@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+
+WORKDIR /app
+COPY . .
+
+RUN dotnet tool install -g dotnet-ef
+
+# Define build arguments
+ARG DB_USERNAME
+ARG DB_PASSWORD
+ARG ACCESS_KEY
+ARG SECRET_KEY
+ARG GOOGLE_API_KEY
+ARG DEFAULT_PASSWORD
+
+# Set environment variables
+ENV DOTNET_USE_POLLING_FILE_WATCHER=1
+ENV PATH=$PATH:/root/.dotnet/tools
+ENV oryxDbConnectionString="Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=veilighdb"
+ENV redisConnectionString="redis:6379,abortConnect=false"
+ENV MINIO_ENDPOINT="minio"
+ENV MINIO_ACCESS_KEY="${ACCESS_KEY}"
+ENV MINIO_SECRET_KEY="${SECRET_KEY}"
+ENV GOOGLE_API_KEY="${GOOGLE_API_KEY}"
+ENV MINIO_PORT=9000
+ENV REDIS_HOST="redis"
+ENV REDIS_PORT=6379 
+ENV DEFAULT_USER_PASSWORD="${DEFAULT_PASSWORD}"
+
+ENTRYPOINT ["dotnet", "watch", "run", "--urls=http://+:5001", "--project", "Veiligh.API/Veiligh.API.csproj"]
