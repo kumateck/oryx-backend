@@ -72,3 +72,13 @@ _[Ss]cripts
 *.dot[Cc]over
 
 .env
+
+# Ignore the .idea directory
+.idea/
+
+# Other common ignore patterns
+*.tmp
+*.swp
+*.userosscache
+*.sln.docstates
+.vscode/
