@@ -54,6 +54,8 @@ jobs:
           DOCKER_IMAGE_NAME: ${{ env.DOCKER_IMAGE_NAME }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           HOST_PORT: ${{ env.HOST_PORT }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
         run: |
           mkdir -p ~/.ssh
@@ -62,7 +64,7 @@ jobs:
 
           ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
             echo "Logging in to Docker Hub"
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker login -u '${DOCKER_USERNAME}' -p '${DOCKER_PASSWORD}'
 
             echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
             docker pull "${DOCKER_IMAGE_NAME}:latest"
