@@ -12,7 +12,7 @@ using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
 namespace APP.Repository;
 
-public class AuthRepository(VeilighContext context, UserManager<User> userManager, IJwtService jwtService /*, IEmailService emailService*/) 
+public class AuthRepository(OryxContext context, UserManager<User> userManager, IJwtService jwtService /*, IEmailService emailService*/) 
     : IAuthRepository
 {
     public async Task<Result<LoginResponse>> Login(LoginRequest request)

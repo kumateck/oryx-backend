@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{66C76CA0-EC6
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "INFRASTRUCTURE", "INFRASTRUCTURE\INFRASTRUCTURE.csproj", "{C8646EC3-E5C8-40F0-90D9-C9D762D69C96}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D720FB41-BC7D-4B2C-9FB5-9E14042B42A3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

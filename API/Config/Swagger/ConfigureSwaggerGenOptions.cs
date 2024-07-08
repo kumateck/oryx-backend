@@ -14,7 +14,7 @@ public class ConfigureSwaggerGenOptions(IApiVersionDescriptionProvider provider)
         {
             var openApiInfo = new OpenApiInfo
             {
-                Title = $"Veiligh API v{description.ApiVersion}",
+                Title = $"Oryx API v{description.ApiVersion}",
                 Version = description.ApiVersion.ToString()
             };
             

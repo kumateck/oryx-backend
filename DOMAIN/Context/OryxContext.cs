@@ -1,7 +1,6 @@
 using System.Reflection;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Incidents;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Identity;
@@ -11,19 +10,12 @@ using SHARED.Provider;
 
 namespace DOMAIN.Context;
 
-public class VeilighContext(DbContextOptions<VeilighContext> options, ITenantProvider tenantProvider) : IdentityDbContext<User, Role, Guid>(options)
+public class OryxContext(DbContextOptions<OryxContext> options, ITenantProvider tenantProvider) : IdentityDbContext<User, Role, Guid>(options)
 {
     
     #region Auth
     public DbSet<PasswordReset> PasswordResets { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
-    #endregion
-    
-    #region Incidents
-    public DbSet<Incident> Incidents { get; set; }
-    public DbSet<IncidentAction> IncidentActions { get; set; }
-    public DbSet<IncidentActionComment> IncidentActionsComments { get; set; }
-    public DbSet<IncidentActionHistory> IncidentActionHistories { get; set; }
     #endregion
 
     #region TenantFilter

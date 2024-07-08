@@ -12,7 +12,7 @@ public class TenantProvider : ITenantProvider
         
         if (string.IsNullOrEmpty(tenant) || tenant == "dev" || tenant == "staging" || tenant == "demo")
         {
-            tenant = "Veiligh-EHS";
+            tenant = "Entrance";
         }
 
         Tenant = tenant;

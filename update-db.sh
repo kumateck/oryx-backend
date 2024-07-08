@@ -1,5 +1,5 @@
 #!/bin/bash
 
-dotnet ef database update --project ./Veiligh.DOMAIN/Veiligh.DOMAIN.csproj --startup-project ./Veiligh.API/Veiligh.API.csproj --context Veiligh.DOMAIN.Context.VeilighContext
+dotnet ef database update --project ./DOMAIN/DOMAIN.csproj --startup-project ./API/API.csproj --context DOMAIN.Context.OryxContext
 
 

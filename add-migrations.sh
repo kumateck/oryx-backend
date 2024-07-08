@@ -24,12 +24,12 @@ fi
 dotnet clean
 
 # Generate a SQL script for the current model
-MIGRATION_OUTPUT=$(dotnet ef migrations script --idempotent --project ./Veiligh.DOMAIN/Veiligh.DOMAIN.csproj --startup-project ./Veiligh.API/Veiligh.API.csproj --context Veiligh.DOMAIN.Context.VeilighContext)
+MIGRATION_OUTPUT=$(dotnet ef migrations script --idempotent --project ./DOMAIN/DOMAIN.csproj --startup-project ./API/API.csproj --context DOMAIN.Context.OryxContext)
 
 # Check if there are pending model changes
 if [[ "$MIGRATION_OUTPUT" == *"No migrations were applied"* ]]; then
   echo "No pending model changes detected."
 else
   echo "Pending model changes detected. Adding new migration..."
-  dotnet ef migrations add "$1" --project ./Veiligh.DOMAIN/Veiligh.DOMAIN.csproj --startup-project ./Veiligh.API/Veiligh.API.csproj --context Veiligh.DOMAIN.Context.VeilighContext
+  dotnet ef migrations add "$1" --project ./DOMAIN/DOMAIN.csproj --startup-project ./API/API.csproj --context DOMAIN.Context.OryxContext
 fi

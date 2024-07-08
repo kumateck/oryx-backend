@@ -14,7 +14,7 @@ using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegiste
 
 namespace APP.Services.Token;
 
-public class JwtService(VeilighContext context, IConfiguration configuration, UserManager<User> userManager)
+public class JwtService(OryxContext context, IConfiguration configuration, UserManager<User> userManager)
     : IJwtService
 {
     public async Task<Result<LoginResponse>> Authenticate(User user, string clientId)

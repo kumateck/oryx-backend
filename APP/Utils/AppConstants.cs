@@ -16,7 +16,7 @@ public static class AppConstants
     public const string AppName = "App-Name";
     
     //Tenant Ids
-    public const string VeilighTenantId = "Veiligh-EHS";
+    public const string DefaultTenantId = "Entrance";
     public const string And = "AND";
     public const string Or = "Or";
     

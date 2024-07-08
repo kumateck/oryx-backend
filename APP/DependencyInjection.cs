@@ -18,6 +18,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IJwtService, JwtService>();

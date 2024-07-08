@@ -7,7 +7,7 @@ namespace APP.Middlewares;
 
 public class JwtMiddleware(RequestDelegate next)
 {
-    public async Task Invoke(HttpContext context,VeilighContext db)
+    public async Task Invoke(HttpContext context,OryxContext db)
     {
         var token = context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
 
@@ -17,7 +17,7 @@ public class JwtMiddleware(RequestDelegate next)
         await next(context);
     }
 
-    private static async Task AttachUserToContext(HttpContext context, string token, VeilighContext db)
+    private static async Task AttachUserToContext(HttpContext context, string token, OryxContext db)
     {
         try
         {

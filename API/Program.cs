@@ -78,20 +78,20 @@ builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("fixed", opt =>
     {
-        opt.PermitLimit = 10; // Allow 10 requests
-        opt.Window = TimeSpan.FromMinutes(1); // Per 1 minute
+        opt.PermitLimit = 10; 
+        opt.Window = TimeSpan.FromMinutes(1); 
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 2; // Up to 2 requests will queue
+        opt.QueueLimit = 2; 
     });
 });
 
 //add automapper
-builder.Services.AddAutoMapper(typeof(VeilighMapper));
+builder.Services.AddAutoMapper(typeof(OryxMapper));
 
 //configure database
-var defaultDbConnectionString = Environment.GetEnvironmentVariable("chillSeekDbConnectionString");
+var defaultDbConnectionString = Environment.GetEnvironmentVariable("oryxDbCOnnectionString");
 
-builder.Services.AddDbContext<VeilighContext>(o =>
+builder.Services.AddDbContext<OryxContext>(o =>
     o.UseNpgsql(defaultDbConnectionString)
 );
 
@@ -105,7 +105,7 @@ builder.Services.AddIdentityCore<User>(options =>
     })
     .AddRoles<Role>()
     .AddUserManager<UserManager<User>>()
-    .AddEntityFrameworkStores<VeilighContext>()
+    .AddEntityFrameworkStores<OryxContext>()
     .AddDefaultTokenProviders();
 
 //add authentication

@@ -7,15 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Entities\Actions\" />
-      <Folder Include="Entities\Audits\" />
-      <Folder Include="Entities\Inspections\" />
-      <Folder Include="Entities\Observations\" />
-      <Folder Include="Entities\Static\" />
-      <Folder Include="Entities\Tags\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
       <PackageReference Include="AutoMapper" Version="13.0.1" />
       <PackageReference Include="Azure.Storage.Blobs" Version="12.21.0-beta.1" />

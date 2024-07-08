@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using Asp.Versioning;
+using APP.Attribute;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.Extensions;
 using APP.IRepository;
+using APP.Utils;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using SHARED.Requests;
@@ -12,12 +13,12 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/user")]
 [ApiController]
-//[ValidateModelState]
+[ValidateModelState]
 public class UserController(IUserRepository repo) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost]
-    [ApiVersion(2)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IResult> CreateUser([FromBody] CreateUserRequest request)
     {
         var response = await repo.CreateUser(request);
@@ -26,13 +27,16 @@ public class UserController(IUserRepository repo) : ControllerBase
     
     [AllowAnonymous]
     [HttpPost("sign-up")]
-    public async Task<IActionResult> CreateNewUser([FromBody] CreateClientRequest request)
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IResult> CreateNewUser([FromBody] CreateClientRequest request)
     {
-        return Created(string.Empty, await repo.CreateNewUser(request));
+        var response = await repo.CreateNewUser(request);
+        return response.IsSuccess ? TypedResults.Created("", response.Value) : response.ToProblemDetails();
     }
     
-    //[Authorize("permission.user." + PermissionUtils.PermSuffixRead)]
+    [Authorize]
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserDto>>))]
     public async Task<IResult> GetUsers([FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 5,
         [FromQuery(Name = "roleNames")] string roleNames = null,
@@ -43,8 +47,10 @@ public class UserController(IUserRepository repo) : ControllerBase
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
     
-    //[Authorize("permission.user." + PermissionUtils.PermSuffixUpdate)]
+    [Authorize]
     [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateUser([FromBody] UpdateUserRequest request, Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -56,6 +62,8 @@ public class UserController(IUserRepository repo) : ControllerBase
     
     //[Authorize("permission.user." + PermissionUtils.PermSuffixUpdate)]
     [HttpPut("role/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateUserRoles([FromBody] UpdateUserRoleRequest request, Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -67,6 +75,8 @@ public class UserController(IUserRepository repo) : ControllerBase
 
     //[Authorize("permission.user." + PermissionUtils.PermSuffixDelete)]
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteUser(Guid id)
     {
         try
@@ -85,6 +95,8 @@ public class UserController(IUserRepository repo) : ControllerBase
     
     [AllowAnonymous]
     [HttpPost("avatar/{id?}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UploadAnImage([Required][FromBody] UploadFileRequest request, Guid? id = null)
     {
         try
@@ -103,6 +115,8 @@ public class UserController(IUserRepository repo) : ControllerBase
     
     //[Authorize("permission.user." + PermissionUtils.PermSuffixDelete)]
     [HttpGet("toggle-disable/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DisableUser(Guid id)
     {
         try

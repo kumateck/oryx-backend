@@ -10,7 +10,7 @@ public static class SeedManager
         using var scope = host.Services.CreateScope();
         try
         {
-            var context = scope.ServiceProvider.GetRequiredService<VeilighContext>();
+            var context = scope.ServiceProvider.GetRequiredService<OryxContext>();
             context.Database.Migrate();
         }
         catch (Exception)

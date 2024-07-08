@@ -15,7 +15,7 @@ using SHARED.Requests;
 
 namespace APP.Repository;
 
-public class UserRepository(VeilighContext context, UserManager<User> userManager, IJwtService jwtService, IBlobStorageService blobStorage, IMapper mapper)
+public class UserRepository(OryxContext context, UserManager<User> userManager, IJwtService jwtService, IBlobStorageService blobStorage, IMapper mapper)
     : IUserRepository
 {
     public async Task<Result<UserDto>> CreateUser(CreateUserRequest request)
