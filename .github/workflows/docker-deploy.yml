@@ -60,9 +60,9 @@ jobs:
           echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << 'EOF'
             echo "Logging in to Docker Hub"
-            docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}" << EOF
+            docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}" << 
 
             echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
             docker pull "${DOCKER_IMAGE_NAME}:latest"
