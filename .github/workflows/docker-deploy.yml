@@ -49,6 +49,8 @@ jobs:
       - name: Deploy to Server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_IMAGE_NAME: ${{ env.DOCKER_IMAGE_NAME }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           HOST_PORT: ${{ env.HOST_PORT }}
@@ -57,21 +59,17 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} -p ${{ secrets.SSH_PORT }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} -p ${{ secrets.SSH_PORT }} 'bash -s' << 'EOF'
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
             echo "Pulling the latest Docker image: $DOCKER_IMAGE_NAME:latest"
             docker pull "$DOCKER_IMAGE_NAME:latest"
-
             echo "Stopping and removing the existing container if it exists"
             if [ $(docker ps -a | grep "$CONTAINER_NAME" | wc -l) -gt 0 ]; then
               docker stop "$CONTAINER_NAME"
               docker rm "$CONTAINER_NAME"
             fi
-
             echo "Pruning unused Docker images"
             docker image prune -a -f
-
             echo "Running the new Docker container on the external 'sail' network"
             docker run -d --net sail -p "$HOST_PORT:$CONTAINER_PORT" --name "$CONTAINER_NAME" "$DOCKER_IMAGE_NAME:latest"
           EOF
