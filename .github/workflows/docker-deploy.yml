@@ -14,6 +14,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -37,11 +38,12 @@ jobs:
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             ACCESS_KEY=${{ secrets.ACCESS_KEY }}
             SECRET_KEY=${{ secrets.SECRET_KEY }}
-            DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD }}
-
+            DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD}}
+  
   deploy:
     runs-on: ubuntu-latest
     needs: build
+
     steps:
       - name: Install SSH Client
         run: sudo apt-get install -y openssh-client
@@ -49,27 +51,31 @@ jobs:
       - name: Deploy to Server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_IMAGE_NAME: ${{ env.DOCKER_IMAGE_NAME }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           HOST_PORT: ${{ env.HOST_PORT }}
           CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} -p ${{ secrets.SSH_PORT }} 'bash -s' << 'EOF'
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-            echo "Pulling the latest Docker image: $DOCKER_IMAGE_NAME:latest"
-            docker pull "$DOCKER_IMAGE_NAME:latest"
+
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
+            echo "Logging in to Docker Hub"
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+            echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
+            docker pull "${DOCKER_IMAGE_NAME}:latest"
+
             echo "Stopping and removing the existing container if it exists"
-            if [ $(docker ps -a | grep "$CONTAINER_NAME" | wc -l) -gt 0 ]; then
-              docker stop "$CONTAINER_NAME"
-              docker rm "$CONTAINER_NAME"
+            if [ \$(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
+              docker stop "${CONTAINER_NAME}"
+              docker rm "${CONTAINER_NAME}"
             fi
+
             echo "Pruning unused Docker images"
             docker image prune -a -f
+
             echo "Running the new Docker container on the external 'sail' network"
-            docker run -d --net sail -p "$HOST_PORT:$CONTAINER_PORT" --name "$CONTAINER_NAME" "$DOCKER_IMAGE_NAME:latest"
+            docker run -d --net sail -p "${HOST_PORT}:${CONTAINER_PORT}" --name "${CONTAINER_NAME}" "${DOCKER_IMAGE_NAME}:latest"
           EOF
