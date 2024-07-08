@@ -38,7 +38,7 @@ jobs:
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             ACCESS_KEY=${{ secrets.ACCESS_KEY }}
             SECRET_KEY=${{ secrets.SECRET_KEY }}
-            DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD}}
+            DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -57,10 +57,10 @@ jobs:
           CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
         run: |
           mkdir -p ~/.ssh
-          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+          echo "${{ env.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << 'EOF'
             echo "Logging in to Docker Hub"
             docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
 
@@ -68,7 +68,7 @@ jobs:
             docker pull "${DOCKER_IMAGE_NAME}:latest"
 
             echo "Stopping and removing the existing container if it exists"
-            if [ \$(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
+            if [ $(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
               docker stop "${CONTAINER_NAME}"
               docker rm "${CONTAINER_NAME}"
             fi
@@ -79,4 +79,3 @@ jobs:
             echo "Running the new Docker container on the external 'sail' network"
             docker run -d --net sail -p "${HOST_PORT}:${CONTAINER_PORT}" --name "${CONTAINER_NAME}" "${DOCKER_IMAGE_NAME}:latest"
           EOF
-  
