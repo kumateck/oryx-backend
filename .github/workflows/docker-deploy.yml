@@ -57,10 +57,10 @@ jobs:
           CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ env.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << 'EOF'
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
             echo "Logging in to Docker Hub"
             docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
 
@@ -68,7 +68,7 @@ jobs:
             docker pull "${DOCKER_IMAGE_NAME}:latest"
 
             echo "Stopping and removing the existing container if it exists"
-            if [ $(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
+            if [ \$(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
               docker stop "${CONTAINER_NAME}"
               docker rm "${CONTAINER_NAME}"
             fi
