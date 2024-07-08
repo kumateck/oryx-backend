@@ -62,10 +62,10 @@ jobs:
 
           ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
             echo "Logging in to Docker Hub"
-            docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
+            docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}" << EOF
 
             echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
-            docker pull "${DOCKER_IMAGE_NAME}:latest"
+            docker pull "${DOCKER_IMAGE_NAME}:latest" << EOF
 
             echo "Stopping and removing the existing container if it exists"
             if [ \$(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
