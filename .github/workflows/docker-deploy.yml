@@ -39,7 +39,7 @@ jobs:
             ACCESS_KEY=${{ secrets.ACCESS_KEY }}
             SECRET_KEY=${{ secrets.SECRET_KEY }}
             DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD}}
-  
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -48,7 +48,7 @@ jobs:
       - name: Install SSH Client
         run: sudo apt-get install -y openssh-client
 
-      - name: Copy and Run Deployment Script
+      - name: Deploy to Server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           DOCKER_IMAGE_NAME: ${{ env.DOCKER_IMAGE_NAME }}
@@ -59,5 +59,24 @@ jobs:
           mkdir -p ~/.ssh
           echo "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          scp ./deploy_docker.sh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/tmp
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} -p ${{ secrets.SSH_PORT }} 'bash /tmp/deploy_docker.sh'
+
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
+            echo "Logging in to Docker Hub"
+            docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
+
+            echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
+            docker pull "${DOCKER_IMAGE_NAME}:latest"
+
+            echo "Stopping and removing the existing container if it exists"
+            if [ \$(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
+              docker stop "${CONTAINER_NAME}"
+              docker rm "${CONTAINER_NAME}"
+            fi
+
+            echo "Pruning unused Docker images"
+            docker image prune -a -f
+
+            echo "Running the new Docker container on the external 'sail' network"
+            docker run -d --net sail -p "${HOST_PORT}:${CONTAINER_PORT}" --name "${CONTAINER_NAME}" "${DOCKER_IMAGE_NAME}:latest"
+          EOF
+  
