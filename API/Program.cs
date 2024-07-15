@@ -178,6 +178,8 @@ app.UseMiddleware<ExceptionHandlerMiddleware>();
 
 app.SeedData();
 
+app.UseRouting();
+
 // Apply rate limiting middleware
 app.UseRateLimiter();
 
@@ -190,7 +192,8 @@ app.UseMiddleware<JwtMiddleware>();
 
 app.UseAuthorization();
 
-
 app.UseHttpsRedirection();
+
+app.MapControllers();
 
 app.Run();
