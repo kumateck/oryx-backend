@@ -23,7 +23,23 @@ public class AuthRepository(OryxContext context, UserManager<User> userManager, 
         {
             return UserErrors.NotFoundByEmail(request.Email);
         }
-
+        
+        if (user.PasswordHash == null) return UserErrors.IncorrectCredentials;
+        var verifyRes = userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+        switch (verifyRes)
+        {
+            case PasswordVerificationResult.SuccessRehashNeeded:
+            {
+                var hashPassword = userManager.PasswordHasher.HashPassword(user, request.Password);
+                user.PasswordHash = hashPassword;
+                context.Users.Update(user);
+                await context.SaveChangesAsync();
+                break;
+            }
+            case PasswordVerificationResult.Failed:
+                return UserErrors.IncorrectCredentials;
+        }
+        
         try
         {
             return await jwtService.Authenticate(user, "web");

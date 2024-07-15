@@ -15,6 +15,8 @@ public static class UserErrors
     
     public static Error InvalidAvatar =>
         Error.Validation("Users.Avatar", "Invalid avatar");
+    public static Error IncorrectCredentials =>
+        Error.Validation("Users.Details", $"Your credentials do not match our records");
     
     public static Error InvalidRoleName(string roleName) =>
         Error.Validation("Users.Roles", $"Role name: {roleName} is not valid.");
