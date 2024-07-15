@@ -42,7 +42,7 @@ public class UserTableSeeders : ISeeder
             EmailConfirmed = true,
             PhoneNumberConfirmed = true,
             OrganizationName = AppConstants.DefaultTenantId,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.UtcNow
         };
 
         var result = userManager.CreateAsync
