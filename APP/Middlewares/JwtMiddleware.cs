@@ -1,13 +1,13 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using DOMAIN.Context;
+using INFRASTRUCTURE.Context;
 
 namespace APP.Middlewares;
 
 public class JwtMiddleware(RequestDelegate next)
 {
-    public async Task Invoke(HttpContext context,OryxContext db)
+    public async Task Invoke(HttpContext context, ApplicationDbContext db)
     {
         var token = context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
 
@@ -17,7 +17,7 @@ public class JwtMiddleware(RequestDelegate next)
         await next(context);
     }
 
-    private static async Task AttachUserToContext(HttpContext context, string token, OryxContext db)
+    private static async Task AttachUserToContext(HttpContext context, string token, ApplicationDbContext db)
     {
         try
         {

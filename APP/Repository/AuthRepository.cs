@@ -4,15 +4,15 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
-using DOMAIN.Context;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Users;
+using INFRASTRUCTURE.Context;
 using SHARED;
 using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
 namespace APP.Repository;
 
-public class AuthRepository(OryxContext context, UserManager<User> userManager, IJwtService jwtService /*, IEmailService emailService*/) 
+public class AuthRepository(ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService /*, IEmailService emailService*/) 
     : IAuthRepository
 {
     public async Task<Result<LoginResponse>> Login(LoginRequest request)

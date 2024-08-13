@@ -1,5 +1,5 @@
 #!/bin/bash
 
-dotnet ef database update --project ./DOMAIN/DOMAIN.csproj --startup-project ./API/API.csproj --context DOMAIN.Context.OryxContext
+dotnet ef database update --project ./INFRASTRUCTURE/INFRASTRUCTURE.csproj --startup-project ./API/API.csproj --context INFRASTRUCTURE.Context.ApplicationDbContext
 
 

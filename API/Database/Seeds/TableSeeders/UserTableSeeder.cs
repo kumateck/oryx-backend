@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
 using APP.Utils;
-using DOMAIN.Context;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using INFRASTRUCTURE.Context;
 
 namespace API.Database.Seeds.TableSeeders;
 
@@ -15,7 +15,7 @@ public class UserTableSeeders : ISeeder
 {
     public void Handle(IServiceScope scope)
     {
-        var dbContext = scope.ServiceProvider.GetService<OryxContext>();
+        var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
         var userManager = scope.ServiceProvider.GetService<UserManager<User>>();
         var roleManager = scope.ServiceProvider.GetService<RoleManager<Role>>();
         
@@ -26,7 +26,7 @@ public class UserTableSeeders : ISeeder
     }
     
     private static void SeedUsers
-        (UserManager<User> userManager, OryxContext dbContext)
+        (UserManager<User> userManager, ApplicationDbContext dbContext)
     {
         var defaultUser = dbContext.Users.IgnoreQueryFilters()
             .FirstOrDefault(item => item.Email == "anthonygyan@gmail.com");
@@ -75,7 +75,7 @@ public class UserTableSeeders : ISeeder
     
     
     private static void SeedRoles
-        (RoleManager<Role> roleManager, OryxContext dbContext)
+        (RoleManager<Role> roleManager, ApplicationDbContext dbContext)
     {
         foreach (var roleName in RoleUtils.AppRoles())
         {

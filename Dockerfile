@@ -18,7 +18,7 @@ ARG DEFAULT_PASSWORD
 # Set environment variables
 ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 ENV PATH=$PATH:/root/.dotnet/tools
-ENV oryxDbConnectionString="Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=oryxdb"
+ENV connectionString="Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=oryxdb"
 ENV redisConnectionString="redis:6379,abortConnect=false"
 ENV MINIO_ENDPOINT="minio"
 ENV MINIO_ACCESS_KEY="${ACCESS_KEY}"

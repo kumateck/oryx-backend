@@ -6,22 +6,21 @@ using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
-using DOMAIN.Context;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using INFRASTRUCTURE.Context;
 using SHARED;
 using SHARED.Requests;
 
 namespace APP.Repository;
 
-public class UserRepository(OryxContext context, UserManager<User> userManager, IJwtService jwtService, IBlobStorageService blobStorage, IMapper mapper)
+public class UserRepository(ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IBlobStorageService blobStorage, IMapper mapper)
     : IUserRepository
 {
     public async Task<Result<UserDto>> CreateUser(CreateUserRequest request)
     {
         var user = mapper.Map<User>(request);
-        user.UserName = request.Email;
 
         if (!await EmailIsUnique(request.Email))
             return UserErrors.EmailNotUnique;

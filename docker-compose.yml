@@ -10,7 +10,7 @@ services:
     environment:
       - ASPNETCORE_Kestrel__Certificates__Default__Password=password
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
-      - oryxDbConnectionString=Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=${DB_DATABASE}
+      - connectionString=Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=${DB_DATABASE}
       - redisConnectionString=redis:6379,abortConnect=false
       - RUN_TEST_SEEDS=ON
       - MINIO_ENDPOINT=minio
@@ -30,6 +30,6 @@ services:
 
 networks:
   sail:
-    external: true  # This indicates the network is already created and shared
+    external: true 
   shared:
     driver: bridge

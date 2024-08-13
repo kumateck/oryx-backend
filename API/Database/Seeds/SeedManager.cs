@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using DOMAIN.Context;
+using INFRASTRUCTURE.Context;
 
 namespace API.Database.Seeds;
 
@@ -10,7 +10,7 @@ public static class SeedManager
         using var scope = host.Services.CreateScope();
         try
         {
-            var context = scope.ServiceProvider.GetRequiredService<OryxContext>();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             context.Database.Migrate();
         }
         catch (Exception)

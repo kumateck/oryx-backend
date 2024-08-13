@@ -12,11 +12,22 @@ using API.Database.Seeds;
 using APP;
 using APP.Mapper;
 using APP.Middlewares;
-using DOMAIN.Context;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using INFRASTRUCTURE.Context;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.UseSentry(o =>
+{
+    o.Dsn = "https://a2211e70914a3e5d12bfc5840da8fc2f@o4507771832762368.ingest.de.sentry.io/4507771836301392";
+    // When configuring for the first time, to see what the SDK is doing:
+    o.Debug = true;
+    // Set TracesSampleRate to 1.0 to capture 100%
+    // of transactions for tracing.
+    // We recommend adjusting this value in production
+    o.TracesSampleRate = 1.0;
+});
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -89,9 +100,9 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddAutoMapper(typeof(OryxMapper));
 
 //configure database
-var defaultDbConnectionString = Environment.GetEnvironmentVariable("oryxDbConnectionString");
+var defaultDbConnectionString = Environment.GetEnvironmentVariable("connectionString");
 
-builder.Services.AddDbContext<OryxContext>(o =>
+builder.Services.AddDbContext<ApplicationDbContext>(o =>
     o.UseNpgsql(defaultDbConnectionString)
 );
 
@@ -105,7 +116,7 @@ builder.Services.AddIdentityCore<User>(options =>
     })
     .AddRoles<Role>()
     .AddUserManager<UserManager<User>>()
-    .AddEntityFrameworkStores<OryxContext>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
 //add authentication
@@ -155,30 +166,34 @@ builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
 
 var app = builder.Build();
 
+app.SeedData();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        var descriptions = app.DescribeApiVersions();
-        foreach (var description in descriptions)
-        {
-            var url = $"/swagger/{description.GroupName}/swagger.json";
-            var name = description.GroupName.ToUpperInvariant();
-            
-            options.SwaggerEndpoint(url, name);
-        }        
-        options.RoutePrefix = "";
-        options.DefaultModelsExpandDepth(-1);
-    });
 }
 
-app.UseMiddleware<ExceptionHandlerMiddleware>();
+// Configure the HTTP request pipeline.
+app.UseHttpsRedirection();
 
-app.SeedData();
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    var descriptions = app.DescribeApiVersions();
+    foreach (var description in descriptions)
+    {
+        var url = $"/swagger/{description.GroupName}/swagger.json";
+        var name = description.GroupName.ToUpperInvariant();
+            
+        options.SwaggerEndpoint(url, name);
+    }        
+    options.RoutePrefix = "";
+    options.DefaultModelsExpandDepth(-1);
+});
 
-app.UseRouting();
+app.UseMiddleware<SentryPerformanceMiddleware>();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Apply rate limiting middleware
 app.UseRateLimiter();
@@ -191,9 +206,5 @@ app.UseAuthentication();
 app.UseMiddleware<JwtMiddleware>();
 
 app.UseAuthorization();
-
-app.UseHttpsRedirection();
-
-app.MapControllers();
 
 app.Run();

@@ -3,16 +3,16 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
-using DOMAIN.Context;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
 
-public class RoleRepository(OryxContext context, IMapper mapper, UserManager<User> userManager, RoleManager<Role> roleManager /*, IPermissionRepository permissionRepository*/)
+public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, RoleManager<Role> roleManager /*, IPermissionRepository permissionRepository*/)
     : IRoleRepository
 {
     public async Task<Result<List<RoleDto>>> GetRoles()

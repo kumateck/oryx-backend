@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using DOMAIN.Context;
+using INFRASTRUCTURE.Context;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Users;
 using SHARED;
@@ -14,7 +14,7 @@ using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegiste
 
 namespace APP.Services.Token;
 
-public class JwtService(OryxContext context, IConfiguration configuration, UserManager<User> userManager)
+public class JwtService(ApplicationDbContext context, IConfiguration configuration, UserManager<User> userManager)
     : IJwtService
 {
     public async Task<Result<LoginResponse>> Authenticate(User user, string clientId)

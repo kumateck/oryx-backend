@@ -1,21 +1,31 @@
 using System.Reflection;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SHARED.Provider;
 
-namespace DOMAIN.Context;
+namespace INFRASTRUCTURE.Context;
 
-public class OryxContext(DbContextOptions<OryxContext> options, ITenantProvider tenantProvider) : IdentityDbContext<User, Role, Guid>(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ITenantProvider tenantProvider) : IdentityDbContext<User, Role, Guid>(options)
 {
     
     #region Auth
     public DbSet<PasswordReset> PasswordResets { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    
+    #endregion
+
+    #region Organization
+
+    public DbSet<Organization> Organizations { get; set; }
+    public DbSet<Site> Sites { get; set; }
+
     #endregion
 
     #region TenantFilter
@@ -69,6 +79,11 @@ public class OryxContext(DbContextOptions<OryxContext> options, ITenantProvider 
                     entity.DeletedAt = DateTime.UtcNow;
                     break;
             }
+            
+            if (entry.Entity is IOrganizationType organization)
+            {
+                organization.OrganizationName = tenantProvider.Tenant;
+            }
         }
     }
 
@@ -85,5 +100,12 @@ public class OryxContext(DbContextOptions<OryxContext> options, ITenantProvider 
         modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("userlogins");
         modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("roleclaims");
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("usertokens");
+        
+        //apply global filters
+        modelBuilder.Entity<User>().HasQueryFilter(entity =>
+            entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
+
+        modelBuilder.Entity<Site>().HasQueryFilter(entity =>
+            entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
     }
 }
