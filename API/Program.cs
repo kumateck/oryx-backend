@@ -231,8 +231,12 @@ app.UseMiddleware<SentryPerformanceMiddleware>();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+app.SeedData();
+
+app.UseRouting();
+
 // Apply rate limiting middleware
-app.UseRateLimiter();
+//app.UseRateLimiter();
 
 //use CORS
 app.UseCors("default");
@@ -242,5 +246,7 @@ app.UseAuthentication();
 app.UseMiddleware<JwtMiddleware>();
 
 app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();
