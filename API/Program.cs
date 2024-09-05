@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using System.Threading.RateLimiting;
 using Asp.Versioning;
@@ -15,6 +16,7 @@ using APP.Middlewares;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,6 +68,10 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
     options.OperationFilter<ReApplyOptionalParameterFilter>();
+    
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
 });
 
 //Add Cors
@@ -80,6 +86,36 @@ builder.Services.AddCors(options =>
                 .AllowAnyMethod();
         });
 });
+
+//validate model state
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(x => x.Value.Errors.Count > 0)
+                .Select(x => new
+                {
+                    Code = x.Key,
+                    Description = x.Value.Errors.Select(e => e.ErrorMessage).FirstOrDefault()
+                })
+                .ToArray();
+
+            var problemDetails = new ProblemDetails
+            {
+                Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1", 
+                Title = "One or more validation errors occurred.",
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Extensions = { ["errors"] = errors }
+            };
+
+            return new ObjectResult(problemDetails)
+            {
+                StatusCode = StatusCodes.Status422UnprocessableEntity
+            };
+        };
+    });
 
 //add http context accessor
 builder.Services.AddHttpContextAccessor();

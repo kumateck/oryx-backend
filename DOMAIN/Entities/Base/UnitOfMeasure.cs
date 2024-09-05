@@ -1,9 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.Base;
 
-namespace DOMAIN.Entities.Materials;
+namespace DOMAIN.Entities.Base;
 
-public class Material : BaseEntity
+public class UnitOfMeasure : BaseEntity
 {
     [StringLength(255)] public string Name { get; set; }
     [StringLength(1000)] public string Description { get; set; }

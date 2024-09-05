@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using APP.Attribute;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.Extensions;
@@ -13,7 +12,6 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/user")]
 [ApiController]
-[ValidateModelState]
 public class UserController(IUserRepository repo) : ControllerBase
 {
     [AllowAnonymous]

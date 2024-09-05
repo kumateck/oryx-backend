@@ -1,4 +1,3 @@
-using APP.Attribute;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -11,7 +10,6 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/role")]
 [ApiController]
 [Authorize]
-[ValidateModelState]
 public class RoleController(IRoleRepository repo) : ControllerBase
 {
     [HttpGet]

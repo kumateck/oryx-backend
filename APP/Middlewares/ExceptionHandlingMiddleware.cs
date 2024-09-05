@@ -13,50 +13,6 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         {
             await next(httpContext);
         }
-        catch (BadHttpRequestException badHttpRequestException)
-        {
-            logger.LogError(badHttpRequestException, "Bad request: {Message}", badHttpRequestException.Message);
-
-            var problemDetails = new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Bad Request",
-                Detail = "The request body could not be read or is malformed.",
-                Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1"
-            };
-
-            httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-            httpContext.Response.ContentType = "application/problem+json";
-
-            var responsePayload = JsonSerializer.Serialize(problemDetails, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
-            await httpContext.Response.WriteAsync(responsePayload);
-        }
-        catch (JsonException jsonException) 
-        {
-            logger.LogError(jsonException, "Invalid JSON format: {Message}", jsonException.Message);
-
-            var problemDetails = new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Bad Request",
-                Detail = "The request body contains invalid JSON.",
-                Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1"
-            };
-            
-            httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-            httpContext.Response.ContentType = "application/problem+json";
-
-            var responsePayload = JsonSerializer.Serialize(problemDetails, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
-            await httpContext.Response.WriteAsync(responsePayload);
-        }
         catch (Exception exception)
         {
             logger.LogError(exception, "Exception Occurred: {Message}", exception.Message);

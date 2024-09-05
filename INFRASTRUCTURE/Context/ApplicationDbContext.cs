@@ -1,10 +1,15 @@
 using System.Reflection;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Organizations;
+using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.WorkOrders;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +30,53 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Organization> Organizations { get; set; }
     public DbSet<Site> Sites { get; set; }
+
+    #endregion
+
+    #region Resources
+
+    public DbSet<Resource> Resources { get; set; }
+
+    #endregion
+
+    #region Material
+
+    public DbSet<Material> Materials { get; set; }
+
+    #endregion
+
+    #region UnitOfMeasure
+
+    public DbSet<UnitOfMeasure> UnitOfMeasures { get; set; }
+
+    #endregion
+
+    #region Products
+
+    public DbSet<Product> Products { get; set; }
+    public DbSet<ProductCategory> ProductCategories { get; set; }
+    public DbSet<ProductBillOfMaterial> ProductBillOfMaterials { get; set; }
+
+    #endregion
+
+    #region BoM
+
+    public DbSet<BillOfMaterial> BillOfMaterials { get; set; }
+    public DbSet<BillOfMaterialItem> BillOfMaterialItems { get; set; }
+
+    #endregion
+
+    #region WorkOrder
+
+    public DbSet<WorkOrder> WorkOrders { get; set; }
+    public DbSet<ProductionStep> ProductionSteps { get; set; }
+
+    #endregion
+
+    #region ProductionSchedule
+
+    public DbSet<ProductionSchedule> ProductionSchedules { get; set; }
+    public DbSet<MasterProductionSchedule> MasterProductionSchedules { get; set; }
 
     #endregion
 
