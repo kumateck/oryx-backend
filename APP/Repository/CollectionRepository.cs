@@ -1,10 +1,10 @@
-using System.Data.Entity;
 using APP.IRepository;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
