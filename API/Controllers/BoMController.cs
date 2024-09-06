@@ -17,7 +17,7 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="request">The CreateBillOfMaterialRequest object.</param>
     /// <returns>Returns the ID of the created Bill of Material.</returns>
     [HttpPost] 
-    [Authorize] 
+    //[Authorize] 
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))] 
     [ProducesResponseType(StatusCodes.Status400BadRequest)] 
     public async Task<IResult> CreateBillOfMaterial([FromBody] CreateBillOfMaterialRequest request)
@@ -35,7 +35,7 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="billOfMaterialId">The ID of the Bill of Material.</param>
     /// <returns>Returns the Bill of Material.</returns>
     [HttpGet("{billOfMaterialId}")]
-    [Authorize] 
+    //[Authorize] 
     [ProducesResponseType(StatusCodes.Status200OK)] 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetBillOfMaterial(Guid billOfMaterialId) 
@@ -52,7 +52,7 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of Bill of Materials.</returns>
     [HttpGet]
-    [Authorize]
+    //[Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)] 
     public async Task<IResult> GetBillOfMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null) 
     { 
@@ -67,7 +67,7 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="billOfMaterialId">The ID of the Bill of Material to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{billOfMaterialId}")]
-    [Authorize]
+    //[Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -86,7 +86,7 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="billOfMaterialId">The ID of the Bill of Material to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("{billOfMaterialId}")]
-    [Authorize]
+    //[Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteBillOfMaterial(Guid billOfMaterialId) 

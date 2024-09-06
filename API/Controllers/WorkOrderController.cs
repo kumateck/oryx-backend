@@ -32,7 +32,7 @@ public class WorkOrderController(IWorkOrderRepository repository) : ControllerBa
     /// <param name="workOrderId">The ID of the work order.</param>
     /// <returns>Returns the work order details.</returns>
     [HttpGet("{workOrderId}")]
-    [Authorize]
+    //[Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WorkOrderDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetWorkOrder(Guid workOrderId)

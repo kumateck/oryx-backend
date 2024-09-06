@@ -30,7 +30,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
 
-    [Authorize]
+    //[Authorize]
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RolePermissionDto))]
     public async Task<IResult> GetRole(Guid id)
@@ -46,7 +46,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
         }
     }
 
-    [Authorize]
+    //[Authorize]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> CreateRole(CreateRoleRequest request)
@@ -58,7 +58,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
         return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
     }
 
-    [Authorize]
+    //[Authorize]
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> UpdateRole(UpdateRoleRequest request, Guid id)
@@ -77,7 +77,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
         }
     }
 
-    [Authorize]
+    //[Authorize]
     [HttpGet("check/{id}")]
     public async Task<IResult> CheckRole(Guid id)
     {
@@ -85,7 +85,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
 
-    [Authorize]
+    //[Authorize]
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> DeleteRole(Guid id)
