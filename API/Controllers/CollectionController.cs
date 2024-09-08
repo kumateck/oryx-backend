@@ -52,6 +52,6 @@ public class CollectionController(ICollectionRepository repository) : Controller
     public async Task<IResult> CreateItem([FromBody] CreateItemRequest request, string itemType)
     {
         var result = await repository.CreateItem(request, itemType);
-        return result.IsSuccess ? TypedResults.Created("", result.Value) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

@@ -7,6 +7,7 @@ using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.WorkOrders;
@@ -77,6 +78,25 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<ProductionSchedule> ProductionSchedules { get; set; }
     public DbSet<MasterProductionSchedule> MasterProductionSchedules { get; set; }
+
+    #endregion
+
+    #region WorkCenter
+
+    public DbSet<WorkCenter> WorkCenters { get; set; }
+
+    #endregion
+
+    #region Operation
+
+    public DbSet<Operation> Operations { get; set; }
+
+    #endregion
+
+    #region Route
+
+    public DbSet<Route> Routes { get; set; }
+    public DbSet<RouteResource> RouteResources { get; set; }
 
     #endregion
 
@@ -159,5 +179,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<Site>().HasQueryFilter(entity =>
             entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
+
+        modelBuilder.Entity<PasswordReset>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue || !entity.User.DeletedAt.HasValue);
     }
 }

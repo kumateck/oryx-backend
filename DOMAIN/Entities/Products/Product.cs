@@ -16,6 +16,8 @@ public class Product : BaseEntity
     public decimal StandardCost { get; set; }
     public decimal SellingPrice { get; set; }
     public bool IsActive { get; set; }
+    [StringLength(255)] public string DosageForm { get; set; }
+    [StringLength(255)] public string Strength { get; set; }
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } // List of BOMs associated with this product
 }
 

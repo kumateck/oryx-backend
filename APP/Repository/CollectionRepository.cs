@@ -13,26 +13,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
 {
     public async Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType)
     {
-        switch (itemType)
+        return itemType switch
         {
-            case nameof(ProductCategory):
-                return mapper.Map<List<CollectionItemDto>>(await context.ProductCategories.ToListAsync());
-            
-            case nameof(Resource):
-                return mapper.Map<List<CollectionItemDto>>(await context.Resources.ToListAsync());
-            
-            case nameof(UnitOfMeasure):
-                return mapper.Map<List<CollectionItemDto>>(await context.UnitOfMeasures.ToListAsync());
-            
-            case nameof(Material):
-                return mapper.Map<List<CollectionItemDto>>(await context.Materials.ToListAsync());
-            
-            case nameof(Product):
-                return mapper.Map<List<CollectionItemDto>>(await context.Products.ToListAsync());
-            
-            default:
-                return Error.Validation("Item", "Invalid item type");
-        }
+            nameof(ProductCategory) => mapper.Map<List<CollectionItemDto>>(
+                await context.ProductCategories.ToListAsync()),
+            nameof(Resource) => mapper.Map<List<CollectionItemDto>>(await context.Resources.ToListAsync()),
+            nameof(UnitOfMeasure) => mapper.Map<List<CollectionItemDto>>(await context.UnitOfMeasures.ToListAsync()),
+            nameof(Material) => mapper.Map<List<CollectionItemDto>>(await context.Materials.ToListAsync()),
+            nameof(Product) => mapper.Map<List<CollectionItemDto>>(await context.Products.ToListAsync()),
+            _ => Error.Validation("Item", "Invalid item type")
+        };
     }
 
     public Result<IEnumerable<string>> GetItemTypes()
@@ -43,7 +33,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Resource),
             nameof(UnitOfMeasure),
             nameof(Material),
-            nameof(Product)
+            nameof(Product),
+            nameof(WorkCenter),
+            nameof(Operation)
         };
     }
     
@@ -74,6 +66,18 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.Materials.AddAsync(material);
                 await context.SaveChangesAsync();
                 return material.Id;
+            
+            case nameof(WorkCenter):
+                var workCenter = mapper.Map<WorkCenter>(request);
+                await context.WorkCenters.AddAsync(workCenter);
+                await context.SaveChangesAsync();
+                return workCenter.Id;
+            
+            case nameof(Operation):
+                var operation = mapper.Map<Operation>(request);
+                await context.Operations.AddAsync(operation);
+                await context.SaveChangesAsync();
+                return operation.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");

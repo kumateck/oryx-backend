@@ -6,6 +6,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.WorkOrders;
 using SHARED;
@@ -23,6 +24,8 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, ProductCategory>();
         CreateMap<CreateItemRequest, UnitOfMeasure>();
         CreateMap<CreateItemRequest, Material>();
+        CreateMap<CreateItemRequest, Operation>();
+        CreateMap<CreateItemRequest, WorkCenter>();
 
         #endregion
         
@@ -31,6 +34,12 @@ public class OryxMapper : Profile
         CreateMap<ProductCategory, CollectionItemDto>();
         CreateMap<UnitOfMeasure, CollectionItemDto>();
         CreateMap<Product, CollectionItemDto>();
+        CreateMap<Operation, CollectionItemDto>();
+        CreateMap<WorkCenter, CollectionItemDto>();
+        CreateMap<RouteResource, CollectionItemDto>()
+            .IncludeMembers(src => src.Resource)
+            .ForMember(dest => dest.Id,
+                opt => opt.MapFrom(src => src.ResourceId));
 
         #endregion
 
@@ -95,6 +104,13 @@ public class OryxMapper : Profile
         CreateMap<ProductionSchedule, ProductionScheduleDto>();
         CreateMap<CreateMasterProductionScheduleRequest, MasterProductionSchedule>();
         CreateMap<MasterProductionSchedule, MasterProductionScheduleDto>();
+
+        #endregion
+
+        #region Route
+
+        CreateMap<CreateRouteRequest, Route>();
+        CreateMap<Route, RouteDto>();
 
         #endregion
 

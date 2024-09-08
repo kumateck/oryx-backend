@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Routes;
 
 namespace API.Controllers;
 
@@ -94,6 +95,73 @@ public class ProductController(IProductRepository repository) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.DeleteProduct(productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+     /// <summary>
+    /// Creates a new route for a product.
+    /// </summary>
+    /// <param name="request">The CreateRouteRequest object.</param>
+    /// <returns>Returns the ID of the created route.</returns>
+    [HttpPost("{productId}/routes")]
+    //[Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateRoute([FromBody] CreateRouteRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.CreateRoute(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific route by its ID.
+    /// </summary>
+    /// <param name="routeId">The ID of the route.</param>
+    /// <returns>Returns the route details.</returns>
+    [HttpGet("routes/{routeId}")]
+    //[Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RouteDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetRoute(Guid routeId)
+    {
+        var result = await repository.GetRoute(routeId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of routes.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of routes.</returns>
+    [HttpGet("{productId}/routes")]
+    //[Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IResult> GetRoutes([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetRoutes(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific route by its ID.
+    /// </summary>
+    /// <param name="routeId">The ID of the route to be deleted.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpDelete("routes/{routeId}")]
+    //[Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteRoute(Guid routeId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.DeleteRoute(routeId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

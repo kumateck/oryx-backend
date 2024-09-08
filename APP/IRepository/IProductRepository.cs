@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Routes;
 using SHARED;
 
 namespace APP.IRepository;
@@ -12,4 +13,9 @@ public interface IProductRepository
         string searchQuery);
     Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId);
     Task<Result> DeleteProduct(Guid productId, Guid userId);
+    Task<Result<Guid>> CreateRoute(CreateRouteRequest request, Guid userId);
+    Task<Result<RouteDto>> GetRoute(Guid routeId);
+    Task<Result<Paginateable<IEnumerable<RouteDto>>>> GetRoutes(int page, int pageSize,
+        string searchQuery = null);
+    Task<Result> DeleteRoute(Guid routeId, Guid userId);
 }

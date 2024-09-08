@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Routes;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -123,4 +124,112 @@ namespace APP.Repository;
          await context.SaveChangesAsync();
          return Result.Success(); 
      }
+     
+      public async Task<Result<Guid>> CreateRoute(CreateRouteRequest request, Guid userId)
+      {
+          var route = mapper.Map<Route>(request);
+          route.Resources = request.ResourceIds.Select(r => new RouteResource 
+          { 
+              ResourceId = r
+          }).ToList();
+          route.CreatedById = userId;
+              
+          await context.Routes.AddAsync(route);
+          await context.SaveChangesAsync();
+
+          return Result.Success(route.Id);
+      }
+
+    public async Task<Result<RouteDto>> GetRoute(Guid routeId)
+    {
+        var route = await context.Routes
+            .Include(r => r.Operation)
+            .Include(r => r.WorkCenter)
+            .Include(r => r.BillOfMaterialItem)
+            .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
+            .FirstOrDefaultAsync(r => r.Id == routeId);
+
+        if (route == null)
+            return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
+
+        var routeDto = mapper.Map<RouteDto>(route);
+        return Result.Success(routeDto);
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<RouteDto>>>> GetRoutes(int page, int pageSize, string searchQuery = null)
+    {
+        var query = context.Routes
+            .Include(r => r.Operation)
+            .Include(r => r.WorkCenter)
+            .Include(r => r.BillOfMaterialItem)
+            .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.Where(r => r.Operation.Name.Contains(searchQuery) || r.WorkCenter.Name.Contains(searchQuery));
+        }
+
+        var paginatedRoutes = await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<RouteDto>
+        );
+
+        return Result.Success(paginatedRoutes);
+    }
+
+    public async Task<Result> UpdateRoute(UpdateRouteRequest request, Guid routeId, Guid userId)
+    {
+        var route = await context.Routes
+            .Include(r => r.Resources)
+            .FirstOrDefaultAsync(r => r.Id == routeId);
+
+        if (route == null)
+            return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
+
+        mapper.Map(request, route);
+        route.LastUpdatedById = userId;
+
+        // Update Route details
+        // route.OperationId = request.OperationId;
+        // route.WorkCenterId = request.WorkCenterId;
+        // route.BillOfMaterialItemId = request.BillOfMaterialItemId;
+        // route.EstimatedTime = request.EstimatedTime;
+        // route.LastUpdatedById = userId;
+
+        // Remove existing resources
+        context.RouteResources.RemoveRange(route.Resources);
+
+        // Add new resources
+        route.Resources = request.ResourceIds.Select(r => new RouteResource
+        {
+            ResourceId = r,
+            RouteId = routeId
+        }).ToList();
+
+        context.Routes.Update(route);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteRoute(Guid routeId, Guid userId)
+    {
+        var route = await context.Routes
+            .Include(r => r.Resources)
+            .FirstOrDefaultAsync(r => r.Id == routeId);
+
+        if (route == null)
+            return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
+
+        route.DeletedAt = DateTime.UtcNow;
+        route.LastDeletedById = userId;
+
+        context.Routes.Update(route);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 }
