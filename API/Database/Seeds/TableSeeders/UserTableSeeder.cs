@@ -29,16 +29,16 @@ public class UserTableSeeders : ISeeder
         (UserManager<User> userManager, ApplicationDbContext dbContext)
     {
         var defaultUser = dbContext.Users.IgnoreQueryFilters()
-            .FirstOrDefault(item => item.Email == "anthonygyan@gmail.com");
+            .FirstOrDefault(item => item.Email == "dkasusei@kumateck.com");
         
         if (defaultUser != null) return;
         
         var user = new User
         {
-            UserName = "anthonygyan@gmail.com",
-            Email = "anthonygyan@gmail.com",
-            FirstName = "Tony",
-            LastName = "Gyan",
+            UserName = "dkasusei@kumateck.com",
+            Email = "dkasusei@kumateck.com",
+            FirstName = "Des",
+            LastName = "Kumateck",
             EmailConfirmed = true,
             PhoneNumberConfirmed = true,
             OrganizationName = AppConstants.DefaultTenantId,
@@ -51,7 +51,7 @@ public class UserTableSeeders : ISeeder
         if (!result.Succeeded) return;
         {
             var createdUser = dbContext.Users.IgnoreQueryFilters()
-                .FirstOrDefault(item => item.Email == "anthonygyan@gmail.com");
+                .FirstOrDefault(item => item.Email == "dkasusei@kumateck.com");
 
             if (createdUser == null) return;
 
@@ -65,8 +65,8 @@ public class UserTableSeeders : ISeeder
 
             _ = userManager.AddClaimsAsync(user, new[]
             {
-                new Claim(JwtClaimTypes.Name, "Tony"),
-                new Claim(JwtClaimTypes.GivenName, "Gyan"),
+                new Claim(JwtClaimTypes.Name, "Des"),
+                new Claim(JwtClaimTypes.GivenName, "KUma"),
                 new Claim(JwtClaimTypes.FamilyName, "Admin")
             }).Result;
         }
