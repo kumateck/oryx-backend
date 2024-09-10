@@ -29,14 +29,14 @@ public class UserTableSeeders : ISeeder
         (UserManager<User> userManager, ApplicationDbContext dbContext)
     {
         var defaultUser = dbContext.Users.IgnoreQueryFilters()
-            .FirstOrDefault(item => item.Email == "dkasusei@kumateck.com");
+            .FirstOrDefault(item => item.Email == "dkadusei@kumateck.com");
         
         if (defaultUser != null) return;
         
         var user = new User
         {
-            UserName = "dkasusei@kumateck.com",
-            Email = "dkasusei@kumateck.com",
+            UserName = "dkadusei@kumateck.com",
+            Email = "dkadusei@kumateck.com",
             FirstName = "Des",
             LastName = "Kumateck",
             EmailConfirmed = true,
@@ -51,7 +51,7 @@ public class UserTableSeeders : ISeeder
         if (!result.Succeeded) return;
         {
             var createdUser = dbContext.Users.IgnoreQueryFilters()
-                .FirstOrDefault(item => item.Email == "dkasusei@kumateck.com");
+                .FirstOrDefault(item => item.Email == "dkadusei@kumateck.com");
 
             if (createdUser == null) return;
 
