@@ -36,6 +36,7 @@ public class OryxMapper : Profile
         CreateMap<Product, CollectionItemDto>();
         CreateMap<Operation, CollectionItemDto>();
         CreateMap<WorkCenter, CollectionItemDto>();
+        CreateMap<Resource, CollectionItemDto>();
         CreateMap<RouteResource, CollectionItemDto>()
             .IncludeMembers(src => src.Resource)
             .ForMember(dest => dest.Id,
