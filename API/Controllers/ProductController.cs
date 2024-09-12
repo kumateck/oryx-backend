@@ -2,12 +2,13 @@ using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
+using APP.Utils;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Routes;
 
 namespace API.Controllers;
 
-[Route("api/v{version:apiVersion}/products")]
+[Route("api/v{version:apiVersion}/product")]
 [ApiController]
 public class ProductController(IProductRepository repository) : ControllerBase
 {
@@ -53,7 +54,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of products.</returns>
     [HttpGet]
     //[Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductDto>>))]
     public async Task<IResult> GetProducts([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetProducts(page, pageSize, searchQuery);

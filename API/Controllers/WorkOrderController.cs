@@ -6,7 +6,7 @@ using DOMAIN.Entities.WorkOrders;
 
 namespace API.Controllers;
 
-[Route("api/v{version:apiVersion}/work-orders")]
+[Route("api/v{version:apiVersion}/work-order")]
 [ApiController]
 public class WorkOrderController(IWorkOrderRepository repository) : ControllerBase
 {
