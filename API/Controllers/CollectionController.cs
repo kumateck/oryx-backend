@@ -54,4 +54,44 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.CreateItem(request, itemType);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates an existing item in the collection.
+    /// </summary>
+    /// <param name="request">The UpdateItemRequest object containing updated item details.</param>
+    /// <param name="itemId">The ID of the item to update.</param>
+    /// <param name="itemType">The type of item to update.</param>
+    /// <returns>Returns the ID of the updated item.</returns>
+    [HttpPut("{itemType}/{itemId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateItem([FromBody] CreateItemRequest request, Guid itemId, string itemType)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.UpdateItem(request, itemId, itemType, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Soft deletes an item by setting DeletedAt and LastDeletedById.
+    /// </summary>
+    /// <param name="itemId">The ID of the item to delete.</param>
+    /// <param name="itemType">The type of item to delete.</param>
+    /// <returns>Returns a confirmation of the deleted item's ID.</returns>
+    [HttpDelete("{itemType}/{itemId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteItem(Guid itemId, string itemType)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        var result = await repository.SoftDeleteItem(itemId, itemType, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }
