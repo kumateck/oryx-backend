@@ -176,11 +176,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //apply global filters
         modelBuilder.Entity<User>().HasQueryFilter(entity =>
             entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
-
         modelBuilder.Entity<Site>().HasQueryFilter(entity =>
             entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
-
         modelBuilder.Entity<PasswordReset>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue || !entity.User.DeletedAt.HasValue);
+        modelBuilder.Entity<Product>().HasQueryFilter(entity =>
+             !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<WorkCenter>().HasQueryFilter(entity => 
+            !entity.DeletedAt.HasValue); 
+        modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity => 
+            !entity.DeletedAt.HasValue); 
+        modelBuilder.Entity<Resource>().HasQueryFilter(entity => 
+            !entity.DeletedAt.HasValue); 
+        modelBuilder.Entity<UnitOfMeasure>().HasQueryFilter(entity => 
+            !entity.DeletedAt.HasValue); 
+        modelBuilder.Entity<Operation>().HasQueryFilter(entity => 
+            !entity.DeletedAt.HasValue); 
     }
 }
