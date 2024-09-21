@@ -77,7 +77,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     }
     
     /// <summary>
-    /// Soft deletes an item by setting DeletedAt and LastDeletedById.
+    /// Deletes an item.
     /// </summary>
     /// <param name="itemId">The ID of the item to delete.</param>
     /// <param name="itemType">The type of item to delete.</param>
