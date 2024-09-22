@@ -36,7 +36,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Prefix, q => q.ItemType);
+            query = query.WhereSearch(searchQuery, q => q.Prefix, q => q.ModelType);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ConfigurationDto>);
