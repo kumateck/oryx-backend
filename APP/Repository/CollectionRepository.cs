@@ -58,6 +58,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var operations = await context.Operations.ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(operations);
                     break;
+                
+                case nameof(MaterialType):
+                    var materialType = await context.MaterialTypes.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(materialType);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -78,7 +83,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Resource),
             nameof(UnitOfMeasure),
             nameof(WorkCenter),
-            nameof(Operation)
+            nameof(Operation),
+            nameof(MaterialType)
         };
     }
     
@@ -115,6 +121,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.Operations.AddAsync(operation);
                 await context.SaveChangesAsync();
                 return operation.Id;
+            
+            case nameof(MaterialType):
+                var materialType = mapper.Map<MaterialType>(request);
+                await context.MaterialTypes.AddAsync(materialType);
+                await context.SaveChangesAsync();
+                return materialType.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -164,6 +176,14 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Operations.Update(operation);
                 await context.SaveChangesAsync();
                 return operation.Id;
+            
+            case nameof(MaterialType):
+                var materialType = await context.MaterialTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, materialType);
+                materialType.LastUpdatedById = userId;
+                context.MaterialTypes.Update(materialType);
+                await context.SaveChangesAsync();
+                return materialType.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -223,6 +243,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 operation.DeletedAt = currentTime;
                 operation.LastDeletedById = userId;
                 context.Operations.Update(operation);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(MaterialType):
+                var materialType = await context.MaterialTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (materialType == null)
+                    return Error.Validation("Operation", "Not found");
+                materialType.DeletedAt = currentTime;
+                materialType.LastDeletedById = userId;
+                context.MaterialTypes.Update(materialType);
                 await context.SaveChangesAsync();
                 return Result.Success();
             

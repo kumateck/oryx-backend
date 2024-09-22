@@ -20,15 +20,19 @@ public class OryxMapper : Profile
     {
 
         #region CreateItemRequest
+        
         CreateMap<CreateItemRequest, Resource>();
         CreateMap<CreateItemRequest, ProductCategory>();
         CreateMap<CreateItemRequest, UnitOfMeasure>();
         CreateMap<CreateItemRequest, Material>();
         CreateMap<CreateItemRequest, Operation>();
         CreateMap<CreateItemRequest, WorkCenter>();
+        CreateMap<CreateItemRequest, MaterialType>();
+        
         #endregion
         
         #region CollectionItems
+        
         CreateMap<ProductCategory, CollectionItemDto>();
         CreateMap<UnitOfMeasure, CollectionItemDto>();
         CreateMap<Product, CollectionItemDto>();
@@ -39,9 +43,12 @@ public class OryxMapper : Profile
             .IncludeMembers(src => src.Resource)
             .ForMember(dest => dest.Id,
                 opt => opt.MapFrom(src => src.ResourceId));
+        CreateMap<MaterialType, CollectionItemDto>();
+        
         #endregion
 
         #region MyRegion
+        
         CreateMap<Resource, ResourceDto>().ReverseMap();
         #endregion
         
@@ -52,9 +59,11 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom<UserRoleResolver>())
             .ForMember(user => user.Avatar,
                 opt => opt.MapFrom<AvatarResolver>());
+        
         #endregion
 
         #region RoleMapper
+        
         CreateMap<CreateRoleRequest, Role>();
         CreateMap<Role, RoleDto>().ReverseMap();
         CreateMap<RoleDto, RolePermissionDto>();
@@ -65,13 +74,16 @@ public class OryxMapper : Profile
         //         opt => opt.MapFrom(src => src.FormatPermissionDescriptionFromAction()))
         //     .ForMember(item => item.Action,
         //         opt => opt.MapFrom(src => src));
+        
         #endregion
 
         #region Product
+        
         CreateMap<CreateProductRequest, Product>();
         CreateMap<Product, ProductDto>();
         CreateMap<CreateProductBillOfMaterialRequest, ProductBillOfMaterial>();
         CreateMap<ProductBillOfMaterial, ProductBillOfMaterialDto>();
+        
         #endregion
 
         #region BoM

@@ -43,9 +43,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #endregion
 
     #region Material
-
+    
     public DbSet<Material> Materials { get; set; }
-
+    public DbSet<MaterialType> MaterialTypes { get; set; }
+    
     #endregion
 
     #region UnitOfMeasure
