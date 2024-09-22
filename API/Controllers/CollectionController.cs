@@ -17,7 +17,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <returns>Returns a collection of items.</returns>
     [HttpPost]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<CollectionItemDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, IEnumerable<CollectionItemDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItemCollection([FromBody] List<string> itemTypes)
     {
