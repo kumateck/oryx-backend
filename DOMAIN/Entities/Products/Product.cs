@@ -6,7 +6,7 @@ namespace DOMAIN.Entities.Products;
 
 public class Product : BaseEntity
 {
-    [StringLength(255)] public string ProductId { get; set; } // Unique identifier for the product
+    [StringLength(255)] public string Code { get; set; } // Unique identifier for the product
     [StringLength(255)] public string Name { get; set; }
     [StringLength(255)] public string Description { get; set; }
     public Guid CategoryId { get; set; } // e.g., Tablet, Syrup, Injectable

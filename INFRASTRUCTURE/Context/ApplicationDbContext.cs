@@ -1,3 +1,4 @@
+using System.Configuration;
 using System.Reflection;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
@@ -15,6 +16,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SHARED.Provider;
+using Configuration = DOMAIN.Entities.Configurations.Configuration;
 
 namespace INFRASTRUCTURE.Context;
 
@@ -100,6 +102,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
+    #region Configuration
+    public DbSet<Configuration> Configurations { get; set; }
+    #endregion
+
     #region TenantFilter
     private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IOrganizationType
     {
@@ -174,23 +180,66 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("usertokens");
         
         //apply global filters
+         // Existing query filters
         modelBuilder.Entity<User>().HasQueryFilter(entity =>
             entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
+
         modelBuilder.Entity<Site>().HasQueryFilter(entity =>
             entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
+
         modelBuilder.Entity<PasswordReset>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue || !entity.User.DeletedAt.HasValue);
+
         modelBuilder.Entity<Product>().HasQueryFilter(entity =>
-             !entity.DeletedAt.HasValue);
-        modelBuilder.Entity<WorkCenter>().HasQueryFilter(entity => 
-            !entity.DeletedAt.HasValue); 
-        modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity => 
-            !entity.DeletedAt.HasValue); 
-        modelBuilder.Entity<Resource>().HasQueryFilter(entity => 
-            !entity.DeletedAt.HasValue); 
-        modelBuilder.Entity<UnitOfMeasure>().HasQueryFilter(entity => 
-            !entity.DeletedAt.HasValue); 
-        modelBuilder.Entity<Operation>().HasQueryFilter(entity => 
-            !entity.DeletedAt.HasValue); 
+            !entity.DeletedAt.HasValue);
+
+        modelBuilder.Entity<WorkCenter>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
+
+        modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
+
+        modelBuilder.Entity<Resource>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
+
+        modelBuilder.Entity<UnitOfMeasure>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
+
+        modelBuilder.Entity<Operation>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
+
+        modelBuilder.Entity<Configuration>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
+
+        // Adjusted query filters to resolve warnings
+        modelBuilder.Entity<WorkOrder>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
+
+        // ProductionSchedule depends on WorkOrder
+        modelBuilder.Entity<ProductionSchedule>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.WorkOrder.DeletedAt.HasValue);
+
+        // ProductionStep depends on WorkOrder
+        modelBuilder.Entity<ProductionStep>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.WorkOrder.DeletedAt.HasValue);
+
+        // Other adjusted query filters from previous steps
+        modelBuilder.Entity<BillOfMaterial>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+
+        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.UoM.DeletedAt.HasValue);
+
+        modelBuilder.Entity<MasterProductionSchedule>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+
+        modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+
+        modelBuilder.Entity<Route>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.Operation.DeletedAt.HasValue);
+
+        modelBuilder.Entity<RouteResource>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.Resource.DeletedAt.HasValue);
     }
 }

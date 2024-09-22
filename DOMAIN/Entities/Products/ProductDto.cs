@@ -6,7 +6,7 @@ namespace DOMAIN.Entities.Products;
 
 public class ProductDto
 {
-    public string ProductId { get; set; } // Unique identifier for the product
+    public string Code { get; set; } // Unique identifier for the product
     public string Name { get; set; }
     public string Description { get; set; }
     public CollectionItemDto Category { get; set; }

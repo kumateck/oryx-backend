@@ -2,6 +2,7 @@ using APP.Mapper.Resolvers;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
@@ -19,18 +20,15 @@ public class OryxMapper : Profile
     {
 
         #region CreateItemRequest
-
         CreateMap<CreateItemRequest, Resource>();
         CreateMap<CreateItemRequest, ProductCategory>();
         CreateMap<CreateItemRequest, UnitOfMeasure>();
         CreateMap<CreateItemRequest, Material>();
         CreateMap<CreateItemRequest, Operation>();
         CreateMap<CreateItemRequest, WorkCenter>();
-
         #endregion
         
         #region CollectionItems
-
         CreateMap<ProductCategory, CollectionItemDto>();
         CreateMap<UnitOfMeasure, CollectionItemDto>();
         CreateMap<Product, CollectionItemDto>();
@@ -41,13 +39,10 @@ public class OryxMapper : Profile
             .IncludeMembers(src => src.Resource)
             .ForMember(dest => dest.Id,
                 opt => opt.MapFrom(src => src.ResourceId));
-
         #endregion
 
         #region MyRegion
-
         CreateMap<Resource, ResourceDto>().ReverseMap();
-
         #endregion
         
         #region UserMapper
@@ -73,46 +68,41 @@ public class OryxMapper : Profile
         #endregion
 
         #region Product
-
         CreateMap<CreateProductRequest, Product>();
         CreateMap<Product, ProductDto>();
         CreateMap<CreateProductBillOfMaterialRequest, ProductBillOfMaterial>();
         CreateMap<ProductBillOfMaterial, ProductBillOfMaterialDto>();
-
         #endregion
 
         #region BoM
-
         CreateMap<CreateBillOfMaterialRequest, BillOfMaterial>();
         CreateMap<BillOfMaterial, BillOfMaterialDto>();
         CreateMap<CreateBoMItemsRequest, BillOfMaterialItem>();
         CreateMap<BillOfMaterialItem, BillOfMaterialItemDto>();
-
         #endregion
 
         #region WorkOrder
-
         CreateMap<CreateWorkOrderRequest, WorkOrder>();
         CreateMap<WorkOrder, WorkOrderDto>();
         CreateMap<CreateProductionStepRequest, ProductionStep>();
         CreateMap<ProductionStep, ProductionStepDto>();
-
         #endregion
 
         #region ProductionSchdule
-
         CreateMap<CreateProductionScheduleRequest, ProductionSchedule>();
         CreateMap<ProductionSchedule, ProductionScheduleDto>();
         CreateMap<CreateMasterProductionScheduleRequest, MasterProductionSchedule>();
         CreateMap<MasterProductionSchedule, MasterProductionScheduleDto>();
-
         #endregion
 
         #region Route
-
         CreateMap<CreateRouteRequest, Route>();
         CreateMap<Route, RouteDto>();
+        #endregion
 
+        #region Configuration
+        CreateMap<CreateConfigurationRequest, Configuration>();
+        CreateMap<Configuration, ConfigurationDto>();
         #endregion
 
     }

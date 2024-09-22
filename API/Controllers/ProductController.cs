@@ -18,7 +18,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="request">The CreateProductRequest object.</param>
     /// <returns>Returns the ID of the created product.</returns>
     [HttpPost]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProduct([FromBody] CreateProductRequest request)
@@ -36,7 +36,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="productId">The ID of the product.</param>
     /// <returns>Returns the product details.</returns>
     [HttpGet("{productId}")]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProduct(Guid productId)
@@ -53,7 +53,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of products.</returns>
     [HttpGet]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductDto>>))]
     public async Task<IResult> GetProducts([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
@@ -68,7 +68,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="productId">The ID of the product to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{productId}")]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -87,7 +87,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="productId">The ID of the product to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("{productId}")]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteProduct(Guid productId)
@@ -105,7 +105,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="request">The CreateRouteRequest object.</param>
     /// <returns>Returns the ID of the created route.</returns>
     [HttpPost("{productId}/routes")]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateRoute([FromBody] CreateRouteRequest request)
@@ -123,7 +123,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="routeId">The ID of the route.</param>
     /// <returns>Returns the route details.</returns>
     [HttpGet("routes/{routeId}")]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RouteDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetRoute(Guid routeId)
@@ -140,7 +140,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of routes.</returns>
     [HttpGet("{productId}/routes")]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IResult> GetRoutes([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
@@ -154,7 +154,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="routeId">The ID of the route to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("routes/{routeId}")]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteRoute(Guid routeId)
