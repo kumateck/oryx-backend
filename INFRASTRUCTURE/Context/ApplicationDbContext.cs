@@ -180,6 +180,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("roleclaims");
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("usertokens");
         
+        //configurations
+        modelBuilder.Entity<ProductBillOfMaterial>()
+            .Property(p => p.Version)
+            .ValueGeneratedOnAdd();
+        
         //apply global filters
          // Existing query filters
         modelBuilder.Entity<User>().HasQueryFilter(entity =>
