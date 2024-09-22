@@ -22,8 +22,14 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         //     bomItem.BillOfMaterialId = billOfMaterial.Id;
         //     await context.BillOfMaterialItems.AddAsync(bomItem);
         // }
-        
-        await context.BillOfMaterials.AddAsync(billOfMaterial); 
+        await context.BillOfMaterials.AddAsync(billOfMaterial);
+
+        await context.ProductBillOfMaterials.AddAsync(new ProductBillOfMaterial
+        {
+            ProductId = request.ProductId,
+            BillOfMaterialId = billOfMaterial.Id,
+            EffectiveDate = DateTime.Now
+        });
         //await context.BillOfMaterialItems.AddRangeAsync(billOfMaterial.Items); 
         await context.SaveChangesAsync();
         
