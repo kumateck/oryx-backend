@@ -21,6 +21,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(UnitOfMeasure) => mapper.Map<List<CollectionItemDto>>(await context.UnitOfMeasures.ToListAsync()),
             nameof(WorkCenter) => mapper.Map<List<CollectionItemDto>>(await context.WorkCenters.ToListAsync()),
             nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
+            nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
