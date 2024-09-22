@@ -24,6 +24,51 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
+    
+    public async Task<Result<Dictionary<string, IEnumerable<CollectionItemDto>>>> GetItemCollection(List<string> itemTypes)
+    {
+        var result = new Dictionary<string, IEnumerable<CollectionItemDto>>();
+        var invalidItemTypes = new List<string>();
+
+        foreach (var itemType in itemTypes)
+        {
+            switch (itemType)
+            {
+                case nameof(ProductCategory):
+                    var productCategories = await context.ProductCategories.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(productCategories);
+                    break;
+
+                case nameof(Resource):
+                    var resources = await context.Resources.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(resources);
+                    break;
+
+                case nameof(UnitOfMeasure):
+                    var units = await context.UnitOfMeasures.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(units);
+                    break;
+
+                case nameof(WorkCenter):
+                    var workCenters = await context.WorkCenters.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(workCenters);
+                    break;
+
+                case nameof(Operation):
+                    var operations = await context.Operations.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(operations);
+                    break;
+
+                default:
+                    invalidItemTypes.Add(itemType);
+                    break;
+            }
+        }
+
+        if (invalidItemTypes.Count == 0) return Result.Success(result);
+        var invalidItems = string.Join(", ", invalidItemTypes);
+        return Error.Validation("Item", $"Invalid item types: {invalidItems}");
+    }
 
     public Result<IEnumerable<string>> GetItemTypes()
     {

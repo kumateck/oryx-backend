@@ -14,6 +14,20 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <summary>
     /// Retrieves a collection of items based on the item type.
     /// </summary>
+    /// <returns>Returns a collection of items.</returns>
+    [HttpPost]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<CollectionItemDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetItemCollection([FromBody] List<string> itemTypes)
+    {
+        var result = await repository.GetItemCollection(itemTypes);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a collection of items based on the item type.
+    /// </summary>
     /// <param name="itemType">The type of item to retrieve.</param>
     /// <returns>Returns a collection of items.</returns>
     [HttpGet("{itemType}")]
