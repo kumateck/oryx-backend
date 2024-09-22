@@ -247,5 +247,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<RouteResource>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue && !entity.Resource.DeletedAt.HasValue);
+        
+        modelBuilder.Entity<MaterialType>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
     }
 }
