@@ -198,6 +198,14 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.MaterialTypes.Update(materialType);
                 await context.SaveChangesAsync();
                 return materialType.Id;
+            
+            case nameof(MaterialCategory):
+                var materialCategory = await context.MaterialCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, materialCategory);
+                materialCategory.LastUpdatedById = userId;
+                context.MaterialCategories.Update(materialCategory);
+                await context.SaveChangesAsync();
+                return materialCategory.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -263,10 +271,20 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             case nameof(MaterialType):
                 var materialType = await context.MaterialTypes.FirstOrDefaultAsync(p => p.Id == itemId);
                 if (materialType == null)
-                    return Error.Validation("Operation", "Not found");
+                    return Error.Validation("MaterialType", "Not found");
                 materialType.DeletedAt = currentTime;
                 materialType.LastDeletedById = userId;
                 context.MaterialTypes.Update(materialType);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(MaterialCategory):
+                var materialCategory = await context.MaterialCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (materialCategory == null)
+                    return Error.Validation("MaterialCategory", "Not found");
+                materialCategory.DeletedAt = currentTime;
+                materialCategory.LastDeletedById = userId;
+                context.MaterialCategories.Update(materialCategory);
                 await context.SaveChangesAsync();
                 return Result.Success();
             
