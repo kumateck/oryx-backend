@@ -22,6 +22,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(WorkCenter) => mapper.Map<List<CollectionItemDto>>(await context.WorkCenters.ToListAsync()),
             nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
+            nameof(MaterialCategory) => mapper.Map<List<CollectionItemDto>>(await context.MaterialCategories.ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -64,6 +65,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var materialType = await context.MaterialTypes.ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(materialType);
                     break;
+                
+                case nameof(MaterialCategory):
+                    var materialCategory = await context.MaterialCategories.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(materialCategory);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -85,7 +91,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(UnitOfMeasure),
             nameof(WorkCenter),
             nameof(Operation),
-            nameof(MaterialType)
+            nameof(MaterialType),
+            nameof(MaterialCategory)
         };
     }
     
@@ -128,6 +135,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.MaterialTypes.AddAsync(materialType);
                 await context.SaveChangesAsync();
                 return materialType.Id;
+            
+            case nameof(MaterialCategory):
+                var materialCategory = mapper.Map<MaterialCategory>(request);
+                await context.MaterialCategories.AddAsync(materialCategory);
+                await context.SaveChangesAsync();
+                return materialCategory.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");

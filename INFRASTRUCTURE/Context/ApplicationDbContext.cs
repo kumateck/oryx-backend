@@ -46,6 +46,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<Material> Materials { get; set; }
     public DbSet<MaterialType> MaterialTypes { get; set; }
+    public DbSet<MaterialCategory> MaterialCategories { get; set; }
     
     #endregion
 
@@ -249,6 +250,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             !entity.DeletedAt.HasValue && !entity.Resource.DeletedAt.HasValue);
         
         modelBuilder.Entity<MaterialType>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
+        
+        modelBuilder.Entity<MaterialCategory>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);
     }
 }

@@ -1,0 +1,10 @@
+using SHARED;
+
+namespace DOMAIN.Entities.Materials;
+
+public class MaterialDto
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public CollectionItemDto MaterialCategory { get; set; }
+}
