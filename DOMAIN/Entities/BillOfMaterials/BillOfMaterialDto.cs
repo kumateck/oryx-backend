@@ -15,6 +15,7 @@ public class BillOfMaterialItemDto
     public Guid BillOfMaterialId { get; set; }
     public CollectionItemDto ComponentMaterial { get; set; }
     public CollectionItemDto ComponentProduct { get; set; }
+    public CollectionItemDto MaterialType { get; set; }
     public int Quantity { get; set; }  // Quantity of the component required
     public CollectionItemDto UoM { get; set; }
     public bool IsSubstitutable { get; set; }  // Allows for substitution in production  

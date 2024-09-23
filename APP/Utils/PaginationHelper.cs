@@ -50,4 +50,23 @@ public static class PaginationHelper
             StopPageIndex = stopPageIndex
         };
     }
+    
+    /*public static async Task<Paginateable<TDto>> GetPaginatedsResultAsync<TEntity, TDto>(
+        IQueryable<TEntity> query,
+        int pageNumber,
+        int pageSize,
+        Func<TEntity, TDto> mapFunc)
+        where TEntity : class
+    {
+        pageNumber = pageNumber == 0 ? 1 : pageNumber;
+        pageSize = pageSize == 0 ? 10 : pageSize;
+        int count = await query.CountAsync();
+        pageNumber = pageNumber <= 0 ? 1 : pageNumber;
+
+        List<TEntity> items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        var dto = items.Select(mapFunc).ToList();
+
+        return new Paginateables<TDto>(dto, count, pageNumber, pageSize);
+    }*/
 }

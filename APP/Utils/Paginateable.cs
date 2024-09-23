@@ -10,3 +10,14 @@ public class Paginateable<T>
     public int StartPageIndex { get; set; }
     public int StopPageIndex { get; set; }
 }
+
+// public class Paginateables<T>(List<T> data = default, int count = 0, int page = 1, int pageSize = 10)
+// {
+//     public List<T> Data { get; set; } = data;
+//     public int CurrentPage { get; set; } = page;
+//     public int TotalPages { get; set; } = (int)Math.Ceiling(count / (double)pageSize);
+//     public int TotalCount { get; set; } = count;
+//     public int PageSize { get; set; } = pageSize;
+//     public bool HasPreviousPage => CurrentPage > 1;
+//     public bool HasNextPage => CurrentPage < TotalPages;
+// }
