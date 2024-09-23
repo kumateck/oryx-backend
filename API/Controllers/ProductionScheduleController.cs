@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.ProductionSchedules;
+using SHARED.Requests;
 
 namespace API.Controllers;
 
@@ -189,6 +192,30 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         
         var result = await repository.DeleteProductionSchedule(scheduleId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets a list of all Production Status.
+    /// </summary>
+    /// <remarks>
+    /// This endpoint returns a list of all availableproduction status along with their integer values.
+    /// </remarks>
+    /// <returns>A list of Naming Types with their corresponding value and name.</returns>
+    /// <response code="200">Returns the list of production status</response>
+    [HttpGet("production-status")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<TypeResponse>))]
+    public IResult GetQuestionValidationTypes()
+    {
+        var types = Enum.GetValues(typeof(ProductionStatus))
+            .Cast<ProductionStatus>()
+            .Select(qt => new TypeResponse
+            {
+                Value = (int)qt,
+                Name = qt.ToString()
+            })
+            .ToList();
+
+        return TypedResults.Ok(types);
     }
 
     #endregion
