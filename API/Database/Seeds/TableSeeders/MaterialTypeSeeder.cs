@@ -14,6 +14,7 @@ public class MaterialTypeSeeder : ISeeder
 
     private void SeedMaterials(ApplicationDbContext dbContext)
     {
+        if (dbContext.MaterialTypes.Any()) return;
         foreach (var type in new List<string>{"Active", "Inactive", "Excepient"})
         {
             dbContext.MaterialTypes.Add(new MaterialType
