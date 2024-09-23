@@ -215,6 +215,7 @@ app.UseHttpsRedirection();
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
+    options.DisplayRequestDuration();
     var descriptions = app.DescribeApiVersions();
     foreach (var description in descriptions)
     {
@@ -225,6 +226,7 @@ app.UseSwaggerUI(options =>
     }        
     options.RoutePrefix = "";
     options.DefaultModelsExpandDepth(-1);
+    options.EnableDeepLinking();
 });
 
 app.UseMiddleware<SentryPerformanceMiddleware>();
