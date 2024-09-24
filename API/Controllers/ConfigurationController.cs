@@ -47,6 +47,21 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     }
     
     /// <summary>
+    /// Retrieves a configuration by modelType.
+    /// </summary>
+    /// <param name="modelType">The modeltype of the configuration to retrieve.</param>
+    /// <returns>Returns the detailed information of the configuration.</returns>
+    [HttpGet("by-model-type/{modelType}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ConfigurationDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetConfiguration(string modelType)
+    {
+        var result = await repository.GetConfiguration(modelType);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Retrieves a list of configurations.
     /// </summary>
     /// <param name="page">Page number of the pagination.</param>

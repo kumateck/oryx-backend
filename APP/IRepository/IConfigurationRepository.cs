@@ -8,6 +8,7 @@ namespace APP.IRepository
     {
         Task<Result<Guid>> CreateConfiguration(CreateConfigurationRequest request, Guid userId);
         Task<Result<ConfigurationDto>> GetConfiguration(Guid configurationId);
+        Task<Result<ConfigurationDto>> GetConfiguration(string modelType);
         Task<Result<Paginateable<IEnumerable<ConfigurationDto>>>> GetConfigurations(int page, int pageSize, string searchQuery = null);
         Task<Result> UpdateConfiguration(CreateConfigurationRequest request, Guid configurationId);
         Task<Result> DeleteConfiguration(Guid configurationId);
