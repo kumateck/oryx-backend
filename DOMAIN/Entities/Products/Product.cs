@@ -11,13 +11,7 @@ public class Product : BaseEntity
     [StringLength(255)] public string Description { get; set; }
     public Guid CategoryId { get; set; } // e.g., Tablet, Syrup, Injectable
     public ProductCategory Category { get; set; }
-    public Guid UoMId { get; set; } // Unit of Measure, e.g., bottles, tablets
-    public UnitOfMeasure UoM { get; set; }
-    public decimal StandardCost { get; set; }
-    public decimal SellingPrice { get; set; }
-    public bool IsActive { get; set; }
-    [StringLength(255)] public string DosageForm { get; set; }
-    [StringLength(255)] public string Strength { get; set; }
+    public List<FinishedProduct> FinishedProducts { get; set; }
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } // List of BOMs associated with this product
 }
 

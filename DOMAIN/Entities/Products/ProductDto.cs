@@ -10,12 +10,8 @@ public class ProductDto
     public string Name { get; set; }
     public string Description { get; set; }
     public CollectionItemDto Category { get; set; }
-    public Guid UoMId { get; set; } // Unit of Measure, e.g., bottles, tablets
-    public UnitOfMeasure UoM { get; set; }
-    public decimal StandardCost { get; set; }
-    public decimal SellingPrice { get; set; }
-    public bool IsActive { get; set; }
-    public List<ProductBillOfMaterialDto> BillOfMaterials { get; set; } // List of BOMs associated with this product
+    public List<FinishedProductDto> FinishedProducts { get; set; }
+    public List<ProductBillOfMaterialDto> BillOfMaterials { get; set; } 
 }
 
 public class ProductBillOfMaterialDto

@@ -61,6 +61,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<ProductBillOfMaterial> ProductBillOfMaterials { get; set; }
+    public DbSet<FinishedProduct> FinishedProducts { get; set; }
 
     #endregion
 
@@ -181,6 +182,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("roleclaims");
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("usertokens");
         
+        //eager load relations
+        modelBuilder.Entity<FinishedProduct>().Navigation(fr => fr.UoM).AutoInclude();
+        
         //configurations
         modelBuilder.Entity<ProductBillOfMaterial>()
             .Property(p => p.Version)
@@ -205,6 +209,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);
+        
+        modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue || !entity.Product.DeletedAt.HasValue);
 
         modelBuilder.Entity<Resource>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);

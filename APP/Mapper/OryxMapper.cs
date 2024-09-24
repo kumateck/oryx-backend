@@ -85,6 +85,8 @@ public class OryxMapper : Profile
         CreateMap<Product, ProductDto>();
         CreateMap<CreateProductBillOfMaterialRequest, ProductBillOfMaterial>();
         CreateMap<ProductBillOfMaterial, ProductBillOfMaterialDto>();
+        CreateMap<CreateFinishedProductRequest, FinishedProduct>();
+        CreateMap<FinishedProduct, FinishedProductDto>();
         
         #endregion
 

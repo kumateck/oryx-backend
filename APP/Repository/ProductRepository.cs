@@ -26,6 +26,7 @@ namespace APP.Repository;
      { 
          var product = await context.Products
              .Include(p => p.BillOfMaterials)
+             .Include(p => p.FinishedProducts)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
          return product is null ? ProductErrors.NotFound(productId) : mapper.Map<ProductDto>(product);
@@ -37,7 +38,7 @@ namespace APP.Repository;
              .AsSplitQuery()
              .Include(p => p.BillOfMaterials)
              .Include(p => p.Category)
-             .Include(p => p.UoM)
+             .Include(p => p.FinishedProducts)
              .AsQueryable();
 
          if (!string.IsNullOrEmpty(searchQuery))
