@@ -773,9 +773,6 @@ namespace DOMAIN.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -817,7 +814,7 @@ namespace DOMAIN.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("FinishedProduct");
+                    b.ToTable("FinishedProducts");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Product", b =>

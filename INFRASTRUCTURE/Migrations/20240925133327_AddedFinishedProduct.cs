@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace INFRASTRUCTURE.Migrations
 {
     /// <inheritdoc />
-    public partial class AddedFinishedProducts : Migration
+    public partial class AddedFinishedProduct : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -44,7 +44,7 @@ namespace INFRASTRUCTURE.Migrations
                 table: "Products");
 
             migrationBuilder.CreateTable(
-                name: "FinishedProduct",
+                name: "FinishedProducts",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -53,7 +53,6 @@ namespace INFRASTRUCTURE.Migrations
                     UoMId = table.Column<Guid>(type: "uuid", nullable: false),
                     StandardCost = table.Column<decimal>(type: "numeric", nullable: false),
                     SellingPrice = table.Column<decimal>(type: "numeric", nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     DosageForm = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     Strength = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -65,59 +64,59 @@ namespace INFRASTRUCTURE.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FinishedProduct", x => x.Id);
+                    table.PrimaryKey("PK_FinishedProducts", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_FinishedProduct_Products_ProductId",
+                        name: "FK_FinishedProducts_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_FinishedProduct_UnitOfMeasures_UoMId",
+                        name: "FK_FinishedProducts_UnitOfMeasures_UoMId",
                         column: x => x.UoMId,
                         principalTable: "UnitOfMeasures",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_FinishedProduct_users_CreatedById",
+                        name: "FK_FinishedProducts_users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_FinishedProduct_users_LastDeletedById",
+                        name: "FK_FinishedProducts_users_LastDeletedById",
                         column: x => x.LastDeletedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_FinishedProduct_users_LastUpdatedById",
+                        name: "FK_FinishedProducts_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_FinishedProduct_CreatedById",
-                table: "FinishedProduct",
+                name: "IX_FinishedProducts_CreatedById",
+                table: "FinishedProducts",
                 column: "CreatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FinishedProduct_LastDeletedById",
-                table: "FinishedProduct",
+                name: "IX_FinishedProducts_LastDeletedById",
+                table: "FinishedProducts",
                 column: "LastDeletedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FinishedProduct_LastUpdatedById",
-                table: "FinishedProduct",
+                name: "IX_FinishedProducts_LastUpdatedById",
+                table: "FinishedProducts",
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FinishedProduct_ProductId",
-                table: "FinishedProduct",
+                name: "IX_FinishedProducts_ProductId",
+                table: "FinishedProducts",
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FinishedProduct_UoMId",
-                table: "FinishedProduct",
+                name: "IX_FinishedProducts_UoMId",
+                table: "FinishedProducts",
                 column: "UoMId");
         }
 
@@ -125,7 +124,7 @@ namespace INFRASTRUCTURE.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "FinishedProduct");
+                name: "FinishedProducts");
 
             migrationBuilder.AddColumn<string>(
                 name: "DosageForm",

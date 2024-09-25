@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240924202714_AddedFinishedProducts")]
-    partial class AddedFinishedProducts
+    [Migration("20240925133327_AddedFinishedProduct")]
+    partial class AddedFinishedProduct
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -776,9 +776,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -820,7 +817,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("FinishedProduct");
+                    b.ToTable("FinishedProducts");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Product", b =>
