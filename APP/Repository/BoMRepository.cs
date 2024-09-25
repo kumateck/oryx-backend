@@ -28,7 +28,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         {
             ProductId = request.ProductId,
             BillOfMaterialId = billOfMaterial.Id,
-            EffectiveDate = DateTime.Now
+            EffectiveDate = DateTime.UtcNow
         });
         //await context.BillOfMaterialItems.AddRangeAsync(billOfMaterial.Items); 
         await context.SaveChangesAsync();
