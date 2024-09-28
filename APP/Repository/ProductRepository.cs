@@ -275,7 +275,7 @@ namespace APP.Repository;
     {
         var productPackage = await context.ProductPackages
             .Include(p => p.Product)
-            .Include(p => p.MaterialType)
+            .Include(p => p.Material)
             .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
 
         if (productPackage == null)
@@ -289,12 +289,12 @@ namespace APP.Repository;
     {
         var query = context.ProductPackages
             .Include(p => p.Product)
-            .Include(p => p.MaterialType)
+            .Include(p => p.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.Where(p => p.Product.Name.Contains(searchQuery) || p.MaterialType.Name.Contains(searchQuery));
+            query = query.WhereSearch(searchQuery, p => p.Material.Name, p => p.Product.Name);
         }
 
         var paginatedProductPackages = await PaginationHelper.GetPaginatedResultAsync(
