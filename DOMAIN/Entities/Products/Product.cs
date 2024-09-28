@@ -13,6 +13,7 @@ public class Product : BaseEntity
     public ProductCategory Category { get; set; }
     public List<FinishedProduct> FinishedProducts { get; set; }
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } // List of BOMs associated with this product
+    public List<ProductPackage> Packages { get; set; } 
 }
 
 public class ProductCategory : BaseEntity

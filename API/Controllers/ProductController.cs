@@ -12,11 +12,11 @@ namespace API.Controllers;
 [ApiController]
 public class ProductController(IProductRepository repository) : ControllerBase
 {
+    // Product CRUD operations (existing)
+    
     /// <summary>
     /// Creates a new product.
     /// </summary>
-    /// <param name="request">The CreateProductRequest object.</param>
-    /// <returns>Returns the ID of the created product.</returns>
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
@@ -33,8 +33,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves a specific product by its ID.
     /// </summary>
-    /// <param name="productId">The ID of the product.</param>
-    /// <returns>Returns the product details.</returns>
     [HttpGet("{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
@@ -48,10 +46,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves a paginated list of products.
     /// </summary>
-    /// <param name="page">The current page number.</param>
-    /// <param name="pageSize">The number of items per page.</param>
-    /// <param name="searchQuery">Search query for filtering results.</param>
-    /// <returns>Returns a paginated list of products.</returns>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductDto>>))]
@@ -64,9 +58,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <summary>
     /// Updates a specific product by its ID.
     /// </summary>
-    /// <param name="request">The UpdateProductRequest object containing updated product data.</param>
-    /// <param name="productId">The ID of the product to be updated.</param>
-    /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -84,8 +75,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <summary>
     /// Deletes a specific product by its ID.
     /// </summary>
-    /// <param name="productId">The ID of the product to be deleted.</param>
-    /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -98,12 +87,12 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.DeleteProduct(productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
-     /// <summary>
+
+    // Route CRUD operations (existing)
+
+    /// <summary>
     /// Creates a new route for a product.
     /// </summary>
-    /// <param name="request">The CreateRouteRequest object.</param>
-    /// <returns>Returns the ID of the created route.</returns>
     [HttpPost("{productId}/routes")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
@@ -120,8 +109,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves a specific route by its ID.
     /// </summary>
-    /// <param name="routeId">The ID of the route.</param>
-    /// <returns>Returns the route details.</returns>
     [HttpGet("routes/{routeId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RouteDto))]
@@ -135,10 +122,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves a paginated list of routes.
     /// </summary>
-    /// <param name="page">The current page number.</param>
-    /// <param name="pageSize">The number of items per page.</param>
-    /// <param name="searchQuery">Search query for filtering results.</param>
-    /// <returns>Returns a paginated list of routes.</returns>
     [HttpGet("{productId}/routes")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -151,8 +134,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <summary>
     /// Deletes a specific route by its ID.
     /// </summary>
-    /// <param name="routeId">The ID of the route to be deleted.</param>
-    /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("routes/{routeId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -163,6 +144,80 @@ public class ProductController(IProductRepository repository) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.DeleteRoute(routeId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Creates a new product package.
+    /// </summary>
+    [HttpPost("{productId}/packages")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateProductPackage([FromBody] CreateProductPackageRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateProductPackage(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific product package by its ID.
+    /// </summary>
+    [HttpGet("packages/{productPackageId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductPackageDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductPackage(Guid productPackageId)
+    {
+        var result = await repository.GetProductPackage(productPackageId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of product packages.
+    /// </summary>
+    [HttpGet("{productId}/packages")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IResult> GetProductPackages([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetProductPackages(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific product package by its ID.
+    /// </summary>
+    [HttpPut("packages/{productPackageId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateProductPackage([FromBody] CreateProductPackageRequest request, Guid productPackageId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateProductPackage(request, productPackageId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific product package by its ID.
+    /// </summary>
+    [HttpDelete("packages/{productPackageId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteProductPackage(Guid productPackageId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteProductPackage(productPackageId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

@@ -26,7 +26,9 @@ namespace APP.Repository;
      { 
          var product = await context.Products
              .Include(p => p.BillOfMaterials)
+             .Include(p => p.Category)
              .Include(p => p.FinishedProducts)
+             .Include(p => p.Packages)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
          return product is null ? ProductErrors.NotFound(productId) : mapper.Map<ProductDto>(product);
@@ -39,6 +41,7 @@ namespace APP.Repository;
              .Include(p => p.BillOfMaterials)
              .Include(p => p.Category)
              .Include(p => p.FinishedProducts)
+             .Include(p => p.Packages)
              .AsQueryable();
 
          if (!string.IsNullOrEmpty(searchQuery))
@@ -229,6 +232,87 @@ namespace APP.Repository;
         route.LastDeletedById = userId;
 
         context.Routes.Update(route);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+    
+    public async Task<Result<Guid>> CreateProductPackage(CreateProductPackageRequest request, Guid userId)
+    {
+        var productPackage = mapper.Map<ProductPackage>(request);
+        productPackage.CreatedById = userId;
+
+        await context.ProductPackages.AddAsync(productPackage);
+        await context.SaveChangesAsync();
+
+        return Result.Success(productPackage.ProductId);
+    }
+
+    public async Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId)
+    {
+        var productPackage = await context.ProductPackages
+            .Include(p => p.Product)
+            .Include(p => p.MaterialType)
+            .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
+
+        if (productPackage == null)
+            return Error.NotFound("ProductPackage.NotFound", $"Product package with ID {productPackageId} not found.");
+
+        var productPackageDto = mapper.Map<ProductPackageDto>(productPackage);
+        return Result.Success(productPackageDto);
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<ProductPackageDto>>>> GetProductPackages(int page, int pageSize, string searchQuery = null)
+    {
+        var query = context.ProductPackages
+            .Include(p => p.Product)
+            .Include(p => p.MaterialType)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.Where(p => p.Product.Name.Contains(searchQuery) || p.MaterialType.Name.Contains(searchQuery));
+        }
+
+        var paginatedProductPackages = await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<ProductPackageDto>
+        );
+
+        return Result.Success(paginatedProductPackages);
+    }
+
+    public async Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId)
+    {
+        var productPackage = await context.ProductPackages
+            .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
+
+        if (productPackage == null)
+            return Error.NotFound("ProductPackage.NotFound", $"Product package with ID {productPackageId} not found.");
+
+        mapper.Map(request, productPackage);
+        productPackage.LastUpdatedById = userId;
+
+        context.ProductPackages.Update(productPackage);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId)
+    {
+        var productPackage = await context.ProductPackages
+            .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
+
+        if (productPackage == null)
+            return Error.NotFound("ProductPackage.NotFound", $"Product package with ID {productPackageId} not found.");
+
+        productPackage.DeletedAt = DateTime.UtcNow;
+        productPackage.LastDeletedById = userId;
+
+        context.ProductPackages.Update(productPackage);
         await context.SaveChangesAsync();
 
         return Result.Success();

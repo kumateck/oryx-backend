@@ -18,4 +18,9 @@ public interface IProductRepository
     Task<Result<Paginateable<IEnumerable<RouteDto>>>> GetRoutes(int page, int pageSize,
         string searchQuery = null);
     Task<Result> DeleteRoute(Guid routeId, Guid userId);
+    Task<Result<Guid>> CreateProductPackage(CreateProductPackageRequest request, Guid userId);
+    Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId);
+    Task<Result<Paginateable<IEnumerable<ProductPackageDto>>>> GetProductPackages(int page, int pageSize, string searchQuery = null);
+    Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId);
+    Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId);
 }
