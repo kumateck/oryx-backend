@@ -129,19 +129,34 @@ namespace APP.Repository;
          return Result.Success(); 
      }
      
-      public async Task<Result<Guid>> CreateRoute(CreateRouteRequest request, Guid userId)
+      public async Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId)
       {
-          var route = mapper.Map<Route>(request);
-          route.Resources = request.ResourceIds.Select(r => new RouteResource 
-          { 
-              ResourceId = r
-          }).ToList();
-          route.CreatedById = userId;
-              
-          await context.Routes.AddAsync(route);
-          await context.SaveChangesAsync();
+          var product = await context.Products.Include(product => product.BillOfMaterials).FirstOrDefaultAsync(p => p.Id == productId);
+          if (product is null) return ProductErrors.NotFound(productId);
 
-          return Result.Success(route.Id);
+          var productBomIds = product.BillOfMaterials.Select(b => b.BillOfMaterialId).ToHashSet();
+          
+          foreach (var routeRequest in request)
+          {
+              if (!productBomIds
+                  .Contains(routeRequest.BillOfMaterialItemId))
+              {
+                  return Error.Validation("Product.BOM",
+                      $"The bill of material item id: {routeRequest.BillOfMaterialItemId} is not found in this product");
+              }
+
+              var route = mapper.Map<Route>(request);
+              route.Resources = routeRequest.ResourceIds.Select(r => new RouteResource 
+              { 
+                  ResourceId = r
+              }).ToList();
+              route.CreatedById = userId;
+              
+              await context.Routes.AddAsync(route);
+              await context.SaveChangesAsync();
+              
+          }
+          return Result.Success();
       }
 
     public async Task<Result<RouteDto>> GetRoute(Guid routeId)
@@ -237,15 +252,15 @@ namespace APP.Repository;
         return Result.Success();
     }
     
-    public async Task<Result<Guid>> CreateProductPackage(CreateProductPackageRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId)
     {
-        var product = await context.Products.Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == request.ProductId);
+        var product = await context.Products.Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null)
         {
-            return ProductErrors.NotFound(request.ProductId);
+            return ProductErrors.NotFound(productId);
         }
 
-        foreach (var newPackage in request.Packages.Select(mapper.Map<ProductPackage>))
+        foreach (var newPackage in request.Select(mapper.Map<ProductPackage>))
         {
             newPackage.CreatedById = userId;
             product.Packages.Add(newPackage);

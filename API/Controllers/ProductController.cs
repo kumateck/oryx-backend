@@ -87,9 +87,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.DeleteProduct(productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-
-    // Route CRUD operations (existing)
-
+    
     /// <summary>
     /// Creates a new route for a product.
     /// </summary>
@@ -97,13 +95,13 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateRoute([FromBody] CreateRouteRequest request)
+    public async Task<IResult> CreateRoute([FromBody] List<CreateRouteRequest> request, Guid productId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.CreateRoute(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        var result = await repository.CreateRoute(request, productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -154,12 +152,12 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateProductPackage([FromBody] CreateProductPackageRequest request)
+    public async Task<IResult> CreateProductPackage([FromBody] List<CreateProductPackageRequest> request, Guid productId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateProductPackage(request, Guid.Parse(userId));
+        var result = await repository.CreateProductPackage(request, productId,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
