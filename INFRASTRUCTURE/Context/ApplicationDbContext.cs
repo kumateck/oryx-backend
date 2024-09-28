@@ -185,7 +185,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("usertokens");
         
         //eager load relations
+        modelBuilder.Entity<Product>().Navigation(fr => fr.Category).AutoInclude();
         modelBuilder.Entity<FinishedProduct>().Navigation(fr => fr.UoM).AutoInclude();
+        modelBuilder.Entity<ProductPackage>().Navigation(fr => fr.Material).AutoInclude();
+        modelBuilder.Entity<ProductPackage>().Navigation(fr => fr.PackageType).AutoInclude();
         
         //configurations
         modelBuilder.Entity<ProductBillOfMaterial>()

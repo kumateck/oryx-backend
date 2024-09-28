@@ -39,6 +39,7 @@ namespace APP.Repository;
          var query = context.Products
              .AsSplitQuery()
              .Include(p => p.BillOfMaterials)
+             .ThenInclude(p => p.BillOfMaterial)
              .Include(p => p.Category)
              .Include(p => p.FinishedProducts)
              .Include(p => p.Packages)

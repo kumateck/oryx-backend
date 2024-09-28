@@ -51,8 +51,11 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
     public async Task<Result<Paginateable<IEnumerable<BillOfMaterialDto>>>> GetBillOfMaterials(int page, int pageSize, string searchQuery) 
     { 
         var query = context.BillOfMaterials
-            .AsSplitQuery().Include(b => b.Items).ThenInclude(i => i.ComponentMaterial)
+            .AsSplitQuery()
+            .Include(b => b.Items).ThenInclude(i => i.ComponentMaterial)
             .Include(b => b.Items).ThenInclude(i => i.ComponentProduct)
+            .Include(b => b.Items).ThenInclude(i => i.MaterialType)
+            .Include(b => b.Items).ThenInclude(i => i.UoM)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
