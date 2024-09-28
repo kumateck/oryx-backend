@@ -71,6 +71,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var materialCategory = await context.MaterialCategories.ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(materialCategory);
                     break;
+                
+                case nameof(PackageType):
+                    var packageType = await context.PackageTypes.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(packageType);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
