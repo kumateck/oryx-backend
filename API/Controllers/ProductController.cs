@@ -89,6 +89,19 @@ public class ProductController(IProductRepository repository) : ControllerBase
     }
     
     /// <summary>
+    /// Retrieves the active bom for the product.
+    /// </summary>
+    [HttpGet("{productId}/bom")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RouteDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetBillOfMaterial(Guid productId)
+    {
+        var result = await repository.GetBillOfMaterialByProductId(productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Creates a new route for a product.
     /// </summary>
     [HttpPost("{productId}/routes")]

@@ -13,6 +13,7 @@ public interface IProductRepository
         string searchQuery);
     Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId);
     Task<Result> DeleteProduct(Guid productId, Guid userId);
+    Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId);
     Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId);
     Task<Result<RouteDto>> GetRoute(Guid routeId);
     Task<Result<Paginateable<IEnumerable<RouteDto>>>> GetRoutes(int page, int pageSize,

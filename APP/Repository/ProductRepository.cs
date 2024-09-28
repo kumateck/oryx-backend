@@ -114,6 +114,21 @@ namespace APP.Repository;
          return Result.Success();
      }
 
+     public async Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId)
+     {
+         var bom = await context.ProductBillOfMaterials
+             .OrderByDescending(p => p.EffectiveDate)
+             .FirstOrDefaultAsync(
+             p => p.ProductId == productId && p.IsActive);
+
+         if (bom is null)
+         {
+             return Error.NotFound("ProductBoM.NotFound", "Could not find bom for this product");
+         }
+
+         return mapper.Map<ProductBillOfMaterialDto>(bom);
+     }
+
      public async Task<Result> DeleteBillOfMaterials(Guid bomId, Guid userId) 
      { 
          var bom = await context.ProductBillOfMaterials.FirstOrDefaultAsync(p => p.Id == bomId);

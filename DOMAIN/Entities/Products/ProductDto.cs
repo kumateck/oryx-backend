@@ -19,7 +19,6 @@ public class ProductBillOfMaterialDto
 {
     public Guid ProductId { get; set; }
     public BillOfMaterialDto BillOfMaterial { get; set; }
-    public int Quantity { get; set; }  // Quantity of the component needed
     public int Version { get; set; }   // Version of the BOM
     public DateTime EffectiveDate { get; set; }
     public bool IsActive { get; set; }
