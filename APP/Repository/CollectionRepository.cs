@@ -23,7 +23,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
             nameof(MaterialCategory) => mapper.Map<List<CollectionItemDto>>(await context.MaterialCategories.ToListAsync()),
-            nameof(ProductPackageType) => mapper.Map<List<CollectionItemDto>>(await context.ProductPackageTypes.ToListAsync()),
+            nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -94,7 +94,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Operation),
             nameof(MaterialType),
             nameof(MaterialCategory),
-            nameof(ProductPackageType)
+            nameof(PackageType)
         };
     }
     
@@ -144,9 +144,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.SaveChangesAsync();
                 return materialCategory.Id;
             
-            case nameof(ProductPackageType):
-                var productPackageType = mapper.Map<ProductPackageType>(request);
-                await context.ProductPackageTypes.AddAsync(productPackageType);
+            case nameof(PackageType):
+                var productPackageType = mapper.Map<PackageType>(request);
+                await context.PackageTypes.AddAsync(productPackageType);
                 await context.SaveChangesAsync();
                 return productPackageType.Id;
             
@@ -215,11 +215,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.SaveChangesAsync();
                 return materialCategory.Id;
             
-            case nameof(ProductPackageType):
-                var productPackageType = await context.ProductPackageTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+            case nameof(PackageType):
+                var productPackageType = await context.PackageTypes.FirstOrDefaultAsync(p => p.Id == itemId);
                 mapper.Map(request, productPackageType);
                 productPackageType.LastUpdatedById = userId;
-                context.ProductPackageTypes.Update(productPackageType);
+                context.PackageTypes.Update(productPackageType);
                 await context.SaveChangesAsync();
                 return productPackageType.Id;
         
@@ -304,13 +304,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.SaveChangesAsync();
                 return Result.Success();
             
-            case nameof(ProductPackageType):
-                var productPackageType = await context.ProductPackageTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+            case nameof(PackageType):
+                var productPackageType = await context.PackageTypes.FirstOrDefaultAsync(p => p.Id == itemId);
                 if (productPackageType == null)
                     return Error.Validation("MaterialCategory", "Not found");
                 productPackageType.DeletedAt = currentTime;
                 productPackageType.LastDeletedById = userId;
-                context.ProductPackageTypes.Update(productPackageType);
+                context.PackageTypes.Update(productPackageType);
                 await context.SaveChangesAsync();
                 return Result.Success();
             

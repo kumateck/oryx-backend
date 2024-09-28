@@ -63,7 +63,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductBillOfMaterial> ProductBillOfMaterials { get; set; }
     public DbSet<FinishedProduct> FinishedProducts { get; set; }
     public DbSet<ProductPackage> ProductPackages { get; set; }
-    public DbSet<ProductPackageType> ProductPackageTypes { get; set; }
+    public DbSet<PackageType> PackageTypes { get; set; }
 
     #endregion
 
@@ -267,7 +267,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<MaterialCategory>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);
         
-        modelBuilder.Entity<ProductPackageType>().HasQueryFilter(entity =>
+        modelBuilder.Entity<PackageType>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);
     }
 }
