@@ -7,11 +7,12 @@ public class BillOfMaterialDto
     public CollectionItemDto Product { get; set; }
     public int Version { get; set; }
     public bool IsActive { get; set; }
-    public List<BillOfMaterialItem> Items { get; set; } = [];
+    public List<BillOfMaterialItemDto> Items { get; set; } = [];
 }
 
 public class BillOfMaterialItemDto
 {
+    public Guid Id { get; set; }
     public Guid BillOfMaterialId { get; set; }
     public CollectionItemDto ComponentMaterial { get; set; }
     public CollectionItemDto ComponentProduct { get; set; }

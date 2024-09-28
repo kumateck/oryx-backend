@@ -11,7 +11,7 @@ public class ProductDto
     public string Description { get; set; }
     public CollectionItemDto Category { get; set; }
     public List<FinishedProductDto> FinishedProducts { get; set; }
-    public List<ProductBillOfMaterialDto> BillOfMaterials { get; set; } 
+    public List<ProductBillOfMaterialDto> BillOfMaterials { get; set; } = [];
     public List<ProductPackageDto> Packages { get; set; } 
 }
 
