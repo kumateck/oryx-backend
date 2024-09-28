@@ -29,6 +29,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, WorkCenter>();
         CreateMap<CreateItemRequest, MaterialType>();
         CreateMap<CreateItemRequest, MaterialCategory>();
+        CreateMap<CreateItemRequest, ProductPackageType>();
         
         #endregion
         
@@ -46,6 +47,7 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom(src => src.ResourceId));
         CreateMap<MaterialType, CollectionItemDto>();
         CreateMap<MaterialCategory, CollectionItemDto>();
+        CreateMap<ProductPackageType, CollectionItemDto>();
         
         #endregion
 
@@ -87,7 +89,7 @@ public class OryxMapper : Profile
         CreateMap<ProductBillOfMaterial, ProductBillOfMaterialDto>();
         CreateMap<CreateFinishedProductRequest, FinishedProduct>();
         CreateMap<FinishedProduct, FinishedProductDto>();
-        CreateMap<CreateProductPackageRequest, ProductPackage>();
+        CreateMap<PackageDetailsRequest, ProductPackage>();
         CreateMap<ProductPackage, ProductPackageDto>();
 
         

@@ -8,6 +8,7 @@ public class ProductPackageDto
     public CollectionItemDto Product { get; set; }
     public Guid? MaterialTypeId { get; set; }
     public CollectionItemDto MaterialType { get; set; }
+    public CollectionItemDto ProductPackageType { get; set; }
     public string MaterialThickness { get; set; }
     public string OtherStandards { get; set; }
 }

@@ -63,6 +63,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductBillOfMaterial> ProductBillOfMaterials { get; set; }
     public DbSet<FinishedProduct> FinishedProducts { get; set; }
     public DbSet<ProductPackage> ProductPackages { get; set; }
+    public DbSet<ProductPackageType> ProductPackageTypes { get; set; }
 
     #endregion
 
@@ -111,9 +112,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #endregion
 
     #region TenantFilter
-    private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IOrganizationType
+    private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     {
-        modelBuilder.Entity<TEntity>().HasQueryFilter(entity => entity.OrganizationName == tenantProvider.Tenant);
+        modelBuilder.Entity<TEntity>().HasQueryFilter(entity => entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
     }
     #endregion
     
@@ -264,6 +265,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             !entity.DeletedAt.HasValue);
         
         modelBuilder.Entity<MaterialCategory>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
+        
+        modelBuilder.Entity<ProductPackageType>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);
     }
 }

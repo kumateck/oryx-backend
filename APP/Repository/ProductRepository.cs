@@ -239,13 +239,21 @@ namespace APP.Repository;
     
     public async Task<Result<Guid>> CreateProductPackage(CreateProductPackageRequest request, Guid userId)
     {
-        var productPackage = mapper.Map<ProductPackage>(request);
-        productPackage.CreatedById = userId;
+        var product = await context.Products.Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == request.ProductId);
+        if (product is null)
+        {
+            return ProductErrors.NotFound(request.ProductId);
+        }
 
-        await context.ProductPackages.AddAsync(productPackage);
+        foreach (var newPackage in request.Packages.Select(mapper.Map<ProductPackage>))
+        {
+            newPackage.CreatedById = userId;
+            product.Packages.Add(newPackage);
+        }
+       
         await context.SaveChangesAsync();
 
-        return Result.Success(productPackage.ProductId);
+        return product.Id;
     }
 
     public async Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId)
