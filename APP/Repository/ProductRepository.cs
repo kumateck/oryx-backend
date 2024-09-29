@@ -117,6 +117,7 @@ namespace APP.Repository;
      public async Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId)
      {
          var bom = await context.ProductBillOfMaterials
+             .Include(b => b.BillOfMaterial)
              .OrderByDescending(p => p.EffectiveDate)
              .FirstOrDefaultAsync(
              p => p.ProductId == productId && p.IsActive);
