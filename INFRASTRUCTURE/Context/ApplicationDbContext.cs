@@ -189,6 +189,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FinishedProduct>().Navigation(fr => fr.UoM).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(fr => fr.Material).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(fr => fr.PackageType).AutoInclude();
+        modelBuilder.Entity<ProductBillOfMaterial>().Navigation(fr => fr.BillOfMaterial).AutoInclude();
         
         //configurations
         modelBuilder.Entity<ProductBillOfMaterial>()

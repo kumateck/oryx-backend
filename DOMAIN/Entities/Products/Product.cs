@@ -31,5 +31,5 @@ public class ProductBillOfMaterial : BaseEntity
     public int Quantity { get; set; }  // Quantity of the component needed
     public int Version { get; set; }   // Version of the BOM
     public DateTime EffectiveDate { get; set; }
-    public bool IsActive { get; set; }
+    public bool IsActive { get; set; } = true;
 }
