@@ -190,11 +190,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProductPackage>().Navigation(fr => fr.Material).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(fr => fr.PackageType).AutoInclude();
         modelBuilder.Entity<ProductBillOfMaterial>().Navigation(fr => fr.BillOfMaterial).AutoInclude();
+        modelBuilder.Entity<BillOfMaterial>().Navigation(fr => fr.Items).AutoInclude();
+        modelBuilder.Entity<BillOfMaterial>().Navigation(fr => fr.Product).AutoInclude();
         
-        //configurations
-        modelBuilder.Entity<ProductBillOfMaterial>()
-            .Property(p => p.Version)
-            .ValueGeneratedOnAdd();
         
         //apply global filters
          // Existing query filters

@@ -17,11 +17,6 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         var billOfMaterial = mapper.Map<BillOfMaterial>(request); 
         billOfMaterial.CreatedById = userId; 
         
-        // foreach (var bomItem in request.Items.Select(mapper.Map<BillOfMaterialItem>))
-        // {
-        //     bomItem.BillOfMaterialId = billOfMaterial.Id;
-        //     await context.BillOfMaterialItems.AddAsync(bomItem);
-        // }
         await context.BillOfMaterials.AddAsync(billOfMaterial);
 
         await context.ProductBillOfMaterials.AddAsync(new ProductBillOfMaterial
@@ -30,7 +25,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
             BillOfMaterialId = billOfMaterial.Id,
             EffectiveDate = DateTime.UtcNow
         });
-        //await context.BillOfMaterialItems.AddRangeAsync(billOfMaterial.Items); 
+
         await context.SaveChangesAsync();
         
         return billOfMaterial.Id;
