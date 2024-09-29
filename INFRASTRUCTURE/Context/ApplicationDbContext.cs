@@ -192,6 +192,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProductBillOfMaterial>().Navigation(fr => fr.BillOfMaterial).AutoInclude();
         modelBuilder.Entity<BillOfMaterial>().Navigation(fr => fr.Items).AutoInclude();
         modelBuilder.Entity<BillOfMaterial>().Navigation(fr => fr.Product).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.ComponentMaterial).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.ComponentProduct).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.MaterialType).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.UoM).AutoInclude();
         
         
         //apply global filters
