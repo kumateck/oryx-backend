@@ -7,4 +7,5 @@ public class CreateRouteRequest
     public Guid BillOfMaterialItemId { get; set; }
     public string EstimatedTime { get; set; }
     public List<Guid> ResourceIds { get; set; }
+    public int Order { get; set; }
 }

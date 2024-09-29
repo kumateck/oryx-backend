@@ -12,8 +12,8 @@ public class ProductPackage : BaseEntity
     public Material Material { get; set; }
     public Guid? PackageTypeId { get; set; }
     public PackageType PackageType { get; set; }
-   [StringLength(255)] public string MaterialThickness { get; set; }
-   [StringLength(255)] public string OtherStandards { get; set; }
+    [StringLength(255)] public string MaterialThickness { get; set; }
+    [StringLength(255)] public string OtherStandards { get; set; }
 }
 
 public class PackageType : BaseEntity

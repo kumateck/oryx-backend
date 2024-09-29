@@ -195,6 +195,7 @@ namespace APP.Repository;
     public async Task<Result<Paginateable<IEnumerable<RouteDto>>>> GetRoutes(int page, int pageSize, string searchQuery = null)
     {
         var query = context.Routes
+            .OrderBy(r => r.Order)
             .Include(r => r.Operation)
             .Include(r => r.WorkCenter)
             .Include(r => r.BillOfMaterialItem)
