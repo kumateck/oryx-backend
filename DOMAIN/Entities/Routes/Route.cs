@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 
@@ -11,7 +12,7 @@ public class Route : BaseEntity
     public WorkCenter WorkCenter { get; set; }
     public Guid BillOfMaterialItemId { get; set; }
     public BillOfMaterialItem BillOfMaterialItem { get; set; }
-    public TimeSpan EstimatedTime { get; set; }
+    [StringLength(50)] public string EstimatedTime { get; set; }
     public List<RouteResource> Resources { get; set; }
 }
 
