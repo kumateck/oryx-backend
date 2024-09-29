@@ -48,6 +48,7 @@ public class OryxMapper : Profile
         CreateMap<MaterialType, CollectionItemDto>();
         CreateMap<MaterialCategory, CollectionItemDto>();
         CreateMap<PackageType, CollectionItemDto>();
+        CreateMap<Material, CollectionItemDto>();
         
         #endregion
 
