@@ -23,6 +23,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         {
             ProductId = request.ProductId,
             BillOfMaterialId = billOfMaterial.Id,
+            IsActive = true,
             EffectiveDate = DateTime.UtcNow
         });
 
