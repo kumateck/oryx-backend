@@ -150,18 +150,9 @@ namespace APP.Repository;
       {
           var product = await context.Products.Include(product => product.BillOfMaterials).FirstOrDefaultAsync(p => p.Id == productId);
           if (product is null) return ProductErrors.NotFound(productId);
-
-          var productBomIds = product.BillOfMaterials.Select(b => b.BillOfMaterialId).ToHashSet();
           
           foreach (var routeRequest in request)
           {
-              if (!productBomIds
-                  .Contains(routeRequest.BillOfMaterialItemId))
-              {
-                  return Error.Validation("Product.BOM",
-                      $"The bill of material item id: {routeRequest.BillOfMaterialItemId} is not found in this product");
-              }
-
               var route = mapper.Map<Route>(request);
               route.Resources = routeRequest.ResourceIds.Select(r => new RouteResource 
               { 
@@ -171,7 +162,6 @@ namespace APP.Repository;
               
               await context.Routes.AddAsync(route);
               await context.SaveChangesAsync();
-              
           }
           return Result.Success();
       }
@@ -181,7 +171,6 @@ namespace APP.Repository;
         var route = await context.Routes
             .Include(r => r.Operation)
             .Include(r => r.WorkCenter)
-            .Include(r => r.BillOfMaterialItem)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .FirstOrDefaultAsync(r => r.Id == routeId);
 
@@ -198,7 +187,6 @@ namespace APP.Repository;
             .OrderBy(r => r.Order)
             .Include(r => r.Operation)
             .Include(r => r.WorkCenter)
-            .Include(r => r.BillOfMaterialItem)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .AsQueryable();
 
