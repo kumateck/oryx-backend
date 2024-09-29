@@ -93,7 +93,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     [HttpGet("{productId}/bom")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RouteDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductBillOfMaterialDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetBillOfMaterial(Guid productId)
     {
