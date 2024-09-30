@@ -153,7 +153,7 @@ namespace APP.Repository;
           
           foreach (var routeRequest in request)
           {
-              var route = mapper.Map<Route>(request);
+              var route = mapper.Map<Route>(routeRequest);
               route.Resources = routeRequest.ResourceIds.Select(r => new RouteResource 
               { 
                   ResourceId = r
