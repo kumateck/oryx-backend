@@ -34,15 +34,10 @@ namespace APP.Repository;
          return product is null ? ProductErrors.NotFound(productId) : mapper.Map<ProductDto>(product);
      }
 
-     public async Task<Result<Paginateable<IEnumerable<ProductDto>>>> GetProducts(int page, int pageSize, string searchQuery)
+     public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize, string searchQuery)
      {
          var query = context.Products
-             .AsSplitQuery()
-             .Include(p => p.BillOfMaterials)
-             .ThenInclude(p => p.BillOfMaterial)
              .Include(p => p.Category)
-             .Include(p => p.FinishedProducts)
-             .Include(p => p.Packages)
              .AsQueryable();
 
          if (!string.IsNullOrEmpty(searchQuery))
@@ -54,7 +49,7 @@ namespace APP.Repository;
              query,
              page,
              pageSize,
-             mapper.Map<ProductDto>
+             mapper.Map<ProductListDto>
          );
      }
 
