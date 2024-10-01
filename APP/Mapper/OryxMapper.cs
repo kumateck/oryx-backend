@@ -49,6 +49,9 @@ public class OryxMapper : Profile
         CreateMap<MaterialCategory, CollectionItemDto>();
         CreateMap<PackageType, CollectionItemDto>();
         CreateMap<Material, CollectionItemDto>();
+        CreateMap<User, CollectionItemDto>()
+            .ForMember(dest => dest.Name,
+                opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
         
         #endregion
 

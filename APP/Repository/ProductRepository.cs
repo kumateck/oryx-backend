@@ -29,6 +29,7 @@ namespace APP.Repository;
              .Include(p => p.Category)
              .Include(p => p.FinishedProducts)
              .Include(p => p.Packages)
+             .Include(p =>p.CreatedBy)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
          return product is null ? ProductErrors.NotFound(productId) : mapper.Map<ProductDto>(product);
