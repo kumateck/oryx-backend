@@ -196,7 +196,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.ComponentProduct).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.MaterialType).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.UoM).AutoInclude();
-        
+        modelBuilder.Entity<Route>().Navigation(fr => fr.Operation).AutoInclude();
+        modelBuilder.Entity<Route>().Navigation(fr => fr.WorkCenter).AutoInclude();
+        modelBuilder.Entity<Route>().Navigation(fr => fr.Resources).AutoInclude();
+        modelBuilder.Entity<RouteResource>().Navigation(fr => fr.Resource).AutoInclude();
         
         //apply global filters
          // Existing query filters

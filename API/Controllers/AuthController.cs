@@ -43,7 +43,7 @@ public class AuthController(IAuthRepository repo) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PasswordChangeResponse))]
     [Authorize]
     [HttpPost("change-password")]
-    public async Task<IResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    public async Task<IResult> ResetPassword([FromBody] ChangePasswordRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
 

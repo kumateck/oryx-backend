@@ -88,7 +88,11 @@ public class OryxMapper : Profile
         #region Product
         
         CreateMap<CreateProductRequest, Product>();
-        CreateMap<Product, ProductDto>();
+        CreateMap<Product, ProductDto>()
+            .ForMember(dest => dest.CurrentBillOfMaterial,
+                opt => opt.MapFrom<ProductBoMResolver>())
+            .ForMember(dest => dest.OutdatedBillOfMaterials,
+                opt => opt.MapFrom<OutdatedProductBoMResolver>());
         CreateMap<Product, ProductListDto>();
         CreateMap<CreateProductBillOfMaterialRequest, ProductBillOfMaterial>();
         CreateMap<ProductBillOfMaterial, ProductBillOfMaterialDto>();

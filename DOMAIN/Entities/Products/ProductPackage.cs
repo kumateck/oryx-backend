@@ -8,9 +8,9 @@ public class ProductPackage : BaseEntity
 {
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
-    public Guid? MaterialId { get; set; }
+    public Guid MaterialId { get; set; }
     public Material Material { get; set; }
-    public Guid? PackageTypeId { get; set; }
+    public Guid PackageTypeId { get; set; }
     public PackageType PackageType { get; set; }
     [StringLength(255)] public string MaterialThickness { get; set; }
     [StringLength(255)] public string OtherStandards { get; set; }

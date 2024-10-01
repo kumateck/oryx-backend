@@ -128,7 +128,7 @@ public class AuthRepository(ApplicationDbContext context, UserManager<User> user
         };
     }
 
-    public async Task<Result<PasswordChangeResponse>> ResetPassword(ResetPasswordRequest model, Guid userId)
+    public async Task<Result<PasswordChangeResponse>> ResetPassword(ChangePasswordRequest model, Guid userId)
     {
         var user = await context.Users.SingleOrDefaultAsync(item => item.Id == userId);
 

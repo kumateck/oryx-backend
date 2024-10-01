@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.Routes;
 
 namespace DOMAIN.Entities.Products;
 
@@ -14,6 +15,7 @@ public class Product : BaseEntity
     public List<FinishedProduct> FinishedProducts { get; set; }
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } // List of BOMs associated with this product
     public List<ProductPackage> Packages { get; set; } = [];
+    public List<Route> Routes { get; set; } = [];
 }
 
 public class ProductCategory : BaseEntity

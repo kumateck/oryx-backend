@@ -29,6 +29,7 @@ namespace APP.Repository;
              .Include(p => p.Category)
              .Include(p => p.FinishedProducts)
              .Include(p => p.Packages)
+             .Include(p => p.Routes)
              .Include(p =>p.CreatedBy)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -156,9 +157,9 @@ namespace APP.Repository;
               }).ToList();
               route.CreatedById = userId;
               
-              await context.Routes.AddAsync(route);
-              await context.SaveChangesAsync();
+              product.Routes.Add(route);
           }
+          await context.SaveChangesAsync();
           return Result.Success();
       }
 
