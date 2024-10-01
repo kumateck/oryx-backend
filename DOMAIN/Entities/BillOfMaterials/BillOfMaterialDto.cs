@@ -19,8 +19,6 @@ public class BillOfMaterialItemDto
     public int Quantity { get; set; } 
     public CollectionItemDto UoM { get; set; }
     public bool IsSubstitutable { get; set; } 
-    public Guid BillOfMaterialId { get; set; }
-    public BillOfMaterial BillOfMaterial { get; set; }
     public string Grade { get; set; }
     public string CasNumber { get; set; }
     public string Function { get; set; }
