@@ -13,7 +13,11 @@ namespace APP.Repository;
 public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMRepository
 {
     public async Task<Result<Guid>> CreateBillOfMaterial(CreateBillOfMaterialRequest request, Guid userId)
-    { 
+    {
+        var product = await context.Products
+            .Include(product => product.BillOfMaterials).FirstOrDefaultAsync(p => p.Id == request.ProductId);
+        if (product is null) return ProductErrors.NotFound(request.ProductId);
+        
         var billOfMaterial = mapper.Map<BillOfMaterial>(request); 
         billOfMaterial.CreatedById = userId; 
         
@@ -24,6 +28,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
             ProductId = request.ProductId,
             BillOfMaterialId = billOfMaterial.Id,
             IsActive = true,
+            Version = product.BillOfMaterials.Count != 0 ? product.BillOfMaterials.MaxBy(p => p.Version).Version + 1 : 1,
             EffectiveDate = DateTime.UtcNow
         });
 

@@ -13,7 +13,7 @@ public class Product : BaseEntity
     public Guid CategoryId { get; set; } // e.g., Tablet, Syrup, Injectable
     public ProductCategory Category { get; set; }
     public List<FinishedProduct> FinishedProducts { get; set; }
-    public List<ProductBillOfMaterial> BillOfMaterials { get; set; } // List of BOMs associated with this product
+    public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = []; // List of BOMs associated with this product
     public List<ProductPackage> Packages { get; set; } = [];
     public List<Route> Routes { get; set; } = [];
 }
