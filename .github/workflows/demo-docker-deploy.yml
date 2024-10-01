@@ -6,8 +6,8 @@ on:
       - demo
 
 env:
-  DOCKER_IMAGE_NAME: kumateck/oryx-erp-api
-  CONTAINER_NAME: oryx-erp-api
+  DOCKER_IMAGE_NAME: kumateck/oryx-erp-api-demo
+  CONTAINER_NAME: oryx-erp-api-demo
   HOST_PORT: 8086
   CONTAINER_PORT: 5006
 
