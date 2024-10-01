@@ -10,7 +10,7 @@ public class ProductBoMResolver(IMapper mapper) : IValueResolver<Product, Produc
     {
         return  mapper.Map<ProductBillOfMaterialDto>(source.BillOfMaterials
             .OrderByDescending(p => p.EffectiveDate)
-            .SingleOrDefault(p => p.IsActive));
+            .FirstOrDefault(p => p.IsActive));
     }
 }
 
@@ -21,7 +21,7 @@ public class OutdatedProductBoMResolver(IMapper mapper)
     {
         var mostRecentActiveBoM = source.BillOfMaterials
             .OrderByDescending(p => p.EffectiveDate)
-            .SingleOrDefault(p => p.IsActive);
+            .FirstOrDefault(p => p.IsActive);
 
         return mapper.Map<List<ProductBillOfMaterialDto>>(source.BillOfMaterials
             .Where(p => p != mostRecentActiveBoM)
