@@ -16,7 +16,13 @@ public class BillOfMaterialItemDto
     public CollectionItemDto ComponentMaterial { get; set; }
     public CollectionItemDto ComponentProduct { get; set; }
     public CollectionItemDto MaterialType { get; set; }
-    public int Quantity { get; set; }  // Quantity of the component required
+    public int Quantity { get; set; } 
     public CollectionItemDto UoM { get; set; }
-    public bool IsSubstitutable { get; set; }  // Allows for substitution in production  
+    public bool IsSubstitutable { get; set; } 
+    public Guid BillOfMaterialId { get; set; }
+    public BillOfMaterial BillOfMaterial { get; set; }
+    public string Grade { get; set; }
+    public string CasNumber { get; set; }
+    public string Function { get; set; }
+    public int Order { get; set; }
 }
