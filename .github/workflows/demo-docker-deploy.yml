@@ -32,7 +32,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          file: Dockerfile.demo # Reference to Dockerfile.demo
+          file: demo.Dockerfile # Reference to Dockerfile.demo
           tags: ${{ env.DOCKER_IMAGE_NAME }}:latest
           build-args: |
             DB_USERNAME=${{ secrets.DB_USERNAME }}
