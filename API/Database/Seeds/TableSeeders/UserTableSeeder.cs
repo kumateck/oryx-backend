@@ -70,7 +70,49 @@ public class UserTableSeeders : ISeeder
                 new Claim(JwtClaimTypes.FamilyName, "Admin")
             }).Result;
         }
-        //Console.WriteLine(claimResult);
+        
+        var defaultUser2 = dbContext.Users.IgnoreQueryFilters()
+            .FirstOrDefault(item => item.Email == "douglassboakye22@gmail.com");
+        
+        if (defaultUser2 != null) return;
+        
+        var user2 = new User
+        {
+            UserName = "douglassboakye22@gmail.com",
+            Email = "douglassboakye22@gmail.com",
+            FirstName = "Doug",
+            LastName = "Afford",
+            EmailConfirmed = true,
+            PhoneNumberConfirmed = true,
+            OrganizationName = AppConstants.DefaultTenantId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var result2 = userManager.CreateAsync
+            (user2, "Pass123$1").Result;
+        
+        if (!result2.Succeeded) return;
+        {
+            var createdUser = dbContext.Users.IgnoreQueryFilters()
+                .FirstOrDefault(item => item.Email == "douglassboakye22@gmail.com");
+
+            if (createdUser == null) return;
+
+            createdUser.OrganizationName = AppConstants.DefaultTenantId;
+            dbContext.Users.Update(createdUser);
+            dbContext.SaveChanges();
+            
+            var roleResult = userManager.AddToRolesAsync(user, new List<string> { RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin }).Result;
+
+            if (!roleResult.Succeeded) return;
+
+            _ = userManager.AddClaimsAsync(user, new[]
+            {
+                new Claim(JwtClaimTypes.Name, "Dog"),
+                new Claim(JwtClaimTypes.GivenName, "Affordable"),
+                new Claim(JwtClaimTypes.FamilyName, "Admin")
+            }).Result;
+        }
     }
     
     
