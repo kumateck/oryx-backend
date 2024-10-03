@@ -21,7 +21,7 @@ public class AuthRepository(ApplicationDbContext context, UserManager<User> user
 
         if (user == null || user.IsDeleted())
         {
-            return UserErrors.NotFoundByEmail(request.Email);
+            return UserErrors.IncorrectCredentials;
         }
         
         if (user.PasswordHash == null) return UserErrors.IncorrectCredentials;
