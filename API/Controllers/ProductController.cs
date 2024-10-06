@@ -231,4 +231,20 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.DeleteProductPackage(productPackageId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Creates a new finished product.
+    /// </summary>
+    [HttpPost("{productId}/finished")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateFinishedProduct([FromBody] List<CreateFinishedProductRequest> request, Guid productId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.CreateFinishedProduct(request, productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }
