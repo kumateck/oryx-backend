@@ -24,4 +24,6 @@ public interface IProductRepository
     Task<Result<Paginateable<IEnumerable<ProductPackageDto>>>> GetProductPackages(int page, int pageSize, string searchQuery = null);
     Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId);
     Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId);
+    Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId,
+        Guid userId);
 }

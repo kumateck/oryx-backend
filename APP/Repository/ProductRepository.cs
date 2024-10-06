@@ -343,4 +343,23 @@ namespace APP.Repository;
 
         return Result.Success();
     }
+    
+    public async Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId, Guid userId)
+    {
+        var product = await context.Products.Include(product => product.FinishedProducts).FirstOrDefaultAsync(p => p.Id == productId);
+        if (product is null)
+        {
+            return ProductErrors.NotFound(productId);
+        }
+
+        foreach (var newFinishedProduct in request.Select(mapper.Map<FinishedProduct>))
+        {
+            newFinishedProduct.CreatedById = userId;
+            product.FinishedProducts.Add(newFinishedProduct);
+        }
+       
+        await context.SaveChangesAsync();
+
+        return product.Id;
+    }
 }
