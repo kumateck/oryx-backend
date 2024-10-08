@@ -145,8 +145,14 @@ namespace APP.Repository;
      
       public async Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId)
       {
-          var product = await context.Products.Include(product => product.BillOfMaterials).FirstOrDefaultAsync(p => p.Id == productId);
+          var product = await context.Products.Include(product => product.BillOfMaterials)
+              .Include(product => product.Routes).Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == productId);
           if (product is null) return ProductErrors.NotFound(productId);
+          
+          if (product.Routes.Count != 0)
+          {
+              context.Routes.RemoveRange(product.Routes);
+          }
           
           foreach (var routeRequest in request)
           {
@@ -263,6 +269,11 @@ namespace APP.Repository;
             return ProductErrors.NotFound(productId);
         }
 
+        if (product.Packages.Count != 0)
+        {
+            context.ProductPackages.RemoveRange(product.Packages);
+        }
+
         foreach (var newPackage in request.Select(mapper.Map<ProductPackage>))
         {
             newPackage.CreatedById = userId;
@@ -350,6 +361,11 @@ namespace APP.Repository;
         if (product is null)
         {
             return ProductErrors.NotFound(productId);
+        }
+         
+        if (product.FinishedProducts.Count != 0)
+        {
+            context.FinishedProducts.RemoveRange(product.FinishedProducts);
         }
 
         foreach (var newFinishedProduct in request.Select(mapper.Map<FinishedProduct>))
