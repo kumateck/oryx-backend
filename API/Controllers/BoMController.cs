@@ -79,6 +79,25 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
         var result = await repository.UpdateBillOfMaterial(request, billOfMaterialId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates a specific Bill of Material.
+    /// </summary>
+    /// <param name="billOfMaterialId">The ID of the Bill of Material to be updated.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("archive/{billOfMaterialId}")]
+    //[Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ArchiveBillOfMaterial([FromBody] Guid billOfMaterialId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.ArchiveBillOfMaterial(billOfMaterialId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Deletes a specific Bill of Material.
