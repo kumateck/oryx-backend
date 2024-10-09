@@ -26,10 +26,12 @@ namespace APP.Repository;
      { 
          var product = await context.Products
              .Include(p => p.BillOfMaterials)
+             .ThenInclude(p => p.BillOfMaterial)
+             .ThenInclude(p => p.Items.OrderBy(i => i.Order))
              .Include(p => p.Category)
              .Include(p => p.FinishedProducts)
              .Include(p => p.Packages)
-             .Include(p => p.Routes)
+             .Include(p => p.Routes.OrderBy(r => r.Order))
              .Include(p =>p.CreatedBy)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
