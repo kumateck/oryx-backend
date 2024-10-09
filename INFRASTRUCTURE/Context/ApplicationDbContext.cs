@@ -210,13 +210,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
 
         modelBuilder.Entity<PasswordReset>().HasQueryFilter(entity =>
-            !entity.DeletedAt.HasValue || !entity.User.DeletedAt.HasValue);
+            !entity.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue);
 
         modelBuilder.Entity<Product>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);
         
         modelBuilder.Entity<ProductPackage>().HasQueryFilter(entity =>
-            !entity.DeletedAt.HasValue || !entity.Product.DeletedAt.HasValue);
+            !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
 
         modelBuilder.Entity<WorkCenter>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);
@@ -225,7 +225,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             !entity.DeletedAt.HasValue);
         
         modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity =>
-            !entity.DeletedAt.HasValue || !entity.Product.DeletedAt.HasValue);
+            !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
 
         modelBuilder.Entity<Resource>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);
