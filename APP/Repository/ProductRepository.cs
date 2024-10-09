@@ -380,4 +380,23 @@ namespace APP.Repository;
 
         return product.Id;
     }
+    
+    public async Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId) 
+    { 
+        var product = await context.Products.Include(product => product.BillOfMaterials)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+        if (product is null) return ProductErrors.NotFound(productId);
+        
+        
+        var bom = product.BillOfMaterials.FirstOrDefault(p => p.IsActive);
+
+        if (bom is not null)
+        {
+            bom.IsActive = false;
+            context.ProductBillOfMaterials.Update(bom);
+            await context.SaveChangesAsync();
+        }
+
+        return Result.Success();
+    }
 }

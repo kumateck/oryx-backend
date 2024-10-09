@@ -21,6 +21,9 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         if (product.BillOfMaterials.Count != 0)
         {
             context.ProductBillOfMaterials.RemoveRange(product.BillOfMaterials);
+            var boms = context.BillOfMaterials
+                .Where(b => product.BillOfMaterials.Select(p => p.BillOfMaterialId).Contains(b.Id));
+            context.BillOfMaterials.RemoveRange(boms);
         }
         
         var billOfMaterial = mapper.Map<BillOfMaterial>(request); 
@@ -100,22 +103,22 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         return Result.Success();
     }
     
-    public async Task<Result> ArchiveBillOfMaterial(Guid billOfMaterialId, Guid userId) 
+    public async Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId) 
     { 
-        var existingBillOfMaterial = await context.BillOfMaterials
-            .Include(b => b.Items)
-            .FirstOrDefaultAsync(b => b.Id == billOfMaterialId);
+        var product = await context.Products.Include(product => product.BillOfMaterials)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+        if (product is null) return ProductErrors.NotFound(productId);
         
-        if (existingBillOfMaterial is null)
-        {
-            return BillOfMaterialErrors.NotFound(billOfMaterialId);
-        }
         
-        existingBillOfMaterial.LastUpdatedById = userId;
-        existingBillOfMaterial.IsActive = false;
+        var bom = product.BillOfMaterials.FirstOrDefault(p => p.IsActive);
 
-        context.BillOfMaterials.Update(existingBillOfMaterial);
-        await context.SaveChangesAsync();
+        if (bom is not null)
+        {
+            bom.IsActive = false;
+            context.ProductBillOfMaterials.Update(bom);
+            await context.SaveChangesAsync();
+        }
+
         return Result.Success();
     }
     

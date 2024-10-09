@@ -247,4 +247,23 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.CreateFinishedProduct(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates a specific Bill of Material.
+    /// </summary>
+    /// <param name="productId">The ID of the Product for which the bom should be archived.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("{productId}/bom/archive")]
+    //[Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ArchiveBillOfMaterial(Guid productId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.ArchiveBillOfMaterial(productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }
