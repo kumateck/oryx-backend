@@ -12,5 +12,6 @@ public interface IBoMRepository
     Task<Result<Paginateable<IEnumerable<BillOfMaterialDto>>>> GetBillOfMaterials(int page, int pageSize,
         string searchQuery);
     Task<Result> UpdateBillOfMaterial(CreateProductBillOfMaterialRequest request, Guid billOfMaterialId, Guid userId);
+    Task<Result> ArchiveBillOfMaterial(Guid billOfMaterialId, Guid userId);
     Task<Result> DeleteBillOfMaterial(Guid billOfMaterialId, Guid userId);
 }

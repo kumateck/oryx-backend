@@ -17,6 +17,11 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         var product = await context.Products
             .Include(product => product.BillOfMaterials).FirstOrDefaultAsync(p => p.Id == request.ProductId);
         if (product is null) return ProductErrors.NotFound(request.ProductId);
+
+        if (product.BillOfMaterials.Count != 0)
+        {
+            context.ProductBillOfMaterials.RemoveRange(product.BillOfMaterials);
+        }
         
         var billOfMaterial = mapper.Map<BillOfMaterial>(request); 
         billOfMaterial.CreatedById = userId; 
@@ -89,6 +94,25 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
         mapper.Map(request, existingBillOfMaterial);
         existingBillOfMaterial.LastUpdatedById = userId;
+
+        context.BillOfMaterials.Update(existingBillOfMaterial);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> ArchiveBillOfMaterial(Guid billOfMaterialId, Guid userId) 
+    { 
+        var existingBillOfMaterial = await context.BillOfMaterials
+            .Include(b => b.Items)
+            .FirstOrDefaultAsync(b => b.Id == billOfMaterialId);
+        
+        if (existingBillOfMaterial is null)
+        {
+            return BillOfMaterialErrors.NotFound(billOfMaterialId);
+        }
+        
+        existingBillOfMaterial.LastUpdatedById = userId;
+        existingBillOfMaterial.IsActive = false;
 
         context.BillOfMaterials.Update(existingBillOfMaterial);
         await context.SaveChangesAsync();
