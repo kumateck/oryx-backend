@@ -26,4 +26,5 @@ public interface IProductRepository
     Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId);
     Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId,
         Guid userId);
+     Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId);
 }
