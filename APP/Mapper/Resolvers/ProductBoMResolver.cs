@@ -8,7 +8,7 @@ public class ProductBoMResolver(IMapper mapper) : IValueResolver<Product, Produc
     public ProductBillOfMaterialDto Resolve(Product source, ProductDto destination, ProductBillOfMaterialDto destMember,
         ResolutionContext context)
     {
-        return  mapper.Map<ProductBillOfMaterialDto>(source.BillOfMaterials
+        return mapper.Map<ProductBillOfMaterialDto>(source.BillOfMaterials
             .OrderByDescending(p => p.EffectiveDate)
             .FirstOrDefault(p => p.IsActive));
     }

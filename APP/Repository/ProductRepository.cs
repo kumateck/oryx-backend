@@ -387,7 +387,6 @@ namespace APP.Repository;
             .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null) return ProductErrors.NotFound(productId);
         
-        
         var bom = product.BillOfMaterials.FirstOrDefault(p => p.IsActive);
 
         if (bom is not null)
