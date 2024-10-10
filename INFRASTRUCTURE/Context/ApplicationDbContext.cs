@@ -238,6 +238,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<Configuration>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue);
+        
+        modelBuilder.Entity<Material>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
 
         // Adjusted query filters to resolve warnings
         modelBuilder.Entity<WorkOrder>().HasQueryFilter(entity =>
