@@ -31,10 +31,12 @@ public class JwtMiddleware(RequestDelegate next)
                     .Select(claim => claim.Value)
                     .ToList();
 
+                var roleIds = db.Roles.Where(role => roles.Contains(role.Name)).Select(r => r.Id);
+
                 if (user != null)
                 {
                     context.Items["Sub"] = jwtToken.Subject;
-                    context.Items["Roles"] = roles;
+                    context.Items["Roles"] = roleIds;
                 }
             }
         }

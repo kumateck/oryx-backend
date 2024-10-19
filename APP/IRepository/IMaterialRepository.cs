@@ -11,4 +11,6 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page, int pageSize, string searchQuery);
     Task<Result> UpdateMaterial(CreateMaterialRequest request, Guid materialId, Guid userId);
     Task<Result> DeleteMaterial(Guid materialId, Guid userId);
+    Task<Result<int>> CheckStockLevel(Guid materialId);
+    Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId);
 }

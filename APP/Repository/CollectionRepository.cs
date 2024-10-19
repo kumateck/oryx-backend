@@ -3,6 +3,7 @@ using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Requisitions;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -99,7 +100,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Operation),
             nameof(MaterialType),
             nameof(MaterialCategory),
-            nameof(PackageType)
+            nameof(PackageType),
+            nameof(StockRequisition)
         };
     }
     
