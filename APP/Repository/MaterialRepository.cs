@@ -95,14 +95,17 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     // ************* CRUD for Material Batches *************
 
     // Create Material Batch
-    public async Task<Result<Guid>> CreateMaterialBatch(CreateMaterialBatchRequest request, Guid userId)
+    public async Task<Result> CreateMaterialBatch(List<CreateMaterialBatchRequest> request, Guid userId)
     {
-        var batch = mapper.Map<MaterialBatch>(request);
-        batch.CreatedById = userId;
-        await context.MaterialBatches.AddAsync(batch);
-        await context.SaveChangesAsync();
+        var batches = mapper.Map<List<MaterialBatch>>(request);
+        foreach (var batch in batches)
+        {
+            batch.CreatedById = userId;
+        }
 
-        return batch.Id;
+        await context.MaterialBatches.AddRangeAsync(batches);
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 
     // Get Material Batch by ID
