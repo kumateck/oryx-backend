@@ -194,7 +194,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     // ************* Check if Requisition Can Be Fulfilled *************
 
     // Checks if the requisition can be fulfilled with the current stock level
-    public async Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId)
+    /*public async Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId)
     {
         var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
         if (material == null)
@@ -202,7 +202,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return MaterialErrors.NotFound(materialId);
         }
 
-        var requisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == requisitionId);
+        var requisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r => r.Id == requisitionId);
 
         if (requisition is null)
         {
@@ -215,11 +215,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(b => b.RemainingQuantity);
 
         // Calculate the remaining stock after fulfilling the requisition
-        var remainingStockAfterRequisition = totalAvailableStock - requisition.Quantity;
+        var remainingStockAfterRequisition = totalAvailableStock - requisition.Items.Where(i => i.MaterialId == ).Sum(i => i.Quantity);
 
         // Check if the requested quantity can be fulfilled AND ensure the remaining stock doesn't drop below the minimum stock level
         // Requisition can be fulfilled without violating the minimum stock level
         // Not enough stock to fulfill requisition without going below minimum stock
         return remainingStockAfterRequisition >= material.MinimumStockLevel;
-    }
+    }*/
 }

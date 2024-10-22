@@ -1,4 +1,3 @@
-using System.Configuration;
 using System.Reflection;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Auth;
@@ -53,7 +52,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialCategory> MaterialCategories { get; set; }
     
     public DbSet<MaterialBatch> MaterialBatches { get; set; }
-    public DbSet<MaterialBatchConsumption> MaterialBatchConsumptions { get; set; }
+    public DbSet<MaterialBatchEvent> MaterialBatchEvents { get; set; }
     
     #endregion
 
@@ -121,7 +120,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Requisition
 
     public DbSet<Requisition> Requisitions { get; set; }
+    public DbSet<RequisitionItem> RequisitionItems { get; set; }
     public DbSet<RequisitionApproval> RequisitionApprovals { get; set; }
+    public DbSet<CompletedRequisition> CompletedRequisitions { get; set; }
+    public DbSet<CompletedRequisitionItem> CompletedRequisitionItems { get; set; }
+
 
     #endregion
 
@@ -197,12 +200,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+   protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Apply configurations from the assembly
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
+        // Call base method
         base.OnModelCreating(modelBuilder);
 
+        #region Table Mappings
         modelBuilder.Entity<User>().ToTable("users");
         modelBuilder.Entity<Role>().ToTable("roles");
         modelBuilder.Entity<IdentityUserRole<Guid>>().ToTable("userroles");
@@ -210,112 +216,101 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("userlogins");
         modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("roleclaims");
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("usertokens");
+        #endregion
+
+        #region Eager Loading Relationships
+
+        // Product-related entities
+        modelBuilder.Entity<Product>().Navigation(p => p.Category).AutoInclude();
+        modelBuilder.Entity<FinishedProduct>().Navigation(fp => fp.UoM).AutoInclude();
+        modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Material).AutoInclude();
+        modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.PackageType).AutoInclude();
+        modelBuilder.Entity<ProductBillOfMaterial>().Navigation(pbm => pbm.BillOfMaterial).AutoInclude();
+
+        // Bill of Material relationships
+        modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Items).AutoInclude();
+        modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Product).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.ComponentMaterial).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.ComponentProduct).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.MaterialType).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.UoM).AutoInclude();
+
+        // Route-related entities
+        modelBuilder.Entity<Route>().Navigation(r => r.Operation).AutoInclude();
+        modelBuilder.Entity<Route>().Navigation(r => r.WorkCenter).AutoInclude();
+        modelBuilder.Entity<Route>().Navigation(r => r.Resources).AutoInclude();
+        modelBuilder.Entity<RouteResource>().Navigation(rr => rr.Resource).AutoInclude();
         
-        //eager load relations
-        modelBuilder.Entity<Product>().Navigation(fr => fr.Category).AutoInclude();
-        modelBuilder.Entity<FinishedProduct>().Navigation(fr => fr.UoM).AutoInclude();
-        modelBuilder.Entity<ProductPackage>().Navigation(fr => fr.Material).AutoInclude();
-        modelBuilder.Entity<ProductPackage>().Navigation(fr => fr.PackageType).AutoInclude();
-        modelBuilder.Entity<ProductBillOfMaterial>().Navigation(fr => fr.BillOfMaterial).AutoInclude();
-        modelBuilder.Entity<BillOfMaterial>().Navigation(fr => fr.Items).AutoInclude();
-        modelBuilder.Entity<BillOfMaterial>().Navigation(fr => fr.Product).AutoInclude();
-        modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.ComponentMaterial).AutoInclude();
-        modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.ComponentProduct).AutoInclude();
-        modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.MaterialType).AutoInclude();
-        modelBuilder.Entity<BillOfMaterialItem>().Navigation(fr => fr.UoM).AutoInclude();
-        modelBuilder.Entity<Route>().Navigation(fr => fr.Operation).AutoInclude();
-        modelBuilder.Entity<Route>().Navigation(fr => fr.WorkCenter).AutoInclude();
-        modelBuilder.Entity<Route>().Navigation(fr => fr.Resources).AutoInclude();
-        modelBuilder.Entity<RouteResource>().Navigation(fr => fr.Resource).AutoInclude();
+        #endregion
+
+        #region Auth Filters
+        modelBuilder.Entity<User>().HasQueryFilter(entity => entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PasswordReset>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue);
+        #endregion
+
+        #region Product Filters
+        modelBuilder.Entity<Product>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductPackage>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+        #endregion
+
+        #region Material Filters
+        modelBuilder.Entity<Material>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialBatch>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Material.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialBatchEvent>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialCategory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialType>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        #endregion
+
+        #region Requisition Filters
+        modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        #endregion
+
+        #region WorkOrder Filters
+        modelBuilder.Entity<WorkOrder>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionStep>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.WorkOrder.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionSchedule>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.WorkOrder.DeletedAt.HasValue);
+        #endregion
+
+        #region BoM Filters
+        modelBuilder.Entity<BillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.BillOfMaterial.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.UoM.DeletedAt.HasValue);
+        #endregion
+
+        #region Route Filters
+        modelBuilder.Entity<Route>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Operation.DeletedAt.HasValue);
+        modelBuilder.Entity<RouteResource>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Resource.DeletedAt.HasValue);
+        #endregion
+
+        #region Configuration Filters
+        modelBuilder.Entity<Configuration>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        #endregion
+
+        #region Miscellaneous Filters
+        modelBuilder.Entity<Resource>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<UnitOfMeasure>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<Operation>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        #endregion
+
+        #region MasterProductionSchedule
+        modelBuilder.Entity<MasterProductionSchedule>()
+            .HasQueryFilter(mps => !mps.Product.DeletedAt.HasValue);
+        #endregion
         
-    modelBuilder.Entity<User>().HasQueryFilter(entity =>
-        entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
+        #region Requisition
+        modelBuilder.Entity<Requisition>()
+            .HasQueryFilter(r => !r.DeletedAt.HasValue);
+        modelBuilder.Entity<CompletedRequisition>()
+            .HasQueryFilter(r => !r.Requisition.DeletedAt.HasValue);
+        modelBuilder.Entity<RequisitionItem>()
+            .HasQueryFilter(r => !r.Requisition.DeletedAt.HasValue);
+        modelBuilder.Entity<CompletedRequisitionItem>()
+            .HasQueryFilter(r => !r.CompletedRequisition.DeletedAt.HasValue);
 
-    modelBuilder.Entity<Site>().HasQueryFilter(entity =>
-        entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<PasswordReset>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue);
-
-    modelBuilder.Entity<Product>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<ProductPackage>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
-
-    modelBuilder.Entity<WorkCenter>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
-
-    modelBuilder.Entity<Resource>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<UnitOfMeasure>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<Operation>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<Configuration>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    // Apply filters to Material and its related entities
-    modelBuilder.Entity<Material>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<MaterialBatch>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.Material.DeletedAt.HasValue); // Ensure batch respects material filter
-
-    modelBuilder.Entity<MaterialBatchConsumption>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.ConsumedBy.DeletedAt.HasValue); // Ensure consumption respects user filter
-
-    // Apply filters to Requisition and related entities
-    modelBuilder.Entity<Requisition>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.Material.DeletedAt.HasValue); // Ensure requisition respects material filter
-
-    modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    // Other adjusted query filters
-    modelBuilder.Entity<WorkOrder>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<ProductionSchedule>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.WorkOrder.DeletedAt.HasValue);
-
-    modelBuilder.Entity<ProductionStep>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.WorkOrder.DeletedAt.HasValue);
-
-    modelBuilder.Entity<BillOfMaterial>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
-
-    modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.UoM.DeletedAt.HasValue);
-
-    modelBuilder.Entity<MasterProductionSchedule>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
-
-    modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
-
-    modelBuilder.Entity<Route>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.Operation.DeletedAt.HasValue);
-
-    modelBuilder.Entity<RouteResource>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue && !entity.Resource.DeletedAt.HasValue);
-
-    modelBuilder.Entity<MaterialType>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<MaterialCategory>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
-
-    modelBuilder.Entity<PackageType>().HasQueryFilter(entity =>
-        !entity.DeletedAt.HasValue);
+        #endregion
     }
+
 }

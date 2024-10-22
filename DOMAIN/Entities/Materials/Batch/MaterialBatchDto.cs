@@ -14,5 +14,5 @@ public class MaterialBatchDto
     public DateTime? DateApproved { get; set; }
     public Guid WarehouseId { get; set; }  
     public WarehouseDto Warehouse { get; set; }
-    public List<MaterialBatchConsumptionDto> ConsumptionEvents { get; set; } = [];
+    public List<MaterialBatchEventDto> Events { get; set; } = [];
 }

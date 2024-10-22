@@ -20,6 +20,13 @@ public class RequisitionListDto
     public string Comments { get; set; }
 }
 
+public class RequisitionItemDto 
+{
+    public RequisitionDto Requisition { get; set; }
+    public MaterialDto Material { get; set; }
+    public int Quantity { get; set; }
+}
+
 public class RequisitionApprovalDto
 {
     public UserDto User { get; set; }

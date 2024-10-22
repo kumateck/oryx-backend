@@ -114,7 +114,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    /// <summary>
+    /*/// <summary>
     /// Checks if a requisition can be fulfilled for a specific material.
     /// </summary>
     /// <param name="materialId">The ID of the material.</param>
@@ -128,7 +128,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var result = await repository.CanFulfillRequisition(materialId, requisitionId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
+    }*/
 
     /// <summary>
     /// Creates a new material batch.

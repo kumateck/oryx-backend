@@ -20,7 +20,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     {
         var requisition = mapper.Map<Requisition>(request);
         requisition.RequestedById = userId;
-        requisition.RequestedAt = DateTime.UtcNow;
         await context.Requisitions.AddAsync(requisition);
 
         var approvals = await context.Approvals.Include(approval => approval.ApprovalStages).FirstOrDefaultAsync(a => a.ItemType == nameof(StockRequisition));
@@ -47,7 +46,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId)
     {
         var requisition = await context.Requisitions
-            .Include(r => r.Material)
+            .Include(r => r.Items)
+            .ThenInclude(i => i.Material)
             .Include(r => r.Approvals)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
@@ -60,13 +60,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<Paginateable<IEnumerable<RequisitionListDto>>>> GetRequisitions(int page, int pageSize, string searchQuery)
     {
         var query = context.Requisitions
-            .Include(r => r.Material)
-            .Include(r => r.Approvals)
+            .Include(r => r.Items)
+            .ThenInclude(i => i.Material)            .Include(r => r.Approvals)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, r => r.Material.Name);
+            query = query.WhereSearch(searchQuery, r => r.Comments);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -114,16 +114,16 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     // ************* Manage Stock Requisition Approvals *************
 
     // Approve Stock Requisition
-    public async Task<Result> ApproveRequisition(ApproveRequisitionRequest request, Guid userId, List<Guid> roleIds)
+    public async Task<Result> ApproveRequisition(ApproveRequisitionRequest request, Guid requisitionId, Guid userId, List<Guid> roleIds)
     {
         // Get the requisition and its approvals
         var requisition = await context.Requisitions
             .Include(r => r.Approvals)
-            .FirstOrDefaultAsync(r => r.Id == request.RequisitionId);
+            .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
         if (requisition == null)
         {
-            return RequisitionErrors.NotFound(request.RequisitionId);
+            return RequisitionErrors.NotFound(requisitionId);
         }
 
         // Find the next required approval
@@ -148,9 +148,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
         if (allApproved)
         {
             requisition.Approved = true;
-            return await ProcessRequisition(requisition.Id);
         }
-
+        
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -159,7 +158,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
 
     // Consume stock once the requisition is fully approved
 
-    private async Task<Result> ProcessRequisition(Guid requisitionId)
+    public async Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId)
      {
          var requisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == requisitionId);
          if (requisition is null)
@@ -167,78 +166,89 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
              return RequisitionErrors.NotFound(requisitionId);
          }
 
-         var materialId = requisition.MaterialId;
-         var requestedQuantity = requisition.Quantity;
-         
-        // Get the material to check the minimum stock level
-        var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
-        if (material == null)
-        {
-            return MaterialErrors.NotFound(materialId);
-        }
+         if (!requisition.Approved)
+         {
+             return RequisitionErrors.PendingApprovals;
+         }
 
-        // Fetch available batches for the material in the specified warehouse
-        var availableBatches = await context.MaterialBatches
-            .Where(b => b.MaterialId == materialId && b.Status == BatchStatus.Available)
-            .OrderBy(b => b.DateReceived)
-            .ToListAsync();
+         var completedRequisition = mapper.Map<CompletedRequisition>(request);
+         completedRequisition.CreatedById = userId;
+         completedRequisition.RequisitionId = requisitionId;
+         await context.CompletedRequisitions.AddAsync(completedRequisition);
+         await context.SaveChangesAsync();
 
-        // Sum up the total available quantity from the batches
-        var totalAvailable = availableBatches.Sum(b => b.RemainingQuantity);
-
-        // Check if the requested quantity can be fulfilled
-        if (totalAvailable < requestedQuantity)
-        {
-            return MaterialErrors.InsufficientStock;
-        }
-
-        // Check if processing the requisition would drop stock below the minimum level
-        var totalRemainingAfterRequisition = totalAvailable - requestedQuantity;
-        if (totalRemainingAfterRequisition < material.MinimumStockLevel)
-        {
-            return MaterialErrors.BelowMinimumStock(materialId);
-        }
-
-        // Process the requisition: consume stock from batches
-        var remainingToConsume = requestedQuantity;
-
-        foreach (var batch in availableBatches)
-        {
-            int consumedFromBatch;
-
-            if (batch.RemainingQuantity >= remainingToConsume)
+         foreach (var requisitionItem in completedRequisition.Items)
+         { 
+             var materialId = requisitionItem.MaterialId;
+             var requestedQuantity = requisitionItem.Quantity;
+             
+            // Get the material to check the minimum stock level
+            var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
+            if (material == null)
             {
-                consumedFromBatch = remainingToConsume;
-                batch.ConsumedQuantity += remainingToConsume;
-                remainingToConsume = 0;
-            }
-            else
-            {
-                consumedFromBatch = batch.RemainingQuantity;
-                batch.ConsumedQuantity = batch.TotalQuantity;  // Fully consume the batch
-                remainingToConsume -= consumedFromBatch;
+                return MaterialErrors.NotFound(materialId);
             }
 
-            // Log the consumption event
-            var consumptionEvent = new MaterialBatchConsumption
+            // Fetch available batches for the material in the specified warehouse
+            var availableBatches = await context.MaterialBatches
+                .Where(b => b.MaterialId == materialId && b.Status == BatchStatus.Available)
+                .OrderBy(b => b.DateReceived)
+                .ToListAsync();
+
+            // Sum up the total available quantity from the batches
+            var totalAvailable = availableBatches.Sum(b => b.RemainingQuantity);
+
+            // Check if the requested quantity can be fulfilled
+            if (totalAvailable < requestedQuantity)
             {
-                BatchId = batch.Id,
-                QuantityConsumed = consumedFromBatch,
-                ConsumedById = requisition.RequestedById,
-                DateConsumed = DateTime.UtcNow
-            };
+                return MaterialErrors.InsufficientStock;
+            }
 
-            await context.MaterialBatchConsumptions.AddAsync(consumptionEvent);
+            // Check if processing the requisition would drop stock below the minimum level
+            var totalRemainingAfterRequisition = totalAvailable - requestedQuantity;
+            if (totalRemainingAfterRequisition < material.MinimumStockLevel)
+            {
+                return MaterialErrors.BelowMinimumStock(materialId);
+            }
 
-            if (remainingToConsume != 0) continue;
-            
-            requisition.Status = RequestStatus.Completed;
-            context.Requisitions.Update(requisition);
-            break;
-        }
+            // Process the requisition: consume stock from batches
+            var remainingToConsume = requestedQuantity;
 
-        // Save changes to the database
-        await context.SaveChangesAsync();
-        return Result.Success();
+            foreach (var batch in availableBatches)
+            {
+                int consumedFromBatch;
+
+                if (batch.RemainingQuantity >= remainingToConsume)
+                {
+                    consumedFromBatch = remainingToConsume;
+                    batch.ConsumedQuantity += remainingToConsume;
+                    remainingToConsume = 0;
+                }
+                else
+                {
+                    consumedFromBatch = batch.RemainingQuantity;
+                    batch.ConsumedQuantity = batch.TotalQuantity;  // Fully consume the batch
+                    remainingToConsume -= consumedFromBatch;
+                }
+
+                // Log the consumption event
+                var materialBatchEvent = new MaterialBatchEvent
+                {
+                    BatchId = batch.Id,
+                    Quantity = consumedFromBatch,
+                    Type = EventType.Supplied,
+                    UserId = requisition.RequestedById,
+                };
+
+                await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
+
+                if (remainingToConsume == 0) break;
+            }
+         }
+         completedRequisition.Status = RequestStatus.Completed;
+         context.CompletedRequisitions.Update(completedRequisition);
+         // Save changes to the database
+         await context.SaveChangesAsync();
+         return Result.Success();
     }
 }

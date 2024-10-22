@@ -3,17 +3,20 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace DOMAIN.Migrations
+namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241022211114_MaterialBatchEvent")]
+    partial class MaterialBatchEvent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -691,7 +694,7 @@ namespace DOMAIN.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("MaterialBatchEvents");
+                    b.ToTable("MaterialBatchConsumptions");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Material", b =>
@@ -1307,112 +1310,6 @@ namespace DOMAIN.Migrations
                     b.ToTable("ProductPackages");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Requisitions.CompletedRequisition", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RequestedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RequisitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("RequisitionType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("RequestedById");
-
-                    b.HasIndex("RequisitionId");
-
-                    b.ToTable("CompletedRequisitions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Requisitions.CompletedRequisitionItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CompletedRequisitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MaterialId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompletedRequisitionId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialId");
-
-                    b.ToTable("CompletedRequisitionItems");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1441,6 +1338,15 @@ namespace DOMAIN.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("RequestedById")
                         .HasColumnType("uuid");
 
@@ -1460,6 +1366,8 @@ namespace DOMAIN.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialId");
 
                     b.HasIndex("RequestedById");
 
@@ -1530,54 +1438,6 @@ namespace DOMAIN.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RequisitionApprovals");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Requisitions.RequisitionItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MaterialId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("RequisitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialId");
-
-                    b.HasIndex("RequisitionId");
-
-                    b.ToTable("RequisitionItems");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Roles.Role", b =>
@@ -2898,51 +2758,8 @@ namespace DOMAIN.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Requisitions.CompletedRequisition", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "RequestedBy")
-                        .WithMany()
-                        .HasForeignKey("RequestedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Requisitions.Requisition", "Requisition")
-                        .WithMany()
-                        .HasForeignKey("RequisitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("RequestedBy");
-
-                    b.Navigation("Requisition");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Requisitions.CompletedRequisitionItem", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Requisitions.CompletedRequisition", "CompletedRequisition")
-                        .WithMany("Items")
-                        .HasForeignKey("CompletedRequisitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -2961,31 +2778,6 @@ namespace DOMAIN.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CompletedRequisition");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Material");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "RequestedBy")
                         .WithMany()
                         .HasForeignKey("RequestedById")
@@ -2997,6 +2789,8 @@ namespace DOMAIN.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Material");
 
                     b.Navigation("RequestedBy");
                 });
@@ -3040,43 +2834,6 @@ namespace DOMAIN.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Requisitions.RequisitionItem", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Requisitions.Requisition", "Requisition")
-                        .WithMany("Items")
-                        .HasForeignKey("RequisitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Material");
-
-                    b.Navigation("Requisition");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Routes.Route", b =>
@@ -3364,16 +3121,9 @@ namespace DOMAIN.Migrations
                     b.Navigation("Routes");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Requisitions.CompletedRequisition", b =>
-                {
-                    b.Navigation("Items");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
                 {
                     b.Navigation("Approvals");
-
-                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Routes.Route", b =>

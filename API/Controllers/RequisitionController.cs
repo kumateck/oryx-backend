@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Requisitions;
+using System.Security.Claims;
 
 namespace API.Controllers;
 
@@ -49,18 +50,38 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// Approves a Stock Requisition.
     /// </summary>
     /// <param name="request">The ApproveRequisitionRequest object.</param>
+    ///     /// <param name="requisitionId">The ID of the Stock Requisition being approved.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("approve")]
+    [HttpPost("{requisitionId}/approve")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> ApproveRequisition([FromBody] ApproveRequisitionRequest request)
+    public async Task<IResult> ApproveRequisition([FromBody] ApproveRequisitionRequest request, Guid requisitionId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         var roleIds = (List<Guid>)HttpContext.Items["Roles"]; 
 
-        var result = await repository.ApproveRequisition(request, Guid.Parse(userId), roleIds);
+        var result = await repository.ApproveRequisition(request,  requisitionId, Guid.Parse(userId), roleIds);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Processes a Stock Requisition.
+    /// </summary>
+    /// <param name="request">The CreateRequisitionRequest object.</param>
+    /// <param name="requisitionId">The ID of the Stock Requisition being processed.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("{requisitionId}/process")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ProcessRequisition([FromBody] CreateRequisitionRequest request, Guid requisitionId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ProcessRequisition(request, requisitionId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

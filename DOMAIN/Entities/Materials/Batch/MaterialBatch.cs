@@ -19,11 +19,12 @@ public class MaterialBatch : BaseEntity
     public DateTime? DateApproved { get; set; }
     public Guid WarehouseId { get; set; }  
     public Warehouse Warehouse { get; set; }
-    public List<MaterialBatchConsumption> ConsumptionEvents { get; set; } = [];
+    public List<MaterialBatchEvent> Events { get; set; } = [];
 }
 
 public enum BatchStatus
 {
+    Received,
     Quarantine,
     Testing,
     Available,

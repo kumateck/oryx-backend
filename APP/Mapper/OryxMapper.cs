@@ -7,6 +7,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
@@ -143,7 +144,20 @@ public class OryxMapper : Profile
 
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
         CreateMap<MaterialBatch, MaterialBatchDto>();
-        CreateMap<MaterialBatchConsumption, MaterialBatchConsumptionDto>();
+        CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
+
+        #endregion
+
+        #region Requisition
+
+        CreateMap<CreateRequisitionRequest, Requisition>();
+        CreateMap<CreateRequisitionItemRequest, RequisitionItem>();
+        CreateMap<Requisition, RequisitionDto>();
+        CreateMap<RequisitionItem, RequisitionItemDto>();
+        CreateMap<CreateRequisitionRequest, CompletedRequisition>();
+        CreateMap<CreateRequisitionItemRequest, CompletedRequisitionItem>();
+        CreateMap<CompletedRequisition, RequisitionDto>();
+        CreateMap<CompletedRequisitionItem, RequisitionItemDto>();
 
         #endregion
 

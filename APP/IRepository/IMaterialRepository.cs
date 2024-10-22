@@ -13,7 +13,7 @@ public interface IMaterialRepository
     Task<Result> UpdateMaterial(CreateMaterialRequest request, Guid materialId, Guid userId);
     Task<Result> DeleteMaterial(Guid materialId, Guid userId);
     Task<Result<int>> CheckStockLevel(Guid materialId);
-    Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId);
+    //Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId);
     Task<Result> CreateMaterialBatch(List<CreateMaterialBatchRequest> request, Guid userId);
     Task<Result<MaterialBatchDto>> GetMaterialBatch(Guid batchId);
     Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(int page, int pageSize,
