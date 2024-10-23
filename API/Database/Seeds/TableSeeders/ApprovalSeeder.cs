@@ -24,7 +24,18 @@ public class ApprovalSeeder : ISeeder
             [
                 new ApprovalStage
                 {
-                    UserId = dbContext.Users.FirstOrDefault()?.Id,
+                    UserId = dbContext.Users.FirstOrDefault(u => u.Email == "dkadusei@kumateck.com")?.Id,
+                    Required = false
+                },
+                new ApprovalStage
+                {
+                    UserId = dbContext.Users.FirstOrDefault(u => u.Email == "douglassboakye22@gmail.com")?.Id,
+                    Required = true
+                },
+                new ApprovalStage
+                {
+                    UserId = dbContext.Users.FirstOrDefault(u => u.Email == "anthonygyan@gmail.com")?.Id,
+                    Required = false
                 }
             ]
         };

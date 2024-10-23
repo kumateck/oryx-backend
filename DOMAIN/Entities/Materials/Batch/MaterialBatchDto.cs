@@ -12,7 +12,10 @@ public class MaterialBatchDto
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }
     public DateTime? DateApproved { get; set; }
-    public Guid WarehouseId { get; set; }  
     public WarehouseDto Warehouse { get; set; }
+    public int TotalQuantity { get; set; }        
+    public int ConsumedQuantity { get; set; }  
+    public int RemainingQuantity { get; set; }
     public List<MaterialBatchEventDto> Events { get; set; } = [];
+    
 }

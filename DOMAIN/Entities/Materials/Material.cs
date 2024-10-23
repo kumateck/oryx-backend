@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials.Batch;
 
 namespace DOMAIN.Entities.Materials;
 
@@ -11,6 +12,7 @@ public class Material : BaseEntity
     public MaterialCategory MaterialCategory { get; set; }
     public int MinimumStockLevel { get; set; }
     public int MaximumStockLevel { get; set; }
+    public List<MaterialBatch> Batches { get; set; } = [];
 }
 
 public class MaterialCategory : BaseEntity
