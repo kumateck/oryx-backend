@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using SHARED;
 
 namespace DOMAIN.Entities.Requisitions;
 
@@ -29,7 +30,7 @@ public class RequisitionItemDto
 
 public class RequisitionApprovalDto
 {
-    public UserDto User { get; set; }
+    public CollectionItemDto User { get; set; }
     public RoleDto Role { get; set; }
     public bool Required { get; set; }    
     public bool IsApproved { get; set; }              

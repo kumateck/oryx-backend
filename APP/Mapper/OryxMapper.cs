@@ -154,6 +154,7 @@ public class OryxMapper : Profile
         CreateMap<CreateRequisitionItemRequest, RequisitionItem>();
         CreateMap<Requisition, RequisitionDto>();
         CreateMap<RequisitionItem, RequisitionItemDto>();
+        CreateMap<RequisitionApproval, RequisitionApprovalDto>();
         CreateMap<CreateRequisitionRequest, CompletedRequisition>();
         CreateMap<CreateRequisitionItemRequest, CompletedRequisitionItem>();
         CreateMap<CompletedRequisition, RequisitionDto>();
