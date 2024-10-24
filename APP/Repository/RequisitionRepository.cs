@@ -46,6 +46,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId)
     {
         var requisition = await context.Requisitions
+            .Include(r => r.RequestedBy)
+            .Include(r => r.Approvals).ThenInclude(r => r.User)
+            .Include(r => r.Approvals).ThenInclude(r => r.Role)
             .Include(r => r.Items)
             .ThenInclude(i => i.Material)
             .Include(r => r.Approvals)
