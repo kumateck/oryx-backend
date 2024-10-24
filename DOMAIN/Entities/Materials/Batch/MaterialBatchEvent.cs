@@ -22,8 +22,6 @@ public enum EventType
 
 public class MaterialBatchEventDto 
 {
-    public Guid Id { get; set; }
-    public MaterialBatchDto Batch { get; set; }    
     public EventType Type { get; set; }
     public int Quantity { get; set; }     
     public CollectionItemDto User { get; set; }          
