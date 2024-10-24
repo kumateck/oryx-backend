@@ -9,8 +9,6 @@ public class CompletedRequisition : BaseEntity
 {
     public Guid RequisitionId { get; set; }
     public Requisition Requisition { get; set; }
-    public Guid RequestedById { get; set; }
-    public User RequestedBy { get; set; }
     public RequestStatus Status { get; set; }  
     public RequisitionType RequisitionType { get; set; }
 

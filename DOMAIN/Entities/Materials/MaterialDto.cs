@@ -9,6 +9,6 @@ public class MaterialDto
     public string Name { get; set; }
     public string Description { get; set; }
     public CollectionItemDto MaterialCategory { get; set; }
-    public List<MaterialBatchDto> Batches { get; set; }
-    public int AmountInStock => Batches.Sum(b => b.RemainingQuantity);
+    public List<MaterialBatchDto> Batches { get; set; } = [];
+    public int AmountInStock => Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity);
 }
