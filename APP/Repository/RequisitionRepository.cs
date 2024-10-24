@@ -51,7 +51,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
             .Include(r => r.Approvals).ThenInclude(r => r.Role)
             .Include(r => r.Items)
             .ThenInclude(i => i.Material)
-            .Include(r => r.Approvals)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
         return requisition is null
@@ -60,11 +59,14 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     }
 
     // Get paginated list of Stock Requisitions
-    public async Task<Result<Paginateable<IEnumerable<RequisitionListDto>>>> GetRequisitions(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery)
     {
         var query = context.Requisitions
+            .Include(r => r.RequestedBy)
+            .Include(r => r.Approvals).ThenInclude(r => r.User)
+            .Include(r => r.Approvals).ThenInclude(r => r.Role)
             .Include(r => r.Items)
-            .ThenInclude(i => i.Material)            .Include(r => r.Approvals)
+            .ThenInclude(i => i.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -76,7 +78,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
             query,
             page,
             pageSize,
-            mapper.Map<RequisitionListDto>
+            mapper.Map<RequisitionDto>
         );
     }
 

@@ -4,12 +4,7 @@ using SHARED;
 
 namespace DOMAIN.Entities.Requisitions;
 
-public class RequisitionDto : RequisitionListDto
-{
-    public List<RequisitionApprovalDto> Approvals { get; set; }
-}
-
-public class RequisitionListDto
+public class RequisitionDto 
 {
     public RequisitionType RequisitionType { get; set; }
     public CollectionItemDto RequestedBy { get; set; }
