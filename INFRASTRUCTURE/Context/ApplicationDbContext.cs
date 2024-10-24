@@ -219,6 +219,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #endregion
 
         #region Eager Loading Relationships
+        
+        //Material Entities
+        modelBuilder.Entity<Material>().Navigation(p => p.Batches).AutoInclude();
+        modelBuilder.Entity<MaterialBatch>().Navigation(p => p.Events).AutoInclude();
 
         // Product-related entities
         modelBuilder.Entity<Product>().Navigation(p => p.Category).AutoInclude();

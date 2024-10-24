@@ -31,7 +31,7 @@ public class JwtMiddleware(RequestDelegate next)
                     .Select(claim => claim.Value)
                     .ToList();
 
-                var roleIds = db.Roles.Where(role => roles.Contains(role.Name)).Select(r => r.Id);
+                var roleIds = db.Roles.Where(role => roles.Contains(role.Name)).Select(r => r.Id).ToList();
 
                 if (user != null)
                 {

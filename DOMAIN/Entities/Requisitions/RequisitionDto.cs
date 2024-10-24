@@ -11,7 +11,7 @@ public class RequisitionDto
     public List<RequisitionItemDto> Items { get; set; }
     public bool Approved { get; set; }
     public List<RequisitionApprovalDto> Approvals { get; set; }
-    public DateTime RequestedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
     public RequestStatus Status { get; set; }  
     public string Comments { get; set; }
 }

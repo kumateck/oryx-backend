@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Requisitions;
 using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Database.Seeds.TableSeeders;
 
@@ -24,17 +25,17 @@ public class ApprovalSeeder : ISeeder
             [
                 new ApprovalStage
                 {
-                    UserId = dbContext.Users.FirstOrDefault(u => u.Email == "dkadusei@kumateck.com")?.Id,
+                    UserId = dbContext.Users.IgnoreQueryFilters().FirstOrDefault(u => u.Email == "dkadusei@kumateck.com")?.Id,
                     Required = false
                 },
                 new ApprovalStage
                 {
-                    UserId = dbContext.Users.FirstOrDefault(u => u.Email == "douglassboakye22@gmail.com")?.Id,
+                    UserId = dbContext.Users.IgnoreQueryFilters().FirstOrDefault(u => u.Email == "douglassboakye22@gmail.com")?.Id,
                     Required = true
                 },
                 new ApprovalStage
                 {
-                    UserId = dbContext.Users.FirstOrDefault(u => u.Email == "anthonygyan@gmail.com")?.Id,
+                    UserId = dbContext.Users.IgnoreQueryFilters().FirstOrDefault(u => u.Email == "anthonygyan@gmail.com")?.Id,
                     Required = false
                 }
             ]
