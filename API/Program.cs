@@ -74,6 +74,9 @@ builder.Services.AddSwaggerGen(options =>
     options.IncludeXmlComments(xmlPath);
 });
 
+//add memory caching
+builder.Services.AddMemoryCache(); 
+
 //Add Cors
 builder.Services.AddCors(options =>
 {

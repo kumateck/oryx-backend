@@ -2,10 +2,11 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using INFRASTRUCTURE.Context;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace APP.Middlewares;
 
-public class JwtMiddleware(RequestDelegate next)
+public class JwtMiddleware(RequestDelegate next, IMemoryCache cache)
 {
     public async Task Invoke(HttpContext context, ApplicationDbContext db)
     {
@@ -17,32 +18,48 @@ public class JwtMiddleware(RequestDelegate next)
         await next(context);
     }
 
-    private static async Task AttachUserToContext(HttpContext context, string token, ApplicationDbContext db)
+    private async Task AttachUserToContext(HttpContext context, string token, ApplicationDbContext db)
     {
         try
         {
-            if (token != null)
+            if (!cache.TryGetValue(token, out (string UserId, List<Guid> RoleIds) cachedData))
             {
+                // Parse the token to extract user and roles information
                 var jwtToken = new JwtSecurityToken(token);
-                var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(item => item.Id == Guid.Parse(jwtToken.Subject));
+                var userId = jwtToken.Subject;
+                var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(item => item.Id == Guid.Parse(userId));
 
                 var roles = jwtToken.Claims
                     .Where(claim => claim.Type == "role")
                     .Select(claim => claim.Value)
                     .ToList();
 
-                var roleIds = db.Roles.Where(role => roles.Contains(role.Name)).Select(r => r.Id).ToList();
+                var roleIds = await db.Roles
+                    .Where(role => roles.Contains(role.Name))
+                    .Select(r => r.Id)
+                    .ToListAsync();
 
+                // Cache the user and role information if the user exists
                 if (user != null)
                 {
-                    context.Items["Sub"] = jwtToken.Subject;
-                    context.Items["Roles"] = roleIds;
+                    cachedData = (UserId: userId, RoleIds: roleIds);
+                    cache.Set(token, cachedData, new MemoryCacheEntryOptions
+                    {
+                        SlidingExpiration = TimeSpan.FromMinutes(5)
+                    });
                 }
+            }
+
+            // Attach cached user data to context
+            if (cachedData.UserId != null)
+            {
+                context.Items["Sub"] = cachedData.UserId;
+                context.Items["Roles"] = cachedData.RoleIds;
             }
         }
         catch (Exception)
         {
-            //do nothing
+            // Handle or log the exception as needed
         }
     }
 }

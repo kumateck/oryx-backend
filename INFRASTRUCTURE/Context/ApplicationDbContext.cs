@@ -245,6 +245,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Route>().Navigation(r => r.Resources).AutoInclude();
         modelBuilder.Entity<RouteResource>().Navigation(rr => rr.Resource).AutoInclude();
         
+        //Approval-related entities
+        modelBuilder.Entity<Approval>().Navigation(r => r.ApprovalStages).AutoInclude();
+        modelBuilder.Entity<ApprovalStage>().Navigation(r => r.User).AutoInclude();
+        modelBuilder.Entity<ApprovalStage>().Navigation(r => r.Role).AutoInclude();
+
         #endregion
 
         #region Auth Filters
@@ -314,6 +319,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<CompletedRequisitionItem>()
             .HasQueryFilter(r => !r.CompletedRequisition.DeletedAt.HasValue);
 
+        #endregion
+
+        #region Approvals
+
+        modelBuilder.Entity<Approval>()
+            .HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<ApprovalStage>()
+            .HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
         #endregion
     }
 

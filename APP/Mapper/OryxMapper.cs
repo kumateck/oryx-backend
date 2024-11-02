@@ -1,5 +1,6 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Configurations;
@@ -159,6 +160,15 @@ public class OryxMapper : Profile
         CreateMap<CreateRequisitionItemRequest, CompletedRequisitionItem>();
         CreateMap<CompletedRequisition, RequisitionDto>();
         CreateMap<CompletedRequisitionItem, RequisitionItemDto>();
+
+        #endregion
+
+        #region Approvals
+
+        CreateMap<CreateApprovalRequest, Approval>();
+        CreateMap<CreateApprovalStageRequest, ApprovalStage>();
+        CreateMap<Approval, ApprovalDto>();
+        CreateMap<ApprovalStage, ApprovalStageDto>();
 
         #endregion
 

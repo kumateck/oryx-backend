@@ -26,6 +26,8 @@ public class RequisitionItem : BaseEntity
     public Requisition Requisition { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
+    public Guid? UomId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
     public int Quantity { get; set; }
 }
 
@@ -53,6 +55,6 @@ public enum RequestStatus
 
 public enum RequisitionType
 {
-    Internal,
+    StockVoucher,
     External
 }

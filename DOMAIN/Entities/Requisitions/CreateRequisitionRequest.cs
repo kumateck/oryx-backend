@@ -11,4 +11,5 @@ public class CreateRequisitionItemRequest
 {
     public Guid MaterialId { get; set; }
     public int Quantity { get; set; }
+    public Guid? UomId { get; set; }
 }

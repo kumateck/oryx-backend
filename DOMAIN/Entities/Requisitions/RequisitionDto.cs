@@ -19,6 +19,7 @@ public class RequisitionDto
 public class RequisitionItemDto 
 {
     public MaterialDto Material { get; set; }
+    public CollectionItemDto UoM { get; set; }
     public int Quantity { get; set; }
 }
 

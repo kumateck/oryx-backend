@@ -22,7 +22,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
         requisition.RequestedById = userId;
         await context.Requisitions.AddAsync(requisition);
 
-        var approvals = await context.Approvals.Include(approval => approval.ApprovalStages).FirstOrDefaultAsync(a => a.ItemType == nameof(StockRequisition));
+        var approvals = await context.Approvals.Include(approval => approval.ApprovalStages)
+            .FirstOrDefaultAsync(a => a.RequisitionType == request.RequisitionType);
 
         if (approvals is not null)
         {

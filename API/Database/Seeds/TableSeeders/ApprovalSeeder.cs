@@ -20,7 +20,7 @@ public class ApprovalSeeder : ISeeder
     {
         var approval = new Approval
         {
-            ItemType = nameof(StockRequisition),
+            RequisitionType = RequisitionType.StockVoucher,
             ApprovalStages =
             [
                 new ApprovalStage
