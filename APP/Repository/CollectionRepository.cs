@@ -4,6 +4,8 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -25,6 +27,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
             nameof(MaterialCategory) => mapper.Map<List<CollectionItemDto>>(await context.MaterialCategories.ToListAsync()),
             nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
+            nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
+            nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -101,7 +105,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(MaterialType),
             nameof(MaterialCategory),
             nameof(PackageType),
-            nameof(StockRequisition)
+            nameof(StockRequisition),
+            nameof(User),
+            nameof(Role)
         };
     }
     
