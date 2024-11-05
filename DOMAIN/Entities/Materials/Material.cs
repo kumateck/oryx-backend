@@ -13,6 +13,7 @@ public class Material : BaseEntity
     public int MinimumStockLevel { get; set; }
     public int MaximumStockLevel { get; set; }
     public List<MaterialBatch> Batches { get; set; } = [];
+    public MaterialKind Kind { get; set; }
 }
 
 public class MaterialCategory : BaseEntity
@@ -27,4 +28,10 @@ public class MaterialType : BaseEntity
 {
     [StringLength(255)] public string Name { get; set; }
     [StringLength(1000)] public string Description { get; set; }
+}
+
+public enum MaterialKind
+{
+    Raw,
+    Package
 }

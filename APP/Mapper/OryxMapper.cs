@@ -6,6 +6,8 @@ using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
@@ -55,6 +57,9 @@ public class OryxMapper : Profile
         CreateMap<User, CollectionItemDto>()
             .ForMember(dest => dest.Name,
                 opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
+        CreateMap<Supplier, CollectionItemDto>();
+        CreateMap<Supplier, CollectionItemDto>();
+        CreateMap<Manufacturer, CollectionItemDto>();
         
         #endregion
 
@@ -169,6 +174,22 @@ public class OryxMapper : Profile
         CreateMap<CreateApprovalStageRequest, ApprovalStage>();
         CreateMap<Approval, ApprovalDto>();
         CreateMap<ApprovalStage, ApprovalStageDto>();
+
+        #endregion
+
+        #region Procurement
+        
+        //supplier
+        CreateMap<CreateSupplierRequest, Supplier>();
+        CreateMap<Supplier, SupplierDto>();
+        CreateMap<CreateSupplierManufacturerRequest, SupplierManufacturer>();
+        CreateMap<SupplierManufacturer, SupplierManufacturerDto>();
+        
+        //manufacturer
+        CreateMap<CreateManufacturerRequest, Manufacturer>();
+        CreateMap<Manufacturer, ManufacturerDto>();
+        CreateMap<CreateManufacturerMaterialRequest, ManufacturerMaterial>();
+        CreateMap<ManufacturerMaterial, ManufacturerMaterialDto>();
 
         #endregion
 

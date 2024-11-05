@@ -6,6 +6,8 @@ using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Organizations;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
@@ -138,6 +140,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Warehouse
 
     public DbSet<Warehouse> Warehouses { get; set; }
+
+    #endregion
+
+    #region Procurement
+
+    public DbSet<Supplier> Suppliers { get; set; }
+    public DbSet<SupplierManufacturer> SupplierManufacturers { get; set; }
+    public DbSet<Manufacturer> Manufacturers { get; set; }
+    public DbSet<ManufacturerMaterial> ManufacturerMaterials { get; set; }
 
     #endregion
 
@@ -323,10 +334,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Approvals
 
-        modelBuilder.Entity<Approval>()
-            .HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<ApprovalStage>()
-            .HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
+        modelBuilder.Entity<Approval>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<ApprovalStage>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
+        #endregion
+
+        #region Procurement
+
+        modelBuilder.Entity<Supplier>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<SupplierManufacturer>().HasQueryFilter(a => !a.Supplier.DeletedAt.HasValue);
+        modelBuilder.Entity<Manufacturer>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<ManufacturerMaterial>().HasQueryFilter(a => !a.Manufacturer.DeletedAt.HasValue);
+        
         #endregion
     }
 

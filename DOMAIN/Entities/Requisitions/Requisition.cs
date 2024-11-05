@@ -56,5 +56,5 @@ public enum RequestStatus
 public enum RequisitionType
 {
     StockVoucher,
-    External
+    Purchase
 }
