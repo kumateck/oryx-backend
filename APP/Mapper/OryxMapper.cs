@@ -57,6 +57,7 @@ public class OryxMapper : Profile
         CreateMap<User, CollectionItemDto>()
             .ForMember(dest => dest.Name,
                 opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
+        CreateMap<Role, CollectionItemDto>().ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.DisplayName));
         CreateMap<Supplier, CollectionItemDto>();
         CreateMap<Supplier, CollectionItemDto>();
         CreateMap<Manufacturer, CollectionItemDto>();
