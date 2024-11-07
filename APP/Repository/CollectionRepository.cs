@@ -81,6 +81,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var packageType = await context.PackageTypes.ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(packageType);
                     break;
+                
+                case nameof(User):
+                    var user = await context.Users.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(user);
+                    break;
+                
+                case nameof(Role):
+                    var role = await context.Roles.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(role);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
