@@ -48,6 +48,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves a paginated list of materials.
     /// </summary>
+    /// <param name="kind">The kind of material being requested</param>
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
@@ -55,9 +56,9 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDto>>))]
-    public async Task<IResult> GetMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetMaterials([FromQuery] MaterialKind kind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetMaterials(page, pageSize, searchQuery);
+        var result = await repository.GetMaterials(page, pageSize, searchQuery, kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

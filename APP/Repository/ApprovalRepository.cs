@@ -11,7 +11,11 @@ namespace APP.Repository;
 public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : IApprovalRepository 
 { 
     public async Task<Result<Guid>> CreateApproval(CreateApprovalRequest request, Guid userId) 
-    { 
+    {
+        if (await context.Approvals.FirstOrDefaultAsync(a => a.RequisitionType == request.RequisitionType) is not null)
+        {
+            return Error.Validation("Approval.RequisitionType", "Approval for this requisition type already exists");
+        }
         var approval = mapper.Map<Approval>(request); 
         approval.CreatedById = userId; 
         await context.Approvals.AddAsync(approval); 

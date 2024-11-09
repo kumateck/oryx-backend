@@ -38,11 +38,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     // Get paginated list of Materials
-    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page, int pageSize, string searchQuery, MaterialKind kind)
     {
         var query = context.Materials
             .AsSplitQuery()
             .Include(m => m.MaterialCategory)
+            .Where(m => m.Kind == kind)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
