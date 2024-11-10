@@ -12,5 +12,6 @@ namespace APP.IRepository
         Task<Result<Paginateable<IEnumerable<ConfigurationDto>>>> GetConfigurations(int page, int pageSize, string searchQuery = null);
         Task<Result> UpdateConfiguration(CreateConfigurationRequest request, Guid configurationId);
         Task<Result> DeleteConfiguration(Guid configurationId);
+        Task<Result<int>> GetCountForCodeConfiguration(string modelType, string prefix);
     }
 }

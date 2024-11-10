@@ -3,6 +3,8 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Configurations;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Products;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -84,5 +86,30 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
         context.Configurations.Remove(configuration);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<Result<int>> GetCountForCodeConfiguration(string modelType, string prefix)
+    {
+
+        switch (modelType)
+        {
+           case "RawMaterial":
+               return await context.Materials
+                   .Where(m => m.Kind == MaterialKind.Raw && m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "PackageMaterial":
+               return await context.Materials
+                   .Where(m => m.Kind == MaterialKind.Package && m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Product):
+               return await context.Products
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           default:
+               return Error.Validation("ModelType", "Invalid model type sent");
+        }
     }
 }
