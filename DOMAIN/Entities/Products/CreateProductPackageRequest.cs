@@ -10,5 +10,5 @@ public class CreateProductPackageRequest
     public Guid PackageTypeId { get; set; }
     [StringLength(255, ErrorMessage = "Should be 255 characters or less")] public string MaterialThickness { get; set; }
     [StringLength(255,  ErrorMessage = "Should be 255 characters or less")] public string OtherStandards { get; set; }
-  
+    public Guid? UoMId { get; set; }
 }
