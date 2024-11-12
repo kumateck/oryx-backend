@@ -2,8 +2,10 @@ namespace DOMAIN.Entities.Requisitions;
 
 public class CreateRequisitionRequest
 {
+    public string Code { get; set; }
     public RequisitionType RequisitionType { get; set; }
     public string Comments { get; set; }
+    public DateTime? ExpectedDelivery { get; set; }
     public List<CreateRequisitionItemRequest> Items { get; set; } = [];
 }
 

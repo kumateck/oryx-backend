@@ -3,12 +3,12 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
-using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.Requisitions;
 
 public class Requisition : BaseEntity
 {
+    [StringLength(255)] public string Code { get; set; }
     public Guid RequestedById { get; set; }
     public User RequestedBy { get; set; }
     public RequestStatus Status { get; set; }  
@@ -16,6 +16,7 @@ public class Requisition : BaseEntity
 
     [StringLength(1000)] public string Comments { get; set; }
     public bool Approved { get; set; }
+    public DateTime? ExpectedDelivery { get; set; }
     public List<RequisitionApproval> Approvals { get; set; }
     public List<RequisitionItem> Items { get; set; }
 }
