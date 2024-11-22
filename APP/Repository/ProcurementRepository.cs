@@ -102,8 +102,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<SupplierDto>> GetSupplier(Guid supplierId)
     {
         var supplier = await context.Suppliers
-            .Include(s => s.AssociatedManufacturers)
-            .ThenInclude(sm => sm.Manufacturer)
+            .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
+            .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
             .FirstOrDefaultAsync(s => s.Id == supplierId);
 
         return supplier is null
@@ -114,8 +114,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<Paginateable<IEnumerable<SupplierDto>>>> GetSuppliers(int page, int pageSize, string searchQuery)
     {
         var query = context.Suppliers
-            .Include(s => s.AssociatedManufacturers)
-            .ThenInclude(sm => sm.Manufacturer)
+            .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
+            .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

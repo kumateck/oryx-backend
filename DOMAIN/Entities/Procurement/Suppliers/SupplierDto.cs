@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using SHARED;
 
@@ -16,4 +17,5 @@ public class SupplierManufacturerDto : BaseDto
 {
     public CollectionItemDto Supplier { get; set; }
     public ManufacturerDto Manufacturer { get; set; }
+    public MaterialDto Material { get; set; }
 }

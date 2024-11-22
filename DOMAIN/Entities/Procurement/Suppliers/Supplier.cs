@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 
 namespace DOMAIN.Entities.Procurement.Suppliers;
@@ -18,4 +19,6 @@ public class SupplierManufacturer : BaseEntity
     public Supplier Supplier { get; set; }
     public Guid ManufacturerId { get; set; } 
     public Manufacturer Manufacturer { get; set; }
+    public Guid? MaterialId { get; set; }
+    public Material Material { get; set; }
 }
