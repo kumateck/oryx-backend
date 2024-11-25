@@ -8,6 +8,7 @@ public class Manufacturer : BaseEntity
 {
     [StringLength(100)] public string Name { get; set; }
     [StringLength(1000)] public string Address { get; set; }
+    [StringLength(100)]  public string Email { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public DateTime? ValidityDate { get; set; }
     public List<ManufacturerMaterial> Materials { get; set; } = [];

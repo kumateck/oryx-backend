@@ -8,6 +8,7 @@ namespace DOMAIN.Entities.Procurement.Suppliers;
 public class SupplierDto : BaseDto
 {
     public string Name { get; set; }
+    public string Email { get; set; }
     public string ContactPerson { get; set; }
     public string ContactNumber { get; set; }
     public List<SupplierManufacturerDto> AssociatedManufacturers { get; set; } = [];
