@@ -30,7 +30,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
             nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
             nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
-            nameof(Country) => mapper.Map<List<CollectionItemDto>>(await context.Countries.ToListAsync()),
+            nameof(Country) => mapper.Map<List<CollectionItemDto>>(await context.Countries.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -95,7 +95,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     break;
                 
                 case nameof(Country):
-                    var countries = await context.Countries.ToListAsync();
+                    var countries = await context.Countries.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(countries);
                     break;
 
