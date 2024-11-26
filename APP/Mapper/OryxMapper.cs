@@ -4,6 +4,7 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Configurations;
+using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -61,10 +62,17 @@ public class OryxMapper : Profile
         CreateMap<Supplier, CollectionItemDto>();
         CreateMap<Supplier, CollectionItemDto>();
         CreateMap<Manufacturer, CollectionItemDto>();
+        CreateMap<Country, CollectionItemDto>();
         
         #endregion
 
-        #region MyRegion
+        #region Country
+
+        CreateMap<Country, CountryDto>();
+
+        #endregion
+
+        #region Resource
         
         CreateMap<Resource, ResourceDto>().ReverseMap();
         #endregion

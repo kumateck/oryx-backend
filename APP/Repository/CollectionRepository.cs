@@ -1,6 +1,7 @@
 using APP.IRepository;
 using AutoMapper;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
@@ -29,6 +30,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
             nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
             nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
+            nameof(Country) => mapper.Map<List<CollectionItemDto>>(await context.Countries.ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -91,6 +93,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var role = await context.Roles.ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(role);
                     break;
+                
+                case nameof(Country):
+                    var countries = await context.Countries.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(countries);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -117,7 +124,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(PackageType),
             nameof(StockRequisition),
             nameof(User),
-            nameof(Role)
+            nameof(Role),
+            nameof(Country)
         };
     }
     

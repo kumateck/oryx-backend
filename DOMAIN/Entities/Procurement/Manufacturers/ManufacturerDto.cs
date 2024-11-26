@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Materials;
 using SHARED;
 
@@ -11,6 +12,7 @@ public class ManufacturerDto : BaseDto
     public string Email { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public DateTime? ValidityDate { get; set; }
+    public CountryDto Country { get; set; }
     public List<ManufacturerMaterialDto> Materials { get; set; } = [];
 }
 

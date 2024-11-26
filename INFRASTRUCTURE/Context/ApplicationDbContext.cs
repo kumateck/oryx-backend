@@ -3,6 +3,7 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Organizations;
@@ -149,6 +150,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SupplierManufacturer> SupplierManufacturers { get; set; }
     public DbSet<Manufacturer> Manufacturers { get; set; }
     public DbSet<ManufacturerMaterial> ManufacturerMaterials { get; set; }
+
+    #endregion
+
+    #region Country
+
+    public DbSet<Country> Countries { get; set; }
 
     #endregion
 

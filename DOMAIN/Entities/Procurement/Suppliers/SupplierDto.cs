@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using SHARED;
@@ -9,8 +10,10 @@ public class SupplierDto : BaseDto
 {
     public string Name { get; set; }
     public string Email { get; set; }
+    public string Address { get; set; }
     public string ContactPerson { get; set; }
     public string ContactNumber { get; set; }
+    public CountryDto Country { get; set; }
     public List<SupplierManufacturerDto> AssociatedManufacturers { get; set; } = [];
 }
 
