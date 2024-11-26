@@ -57,7 +57,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<IEnumerable<ManufacturerDto>>> GetManufacturersByMaterial(Guid materialId)
     {
        return mapper.Map<List<ManufacturerDto>>( await context.Manufacturers
-            .Include(m => m.Materials)
+            .Include(m => m.Materials).ThenInclude(m => m.Material)
             .Where(m => m.Materials.Select(ma => ma.MaterialId).Contains(materialId))
             .ToListAsync());
     }
@@ -141,7 +141,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<IEnumerable<SupplierDto>>> GetSupplierByMaterial(Guid materialId)
     {
         return mapper.Map<List<SupplierDto>>( await context.Suppliers
-            .Include(m => m.AssociatedManufacturers)
+            .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
+            .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
             .Where(m => m.AssociatedManufacturers.Select(ma => ma.MaterialId).Contains(materialId))
             .ToListAsync());
     }
