@@ -70,7 +70,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <returns>Returns the supplier details.</returns>
     [HttpGet("manufacturer/material/{materialId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ManufacturerDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetManufacturerByMaterial(Guid materialId)
     {
@@ -174,7 +174,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <returns>Returns the supplier details.</returns>
     [HttpGet("supplier/material/{materialId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetSupplierByMaterial(Guid materialId)
     {
