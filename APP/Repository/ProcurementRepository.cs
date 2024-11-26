@@ -54,6 +54,14 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
         );
     }
     
+    public async Task<Result<IEnumerable<ManufacturerDto>>> GetManufacturersByMaterial(Guid materialId)
+    {
+       return mapper.Map<List<ManufacturerDto>>( await context.Manufacturers
+            .Include(m => m.Materials)
+            .Where(m => m.Materials.Select(ma => ma.MaterialId).Contains(materialId))
+            .ToListAsync());
+    }
+    
     public async Task<Result> UpdateManufacturer(CreateManufacturerRequest request, Guid manufacturerId, Guid userId)
     {
         var existingManufacturer = await context.Manufacturers.FirstOrDefaultAsync(m => m.Id == manufacturerId);
@@ -129,6 +137,13 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
             pageSize,
             mapper.Map<SupplierDto>
         );
+    }
+    public async Task<Result<IEnumerable<SupplierDto>>> GetSupplierByMaterial(Guid materialId)
+    {
+        return mapper.Map<List<SupplierDto>>( await context.Suppliers
+            .Include(m => m.AssociatedManufacturers)
+            .Where(m => m.AssociatedManufacturers.Select(ma => ma.MaterialId).Contains(materialId))
+            .ToListAsync());
     }
 
     public async Task<Result> UpdateSupplier(CreateSupplierRequest request, Guid supplierId, Guid userId)

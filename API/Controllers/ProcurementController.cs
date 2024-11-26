@@ -54,12 +54,27 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of manufacturers.</returns>
-    [HttpGet("manufacturers")]
+    [HttpGet("manufacturer")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ManufacturerDto>>))]
     public async Task<IResult> GetManufacturers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetManufacturers(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of manufacturers by their material ID.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <returns>Returns the supplier details.</returns>
+    [HttpGet("manufacturer/material/{materialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetManufacturerByMaterial(Guid materialId)
+    {
+        var result = await repository.GetManufacturersByMaterial(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -143,12 +158,27 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of suppliers.</returns>
-    [HttpGet("suppliers")]
+    [HttpGet("supplier")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierDto>>))]
     public async Task<IResult> GetSuppliers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetSuppliers(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of suppliers by their material ID.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <returns>Returns the supplier details.</returns>
+    [HttpGet("supplier/material/{materialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetSupplierByMaterial(Guid materialId)
+    {
+        var result = await repository.GetSupplierByMaterial(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
