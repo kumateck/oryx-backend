@@ -93,6 +93,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region ProductionSchedule
 
     public DbSet<ProductionSchedule> ProductionSchedules { get; set; }
+    public DbSet<ProductionScheduleItem> ProductionScheduleItems { get; set; }
     public DbSet<MasterProductionSchedule> MasterProductionSchedules { get; set; }
 
     #endregion
