@@ -3,8 +3,9 @@ using DOMAIN.Entities.WorkOrders;
 
 namespace DOMAIN.Entities.ProductionSchedules;
 
-public class ProductionScheduleDto
+public class ProductionScheduleDto : BaseDto
 {
+    public string Code { get; set; }
     public WorkOrderDto WorkOrder { get; set; }
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }

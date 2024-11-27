@@ -6,6 +6,7 @@ namespace DOMAIN.Entities.ProductionSchedules;
 
 public class ProductionSchedule : BaseEntity
 {
+    [StringLength(100)] public string Code { get; set; }
     public Guid WorkOrderId { get; set; }
     public WorkOrder WorkOrder { get; set; }
     public DateTime ScheduledStartTime { get; set; }

@@ -4,7 +4,9 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.WorkOrders;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -105,6 +107,16 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            
            case nameof(Product):
                return await context.Products
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(ProductionSchedule):
+               return await context.ProductionSchedules
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(WorkOrder):
+               return await context.WorkOrders
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            

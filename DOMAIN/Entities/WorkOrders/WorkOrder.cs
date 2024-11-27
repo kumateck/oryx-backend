@@ -7,6 +7,7 @@ namespace DOMAIN.Entities.WorkOrders;
 
 public class WorkOrder : BaseEntity
 {
+    [StringLength(100)] public string Code { get; set; }
     public Guid ProductId { get; set; }
     public Product Product { get; set; } // Navigation to the Product entity
     public Guid? MasterProductionScheduleId { get; set; } // Link to the Master Production Schedule
