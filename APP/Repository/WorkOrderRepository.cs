@@ -25,7 +25,6 @@ public class WorkOrderRepository(ApplicationDbContext context, IMapper mapper) :
     { 
         var workOrder = await context.WorkOrders
             .Include(w => w.Steps)
-            .Include(w => w.Product)
             .FirstOrDefaultAsync(w => w.Id == workOrderId);
 
         return workOrder is null ? Error.NotFound("WorkOrder.NotFound", "Work order is not found") : mapper.Map<WorkOrderDto>(workOrder);
@@ -36,12 +35,11 @@ public class WorkOrderRepository(ApplicationDbContext context, IMapper mapper) :
         var query = context.WorkOrders
             .AsSplitQuery()
             .Include(w => w.Steps)
-            .Include(w => w.Product)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, f => f.Product.Name);
+            query = query.WhereSearch(searchQuery, f => f.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

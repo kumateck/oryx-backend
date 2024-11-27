@@ -1,15 +1,26 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.WorkOrders;
+using SHARED;
 
 namespace DOMAIN.Entities.ProductionSchedules;
 
 public class ProductionScheduleDto : BaseDto
 {
     public string Code { get; set; }
-    public WorkOrderDto WorkOrder { get; set; }
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }
-    public ResourceDto Resource { get; set; }
+    public ProductDto Product { get; set; }
     public ProductionStatus Status { get; set; } 
-    public string Remarks { get; set; } // Optional remarks for additional notes
+    public int Quantity { get; set; } 
+    public string Remarks { get; set; } 
+    public List<ProductionScheduleItemDto> Items { get; set; } = [];
+
+}
+
+public class ProductionScheduleItemDto : BaseDto
+{
+    public CollectionItemDto Material { get; set; }
+    public CollectionItemDto UoM { get; set; }
+    public int Quantity { get; set; }
 }

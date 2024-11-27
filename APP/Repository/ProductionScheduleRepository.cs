@@ -97,7 +97,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId) 
     { 
         var productionSchedule = await context.ProductionSchedules
-            .Include(s => s.WorkOrder)
+            .Include(s => s.Items).ThenInclude(s => s.Material)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
         return productionSchedule is null ? Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found") : mapper.Map<ProductionScheduleDto>(productionSchedule);
@@ -106,13 +106,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page, int pageSize, string searchQuery) 
     { 
         var query = context.ProductionSchedules
-            .AsSplitQuery()
-            .Include(s => s.WorkOrder)
+            .Include(s => s.Items).ThenInclude(s => s.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery)) 
         { 
-            query = query.WhereSearch(searchQuery, f => f.WorkOrder.Product.Name);
+            query = query.WhereSearch(searchQuery, f => f.Product.Name);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(

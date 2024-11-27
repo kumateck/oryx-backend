@@ -137,7 +137,9 @@ public class OryxMapper : Profile
 
         #region ProductionSchdule
         CreateMap<CreateProductionScheduleRequest, ProductionSchedule>();
+        CreateMap<CreateProductionScheduleItemRequest, ProductionScheduleItem>();
         CreateMap<ProductionSchedule, ProductionScheduleDto>();
+        CreateMap<ProductionScheduleItem, ProductionScheduleItemDto>();
         CreateMap<CreateMasterProductionScheduleRequest, MasterProductionSchedule>();
         CreateMap<MasterProductionSchedule, MasterProductionScheduleDto>();
         #endregion

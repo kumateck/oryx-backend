@@ -297,7 +297,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region WorkOrder Filters
         modelBuilder.Entity<WorkOrder>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionStep>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.WorkOrder.DeletedAt.HasValue);
-        modelBuilder.Entity<ProductionSchedule>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.WorkOrder.DeletedAt.HasValue);
         #endregion
 
         #region BoM Filters
@@ -325,6 +324,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region MasterProductionSchedule
         modelBuilder.Entity<MasterProductionSchedule>()
             .HasQueryFilter(mps => !mps.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionSchedule>()
+            .HasQueryFilter(mps => !mps.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionSchedule>()
+            .HasQueryFilter(mps => !mps.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionScheduleItem>()
+            .HasQueryFilter(mps => !mps.ProductionSchedule.DeletedAt.HasValue);
         #endregion
         
         #region Requisition
