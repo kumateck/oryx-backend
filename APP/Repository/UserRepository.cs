@@ -130,10 +130,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
             user.PhoneNumber = request.PhoneNumber;
-            user.HiredOn = request.HiredOn;
             user.DateOfBirth = request.DateOfBirth;
-            user.DirectReportId= request.DirectReportId;
-            user.HiredOn =request.HiredOn;
             user.LastUpdatedById = userId;
             user.UpdatedAt = DateTime.UtcNow;
 
