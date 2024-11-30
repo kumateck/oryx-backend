@@ -143,6 +143,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Warehouse
 
     public DbSet<Warehouse> Warehouses { get; set; }
+    public DbSet<WarehouseLocation> WarehouseLocations { get; set; }
 
     #endregion
 
@@ -382,6 +383,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Warehouse Filters
         modelBuilder.Entity<Warehouse>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a => !a.Warehouse.DeletedAt.HasValue);
         #endregion
     }
 }

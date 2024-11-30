@@ -213,7 +213,9 @@ public class OryxMapper : Profile
 
         CreateMap<CreateWarehouseRequest, Warehouse>();
         CreateMap<UpdateWarehouseRequest, Warehouse>();
+        CreateMap<CreateWarehouseLocationRequest, WarehouseLocation>();
         CreateMap<Warehouse, WarehouseDto>();
+        CreateMap<WarehouseLocation, WarehouseLocationDto>();
 
         #endregion
 
