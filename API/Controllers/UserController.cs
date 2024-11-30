@@ -6,6 +6,7 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Users.Request;
 using SHARED.Requests;
 
 namespace API.Controllers;

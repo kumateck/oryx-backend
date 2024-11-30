@@ -4,6 +4,7 @@ using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Countries;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Organizations;
@@ -160,6 +161,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
+    #region Department
+
+    public DbSet<Department> Departments { get; set; }
+
+    #endregion
+    
+
     #region TenantFilter
     private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     {
@@ -219,7 +227,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
-   protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply configurations from the assembly
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
@@ -227,7 +235,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // Call base method
         base.OnModelCreating(modelBuilder);
 
-        #region Table Mappings
+        ConfigureTableMappings(modelBuilder);
+        ConfigureAutoIncludes(modelBuilder);
+        ConfigureQueryFilters(modelBuilder);
+    }
+
+    private void ConfigureTableMappings(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<User>().ToTable("users");
         modelBuilder.Entity<Role>().ToTable("roles");
         modelBuilder.Entity<IdentityUserRole<Guid>>().ToTable("userroles");
@@ -235,42 +249,48 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("userlogins");
         modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("roleclaims");
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("usertokens");
-        #endregion
+    }
 
-        #region Eager Loading Relationships
-        
-        //Material Entities
+    private void ConfigureAutoIncludes(ModelBuilder modelBuilder)
+    {
+        #region Material Entities
         modelBuilder.Entity<Material>().Navigation(p => p.Batches).AutoInclude();
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.Events).AutoInclude();
+        #endregion
 
-        // Product-related entities
+        #region Product Entities
         modelBuilder.Entity<Product>().Navigation(p => p.Category).AutoInclude();
         modelBuilder.Entity<FinishedProduct>().Navigation(fp => fp.UoM).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Material).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.PackageType).AutoInclude();
         modelBuilder.Entity<ProductBillOfMaterial>().Navigation(pbm => pbm.BillOfMaterial).AutoInclude();
+        #endregion
 
-        // Bill of Material relationships
+        #region Bill of Material Entities
         modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Items).AutoInclude();
         modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Product).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.ComponentMaterial).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.ComponentProduct).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.MaterialType).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.UoM).AutoInclude();
+        #endregion
 
-        // Route-related entities
+        #region Route Entities
         modelBuilder.Entity<Route>().Navigation(r => r.Operation).AutoInclude();
         modelBuilder.Entity<Route>().Navigation(r => r.WorkCenter).AutoInclude();
         modelBuilder.Entity<Route>().Navigation(r => r.Resources).AutoInclude();
         modelBuilder.Entity<RouteResource>().Navigation(rr => rr.Resource).AutoInclude();
-        
-        //Approval-related entities
+        #endregion
+
+        #region Approval Entities
         modelBuilder.Entity<Approval>().Navigation(r => r.ApprovalStages).AutoInclude();
         modelBuilder.Entity<ApprovalStage>().Navigation(r => r.User).AutoInclude();
         modelBuilder.Entity<ApprovalStage>().Navigation(r => r.Role).AutoInclude();
-
         #endregion
+    }
 
+    private void ConfigureQueryFilters(ModelBuilder modelBuilder)
+    {
         #region Auth Filters
         modelBuilder.Entity<User>().HasQueryFilter(entity => entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
         modelBuilder.Entity<PasswordReset>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue);
@@ -322,7 +342,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Operation>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         #endregion
 
-        #region MasterProductionSchedule
+        #region MasterProductionSchedule Filters
         modelBuilder.Entity<MasterProductionSchedule>()
             .HasQueryFilter(mps => !mps.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionSchedule>()
@@ -332,8 +352,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProductionScheduleItem>()
             .HasQueryFilter(mps => !mps.ProductionSchedule.DeletedAt.HasValue);
         #endregion
-        
-        #region Requisition
+
+        #region Requisition Filters
         modelBuilder.Entity<Requisition>()
             .HasQueryFilter(r => !r.DeletedAt.HasValue);
         modelBuilder.Entity<CompletedRequisition>()
@@ -342,23 +362,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasQueryFilter(r => !r.Requisition.DeletedAt.HasValue);
         modelBuilder.Entity<CompletedRequisitionItem>()
             .HasQueryFilter(r => !r.CompletedRequisition.DeletedAt.HasValue);
-
         #endregion
 
-        #region Approvals
-
+        #region Approval Filters
         modelBuilder.Entity<Approval>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<ApprovalStage>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
         #endregion
 
-        #region Procurement
-
+        #region Procurement Filters
         modelBuilder.Entity<Supplier>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<SupplierManufacturer>().HasQueryFilter(a => !a.Supplier.DeletedAt.HasValue);
         modelBuilder.Entity<Manufacturer>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<ManufacturerMaterial>().HasQueryFilter(a => !a.Manufacturer.DeletedAt.HasValue);
-        
+        #endregion
+
+        #region Department Filters
+        modelBuilder.Entity<Department>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        #endregion
+
+        #region Warehouse Filters
+        modelBuilder.Entity<Warehouse>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         #endregion
     }
-
 }

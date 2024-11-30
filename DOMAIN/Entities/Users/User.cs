@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Departments;
 using Microsoft.AspNetCore.Identity;
 
 namespace DOMAIN.Entities.Users;
@@ -18,5 +19,15 @@ public class User : IdentityUser<Guid>, IBaseEntity, IOrganizationType
     public Guid? LastDeletedById { get; set; }
     [StringLength(100)] public string Avatar { get; set; }
     public bool IsDisabled { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public Department Department { get; set; }
     [StringLength(100)] public string OrganizationName { get; set; }
+}
+
+public class UserDepartment
+{
+    public Guid UserId { get; set; }
+    public User User { get; set; }
+    public Guid DepartmentId { get; set; }
+    public Department Department { get; set; }
 }

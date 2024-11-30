@@ -9,6 +9,7 @@ using APP.Extensions;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Users.Request;
 using INFRASTRUCTURE.Context;
 using SHARED;
 using SHARED.Requests;

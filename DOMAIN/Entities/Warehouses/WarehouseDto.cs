@@ -1,6 +1,9 @@
+using DOMAIN.Entities.Base;
+
 namespace DOMAIN.Entities.Warehouses;
 
-public class WarehouseDto
+public class WarehouseDto : BaseDto
 {
-    public Guid Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
 }

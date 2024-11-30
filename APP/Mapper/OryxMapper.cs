@@ -5,6 +5,8 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
+using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Departments.Request;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -15,6 +17,9 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Users.Request;
+using DOMAIN.Entities.Warehouses;
+using DOMAIN.Entities.Warehouses.Request;
 using DOMAIN.Entities.WorkOrders;
 using SHARED;
 
@@ -204,5 +209,20 @@ public class OryxMapper : Profile
 
         #endregion
 
+        #region Warehoues
+
+        CreateMap<CreateWarehouseRequest, Warehouse>();
+        CreateMap<UpdateWarehouseRequest, Warehouse>();
+        CreateMap<Warehouse, WarehouseDto>();
+
+        #endregion
+
+        #region Department
+        
+        CreateMap<CreateDepartmentRequest, Department>();
+        CreateMap<UpdateDepartmentRequest, Department>();
+        CreateMap<Department, DepartmentDto>();
+
+        #endregion
     }
 }

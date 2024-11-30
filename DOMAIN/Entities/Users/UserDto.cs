@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Roles;
 using Microsoft.AspNetCore.Identity;
 
@@ -20,5 +21,6 @@ public class UserDto
     public DateTime HiredOn { get; set; }
     public string Avatar { get; set; }
     public bool IsDisabled { get; set; }
+    public DepartmentDto Department { get; set; }
     public ICollection<RoleDto> Roles { get; set; }
 }
