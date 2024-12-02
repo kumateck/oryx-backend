@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.Materials.Batch;
@@ -17,9 +18,10 @@ public class MaterialBatch : BaseEntity
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }
     public DateTime? DateApproved { get; set; }
-    public Guid WarehouseId { get; set; }  
-    public Warehouse Warehouse { get; set; }
+    public Guid CurrentLocationId { get; set; }
+    public WarehouseLocation CurrentLocation { get; set; }
     public List<MaterialBatchEvent> Events { get; set; } = [];
+    public List<MaterialBatchMovement> Movements { get; set; } = [];
 }
 
 public enum BatchStatus
@@ -30,5 +32,52 @@ public enum BatchStatus
     Available,
     Rejected,
     Retest
+}
+
+public class MaterialBatchEvent : BaseEntity
+{
+    public Guid BatchId { get; set; }            
+    public MaterialBatch Batch { get; set; }     
+    public int Quantity { get; set; }     
+    public Guid UserId { get; set; }       
+    public User User { get; set; } 
+    public EventType Type { get; set; }
+}
+
+public enum EventType
+{
+    Supplied,
+    Added,
+    Moved,
+    Consumed
+}
+
+
+public class MaterialBatchMovement : BaseEntity
+{
+    public Guid BatchId { get; set; }
+    public MaterialBatch Batch { get; set; }
+
+    public Guid FromLocationId { get; set; }
+    public WarehouseLocation FromLocation { get; set; }
+
+    public Guid ToLocationId { get; set; }
+    public WarehouseLocation ToLocation { get; set; }
+
+    public int Quantity { get; set; }
+
+    public DateTime MovedAt { get; set; }
+
+    public Guid MovedById { get; set; }
+    public User MovedBy { get; set; }
+
+    public MovementType MovementType { get; set; }  
+}
+
+public enum MovementType
+{
+    ToWarehouse,
+    ToProduction,
+    BetweenLocations
 }
 

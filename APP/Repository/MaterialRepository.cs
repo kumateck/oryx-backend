@@ -114,7 +114,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var batch = await context.MaterialBatches
             .Include(b => b.Material)
-            .Include(b => b.Warehouse)
+            .Include(b => b.CurrentLocation)
             .FirstOrDefaultAsync(b => b.Id == batchId);
 
         return batch is null
@@ -127,7 +127,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var query = context.MaterialBatches
             .Include(b => b.Material)
-            .Include(b => b.Warehouse)
+            .Include(b => b.CurrentLocation)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -191,6 +191,57 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return totalStock;
     }
+    
+    public async Task<Result<int>> GetWarehouseStock(Guid materialId, Guid warehouseId)
+    {
+        return await context.MaterialBatches
+            .Where(b => b.MaterialId == materialId && b.Status == BatchStatus.Available && b.CurrentLocation.WarehouseId == warehouseId)
+            .SumAsync(b => b.RemainingQuantity);
+    }
+
+    public async Task<Result> MoveMaterialBatch(  Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity, Guid userId)
+    {
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == batchId);
+        if (batch is null)
+        {
+            return MaterialErrors.NotFound(batchId);
+        }
+        
+        if (batch.RemainingQuantity < quantity) 
+            return MaterialErrors.InsufficientStock;
+
+        batch.CurrentLocationId = toLocationId;
+        context.MaterialBatches.Update(batch);
+        
+        var movement = new MaterialBatchMovement
+        {
+            BatchId = batchId,
+            FromLocationId = fromLocationId,
+            ToLocationId = toLocationId,
+            Quantity = quantity,
+            MovedAt = DateTime.UtcNow,
+            MovedById = userId,
+            MovementType = MovementType.BetweenLocations
+        };
+
+        context.MaterialBatchMovements.Add(movement);
+        
+        var batchEvent = new MaterialBatchEvent
+        {
+            BatchId = batchId,
+            Type = EventType.Moved, 
+            Quantity = quantity,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        context.MaterialBatchEvents.Add(batchEvent);
+
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
 
     // ************* Check if Requisition Can Be Fulfilled *************
 

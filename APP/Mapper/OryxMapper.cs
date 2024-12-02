@@ -68,6 +68,10 @@ public class OryxMapper : Profile
         CreateMap<Supplier, CollectionItemDto>();
         CreateMap<Manufacturer, CollectionItemDto>();
         CreateMap<Country, CollectionItemDto>();
+        CreateMap<WarehouseLocation, CollectionItemDto>()
+            .ForMember(dest => dest.Name,
+                opt => opt.MapFrom(src => $"{src.Name} - {src.Warehouse.Name}"));
+        CreateMap<MaterialBatch, CollectionItemDto>();
         
         #endregion
 
@@ -167,6 +171,7 @@ public class OryxMapper : Profile
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
         CreateMap<MaterialBatch, MaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
+        CreateMap<MaterialBatchMovement, MaterialBatchMovementDto>();
 
         #endregion
 

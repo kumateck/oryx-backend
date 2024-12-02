@@ -43,7 +43,7 @@ namespace API.Database.Seeds.TableSeeders
                     UoMId = dbContext.UnitOfMeasures.FirstOrDefault()?.Id ?? Guid.NewGuid(),
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
-                    WarehouseId = dbContext.Warehouses.FirstOrDefault()?.Id ?? Guid.NewGuid()
+                    CurrentLocationId = dbContext.WarehouseLocations.FirstOrDefault()?.Id ?? Guid.NewGuid()
                 },
                 new MaterialBatch
                 {
@@ -53,7 +53,7 @@ namespace API.Database.Seeds.TableSeeders
                     UoMId = dbContext.UnitOfMeasures.FirstOrDefault()?.Id ?? Guid.NewGuid(),
                     Status = BatchStatus.Quarantine,
                     DateReceived = DateTime.UtcNow.AddDays(-5),
-                    WarehouseId = dbContext.Warehouses.FirstOrDefault()?.Id ?? Guid.NewGuid()
+                    CurrentLocationId = dbContext.WarehouseLocations.FirstOrDefault()?.Id ?? Guid.NewGuid()
                 },
                 new MaterialBatch
                 {
@@ -63,7 +63,7 @@ namespace API.Database.Seeds.TableSeeders
                     UoMId = dbContext.UnitOfMeasures.FirstOrDefault()?.Id ?? Guid.NewGuid(),
                     Status = BatchStatus.Testing,
                     DateReceived = DateTime.UtcNow.AddDays(-10),
-                    WarehouseId = dbContext.Warehouses.FirstOrDefault()?.Id ?? Guid.NewGuid()
+                    CurrentLocationId = dbContext.WarehouseLocations.FirstOrDefault()?.Id ?? Guid.NewGuid()
                 }
             };
 

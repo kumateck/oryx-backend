@@ -7,6 +7,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -31,6 +32,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
             nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
             nameof(Country) => mapper.Map<List<CollectionItemDto>>(await context.Countries.OrderBy(c => c.Name).ToListAsync()),
+            nameof(WarehouseLocation) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocations.OrderBy(c => c.Name).Include(w => w.Warehouse).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -98,6 +100,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var countries = await context.Countries.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(countries);
                     break;
+                
+                case nameof(WarehouseLocation):
+                    var warehouseLocations = await context.WarehouseLocations.OrderBy(c => c.Name).Include(w => w.Warehouse).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocations);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -125,7 +132,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(StockRequisition),
             nameof(User),
             nameof(Role),
-            nameof(Country)
+            nameof(Country),
+            nameof(WarehouseLocation)
         };
     }
     

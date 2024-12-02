@@ -179,4 +179,41 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialBatches(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Moves a material batch from one location to another.
+    /// </summary>
+    /// <param name="batchId">The ID of the material batch to move.</param>
+    /// <param name="fromLocationId">The ID of the source location.</param>
+    /// <param name="toLocationId">The ID of the destination location.</param>
+    /// <param name="quantity">The quantity to move.</param>
+    /// <param name="userId">The ID of the user performing the action.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("batch/move")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MoveMaterialBatch(
+        Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity, Guid userId)
+    {
+        var result = await repository.MoveMaterialBatch(batchId, fromLocationId, toLocationId, quantity, userId);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the total stock of a material in a specific warehouse.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <param name="warehouseId">The ID of the warehouse.</param>
+    /// <returns>Returns the total stock quantity of the material in the specified warehouse.</returns>
+    [HttpGet("{materialId}/stock/{warehouseId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetWarehouseStock(Guid materialId, Guid warehouseId)
+    {
+        var result = await repository.GetWarehouseStock(materialId, warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

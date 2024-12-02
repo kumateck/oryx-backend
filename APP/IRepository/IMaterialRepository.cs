@@ -18,4 +18,7 @@ public interface IMaterialRepository
     Task<Result<MaterialBatchDto>> GetMaterialBatch(Guid batchId);
     Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(int page, int pageSize,
         string searchQuery);
+    Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity,
+        Guid userId);
+    Task<Result<int>> GetWarehouseStock(Guid materialId, Guid warehouseId);
 }
