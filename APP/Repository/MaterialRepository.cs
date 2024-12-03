@@ -187,7 +187,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var totalStock = await context.MaterialBatches
             .Where(b => b.MaterialId == materialId && b.Status == BatchStatus.Available)
-            .SumAsync(b => b.RemainingQuantity);
+            .SumAsync(b => b.TotalQuantity - b.ConsumedQuantity);
 
         return totalStock;
     }
@@ -195,8 +195,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<int>> GetWarehouseStock(Guid materialId, Guid warehouseId)
     {
         return await context.MaterialBatches
-            .Where(b => b.MaterialId == materialId && b.Status == BatchStatus.Available && b.CurrentLocation.WarehouseId == warehouseId)
-            .SumAsync(b => b.RemainingQuantity);
+            .Include(m => m.CurrentLocation)
+            .Where(b => b.MaterialId == materialId 
+                        && b.Status == BatchStatus.Available 
+                        && b.CurrentLocation.WarehouseId == warehouseId)
+            .SumAsync(b => b.TotalQuantity - b.ConsumedQuantity);
+
     }
 
     public async Task<Result> MoveMaterialBatch(  Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity, Guid userId)
