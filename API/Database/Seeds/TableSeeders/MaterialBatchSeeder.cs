@@ -17,16 +17,16 @@ namespace API.Database.Seeds.TableSeeders
 
         private void SeedMaterialAndBatches(ApplicationDbContext dbContext)
         {
-            var existingMaterial = dbContext.Materials.FirstOrDefault(m => m.Name == "Test Material");
+            var existingMaterial = dbContext.Materials.FirstOrDefault(m => m.Name == "Test Material Warehouse Location");
             if (existingMaterial is not null) return;
             
             // Seeding a test material
             var testMaterial = new Material
             {
-                Name = "Test Material",
+                Name = "Test Material Warehouse Location",
                 Description = "This is a test material for seeding.",
                 MinimumStockLevel = 100,
-                MaximumStockLevel = 2000
+                MaximumStockLevel = 20000
             };
 
             dbContext.Materials.Add(testMaterial);
