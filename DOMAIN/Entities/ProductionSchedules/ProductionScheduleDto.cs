@@ -24,3 +24,13 @@ public class ProductionScheduleItemDto : BaseDto
     public CollectionItemDto UoM { get; set; }
     public int Quantity { get; set; }
 }
+
+public class ProductionScheduleProcurementDto : BaseDto
+{
+    public CollectionItemDto Material { get; set; }
+    public CollectionItemDto UoM { get; set; }
+    public int Quantity { get; set; }
+    public int QuantityOnHand { get; set; }
+    public int QuantityNeeded => Quantity - QuantityOnHand < 0 ? 0 :  Quantity - QuantityOnHand;
+}
+

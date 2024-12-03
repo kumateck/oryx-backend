@@ -21,4 +21,6 @@ public interface IProductionScheduleRepository
     Task<Result> UpdateProductionSchedule(UpdateProductionScheduleRequest request, Guid scheduleId,
         Guid userId);
     Task<Result> DeleteProductionSchedule(Guid scheduleId, Guid userId);
+    Task<Result<List<ProductionScheduleProcurementDto>>> GetProductionScheduleDetail(
+        Guid scheduleId, Guid userId);
 }
