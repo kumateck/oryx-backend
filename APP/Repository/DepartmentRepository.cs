@@ -16,6 +16,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
     {
         var department = mapper.Map<Department>(request);
         department.CreatedById = userId;
+        department.CreatedAt = DateTime.UtcNow;
         await context.Departments.AddAsync(department);
         await context.SaveChangesAsync();
 
