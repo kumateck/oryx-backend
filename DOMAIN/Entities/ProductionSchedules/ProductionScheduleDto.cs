@@ -32,6 +32,5 @@ public class ProductionScheduleProcurementDto
     public CollectionItemDto UoM { get; set; }
     public int QuantityRequested { get; set; }
     public int QuantityOnHand { get; set; }
-    public int QuantityNeeded => QuantityRequested - QuantityOnHand < 0 ? 0 :  QuantityRequested - QuantityOnHand;
 }
 

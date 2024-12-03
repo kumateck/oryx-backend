@@ -184,10 +184,9 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Moves a material batch from one location to another.
     /// </summary>
     /// <param name="batchId">The ID of the material batch to move.</param>
-    /// <param name="fromLocationId">The ID of the source location.</param>
-    /// <param name="toLocationId">The ID of the destination location.</param>
+    /// <param name="fromLocationId">The ID of the warehouse source location.</param>
+    /// <param name="toLocationId">The ID of the warehouse destination location.</param>
     /// <param name="quantity">The quantity to move.</param>
-    /// <param name="userId">The ID of the user performing the action.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("batch/move")]
     [Authorize]
@@ -195,9 +194,12 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> MoveMaterialBatch(
-        Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity, Guid userId)
+        Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity)
     {
-        var result = await repository.MoveMaterialBatch(batchId, fromLocationId, toLocationId, quantity, userId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.MoveMaterialBatch(batchId, fromLocationId, toLocationId, quantity, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 

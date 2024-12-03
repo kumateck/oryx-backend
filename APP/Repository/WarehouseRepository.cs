@@ -49,6 +49,28 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         );
     }
     
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(int page, int pageSize, string searchQuery)
+    {
+        var query = context.WarehouseLocations.AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, w => w.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<WarehouseLocationDto>
+        );
+    }
+    
+    public async Task<Result<List<WarehouseLocationDto>>>  GetWarehouseLocations()
+    {
+        return mapper.Map<List<WarehouseLocationDto>>(await context.WarehouseLocations.ToListAsync());
+    }
+    
     public async Task<Result> UpdateWarehouse(CreateWarehouseRequest request, Guid warehouseId, Guid userId)
     {
         var existingWarehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId);
