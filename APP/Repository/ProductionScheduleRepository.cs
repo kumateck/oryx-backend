@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -141,9 +142,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
             return new ProductionScheduleProcurementDto
             {
-                Material = mapper.Map<CollectionItemDto>(item.Material),
+                Material = mapper.Map<MaterialDto>(item.Material),
                 UoM = mapper.Map<CollectionItemDto>(item.UoM),
-                Quantity = item.Quantity,
+                QuantityRequested = item.Quantity,
                 QuantityOnHand = quantityOnHand,
             };
         }).ToList();
