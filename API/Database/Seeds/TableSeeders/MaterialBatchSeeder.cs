@@ -92,11 +92,12 @@ namespace API.Database.Seeds.TableSeeders
 
             dbContext.MaterialBatches.AddRange(batches);
             dbContext.SaveChanges();
-
+            
+            var userId = dbContext.Users.First(u => u.Email == "dkadusei@kumateck.com").Id;
+            
             // Now we need to add MaterialBatchMovements and MaterialBatchEvents
             foreach (var batch in batches)
             {
-                var userId = dbContext.Users.First(u => u.Email == "dkadusei@kumateck.com").Id;
                 // Creating a movement to simulate moving the entire batch to the warehouse
                 var movement = new MaterialBatchMovement
                 {

@@ -60,7 +60,7 @@ public class MaterialBatchMovement : BaseEntity
     public Guid BatchId { get; set; }
     public MaterialBatch Batch { get; set; }
 
-    public Guid FromLocationId { get; set; }
+    public Guid? FromLocationId { get; set; }
     public WarehouseLocation FromLocation { get; set; }
 
     public Guid ToLocationId { get; set; }
