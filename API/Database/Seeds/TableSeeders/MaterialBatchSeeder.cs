@@ -1,10 +1,7 @@
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Base;
 using INFRASTRUCTURE.Context;
-using System;
-using System.Linq;
 using DOMAIN.Entities.Materials.Batch;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace API.Database.Seeds.TableSeeders
 {
@@ -13,7 +10,22 @@ namespace API.Database.Seeds.TableSeeders
         public void Handle(IServiceScope scope)
         {
             var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
+            SeedUnitOfMeasures(dbContext); // Ensure unit of measures are seeded before materials
             SeedMaterialAndBatches(dbContext);
+        }
+
+        private void SeedUnitOfMeasures(ApplicationDbContext dbContext)
+        {
+            if (dbContext.UnitOfMeasures.Any()) return; // Prevent re-seeding if already present
+            
+            var unitOfMeasures = new[]
+            {
+                new UnitOfMeasure { Name = "Kilogram", Description = "Unit of mass" },
+                new UnitOfMeasure { Name = "Litre", Description = "Unit of volume" }
+            };
+
+            dbContext.UnitOfMeasures.AddRange(unitOfMeasures);
+            dbContext.SaveChanges();
         }
 
         private void SeedMaterialAndBatches(ApplicationDbContext dbContext)
@@ -26,21 +38,25 @@ namespace API.Database.Seeds.TableSeeders
             }
             
             // Check if the material already exists
-            var existingMaterial = dbContext.Materials.FirstOrDefault(m => m.Name == "Test Material Warehouse Location");
+            var existingMaterial = dbContext.Materials.FirstOrDefault(m => m.Name == "Paracetamol 500mg Tablet");
             if (existingMaterial is not null) return;
             
-            // Seeding a test material
+            // Seeding a valid material
             var testMaterial = new Material
             {
-                Name = "Test Material Warehouse Location",
+                Name = "Paracetamol 500mg Tablet",
                 Code = "M-001",
-                Description = "This is a test material for seeding.",
+                Description = "Paracetamol 500mg tablet for pain relief.",
                 MinimumStockLevel = 100,
                 MaximumStockLevel = 20000
             };
 
             dbContext.Materials.Add(testMaterial);
             dbContext.SaveChanges(); // Save to ensure we have the MaterialId
+
+            // Get unit of measures to link with batches
+            var kgUoM = dbContext.UnitOfMeasures.First(u => u.Name == "Kilogram").Id;
+            var litreUoM = dbContext.UnitOfMeasures.First(u => u.Name == "Litre").Id;
 
             // Seeding multiple material batches for the test material
             var batches = new[]
@@ -50,30 +66,27 @@ namespace API.Database.Seeds.TableSeeders
                     Code = "MB-001",
                     MaterialId = testMaterial.Id,
                     TotalQuantity = 500,
-                    UoMId = dbContext.UnitOfMeasures.FirstOrDefault()?.Id ?? Guid.NewGuid(),
+                    UoMId = kgUoM,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
-                    // No CurrentLocationId here since we'll handle it via movement
                 },
                 new MaterialBatch
                 {
                     Code = "MB-002",
                     MaterialId = testMaterial.Id,
                     TotalQuantity = 300,
-                    UoMId = dbContext.UnitOfMeasures.FirstOrDefault()?.Id ?? Guid.NewGuid(),
+                    UoMId = litreUoM,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow.AddDays(-5),
-                    // No CurrentLocationId here
                 },
                 new MaterialBatch
                 {
                     Code = "MB-003",
                     MaterialId = testMaterial.Id,
                     TotalQuantity = 200,
-                    UoMId = dbContext.UnitOfMeasures.FirstOrDefault()?.Id ?? Guid.NewGuid(),
+                    UoMId = kgUoM,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow.AddDays(-10),
-                    // No CurrentLocationId here
                 }
             };
 
