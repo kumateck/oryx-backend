@@ -170,12 +170,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #endregion
     
 
-    #region TenantFilter
-    private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
-    {
-        modelBuilder.Entity<TEntity>().HasQueryFilter(entity => entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
-    }
-    #endregion
+    // #region TenantFilter
+    // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
+    // {
+    //     modelBuilder.Entity<TEntity>().HasQueryFilter(entity => entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
+    // }
+    // #endregion
     
     #region SoftDeleteFilter
     private static void ApplyDeletedAtFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity
@@ -222,10 +222,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                     break;
             }
             
-            if (entry.Entity is IOrganizationType organization)
-            {
-                organization.OrganizationName = tenantProvider.Tenant;
-            }
+            // if (entry.Entity is IOrganizationType organization)
+            // {
+            //     organization.OrganizationName = tenantProvider.Tenant;
+            // }
         }
     }
 
@@ -294,7 +294,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
     {
         #region Auth Filters
-        modelBuilder.Entity<User>().HasQueryFilter(entity => entity.OrganizationName == tenantProvider.Tenant && !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<User>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         modelBuilder.Entity<PasswordReset>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue);
         #endregion
 

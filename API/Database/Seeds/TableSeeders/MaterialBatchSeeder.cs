@@ -96,6 +96,7 @@ namespace API.Database.Seeds.TableSeeders
             // Now we need to add MaterialBatchMovements and MaterialBatchEvents
             foreach (var batch in batches)
             {
+                var userId = dbContext.Users.First(u => u.Email == "dkadusei@kumateck.com").Id;
                 // Creating a movement to simulate moving the entire batch to the warehouse
                 var movement = new MaterialBatchMovement
                 {
@@ -103,7 +104,7 @@ namespace API.Database.Seeds.TableSeeders
                     ToLocationId = warehouseLocations[0].Id, // Move to the first warehouse
                     Quantity = batch.TotalQuantity, // Move the entire batch quantity
                     MovedAt = DateTime.UtcNow,
-                    MovedById = dbContext.Users.First().Id, // Simulate a user ID
+                    MovedById = userId, // Simulate a user ID
                     MovementType = MovementType.ToWarehouse
                 };
 

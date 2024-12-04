@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace DOMAIN.Entities.Users;
 
-public class User : IdentityUser<Guid>, IBaseEntity, IOrganizationType
+public class User : IdentityUser<Guid>, IBaseEntity 
 {
     [PersonalData][StringLength(100)] public string FirstName { get; set; }
     [PersonalData][StringLength(100)] public string LastName { get; set; }
@@ -21,7 +21,6 @@ public class User : IdentityUser<Guid>, IBaseEntity, IOrganizationType
     public bool IsDisabled { get; set; }
     public Guid? DepartmentId { get; set; }
     public Department Department { get; set; }
-    [StringLength(100)] public string OrganizationName { get; set; }
 }
 
 public class UserDepartment

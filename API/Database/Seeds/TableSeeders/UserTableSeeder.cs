@@ -66,7 +66,6 @@ public class UserTableSeeders : ISeeder
             LastName = lastName,
             EmailConfirmed = true,
             PhoneNumberConfirmed = true,
-            OrganizationName = AppConstants.DefaultTenantId,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -78,7 +77,6 @@ public class UserTableSeeders : ISeeder
 
     private static void AssignRolesAndClaims(UserManager<User> userManager, ApplicationDbContext dbContext, User user, List<string> roles, Claim[] claims)
     {
-        user.OrganizationName = AppConstants.DefaultTenantId;
         dbContext.Users.Update(user);
         dbContext.SaveChanges();
 
