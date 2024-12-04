@@ -339,31 +339,35 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId)
     {
-        // Get all unique warehouse IDs (both from and to locations), handling possible null values for FromLocation
-        var warehouseIds = await context.MaterialBatchMovements
+        // Get all material batch movements for the given materialId, including both FromLocation and ToLocation
+        var batchMovements = await context.MaterialBatchMovements
             .Where(m => m.Batch.MaterialId == materialId)
             .Include(m => m.ToLocation)
             .Include(m => m.FromLocation)
+            .ToListAsync(); // Move the logic to client-side by retrieving the data first
+
+        // Get all unique warehouse IDs (both from and to locations)
+        var warehouseIds = batchMovements
             .SelectMany(m => new[]
             {
-                m.ToLocation.WarehouseId,                    
-                m.FromLocation != null ? m.FromLocation.WarehouseId : Guid.Empty 
+                m.ToLocation?.WarehouseId, // Always include ToLocation's WarehouseId
+                m.FromLocation?.WarehouseId // Include FromLocation's WarehouseId if not null
             })
-            .Where(warehouseId => warehouseId != Guid.Empty)
+            .Where(warehouseId => warehouseId.HasValue) // Filter out null warehouse IDs
             .Distinct()
-            .ToListAsync();
+            .ToList();
 
         // List to store the WarehouseStockDto
         var warehouseStockList = new List<WarehouseStockDto>();
 
         // For each warehouse ID, retrieve the stock and warehouse info
-        foreach (var warehouseId in warehouseIds)
+        foreach (var warehouseId in warehouseIds.Where(warehouseId => warehouseId.HasValue))
         {
-            var stockResult = await GetMaterialStockInWarehouse(materialId, warehouseId);
+            var stockResult = await GetMaterialStockInWarehouse(materialId, warehouseId.Value);
             if (!stockResult.IsSuccess) continue;
 
             // Get warehouse details (you can map this from your Warehouse entity)
-            var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId);
+            var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId.Value);
         
             if (warehouse != null)
             {
