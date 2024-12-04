@@ -18,6 +18,13 @@ namespace API.Database.Seeds.TableSeeders
 
         private void SeedMaterialAndBatches(ApplicationDbContext dbContext)
         {
+            // Get some existing warehouse locations to move the material to
+            var warehouseLocations = dbContext.WarehouseLocations.Take(2).ToList();
+            if (warehouseLocations.Count == 0)
+            {
+                return;
+            }
+            
             // Check if the material already exists
             var existingMaterial = dbContext.Materials.FirstOrDefault(m => m.Name == "Test Material Warehouse Location");
             if (existingMaterial is not null) return;
@@ -26,6 +33,7 @@ namespace API.Database.Seeds.TableSeeders
             var testMaterial = new Material
             {
                 Name = "Test Material Warehouse Location",
+                Code = "M-001",
                 Description = "This is a test material for seeding.",
                 MinimumStockLevel = 100,
                 MaximumStockLevel = 20000
@@ -33,13 +41,6 @@ namespace API.Database.Seeds.TableSeeders
 
             dbContext.Materials.Add(testMaterial);
             dbContext.SaveChanges(); // Save to ensure we have the MaterialId
-
-            // Get some existing warehouse locations to move the material to
-            var warehouseLocations = dbContext.WarehouseLocations.Take(2).ToList();
-            if (warehouseLocations.Count == 0)
-            {
-                return;
-            }
 
             // Seeding multiple material batches for the test material
             var batches = new[]
