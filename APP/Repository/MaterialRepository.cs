@@ -291,13 +291,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var batchesMovedOut = await context.MaterialBatchMovements
             .Include(m => m.FromLocation)
             .Where(m => m.Batch.MaterialId == materialId
-                        && m.FromLocation.WarehouseId == warehouseId)
+                        && m.FromLocation != null && m.FromLocation.WarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of the consumed quantities at this location for the given material
         var batchesConsumedAtLocation = await context.MaterialBatchEvents
             .Include(m => m.ConsumedLocation)
             .Where(e => e.Batch.MaterialId == materialId
+                        && e.ConsumedLocation != null 
                         && e.ConsumedLocation.WarehouseId == warehouseId
                         && e.Type == EventType.Consumed)
             .SumAsync(e => e.Quantity);
@@ -338,10 +339,17 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId)
     {
-        // Get all unique warehouse IDs (both from and to locations)
+        // Get all unique warehouse IDs (both from and to locations), handling possible null values for FromLocation
         var warehouseIds = await context.MaterialBatchMovements
             .Where(m => m.Batch.MaterialId == materialId)
-            .SelectMany(m => new[] { m.ToLocation.WarehouseId, m.FromLocation.WarehouseId })
+            .Include(m => m.ToLocation)
+            .Include(m => m.FromLocation)
+            .SelectMany(m => new[]
+            {
+                m.ToLocation.WarehouseId,                    
+                m.FromLocation != null ? m.FromLocation.WarehouseId : Guid.Empty 
+            })
+            .Where(warehouseId => warehouseId != Guid.Empty)
             .Distinct()
             .ToListAsync();
 
@@ -351,23 +359,25 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // For each warehouse ID, retrieve the stock and warehouse info
         foreach (var warehouseId in warehouseIds)
         {
-            var stock = await GetMaterialStockInWarehouse(materialId, warehouseId);
-        
+            var stockResult = await GetMaterialStockInWarehouse(materialId, warehouseId);
+            if (!stockResult.IsSuccess) continue;
+
             // Get warehouse details (you can map this from your Warehouse entity)
             var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId);
-            
+        
             if (warehouse != null)
             {
                 warehouseStockList.Add(new WarehouseStockDto
                 {
                     Warehouse = mapper.Map<WarehouseDto>(warehouse),
-                    StockQuantity = stock.Value
+                    StockQuantity = stockResult.Value
                 });
             }
         }
 
-        return warehouseStockList;
+        return Result.Success(warehouseStockList);
     }
+
 
 
 
