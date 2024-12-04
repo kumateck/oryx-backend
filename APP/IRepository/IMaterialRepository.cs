@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Warehouses;
 using SHARED;
 
 namespace APP.IRepository;
@@ -20,5 +21,7 @@ public interface IMaterialRepository
         string searchQuery);
     Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity,
         Guid userId);
-    Task<Result<int>> GetWarehouseStock(Guid materialId, Guid warehouseId);
+    Task<Result<int>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId); 
+    Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, int quantity, Guid userId); 
+    Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId);
 }

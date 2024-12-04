@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace DOMAIN.Migrations
+namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -671,9 +671,6 @@ namespace DOMAIN.Migrations
                     b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CurrentLocationId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("DateApproved")
                         .HasColumnType("timestamp with time zone");
 
@@ -708,8 +705,6 @@ namespace DOMAIN.Migrations
 
                     b.HasIndex("CreatedById");
 
-                    b.HasIndex("CurrentLocationId");
-
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
@@ -728,6 +723,12 @@ namespace DOMAIN.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("BatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ConsumedLocationId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -760,6 +761,8 @@ namespace DOMAIN.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BatchId");
+
+                    b.HasIndex("ConsumedLocationId");
 
                     b.HasIndex("CreatedById");
 
@@ -2981,12 +2984,6 @@ namespace DOMAIN.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Warehouses.WarehouseLocation", "CurrentLocation")
-                        .WithMany()
-                        .HasForeignKey("CurrentLocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -3009,8 +3006,6 @@ namespace DOMAIN.Migrations
 
                     b.Navigation("CreatedBy");
 
-                    b.Navigation("CurrentLocation");
-
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
@@ -3027,6 +3022,10 @@ namespace DOMAIN.Migrations
                         .HasForeignKey("BatchId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Warehouses.WarehouseLocation", "ConsumedLocation")
+                        .WithMany()
+                        .HasForeignKey("ConsumedLocationId");
 
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
@@ -3047,6 +3046,8 @@ namespace DOMAIN.Migrations
                         .IsRequired();
 
                     b.Navigation("Batch");
+
+                    b.Navigation("ConsumedLocation");
 
                     b.Navigation("CreatedBy");
 

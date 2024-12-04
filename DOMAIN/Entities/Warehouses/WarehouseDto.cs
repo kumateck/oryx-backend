@@ -14,3 +14,9 @@ public class WarehouseLocationDto : BaseDto
 { 
     public string Name { get; set; }
 }
+
+public class WarehouseStockDto
+{
+    public WarehouseDto Warehouse { get; set; }
+    public int StockQuantity { get; set; }
+}

@@ -12,7 +12,6 @@ public class MaterialBatchDto
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }
     public DateTime? DateApproved { get; set; }
-    public WarehouseLocationDto CurrentLocation { get; set; }
     public int TotalQuantity { get; set; }        
     public int ConsumedQuantity { get; set; }  
     public int RemainingQuantity { get; set; }

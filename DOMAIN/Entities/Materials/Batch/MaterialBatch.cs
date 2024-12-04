@@ -18,8 +18,6 @@ public class MaterialBatch : BaseEntity
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }
     public DateTime? DateApproved { get; set; }
-    public Guid CurrentLocationId { get; set; }
-    public WarehouseLocation CurrentLocation { get; set; }
     public List<MaterialBatchEvent> Events { get; set; } = [];
     public List<MaterialBatchMovement> Movements { get; set; } = [];
 }
@@ -42,6 +40,10 @@ public class MaterialBatchEvent : BaseEntity
     public Guid UserId { get; set; }       
     public User User { get; set; } 
     public EventType Type { get; set; }
+    // Nullable fields for tracking consumption location and timestamp
+    public Guid? ConsumedLocationId { get; set; }
+    public WarehouseLocation ConsumedLocation { get; set; }
+    public DateTime? ConsumedAt { get; set; }
 }
 
 public enum EventType

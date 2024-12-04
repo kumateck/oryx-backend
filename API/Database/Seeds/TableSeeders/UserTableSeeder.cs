@@ -30,12 +30,12 @@ public class UserTableSeeders : ISeeder
         // Seed first user
         CreateUserIfNotExists(userManager, dbContext, 
             "dkadusei@kumateck.com", "Des", "Kumateck", "Pass123$1",
-            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin], 
-            new Claim[] {
+            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [
                 new Claim(JwtClaimTypes.Name, "Des"),
                 new Claim(JwtClaimTypes.GivenName, "KUma"),
                 new Claim(JwtClaimTypes.FamilyName, "Admin")
-            });
+            ]);
 
         // Seed second user
         CreateUserIfNotExists(userManager, dbContext, 

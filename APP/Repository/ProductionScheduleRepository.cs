@@ -131,7 +131,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             // Fetch stock levels for each material ID individually
             foreach (var materialId in productionSchedule.Items.Select(item => item.MaterialId).Distinct())
             {
-                var stockLevel = await materialRepository.GetWarehouseStock(materialId, warehouseId);
+                var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouseId);
                 stockLevels[materialId] = stockLevel.Value;
             }
         }
