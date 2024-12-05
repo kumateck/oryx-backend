@@ -282,6 +282,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         // Sum of quantities moved to this location (incoming batches)
         var batchesInLocation = await context.MaterialBatchMovements
+            .Include(m => m.Batch)
             .Include(m => m.ToLocation)
             .Where(m => m.Batch.MaterialId == materialId
                         && m.ToLocation.WarehouseId == warehouseId)
@@ -289,6 +290,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
         // Sum of quantities moved out of this location (outgoing batches)
         var batchesMovedOut = await context.MaterialBatchMovements
+            .Include(m => m.Batch)
             .Include(m => m.FromLocation)
             .Where(m => m.Batch.MaterialId == materialId
                         && m.FromLocation != null && m.FromLocation.WarehouseId == warehouseId)
@@ -296,6 +298,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
         // Sum of the consumed quantities at this location for the given material
         var batchesConsumedAtLocation = await context.MaterialBatchEvents
+            .Include(m => m.Batch)
             .Include(m => m.ConsumedLocation)
             .Where(e => e.Batch.MaterialId == materialId
                         && e.ConsumedLocation != null 
@@ -344,16 +347,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Where(m => m.Batch.MaterialId == materialId)
             .Include(m => m.ToLocation)
             .Include(m => m.FromLocation)
-            .ToListAsync(); // Move the logic to client-side by retrieving the data first
+            .ToListAsync();
 
         // Get all unique warehouse IDs (both from and to locations)
         var warehouseIds = batchMovements
             .SelectMany(m => new[]
             {
-                m.ToLocation?.WarehouseId, // Always include ToLocation's WarehouseId
-                m.FromLocation?.WarehouseId // Include FromLocation's WarehouseId if not null
+                m.ToLocation.WarehouseId, 
+                m.FromLocation?.WarehouseId
             })
-            .Where(warehouseId => warehouseId.HasValue) // Filter out null warehouse IDs
+            .Where(warehouseId => warehouseId.HasValue)
             .Distinct()
             .ToList();
 
