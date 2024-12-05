@@ -321,7 +321,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             UserId = userId,
             Type = EventType.Consumed,
             ConsumedLocationId = locationId,
-            ConsumedAt = DateTime.UtcNow  // or another appropriate timestamp
+            ConsumedAt = DateTime.UtcNow 
         };
 
         // Optionally update the batch's consumed quantity
@@ -330,10 +330,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (materialBatch != null)
         {
             materialBatch.ConsumedQuantity += quantity;
+            context.MaterialBatches.Update(materialBatch);
         }
 
         // Add the event to the context
-        context.MaterialBatchEvents.Add(materialBatchEvent);
+        await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
 
         // Save changes to the database
         await context.SaveChangesAsync();
