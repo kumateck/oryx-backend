@@ -3,9 +3,12 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Configurations;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.WorkOrders;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -117,6 +120,26 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            
            case nameof(WorkOrder):
                return await context.WorkOrders
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Warehouse):
+               return await context.Warehouses
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Department):
+               return await context.Departments
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Requisition):
+               return await context.Requisitions
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(SourceRequisition):
+               return await context.SourceRequisitions
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
