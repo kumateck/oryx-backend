@@ -6,9 +6,9 @@ using INFRASTRUCTURE.Context;
 namespace APP.Mapper.Resolvers;
 
 public class UserRoleResolver(ApplicationDbContext context, IMapper mapper)
-    : IValueResolver<User, UserDto, ICollection<RoleDto>>
+    : IValueResolver<User, UserDto, List<RoleDto>>
 {
-    public ICollection<RoleDto> Resolve(User source, UserDto destination, ICollection<RoleDto> destMember,
+    public List<RoleDto> Resolve(User source, UserDto destination, List<RoleDto> destMember,
         ResolutionContext context1)
     {
         var roleIds = context

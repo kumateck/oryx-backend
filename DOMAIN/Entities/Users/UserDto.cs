@@ -11,11 +11,7 @@ public class UserDto
     [PersonalData] public string FirstName { get; set; }
     [PersonalData] public string LastName { get; set; }
     [EmailAddress] public string Email { get; set; }
-    [Phone] public string PhoneNumber { get; set; }
-    public string Title { get; set; }
-    public DateTime HiredOn { get; set; }
     public string Avatar { get; set; }
-    public bool IsDisabled { get; set; }
     public DepartmentDto Department { get; set; }
-    public ICollection<RoleDto> Roles { get; set; }
+    public List<RoleDto> Roles { get; set; }
 }

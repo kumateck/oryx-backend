@@ -22,12 +22,11 @@ using DOMAIN.Entities.WorkOrders;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using SHARED.Provider;
 using Configuration = DOMAIN.Entities.Configurations.Configuration;
 
 namespace INFRASTRUCTURE.Context;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ITenantProvider tenantProvider) : IdentityDbContext<User, Role, Guid>(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options/* , ITenantProvider tenantProvider*/) : IdentityDbContext<User, Role, Guid>(options)
 {
     
     #region Auth
@@ -296,6 +295,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Approval>().Navigation(r => r.ApprovalStages).AutoInclude();
         modelBuilder.Entity<ApprovalStage>().Navigation(r => r.User).AutoInclude();
         modelBuilder.Entity<ApprovalStage>().Navigation(r => r.Role).AutoInclude();
+        #endregion
+        
+        #region Requsition Entities
+        modelBuilder.Entity<RequisitionItem>().Navigation(r => r.UoM).AutoInclude();
         #endregion
     }
 
