@@ -77,7 +77,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     /// <param name="reference">A reference name for the specific file (e.g., file name, document ID, etc.).</param>
     /// <returns>Returns the image/file if found, or No Content if not.</returns>
     [HttpGet("{modelType}/{modelId}/{reference}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IFormFile))]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> GetImage(string modelType, Guid modelId, string reference)
     {
