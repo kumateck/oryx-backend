@@ -181,6 +181,22 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetSupplierByMaterial(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of suppliers by their material ID.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <param name="type">The type of the supplier.</param>
+    /// <returns>Returns the supplier details.</returns>
+    [HttpGet("supplier/{materialId}/{type}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetSupplierByMaterialAndType(Guid materialId, SupplierType type)
+    {
+        var result = await repository.GetSupplierByMaterialAndType(materialId, type);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates a specific supplier by its ID.

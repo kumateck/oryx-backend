@@ -20,6 +20,8 @@ namespace APP.IRepository
         Task<Result<SupplierDto>> GetSupplier(Guid supplierId);
         Task<Result<Paginateable<IEnumerable<SupplierDto>>>> GetSuppliers(int page, int pageSize, string searchQuery);
         Task<Result<IEnumerable<SupplierDto>>> GetSupplierByMaterial(Guid materialId);
+        Task<Result<IEnumerable<SupplierDto>>> GetSupplierByMaterialAndType(Guid materialId,
+            SupplierType type);
         Task<Result> UpdateSupplier(CreateSupplierRequest request, Guid supplierId, Guid userId);
         Task<Result> DeleteSupplier(Guid supplierId, Guid userId);
     }
