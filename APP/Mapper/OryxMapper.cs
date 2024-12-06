@@ -89,8 +89,8 @@ public class OryxMapper : Profile
         #region UserMapper
         CreateMap<CreateUserRequest, User>();
         CreateMap<User, UserDto>()
-            .ForMember(user => user.Roles,
-                opt => opt.MapFrom<UserRoleResolver>())
+            // .ForMember(user => user.Roles,
+            //     opt => opt.MapFrom<UserRoleResolver>())
             .ForMember(user => user.Avatar,
                 opt => opt.MapFrom<AvatarResolver>());
         

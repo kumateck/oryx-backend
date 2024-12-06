@@ -13,5 +13,5 @@ public class UserDto
     [EmailAddress] public string Email { get; set; }
     public string Avatar { get; set; }
     public DepartmentDto Department { get; set; }
-    public List<RoleDto> Roles { get; set; }
+    //public List<RoleDto> Roles { get; set; }
 }
