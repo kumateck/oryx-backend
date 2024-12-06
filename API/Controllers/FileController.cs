@@ -23,7 +23,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [Authorize]
     public async Task<IResult> UploadFile(string modelType, Guid modelId, 
-        string reference, [FromForm] IFormFile file)
+        string reference, IFormFile file)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
