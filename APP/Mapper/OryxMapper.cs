@@ -14,6 +14,7 @@ using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
@@ -72,6 +73,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Name,
                 opt => opt.MapFrom(src => $"{src.Name} - {src.Warehouse.Name}"));
         CreateMap<MaterialBatch, CollectionItemDto>();
+        CreateMap<SourceRequisition, CollectionItemDto>();
         
         #endregion
 
@@ -186,7 +188,12 @@ public class OryxMapper : Profile
         CreateMap<CreateRequisitionItemRequest, CompletedRequisitionItem>();
         CreateMap<CompletedRequisition, RequisitionDto>();
         CreateMap<CompletedRequisitionItem, RequisitionItemDto>();
-
+        CreateMap<CreateSourceRequisitionRequest, SourceRequisition>();
+        CreateMap<CreateSourceRequisitionItemRequest, SourceRequisitionItem>();
+        CreateMap<CreateSourceRequisitionItemSupplierRequest, SourceRequisitionItemSupplier>();
+        CreateMap<SourceRequisition, SourceRequisitionDto>(); 
+        CreateMap<SourceRequisitionItem, SourceRequisitionItemDto>();
+        CreateMap<SourceRequisitionItemSupplier, SourceRequisitionItemSupplierDto>();
         #endregion
 
         #region Approvals

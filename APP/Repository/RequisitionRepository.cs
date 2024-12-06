@@ -258,4 +258,104 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
          await context.SaveChangesAsync();
          return Result.Success();
     }
+    
+        // ************* CRUD for SourceRequisition *************
+
+    // Create Source Requisition
+    public async Task<Result<Guid>> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId)
+    {
+        var sourceRequisition = mapper.Map<SourceRequisition>(request);
+        sourceRequisition.CreatedById = userId;
+        await context.SourceRequisitions.AddAsync(sourceRequisition);
+        await context.SaveChangesAsync();
+        return sourceRequisition.Id;
+    }
+
+    // Get Source Requisition by ID
+    public async Task<Result<SourceRequisitionDto>> GetSourceRequisition(Guid sourceRequisitionId)
+    {
+        var sourceRequisition = await context.SourceRequisitions
+            .Include(sr => sr.Requisition).ThenInclude(sr => sr.RequestedBy)
+            .Include(sr => sr.Items).ThenInclude(sr => sr.Suppliers)
+            .Include(sr => sr.Items).ThenInclude(item => item.Material)
+            .Include(sr => sr.Items).ThenInclude(item => item.UoM)
+            .FirstOrDefaultAsync(sr => sr.Id == sourceRequisitionId);
+
+        return sourceRequisition is null
+            ? RequisitionErrors.NotFound(sourceRequisitionId)
+            : mapper.Map<SourceRequisitionDto>(sourceRequisition);
+    }
+
+    // Get paginated list of Source Requisitions
+    public async Task<Result<Paginateable<IEnumerable<SourceRequisitionDto>>>> GetSourceRequisitions(int page, int pageSize, string searchQuery)
+    {
+        var query = context.SourceRequisitions
+            .Include(sr => sr.Requisition)
+            .Include(sr => sr.Items)
+            .ThenInclude(item => item.Material)
+            .Include(sr => sr.Items)
+            .ThenInclude(item => item.UoM)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, sr => sr.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<SourceRequisitionDto>
+        );
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<SourceRequisitionItemDto>>>> GetSourceRequisitionItems(int page, int pageSize,  ProcurementSource source)
+    {
+        var query = context.SourceRequisitionItems
+            .Include(sr => sr.SourceRequisition)
+            .Include(sr => sr.Material)
+            .Include(sr => sr.UoM)
+            .Include(sr => sr.Suppliers)
+            .Where(sr => sr.Source == source)
+            .AsQueryable();
+
+      
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<SourceRequisitionItemDto>
+        );
+    }
+
+    // Update Source Requisition
+    public async Task<Result> UpdateSourceRequisition(CreateSourceRequisitionRequest request, Guid sourceRequisitionId)
+    {
+        var existingSourceRequisition = await context.SourceRequisitions.FirstOrDefaultAsync(sr => sr.Id == sourceRequisitionId);
+        if (existingSourceRequisition is null)
+        {
+            return RequisitionErrors.NotFound(sourceRequisitionId);
+        }
+
+        mapper.Map(request, existingSourceRequisition);
+        context.SourceRequisitions.Update(existingSourceRequisition);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // Delete Source Requisition (soft delete)
+    public async Task<Result> DeleteSourceRequisition(Guid sourceRequisitionId)
+    {
+        var sourceRequisition = await context.SourceRequisitions.FirstOrDefaultAsync(sr => sr.Id == sourceRequisitionId);
+        if (sourceRequisition is null)
+        {
+            return RequisitionErrors.NotFound(sourceRequisitionId);
+        }
+
+        sourceRequisition.DeletedAt = DateTime.UtcNow;
+        context.SourceRequisitions.Update(sourceRequisition);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 }
