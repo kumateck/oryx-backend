@@ -58,6 +58,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             mapper.Map<MaterialDto>
         );
     }
+    
+    public async Task<Result<List<MaterialDto>>> GetMaterials()
+    {
+        return mapper.Map<List<MaterialDto>>(await context.Materials
+            .AsSplitQuery()
+            .Include(m => m.MaterialCategory)
+            .ToListAsync());
+    }
 
     // Update Material
     public async Task<Result> UpdateMaterial(CreateMaterialRequest request, Guid materialId, Guid userId)

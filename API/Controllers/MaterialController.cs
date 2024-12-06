@@ -62,6 +62,19 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterials(page, pageSize, searchQuery, kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of all materials.
+    /// </summary>
+    /// <returns>Returns a paginated list of materials.</returns>
+    [HttpGet("all")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<List<MaterialDto>>))]
+    public async Task<IResult> GetMaterials()
+    {
+        var result = await repository.GetMaterials();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates a specific material by its ID.
