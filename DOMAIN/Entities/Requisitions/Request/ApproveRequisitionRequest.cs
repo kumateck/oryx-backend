@@ -1,4 +1,4 @@
-namespace DOMAIN.Entities.Requisitions;
+namespace DOMAIN.Entities.Requisitions.Request;
 
 public class ApproveRequisitionRequest
 {

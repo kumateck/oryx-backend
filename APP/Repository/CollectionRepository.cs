@@ -4,7 +4,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
-using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
@@ -129,7 +128,6 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(MaterialType),
             nameof(MaterialCategory),
             nameof(PackageType),
-            nameof(StockRequisition),
             nameof(User),
             nameof(Role),
             nameof(Country),

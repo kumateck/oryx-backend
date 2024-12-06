@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Requisitions;
-using System.Security.Claims;
 using APP.Utils;
+using DOMAIN.Entities.Requisitions.Request;
 
 namespace API.Controllers;
 

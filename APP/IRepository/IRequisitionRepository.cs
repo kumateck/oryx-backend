@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Requisitions.Request;
 using SHARED;
 
 namespace APP.IRepository;

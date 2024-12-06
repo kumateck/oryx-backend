@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using SHARED;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Requisitions.Request;
 
 namespace APP.Repository;
 
