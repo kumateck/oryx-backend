@@ -262,6 +262,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Department>().Navigation(p => p.Warehouse).AutoInclude();
         #endregion
         
+        #region Warehouse Entities
+        modelBuilder.Entity<Warehouse>().Navigation(p => p.Locations).AutoInclude();
+        #endregion
+        
         #region Material Entities
         modelBuilder.Entity<Material>().Navigation(p => p.Batches).AutoInclude();
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.Events).AutoInclude();
