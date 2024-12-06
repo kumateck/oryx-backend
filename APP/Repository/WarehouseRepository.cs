@@ -25,6 +25,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<WarehouseDto>> GetWarehouse(Guid warehouseId)
     {
         var warehouse = await context.Warehouses
+            .Include(w => w.Locations)
             .FirstOrDefaultAsync(w => w.Id == warehouseId);
 
         return warehouse is null
@@ -34,7 +35,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     
     public async Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery)
     {
-        var query = context.Warehouses.AsQueryable();
+        var query = context.Warehouses
+            .Include(w => w.Locations)
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -51,7 +54,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(int page, int pageSize, string searchQuery)
     {
-        var query = context.WarehouseLocations.AsQueryable();
+        var query = context.WarehouseLocations
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
