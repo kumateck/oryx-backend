@@ -1,5 +1,6 @@
 using System.Reflection;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
@@ -170,6 +171,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Department
 
     public DbSet<Department> Departments { get; set; }
+
+    #endregion
+
+    #region Attachment
+
+    public DbSet<Attachment> Attachments { get; set; }
 
     #endregion
     
@@ -427,6 +434,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<WarehouseLocationRack>().HasQueryFilter(a => !a.WarehouseLocation.DeletedAt.HasValue);
         modelBuilder.Entity<WarehouseLocationShelf>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<WarehouseLocationShelf>().HasQueryFilter(a => !a.WarehouseLocationRack.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Attachment Filter
+
+        modelBuilder.Entity<Attachment>().HasQueryFilter(a => !a.DeletedAt.HasValue);
 
         #endregion
     }

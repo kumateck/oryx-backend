@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -45,11 +46,13 @@ public class SourceRequisitionItemSupplier : BaseEntity
     public DateTime? SentQuotationRequestAt { get; set; }
 }
 
-public class SourceRequisitionDto : BaseDto
+public class SourceRequisitionDto :  WithAttachment
 {
+    public Guid Id { get; set; }
     public string Code { get; set; }
     public CollectionItemDto Requisition { get; set; }
     public List<SourceRequisitionItemDto> Items { get; set; } = [];
+    public DateTime CreatedAt { get; set; }
 
 }
 

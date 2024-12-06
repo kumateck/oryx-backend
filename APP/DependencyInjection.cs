@@ -31,8 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IProcurementRepository, ProcurementRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
-
-        
+        services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<ITenantProvider, TenantProvider>();

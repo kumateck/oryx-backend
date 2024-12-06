@@ -283,7 +283,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
 
         return sourceRequisition is null
             ? RequisitionErrors.NotFound(sourceRequisitionId)
-            : mapper.Map<SourceRequisitionDto>(sourceRequisition);
+            : mapper.Map<SourceRequisitionDto>(sourceRequisition, opt =>
+            {
+                opt.Items[AppConstants.ModelType] = nameof(SourceRequisition);
+            });
     }
 
     // Get paginated list of Source Requisitions

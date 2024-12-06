@@ -1,6 +1,7 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Configurations;
@@ -243,6 +244,14 @@ public class OryxMapper : Profile
         CreateMap<CreateDepartmentRequest, Department>();
         CreateMap<UpdateDepartmentRequest, Department>();
         CreateMap<Department, DepartmentDto>();
+
+        #endregion
+
+        #region Attachment
+
+        CreateMap<BaseEntity, WithAttachment>()
+            .ForMember(dest => dest.Attachments,
+                opt => opt.MapFrom<AttachmentsResolver>());
 
         #endregion
     }
