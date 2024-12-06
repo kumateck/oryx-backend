@@ -15,7 +15,14 @@ public class Supplier : BaseEntity
     [StringLength(20)] public string ContactNumber { get; set; }
     public Guid? CountryId { get; set; }
     public Country Country { get; set; }
+    public SupplierType Type { get; set; }
     public List<SupplierManufacturer> AssociatedManufacturers { get; set; } = [];
+}
+
+public enum SupplierType
+{
+    Foreign, 
+    Local
 }
 
 public class SupplierManufacturer : BaseEntity
