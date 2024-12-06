@@ -255,6 +255,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     private void ConfigureAutoIncludes(ModelBuilder modelBuilder)
     {
+        #region User Entities
+        modelBuilder.Entity<User>().Navigation(p => p.Department).AutoInclude();
+        #endregion
+        
+        #region Department Entities
+        modelBuilder.Entity<Department>().Navigation(p => p.Warehouse).AutoInclude();
+        #endregion
+        
         #region Material Entities
         modelBuilder.Entity<Material>().Navigation(p => p.Batches).AutoInclude();
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.Events).AutoInclude();
