@@ -14,4 +14,21 @@ public class CreateWarehouseRequest
 public class CreateWarehouseLocationRequest 
 {
     [StringLength(255)] public string Name { get; set; }
+    [StringLength(255)] public string FloorName { get; set; }
+    [StringLength(1000)] public string Description { get; set; }
+    public List<CreateWarehouseLocationRackRequest> Racks { get; set; } = [];
+}
+
+public class CreateWarehouseLocationRackRequest 
+{
+    [StringLength(255)] public string Name { get; set; }
+    [StringLength(1000)] public string Description { get; set; }
+    public List<CreateWarehouseLocationShelfRequest> Shelves { get; set; } = [];
+}
+
+public class CreateWarehouseLocationShelfRequest 
+{
+    [StringLength(255)] public string Code { get; set; }
+    [StringLength(255)] public string Name { get; set; }
+    [StringLength(1000)] public string Description { get; set; }
 }

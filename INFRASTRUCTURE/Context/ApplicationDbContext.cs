@@ -147,6 +147,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Warehouse> Warehouses { get; set; }
     public DbSet<WarehouseLocation> WarehouseLocations { get; set; }
+    public DbSet<WarehouseLocationRack> WarehouseLocationRacks { get; set; }
+    public DbSet<WarehouseLocationShelf> WarehouseLocationShelves { get; set; }
 
     #endregion
 
@@ -267,6 +269,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         #region Warehouse Entities
         modelBuilder.Entity<Warehouse>().Navigation(p => p.Locations).AutoInclude();
+        modelBuilder.Entity<WarehouseLocation>().Navigation(p => p.Racks).AutoInclude();
+        modelBuilder.Entity<WarehouseLocationRack>().Navigation(p => p.Shelves).AutoInclude();
+
         #endregion
         
         #region Material Entities
@@ -418,6 +423,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Warehouse>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a => !a.Warehouse.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseLocationRack>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseLocationRack>().HasQueryFilter(a => !a.WarehouseLocation.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseLocationShelf>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseLocationShelf>().HasQueryFilter(a => !a.WarehouseLocationRack.DeletedAt.HasValue);
+
         #endregion
     }
 }

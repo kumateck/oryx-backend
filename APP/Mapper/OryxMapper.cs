@@ -72,6 +72,8 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocation, CollectionItemDto>()
             .ForMember(dest => dest.Name,
                 opt => opt.MapFrom(src => $"{src.Name} - {src.Warehouse.Name}"));
+        CreateMap<WarehouseLocationRack, CollectionItemDto>();
+        CreateMap<WarehouseLocationShelf, CollectionItemDto>();
         CreateMap<MaterialBatch, CollectionItemDto>();
         CreateMap<SourceRequisition, CollectionItemDto>();
         CreateMap<Requisition, CollectionItemDto>();
@@ -227,9 +229,13 @@ public class OryxMapper : Profile
         CreateMap<CreateWarehouseRequest, Warehouse>();
         CreateMap<UpdateWarehouseRequest, Warehouse>();
         CreateMap<CreateWarehouseLocationRequest, WarehouseLocation>();
+        CreateMap<CreateWarehouseLocationRackRequest, WarehouseLocationRack>();
+        CreateMap<CreateWarehouseLocationShelfRequest, WarehouseLocationShelf>();
         CreateMap<Warehouse, WarehouseDto>();
         CreateMap<WarehouseLocation, WarehouseLocationDto>();
-
+        CreateMap<WarehouseLocationRack, WarehouseLocationRackDto>();
+        CreateMap<WarehouseLocationShelf, WarehouseLocationShelfDto>();
+        
         #endregion
 
         #region Department

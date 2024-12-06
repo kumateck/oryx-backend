@@ -12,11 +12,11 @@ namespace API.Controllers;
 [ApiController]
 public class WarehouseController(IWarehouseRepository repository) : ControllerBase
 {
+    #region Warehouse CRUD
+
     /// <summary>
     /// Creates a new warehouse.
     /// </summary>
-    /// <param name="request">The CreateWarehouseRequest object.</param>
-    /// <returns>Returns the ID of the created warehouse.</returns>
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
@@ -31,10 +31,8 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     /// <summary>
-    /// Retrieves a warehouse by its ID.
+    /// Retrieves the details of a specific warehouse by its ID.
     /// </summary>
-    /// <param name="warehouseId">The ID of the warehouse.</param>
-    /// <returns>Returns the warehouse details.</returns>
     [HttpGet("{warehouseId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseDto))]
@@ -46,12 +44,8 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     /// <summary>
-    /// Retrieves a paginated list of warehouses.
+    /// Retrieves a paginated list of warehouses based on search criteria.
     /// </summary>
-    /// <param name="page">The current page number.</param>
-    /// <param name="pageSize">The number of items per page.</param>
-    /// <param name="searchQuery">Search query for filtering results.</param>
-    /// <returns>Returns a paginated list of warehouses.</returns>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseDto>>))]
@@ -62,11 +56,8 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     /// <summary>
-    /// Updates a specific warehouse by its ID.
+    /// Updates the details of an existing warehouse.
     /// </summary>
-    /// <param name="request">The CreateWarehouseRequest object.</param>
-    /// <param name="warehouseId">The ID of the warehouse to update.</param>
-    /// <returns>Returns success or failure.</returns>
     [HttpPut("{warehouseId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -84,8 +75,6 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <summary>
     /// Deletes a specific warehouse by its ID.
     /// </summary>
-    /// <param name="warehouseId">The ID of the warehouse to delete.</param>
-    /// <returns>Returns success or failure.</returns>
     [HttpDelete("{warehouseId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -98,4 +87,237 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.DeleteWarehouse(warehouseId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+
+    #endregion
+
+    #region Warehouse Location CRUD
+
+    /// <summary>
+    /// Creates a new location within a warehouse.
+    /// </summary>
+    [HttpPost("{warehouseId}/location")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    public async Task<IResult> CreateWarehouseLocation([FromBody] CreateWarehouseLocationRequest request, Guid warehouseId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateWarehouseLocation(request, warehouseId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves details of a specific warehouse location.
+    /// </summary>
+    [HttpGet("location/{locationId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseLocationDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetWarehouseLocation(Guid locationId)
+    {
+        var result = await repository.GetWarehouseLocation(locationId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of warehouse locations.
+    /// </summary>
+    [HttpGet("location")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationDto>>))]
+    public async Task<IResult> GetWarehouseLocations([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetWarehouseLocations(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates an existing warehouse location.
+    /// </summary>
+    [HttpPut("location/{locationId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateWarehouseLocation([FromBody] CreateWarehouseLocationRequest request, Guid locationId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateWarehouseLocation(request, locationId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific warehouse location.
+    /// </summary>
+    [HttpDelete("location/{locationId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteWarehouseLocation(Guid locationId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteWarehouseLocation(locationId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    #endregion
+
+    #region Warehouse Location Rack CRUD
+
+    /// <summary>
+    /// Creates a new rack within a warehouse location.
+    /// </summary>
+    [HttpPost("{locationId}/rack")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    public async Task<IResult> CreateWarehouseLocationRack([FromBody] CreateWarehouseLocationRackRequest request, Guid locationId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateWarehouseLocationRack(request, locationId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves details of a specific warehouse location rack.
+    /// </summary>
+    [HttpGet("rack/{rackId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseLocationRackDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetWarehouseLocationRack(Guid rackId)
+    {
+        var result = await repository.GetWarehouseLocationRack(rackId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of racks in warehouse locations.
+    /// </summary>
+    [HttpGet("rack")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationRackDto>>))]
+    public async Task<IResult> GetWarehouseLocationRacks([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetWarehouseLocationRacks(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates an existing warehouse location rack.
+    /// </summary>
+    [HttpPut("rack/{rackId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateWarehouseLocationRack([FromBody] CreateWarehouseLocationRackRequest request, Guid rackId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateWarehouseLocationRack(request, rackId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific warehouse location rack.
+    /// </summary>
+    [HttpDelete("rack/{rackId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteWarehouseLocationRack(Guid rackId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteWarehouseLocationRack(rackId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    #endregion
+
+    #region Warehouse Location Shelf CRUD
+
+    /// <summary>
+    /// Creates a new shelf within a warehouse location rack.
+    /// </summary>
+    [HttpPost("{rackId}/shelf")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    public async Task<IResult> CreateWarehouseLocationShelf([FromBody] CreateWarehouseLocationShelfRequest request, Guid rackId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateWarehouseLocationShelf(request, rackId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves details of a specific warehouse location shelf.
+    /// </summary>
+    [HttpGet("shelf/{shelfId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseLocationShelfDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetWarehouseLocationShelf(Guid shelfId)
+    {
+        var result = await repository.GetWarehouseLocationShelf(shelfId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of shelves in warehouse locations.
+    /// </summary>
+    [HttpGet("shelf")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
+    public async Task<IResult> GetWarehouseLocationShelves([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetWarehouseLocationShelves(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates an existing warehouse location shelf.
+    /// </summary>
+    [HttpPut("shelf/{shelfId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateWarehouseLocationShelf([FromBody] CreateWarehouseLocationShelfRequest request, Guid shelfId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateWarehouseLocationShelf(request, shelfId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific warehouse location shelf.
+    /// </summary>
+    [HttpDelete("shelf/{shelfId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteWarehouseLocationShelf(Guid shelfId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteWarehouseLocationShelf(shelfId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    #endregion
 }
