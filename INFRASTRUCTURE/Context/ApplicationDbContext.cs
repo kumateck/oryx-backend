@@ -267,6 +267,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         #region Warehouse Entities
         modelBuilder.Entity<Warehouse>().Navigation(p => p.Locations).AutoInclude();
+        modelBuilder.Entity<Warehouse>().Navigation(p => p.CreatedBy).AutoInclude();
         #endregion
         
         #region Material Entities
@@ -305,6 +306,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #endregion
         
         #region Requsition Entities
+        modelBuilder.Entity<Requisition>().Navigation(r => r.CreatedBy).AutoInclude();
+        modelBuilder.Entity<SourceRequisition>().Navigation(r => r.CreatedBy).AutoInclude();
         modelBuilder.Entity<RequisitionItem>().Navigation(r => r.UoM).AutoInclude();
         modelBuilder.Entity<SourceRequisitionItem>().Navigation(r => r.UoM).AutoInclude();
         modelBuilder.Entity<SourceRequisitionItemSupplier>().Navigation(r => r.Supplier).AutoInclude();

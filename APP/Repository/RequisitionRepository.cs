@@ -275,7 +275,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<SourceRequisitionDto>> GetSourceRequisition(Guid sourceRequisitionId)
     {
         var sourceRequisition = await context.SourceRequisitions
-            .Include(sr => sr.Requisition).ThenInclude(sr => sr.RequestedBy)
+            .Include(sr => sr.Requisition)
             .Include(sr => sr.Items).ThenInclude(sr => sr.Suppliers)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
@@ -291,10 +291,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     {
         var query = context.SourceRequisitions
             .Include(sr => sr.Requisition)
-            .Include(sr => sr.Items)
-            .ThenInclude(item => item.Material)
-            .Include(sr => sr.Items)
-            .ThenInclude(item => item.UoM)
+            .Include(sr => sr.Items).ThenInclude(sr => sr.Suppliers)
+            .Include(sr => sr.Items).ThenInclude(item => item.Material)
+            .Include(sr => sr.Items).ThenInclude(item => item.UoM)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

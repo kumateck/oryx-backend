@@ -48,8 +48,7 @@ public class SourceRequisitionItemSupplier : BaseEntity
 public class SourceRequisitionDto : BaseDto
 {
     public string Code { get; set; }
-    public Guid RequisitionId { get; set; }
-    public Requisition Requisition { get; set; }
+    public CollectionItemDto Requisition { get; set; }
     public List<SourceRequisitionItemDto> Items { get; set; } = [];
 
 }
@@ -64,6 +63,7 @@ public class SourceRequisitionItemDto
     public ProcurementSource Source { get; set; }
     public List<SourceRequisitionItemSupplierDto> Suppliers { get; set; } = [];
     public DateTime? SentQuotationRequestAt { get; set; }
+    public DateTime CreatedAt { get; set; }
     public bool SentQuotationRequest => SentQuotationRequestAt is not null;
 }
 public class SourceRequisitionItemSupplierDto 

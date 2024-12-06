@@ -74,6 +74,7 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom(src => $"{src.Name} - {src.Warehouse.Name}"));
         CreateMap<MaterialBatch, CollectionItemDto>();
         CreateMap<SourceRequisition, CollectionItemDto>();
+        CreateMap<Requisition, CollectionItemDto>();
         
         #endregion
 

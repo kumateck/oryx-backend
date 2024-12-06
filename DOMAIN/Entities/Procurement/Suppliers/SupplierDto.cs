@@ -20,7 +20,6 @@ public class SupplierDto : BaseDto
 
 public class SupplierManufacturerDto : BaseDto
 {
-    public CollectionItemDto Supplier { get; set; }
     public ManufacturerDto Manufacturer { get; set; }
     public MaterialDto Material { get; set; }
 }

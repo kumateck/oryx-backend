@@ -13,7 +13,6 @@ public class CreateSourceRequisitionItemRequest
     public int Quantity { get; set; }
     public ProcurementSource Source { get; set; }
     public List<CreateSourceRequisitionItemSupplierRequest> Suppliers { get; set; } = [];
-
 }
 
 public class CreateSourceRequisitionItemSupplierRequest
