@@ -284,6 +284,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Material Entities
         modelBuilder.Entity<Material>().Navigation(p => p.Batches).AutoInclude();
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.Events).AutoInclude();
+        modelBuilder.Entity<ManufacturerMaterial>().Navigation(p => p.Material).AutoInclude();
         #endregion
 
         #region Product Entities

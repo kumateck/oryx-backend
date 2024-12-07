@@ -18,5 +18,5 @@ public class ManufacturerDto : BaseDto
 
 public class ManufacturerMaterialDto : BaseDto
 {
-    public MaterialDto Material { get; set; }
+    public CollectionItemDto Material { get; set; }
 }
