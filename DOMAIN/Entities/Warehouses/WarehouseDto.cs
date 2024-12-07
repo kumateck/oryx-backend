@@ -19,6 +19,7 @@ public class WarehouseLocationDto
     public string Name { get; set; }
     public string FloorName { get; set; }
     public string Description { get; set; }
+    public CollectionItemDto Warehouse { get; set; }
     public List<WarehouseLocationRackDto> Racks { get; set; } = [];
 }
 
