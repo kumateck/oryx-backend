@@ -205,10 +205,11 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var result = await repository.DeleteSourceRequisition(sourceRequisitionId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of suppliers with their associated source requisition items.
     /// </summary>
+    /// <param name="source">The source of the requisition. (example Local, Foreign, Internal)</param>
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="sent">Filter by whether a quotation has been sent.</param>
@@ -216,12 +217,26 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [HttpGet("source/supplier")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationDto>>))]
-    public async Task<IResult> GetSuppliersWithSourceRequisitionItems(
+    public async Task<IResult> GetSuppliersWithSourceRequisitionItems([FromQuery] ProcurementSource source,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] bool sent = false)
     {
-        var result = await repository.GetSuppliersWithSourceRequisitionItems(page, pageSize, sent);
+        var result = await repository.GetSuppliersWithSourceRequisitionItems(page, pageSize, source, sent);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a supplier with their associated source requisition items.
+    /// </summary>
+    /// <param name="supplierId">The id of the supplier with associated requisition items.</param>
+    /// <returns>Returns a supplier with their requisition items.</returns>
+    [HttpGet("source/supplier/{supplierId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationDto))]
+    public async Task<IResult> GetSuppliersWithSourceRequisitionItems(Guid supplierId)
+    {
+        var result = await repository.GetSuppliersWithSourceRequisitionItems(supplierId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

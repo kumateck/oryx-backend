@@ -370,7 +370,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
         return Result.Success();
     }
     
-    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSuppliersWithSourceRequisitionItems(int page, int pageSize, bool sent)
+    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSuppliersWithSourceRequisitionItems(int page, int pageSize, ProcurementSource source, bool sent)
     {
         // Base query
         var query =  context.SourceRequisitionItemSuppliers
@@ -379,6 +379,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
             .ThenInclude(item => item.Material)
             .Include(s => s.SourceRequisitionItem)
             .ThenInclude(item => item.UoM)
+            .Include(s => s.SourceRequisitionItem)
+            .ThenInclude(item => item.SourceRequisition)
+            .Where(s => s.SourceRequisitionItem.Source == source)
             .AsQueryable();
 
         var sourceRequisitionItemSuppliers = sent ? await query.Where(s => s.SentQuotationRequestAt != null).ToListAsync() 
@@ -387,7 +390,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
         // Group the query
         var groupedQuery = sourceRequisitionItemSuppliers
             .GroupBy(s => s.Supplier)
-            .AsEnumerable()
             .Select(item => new SupplierQuotationDto
             {
                 Supplier = mapper.Map<CollectionItemDto>(item.Key),
@@ -396,6 +398,26 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
             }).ToList();
         
         return PaginationHelper.Paginate(page, pageSize, groupedQuery);
+    }
+    
+    public async Task<Result<SupplierQuotationDto>> GetSuppliersWithSourceRequisitionItems(Guid supplierId)
+    {
+        var query =  await context.SourceRequisitionItemSuppliers
+            .Include(s => s.Supplier)
+            .Include(s => s.SourceRequisitionItem)
+            .ThenInclude(item => item.Material)
+            .Include(s => s.SourceRequisitionItem)
+            .ThenInclude(item => item.UoM)
+            .Include(s => s.SourceRequisitionItem)
+            .ThenInclude(item => item.SourceRequisition)
+            .Where(s => s.SupplierId == supplierId && s.SentQuotationRequestAt == null)
+            .ToListAsync();
+
+        return new SupplierQuotationDto
+        {
+            Supplier = mapper.Map<CollectionItemDto>(query.FirstOrDefault()?.Supplier),
+            Items = mapper.Map<List<SourceRequisitionItemDto>>(query.Select(i => i.SourceRequisitionItem))
+        };
     }
     
     public async Task<Result> MarkQuotationAsSent(Guid supplierId)
