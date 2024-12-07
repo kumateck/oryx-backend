@@ -249,7 +249,7 @@ public class OryxMapper : Profile
 
         #region Attachment
 
-        CreateMap<BaseEntity, WithAttachment>()
+        CreateMap<SourceRequisition, SourceRequisitionDto>()
             .ForMember(dest => dest.Attachments,
                 opt => opt.MapFrom<AttachmentsResolver>());
 
