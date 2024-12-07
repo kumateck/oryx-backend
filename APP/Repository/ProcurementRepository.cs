@@ -27,6 +27,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<ManufacturerDto>> GetManufacturer(Guid manufacturerId)
     {
         var manufacturer = await context.Manufacturers
+            .Include(m => m.Country)
             .Include(m => m.Materials)
             .FirstOrDefaultAsync(m => m.Id == manufacturerId);
 
@@ -38,6 +39,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<Paginateable<IEnumerable<ManufacturerDto>>>> GetManufacturers(int page, int pageSize, string searchQuery)
     {
         var query = context.Manufacturers
+            .Include(m => m.Country)
             .Include(m => m.Materials)
             .AsQueryable();
 
