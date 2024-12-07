@@ -18,7 +18,5 @@ public class ManufacturerDto : BaseDto
 
 public class ManufacturerMaterialDto 
 {
-    public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
-    public DateTime CreatedAt { get; set; }
 }
