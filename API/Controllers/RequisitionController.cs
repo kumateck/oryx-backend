@@ -213,7 +213,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="sent">Filter by whether a quotation has been sent.</param>
     /// <returns>Returns a paginated list of suppliers with their requisition items.</returns>
-    [HttpGet("source/suppliers")]
+    [HttpGet("source/supplier")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationDto>>))]
     public async Task<IResult> GetSuppliersWithSourceRequisitionItems(
@@ -230,7 +230,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// </summary>
     /// <param name="supplierId">The ID of the supplier.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("source/suppliers/{supplierId}/mark-quotation-sent")]
+    [HttpPost("source/supplier/{supplierId}/mark-quotation-sent")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
