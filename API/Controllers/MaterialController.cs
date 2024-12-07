@@ -69,7 +69,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of materials.</returns>
     [HttpGet("all")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<List<MaterialDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
     public async Task<IResult> GetMaterials()
     {
         var result = await repository.GetMaterials();
