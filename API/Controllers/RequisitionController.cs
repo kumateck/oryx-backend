@@ -38,13 +38,14 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="status">Filter by status of the requisition.</param>
     /// <returns>Returns a paginated list of requisitions.</returns>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
-    public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] RequestStatus? status = null)
     {
-        var result = await repository.GetRequisitions(page, pageSize, searchQuery);
+        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -202,6 +203,40 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     public async Task<IResult> DeleteSourceRequisition(Guid sourceRequisitionId)
     {
         var result = await repository.DeleteSourceRequisition(sourceRequisitionId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of suppliers with their associated source requisition items.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="sent">Filter by whether a quotation has been sent.</param>
+    /// <returns>Returns a paginated list of suppliers with their requisition items.</returns>
+    [HttpGet("source/suppliers")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationDto>>))]
+    public async Task<IResult> GetSuppliersWithSourceRequisitionItems(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] bool sent = false)
+    {
+        var result = await repository.GetSuppliersWithSourceRequisitionItems(page, pageSize, sent);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Marks requisition item suppliers as having received a quotation request.
+    /// </summary>
+    /// <param name="supplierId">The ID of the supplier.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("source/suppliers/{supplierId}/mark-quotation-sent")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> MarkQuotationAsSent(Guid supplierId)
+    {
+        var result = await repository.MarkQuotationAsSent(supplierId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

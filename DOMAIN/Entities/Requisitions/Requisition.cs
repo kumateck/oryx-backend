@@ -50,6 +50,7 @@ public class RequisitionApproval : BaseEntity
 public enum RequestStatus
 {
     Pending,
+    Sourced,
     Completed,
     Rejected
 }

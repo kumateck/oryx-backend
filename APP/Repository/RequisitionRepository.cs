@@ -61,7 +61,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     }
 
     // Get paginated list of Stock Requisitions
-    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status)
     {
         var query = context.Requisitions
             .Include(r => r.RequestedBy)
@@ -70,6 +70,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
             .Include(r => r.Items)
             .ThenInclude(i => i.Material)
             .AsQueryable();
+        
+        if (status.HasValue)
+        {
+            query = query.Where(r => r.Status == status);
+        }
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -166,7 +171,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     // Consume stock once the requisition is fully approved
 
     public async Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId)
-     {
+    {
          var requisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == requisitionId);
          if (requisition is null)
          {
@@ -264,9 +269,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
     // Create Source Requisition
     public async Task<Result<Guid>> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId)
     {
+        var requisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == request.RequisitionId);
+        if (requisition is null) return RequisitionErrors.NotFound(request.RequisitionId);
         var sourceRequisition = mapper.Map<SourceRequisition>(request);
         sourceRequisition.CreatedById = userId;
         await context.SourceRequisitions.AddAsync(sourceRequisition);
+        requisition.Status = RequestStatus.Sourced;
+        context.Requisitions.Update(requisition);
         await context.SaveChangesAsync();
         return sourceRequisition.Id;
     }
@@ -357,6 +366,55 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
 
         sourceRequisition.DeletedAt = DateTime.UtcNow;
         context.SourceRequisitions.Update(sourceRequisition);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSuppliersWithSourceRequisitionItems(int page, int pageSize, bool sent)
+    {
+        // Base query
+        var query =  context.SourceRequisitionItemSuppliers
+            .Include(s => s.Supplier)
+            .Include(s => s.SourceRequisitionItem)
+            .ThenInclude(item => item.Material)
+            .Include(s => s.SourceRequisitionItem)
+            .ThenInclude(item => item.UoM)
+            .AsQueryable();
+
+        var sourceRequisitionItemSuppliers = sent ? await query.Where(s => s.SentQuotationRequestAt != null).ToListAsync() 
+            : await query.Where(s => s.SentQuotationRequestAt == null).ToListAsync();
+
+        // Group the query
+        var groupedQuery = sourceRequisitionItemSuppliers
+            .GroupBy(s => s.Supplier)
+            .AsEnumerable()
+            .Select(item => new SupplierQuotationDto
+            {
+                Supplier = mapper.Map<CollectionItemDto>(item.Key),
+                SentQuotationRequestAt = sent ? item.Min(s => s.SentQuotationRequestAt) : null, 
+                Items = mapper.Map<List<SourceRequisitionItemDto>>(item.Select(i => i.SourceRequisitionItem))
+            }).ToList();
+        
+        return PaginationHelper.Paginate(page, pageSize, groupedQuery);
+    }
+    
+    public async Task<Result> MarkQuotationAsSent(Guid supplierId)
+    {
+        var itemsToUpdate = await context.SourceRequisitionItemSuppliers
+            .Where(s => s.SupplierId == supplierId && s.SentQuotationRequestAt == null)
+            .ToListAsync();
+
+        if (itemsToUpdate.Count == 0)
+        {
+            return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
+        }
+
+        foreach (var item in itemsToUpdate)
+        {
+            item.SentQuotationRequestAt = DateTime.UtcNow;
+        }
+
+        // Save changes to the database
         await context.SaveChangesAsync();
         return Result.Success();
     }

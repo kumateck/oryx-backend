@@ -65,11 +65,18 @@ public class SourceRequisitionItemDto
     public int Quantity { get; set; }
     public ProcurementSource Source { get; set; }
     public List<SourceRequisitionItemSupplierDto> Suppliers { get; set; } = [];
-    public DateTime? SentQuotationRequestAt { get; set; }
     public DateTime CreatedAt { get; set; }
-    public bool SentQuotationRequest => SentQuotationRequestAt is not null;
 }
 public class SourceRequisitionItemSupplierDto 
 {
     public CollectionItemDto Supplier { get; set; }
+    public DateTime? SentQuotationRequestAt { get; set; }
+}
+
+public class SupplierQuotationDto
+{
+    public CollectionItemDto Supplier { get; set; }
+    public DateTime? SentQuotationRequestAt { get; set; }
+    public bool SentQuotationRequest => SentQuotationRequestAt is not null;
+    public List<SourceRequisitionItemDto> Items { get; set; } = [];
 }

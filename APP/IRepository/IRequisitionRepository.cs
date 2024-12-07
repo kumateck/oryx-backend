@@ -10,7 +10,7 @@ public interface IRequisitionRepository
     Task<Result<Guid>> CreateRequisition(CreateRequisitionRequest request, Guid userId);
     Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId);
     Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize,
-        string searchQuery);
+        string searchQuery,  RequestStatus? status);
     Task<Result> ApproveRequisition(ApproveRequisitionRequest request, Guid requisitionId, Guid userId, List<Guid> roleIds);
      Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId);
      Task<Result<Guid>> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId);
@@ -21,4 +21,9 @@ public interface IRequisitionRepository
         int pageSize, ProcurementSource source); 
     Task<Result> UpdateSourceRequisition(CreateSourceRequisitionRequest request, Guid sourceRequisitionId); 
     Task<Result> DeleteSourceRequisition(Guid sourceRequisitionId);
+
+    Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSuppliersWithSourceRequisitionItems(int page,
+        int pageSize, bool sent);
+
+   Task<Result> MarkQuotationAsSent(Guid supplierId);
 }
