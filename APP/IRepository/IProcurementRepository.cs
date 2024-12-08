@@ -2,6 +2,8 @@ using SHARED;
 using APP.Utils;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.PurchaseOrders.Request;
 
 namespace APP.IRepository
 {
@@ -24,5 +26,28 @@ namespace APP.IRepository
             SupplierType type);
         Task<Result> UpdateSupplier(CreateSupplierRequest request, Guid supplierId, Guid userId);
         Task<Result> DeleteSupplier(Guid supplierId, Guid userId);
+        
+        // ************* PurchaseOrder *************
+        Task<Result<Guid>> CreatePurchaseOrder(CreatePurchaseOrderRequest request, Guid userId);
+        Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId);
+        Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery);
+        Task<Result> UpdatePurchaseOrder(CreatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId);
+        Task<Result> DeletePurchaseOrder(Guid purchaseOrderId, Guid userId);
+
+        // ************* PurchaseOrderInvoice *************
+        Task<Result<Guid>> CreatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid userId);
+        Task<Result<PurchaseOrderInvoiceDto>> GetPurchaseOrderInvoice(Guid invoiceId);
+        Task<Result<Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>>> GetPurchaseOrderInvoices(int page,
+            int pageSize, string searchQuery);
+        Task<Result> UpdatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid invoiceId, Guid userId);
+        Task<Result> DeletePurchaseOrderInvoice(Guid invoiceId, Guid userId);
+
+        // ************* BillingSheet *************
+        Task<Result<Guid>> CreateBillingSheet(CreateBillingSheetRequest request, Guid userId);
+        Task<Result<BillingSheetDto>> GetBillingSheet(Guid billingSheetId);
+        Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize,
+            string searchQuery);
+        Task<Result> UpdateBillingSheet(CreateBillingSheetRequest request, Guid billingSheetId, Guid userId);
+        Task<Result> DeleteBillingSheet(Guid billingSheetId, Guid userId);
     }
 }

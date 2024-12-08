@@ -2,6 +2,7 @@ using APP.IRepository;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Countries;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
@@ -32,6 +33,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
             nameof(Country) => mapper.Map<List<CollectionItemDto>>(await context.Countries.OrderBy(c => c.Name).ToListAsync()),
             nameof(WarehouseLocation) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocations.OrderBy(c => c.Name).Include(w => w.Warehouse).ToListAsync()),
+            nameof(Warehouse) => mapper.Map<List<CollectionItemDto>>(await context.Warehouses.OrderBy(c => c.Name).ToListAsync()),
+            nameof(Currency) => mapper.Map<List<CollectionItemDto>>(await context.Currencies.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -104,6 +107,17 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var warehouseLocations = await context.WarehouseLocations.OrderBy(c => c.Name).Include(w => w.Warehouse).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocations);
                     break;
+                
+                case nameof(Warehouse):
+                    var warehouses = await context.Warehouses.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouses);
+                    break;
+                
+                case nameof(Currency):
+                    var currencies = await context.Currencies.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(currencies);
+                    break;
+                
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -187,6 +201,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.SaveChangesAsync();
                 return productPackageType.Id;
             
+            case nameof(Currency):
+                var currency = mapper.Map<Currency>(request);
+                await context.Currencies.AddAsync(currency);
+                await context.SaveChangesAsync();
+                return currency.Id;
+            
             default:
                 return Error.Validation("Item", "Invalid item type");
         }
@@ -259,6 +279,14 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.PackageTypes.Update(productPackageType);
                 await context.SaveChangesAsync();
                 return productPackageType.Id;
+            
+            case nameof(Currency):
+                var currency = await context.Currencies.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, currency);
+                currency.LastUpdatedById = userId;
+                context.Currencies.Update(currency);
+                await context.SaveChangesAsync();
+                return currency.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -348,6 +376,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 productPackageType.DeletedAt = currentTime;
                 productPackageType.LastDeletedById = userId;
                 context.PackageTypes.Update(productPackageType);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(Currency):
+                var currency = await context.Currencies.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (currency == null)
+                    return Error.Validation("Currency", "Not found");
+                currency.DeletedAt = currentTime;
+                currency.LastDeletedById = userId;
+                context.Currencies.Update(currency);
                 await context.SaveChangesAsync();
                 return Result.Success();
             

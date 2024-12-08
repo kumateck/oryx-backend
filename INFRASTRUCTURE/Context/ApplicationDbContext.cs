@@ -5,6 +5,7 @@ using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Countries;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -13,6 +14,7 @@ using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
@@ -179,6 +181,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Attachment> Attachments { get; set; }
 
     #endregion
+
+    #region Currency
+
+    public DbSet<Currency> Currencies { get; set; }
+
+    #endregion
+
+    #region Purchase Order
+
+    public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
+    public DbSet<PurchaseOrderInvoice> PurchaseOrderInvoices { get; set; }
+    public DbSet<BillingSheet> BillingSheets { get; set; }
+
+    #endregion
     
 
     // #region TenantFilter
@@ -324,6 +340,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<SourceRequisitionItem>().Navigation(r => r.UoM).AutoInclude();
         modelBuilder.Entity<SourceRequisitionItemSupplier>().Navigation(r => r.Supplier).AutoInclude();
         #endregion
+
+        #region Purchase Order ENtites
+
+        modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Items).AutoInclude();
+        modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Material).AutoInclude();
+        modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Uom).AutoInclude();
+        modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Currency).AutoInclude();
+        
+        modelBuilder.Entity<PurchaseOrderInvoice>().Navigation(p => p.BatchItems).AutoInclude();
+        modelBuilder.Entity<PurchaseOrderInvoice>().Navigation(p => p.Charges).AutoInclude();
+        modelBuilder.Entity<BatchItem>().Navigation(b => b.Manufacturer).AutoInclude();
+        modelBuilder.Entity<Charge>().Navigation(b => b.Currency).AutoInclude();
+
+        modelBuilder.Entity<BillingSheet>().Navigation(b => b.Supplier).AutoInclude();
+
+        #endregion
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
@@ -441,6 +473,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Attachment Filter
 
         modelBuilder.Entity<Attachment>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Currency
+
+        modelBuilder.Entity<Currency>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Purchase Order
+
+        modelBuilder.Entity<PurchaseOrder>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<PurchaseOrderItem>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
+        modelBuilder.Entity<PurchaseOrderInvoice>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<PurchaseOrderInvoice>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
+        modelBuilder.Entity<BatchItem>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
+        modelBuilder.Entity<Charge>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
+        modelBuilder.Entity<BillingSheet>().HasQueryFilter(a => !a.DeletedAt.HasValue);
 
         #endregion
     }

@@ -32,6 +32,7 @@
 
     <ItemGroup>
       <Folder Include="Entities\Logistics\" />
+      <Folder Include="Entities\Shipments\Request\" />
     </ItemGroup>
 
 </Project>

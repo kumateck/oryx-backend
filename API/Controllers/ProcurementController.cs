@@ -5,6 +5,8 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.PurchaseOrders.Request;
 
 namespace API.Controllers;
 
@@ -233,6 +235,273 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteSupplier(supplierId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+     // ************* PurchaseOrder Endpoints *************
+
+    /// <summary>
+    /// Creates a new purchase order.
+    /// </summary>
+    /// <param name="request">The CreatePurchaseOrderRequest object.</param>
+    /// <returns>Returns the ID of the created purchase order.</returns>
+    [HttpPost("purchase-order")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreatePurchaseOrder([FromBody] CreatePurchaseOrderRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreatePurchaseOrder(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a purchase order by its ID.
+    /// </summary>
+    /// <param name="purchaseOrderId">The ID of the purchase order.</param>
+    /// <returns>Returns the purchase order details.</returns>
+    [HttpGet("purchase-order/{purchaseOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PurchaseOrderDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetPurchaseOrder(Guid purchaseOrderId)
+    {
+        var result = await repository.GetPurchaseOrder(purchaseOrderId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of purchase orders.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of purchase orders.</returns>
+    [HttpGet("purchase-order")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<PurchaseOrderDto>>))]
+    public async Task<IResult> GetPurchaseOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetPurchaseOrders(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific purchase order by its ID.
+    /// </summary>
+    /// <param name="request">The UpdatePurchaseOrderRequest object.</param>
+    /// <param name="purchaseOrderId">The ID of the purchase order to update.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("purchase-order/{purchaseOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdatePurchaseOrder([FromBody] CreatePurchaseOrderRequest request, Guid purchaseOrderId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdatePurchaseOrder(request, purchaseOrderId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific purchase order by its ID.
+    /// </summary>
+    /// <param name="purchaseOrderId">The ID of the purchase order to delete.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpDelete("purchase-order/{purchaseOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeletePurchaseOrder(Guid purchaseOrderId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeletePurchaseOrder(purchaseOrderId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    // ************* PurchaseOrderInvoice Endpoints *************
+
+    /// <summary>
+    /// Creates a new purchase order invoice.
+    /// </summary>
+    /// <param name="request">The CreatePurchaseOrderInvoiceRequest object.</param>
+    /// <returns>Returns the ID of the created invoice.</returns>
+    [HttpPost("purchase-order-invoice")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreatePurchaseOrderInvoice([FromBody] CreatePurchaseOrderInvoiceRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreatePurchaseOrderInvoice(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a purchase order invoice by its ID.
+    /// </summary>
+    /// <param name="invoiceId">The ID of the invoice.</param>
+    /// <returns>Returns the invoice details.</returns>
+    [HttpGet("purchase-order-invoice/{invoiceId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PurchaseOrderInvoiceDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetPurchaseOrderInvoice(Guid invoiceId)
+    {
+        var result = await repository.GetPurchaseOrderInvoice(invoiceId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of purchase order invoices.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of invoices.</returns>
+    [HttpGet("purchase-order-invoice")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>))]
+    public async Task<IResult> GetPurchaseOrderInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetPurchaseOrderInvoices(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific purchase order invoice by its ID.
+    /// </summary>
+    /// <param name="request">The UpdatePurchaseOrderInvoiceRequest object.</param>
+    /// <param name="invoiceId">The ID of the invoice to update.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("purchase-order-invoice/{invoiceId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdatePurchaseOrderInvoice([FromBody] CreatePurchaseOrderInvoiceRequest request, Guid invoiceId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdatePurchaseOrderInvoice(request, invoiceId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific purchase order invoice by its ID.
+    /// </summary>
+    /// <param name="invoiceId">The ID of the invoice to delete.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpDelete("purchase-order-invoice/{invoiceId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeletePurchaseOrderInvoice(Guid invoiceId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeletePurchaseOrderInvoice(invoiceId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    // ************* BillingSheet Endpoints *************
+
+    /// <summary>
+    /// Creates a new billing sheet.
+    /// </summary>
+    /// <param name="request">The CreateBillingSheetRequest object.</param>
+    /// <returns>Returns the ID of the created billing sheet.</returns>
+    [HttpPost("billing-sheet")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateBillingSheet([FromBody] CreateBillingSheetRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateBillingSheet(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a billing sheet by its ID.
+    /// </summary>
+    /// <param name="billingSheetId">The ID of the billing sheet.</param>
+    /// <returns>Returns the billing sheet details.</returns>
+    [HttpGet("billing-sheet/{billingSheetId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BillingSheetDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetBillingSheet(Guid billingSheetId)
+    {
+        var result = await repository.GetBillingSheet(billingSheetId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of billing sheets.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of billing sheets.</returns>
+    [HttpGet("billing-sheet")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BillingSheetDto>>))]
+    public async Task<IResult> GetBillingSheets([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetBillingSheets(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific billing sheet by its ID.
+    /// </summary>
+    /// <param name="request">The UpdateBillingSheetRequest object.</param>
+    /// <param name="billingSheetId">The ID of the billing sheet to update.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("billing-sheet/{billingSheetId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateBillingSheet([FromBody] CreateBillingSheetRequest request, Guid billingSheetId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateBillingSheet(request, billingSheetId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific billing sheet by its ID.
+    /// </summary>
+    /// <param name="billingSheetId">The ID of the billing sheet to delete.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpDelete("billing-sheet/{billingSheetId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteBillingSheet(Guid billingSheetId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteBillingSheet(billingSheetId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

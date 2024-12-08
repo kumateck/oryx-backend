@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using SHARED;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.PurchaseOrders.Request;
 
 namespace APP.Repository;
 
@@ -186,6 +188,236 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
         supplier.LastDeletedById = userId;
 
         context.Suppliers.Update(supplier);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    // ************* CRUD for PurchaseOrder *************
+
+    public async Task<Result<Guid>> CreatePurchaseOrder(CreatePurchaseOrderRequest request, Guid userId)
+    {
+        var purchaseOrder = mapper.Map<PurchaseOrder>(request);
+        purchaseOrder.CreatedById = userId;
+        await context.PurchaseOrders.AddAsync(purchaseOrder);
+        await context.SaveChangesAsync();
+
+        return purchaseOrder.Id;
+    }
+
+    public async Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId)
+    {
+        var purchaseOrder = await context.PurchaseOrders
+            .Include(po => po.Supplier)
+            .Include(po => po.Items).ThenInclude(i => i.Material)
+            .Include(po => po.Items).ThenInclude(i => i.Uom)
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+
+        return purchaseOrder is null
+            ? Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found")
+            : mapper.Map<PurchaseOrderDto>(purchaseOrder);
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery)
+    {
+        var query = context.PurchaseOrders
+            .Include(po => po.Supplier)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, po => po.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<PurchaseOrderDto>
+        );
+    }
+
+    public async Task<Result> UpdatePurchaseOrder(CreatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId)
+    {
+        var existingOrder = await context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+        if (existingOrder is null)
+        {
+            return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        }
+
+        mapper.Map(request, existingOrder);
+        existingOrder.LastUpdatedById = userId;
+
+        context.PurchaseOrders.Update(existingOrder);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeletePurchaseOrder(Guid purchaseOrderId, Guid userId)
+    {
+        var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+        if (purchaseOrder is null)
+        {
+            return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        }
+
+        purchaseOrder.DeletedAt = DateTime.UtcNow;
+        purchaseOrder.LastDeletedById = userId;
+
+        context.PurchaseOrders.Update(purchaseOrder);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // ************* CRUD for PurchaseOrderInvoice *************
+
+    public async Task<Result<Guid>> CreatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid userId)
+    {
+        var invoice = mapper.Map<PurchaseOrderInvoice>(request);
+        invoice.CreatedById = userId;
+        await context.PurchaseOrderInvoices.AddAsync(invoice);
+        await context.SaveChangesAsync();
+
+        return invoice.Id;
+    }
+
+    public async Task<Result<PurchaseOrderInvoiceDto>> GetPurchaseOrderInvoice(Guid invoiceId)
+    {
+        var invoice = await context.PurchaseOrderInvoices
+            .Include(poi => poi.PurchaseOrder).ThenInclude(po => po.Supplier)
+            .Include(poi => poi.BatchItems).ThenInclude(bi => bi.Manufacturer)
+            .Include(poi => poi.Charges).ThenInclude(c => c.Currency)
+            .FirstOrDefaultAsync(poi => poi.Id == invoiceId);
+
+        return invoice is null
+            ? Error.NotFound("PurchaseOrderInvoice.NotFound", "Invoice not found")
+            : mapper.Map<PurchaseOrderInvoiceDto>(invoice);
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>>> GetPurchaseOrderInvoices(int page, int pageSize, string searchQuery)
+    {
+        var query = context.PurchaseOrderInvoices
+            .Include(poi => poi.PurchaseOrder).ThenInclude(po => po.Supplier)
+            .Include(poi => poi.BatchItems).ThenInclude(bi => bi.Manufacturer)
+            .Include(poi => poi.Charges).ThenInclude(c => c.Currency)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, poi => poi.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<PurchaseOrderInvoiceDto>
+        );
+    }
+
+    public async Task<Result> UpdatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid invoiceId, Guid userId)
+    {
+        var existingInvoice = await context.PurchaseOrderInvoices.FirstOrDefaultAsync(poi => poi.Id == invoiceId);
+        if (existingInvoice is null)
+        {
+            return Error.NotFound("PurchaseOrderInvoice.NotFound", "Invoice not found");
+        }
+
+        mapper.Map(request, existingInvoice);
+        existingInvoice.LastUpdatedById = userId;
+
+        context.PurchaseOrderInvoices.Update(existingInvoice);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeletePurchaseOrderInvoice(Guid invoiceId, Guid userId)
+    {
+        var invoice = await context.PurchaseOrderInvoices.FirstOrDefaultAsync(poi => poi.Id == invoiceId);
+        if (invoice is null)
+        {
+            return Error.NotFound("PurchaseOrderInvoice.NotFound", "Invoice not found");
+        }
+
+        invoice.DeletedAt = DateTime.UtcNow;
+        invoice.LastDeletedById = userId;
+
+        context.PurchaseOrderInvoices.Update(invoice);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // ************* CRUD for BillingSheet *************
+
+    public async Task<Result<Guid>> CreateBillingSheet(CreateBillingSheetRequest request, Guid userId)
+    {
+        var billingSheet = mapper.Map<BillingSheet>(request);
+        billingSheet.CreatedById = userId;
+        await context.BillingSheets.AddAsync(billingSheet);
+        await context.SaveChangesAsync();
+
+        return billingSheet.Id;
+    }
+
+    public async Task<Result<BillingSheetDto>> GetBillingSheet(Guid billingSheetId)
+    {
+        var billingSheet = await context.BillingSheets
+            .Include(bs => bs.Supplier)
+            .Include(bs => bs.Invoice).ThenInclude(poi => poi.PurchaseOrder)
+            .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
+
+        return billingSheet is null
+            ? Error.NotFound("BillingSheet.NotFound", "Billing sheet not found")
+            : mapper.Map<BillingSheetDto>(billingSheet);
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize, string searchQuery)
+    {
+        var query = context.BillingSheets
+            .Include(bs => bs.Supplier)
+            .Include(bs => bs.Invoice).ThenInclude(poi => poi.PurchaseOrder)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, bs => bs.Code, bs => bs.BillOfLading);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<BillingSheetDto>
+        );
+    }
+
+    public async Task<Result> UpdateBillingSheet(CreateBillingSheetRequest request, Guid billingSheetId, Guid userId)
+    {
+        var existingBillingSheet = await context.BillingSheets.FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
+        if (existingBillingSheet is null)
+        {
+            return Error.NotFound("BillingSheet.NotFound", "Billing sheet not found");
+        }
+
+        mapper.Map(request, existingBillingSheet);
+        existingBillingSheet.LastUpdatedById = userId;
+
+        context.BillingSheets.Update(existingBillingSheet);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteBillingSheet(Guid billingSheetId, Guid userId)
+    {
+        var billingSheet = await context.BillingSheets.FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
+        if (billingSheet is null)
+        {
+            return Error.NotFound("BillingSheet.NotFound", "Billing sheet not found");
+        }
+
+        billingSheet.DeletedAt = DateTime.UtcNow;
+        billingSheet.LastDeletedById = userId;
+
+        context.BillingSheets.Update(billingSheet);
         await context.SaveChangesAsync();
         return Result.Success();
     }
