@@ -341,7 +341,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<SourceRequisitionItemSupplier>().Navigation(r => r.Supplier).AutoInclude();
         #endregion
 
-        #region Purchase Order ENtites
+        #region Purchase Order Entites
 
         modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Items).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Material).AutoInclude();
@@ -354,6 +354,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Charge>().Navigation(b => b.Currency).AutoInclude();
 
         modelBuilder.Entity<BillingSheet>().Navigation(b => b.Supplier).AutoInclude();
+
+        #endregion
+
+        #region Material Entities
+
+        modelBuilder.Entity<MaterialBatch>().Navigation(p => p.UoM).AutoInclude();
 
         #endregion
     }

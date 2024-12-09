@@ -158,9 +158,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(b => b.Movements).ThenInclude(m => m.ToLocation)
             .FirstOrDefaultAsync(b => b.Id == batchId);
 
-        return batch is null
-            ? MaterialErrors.NotFound(batchId)
-            : mapper.Map<MaterialBatchDto>(batch);
+        if (batch is null) return MaterialErrors.NotFound(batchId); 
+        
+        var batchDto = mapper.Map<MaterialBatchDto>(batch);
+        batchDto.Locations = GetCurrentLocations(batchDto);
+        return batchDto;
     }
 
     // Get paginated list of Material Batches
@@ -168,19 +170,77 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var query = context.MaterialBatches
             .Include(b => b.Material)
+            .Include(b => b.Events).ThenInclude(m => m.User)
+            .Include(b => b.Events).ThenInclude(m => m.ConsumedLocation)
+            .Include(b => b.Movements).ThenInclude(m => m.FromLocation)
+            .Include(b => b.Movements).ThenInclude(m => m.ToLocation)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, b => b.Material.Name);  // Searching by material name
+            query = query.WhereSearch(searchQuery, b => b.Material.Name); 
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
+        var result = await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
             mapper.Map<MaterialBatchDto>
         );
+        
+        var batches = result.Data.ToList();
+        foreach (var batch in batches)
+        {
+            batch.Locations = GetCurrentLocations(batch);
+        }
+        result.Data = batches;
+        return result;
+    }
+    
+    public List<CurrentLocationDto> GetCurrentLocations(MaterialBatchDto batch)
+    {
+        // Dictionary to track the total quantity at each location
+        var locationQuantities = new Dictionary<CollectionItemDto, int>();
+
+        // Track the movements and update the locations accordingly
+        foreach (var movement in batch.Movements)
+        {
+            var fromLocation = movement.FromLocation;
+            var toLocation = movement.ToLocation;
+
+            // If moving to a location, increase the quantity at the destination
+            if (toLocation is not null)
+            {
+                if (!locationQuantities.ContainsKey(toLocation))
+                {
+                    locationQuantities[toLocation] = 0;
+                }
+                locationQuantities[toLocation] += movement.Quantity;
+            }
+
+            // If moving from a location, decrease the quantity at the origin
+            if (fromLocation is not null)
+            {
+                if (!locationQuantities.ContainsKey(fromLocation))
+                {
+                    locationQuantities[fromLocation] = 0; 
+                }
+                locationQuantities[fromLocation] -= movement.Quantity;
+
+                // Ensure no negative quantities
+                if (locationQuantities[fromLocation] < 0)
+                {
+                    locationQuantities[fromLocation] = 0;
+                }
+            }
+        }
+
+        // Convert dictionary to list of CurrentLocationDto and return
+        return locationQuantities.Select(kvp => new CurrentLocationDto
+        {
+            LocationName = kvp.Key.Name,
+            QuantityAtLocation = kvp.Value
+        }).ToList();
     }
 
     // Update Material Batch

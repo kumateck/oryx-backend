@@ -18,6 +18,8 @@ public class MaterialBatch : BaseEntity
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }
     public DateTime? DateApproved { get; set; }
+    public DateTime? DateRejected { get; set; }
+    public DateTime ExpiryDate { get; set; }
     public List<MaterialBatchEvent> Events { get; set; } = [];
     public List<MaterialBatchMovement> Movements { get; set; } = [];
 }

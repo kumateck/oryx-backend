@@ -69,6 +69,7 @@ namespace API.Database.Seeds.TableSeeders
                     UoMId = kgUoM,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
+                    ExpiryDate = DateTime.UtcNow.AddYears(1)
                 },
                 new MaterialBatch
                 {
@@ -78,6 +79,7 @@ namespace API.Database.Seeds.TableSeeders
                     UoMId = litreUoM,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow.AddDays(-5),
+                    ExpiryDate = DateTime.UtcNow.AddYears(1)
                 },
                 new MaterialBatch
                 {
@@ -87,6 +89,7 @@ namespace API.Database.Seeds.TableSeeders
                     UoMId = kgUoM,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow.AddDays(-10),
+                    ExpiryDate = DateTime.UtcNow.AddYears(1)
                 }
             };
 
