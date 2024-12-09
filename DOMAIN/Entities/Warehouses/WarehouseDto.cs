@@ -1,4 +1,3 @@
-using DOMAIN.Entities.Base;
 using SHARED;
 
 namespace DOMAIN.Entities.Warehouses;
@@ -25,6 +24,7 @@ public class WarehouseLocationDto
 
 public class WarehouseLocationRackDto 
 {
+    public Guid Id { get; set; }
     public CollectionItemDto WarehouseLocation { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
@@ -33,6 +33,7 @@ public class WarehouseLocationRackDto
 
 public class WarehouseLocationShelfDto
 {
+    public Guid Id { get; set; }
     public CollectionItemDto WarehouseLocationRack { get; set; }
     public string Code { get; set; }
     public string Name { get; set; }

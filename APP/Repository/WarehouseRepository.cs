@@ -214,6 +214,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page, int pageSize, string searchQuery)
     {
         var query = context.WarehouseLocationRacks
+            .Include(r => r.WarehouseLocation)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -230,7 +231,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     }
 
 
-    public async Task<Result> UpdateWarehouseLocationRack( CreateWarehouseLocationRackRequest request, Guid rackId, Guid userId)
+    public async Task<Result> UpdateWarehouseLocationRack(CreateWarehouseLocationRackRequest request, Guid rackId, Guid userId)
     {
         var rack = await context.WarehouseLocationRacks
             .FirstOrDefaultAsync(r => r.Id == rackId);

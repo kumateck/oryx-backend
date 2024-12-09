@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Mail;
-using DOMAIN.Entities.Users;
 using Microsoft.Extensions.Logging;
 
 namespace APP.Services.Email;
