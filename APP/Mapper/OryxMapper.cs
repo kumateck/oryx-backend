@@ -75,9 +75,7 @@ public class OryxMapper : Profile
         CreateMap<Manufacturer, CollectionItemDto>();
         CreateMap<Country, CollectionItemDto>();
         CreateMap<Warehouse, CollectionItemDto>();
-        CreateMap<WarehouseLocation, CollectionItemDto>()
-            .ForMember(dest => dest.Name,
-                opt => opt.MapFrom(src => $"{src.Name} - {src.Warehouse.Name}"));
+        CreateMap<WarehouseLocation, CollectionItemDto>();
         CreateMap<WarehouseLocationRack, CollectionItemDto>();
         CreateMap<WarehouseLocationShelf, CollectionItemDto>();
         CreateMap<MaterialBatch, CollectionItemDto>();
