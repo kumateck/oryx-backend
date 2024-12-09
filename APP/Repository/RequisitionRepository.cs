@@ -1,5 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Email;
+using APP.Services.Pdf;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Materials;
@@ -9,10 +11,12 @@ using SHARED;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Requisitions.Request;
+using DOMAIN.Entities.Users;
+using SHARED.Requests;
 
 namespace APP.Repository;
 
-public class RequisitionRepository(ApplicationDbContext context, IMapper mapper) : IRequisitionRepository
+public class RequisitionRepository(ApplicationDbContext context, IMapper mapper, IEmailService emailService, IPdfService pdfService) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
 
@@ -420,15 +424,38 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper)
         };
     }
     
-    public async Task<Result> MarkQuotationAsSent(Guid supplierId)
+    public async Task<Result> SendQuotationToSupplier(SendEmailRequest request, Guid userId, Guid supplierId)
     {
         var itemsToUpdate = await context.SourceRequisitionItemSuppliers
+            .Include(s => s.Supplier)
             .Where(s => s.SupplierId == supplierId && s.SentQuotationRequestAt == null)
             .ToListAsync();
-
+        
         if (itemsToUpdate.Count == 0)
         {
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
+        }
+        
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if(user is null) return UserErrors.NotFound(userId);
+        
+        var mailAttachments = new List<(byte[] fileContent, string fileName)>();
+        var count = 0;
+        foreach (var attachment in request.Attachments)
+        {
+            var fileName = $"attachment_{count}";
+            var fileContent = pdfService.GeneratePdfFromHtml(attachment);
+            mailAttachments.Add((fileContent, fileName));
+            count++;
+        }
+
+        try
+        {
+            emailService.SendMail(itemsToUpdate[0].Supplier.Email, request.Subject, request.Body, mailAttachments);
+        }
+        catch (Exception e)
+        {
+            return Error.Validation("Send.Quotation", e.Message);
         }
 
         foreach (var item in itemsToUpdate)

@@ -2,6 +2,7 @@ using APP.Utils;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using SHARED;
+using SHARED.Requests;
 
 namespace APP.IRepository;
 
@@ -27,5 +28,5 @@ public interface IRequisitionRepository
 
    Task<Result<SupplierQuotationDto>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
 
-   Task<Result> MarkQuotationAsSent(Guid supplierId);
+   Task<Result> SendQuotationToSupplier(SendEmailRequest request,  Guid userId, Guid supplierId);
 }

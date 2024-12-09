@@ -1,6 +1,9 @@
+using DOMAIN.Entities.Users;
+
 namespace APP.Services.Email;
 
-public class IEmailService
-{
-    
+public interface IEmailService
+{ 
+        void SendMail(string to, string subject, string body,
+        List<(byte[] fileContent, string fileName)> attachments);
 }

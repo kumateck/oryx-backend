@@ -5,6 +5,7 @@ using APP.IRepository;
 using DOMAIN.Entities.Requisitions;
 using APP.Utils;
 using DOMAIN.Entities.Requisitions.Request;
+using SHARED.Requests;
 
 namespace API.Controllers;
 
@@ -241,17 +242,21 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     }
 
     /// <summary>
-    /// Marks requisition item suppliers as having received a quotation request.
+    /// Send Quotation request email to supplier.
     /// </summary>
     /// <param name="supplierId">The ID of the supplier.</param>
+    /// <param name="request">The body of the email</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("source/supplier/{supplierId}/mark-quotation-sent")]
+    [HttpPost("source/supplier/{supplierId}/send-quotation")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> MarkQuotationAsSent(Guid supplierId)
+    public async Task<IResult> MarkQuotationAsSent(Guid supplierId, [FromBody] SendEmailRequest request)
     {
-        var result = await repository.MarkQuotationAsSent(supplierId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.SendQuotationToSupplier(request, Guid.Parse(userId), supplierId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
