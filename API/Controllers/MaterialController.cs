@@ -185,7 +185,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of material batches.</returns>
-    [HttpGet("batches")]
+    [HttpGet("batch")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>))]
     public async Task<IResult> GetMaterialBatches([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
