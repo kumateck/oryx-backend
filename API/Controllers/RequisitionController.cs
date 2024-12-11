@@ -245,18 +245,17 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// Send Quotation request email to supplier.
     /// </summary>
     /// <param name="supplierId">The ID of the supplier.</param>
-    /// <param name="request">The body of the email</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("source/supplier/{supplierId}/send-quotation")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> MarkQuotationAsSent(Guid supplierId, [FromBody] SendEmailRequest request)
+    public async Task<IResult> MarkQuotationAsSent(Guid supplierId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.SendQuotationToSupplier(request, Guid.Parse(userId), supplierId);
+        var result = await repository.SendQuotationToSupplier(supplierId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

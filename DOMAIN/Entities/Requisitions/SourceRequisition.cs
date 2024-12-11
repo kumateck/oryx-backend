@@ -79,7 +79,7 @@ public class SourceRequisitionItemSupplierDto
 
 public class SupplierQuotationDto
 {
-    public CollectionItemDto Supplier { get; set; }
+    public SupplierDto Supplier { get; set; }
     public DateTime? SentQuotationRequestAt { get; set; }
     public bool SentQuotationRequest => SentQuotationRequestAt is not null;
     public decimal? SupplierQuotedPrice { get; set; }

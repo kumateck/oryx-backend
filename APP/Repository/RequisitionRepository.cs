@@ -10,10 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using SHARED;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Users;
-using SHARED.Requests;
 
 namespace APP.Repository;
 
@@ -398,7 +398,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .GroupBy(s => s.Supplier)
             .Select(item => new SupplierQuotationDto
             {
-                Supplier = mapper.Map<CollectionItemDto>(item.Key),
+                Supplier = mapper.Map<SupplierDto>(item.Key),
                 SentQuotationRequestAt = sent ? item.Min(s => s.SentQuotationRequestAt) : null, 
                 Items = mapper.Map<List<SourceRequisitionItemDto>>(item.Select(i => i.SourceRequisitionItem))
             }).ToList();
@@ -446,11 +446,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .ToListAsync();
         
 
-        return new SupplierQuotationDto
-        {
-            Supplier = mapper.Map<CollectionItemDto>(query.FirstOrDefault()?.Supplier),
-            Items = mapper.Map<List<SourceRequisitionItemDto>>(query.Select(i => i.SourceRequisitionItem))
-        };
+        return GetSupplierQuotation(query);
         
         /*var groupedItems = query
             .Select(i => i.SourceRequisitionItem)
@@ -479,11 +475,27 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             Items = groupedItems
         };*/
     }
+
+    private SupplierQuotationDto GetSupplierQuotation(
+        List<SourceRequisitionItemSupplier> sourceRequisitionItemSuppliers)
+    {
+        return new SupplierQuotationDto
+        {
+            Supplier = mapper.Map<SupplierDto>(sourceRequisitionItemSuppliers.FirstOrDefault()?.Supplier),
+            Items = mapper.Map<List<SourceRequisitionItemDto>>(sourceRequisitionItemSuppliers.Select(i => i.SourceRequisitionItem))
+        };
+    }
     
-    public async Task<Result> SendQuotationToSupplier(SendEmailRequest request, Guid userId, Guid supplierId)
+    public async Task<Result> SendQuotationToSupplier(Guid supplierId, Guid userId)
     {
         var itemsToUpdate = await context.SourceRequisitionItemSuppliers
             .Include(s => s.Supplier)
+            .Include(s => s.SourceRequisitionItem)
+            .ThenInclude(item => item.Material)
+            .Include(s => s.SourceRequisitionItem)
+            .ThenInclude(item => item.UoM)
+            .Include(s => s.SourceRequisitionItem)
+            .ThenInclude(item => item.SourceRequisition)
             .Where(s => s.SupplierId == supplierId && s.SentQuotationRequestAt == null)
             .ToListAsync();
         
@@ -492,26 +504,28 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
         }
         
+        var supplierQuotationDto =  GetSupplierQuotation(itemsToUpdate);
+        
+        if (supplierQuotationDto.Items.Count == 0)
+        {
+            return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
+        }
+        
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if(user is null) return UserErrors.NotFound(userId);
         
         var mailAttachments = new List<(byte[] fileContent, string fileName)>();
-        var count = 0;
-        foreach (var attachment in request.Attachments)
-        {
-            var fileName = $"attachment_{count}";
-            var fileContent = pdfService.GeneratePdfFromHtml(attachment);
-            mailAttachments.Add((fileContent, fileName));
-            count++;
-        }
+        var content = PdfTemplate.QuotationRequestTemplate(supplierQuotationDto);
+        var fileContent = pdfService.GeneratePdfFromHtml(content);
+        mailAttachments.Add((fileContent, $"Quotation Request from Entrance"));
 
         try
         {
-            emailService.SendMail(itemsToUpdate[0].Supplier.Email, request.Subject, request.Body, mailAttachments);
+            emailService.SendMail(supplierQuotationDto.Supplier.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
         }
         catch (Exception e)
         {
-            return Error.Validation("Send.Quotation", e.Message);
+            return Error.Validation("Supplier.Quotation", e.Message);
         }
 
         foreach (var item in itemsToUpdate)
@@ -547,7 +561,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .GroupBy(s => s.Supplier)
             .Select(item => new SupplierQuotationDto
             {
-                Supplier = mapper.Map<CollectionItemDto>(item.Key),
+                Supplier = mapper.Map<SupplierDto>(item.Key),
                 SentQuotationRequestAt =  item.Min(s => s.SentQuotationRequestAt) ,
                 SupplierQuotedPrice = received ?  item.Min(s => s.SupplierQuotedPrice) : null,
                 Items = mapper.Map<List<SourceRequisitionItemDto>>(item.Select(i => i.SourceRequisitionItem))
@@ -597,7 +611,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         return new SupplierQuotationDto
         {
-            Supplier = mapper.Map<CollectionItemDto>(query.FirstOrDefault()?.Supplier),
+            Supplier = mapper.Map<SupplierDto>(query.FirstOrDefault()?.Supplier),
             SentQuotationRequestAt = query.FirstOrDefault()?.SentQuotationRequestAt,
             Items = mapper.Map<List<SourceRequisitionItemDto>>(query.Select(i => i.SourceRequisitionItem))
         };

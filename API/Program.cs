@@ -244,6 +244,8 @@ app.UseRouting();
 // Apply rate limiting middleware
 //app.UseRateLimiter();
 
+app.UseStaticFiles();
+
 //use CORS
 app.UseCors("default");
 

@@ -28,7 +28,7 @@ public interface IRequisitionRepository
 
    Task<Result<SupplierQuotationDto>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
 
-   Task<Result> SendQuotationToSupplier(SendEmailRequest request,  Guid userId, Guid supplierId);
+   Task<Result> SendQuotationToSupplier(Guid supplierId, Guid userId);
 
   Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>>
        GetSuppliersWithSourceRequisitionItemsForQuotation(int page, int pageSize, ProcurementSource source,
