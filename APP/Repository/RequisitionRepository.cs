@@ -394,20 +394,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             : await query.Where(s => s.SentQuotationRequestAt == null).ToListAsync();
 
         // Group the query
+        // var groupedQuery = sourceRequisitionItemSuppliers
+        //     .GroupBy(s => s.Supplier)
+        //     .Select(item => new SupplierQuotationDto
+        //     {
+        //         Supplier = mapper.Map<SupplierDto>(item.Key),
+        //         SentQuotationRequestAt = sent ? item.Min(s => s.SentQuotationRequestAt) : null, 
+        //         Items = mapper.Map<List<SourceRequisitionItemDto>>(item.Select(i => i.SourceRequisitionItem))
+        //     }).ToList();
+        
         var groupedQuery = sourceRequisitionItemSuppliers
             .GroupBy(s => s.Supplier)
             .Select(item => new SupplierQuotationDto
             {
                 Supplier = mapper.Map<SupplierDto>(item.Key),
-                SentQuotationRequestAt = sent ? item.Min(s => s.SentQuotationRequestAt) : null, 
-                Items = mapper.Map<List<SourceRequisitionItemDto>>(item.Select(i => i.SourceRequisitionItem))
-            }).ToList();
-        
-        /*var groupedQuery = sourceRequisitionItemSuppliers
-            .GroupBy(s => s.Supplier)
-            .Select(item => new SupplierQuotationDto
-            {
-                Supplier = mapper.Map<CollectionItemDto>(item.Key),
                 SentQuotationRequestAt = sent ? item.Min(s => s.SentQuotationRequestAt) : null, 
                 Items = item
                     .Select(i => i.SourceRequisitionItem)
@@ -427,7 +427,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                             }).ToList(),
                         CreatedAt = g.First().CreatedAt
                     }).ToList()
-            }).ToList();*/
+            }).ToList();
         
         return PaginationHelper.Paginate(page, pageSize, groupedQuery);
     }
@@ -446,7 +446,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .ToListAsync();
         
 
-        return GetSupplierQuotation(query);
+        return GetSupplierQuotation(query, supplierId);
         
         /*var groupedItems = query
             .Select(i => i.SourceRequisitionItem)
@@ -477,12 +477,33 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     private SupplierQuotationDto GetSupplierQuotation(
-        List<SourceRequisitionItemSupplier> sourceRequisitionItemSuppliers)
+        List<SourceRequisitionItemSupplier> sourceRequisitionItemSuppliers, Guid supplierId)
     {
+        var groupedItems = sourceRequisitionItemSuppliers
+            .Select(i => i.SourceRequisitionItem)
+            .GroupBy(i => new { i.MaterialId, i.UoMId })
+            .Select(g => new SourceRequisitionItemDto
+            {
+                Id = g.First().Suppliers.First(s => s.SupplierId == supplierId).Id, 
+                Material = mapper.Map<CollectionItemDto>(g.First().Material),
+                UoM = mapper.Map<CollectionItemDto>(g.First().UoM),
+                Quantity = g.Sum(x => x.Quantity),
+                Source = g.First().Source,
+                Suppliers = g.SelectMany(x => x.Suppliers)
+                    .Where(s => s.SupplierId == supplierId)
+                    .Select(s => new SourceRequisitionItemSupplierDto
+                    {
+                        Supplier = mapper.Map<CollectionItemDto>(s.Supplier),
+                        SentQuotationRequestAt = s.SentQuotationRequestAt
+                    }).ToList(),
+                CreatedAt = g.First().CreatedAt
+            }).ToList();
+        
         return new SupplierQuotationDto
         {
             Supplier = mapper.Map<SupplierDto>(sourceRequisitionItemSuppliers.FirstOrDefault()?.Supplier),
-            Items = mapper.Map<List<SourceRequisitionItemDto>>(sourceRequisitionItemSuppliers.Select(i => i.SourceRequisitionItem))
+            SentQuotationRequestAt = sourceRequisitionItemSuppliers.FirstOrDefault()?.SentQuotationRequestAt,
+            Items = groupedItems
         };
     }
     
@@ -504,7 +525,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
         }
         
-        var supplierQuotationDto =  GetSupplierQuotation(itemsToUpdate);
+        var supplierQuotationDto = GetSupplierQuotation(itemsToUpdate, supplierId);
         
         if (supplierQuotationDto.Items.Count == 0)
         {
@@ -557,22 +578,23 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             : await query.Where(s => s.SentQuotationRequestAt.HasValue && !s.SupplierQuotedPrice.HasValue).ToListAsync();
         
         // Group the query
+        // var groupedQuery = sourceRequisitionItemSuppliers
+        //     .GroupBy(s => s.Supplier)
+        //     .Select(item => new SupplierQuotationDto
+        //     {
+        //         Supplier = mapper.Map<SupplierDto>(item.Key),
+        //         SentQuotationRequestAt =  item.Min(s => s.SentQuotationRequestAt) ,
+        //         SupplierQuotedPrice = received ?  item.Min(s => s.SupplierQuotedPrice) : null,
+        //         Items = mapper.Map<List<SourceRequisitionItemDto>>(item.Select(i => i.SourceRequisitionItem))
+        //     }).ToList();
+        
         var groupedQuery = sourceRequisitionItemSuppliers
             .GroupBy(s => s.Supplier)
             .Select(item => new SupplierQuotationDto
             {
                 Supplier = mapper.Map<SupplierDto>(item.Key),
-                SentQuotationRequestAt =  item.Min(s => s.SentQuotationRequestAt) ,
+                SentQuotationRequestAt = received ? item.Min(s => s.SentQuotationRequestAt) : null, 
                 SupplierQuotedPrice = received ?  item.Min(s => s.SupplierQuotedPrice) : null,
-                Items = mapper.Map<List<SourceRequisitionItemDto>>(item.Select(i => i.SourceRequisitionItem))
-            }).ToList();
-        
-        /*var groupedQuery = sourceRequisitionItemSuppliers
-            .GroupBy(s => s.Supplier)
-            .Select(item => new SupplierQuotationDto
-            {
-                Supplier = mapper.Map<CollectionItemDto>(item.Key),
-                SentQuotationRequestAt = sent ? item.Min(s => s.SentQuotationRequestAt) : null, 
                 Items = item
                     .Select(i => i.SourceRequisitionItem)
                     .GroupBy(i => new { i.MaterialId, i.UoMId })
@@ -591,7 +613,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                             }).ToList(),
                         CreatedAt = g.First().CreatedAt
                     }).ToList()
-            }).ToList();*/
+            }).ToList();
         
         return PaginationHelper.Paginate(page, pageSize, groupedQuery);
     }
@@ -608,13 +630,17 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(item => item.SourceRequisition)
             .Where(s => s.SupplierId == supplierId && s.SentQuotationRequestAt.HasValue && !s.SupplierQuotedPrice.HasValue)
             .ToListAsync();
-
+        
+        return GetSupplierQuotation(query, supplierId);
+        
+        /*
         return new SupplierQuotationDto
         {
             Supplier = mapper.Map<SupplierDto>(query.FirstOrDefault()?.Supplier),
             SentQuotationRequestAt = query.FirstOrDefault()?.SentQuotationRequestAt,
             Items = mapper.Map<List<SourceRequisitionItemDto>>(query.Select(i => i.SourceRequisitionItem))
         };
+        */
         
         /*var groupedItems = query
             .Select(i => i.SourceRequisitionItem)
