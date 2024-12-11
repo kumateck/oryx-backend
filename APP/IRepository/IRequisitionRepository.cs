@@ -29,4 +29,14 @@ public interface IRequisitionRepository
    Task<Result<SupplierQuotationDto>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
 
    Task<Result> SendQuotationToSupplier(SendEmailRequest request,  Guid userId, Guid supplierId);
+
+  Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>>
+       GetSuppliersWithSourceRequisitionItemsForQuotation(int page, int pageSize, ProcurementSource source,
+           bool received);
+  Task<Result<SupplierQuotationDto>> GetSuppliersWithSourceRequisitionItemsForQuotation(Guid supplierId);
+  Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse,
+      Guid supplierId, Guid userId);
+  Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(ProcurementSource source);
+  Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations,
+      Guid userId);
 }

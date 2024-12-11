@@ -3,6 +3,7 @@ using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.PurchaseOrders.Request;
 using SHARED;
 
 namespace DOMAIN.Entities.Requisitions;
@@ -37,13 +38,16 @@ public enum ProcurementSource
     Internal
 }
 
-public class SourceRequisitionItemSupplier : BaseEntity
+public class SourceRequisitionItemSupplier : BaseEntity //SourceRequisitionItemId AND SupplierId should be unique together
 {
     public Guid SourceRequisitionItemId { get; set; }
     public SourceRequisitionItem SourceRequisitionItem { get; set; }
     public Guid SupplierId { get; set; }
     public Supplier Supplier { get; set; }
     public DateTime? SentQuotationRequestAt { get; set; }
+    public decimal? SupplierQuotedPrice { get; set; }
+    public DateTime? ReceivedQuotationAt { get; set; }
+    public bool Processed { get; set; }
 }
 
 public class SourceRequisitionDto :  WithAttachment
@@ -78,5 +82,32 @@ public class SupplierQuotationDto
     public CollectionItemDto Supplier { get; set; }
     public DateTime? SentQuotationRequestAt { get; set; }
     public bool SentQuotationRequest => SentQuotationRequestAt is not null;
+    public decimal? SupplierQuotedPrice { get; set; }
     public List<SourceRequisitionItemDto> Items { get; set; } = [];
+}
+
+
+public class SupplierQuotationResponseDto
+{
+    public Guid Id { get; set; }
+    public decimal Price { get; set; }
+}
+
+public class SupplierPriceComparison
+{
+    public CollectionItemDto Material { get; set; }
+    public List<SupplierQuotation> SupplierQuotation { get; set; } 
+}
+
+public class SupplierQuotation
+{   
+    public CollectionItemDto Supplier { get; set; }
+    public decimal? Price { get; set; }
+}
+
+public class ProcessQuotation
+{
+    public Guid SupplierId { get; set; }
+    public DateTime ExpectedDeliveryDate { get; set; }
+    public List<CreatePurchaseOrderItemRequest> Items { get; set; } = [];
 }

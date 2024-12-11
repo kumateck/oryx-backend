@@ -261,4 +261,96 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     }
 
     #endregion
+    
+    #region Supplier Quotation Management
+
+    /// <summary>
+    /// Retrieves a paginated list of suppliers with their associated source requisition items for quotation.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="source">The source of the requisition (example Local, Foreign, Internal).</param>
+    /// <param name="received">Filter by whether the quotation has been received.</param>
+    /// <returns>Returns a paginated list of suppliers with their requisition items for quotation.</returns>
+    [HttpGet("source/supplier/quotation")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationDto>>))]
+    public async Task<IResult> GetSuppliersWithSourceRequisitionItemsForQuotation([FromQuery] ProcurementSource source,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] bool received = false)
+    {
+        var result = await repository.GetSuppliersWithSourceRequisitionItemsForQuotation(page, pageSize, source, received);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a supplier with their associated source requisition items for quotation.
+    /// </summary>
+    /// <param name="supplierId">The ID of the supplier.</param>
+    /// <returns>Returns a supplier with their requisition items for quotation.</returns>
+    [HttpGet("source/supplier/{supplierId}/quotation")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationDto))]
+    public async Task<IResult> GetSuppliersWithSourceRequisitionItemsForQuotation(Guid supplierId)
+    {
+        var result = await repository.GetSuppliersWithSourceRequisitionItemsForQuotation(supplierId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Receives quotations from a supplier.
+    /// </summary>
+    /// <param name="supplierQuotationResponse">The list of quotations received from the supplier.</param>
+    /// <param name="supplierId">The ID of the supplier.</param>
+    /// <param name="userId">The ID of the user processing the quotation.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("source/supplier/{supplierId}/quotation/receive")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ReceiveQuotationFromSupplier(
+        [FromBody] List<SupplierQuotationResponseDto> supplierQuotationResponse,
+        Guid supplierId,
+        [FromQuery] Guid userId)
+    {
+        var result = await repository.ReceiveQuotationFromSupplier(supplierQuotationResponse, supplierId, userId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a price comparison of materials for a procurement source.
+    /// </summary>
+    /// <param name="source">The source of the procurement (example Local, Foreign, Internal).</param>
+    /// <returns>Returns a list of price comparisons.</returns>
+    [HttpGet("source/materials/price-comparison")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierPriceComparison>))]
+    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] ProcurementSource source)
+    {
+        var result = await repository.GetPriceComparisonOfMaterial(source);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Processes quotations and creates purchase orders.
+    /// </summary>
+    /// <param name="processQuotations">The list of quotations to process.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("source/quotation/process-purchase-order")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ProcessQuotationAndCreatePurchaseOrder(
+        [FromBody] List<ProcessQuotation> processQuotations)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.ProcessQuotationAndCreatePurchaseOrder(processQuotations, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    #endregion
+
 }
