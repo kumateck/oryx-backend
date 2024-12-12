@@ -609,13 +609,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return PaginationHelper.Paginate(page, pageSize, groupedQuery);*/
     }
     
-    public async Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierId)
+    public async Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId)
     {
         return mapper.Map<SupplierQuotationDto>(await  context.SupplierQuotations
             .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Items).ThenInclude(s => s.UoM)
             .Include(s => s.Supplier)
-            .FirstOrDefaultAsync(s => s.Id == supplierId));
+            .FirstOrDefaultAsync(s => s.Id == supplierQuotationId));
         
         /*
         return new SupplierQuotationDto
@@ -667,26 +667,27 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
         }
-        
 
         foreach (var item in supplierQuotation.Items)
         {
             item.QuotedPrice = supplierQuotationResponse.FirstOrDefault(s => s.Id == item.Id)?.Price;
         }
         
+        supplierQuotation.ReceivedQuotation = true;
+        context.SupplierQuotations.Update(supplierQuotation);
         context.SupplierQuotationItems.UpdateRange(supplierQuotation.Items);
         // Save changes to the database
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
-    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(ProcurementSource source)
+    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType)
     {
         var sourceRequisitionItemSuppliers =  await context.SupplierQuotationItems
             .Include(s => s.Material)
             .Include(s => s.UoM)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
-            .Where(s => s.QuotedPrice != null && !s.SupplierQuotation.Processed).ToListAsync();
+            .Where(s => s.QuotedPrice != null && !s.SupplierQuotation.Processed && s.SupplierQuotation.Supplier.Type == supplierType).ToListAsync();
 
         return sourceRequisitionItemSuppliers
             .GroupBy(s => new { s.Material, s.UoM})

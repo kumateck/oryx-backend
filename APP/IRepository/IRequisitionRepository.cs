@@ -33,10 +33,10 @@ public interface IRequisitionRepository
 
    Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, int pageSize,
        SupplierType supplierType, bool received);
-  Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierId);
+  Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId);
   Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse,
       Guid supplierQuotationId);
-  Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(ProcurementSource source);
+  Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType);
   Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations,
       Guid userId);
 }

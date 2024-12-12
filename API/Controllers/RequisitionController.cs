@@ -286,14 +286,14 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <summary>
     /// Retrieves a supplier with their associated source requisition items for quotation.
     /// </summary>
-    /// <param name="supplierId">The ID of the supplier.</param>
+    /// <param name="supplierQuotationId">The ID of the supplier quotation.</param>
     /// <returns>Returns a supplier with their requisition items for quotation.</returns>
-    [HttpGet("source/supplier/{supplierId}/quotation")]
+    [HttpGet("source/supplier/{supplierQuotationId}/quotation")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationDto))]
-    public async Task<IResult> GetSuppliersWithSourceRequisitionItemsForQuotation(Guid supplierId)
+    public async Task<IResult> GetSuppliersWithSourceRequisitionItemsForQuotation(Guid supplierQuotationId)
     {
-        var result = await repository.GetSupplierQuotation(supplierId);
+        var result = await repository.GetSupplierQuotation(supplierQuotationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -318,14 +318,14 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <summary>
     /// Retrieves a price comparison of materials for a procurement source.
     /// </summary>
-    /// <param name="source">The source of the procurement (example Local, Foreign, Internal).</param>
+    /// <param name="supplierType">The type of the supplier (example Local, Foreign).</param>
     /// <returns>Returns a list of price comparisons.</returns>
     [HttpGet("source/material/price-comparison")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierPriceComparison>))]
-    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] ProcurementSource source)
+    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType)
     {
-        var result = await repository.GetPriceComparisonOfMaterial(source);
+        var result = await repository.GetPriceComparisonOfMaterial(supplierType);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
