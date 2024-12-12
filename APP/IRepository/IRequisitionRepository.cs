@@ -35,7 +35,7 @@ public interface IRequisitionRepository
        SupplierType supplierType, bool received);
   Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierId);
   Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse,
-      Guid supplierId, Guid userId);
+      Guid supplierQuotationId);
   Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(ProcurementSource source);
   Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations,
       Guid userId);

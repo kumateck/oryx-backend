@@ -301,20 +301,17 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// Receives quotations from a supplier.
     /// </summary>
     /// <param name="supplierQuotationResponse">The list of quotations received from the supplier.</param>
-    /// <param name="supplierId">The ID of the supplier.</param>
+    /// <param name="supplierQuotationId">The ID of the supplier quotation.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("source/supplier/{supplierId}/quotation/receive")]
+    [HttpPost("source/supplier/{supplierQuotationId}/quotation/receive")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ReceiveQuotationFromSupplier(
         [FromBody] List<SupplierQuotationResponseDto> supplierQuotationResponse,
-        Guid supplierId)
+        Guid supplierQuotationId)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.ReceiveQuotationFromSupplier(supplierQuotationResponse, supplierId, Guid.Parse(userId));
+        var result = await repository.ReceiveQuotationFromSupplier(supplierQuotationResponse, supplierQuotationId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -323,7 +320,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// </summary>
     /// <param name="source">The source of the procurement (example Local, Foreign, Internal).</param>
     /// <returns>Returns a list of price comparisons.</returns>
-    [HttpGet("source/materials/price-comparison")]
+    [HttpGet("source/material/price-comparison")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierPriceComparison>))]
     public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] ProcurementSource source)

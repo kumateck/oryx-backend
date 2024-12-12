@@ -654,22 +654,19 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         };*/
     }
     
-    public async Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse, Guid supplierId, Guid userId)
+    public async Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse, Guid supplierQuotationId)
     {
         var supplierQuotation = await context.SupplierQuotations
             .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Items).ThenInclude(s => s.UoM)
             .Include(s => s.Supplier)
-            .FirstOrDefaultAsync(s => s.Id == supplierId);
+            .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
 
         var itemsToUpdate = supplierQuotation.Items;
         if (supplierQuotation.Items.Count == 0)
         {
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
         }
-        
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if(user is null) return UserErrors.NotFound(userId);
         
 
         foreach (var item in supplierQuotation.Items)
