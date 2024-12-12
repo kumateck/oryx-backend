@@ -535,10 +535,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if(user is null) return UserErrors.NotFound(userId);
         
-        var mailAttachments = new List<(byte[] fileContent, string fileName)>();
-        var content = PdfTemplate.QuotationRequestTemplate(supplierQuotationDto);
-        var fileContent = pdfService.GeneratePdfFromHtml(content);
-        mailAttachments.Add((fileContent, $"Quotation Request from Entrance"));
+        var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
+        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.QuotationRequestTemplate(supplierQuotationDto));
+        mailAttachments.Add((fileContent, $"Quotation Request from Entrance",  "application/pdf"));
 
         try
         {

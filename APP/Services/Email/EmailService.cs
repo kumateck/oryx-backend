@@ -6,7 +6,7 @@ namespace APP.Services.Email;
 
 public class EmailService(ILogger<EmailService> logger) : IEmailService
 {
-    public void SendMail(string to, string subject, string body, List<(byte[] fileContent, string fileName)> attachments)
+    public void SendMail(string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
         var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "admin@kumateck.com";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
@@ -36,7 +36,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
             foreach (var attachment in attachments)
             {
                 var stream = new MemoryStream(attachment.fileContent);
-                var mailAttachment = new Attachment(stream, attachment.fileName);
+                var mailAttachment = new Attachment(stream, attachment.fileName, attachment.fileType);
                 mail.Attachments.Add(mailAttachment);
             }
 
