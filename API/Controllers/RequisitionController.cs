@@ -5,7 +5,6 @@ using APP.IRepository;
 using DOMAIN.Entities.Requisitions;
 using APP.Utils;
 using DOMAIN.Entities.Requisitions.Request;
-using SHARED.Requests;
 
 namespace API.Controllers;
 
@@ -302,7 +301,6 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// </summary>
     /// <param name="supplierQuotationResponse">The list of quotations received from the supplier.</param>
     /// <param name="supplierId">The ID of the supplier.</param>
-    /// <param name="userId">The ID of the user processing the quotation.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("source/supplier/{supplierId}/quotation/receive")]
     [Authorize]
@@ -310,10 +308,12 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ReceiveQuotationFromSupplier(
         [FromBody] List<SupplierQuotationResponseDto> supplierQuotationResponse,
-        Guid supplierId,
-        [FromQuery] Guid userId)
+        Guid supplierId)
     {
-        var result = await repository.ReceiveQuotationFromSupplier(supplierQuotationResponse, supplierId, userId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.ReceiveQuotationFromSupplier(supplierQuotationResponse, supplierId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
