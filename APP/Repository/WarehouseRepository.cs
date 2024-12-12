@@ -15,7 +15,6 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request, Guid userId)
     {
         var warehouse = mapper.Map<Warehouse>(request);
-        warehouse.CreatedById = userId;
         await context.Warehouses.AddAsync(warehouse);
         await context.SaveChangesAsync();
 

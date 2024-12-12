@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using SHARED;
@@ -23,17 +24,16 @@ public interface IRequisitionRepository
     Task<Result> UpdateSourceRequisition(CreateSourceRequisitionRequest request, Guid sourceRequisitionId); 
     Task<Result> DeleteSourceRequisition(Guid sourceRequisitionId);
 
-    Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSuppliersWithSourceRequisitionItems(int page,
+    Task<Result<Paginateable<IEnumerable<SupplierQuotationRequest>>>> GetSuppliersWithSourceRequisitionItems(int page,
         int pageSize,  ProcurementSource source, bool sent);
 
-   Task<Result<SupplierQuotationDto>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
+   Task<Result<SupplierQuotationRequest>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
 
    Task<Result> SendQuotationToSupplier(Guid supplierId, Guid userId);
 
-  Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>>
-       GetSuppliersWithSourceRequisitionItemsForQuotation(int page, int pageSize, ProcurementSource source,
-           bool received);
-  Task<Result<SupplierQuotationDto>> GetSuppliersWithSourceRequisitionItemsForQuotation(Guid supplierId);
+   Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, int pageSize,
+       SupplierType supplierType, bool received);
+  Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierId);
   Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse,
       Guid supplierId, Guid userId);
   Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(ProcurementSource source);

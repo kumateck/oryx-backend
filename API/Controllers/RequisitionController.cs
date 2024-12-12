@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Requisitions;
 using APP.Utils;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions.Request;
 
 namespace API.Controllers;
@@ -267,18 +268,18 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// </summary>
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
-    /// <param name="source">The source of the requisition (example Local, Foreign, Internal).</param>
+    /// <param name="supplierType">The type of the supplier (example Foreign, Local).</param>
     /// <param name="received">Filter by whether the quotation has been received.</param>
     /// <returns>Returns a paginated list of suppliers with their requisition items for quotation.</returns>
     [HttpGet("source/supplier/quotation")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationDto>>))]
-    public async Task<IResult> GetSuppliersWithSourceRequisitionItemsForQuotation([FromQuery] ProcurementSource source,
+    public async Task<IResult> GetSuppliersWithSourceRequisitionItemsForQuotation([FromQuery] SupplierType supplierType,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] bool received = false)
     {
-        var result = await repository.GetSuppliersWithSourceRequisitionItemsForQuotation(page, pageSize, source, received);
+        var result = await repository.GetSupplierQuotations(page, pageSize, supplierType, received);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -292,7 +293,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationDto))]
     public async Task<IResult> GetSuppliersWithSourceRequisitionItemsForQuotation(Guid supplierId)
     {
-        var result = await repository.GetSuppliersWithSourceRequisitionItemsForQuotation(supplierId);
+        var result = await repository.GetSupplierQuotation(supplierId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

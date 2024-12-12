@@ -25,11 +25,12 @@ using DOMAIN.Entities.WorkOrders;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using SHARED.Services.Identity;
 using Configuration = DOMAIN.Entities.Configurations.Configuration;
 
 namespace INFRASTRUCTURE.Context;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options/* , ITenantProvider tenantProvider*/) : IdentityDbContext<User, Role, Guid>(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService currentUserService /*, ITenantProvider tenantProvider*/) : IdentityDbContext<User, Role, Guid>(options)
 {
     
     #region Auth
@@ -136,6 +137,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SourceRequisition> SourceRequisitions { get; set; }
     public DbSet<SourceRequisitionItem> SourceRequisitionItems { get; set; }
     public DbSet<SourceRequisitionItemSupplier> SourceRequisitionItemSuppliers { get; set; }
+    public DbSet<SupplierQuotation> SupplierQuotations { get; set; }
+    public DbSet<SupplierQuotationItem> SupplierQuotationItems { get; set; }
 
     #endregion
 
@@ -237,15 +240,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             {
                 case EntityState.Added:
                     entity.CreatedAt = DateTime.UtcNow;
+                    entity.CreatedById = currentUserService.UserId;
                     break;
                 
                 case EntityState.Modified:
                     entity.UpdatedAt = DateTime.UtcNow;
+                    entity.LastUpdatedById = currentUserService.UserId;
                     break;
                 
                 case EntityState.Deleted:
                     entry.State = EntityState.Modified;
                     entity.DeletedAt = DateTime.UtcNow;
+                    entity.LastDeletedById = currentUserService.UserId;
                     break;
             }
             
@@ -497,6 +503,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BatchItem>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
         modelBuilder.Entity<Charge>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
         modelBuilder.Entity<BillingSheet>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+
+        #endregion
+
+        #region SupplierQuotation
+
+        modelBuilder.Entity<SupplierQuotation>().HasQueryFilter(a => !a.Supplier.DeletedAt.HasValue);
+        modelBuilder.Entity<SupplierQuotationItem>().HasQueryFilter(a => !a.Material.DeletedAt.HasValue);
 
         #endregion
     }

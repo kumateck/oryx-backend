@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using INFRASTRUCTURE.Context;
@@ -26,7 +27,7 @@ public class JwtMiddleware(RequestDelegate next, IMemoryCache cache)
             {
                 // Parse the token to extract user and roles information
                 var jwtToken = new JwtSecurityToken(token);
-                var userId = jwtToken.Subject;
+                var userId = jwtToken.Subject ?? context.User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(item => item.Id == Guid.Parse(userId));
 
                 var roles = jwtToken.Claims

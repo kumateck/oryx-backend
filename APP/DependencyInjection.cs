@@ -8,6 +8,7 @@ using DinkToPdf;
 using DinkToPdf.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
+using SHARED.Services.Identity;
 using StackExchange.Redis;
 
 namespace APP;
@@ -41,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantProvider, TenantProvider>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IPdfService, PdfService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)

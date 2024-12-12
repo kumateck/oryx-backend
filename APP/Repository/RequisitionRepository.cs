@@ -376,7 +376,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
     
-    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSuppliersWithSourceRequisitionItems(int page, int pageSize, ProcurementSource source, bool sent)
+    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationRequest>>>> GetSuppliersWithSourceRequisitionItems(int page, int pageSize, ProcurementSource source, bool sent)
     {
         // Base query
         var query =  context.SourceRequisitionItemSuppliers
@@ -392,20 +392,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         var sourceRequisitionItemSuppliers = sent ? await query.Where(s => s.SentQuotationRequestAt != null).ToListAsync() 
             : await query.Where(s => s.SentQuotationRequestAt == null).ToListAsync();
-
-        // Group the query
-        // var groupedQuery = sourceRequisitionItemSuppliers
-        //     .GroupBy(s => s.Supplier)
-        //     .Select(item => new SupplierQuotationDto
-        //     {
-        //         Supplier = mapper.Map<SupplierDto>(item.Key),
-        //         SentQuotationRequestAt = sent ? item.Min(s => s.SentQuotationRequestAt) : null, 
-        //         Items = mapper.Map<List<SourceRequisitionItemDto>>(item.Select(i => i.SourceRequisitionItem))
-        //     }).ToList();
+        
         
         var groupedQuery = sourceRequisitionItemSuppliers
             .GroupBy(s => s.Supplier)
-            .Select(item => new SupplierQuotationDto
+            .Select(item => new SupplierQuotationRequest
             {
                 Supplier = mapper.Map<SupplierDto>(item.Key),
                 SentQuotationRequestAt = sent ? item.Min(s => s.SentQuotationRequestAt) : null, 
@@ -432,7 +423,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return PaginationHelper.Paginate(page, pageSize, groupedQuery);
     }
     
-    public async Task<Result<SupplierQuotationDto>> GetSuppliersWithSourceRequisitionItems(Guid supplierId)
+    public async Task<Result<SupplierQuotationRequest>> GetSuppliersWithSourceRequisitionItems(Guid supplierId)
     {
         var query =  await context.SourceRequisitionItemSuppliers
             .Include(s => s.Supplier)
@@ -445,38 +436,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Where(s => s.SupplierId == supplierId && !s.SentQuotationRequestAt.HasValue)
             .ToListAsync();
         
-
-        return GetSupplierQuotation(query, supplierId);
-        
-        /*var groupedItems = query
-            .Select(i => i.SourceRequisitionItem)
-            .GroupBy(i => new { i.MaterialId, i.UoMId })
-            .Select(g => new SourceRequisitionItemDto
-            {
-                Id = g.First().Suppliers.First(s => s.SupplierId == supplierId).Id, 
-                Material = mapper.Map<CollectionItemDto>(g.First().Material),
-                UoM = mapper.Map<CollectionItemDto>(g.First().UoM),
-                Quantity = g.Sum(x => x.Quantity),
-                Source = g.First().Source,
-                Suppliers = g.SelectMany(x => x.Suppliers)
-                    .Where(s => s.SupplierId == supplierId)
-                    .Select(s => new SourceRequisitionItemSupplierDto
-                    {
-                        Supplier = mapper.Map<CollectionItemDto>(s.Supplier),
-                        SentQuotationRequestAt = s.SentQuotationRequestAt
-                    }).ToList(),
-                CreatedAt = g.First().CreatedAt
-            }).ToList();
-
-        
-        return new SupplierQuotationDto
-        {
-            Supplier = mapper.Map<CollectionItemDto>(query.FirstOrDefault()?.Supplier),
-            Items = groupedItems
-        };*/
+        return GetSupplierItems(query, supplierId);
     }
 
-    private SupplierQuotationDto GetSupplierQuotation(
+    private SupplierQuotationRequest GetSupplierItems(
         List<SourceRequisitionItemSupplier> sourceRequisitionItemSuppliers, Guid supplierId)
     {
         var groupedItems = sourceRequisitionItemSuppliers
@@ -484,7 +447,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .GroupBy(i => new { i.MaterialId, i.UoMId })
             .Select(g => new SourceRequisitionItemDto
             {
-                Id = g.First().Suppliers.First(s => s.SupplierId == supplierId).Id, 
+                Id = g.First().Id, 
                 Material = mapper.Map<CollectionItemDto>(g.First().Material),
                 UoM = mapper.Map<CollectionItemDto>(g.First().UoM),
                 Quantity = g.Sum(x => x.Quantity),
@@ -494,12 +457,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     .Select(s => new SourceRequisitionItemSupplierDto
                     {
                         Supplier = mapper.Map<CollectionItemDto>(s.Supplier),
-                        SentQuotationRequestAt = s.SentQuotationRequestAt
+                        SentQuotationRequestAt = s.SentQuotationRequestAt,
                     }).ToList(),
                 CreatedAt = g.First().CreatedAt
             }).ToList();
         
-        return new SupplierQuotationDto
+        return new SupplierQuotationRequest
         {
             Supplier = mapper.Map<SupplierDto>(sourceRequisitionItemSuppliers.FirstOrDefault()?.Supplier),
             SentQuotationRequestAt = sourceRequisitionItemSuppliers.FirstOrDefault()?.SentQuotationRequestAt,
@@ -525,7 +488,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
         }
         
-        var supplierQuotationDto = GetSupplierQuotation(itemsToUpdate, supplierId);
+        var supplierQuotationDto = GetSupplierItems(itemsToUpdate, supplierId);
         
         if (supplierQuotationDto.Items.Count == 0)
         {
@@ -553,16 +516,46 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             item.SentQuotationRequestAt = DateTime.UtcNow;
         }
 
+        var supplierQuotation = new SupplierQuotation
+        {
+            SupplierId = supplierQuotationDto.Supplier.Id,
+            Items = supplierQuotationDto.Items.Select(i => new SupplierQuotationItem
+            {
+                MaterialId = i.Material.Id.Value,
+                UoMId = i.UoM.Id.Value,
+                Quantity = i.Quantity
+            }).ToList()
+        };
+
         context.SourceRequisitionItemSuppliers.UpdateRange(itemsToUpdate);
+        await context.SupplierQuotations.AddAsync(supplierQuotation);
         // Save changes to the database
         await context.SaveChangesAsync();
         return Result.Success();
     }
     
-    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSuppliersWithSourceRequisitionItemsForQuotation(int page, int pageSize, ProcurementSource source, bool received)
+    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, int pageSize, SupplierType supplierType, bool received)
     {
+
+        var query =  context.SupplierQuotations
+            .Include(s => s.Items).ThenInclude(s => s.Material)
+            .Include(s => s.Items).ThenInclude(s => s.UoM)
+            .Include(s => s.Supplier)
+            .Where(s => s.Supplier.Type == supplierType)
+            .AsQueryable();
+
+        var supplierQuotations = received
+            ?  query.Where(s => s.ReceivedQuotation)
+            :  query.Where(s => !s.ReceivedQuotation);
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            supplierQuotations,
+            page,
+            pageSize,
+            mapper.Map<SupplierQuotationDto>);
+
         // Base query
-        var query =  context.SourceRequisitionItemSuppliers
+        /*var query =  context.SourceRequisitionItemSuppliers
             .Include(s => s.Supplier)
             .Include(s => s.SourceRequisitionItem)
             .ThenInclude(item => item.Material)
@@ -573,9 +566,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Where(s => s.SourceRequisitionItem.Source == source)
             .AsQueryable();
 
-        var sourceRequisitionItemSuppliers = received ? await query.Where(s => s.SentQuotationRequestAt.HasValue && s.SupplierQuotedPrice.HasValue).ToListAsync() 
+        var sourceRequisitionItemSuppliers = received ? await query.Where(s => s.SentQuotationRequestAt.HasValue && s.SupplierQuotedPrice.HasValue).ToListAsync()
             : await query.Where(s => s.SentQuotationRequestAt.HasValue && !s.SupplierQuotedPrice.HasValue).ToListAsync();
-        
+
         // Group the query
         // var groupedQuery = sourceRequisitionItemSuppliers
         //     .GroupBy(s => s.Supplier)
@@ -586,20 +579,19 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         //         SupplierQuotedPrice = received ?  item.Min(s => s.SupplierQuotedPrice) : null,
         //         Items = mapper.Map<List<SourceRequisitionItemDto>>(item.Select(i => i.SourceRequisitionItem))
         //     }).ToList();
-        
+
         var groupedQuery = sourceRequisitionItemSuppliers
             .GroupBy(s => s.Supplier)
-            .Select(item => new SupplierQuotationDto
+            .Select(item => new SupplierQuotationRequest
             {
                 Supplier = mapper.Map<SupplierDto>(item.Key),
-                SentQuotationRequestAt = received ? item.Min(s => s.SentQuotationRequestAt) : null, 
-                SupplierQuotedPrice = received ?  item.Min(s => s.SupplierQuotedPrice) : null,
+                SentQuotationRequestAt = item.Min(s => s.SentQuotationRequestAt),
                 Items = item
                     .Select(i => i.SourceRequisitionItem)
                     .GroupBy(i => new { i.MaterialId, i.UoMId })
                     .Select(g => new SourceRequisitionItemDto
                     {
-                        Id = g.First().Suppliers.First().Id,
+                        Id = g.First().Id,
                         Material = mapper.Map<CollectionItemDto>(g.First().Material),
                         UoM = mapper.Map<CollectionItemDto>(g.First().UoM),
                         Quantity = g.Sum(x => x.Quantity),
@@ -613,24 +605,17 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                         CreatedAt = g.First().CreatedAt
                     }).ToList()
             }).ToList();
-        
-        return PaginationHelper.Paginate(page, pageSize, groupedQuery);
+
+        return PaginationHelper.Paginate(page, pageSize, groupedQuery);*/
     }
     
-    public async Task<Result<SupplierQuotationDto>> GetSuppliersWithSourceRequisitionItemsForQuotation(Guid supplierId)
+    public async Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierId)
     {
-        var query =  await context.SourceRequisitionItemSuppliers
+        return mapper.Map<SupplierQuotationDto>(await  context.SupplierQuotations
+            .Include(s => s.Items).ThenInclude(s => s.Material)
+            .Include(s => s.Items).ThenInclude(s => s.UoM)
             .Include(s => s.Supplier)
-            .Include(s => s.SourceRequisitionItem)
-            .ThenInclude(item => item.Material)
-            .Include(s => s.SourceRequisitionItem)
-            .ThenInclude(item => item.UoM)
-            .Include(s => s.SourceRequisitionItem)
-            .ThenInclude(item => item.SourceRequisition)
-            .Where(s => s.SupplierId == supplierId && s.SentQuotationRequestAt.HasValue && !s.SupplierQuotedPrice.HasValue)
-            .ToListAsync();
-        
-        return GetSupplierQuotation(query, supplierId);
+            .FirstOrDefaultAsync(s => s.Id == supplierId));
         
         /*
         return new SupplierQuotationDto
@@ -671,12 +656,14 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     
     public async Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse, Guid supplierId, Guid userId)
     {
-        var itemsToUpdate = await context.SourceRequisitionItemSuppliers
+        var supplierQuotation = await context.SupplierQuotations
+            .Include(s => s.Items).ThenInclude(s => s.Material)
+            .Include(s => s.Items).ThenInclude(s => s.UoM)
             .Include(s => s.Supplier)
-            .Where(s => s.SupplierId == supplierId && s.SentQuotationRequestAt.HasValue && !s.SupplierQuotedPrice.HasValue)
-            .ToListAsync();
-        
-        if (itemsToUpdate.Count == 0)
+            .FirstOrDefaultAsync(s => s.Id == supplierId);
+
+        var itemsToUpdate = supplierQuotation.Items;
+        if (supplierQuotation.Items.Count == 0)
         {
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
         }
@@ -685,13 +672,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if(user is null) return UserErrors.NotFound(userId);
         
 
-        foreach (var item in itemsToUpdate)
+        foreach (var item in supplierQuotation.Items)
         {
-            item.SupplierQuotedPrice = supplierQuotationResponse.FirstOrDefault(s => s.Id == item.Id)?.Price;
-            item.ReceivedQuotationAt = DateTime.UtcNow;
+            item.QuotedPrice = supplierQuotationResponse.FirstOrDefault(s => s.Id == item.Id)?.Price;
         }
         
-        context.SourceRequisitionItemSuppliers.UpdateRange(itemsToUpdate);
+        context.SupplierQuotationItems.UpdateRange(supplierQuotation.Items);
         // Save changes to the database
         await context.SaveChangesAsync();
         return Result.Success();
@@ -699,36 +685,34 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(ProcurementSource source)
     {
-        var sourceRequisitionItemSuppliers =  await context.SourceRequisitionItemSuppliers
-            .Include(s => s.Supplier)
-            .Include(s => s.SourceRequisitionItem)
-            .ThenInclude(item => item.Material)
-            .Include(s => s.SourceRequisitionItem)
-            .ThenInclude(item => item.UoM)
-            .Include(s => s.SourceRequisitionItem)
-            .ThenInclude(item => item.SourceRequisition)
-            .Where(s => s.SourceRequisitionItem.Source == source &&  s.SentQuotationRequestAt.HasValue && s.SupplierQuotedPrice.HasValue && !s.Processed)
-            .ToListAsync();
+        var sourceRequisitionItemSuppliers =  await context.SupplierQuotationItems
+            .Include(s => s.Material)
+            .Include(s => s.UoM)
+            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
+            .Where(s => s.QuotedPrice != null && !s.SupplierQuotation.Processed).ToListAsync();
 
         return sourceRequisitionItemSuppliers
-            .GroupBy(s => new { s.SourceRequisitionItem.MaterialId, s.SourceRequisitionItem.UoMId})
+            .GroupBy(s => new { s.Material, s.UoM})
             .Select(item => new SupplierPriceComparison
             {
-                Material = mapper.Map<CollectionItemDto>(item.Key),
-                SupplierQuotation = item.Select(s => new SupplierQuotation
+                Material = mapper.Map<CollectionItemDto>(item.Key.Material),
+                SupplierQuotation = item.Select(s => new SupplierPrice
                 {
-                    Supplier = mapper.Map<CollectionItemDto>(s.Supplier),
-                    Price = item.Where(i => i.SupplierId == s.SupplierId).Sum(i => i.SupplierQuotedPrice),
+                    Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                    Price = item.Select(i => i.QuotedPrice).First()
                 }).ToList()
             }).ToList();
     }
 
     public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, Guid userId)
     {
-        var sourceRequisitionItemSuppliers =  await context.SourceRequisitionItemSuppliers
-            .Where(s =>  s.SentQuotationRequestAt.HasValue && s.SupplierQuotedPrice.HasValue && !s.Processed)
-            .ToListAsync();
+        var sourceRequisitionItemSuppliers =  await context.SupplierQuotations
+            .Include(s => s.Items).ThenInclude(i => i.Material)
+            .Include(s => s.Items).ThenInclude(i => i.UoM)
+            .Include(s => s.Supplier)
+            .Where(s => s.ReceivedQuotation && !s.Processed).ToListAsync();
 
+      
         foreach (var quotation in processQuotations)
         {
             await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
@@ -745,7 +729,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             sourceRequisition.Processed = true;
         }
         
-        context.SourceRequisitionItemSuppliers.UpdateRange(sourceRequisitionItemSuppliers);
+        context.SupplierQuotations.UpdateRange(sourceRequisitionItemSuppliers);
         await context.SaveChangesAsync();
         return Result.Success();
     }

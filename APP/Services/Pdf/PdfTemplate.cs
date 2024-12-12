@@ -6,7 +6,7 @@ namespace APP.Services.Pdf;
 
 public static class PdfTemplate
 {
-  public static string QuotationRequestTemplate(SupplierQuotationDto quotation)
+  public static string QuotationRequestTemplate(SupplierQuotationRequest quotation)
   {
       var content = new StringBuilder();
 
