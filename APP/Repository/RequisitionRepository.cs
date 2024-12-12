@@ -694,10 +694,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Select(item => new SupplierPriceComparison
             {
                 Material = mapper.Map<CollectionItemDto>(item.Key.Material),
+                UoM = mapper.Map<CollectionItemDto>(item.Key.UoM),
                 SupplierQuotation = item.Select(s => new SupplierPrice
                 {
                     Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
-                    Price = item.Select(i => i.QuotedPrice).First()
+                    Price = s.QuotedPrice
                 }).ToList()
             }).ToList();
     }

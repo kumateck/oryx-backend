@@ -130,6 +130,7 @@ public class SupplierQuotationResponseDto
 public class SupplierPriceComparison
 {
     public CollectionItemDto Material { get; set; }
+    public CollectionItemDto UoM { get; set; }
     public List<SupplierPrice> SupplierQuotation { get; set; } = [];
 }
 
