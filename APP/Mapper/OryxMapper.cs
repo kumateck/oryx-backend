@@ -269,6 +269,13 @@ public class OryxMapper : Profile
 
         #endregion
 
+        #region Supplier Quotation
+
+        CreateMap<SupplierQuotation, SupplierQuotationDto>();
+        CreateMap<SupplierQuotationItem, SupplierQuotationItemDto>();
+
+        #endregion
+
         #region Purchase Order
         
         CreateMap<CreatePurchaseOrderRequest, PurchaseOrder>();

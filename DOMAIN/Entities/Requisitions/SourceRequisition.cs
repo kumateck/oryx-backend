@@ -87,6 +87,7 @@ public class SupplierQuotationItem : BaseEntity
 
 public class SupplierQuotationItemDto
 {
+    public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public CollectionItemDto UoM { get; set; }
     public int Quantity { get; set; }
