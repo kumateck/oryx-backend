@@ -34,6 +34,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Country) => mapper.Map<List<CollectionItemDto>>(await context.Countries.OrderBy(c => c.Name).ToListAsync()),
             nameof(WarehouseLocation) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocations.OrderBy(c => c.Name).Include(w => w.Warehouse).ToListAsync()),
             nameof(Warehouse) => mapper.Map<List<CollectionItemDto>>(await context.Warehouses.OrderBy(c => c.Name).ToListAsync()),
+            nameof(WarehouseLocationRack) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationRacks.OrderBy(c => c.Name).ToListAsync()),
+            nameof(WarehouseLocationShelf) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync()),
             nameof(Currency) => mapper.Map<List<CollectionItemDto>>(await context.Currencies.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
@@ -118,6 +120,15 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(currencies);
                     break;
                 
+                case nameof(WarehouseLocationRack):
+                    var warehouseLocationRacks = await context.WarehouseLocationRacks.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationRacks);
+                    break;
+                
+                case nameof(WarehouseLocationShelf):
+                    var warehouseLocationShelves = await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationShelves);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
