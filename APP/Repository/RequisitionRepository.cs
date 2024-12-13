@@ -662,7 +662,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(s => s.Supplier)
             .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
 
-        var itemsToUpdate = supplierQuotation.Items;
         if (supplierQuotation.Items.Count == 0)
         {
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
@@ -698,6 +697,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 SupplierQuotation = item.Select(s => new SupplierPrice
                 {
                     Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                    Quantity = s.Quantity,
                     Price = s.QuotedPrice
                 }).ToList()
             }).ToList();

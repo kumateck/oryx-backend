@@ -137,6 +137,7 @@ public class SupplierPriceComparison
 public class SupplierPrice
 {
     public CollectionItemDto Supplier { get; set; }
+    public int Quantity { get; set; }
     public decimal? Price { get; set; }
 }
 
