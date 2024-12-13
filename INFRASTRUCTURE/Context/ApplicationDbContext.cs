@@ -473,12 +473,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Warehouse Filters
         modelBuilder.Entity<Warehouse>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a => !a.Warehouse.DeletedAt.HasValue);
-        modelBuilder.Entity<WarehouseLocationRack>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<WarehouseLocationRack>().HasQueryFilter(a => !a.WarehouseLocation.DeletedAt.HasValue);
-        modelBuilder.Entity<WarehouseLocationShelf>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<WarehouseLocationShelf>().HasQueryFilter(a => !a.WarehouseLocationRack.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a => !a.DeletedAt.HasValue ||  !a.Warehouse.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseLocationRack>().HasQueryFilter(a => !a.DeletedAt.HasValue || !a.WarehouseLocation.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseLocationShelf>().HasQueryFilter(a => !a.DeletedAt.HasValue || !a.WarehouseLocationRack.DeletedAt.HasValue);
 
         #endregion
 
