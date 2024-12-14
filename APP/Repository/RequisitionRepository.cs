@@ -13,7 +13,6 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions.Request;
-using DOMAIN.Entities.Users;
 
 namespace APP.Repository;
 
@@ -691,10 +690,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             {
                 Material = mapper.Map<CollectionItemDto>(item.Key.Material),
                 UoM = mapper.Map<CollectionItemDto>(item.Key.UoM),
+                Quantity = item.Select(s => s.Quantity).First(),
                 SupplierQuotation = item.Select(s => new SupplierPrice
                 {
                     Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
-                    Quantity = s.Quantity,
                     Price = s.QuotedPrice
                 }).ToList()
             }).ToList();

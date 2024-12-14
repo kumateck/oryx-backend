@@ -131,13 +131,13 @@ public class SupplierPriceComparison
 {
     public CollectionItemDto Material { get; set; }
     public CollectionItemDto UoM { get; set; }
+    public int Quantity { get; set; }
     public List<SupplierPrice> SupplierQuotation { get; set; } = [];
 }
 
 public class SupplierPrice
 {
     public CollectionItemDto Supplier { get; set; }
-    public int Quantity { get; set; }
     public decimal? Price { get; set; }
 }
 
