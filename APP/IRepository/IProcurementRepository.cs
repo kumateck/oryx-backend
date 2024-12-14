@@ -30,7 +30,7 @@ namespace APP.IRepository
         // ************* PurchaseOrder *************
         Task<Result<Guid>> CreatePurchaseOrder(CreatePurchaseOrderRequest request, Guid userId);
         Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId);
-        Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery);
+        Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status);
         Task<Result> UpdatePurchaseOrder(CreatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId);
         Task<Result> DeletePurchaseOrder(Guid purchaseOrderId, Guid userId);
 
@@ -39,6 +39,7 @@ namespace APP.IRepository
         Task<Result<PurchaseOrderInvoiceDto>> GetPurchaseOrderInvoice(Guid invoiceId);
         Task<Result<Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>>> GetPurchaseOrderInvoices(int page,
             int pageSize, string searchQuery);
+        Task<Result> SendPurchaseOrderToSupplier(Guid purchaseOrderId);
         Task<Result> UpdatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid invoiceId, Guid userId);
         Task<Result> DeletePurchaseOrderInvoice(Guid invoiceId, Guid userId);
 

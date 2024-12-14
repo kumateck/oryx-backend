@@ -282,7 +282,9 @@ public class OryxMapper : Profile
         
         CreateMap<CreatePurchaseOrderRequest, PurchaseOrder>();
         CreateMap<CreatePurchaseOrderItemRequest, PurchaseOrderItem>();
-        CreateMap<PurchaseOrder, PurchaseOrderDto>();
+        CreateMap<PurchaseOrder, PurchaseOrderDto>()
+            .ForMember(dest => dest.Attachments,
+                opt => opt.MapFrom<AttachmentsResolver>());
         CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>();
 
         CreateMap<CreatePurchaseOrderInvoiceRequest, PurchaseOrderInvoice>();

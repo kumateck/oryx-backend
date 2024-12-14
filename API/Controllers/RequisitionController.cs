@@ -255,7 +255,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.SendQuotationToSupplier(supplierId, Guid.Parse(userId));
+        var result = await repository.SendQuotationToSupplier(supplierId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

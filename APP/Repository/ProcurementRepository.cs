@@ -1,5 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Email;
+using APP.Services.Pdf;
 using APP.Utils;
 using AutoMapper;
 using INFRASTRUCTURE.Context;
@@ -12,7 +14,7 @@ using DOMAIN.Entities.PurchaseOrders.Request;
 
 namespace APP.Repository;
 
-public class ProcurementRepository(ApplicationDbContext context, IMapper mapper) : IProcurementRepository
+public class ProcurementRepository(ApplicationDbContext context, IMapper mapper, IEmailService emailService, IPdfService pdfService) : IProcurementRepository
 {
     // ************* CRUD for Manufacturer *************
 
@@ -209,15 +211,15 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
         var purchaseOrder = await context.PurchaseOrders
             .Include(po => po.Supplier)
             .Include(po => po.Items).ThenInclude(i => i.Material)
-            .Include(po => po.Items).ThenInclude(i => i.Uom)
+            .Include(po => po.Items).ThenInclude(i => i.UoM)
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
 
         return purchaseOrder is null
             ? Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found")
-            : mapper.Map<PurchaseOrderDto>(purchaseOrder);
+            : mapper.Map<PurchaseOrderDto>(purchaseOrder, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
     }
 
-    public async Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status)
     {
         var query = context.PurchaseOrders
             .Include(po => po.Supplier)
@@ -228,12 +230,24 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
             query = query.WhereSearch(searchQuery, po => po.Code);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<PurchaseOrderDto>
-        );
+        if (status.HasValue)
+        {
+            query = query.Where(po => po.Status == status);
+        }
+        
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var purchaseOrders = await paginatedResult.Data.ToListAsync();
+        
+        return new Paginateable<IEnumerable<PurchaseOrderDto>>
+        {
+            Data = mapper.Map<IEnumerable<PurchaseOrderDto>>(purchaseOrders, 
+                opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder)),
+            PageIndex = page,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
     }
 
     public async Task<Result> UpdatePurchaseOrder(CreatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId)
@@ -265,6 +279,32 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper)
 
         context.PurchaseOrders.Update(purchaseOrder);
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> SendPurchaseOrderToSupplier(Guid purchaseOrderId)
+    {
+        var purchaseOrder =  await context.PurchaseOrders
+            .Include(po => po.Supplier)
+            .Include(po => po.Items).ThenInclude(i => i.Material)
+            .Include(po => po.Items).ThenInclude(i => i.UoM)
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+        
+        if (purchaseOrder is null) return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        
+        var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
+        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.PurchaseOrderTemplate(purchaseOrder));
+        mailAttachments.Add((fileContent, $"Quotation Request from Entrance",  "application/pdf"));
+
+        try
+        {
+            emailService.SendMail(purchaseOrder.Supplier.Email, "Awarded Quote From Entrance", "Please find attached to this email your final awarded quotation to draft a purchase order.", mailAttachments);
+        }
+        catch (Exception e)
+        {
+            return Error.Validation("Supplier.Quotation", e.Message);
+        }
+
         return Result.Success();
     }
 

@@ -470,7 +470,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         };
     }
     
-    public async Task<Result> SendQuotationToSupplier(Guid supplierId, Guid userId)
+    public async Task<Result> SendQuotationToSupplier(Guid supplierId)
     {
         var itemsToUpdate = await context.SourceRequisitionItemSuppliers
             .Include(s => s.Supplier)
@@ -494,9 +494,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
         }
-        
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if(user is null) return UserErrors.NotFound(userId);
         
         var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
         var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.QuotationRequestTemplate(supplierQuotationDto));

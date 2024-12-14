@@ -279,14 +279,30 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="status">Filter by the status of the purchase order. (Pending, Delivered, Completed)</param>
     /// <returns>Returns a paginated list of purchase orders.</returns>
     [HttpGet("purchase-order")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<PurchaseOrderDto>>))]
-    public async Task<IResult> GetPurchaseOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetPurchaseOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] PurchaseOrderStatus? status = null)
     {
-        var result = await repository.GetPurchaseOrders(page, pageSize, searchQuery);
+        var result = await repository.GetPurchaseOrders(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a purchase order by its ID.
+    /// </summary>
+    /// <param name="purchaseOrderId">The ID of the purchase order you want to send to a supplier as an email.</param>
+    /// <returns>Returns a 204 no content response</returns>
+    [HttpPost("purchase-order/{purchaseOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SendPurchaseOrderToSupplier(Guid purchaseOrderId)
+    {
+        var result = await repository.SendPurchaseOrderToSupplier(purchaseOrderId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>

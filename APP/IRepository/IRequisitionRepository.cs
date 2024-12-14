@@ -29,7 +29,7 @@ public interface IRequisitionRepository
 
    Task<Result<SupplierQuotationRequest>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
 
-   Task<Result> SendQuotationToSupplier(Guid supplierId, Guid userId);
+   Task<Result> SendQuotationToSupplier(Guid supplierId);
 
    Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, int pageSize,
        SupplierType supplierType, bool received);

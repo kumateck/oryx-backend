@@ -351,7 +351,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Items).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Material).AutoInclude();
-        modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Uom).AutoInclude();
+        modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.UoM).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Currency).AutoInclude();
         
         modelBuilder.Entity<PurchaseOrderInvoice>().Navigation(p => p.BatchItems).AutoInclude();
