@@ -2,6 +2,7 @@ using System.Data.Entity;
 using APP.IRepository;
 using APP.Services.Storage;
 using DOMAIN.Entities.Attachments;
+using DOMAIN.Entities.PurchaseOrders;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
 using SHARED;
@@ -34,6 +35,19 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                 return result.Error;
             }
             await transaction.CommitAsync();
+
+            switch (modelType)
+            {
+                case nameof(PurchaseOrder):
+                    var purchaseOrder = await context.PurchaseOrders.FindAsync(modelId);
+                    if (purchaseOrder is not null)
+                    {
+                        purchaseOrder.Status = PurchaseOrderStatus.Completed;
+                        context.PurchaseOrders.Update(purchaseOrder);
+                        await context.SaveChangesAsync();
+                    }
+                    break;
+            }
         }
         catch (Exception)
         {

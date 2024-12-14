@@ -49,7 +49,7 @@ public class PurchaseOrderDto : WithAttachment
     public DateTime RequestDate { get; set; }
     public DateTime? ExpectedDeliveryDate { get; set; }
     public List<PurchaseOrderItemDto> Items { get; set; } = [];
-    public PurchaseOrderStatus Status  => ExpectedDeliveryDate != null && Attachments.Any() ? PurchaseOrderStatus.Completed : Status;
+    public PurchaseOrderStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
