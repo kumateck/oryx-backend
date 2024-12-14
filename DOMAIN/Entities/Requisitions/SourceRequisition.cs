@@ -144,6 +144,5 @@ public class SupplierPrice
 public class ProcessQuotation
 {
     public Guid SupplierId { get; set; }
-    public DateTime ExpectedDeliveryDate { get; set; }
     public List<CreatePurchaseOrderItemRequest> Items { get; set; } = [];
 }

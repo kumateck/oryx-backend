@@ -715,7 +715,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             {
                 SupplierId = quotation.SupplierId,
                 RequestDate = DateTime.UtcNow,
-                ExpectedDeliveryDate = quotation.ExpectedDeliveryDate,
                 Items = quotation.Items
             }, userId);
         }

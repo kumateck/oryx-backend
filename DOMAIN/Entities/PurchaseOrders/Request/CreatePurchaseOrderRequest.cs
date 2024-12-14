@@ -4,7 +4,7 @@ public class CreatePurchaseOrderRequest
 {
     public Guid SupplierId { get; set; }
     public DateTime RequestDate { get; set; }
-    public DateTime ExpectedDeliveryDate { get; set; }
+    public DateTime? ExpectedDeliveryDate { get; set; }
     public List<CreatePurchaseOrderItemRequest> Items { get; set; } = [];
 }
 
