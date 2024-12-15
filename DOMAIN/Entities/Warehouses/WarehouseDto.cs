@@ -25,7 +25,7 @@ public class WarehouseLocationDto
 public class WarehouseLocationRackDto 
 {
     public Guid Id { get; set; }
-    public CollectionItemDto WarehouseLocation { get; set; }
+    public WareHouseLocationDto WarehouseLocation { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
     public List<WarehouseLocationShelfDto> Shelves { get; set; } = [];
@@ -43,4 +43,13 @@ public class WarehouseStockDto
 {
     public WarehouseDto Warehouse { get; set; }
     public int StockQuantity { get; set; }
+}
+
+public class WareHouseLocationDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; }
+    public string FloorName { get; set; }
+    public string Description { get; set; }
+    public CollectionItemDto Warehouse { get; set; }
 }
