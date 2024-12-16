@@ -42,7 +42,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                     var purchaseOrder = await context.PurchaseOrders.FindAsync(modelId);
                     if (purchaseOrder is not null)
                     {
-                        purchaseOrder.Status = PurchaseOrderStatus.Completed;
+                        purchaseOrder.Status = PurchaseOrderStatus.Attached;
                         context.PurchaseOrders.Update(purchaseOrder);
                         await context.SaveChangesAsync();
                     }

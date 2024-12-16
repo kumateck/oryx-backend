@@ -125,7 +125,7 @@ public static class PdfTemplate
                     <thead>
                       <tr>
                         <th>Material Name</th>
-                        <th>Request Quantity</th>
+                        <th>Quantity</th>
                         <th>Unit of Measure</th>
                       </tr>
                     </thead>
@@ -273,7 +273,7 @@ public static class PdfTemplate
                     <thead>
                       <tr>
                         <th>Material Name</th>
-                        <th>Request Quantity</th>
+                        <th>Quantity</th>
                         <th>Unit of Measure</th>
                         <th>Price Per Unit</th>
                       </tr>
@@ -288,7 +288,7 @@ public static class PdfTemplate
                             <td>{item.Material.Name}</td>
                             <td>{item.Quantity}</td>
                             <td>{item.UoM.Name}</td>
-                            <td>{item.PricePerUnit}</td>
+                            <td>{item.Price}</td>
                           </tr>");
         }
         content.AppendLine($@"
@@ -423,7 +423,7 @@ public static class PdfTemplate
                 <tr>
                   <th>Material Name</th>
                   <th>Unit of Measure</th>
-                  <th>Request Quantity</th>
+                  <th>Quantity</th>
                   <th>Unit Price</th>
                   <th>Total</th>
                 </tr>
@@ -437,8 +437,8 @@ public static class PdfTemplate
           <td>{item.Material.Name}</td>
           <td>{item.UoM.Name}</td>
           <td>{item.Quantity}</td>
-          <td>{purchaseOrder.Supplier?.Currency?.Symbol}{item.PricePerUnit}</td>
-          <td>{purchaseOrder.Supplier?.Currency?.Symbol}{Math.Round(item.PricePerUnit * item.Quantity, 2)}</td>
+          <td>{purchaseOrder.Supplier?.Currency?.Symbol}{item.Price}</td>
+          <td>{purchaseOrder.Supplier?.Currency?.Symbol}{Math.Round(item.Price * item.Quantity, 2)}</td>
           </tr>");
       }
       

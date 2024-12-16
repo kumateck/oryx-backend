@@ -306,8 +306,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return Error.Validation("Supplier.Quotation", e.Message);
         }
         
-        purchaseOrder.Status = PurchaseOrderStatus.Delivered;
-        context.PurchaseOrders.Update(purchaseOrder);
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -334,7 +332,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.Validation("Supplier.Quotation", e.Message);
         }
-
+        
+        purchaseOrder.Status = PurchaseOrderStatus.Delivered;
+        context.PurchaseOrders.Update(purchaseOrder);
         return Result.Success();
     }
 

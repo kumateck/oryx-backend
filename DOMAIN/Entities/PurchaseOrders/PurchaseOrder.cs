@@ -30,7 +30,7 @@ public class PurchaseOrderItem : BaseEntity
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public int Quantity { get; set; }
-    public decimal PricePerUnit { get; set; }
+    public decimal Price { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
 }
@@ -39,6 +39,7 @@ public enum PurchaseOrderStatus
 {
     Pending,
     Delivered,
+    Attached,
     Completed
 }
 
@@ -59,7 +60,7 @@ public class PurchaseOrderItemDto
     public CollectionItemDto Material { get; set; }
     public CollectionItemDto Uom { get; set; }
     public int Quantity { get; set; }
-    public decimal PricePerUnit { get; set; }
+    public decimal Price { get; set; }
     public CollectionItemDto Currency { get; set; }
-    public decimal Cost => PricePerUnit * Quantity;
+    public decimal Cost => Price * Quantity;
 }

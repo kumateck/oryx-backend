@@ -13,5 +13,5 @@ public class CreatePurchaseOrderItemRequest
     public Guid MaterialId { get; set; }
     public Guid UomId { get; set; }
     public int Quantity { get; set; }
-    public decimal PricePerUnit { get; set; }
+    public decimal Price { get; set; }
 }
