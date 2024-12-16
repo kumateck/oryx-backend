@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Countries;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 
@@ -15,6 +16,8 @@ public class Supplier : BaseEntity
     [StringLength(20)] public string ContactNumber { get; set; }
     public Guid? CountryId { get; set; }
     public Country Country { get; set; }
+    public Guid? CurrencyId { get; set; }
+    public Currency Currency { get; set; }
     public SupplierType Type { get; set; }
     public List<SupplierManufacturer> AssociatedManufacturers { get; set; } = [];
 }

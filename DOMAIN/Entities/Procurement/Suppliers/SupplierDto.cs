@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Countries;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using SHARED;
@@ -14,6 +15,7 @@ public class SupplierDto : BaseDto
     public string ContactPerson { get; set; }
     public string ContactNumber { get; set; }
     public CountryDto Country { get; set; }
+    public CurrencyDto Currency { get; set; }
     public SupplierType Type { get; set; }
     public List<SupplierManufacturerDto> AssociatedManufacturers { get; set; } = [];
 }

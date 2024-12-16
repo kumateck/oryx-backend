@@ -307,6 +307,32 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         return Result.Success();
     }
+    
+    public async Task<Result> SendProformaInvoiceToSupplier(Guid purchaseOrderId)
+    {
+        var purchaseOrder =  await context.PurchaseOrders
+            .Include(po => po.Supplier)
+            .Include(po => po.Items).ThenInclude(i => i.Material)
+            .Include(po => po.Items).ThenInclude(i => i.UoM)
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+        
+        if (purchaseOrder is null) return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        
+        var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
+        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.ProformaInvoiceTemplate(purchaseOrder));
+        mailAttachments.Add((fileContent, $"Proforma Invoice from Entrance",  "application/pdf"));
+
+        try
+        {
+            emailService.SendMail(purchaseOrder.Supplier.Email, "Proforma Invoice From Entrance", "Please find attached a proforma invoice.", mailAttachments);
+        }
+        catch (Exception e)
+        {
+            return Error.Validation("Supplier.Quotation", e.Message);
+        }
+
+        return Result.Success();
+    }
 
     // ************* CRUD for PurchaseOrderInvoice *************
 

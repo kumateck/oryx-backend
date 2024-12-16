@@ -291,7 +291,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
     
     /// <summary>
-    /// Retrieves a purchase order by its ID.
+    /// Sends a purchase order or awarded quote to a supplier
     /// </summary>
     /// <param name="purchaseOrderId">The ID of the purchase order you want to send to a supplier as an email.</param>
     /// <returns>Returns a 204 no content response</returns>
@@ -302,6 +302,21 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     public async Task<IResult> SendPurchaseOrderToSupplier(Guid purchaseOrderId)
     {
         var result = await repository.SendPurchaseOrderToSupplier(purchaseOrderId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Sends a proforma-invoice to a supplier
+    /// </summary>
+    /// <param name="purchaseOrderId">The ID of the purchase order you want to send to a supplier as an email.</param>
+    /// <returns>Returns a 204 no content response</returns>
+    [HttpPost("purchase-order/proforma-invoice/{purchaseOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SendProformaInvoiceToSupplier(Guid purchaseOrderId)
+    {
+        var result = await repository.SendProformaInvoiceToSupplier(purchaseOrderId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

@@ -8,6 +8,7 @@ public class CreateSupplierRequest
     public string ContactPerson { get; set; }
     public string ContactNumber { get; set; }
     public Guid? CountryId { get; set; }
+    public Guid? CurrencyId { get; set; }
     public SupplierType Type { get; set; }
     public List<CreateSupplierManufacturerRequest> AssociatedManufacturers { get; set; } = [];
 }
