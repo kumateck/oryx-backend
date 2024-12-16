@@ -293,7 +293,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         if (purchaseOrder is null) return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         
         var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
-        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.PurchaseOrderTemplate(purchaseOrder));
+        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.ProformaInvoiceTemplate(purchaseOrder));
         mailAttachments.Add((fileContent, $"Quotation Request from Entrance",  "application/pdf"));
 
         try
@@ -304,7 +304,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.Validation("Supplier.Quotation", e.Message);
         }
-
+        
+        purchaseOrder.Status = PurchaseOrderStatus.Delivered;
+        context.PurchaseOrders.Update(purchaseOrder);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
     
