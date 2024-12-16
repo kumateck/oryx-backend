@@ -174,6 +174,12 @@ public static partial class StringExtensions
         var words = Regex.Split(input, pattern);
         return string.Join(" ", words);
     }
+    
+    public static string ConvertToBase64(string imagePath)
+    {
+        var imageBytes = File.ReadAllBytes(imagePath);
+        return Convert.ToBase64String(imageBytes);
+    }
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex MyRegex();

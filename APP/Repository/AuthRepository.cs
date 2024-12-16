@@ -86,7 +86,7 @@ public class AuthRepository(ApplicationDbContext context, UserManager<User> user
 
         var url = request.ClientId switch
         {
-            "web" => $"https://{user.OrganizationName.ToLower()}.{partialUrl}/reset-password?key={key}",
+            "web" => $"https://{partialUrl}/reset-password?key={key}",
             "mobile" => $"veilghehs-mobile://set-password/{key}",
             _ => $"{partialUrl}/reset-password?key={key}"
         };

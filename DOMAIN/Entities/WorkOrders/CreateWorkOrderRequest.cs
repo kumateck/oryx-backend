@@ -1,9 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 
 namespace DOMAIN.Entities.WorkOrders;
 
 public class CreateWorkOrderRequest
 {
+    [StringLength(100)] public string Code { get; set; }
     public Guid ProductId { get; set; }
     public Guid? MasterProductionScheduleId { get; set; } // Link to the Master Production Schedule
     

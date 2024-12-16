@@ -38,7 +38,9 @@ jobs:
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             ACCESS_KEY=${{ secrets.ACCESS_KEY }}
             SECRET_KEY=${{ secrets.SECRET_KEY }}
-            DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD}}
+            DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD }}
+            SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
   
   deploy:
     runs-on: ubuntu-latest

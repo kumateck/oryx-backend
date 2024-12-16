@@ -7,9 +7,11 @@ namespace APP.Services.Storage;
 
 public interface IBlobStorageService
 {
-    Task<Result> UploadBlobAsync(string containerName, IFormFile file, string reference, string previousRef = null);
-    Result UploadBlob(string containerName, IFormFile file, string reference, string previousRef = null);
-    Task<Result<BlobDownloadInfo>> GetBlobAsync(string containerName, string name);
-    Task<Result<FileDownloadResponse>> GetBlobAsync(string containerName, Guid modelId, Guid reference);
-    Task<Result<List<FileDownloadResponse>>> DownloadBlobsAsync(string containerName, string reference);
+    Task<Result> UploadBlobAsync(string bucketName, IFormFile file, string objectName, string previousObjectName = null);
+    Result UploadBlob(string bucketName, IFormFile file, string objectName, string previousObjectName = null);
+    Task<Result<(Stream Stream, string ContentType, string Name)>> GetBlobAsync(string bucketName, string objectName);
+    Task<Result<(Stream Stream, string ContentType, string Name)>> GetBlobAsync(string bucketName,
+        string modelId, string reference);
+    Task<Result> UploadChunkAsync(string bucketName, IFormFile chunk, string objectName, int chunkIndex);
+    Task<Result> CombineChunksAsync(string bucketName, string objectName, int totalChunks);
 }

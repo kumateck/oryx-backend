@@ -1,8 +1,13 @@
 using APP.IRepository;
 using AutoMapper;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Countries;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -24,6 +29,14 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
             nameof(MaterialCategory) => mapper.Map<List<CollectionItemDto>>(await context.MaterialCategories.ToListAsync()),
             nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
+            nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
+            nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
+            nameof(Country) => mapper.Map<List<CollectionItemDto>>(await context.Countries.OrderBy(c => c.Name).ToListAsync()),
+            nameof(WarehouseLocation) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocations.OrderBy(c => c.Name).Include(w => w.Warehouse).ToListAsync()),
+            nameof(Warehouse) => mapper.Map<List<CollectionItemDto>>(await context.Warehouses.OrderBy(c => c.Name).ToListAsync()),
+            nameof(WarehouseLocationRack) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationRacks.OrderBy(c => c.Name).ToListAsync()),
+            nameof(WarehouseLocationShelf) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync()),
+            nameof(Currency) => mapper.Map<List<CollectionItemDto>>(await context.Currencies.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -76,6 +89,46 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var packageType = await context.PackageTypes.ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(packageType);
                     break;
+                
+                case nameof(User):
+                    var user = await context.Users.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(user);
+                    break;
+                
+                case nameof(Role):
+                    var role = await context.Roles.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(role);
+                    break;
+                
+                case nameof(Country):
+                    var countries = await context.Countries.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(countries);
+                    break;
+                
+                case nameof(WarehouseLocation):
+                    var warehouseLocations = await context.WarehouseLocations.OrderBy(c => c.Name).Include(w => w.Warehouse).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocations);
+                    break;
+                
+                case nameof(Warehouse):
+                    var warehouses = await context.Warehouses.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouses);
+                    break;
+                
+                case nameof(Currency):
+                    var currencies = await context.Currencies.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(currencies);
+                    break;
+                
+                case nameof(WarehouseLocationRack):
+                    var warehouseLocationRacks = await context.WarehouseLocationRacks.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationRacks);
+                    break;
+                
+                case nameof(WarehouseLocationShelf):
+                    var warehouseLocationShelves = await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationShelves);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -99,7 +152,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Operation),
             nameof(MaterialType),
             nameof(MaterialCategory),
-            nameof(PackageType)
+            nameof(PackageType),
+            nameof(User),
+            nameof(Role),
+            nameof(Country),
+            nameof(WarehouseLocation)
         };
     }
     
@@ -154,6 +211,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.PackageTypes.AddAsync(productPackageType);
                 await context.SaveChangesAsync();
                 return productPackageType.Id;
+            
+            case nameof(Currency):
+                var currency = mapper.Map<Currency>(request);
+                await context.Currencies.AddAsync(currency);
+                await context.SaveChangesAsync();
+                return currency.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -227,6 +290,14 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.PackageTypes.Update(productPackageType);
                 await context.SaveChangesAsync();
                 return productPackageType.Id;
+            
+            case nameof(Currency):
+                var currency = await context.Currencies.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, currency);
+                currency.LastUpdatedById = userId;
+                context.Currencies.Update(currency);
+                await context.SaveChangesAsync();
+                return currency.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -316,6 +387,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 productPackageType.DeletedAt = currentTime;
                 productPackageType.LastDeletedById = userId;
                 context.PackageTypes.Update(productPackageType);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(Currency):
+                var currency = await context.Currencies.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (currency == null)
+                    return Error.Validation("Currency", "Not found");
+                currency.DeletedAt = currentTime;
+                currency.LastDeletedById = userId;
+                context.Currencies.Update(currency);
                 await context.SaveChangesAsync();
                 return Result.Success();
             

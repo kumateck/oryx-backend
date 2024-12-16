@@ -30,22 +30,31 @@ public class UserTableSeeders : ISeeder
         // Seed first user
         CreateUserIfNotExists(userManager, dbContext, 
             "dkadusei@kumateck.com", "Des", "Kumateck", "Pass123$1",
-            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin], 
-            new Claim[] {
+            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [
                 new Claim(JwtClaimTypes.Name, "Des"),
                 new Claim(JwtClaimTypes.GivenName, "KUma"),
                 new Claim(JwtClaimTypes.FamilyName, "Admin")
-            });
+            ]);
 
         // Seed second user
         CreateUserIfNotExists(userManager, dbContext, 
             "douglassboakye22@gmail.com", "Doug", "Afford", "Pass123$1",
-            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin], 
-            new Claim[] {
+            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [
                 new Claim(JwtClaimTypes.Name, "Dog"),
                 new Claim(JwtClaimTypes.GivenName, "Affordable"),
                 new Claim(JwtClaimTypes.FamilyName, "Admin")
-            });
+            ]);
+        
+        CreateUserIfNotExists(userManager, dbContext, 
+            "adujoel7@gmail.com", "Adu", "Joel", "Pass123$1",
+            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [
+                new Claim(JwtClaimTypes.Name, "Adu"),
+                new Claim(JwtClaimTypes.GivenName, "Joel"),
+                new Claim(JwtClaimTypes.FamilyName, "Admin")
+            ]);
     }
 
     private static void CreateUserIfNotExists(
@@ -66,7 +75,6 @@ public class UserTableSeeders : ISeeder
             LastName = lastName,
             EmailConfirmed = true,
             PhoneNumberConfirmed = true,
-            OrganizationName = AppConstants.DefaultTenantId,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -78,7 +86,6 @@ public class UserTableSeeders : ISeeder
 
     private static void AssignRolesAndClaims(UserManager<User> userManager, ApplicationDbContext dbContext, User user, List<string> roles, Claim[] claims)
     {
-        user.OrganizationName = AppConstants.DefaultTenantId;
         dbContext.Users.Update(user);
         dbContext.SaveChanges();
 

@@ -9,6 +9,7 @@ using APP.Extensions;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Users.Request;
 using INFRASTRUCTURE.Context;
 using SHARED;
 using SHARED.Requests;
@@ -130,10 +131,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
             user.PhoneNumber = request.PhoneNumber;
-            user.HiredOn = request.HiredOn;
             user.DateOfBirth = request.DateOfBirth;
-            user.DirectReportId= request.DirectReportId;
-            user.HiredOn =request.HiredOn;
             user.LastUpdatedById = userId;
             user.UpdatedAt = DateTime.UtcNow;
 

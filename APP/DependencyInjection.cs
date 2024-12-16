@@ -1,9 +1,14 @@
 using APP.IRepository;
 using APP.Repository;
+using APP.Services.Email;
+using APP.Services.Pdf;
 using APP.Services.Storage;
 using APP.Services.Token;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
+using SHARED.Services.Identity;
 using StackExchange.Redis;
 
 namespace APP;
@@ -26,10 +31,18 @@ public static class DependencyInjection
         services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
         services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
         services.AddScoped<IMaterialRepository, MaterialRepository>();
-        
+        services.AddScoped<IRequisitionRepository, RequisitionRepository>();
+        services.AddScoped<IApprovalRepository, ApprovalRepository>();
+        services.AddScoped<IProcurementRepository, ProcurementRepository>();
+        services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+        services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+        services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<ITenantProvider, TenantProvider>();
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IPdfService, PdfService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)
@@ -39,5 +52,6 @@ public static class DependencyInjection
             ConnectionMultiplexer.Connect(redisConnectionString));
         services.AddSingleton(sp => 
             sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
+        services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
     }
 }

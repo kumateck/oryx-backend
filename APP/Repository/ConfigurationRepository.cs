@@ -3,6 +3,13 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Configurations;
+using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Warehouses;
+using DOMAIN.Entities.WorkOrders;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -84,5 +91,60 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
         context.Configurations.Remove(configuration);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<Result<int>> GetCountForCodeConfiguration(string modelType, string prefix)
+    {
+
+        switch (modelType)
+        {
+           case "RawMaterial":
+               return await context.Materials
+                   .Where(m => m.Kind == MaterialKind.Raw && m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "PackageMaterial":
+               return await context.Materials
+                   .Where(m => m.Kind == MaterialKind.Package && m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Product):
+               return await context.Products
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(ProductionSchedule):
+               return await context.ProductionSchedules
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(WorkOrder):
+               return await context.WorkOrders
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Warehouse):
+               return await context.Warehouses
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Department):
+               return await context.Departments
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Requisition):
+               return await context.Requisitions
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(SourceRequisition):
+               return await context.SourceRequisitions
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           default:
+               return Error.Validation("ModelType", "Invalid model type sent");
+        }
     }
 }

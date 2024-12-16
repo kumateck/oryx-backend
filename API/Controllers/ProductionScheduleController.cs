@@ -217,6 +217,24 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
 
         return TypedResults.Ok(types);
     }
+    
+    /// <summary>
+    /// Retrieves the details of a specific Production Schedule, including procurement information.
+    /// </summary>
+    /// <param name="scheduleId">The ID of the Production Schedule.</param>
+    /// <returns>Returns the details of the Production Schedule, including procurement information.</returns>
+    [HttpGet("{scheduleId}/details")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionScheduleDetails(Guid scheduleId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
 
+        var result = await repository.GetProductionScheduleDetail(scheduleId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     #endregion
 }

@@ -74,6 +74,9 @@ builder.Services.AddSwaggerGen(options =>
     options.IncludeXmlComments(xmlPath);
 });
 
+//add memory caching
+builder.Services.AddMemoryCache(); 
+
 //Add Cors
 builder.Services.AddCors(options =>
 {
@@ -240,6 +243,8 @@ app.UseRouting();
 
 // Apply rate limiting middleware
 //app.UseRateLimiter();
+
+app.UseStaticFiles();
 
 //use CORS
 app.UseCors("default");

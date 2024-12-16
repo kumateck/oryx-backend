@@ -1,14 +1,30 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
+using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Configurations;
+using DOMAIN.Entities.Countries;
+using DOMAIN.Entities.Currencies;
+using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Departments.Request;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.PurchaseOrders.Request;
+using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Users.Request;
+using DOMAIN.Entities.Warehouses;
+using DOMAIN.Entities.Warehouses.Request;
 using DOMAIN.Entities.WorkOrders;
 using SHARED;
 
@@ -30,6 +46,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, MaterialType>();
         CreateMap<CreateItemRequest, MaterialCategory>();
         CreateMap<CreateItemRequest, PackageType>();
+        CreateMap<CreateItemRequest, Currency>();
         
         #endregion
         
@@ -52,10 +69,33 @@ public class OryxMapper : Profile
         CreateMap<User, CollectionItemDto>()
             .ForMember(dest => dest.Name,
                 opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
+        CreateMap<Role, CollectionItemDto>().ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.DisplayName));
+        CreateMap<Supplier, CollectionItemDto>();
+        CreateMap<Supplier, CollectionItemDto>();
+        CreateMap<Manufacturer, CollectionItemDto>();
+        CreateMap<Country, CollectionItemDto>();
+        CreateMap<Warehouse, CollectionItemDto>();
+        CreateMap<WarehouseLocation, CollectionItemDto>();
+        CreateMap<WarehouseLocationRack, CollectionItemDto>();
+        CreateMap<WarehouseLocationShelf, CollectionItemDto>();
+        CreateMap<MaterialBatch, CollectionItemDto>();
+        CreateMap<SourceRequisition, CollectionItemDto>();
+        CreateMap<Requisition, CollectionItemDto>();
+        CreateMap<Currency, CollectionItemDto>();
+        CreateMap<PurchaseOrder, CollectionItemDto>();
+        CreateMap<PurchaseOrderInvoice, CollectionItemDto>();
+        CreateMap<BillingSheet, CollectionItemDto>();
+
         
         #endregion
 
-        #region MyRegion
+        #region Country
+
+        CreateMap<Country, CountryDto>();
+
+        #endregion
+
+        #region Resource
         
         CreateMap<Resource, ResourceDto>().ReverseMap();
         #endregion
@@ -63,8 +103,8 @@ public class OryxMapper : Profile
         #region UserMapper
         CreateMap<CreateUserRequest, User>();
         CreateMap<User, UserDto>()
-            .ForMember(user => user.Roles,
-                opt => opt.MapFrom<UserRoleResolver>())
+            // .ForMember(user => user.Roles,
+            //     opt => opt.MapFrom<UserRoleResolver>())
             .ForMember(user => user.Avatar,
                 opt => opt.MapFrom<AvatarResolver>());
         
@@ -120,7 +160,9 @@ public class OryxMapper : Profile
 
         #region ProductionSchdule
         CreateMap<CreateProductionScheduleRequest, ProductionSchedule>();
+        CreateMap<CreateProductionScheduleItemRequest, ProductionScheduleItem>();
         CreateMap<ProductionSchedule, ProductionScheduleDto>();
+        CreateMap<ProductionScheduleItem, ProductionScheduleItemDto>();
         CreateMap<CreateMasterProductionScheduleRequest, MasterProductionSchedule>();
         CreateMap<MasterProductionSchedule, MasterProductionScheduleDto>();
         #endregion
@@ -140,7 +182,120 @@ public class OryxMapper : Profile
         CreateMap<CreateMaterialRequest, Material>();
         CreateMap<Material, MaterialDto>();
 
+        CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
+        CreateMap<MaterialBatch, MaterialBatchDto>();
+        CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
+        CreateMap<MaterialBatchMovement, MaterialBatchMovementDto>();
+
         #endregion
 
+        #region Requisition
+
+        CreateMap<CreateRequisitionRequest, Requisition>();
+        CreateMap<CreateRequisitionItemRequest, RequisitionItem>();
+        CreateMap<Requisition, RequisitionDto>();
+        CreateMap<RequisitionItem, RequisitionItemDto>();
+        CreateMap<RequisitionApproval, RequisitionApprovalDto>();
+        CreateMap<CreateRequisitionRequest, CompletedRequisition>();
+        CreateMap<CreateRequisitionItemRequest, CompletedRequisitionItem>();
+        CreateMap<CompletedRequisition, RequisitionDto>();
+        CreateMap<CompletedRequisitionItem, RequisitionItemDto>();
+        CreateMap<CreateSourceRequisitionRequest, SourceRequisition>();
+        CreateMap<CreateSourceRequisitionItemRequest, SourceRequisitionItem>();
+        CreateMap<CreateSourceRequisitionItemSupplierRequest, SourceRequisitionItemSupplier>();
+        CreateMap<SourceRequisition, SourceRequisitionDto>(); 
+        CreateMap<SourceRequisitionItem, SourceRequisitionItemDto>();
+        CreateMap<SourceRequisitionItemSupplier, SourceRequisitionItemSupplierDto>();
+        #endregion
+
+        #region Approvals
+
+        CreateMap<CreateApprovalRequest, Approval>();
+        CreateMap<CreateApprovalStageRequest, ApprovalStage>();
+        CreateMap<Approval, ApprovalDto>();
+        CreateMap<ApprovalStage, ApprovalStageDto>();
+
+        #endregion
+
+        #region Procurement
+        
+        //supplier
+        CreateMap<CreateSupplierRequest, Supplier>();
+        CreateMap<Supplier, SupplierDto>();
+        CreateMap<CreateSupplierManufacturerRequest, SupplierManufacturer>();
+        CreateMap<SupplierManufacturer, SupplierManufacturerDto>();
+        
+        //manufacturer
+        CreateMap<CreateManufacturerRequest, Manufacturer>();
+        CreateMap<Manufacturer, ManufacturerDto>();
+        CreateMap<CreateManufacturerMaterialRequest, ManufacturerMaterial>();
+        CreateMap<ManufacturerMaterial, ManufacturerMaterialDto>();
+
+        #endregion
+
+        #region Warehoues
+
+        CreateMap<CreateWarehouseRequest, Warehouse>();
+        CreateMap<UpdateWarehouseRequest, Warehouse>();
+        CreateMap<CreateWarehouseLocationRequest, WarehouseLocation>();
+        CreateMap<CreateWarehouseLocationRackRequest, WarehouseLocationRack>();
+        CreateMap<CreateWarehouseLocationShelfRequest, WarehouseLocationShelf>();
+        CreateMap<Warehouse, WarehouseDto>();
+        CreateMap<WarehouseLocation, WarehouseLocationDto>();
+        CreateMap<WarehouseLocation, WareHouseLocationDto>();
+        CreateMap<WarehouseLocationRack, WarehouseLocationRackDto>();
+        CreateMap<WarehouseLocationShelf, WarehouseLocationShelfDto>();
+        
+        #endregion
+
+        #region Department
+        
+        CreateMap<CreateDepartmentRequest, Department>();
+        CreateMap<UpdateDepartmentRequest, Department>();
+        CreateMap<Department, DepartmentDto>();
+
+        #endregion
+
+        #region Attachment
+
+        CreateMap<SourceRequisition, SourceRequisitionDto>()
+            .ForMember(dest => dest.Attachments,
+                opt => opt.MapFrom<AttachmentsResolver>());
+
+        #endregion
+
+        #region Currency
+
+        CreateMap<Currency, CurrencyDto>();
+
+        #endregion
+
+        #region Supplier Quotation
+
+        CreateMap<SupplierQuotation, SupplierQuotationDto>();
+        CreateMap<SupplierQuotationItem, SupplierQuotationItemDto>();
+
+        #endregion
+
+        #region Purchase Order
+        
+        CreateMap<CreatePurchaseOrderRequest, PurchaseOrder>();
+        CreateMap<CreatePurchaseOrderItemRequest, PurchaseOrderItem>();
+        CreateMap<PurchaseOrder, PurchaseOrderDto>()
+            .ForMember(dest => dest.Attachments,
+                opt => opt.MapFrom<AttachmentsResolver>());
+        CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>();
+
+        CreateMap<CreatePurchaseOrderInvoiceRequest, PurchaseOrderInvoice>();
+        CreateMap<CreateBatchItemRequest, BatchItem>();
+        CreateMap<CreateChargeRequest, Charge>();
+        CreateMap<PurchaseOrderInvoice, PurchaseOrderInvoiceDto>();
+        CreateMap<BatchItem, BatchItemDto>();
+        CreateMap<Charge, ChargeDto>();
+
+        CreateMap<CreateBillingSheetRequest, BillingSheet>();
+        CreateMap<BillingSheet, BillingSheetDto>();
+
+        #endregion
     }
 }

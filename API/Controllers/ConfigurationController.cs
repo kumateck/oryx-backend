@@ -139,4 +139,20 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
 
         return TypedResults.Ok(types);
     }
+
+    /// <summary>
+    /// Retrieves the count of items using a particular code config
+    /// </summary>
+    /// <param name="modelType">The model type of which the count is need </param>
+    /// <param name="prefix">The prefix of the particular model </param>
+    /// <returns>Returns the count or usage of the configuration.</returns>
+    [HttpGet("{modelType}/{prefix}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetConfiguration(string modelType, string prefix)
+    {
+        var result = await repository.GetCountForCodeConfiguration(modelType, prefix);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

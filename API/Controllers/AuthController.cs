@@ -10,7 +10,6 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/auth")]
 [ApiController]
-//[ValidateModelState]
 public class AuthController(IAuthRepository repo) : ControllerBase
 {
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LoginResponse))]

@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper) : IProductionScheduleRepository
+public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository) : IProductionScheduleRepository
 {
      public async Task<Result<Guid>> CreateMasterProductionSchedule(CreateMasterProductionScheduleRequest request, Guid userId)
      { 
@@ -97,22 +98,71 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId) 
     { 
         var productionSchedule = await context.ProductionSchedules
-            .Include(s => s.WorkOrder)
+            .Include(s => s.Items).ThenInclude(s => s.Material)
+            .Include(s => s.Product)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
         return productionSchedule is null ? Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found") : mapper.Map<ProductionScheduleDto>(productionSchedule);
     }
     
+    public async Task<Result<List<ProductionScheduleProcurementDto>>> GetProductionScheduleDetail(Guid scheduleId, Guid userId)
+    {
+        // Fetch the production schedule with related data
+        var productionSchedule = await context.ProductionSchedules
+            .Include(s => s.Items).ThenInclude(s => s.Material)
+            .Include(s => s.Items).ThenInclude(s => s.UoM)
+            .FirstOrDefaultAsync(s => s.Id == scheduleId);
+
+        if (productionSchedule is null)
+            return Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found");
+
+        // Fetch the user with related department data
+        var user = await context.Users.Include(user => user.Department).FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return Error.NotFound("User.NotFound", $"User with id {userId} not found");
+
+        // Initialize a dictionary to store stock levels
+        var stockLevels = new Dictionary<Guid, int>();
+
+        if (user.Department?.WarehouseId != null)
+        {
+            var warehouseId = user.Department.WarehouseId.Value;
+
+            // Fetch stock levels for each material ID individually
+            foreach (var materialId in productionSchedule.Items.Select(item => item.MaterialId).Distinct())
+            {
+                var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouseId);
+                stockLevels[materialId] = stockLevel.Value;
+            }
+        }
+
+        var procurementDetails = productionSchedule.Items.Select(item =>
+        {
+            var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
+
+            return new ProductionScheduleProcurementDto
+            {
+                Material = mapper.Map<MaterialDto>(item.Material),
+                UoM = mapper.Map<CollectionItemDto>(item.UoM),
+                QuantityRequested = item.Quantity,
+                QuantityOnHand = quantityOnHand,
+            };
+        }).ToList();
+
+        return procurementDetails;
+    }
+    
+
     public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page, int pageSize, string searchQuery) 
     { 
         var query = context.ProductionSchedules
-            .AsSplitQuery()
-            .Include(s => s.WorkOrder)
+            .Include(s => s.Items).ThenInclude(s => s.Material)
+            .Include(s => s.Product)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery)) 
         { 
-            query = query.WhereSearch(searchQuery, f => f.WorkOrder.Product.Name);
+            query = query.WhereSearch(searchQuery, f => f.Product.Name);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(

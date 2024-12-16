@@ -4,8 +4,9 @@ using SHARED;
 
 namespace DOMAIN.Entities.WorkOrders;
 
-public class WorkOrderDto
+public class WorkOrderDto : BaseDto
 {
+    public string Code { get; set; }
     public CollectionItemDto Product { get; set; } // Navigation to the Product entity
     public MasterProductionScheduleDto MasterProductionSchedule { get; set; } // Navigation to MPS
     public int Quantity { get; set; } // Quantity of the product to be produced

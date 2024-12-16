@@ -71,7 +71,7 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
         
         var claims = new List<Claim> 
         {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()), 
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}" ?? ""), 
             new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
             
