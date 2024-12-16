@@ -335,6 +335,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         
         purchaseOrder.Status = PurchaseOrderStatus.Delivered;
         context.PurchaseOrders.Update(purchaseOrder);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
