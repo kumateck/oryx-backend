@@ -149,6 +149,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return mapper.Map<List<SupplierDto>>( await context.Suppliers
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
+            
             .Where(m => m.AssociatedManufacturers.Select(ma => ma.MaterialId).Contains(materialId))
             .ToListAsync());
     }

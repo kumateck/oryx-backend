@@ -68,7 +68,7 @@ public class SupplierQuotation : BaseEntity
 public class SupplierQuotationDto 
 { 
     public Guid Id { get; set; }
-    public CollectionItemDto Supplier { get; set; } 
+    public SupplierDto Supplier { get; set; } 
     public List<SupplierQuotationItemDto> Items { get; set; } = [];
     public bool ReceivedQuotation { get; set; }
 }

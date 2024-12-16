@@ -368,6 +368,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.UoM).AutoInclude();
 
         #endregion
+
+        #region Supplier Entities
+
+        modelBuilder.Entity<Supplier>().Navigation(p => p.Country).AutoInclude();
+        modelBuilder.Entity<Supplier>().Navigation(p => p.Currency).AutoInclude();
+
+        #endregion
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
