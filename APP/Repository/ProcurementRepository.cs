@@ -293,6 +293,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         
         if (purchaseOrder is null) return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         purchaseOrder.ExpectedDeliveryDate = request.ExpectedDeliveryDate;
+        purchaseOrder.Status = PurchaseOrderStatus.Completed;
         context.PurchaseOrders.Update(purchaseOrder);
         await context.SaveChangesAsync();
         
