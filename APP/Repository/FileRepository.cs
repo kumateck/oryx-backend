@@ -39,7 +39,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             switch (modelType)
             {
                 case nameof(PurchaseOrder):
-                    var purchaseOrder = await context.PurchaseOrders.FindAsync(modelId);
+                    var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item => item.Id == modelId);
                     if (purchaseOrder is not null)
                     {
                         purchaseOrder.Status = PurchaseOrderStatus.Attached;
@@ -97,7 +97,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             // Update status after all files are uploaded
             if (modelType == nameof(PurchaseOrder))
             {
-                var purchaseOrder = await context.PurchaseOrders.FindAsync(modelId);
+                var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item => item.Id == modelId);
                 if (purchaseOrder is not null)
                 {
                     purchaseOrder.Status = PurchaseOrderStatus.Attached;
