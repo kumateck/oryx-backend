@@ -265,10 +265,11 @@ public static class PdfTemplate
                   <h1>{purchaseOrder.Supplier.Name}</h1>
                 </div>
                 <div class=""content"">
-                  <h2>Sales Quotation Request</h2>
+                  <h2>Purchase Order - ({purchaseOrder.Code})</h2>
                   <p>
                     Kindly provide us with a sales quotation for the following items:
                   </p>
+                  <p><strong>Expected Delivery Date:</strong> {purchaseOrder.ExpectedDeliveryDate:D}</p>
                   <table class=""table"">
                     <thead>
                       <tr>

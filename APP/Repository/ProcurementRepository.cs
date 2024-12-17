@@ -292,23 +292,23 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         
         if (purchaseOrder is null) return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        purchaseOrder.ExpectedDeliveryDate = request.ExpectedDeliveryDate;
+        context.PurchaseOrders.Update(purchaseOrder);
+        await context.SaveChangesAsync();
         
         var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
-        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.ProformaInvoiceTemplate(purchaseOrder));
-        mailAttachments.Add((fileContent, $"Quotation Request from Entrance",  "application/pdf"));
+        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.PurchaseOrderTemplate(purchaseOrder));
+        mailAttachments.Add((fileContent, $"Purchase Order from Entrance",  "application/pdf"));
 
         try
         {
-            emailService.SendMail(purchaseOrder.Supplier.Email, "Awarded Quote From Entrance", "Please find attached to this email your final awarded quotation to draft a purchase order.", mailAttachments);
+            emailService.SendMail(purchaseOrder.Supplier.Email, "Purchase Order From Entrance", "Please find attached to this email your final awarded quotation to draft a purchase order.", mailAttachments);
         }
         catch (Exception e)
         {
             return Error.Validation("Supplier.Quotation", e.Message);
         }
-
-        purchaseOrder.ExpectedDeliveryDate = request.ExpectedDeliveryDate;
-        context.PurchaseOrders.Update(purchaseOrder);
-        await context.SaveChangesAsync();
+        
         return Result.Success();
     }
     
