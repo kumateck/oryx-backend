@@ -283,7 +283,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
     
-    public async Task<Result> SendPurchaseOrderToSupplier(Guid purchaseOrderId)
+    public async Task<Result> SendPurchaseOrderToSupplier(SendPurchaseOrderRequest request, Guid purchaseOrderId)
     {
         var purchaseOrder =  await context.PurchaseOrders
             .Include(po => po.Supplier)
@@ -305,7 +305,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.Validation("Supplier.Quotation", e.Message);
         }
-        
+
+        purchaseOrder.ExpectedDeliveryDate = request.ExpectedDeliveryDate;
+        context.PurchaseOrders.Update(purchaseOrder);
         await context.SaveChangesAsync();
         return Result.Success();
     }

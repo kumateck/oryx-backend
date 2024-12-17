@@ -293,15 +293,16 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <summary>
     /// Sends a purchase order or awarded quote to a supplier
     /// </summary>
+    /// <param name="request">The request metadata to send purchase orders to suppliers.</param>
     /// <param name="purchaseOrderId">The ID of the purchase order you want to send to a supplier as an email.</param>
     /// <returns>Returns a 204 no content response</returns>
     [HttpPost("purchase-order/{purchaseOrderId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> SendPurchaseOrderToSupplier(Guid purchaseOrderId)
+    public async Task<IResult> SendPurchaseOrderToSupplier([FromBody] SendPurchaseOrderRequest request, Guid purchaseOrderId)
     {
-        var result = await repository.SendPurchaseOrderToSupplier(purchaseOrderId);
+        var result = await repository.SendPurchaseOrderToSupplier(request, purchaseOrderId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
