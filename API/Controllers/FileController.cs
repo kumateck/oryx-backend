@@ -31,6 +31,27 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
         var result = await fileRepository.SaveBlobItem(modelType.ToLower(), modelId, reference, file, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Uploads multiple files to be associated with a model.
+    /// </summary>
+    /// <param name="modelType">Type of the model to associate the file with.</param>
+    /// <param name="modelId">ID of the model to associate the file with.</param>
+    /// <param name="files">The files to upload.</param>
+    /// <returns>The ID of the uploaded file or an error message.</returns>
+    [HttpPost("{modelType}/{modelId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize]
+    public async Task<IResult> UploadFile(string modelType, Guid modelId, 
+      [FromForm] List<IFormFile> files)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await fileRepository.SaveBlobItem(modelType.ToLower(), modelId, files, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Deletes all attachments associated with a specific model.

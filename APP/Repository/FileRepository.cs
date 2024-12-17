@@ -56,7 +56,66 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
 
         return Result.Success();
     }
-    
+
+    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, List<IFormFile> files, Guid userId)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            var references = new List<string>();
+
+            foreach (var file in files)
+            {
+                var reference = Guid.NewGuid();
+                var attachment = new Attachment
+                {
+                    ModelId = modelId,
+                    ModelType = modelType,
+                    Reference = reference.ToString(),
+                    Name = Path.GetFileName(file.FileName),
+                    CreatedById = userId
+                };
+
+                context.Attachments.Add(attachment);
+                references.Add(reference.ToString()); 
+            }
+
+            await context.SaveChangesAsync();
+
+            foreach (var file in files)
+            {
+                var reference = references[files.IndexOf(file)];
+                var result = await blobStorageService.UploadBlobAsync(modelType.ToLower(), file, $"{modelId}/{reference}");
+
+                if (result.IsFailure)
+                {
+                    await transaction.RollbackAsync();
+                    return result.Error;
+                }
+            }
+
+            // Update status after all files are uploaded
+            if (modelType == nameof(PurchaseOrder))
+            {
+                var purchaseOrder = await context.PurchaseOrders.FindAsync(modelId);
+                if (purchaseOrder is not null)
+                {
+                    purchaseOrder.Status = PurchaseOrderStatus.Attached;
+                    context.PurchaseOrders.Update(purchaseOrder);
+                }
+            }
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+        }
+        return Result.Success();
+    }
+
+
     public async Task<Result> DeleteAttachment(Guid modelId, Guid userId)
     {
         var attachments = await context.Attachments
