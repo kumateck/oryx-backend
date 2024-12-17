@@ -28,7 +28,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await fileRepository.SaveBlobItem(modelType.ToLower(), modelId, reference, file, Guid.Parse(userId));
+        var result = await fileRepository.SaveBlobItem(modelType, modelId, reference, file, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
@@ -49,7 +49,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await fileRepository.SaveBlobItem(modelType.ToLower(), modelId, files, Guid.Parse(userId));
+        var result = await fileRepository.SaveBlobItem(modelType, modelId, files, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
