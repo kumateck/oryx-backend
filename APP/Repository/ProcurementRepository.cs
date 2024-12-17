@@ -283,7 +283,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
     
-    public async Task<Result> SendPurchaseOrderToSupplier(Guid purchaseOrderId)
+    public async Task<Result> SendPurchaseOrderToSupplier(SendPurchaseOrderRequest request, Guid purchaseOrderId)
     {
         var purchaseOrder =  await context.PurchaseOrders
             .Include(po => po.Supplier)
@@ -292,23 +292,24 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         
         if (purchaseOrder is null) return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        purchaseOrder.ExpectedDeliveryDate = request.ExpectedDeliveryDate;
+        purchaseOrder.Status = PurchaseOrderStatus.Completed;
+        context.PurchaseOrders.Update(purchaseOrder);
+        await context.SaveChangesAsync();
         
         var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
-        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.ProformaInvoiceTemplate(purchaseOrder));
-        mailAttachments.Add((fileContent, $"Quotation Request from Entrance",  "application/pdf"));
+        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.PurchaseOrderTemplate(purchaseOrder));
+        mailAttachments.Add((fileContent, $"Purchase Order from Entrance",  "application/pdf"));
 
         try
         {
-            emailService.SendMail(purchaseOrder.Supplier.Email, "Awarded Quote From Entrance", "Please find attached to this email your final awarded quotation to draft a purchase order.", mailAttachments);
+            emailService.SendMail(purchaseOrder.Supplier.Email, "Purchase Order From Entrance", "Please find attached to this email your final awarded quotation to draft a purchase order.", mailAttachments);
         }
         catch (Exception e)
         {
             return Error.Validation("Supplier.Quotation", e.Message);
         }
         
-        purchaseOrder.Status = PurchaseOrderStatus.Delivered;
-        context.PurchaseOrders.Update(purchaseOrder);
-        await context.SaveChangesAsync();
         return Result.Success();
     }
     
@@ -334,7 +335,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.Validation("Supplier.Quotation", e.Message);
         }
-
+        
+        purchaseOrder.Status = PurchaseOrderStatus.Delivered;
+        context.PurchaseOrders.Update(purchaseOrder);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 

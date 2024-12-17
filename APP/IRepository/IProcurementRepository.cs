@@ -39,7 +39,7 @@ namespace APP.IRepository
         Task<Result<PurchaseOrderInvoiceDto>> GetPurchaseOrderInvoice(Guid invoiceId);
         Task<Result<Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>>> GetPurchaseOrderInvoices(int page,
             int pageSize, string searchQuery);
-        Task<Result> SendPurchaseOrderToSupplier(Guid purchaseOrderId);
+        Task<Result> SendPurchaseOrderToSupplier(SendPurchaseOrderRequest request, Guid purchaseOrderId);
         Task<Result> SendProformaInvoiceToSupplier(Guid purchaseOrderId);
         Task<Result> UpdatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid invoiceId, Guid userId);
         Task<Result> DeletePurchaseOrderInvoice(Guid invoiceId, Guid userId);
