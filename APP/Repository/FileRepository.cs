@@ -1,10 +1,10 @@
-using System.Data.Entity;
 using APP.IRepository;
 using APP.Services.Storage;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.PurchaseOrders;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
@@ -86,7 +86,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             {
                 var reference = references[files.IndexOf(file)];
                 var result = await blobStorageService.UploadBlobAsync(modelType.ToLower(), file, $"{modelId}/{reference}");
-
+            
                 if (result.IsFailure)
                 {
                     await transaction.RollbackAsync();
