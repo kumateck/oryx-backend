@@ -18,6 +18,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
@@ -197,6 +198,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
     public DbSet<PurchaseOrderInvoice> PurchaseOrderInvoices { get; set; }
     public DbSet<BillingSheet> BillingSheets { get; set; }
+
+    #endregion
+    
+    #region Shipment Document
+
+    public DbSet<ShipmentDocument> ShipmentDocuments { get; set; }
 
     #endregion
     
@@ -524,6 +531,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<SupplierQuotation>().HasQueryFilter(a => !a.Supplier.DeletedAt.HasValue);
         modelBuilder.Entity<SupplierQuotationItem>().HasQueryFilter(a => !a.Material.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Shipment Document
+        
+        modelBuilder.Entity<ShipmentDocument>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentDocument>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
 
         #endregion
     }

@@ -8,6 +8,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.WorkOrders;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -134,6 +135,11 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            
            case nameof(SourceRequisition):
                return await context.SourceRequisitions
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(ShipmentDocument):
+               return await context.ShipmentDocuments
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            

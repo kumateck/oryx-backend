@@ -21,6 +21,8 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Shipments;
+using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
 using DOMAIN.Entities.Warehouses;
@@ -298,6 +300,15 @@ public class OryxMapper : Profile
         CreateMap<CreateBillingSheetRequest, BillingSheet>();
         CreateMap<BillingSheet, BillingSheetDto>();
 
+        #endregion
+
+        #region Shipment Document
+
+        CreateMap<CreateShipmentDocumentRequest, ShipmentDocument>();
+        CreateMap<ShipmentDocument, ShipmentDocumentDto>()
+            .ForMember(dest => dest.Attachments,
+                opt => opt.MapFrom<AttachmentsResolver>());
+        
         #endregion
     }
 }

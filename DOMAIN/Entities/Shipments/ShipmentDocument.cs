@@ -6,6 +6,7 @@ namespace DOMAIN.Entities.Shipments;
 
 public class ShipmentDocument : BaseEntity
 {
+    [StringLength(255)] public string Code { get; set; }
     public Guid PurchaseOrderId { get; set; }
     public PurchaseOrder PurchaseOrder { get; set; }
     [StringLength(255)] public string InvoiceNumber { get; set; }
