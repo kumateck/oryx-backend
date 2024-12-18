@@ -5,7 +5,6 @@ namespace DOMAIN.Entities.Warehouses;
 public class WarehouseDto 
 {
     public Guid Id { get; set; }
-    public string Code { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
     public WarehouseType Type { get; set; }
