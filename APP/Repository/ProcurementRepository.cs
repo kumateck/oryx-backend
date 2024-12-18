@@ -511,6 +511,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId)
     {
         var shipmentDocument = await context.ShipmentDocuments
+            .Include(s => s.PurchaseOrder)
             .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 
         return shipmentDocument is null
@@ -521,6 +522,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page, int pageSize, string searchQuery)
     {
         var query = context.ShipmentDocuments
+            .Include(s => s.PurchaseOrder)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

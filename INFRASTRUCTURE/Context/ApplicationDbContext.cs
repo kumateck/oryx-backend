@@ -358,6 +358,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Purchase Order Entites
 
+        modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Supplier).AutoInclude();
         modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Items).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Material).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.UoM).AutoInclude();
