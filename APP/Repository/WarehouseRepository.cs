@@ -291,7 +291,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<WarehouseLocationShelfDto>> GetWarehouseLocationShelf(Guid shelfId)
     {
         var shelf = await context.WarehouseLocationShelves
-            .Include(s => s.WarehouseLocationRack)
+            .Include(s => s.WarehouseLocationRack).ThenInclude(s => s.WarehouseLocation)
             .FirstOrDefaultAsync(s => s.Id == shelfId);
 
         return shelf is null
@@ -302,7 +302,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetWarehouseLocationShelves(int page, int pageSize, string searchQuery)
     {
         var query = context.WarehouseLocationShelves
-            .Include(s => s.WarehouseLocationRack)
+            .Include(s => s.WarehouseLocationRack).ThenInclude(s => s.WarehouseLocation)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

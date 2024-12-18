@@ -33,7 +33,7 @@ public class WarehouseLocationRackDto
 public class WarehouseLocationShelfDto
 {
     public Guid Id { get; set; }
-    public CollectionItemDto WarehouseLocationRack { get; set; }
+    public WareHouseLocationRackDto WarehouseLocationRack { get; set; }
     public string Code { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
@@ -51,4 +51,12 @@ public class WareHouseLocationDto
     public string FloorName { get; set; }
     public string Description { get; set; }
     public CollectionItemDto Warehouse { get; set; }
+}
+
+public class WareHouseLocationRackDto 
+{
+    public Guid Id { get; set; }
+    public WareHouseLocationDto WarehouseLocation { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
 }
