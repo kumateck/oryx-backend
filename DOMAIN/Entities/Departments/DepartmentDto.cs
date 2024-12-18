@@ -1,5 +1,3 @@
-using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Warehouses;
 using SHARED;
 
 namespace DOMAIN.Entities.Departments;

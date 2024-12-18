@@ -2,6 +2,7 @@ namespace DOMAIN.Entities.PurchaseOrders.Request;
 
 public class CreatePurchaseOrderRequest
 {
+    public string Code { get; set; }
     public Guid SupplierId { get; set; }
     public DateTime RequestDate { get; set; }
     public DateTime? ExpectedDeliveryDate { get; set; }
