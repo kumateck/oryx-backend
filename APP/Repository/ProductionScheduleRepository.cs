@@ -118,7 +118,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found");
 
         // Fetch the user with related department data
-        var user = await context.Users.Include(user => user.Department).FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await context.Users.Include(user => user.Department)
+            .ThenInclude(u => u.Warehouses)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        
         if (user is null)
             return Error.NotFound("User.NotFound", $"User with id {userId} not found");
 
