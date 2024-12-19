@@ -712,7 +712,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
-                Code = await GeneratePurchaseOrderCode(),
+                Code =  $"PO-{Guid.NewGuid()}",
                 SupplierId = quotation.SupplierId,
                 RequestDate = DateTime.UtcNow,
                 Items = quotation.Items
