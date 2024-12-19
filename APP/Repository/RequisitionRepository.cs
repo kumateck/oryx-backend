@@ -695,7 +695,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 {
                     Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
                     Price = s.QuotedPrice
-                }).ToList()
+                }).ToHashSet()
             }).ToList();
     }
 
@@ -712,7 +712,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
-                Code =  $"PO-{Guid.NewGuid()}",
+                Code =  await GeneratePurchaseOrderCode(),
                 SupplierId = quotation.SupplierId,
                 RequestDate = DateTime.UtcNow,
                 Items = quotation.Items
