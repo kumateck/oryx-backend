@@ -4,6 +4,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -124,17 +125,32 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         // Initialize a dictionary to store stock levels
         var stockLevels = new Dictionary<Guid, int>();
 
-        if (user.Department?.WarehouseId != null)
+        
+        if (user.Department.Warehouses.Count != 0)
         {
-            var warehouseId = user.Department.WarehouseId.Value;
-
-            // Fetch stock levels for each material ID individually
-            foreach (var materialId in productionSchedule.Items.Select(item => item.MaterialId).Distinct())
+            var warehouseId = user.Department.Warehouses.FirstOrDefault(i => i.Warehouse.Type == WarehouseType.Production)?.WarehouseId;
+            if (warehouseId.HasValue)
             {
-                var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouseId);
-                stockLevels[materialId] = stockLevel.Value;
+                // Fetch stock levels for each material ID individually
+                foreach (var materialId in productionSchedule.Items.Select(item => item.MaterialId).Distinct())
+                {
+                    var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouseId.Value);
+                    stockLevels[materialId] = stockLevel.Value;
+                }
             }
         }
+        
+        // if (user.Department?.WarehouseId != null)
+        // {
+        //     var warehouseId = user.Department.WarehouseId.Value;
+        //
+        //     // Fetch stock levels for each material ID individually
+        //     foreach (var materialId in productionSchedule.Items.Select(item => item.MaterialId).Distinct())
+        //     {
+        //         var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouseId);
+        //         stockLevels[materialId] = stockLevel.Value;
+        //     }
+        // }
 
         var procurementDetails = productionSchedule.Items.Select(item =>
         {

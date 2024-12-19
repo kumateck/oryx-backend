@@ -22,7 +22,7 @@ public class AttachmentsResolver(ApplicationDbContext context, IHttpContextAcces
                 .Select(attachment => new AttachmentDto
                 {
                     Name = attachment.Name,
-                    Link = $"https://{request.HttpContext.Request.Host}/api/v1/file/{modelType.ToLower()}/{attachment.ModelId}/{attachment.Reference}",
+                    Link = $"http://{request.HttpContext.Request.Host}/api/v1/file/{modelType.ToLower()}/{attachment.ModelId}/{attachment.Reference}",
                     Id = attachment.ModelId,
                     Reference = attachment.Reference
                 }).ToList();

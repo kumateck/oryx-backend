@@ -18,6 +18,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
@@ -176,6 +177,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Department
 
     public DbSet<Department> Departments { get; set; }
+    public DbSet<DepartmentWarehouse> DepartmentWarehouses { get; set; }
 
     #endregion
 
@@ -196,6 +198,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
     public DbSet<PurchaseOrderInvoice> PurchaseOrderInvoices { get; set; }
     public DbSet<BillingSheet> BillingSheets { get; set; }
+
+    #endregion
+    
+    #region Shipment Document
+
+    public DbSet<ShipmentDocument> ShipmentDocuments { get; set; }
 
     #endregion
     
@@ -293,7 +301,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #endregion
         
         #region Department Entities
-        modelBuilder.Entity<Department>().Navigation(p => p.Warehouse).AutoInclude();
+        modelBuilder.Entity<Department>().Navigation(p => p.Warehouses).AutoInclude();
+        modelBuilder.Entity<DepartmentWarehouse>().Navigation(p => p.Warehouse).AutoInclude();
         #endregion
         
         #region Warehouse Entities
@@ -349,6 +358,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Purchase Order Entites
 
+        modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Supplier).AutoInclude();
         modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Items).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Material).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.UoM).AutoInclude();
@@ -476,6 +486,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Department Filters
         modelBuilder.Entity<Department>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<DepartmentWarehouse>().HasQueryFilter(a => !a.Department.DeletedAt.HasValue);
         #endregion
 
         #region Warehouse Filters
@@ -521,6 +532,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<SupplierQuotation>().HasQueryFilter(a => !a.Supplier.DeletedAt.HasValue);
         modelBuilder.Entity<SupplierQuotationItem>().HasQueryFilter(a => !a.Material.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Shipment Document
+        
+        modelBuilder.Entity<ShipmentDocument>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentDocument>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
 
         #endregion
     }

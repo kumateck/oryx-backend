@@ -26,7 +26,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
     public async Task<Result<DepartmentDto>> GetDepartment(Guid departmentId)
     {
         var department = await context.Departments
-            .Include(d => d.Warehouse)
+            .Include(d => d.Warehouses).ThenInclude(d => d.Warehouse)
             .FirstOrDefaultAsync(d => d.Id == departmentId);
 
         return department is null
@@ -37,7 +37,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
     public async Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> GetDepartments(int page, int pageSize, string searchQuery)
     {
         var query = context.Departments
-            .Include(d => d.Warehouse)
+            .Include(d => d.Warehouses).ThenInclude(d => d.Warehouse)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

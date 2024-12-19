@@ -1,5 +1,4 @@
-using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Warehouses;
+using SHARED;
 
 namespace DOMAIN.Entities.Departments;
 
@@ -9,5 +8,10 @@ public class DepartmentDto
     public string Code { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
-    public WarehouseDto Warehouse { get; set; }
+    public List<DepartmentWarehouseDto> Warehouses { get; set; }
+}
+
+public class DepartmentWarehouseDto
+{
+    public CollectionItemDto Warehouse { get; set; }
 }

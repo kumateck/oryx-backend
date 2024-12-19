@@ -7,6 +7,8 @@ using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
+using DOMAIN.Entities.Shipments;
+using DOMAIN.Entities.Shipments.Request;
 
 namespace API.Controllers;
 
@@ -534,6 +536,93 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteBillingSheet(billingSheetId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+      /// <summary>
+    /// Creates a new shipment document.
+    /// </summary>
+    /// <param name="request">The CreateShipmentDocumentRequest object.</param>
+    /// <returns>Returns the ID of the created shipment document.</returns>
+    [HttpPost("shipment-document")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateShipmentDocument([FromBody] CreateShipmentDocumentRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateShipmentDocument(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a shipment document by its ID.
+    /// </summary>
+    /// <param name="shipmentDocumentId">The ID of the shipment document.</param>
+    /// <returns>Returns the shipment document details.</returns>
+    [HttpGet("shipment-document/{shipmentDocumentId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentDocumentDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShipmentDocument(Guid shipmentDocumentId)
+    {
+        var result = await repository.GetShipmentDocument(shipmentDocumentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of shipment documents.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of shipment documents.</returns>
+    [HttpGet("shipment-document")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShipmentDocumentDto>>))]
+    public async Task<IResult> GetShipmentDocuments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetShipmentDocuments(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific shipment document by its ID.
+    /// </summary>
+    /// <param name="request">The CreateShipmentDocumentRequest object.</param>
+    /// <param name="shipmentDocumentId">The ID of the shipment document to update.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("shipment-document/{shipmentDocumentId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateShipmentDocument([FromBody] CreateShipmentDocumentRequest request, Guid shipmentDocumentId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateShipmentDocument(request, shipmentDocumentId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific shipment document by its ID.
+    /// </summary>
+    /// <param name="shipmentDocumentId">The ID of the shipment document to delete.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpDelete("shipment-document/{shipmentDocumentId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteShipmentDocument(Guid shipmentDocumentId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteShipmentDocument(shipmentDocumentId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

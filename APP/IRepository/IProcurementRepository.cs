@@ -4,6 +4,8 @@ using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
+using DOMAIN.Entities.Shipments;
+using DOMAIN.Entities.Shipments.Request;
 
 namespace APP.IRepository
 {
@@ -51,5 +53,14 @@ namespace APP.IRepository
             string searchQuery);
         Task<Result> UpdateBillingSheet(CreateBillingSheetRequest request, Guid billingSheetId, Guid userId);
         Task<Result> DeleteBillingSheet(Guid billingSheetId, Guid userId);
+        
+        //************* Shipment Document ************
+        Task<Result<Guid>> CreateShipmentDocument(CreateShipmentDocumentRequest request, Guid userId);
+        Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId);
+        Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page,
+            int pageSize, string searchQuery);
+        Task<Result> UpdateShipmentDocument(CreateShipmentDocumentRequest request, Guid shipmentDocumentId,
+            Guid userId);
+        Task<Result> DeleteShipmentDocument(Guid shipmentDocumentId, Guid userId);
     }
 }

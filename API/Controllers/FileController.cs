@@ -100,6 +100,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [HttpGet("{modelType}/{modelId}/{reference}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IFormFile))]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [AllowAnonymous]
     public async Task<IResult> GetImage(string modelType, Guid modelId, string reference)
     {
         try

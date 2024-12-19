@@ -712,6 +712,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
+                Code = await GeneratePurchaseOrderCode(),
                 SupplierId = quotation.SupplierId,
                 RequestDate = DateTime.UtcNow,
                 Items = quotation.Items
@@ -726,5 +727,15 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         context.SupplierQuotations.UpdateRange(sourceRequisitionItemSuppliers);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    private async Task<string> GeneratePurchaseOrderCode()
+    {
+        // Fetch the configuration for PurchaseOrder
+        var config = await context.Configurations
+            .FirstOrDefaultAsync(c => c.ModelType == "PurchaseOrder");
+
+        return config == null ? string.Empty :
+            CodeGenerator.GenerateCode(context, "PurchaseOrder");
     }
 }
