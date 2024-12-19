@@ -46,6 +46,7 @@ public enum PurchaseOrderStatus
 public class PurchaseOrderDto : WithAttachment
 {
     public Guid Id { get; set; }
+    public string Code { get; set; }
     public CollectionItemDto Supplier { get; set; }
     public DateTime RequestDate { get; set; }
     public DateTime? ExpectedDeliveryDate { get; set; }
