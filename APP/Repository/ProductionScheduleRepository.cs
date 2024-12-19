@@ -129,7 +129,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var stockLevels = new Dictionary<Guid, int>();
 
         
-        if (user.Department.Warehouses.Count != 0)
+        if (user.Department != null && user.Department.Warehouses.Count != 0)
         {
             var warehouseId = user.Department.Warehouses.FirstOrDefault(i => i.Warehouse.Type == WarehouseType.Production)?.WarehouseId;
             if (warehouseId.HasValue)
