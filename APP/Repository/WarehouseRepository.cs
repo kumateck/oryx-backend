@@ -302,7 +302,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetWarehouseLocationShelves(int page, int pageSize, string searchQuery)
     {
         var query = context.WarehouseLocationShelves
-            .Include(s => s.WarehouseLocationRack).ThenInclude(s => s.WarehouseLocation)
+            .Include(s => s.WarehouseLocationRack)
+            .ThenInclude(s => s.WarehouseLocation).ThenInclude(s => s.Warehouse)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
