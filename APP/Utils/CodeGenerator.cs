@@ -12,7 +12,7 @@ public static class CodeGenerator
 
         if (config == null)
         {
-            throw new InvalidOperationException($"Configuration for ModelType '{modelType}' not found.");
+            return $"PO-{Guid.NewGuid()}";
         }
 
         string generatedCode;
@@ -30,7 +30,7 @@ public static class CodeGenerator
                 generatedCode = seriesCounter.ToString().PadLeft(config.MinimumNameLength, '0');
                 break;
             default:
-                throw new InvalidOperationException("Invalid NamingType provided in configuration.");
+                return $"PO-{Guid.NewGuid()}";
         }
 
         if (generatedCode.Length < config.MinimumNameLength)
