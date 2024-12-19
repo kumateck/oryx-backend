@@ -735,7 +735,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var config = await context.Configurations
             .FirstOrDefaultAsync(c => c.ModelType == "PurchaseOrder");
 
-        return config == null ? string.Empty :
+        return config == null ? $"PO-{Guid.NewGuid()}" :
             CodeGenerator.GenerateCode(context, "PurchaseOrder");
     }
 }
