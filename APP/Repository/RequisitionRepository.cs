@@ -596,13 +596,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 {
                     Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
                     Price = s.QuotedPrice
-                }).ToHashSet()
+                }).ToList()
             }).ToList();
     }
 
     public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, Guid userId)
     {
-        var sourceRequisitionItemSuppliers =  await context.SupplierQuotations
+        var supplierQuotations =  await context.SupplierQuotations
             .Include(s => s.Items).ThenInclude(i => i.Material)
             .Include(s => s.Items).ThenInclude(i => i.UoM)
             .Include(s => s.Supplier)
@@ -613,19 +613,19 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
-                Code =  await GeneratePurchaseOrderCode(),
+                Code = await GeneratePurchaseOrderCode(),
                 SupplierId = quotation.SupplierId,
                 RequestDate = DateTime.UtcNow,
                 Items = quotation.Items
             }, userId);
         }
 
-        foreach (var sourceRequisition in sourceRequisitionItemSuppliers)
+        foreach (var supplierQuotation in supplierQuotations)
         {
-            sourceRequisition.Processed = true;
+            supplierQuotation.Processed = true;
         }
         
-        context.SupplierQuotations.UpdateRange(sourceRequisitionItemSuppliers);
+        context.SupplierQuotations.UpdateRange(supplierQuotations);
         await context.SaveChangesAsync();
         return Result.Success();
     }
