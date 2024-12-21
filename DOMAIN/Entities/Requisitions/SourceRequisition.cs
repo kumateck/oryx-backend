@@ -139,6 +139,28 @@ public class SupplierPrice
 {
     public CollectionItemDto Supplier { get; set; }
     public decimal? Price { get; set; }
+    
+    public override int GetHashCode()
+    {
+        unchecked // Allow overflow, it's fine for hash codes
+        {
+            int hash = 17;
+
+            // Uniqueness is based only on the Supplier property
+            hash = hash * 23 + (Supplier != null ? Supplier.GetHashCode() : 0);
+
+            return hash;
+        }
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (obj is SupplierPrice other)
+        {
+            return EqualityComparer<CollectionItemDto>.Default.Equals(Supplier, other.Supplier);
+        }
+        return false;
+    }
 }
 
 public class ProcessQuotation
