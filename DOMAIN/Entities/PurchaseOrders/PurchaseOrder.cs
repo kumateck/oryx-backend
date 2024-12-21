@@ -29,7 +29,7 @@ public class PurchaseOrderItem : BaseEntity
     public Material Material { get; set; }
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
     public decimal Price { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
@@ -60,7 +60,7 @@ public class PurchaseOrderItemDto
     public CollectionItemDto PurchaseOrder { get; set; }
     public CollectionItemDto Material { get; set; }
     public CollectionItemDto Uom { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
     public decimal Price { get; set; }
     public CollectionItemDto Currency { get; set; }
     public decimal Cost => Price * Quantity;

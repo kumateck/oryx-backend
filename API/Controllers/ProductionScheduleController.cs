@@ -163,7 +163,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="scheduleId">The ID of the Production Schedule to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("schedule/{scheduleId}")]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
