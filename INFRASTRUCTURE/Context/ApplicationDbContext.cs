@@ -137,7 +137,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<SourceRequisition> SourceRequisitions { get; set; }
     public DbSet<SourceRequisitionItem> SourceRequisitionItems { get; set; }
-    public DbSet<SourceRequisitionItemSupplier> SourceRequisitionItemSuppliers { get; set; }
     public DbSet<SupplierQuotation> SupplierQuotations { get; set; }
     public DbSet<SupplierQuotationItem> SupplierQuotationItems { get; set; }
 
@@ -353,7 +352,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<SourceRequisition>().Navigation(r => r.CreatedBy).AutoInclude();
         modelBuilder.Entity<RequisitionItem>().Navigation(r => r.UoM).AutoInclude();
         modelBuilder.Entity<SourceRequisitionItem>().Navigation(r => r.UoM).AutoInclude();
-        modelBuilder.Entity<SourceRequisitionItemSupplier>().Navigation(r => r.Supplier).AutoInclude();
         #endregion
 
         #region Purchase Order Entites
@@ -468,8 +466,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasQueryFilter(r => !r.DeletedAt.HasValue);
         modelBuilder.Entity<SourceRequisitionItem>()
             .HasQueryFilter(r => !r.SourceRequisition.DeletedAt.HasValue);
-        modelBuilder.Entity<SourceRequisitionItemSupplier>()
-            .HasQueryFilter(r => !r.SourceRequisitionItem.DeletedAt.HasValue);
         #endregion
 
         #region Approval Filters

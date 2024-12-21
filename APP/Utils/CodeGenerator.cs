@@ -1,47 +1,63 @@
 using DOMAIN.Entities.Configurations;
-using INFRASTRUCTURE.Context;
 
 namespace APP.Utils;
 
 public static class CodeGenerator
 {
-    public static string GenerateCode(ApplicationDbContext context, string modelType, int seriesCounter = 1)
+    public static string GenerateCode(Configuration config, int seriesCounter = 1)
     {
-        var config = context.Configurations
-            .FirstOrDefault(c => c.ModelType == modelType);
-
-        if (config == null)
+        try
         {
-            return $"PO-{Guid.NewGuid()}";
+            string generatedCode;
+            switch (config.NamingType)
+            {
+                case NamingType.Time:
+                    generatedCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+                    break;
+
+                case NamingType.Random:
+                    // Ensure the total length includes the prefix and hyphen
+                    var prefixLength = config.Prefix.Length + 1; // Adding 1 for the hyphen
+                    var minLength = Math.Max(config.MinimumNameLength - prefixLength, 1);
+                    var maxLength = Math.Max(config.MaximumNameLength - prefixLength, minLength);
+
+                    if (maxLength < minLength)
+                    {
+                        return $"{config.Prefix}-{Guid.NewGuid()}";
+                    }
+
+                    var random = new Random();
+                    var randomLength = random.Next(minLength, maxLength + 1); // Determine the random length of the number part
+                    var randomNumber = new string(Enumerable.Range(0, randomLength)
+                        .Select(_ => random.Next(0, 10).ToString()[0]) // Generate random digits
+                        .ToArray());
+                    generatedCode = randomNumber;
+                    break;
+
+                case NamingType.Series:
+                    generatedCode = seriesCounter.ToString().PadLeft(config.MinimumNameLength, '0');
+                    break;
+
+                default:
+                    return $"{config.Prefix}-{Guid.NewGuid()}";
+            }
+
+            // Ensure the generated code respects minimum and maximum length including prefix
+            if (generatedCode.Length + config.Prefix.Length + 1 < config.MinimumNameLength)
+            {
+                generatedCode = generatedCode.PadLeft(config.MinimumNameLength - (config.Prefix.Length + 1), '0');
+            }
+            else if (generatedCode.Length + config.Prefix.Length + 1 > config.MaximumNameLength)
+            {
+                generatedCode = generatedCode[..(config.MaximumNameLength - (config.Prefix.Length + 1))];
+            }
+
+            return $"{config.Prefix}-{generatedCode}";
         }
-
-        string generatedCode;
-
-        switch (config.NamingType)
+        catch (Exception e)
         {
-            case NamingType.Time:
-                generatedCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-                break;
-            case NamingType.Random:
-                var random = new Random();
-                generatedCode = random.Next(0, (int)Math.Pow(10, config.MaximumNameLength)).ToString();
-                break;
-            case NamingType.Series:
-                generatedCode = seriesCounter.ToString().PadLeft(config.MinimumNameLength, '0');
-                break;
-            default:
-                return $"PO-{Guid.NewGuid()}";
+            Console.WriteLine(e);
+            return $"{config.Prefix}-{Guid.NewGuid()}";
         }
-
-        if (generatedCode.Length < config.MinimumNameLength)
-        {
-            generatedCode = generatedCode.PadLeft(config.MinimumNameLength, '0');
-        }
-        else if (generatedCode.Length > config.MaximumNameLength)
-        {
-            generatedCode = generatedCode[..config.MaximumNameLength];
-        }
-
-        return $"{config.Prefix}{generatedCode}";
     }
 }

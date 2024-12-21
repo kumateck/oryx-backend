@@ -11,13 +11,14 @@ using SHARED;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions.Request;
 
 namespace APP.Repository;
 
 public class RequisitionRepository(ApplicationDbContext context, IMapper mapper, IProcurementRepository procurementRepository, 
-    IEmailService emailService, IPdfService pdfService) : IRequisitionRepository
+    IEmailService emailService, IPdfService pdfService, IConfigurationRepository configurationRepository) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
 
@@ -638,9 +639,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         // Fetch the configuration for PurchaseOrder
         var config = await context.Configurations
-            .FirstOrDefaultAsync(c => c.ModelType == "PurchaseOrder");
+            .FirstOrDefaultAsync(c => c.ModelType == nameof(PurchaseOrder));
+        if(config is null) return $"PO-{Guid.NewGuid()}";
 
-        return config == null ? $"PO-{Guid.NewGuid()}" :
-            CodeGenerator.GenerateCode(context, "PurchaseOrder");
+        var seriesCount =
+            await configurationRepository.GetCountForCodeConfiguration(nameof(PurchaseOrder), config.Prefix);
+        return seriesCount.IsFailure ? $"PO-{Guid.NewGuid()}" : CodeGenerator.GenerateCode(config, seriesCount.Value);
     }
 }
