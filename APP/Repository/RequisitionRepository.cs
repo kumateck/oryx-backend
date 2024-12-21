@@ -579,24 +579,28 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType)
     {
-        var sourceRequisitionItemSuppliers =  await context.SupplierQuotationItems
+        var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
             .Include(s => s.Material)
             .Include(s => s.UoM)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
-            .Where(s => s.QuotedPrice != null && !s.SupplierQuotation.Processed && s.SupplierQuotation.Supplier.Type == supplierType).ToListAsync();
+            .Where(s => s.QuotedPrice != null && !s.SupplierQuotation.Processed && s.SupplierQuotation.Supplier.Type == supplierType)
+            .ToListAsync();
 
         return sourceRequisitionItemSuppliers
-            .GroupBy(s => new { s.Material, s.UoM})
+            .GroupBy(s => new { s.Material, s.UoM })
             .Select(item => new SupplierPriceComparison
             {
                 Material = mapper.Map<CollectionItemDto>(item.Key.Material),
                 UoM = mapper.Map<CollectionItemDto>(item.Key.UoM),
                 Quantity = item.Select(s => s.Quantity).First(),
-                SupplierQuotation = item.Select(s => new SupplierPrice
-                {
-                    Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
-                    Price = s.QuotedPrice
-                }).ToList()
+                SupplierQuotation = item
+                    .GroupBy(s => s.SupplierQuotation.SupplierId)
+                    .Select(sg => sg.OrderByDescending(s => s.SupplierQuotation.CreatedAt).First())
+                    .Select(s => new SupplierPrice
+                    {
+                        Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                        Price = s.QuotedPrice
+                    }).ToList()
             }).ToList();
     }
 
