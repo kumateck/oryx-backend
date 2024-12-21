@@ -39,13 +39,6 @@ public enum ProcurementSource
     Internal
 }
 
-public class SourceRequisitionItemSupplier : BaseEntity //SourceRequisitionItemId AND SupplierId should be unique together
-{
-    public Guid SourceRequisitionItemId { get; set; }
-    public SourceRequisitionItem SourceRequisitionItem { get; set; }
-    public Guid SupplierId { get; set; }
-    public Supplier Supplier { get; set; }
-}
 
 public class SourceRequisitionDto :  WithAttachment
 {
@@ -105,13 +98,6 @@ public class SourceRequisitionItemDto
     public ProcurementSource Source { get; set; }
     public DateTime CreatedAt { get; set; }
 }
-public class SourceRequisitionItemSupplierDto 
-{
-    public CollectionItemDto Supplier { get; set; }
-    public DateTime? SentQuotationRequestAt { get; set; }
-    public decimal? SupplierQuotedPrice { get; set; }
-}
-
 public class SupplierQuotationRequest
 {
     public SupplierDto Supplier { get; set; }
@@ -140,27 +126,6 @@ public class SupplierPrice
     public CollectionItemDto Supplier { get; set; }
     public decimal? Price { get; set; }
     
-    public override int GetHashCode()
-    {
-        unchecked // Allow overflow, it's fine for hash codes
-        {
-            int hash = 17;
-
-            // Uniqueness is based only on the Supplier property
-            hash = hash * 23 + (Supplier != null ? Supplier.GetHashCode() : 0);
-
-            return hash;
-        }
-    }
-
-    public override bool Equals(object obj)
-    {
-        if (obj is SupplierPrice other)
-        {
-            return EqualityComparer<CollectionItemDto>.Default.Equals(Supplier, other.Supplier);
-        }
-        return false;
-    }
 }
 
 public class ProcessQuotation
