@@ -16,7 +16,7 @@ public class BillOfMaterialItemDto
     public CollectionItemDto ComponentMaterial { get; set; }
     public CollectionItemDto ComponentProduct { get; set; }
     public CollectionItemDto MaterialType { get; set; }
-    public int Quantity { get; set; } 
+    public decimal Quantity { get; set; } 
     public CollectionItemDto UoM { get; set; }
     public bool IsSubstitutable { get; set; } 
     public string Grade { get; set; }

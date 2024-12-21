@@ -15,7 +15,7 @@ public interface IRequisitionRepository
         string searchQuery,  RequestStatus? status);
     Task<Result> ApproveRequisition(ApproveRequisitionRequest request, Guid requisitionId, Guid userId, List<Guid> roleIds);
      Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId);
-     Task<Result<Guid>> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId);
+     Task<Result> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId);
     Task<Result<SourceRequisitionDto>> GetSourceRequisition(Guid sourceRequisitionId);
     Task<Result<Paginateable<IEnumerable<SourceRequisitionDto>>>> GetSourceRequisitions(int page,
         int pageSize, string searchQuery);

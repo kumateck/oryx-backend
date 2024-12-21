@@ -23,14 +23,14 @@ public class ProductionScheduleItemDto : BaseDto
 {
     public CollectionItemDto Material { get; set; }
     public CollectionItemDto UoM { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 public class ProductionScheduleProcurementDto 
 {
     public MaterialDto Material { get; set; }
     public CollectionItemDto UoM { get; set; }
-    public int QuantityRequested { get; set; }
-    public int QuantityOnHand { get; set; }
+    public decimal QuantityRequested { get; set; }
+    public decimal QuantityOnHand { get; set; }
 }
 

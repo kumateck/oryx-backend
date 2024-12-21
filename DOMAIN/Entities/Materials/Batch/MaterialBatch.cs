@@ -10,9 +10,9 @@ public class MaterialBatch : BaseEntity
     [StringLength(10000)] public string Code { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
-    public int TotalQuantity { get; set; }        
-    public int ConsumedQuantity { get; set; }  
-    public int RemainingQuantity => TotalQuantity - ConsumedQuantity;
+    public decimal TotalQuantity { get; set; }        
+    public decimal ConsumedQuantity { get; set; }  
+    public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity;
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public BatchStatus Status { get; set; }  
@@ -38,7 +38,7 @@ public class MaterialBatchEvent : BaseEntity
 {
     public Guid BatchId { get; set; }            
     public MaterialBatch Batch { get; set; }     
-    public int Quantity { get; set; }     
+    public decimal Quantity { get; set; }     
     public Guid UserId { get; set; }       
     public User User { get; set; } 
     public EventType Type { get; set; }
@@ -68,7 +68,7 @@ public class MaterialBatchMovement : BaseEntity
     public Guid ToLocationId { get; set; }
     public WarehouseLocation ToLocation { get; set; }
 
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 
     public DateTime MovedAt { get; set; }
 

@@ -14,7 +14,7 @@ public interface IMaterialRepository
     Task<Result<List<MaterialDto>>> GetMaterials();
     Task<Result> UpdateMaterial(CreateMaterialRequest request, Guid materialId, Guid userId);
     Task<Result> DeleteMaterial(Guid materialId, Guid userId);
-    Task<Result<int>> CheckStockLevel(Guid materialId);
+    Task<Result<decimal>> CheckStockLevel(Guid materialId);
     //Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId);
     Task<Result> CreateMaterialBatch(List<CreateMaterialBatchRequest> request, Guid userId);
     Task<Result<MaterialBatchDto>> GetMaterialBatch(Guid batchId);
@@ -22,7 +22,7 @@ public interface IMaterialRepository
         string searchQuery);
     Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity,
         Guid userId);
-    Task<Result<int>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId); 
+    Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId); 
     Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, int quantity, Guid userId); 
     Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId);
 }

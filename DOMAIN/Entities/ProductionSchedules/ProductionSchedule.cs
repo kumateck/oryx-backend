@@ -14,7 +14,7 @@ public class ProductionSchedule : BaseEntity
     public Guid? ProductId { get; set; }
     public Product Product { get; set; }
     public ProductionStatus Status { get; set; } 
-    public int Quantity { get; set; } // Quantity of the product to be produced
+    public decimal Quantity { get; set; } // Quantity of the product to be produced
     [StringLength(1000)] public string Remarks { get; set; } // Optional remarks for additional notes
     public List<ProductionScheduleItem> Items { get; set; } = [];
 
@@ -28,5 +28,5 @@ public class ProductionScheduleItem : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }

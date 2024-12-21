@@ -23,5 +23,7 @@ public class CompletedRequisitionItem : BaseEntity
     public CompletedRequisition CompletedRequisition { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
-    public int Quantity { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
+    public decimal Quantity { get; set; }
 }
