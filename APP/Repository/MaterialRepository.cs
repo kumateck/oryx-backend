@@ -277,7 +277,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
     
-    public async Task<Result<int>> CheckStockLevel(Guid materialId)
+    public async Task<Result<decimal>> CheckStockLevel(Guid materialId)
     {
         var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
         if (material == null)
@@ -345,7 +345,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     
-    public async Task<Result<int>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
+    public async Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {
         // Sum of quantities moved to this location (incoming batches)
         var batchesInLocation = await context.MaterialBatchMovements

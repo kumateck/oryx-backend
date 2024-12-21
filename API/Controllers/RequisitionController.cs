@@ -124,7 +124,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.CreateSourceRequisition(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>

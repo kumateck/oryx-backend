@@ -126,7 +126,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("User.NotFound", $"User with id {userId} not found");
 
         // Initialize a dictionary to store stock levels
-        var stockLevels = new Dictionary<Guid, int>();
+        var stockLevels = new Dictionary<Guid, decimal>();
 
         
         if (user.Department != null && user.Department.Warehouses.Count != 0)

@@ -41,7 +41,7 @@ public class WarehouseLocationShelfDto
 public class WarehouseStockDto
 {
     public WarehouseDto Warehouse { get; set; }
-    public int StockQuantity { get; set; }
+    public decimal StockQuantity { get; set; }
 }
 
 public class WareHouseLocationDto

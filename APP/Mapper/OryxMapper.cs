@@ -206,6 +206,7 @@ public class OryxMapper : Profile
         CreateMap<CreateSourceRequisitionItemRequest, SourceRequisitionItem>();
         CreateMap<CreateSourceRequisitionItemSupplierRequest, SourceRequisitionItemSupplier>();
         CreateMap<SourceRequisition, SourceRequisitionDto>(); 
+        CreateMap<SourceRequisition, SupplierQuotationRequest>(); 
         CreateMap<SourceRequisitionItem, SourceRequisitionItemDto>();
         CreateMap<SourceRequisitionItemSupplier, SourceRequisitionItemSupplierDto>();
         #endregion
