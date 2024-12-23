@@ -403,7 +403,7 @@ public static class PdfTemplate
         <div class=""container"">
           <div class=""header"">
             <img
-              src=""https://joels-pic-bucket.s3.us-east-2.amazonaws.com/entrance-logo.png""
+              src=""data:image/png;base64, {StringExtensions.ConvertToBase64("wwwroot/images/entrance-logo.png")}""
               alt=""Entrance Logo""
               class=""logo""
             />
