@@ -17,7 +17,6 @@ public class CreateShipmentInvoice
 
 public class CreateShipmentInvoiceItem 
 {
-    public Guid ShipmentInvoiceId { get; set; }
     public Guid MaterialId { get; set; }
     public Guid UoMId { get; set; }
     public decimal ExpectedQuantity { get; set; }
@@ -34,7 +33,6 @@ public class CreateShipmentDiscrepancy
 
 public class CreateShipmentDiscrepancyItem
 {
-    public Guid ShipmentDiscrepancyId { get; set; }
     public Guid MaterialId { get; set; }
     public Guid UoMId { get; set; }
     public decimal ReceivedQuantity { get; set; }
