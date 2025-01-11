@@ -422,8 +422,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.BillOfMaterial.DeletedAt.HasValue);
         modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
-        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.UoM.DeletedAt.HasValue);
-        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.ComponentMaterial.DeletedAt.HasValue);
+        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => !entity.ComponentMaterial.DeletedAt.HasValue);
         #endregion
 
         #region Route Filters
