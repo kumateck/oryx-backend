@@ -576,4 +576,125 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result<Guid>> CreateShipmentInvoice(CreateShipmentInvoice request, Guid userId)
+    {
+        var shipmentInvoice = mapper.Map<ShipmentInvoice>(request);
+        shipmentInvoice.CreatedById = userId;
+        await context.ShipmentInvoices.AddAsync(shipmentInvoice);
+        await context.SaveChangesAsync();
+
+        return shipmentInvoice.Id;
+    }
+
+    public async Task<Result<Guid>> CreateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid userId)
+    {
+        var shipmentDiscrepancy = mapper.Map<ShipmentDiscrepancy>(request);
+        shipmentDiscrepancy.CreatedById = userId;
+        await context.ShipmentDiscrepancies.AddAsync(shipmentDiscrepancy);
+        await context.SaveChangesAsync();
+
+        return shipmentDiscrepancy.Id;
+    }
+
+    // Read operations for ShipmentInvoice and ShipmentDiscrepancy
+    public async Task<Result<ShipmentInvoiceDto>> GetShipmentInvoice(Guid shipmentInvoiceId)
+    {
+        var shipmentInvoice = await context.ShipmentInvoices
+            .Include(si => si.ShipmentDocument)
+            .Include(si => si.Items)
+                .ThenInclude(item => item.Material)
+            .Include(si => si.Items)
+                .ThenInclude(item => item.UoM)
+            .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
+
+        return shipmentInvoice is null
+            ? Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found")
+            : mapper.Map<ShipmentInvoiceDto>(shipmentInvoice);
+    }
+
+    public async Task<Result<ShipmentDiscrepancyDto>> GetShipmentDiscrepancy(Guid shipmentDiscrepancyId)
+    {
+        var shipmentDiscrepancy = await context.ShipmentDiscrepancies
+            .Include(sd => sd.ShipmentDocument)
+            .Include(sd => sd.Items)
+                .ThenInclude(item => item.Material)
+            .Include(sd => sd.Items)
+                .ThenInclude(item => item.UoM)
+            .FirstOrDefaultAsync(sd => sd.Id == shipmentDiscrepancyId);
+
+        return shipmentDiscrepancy is null
+            ? Error.NotFound("ShipmentDiscrepancy.NotFound", "Shipment discrepancy not found")
+            : mapper.Map<ShipmentDiscrepancyDto>(shipmentDiscrepancy);
+    }
+
+    // Update operations for ShipmentInvoice and ShipmentDiscrepancy
+    public async Task<Result> UpdateShipmentInvoice(CreateShipmentInvoice request, Guid shipmentInvoiceId, Guid userId)
+    {
+        var existingShipmentInvoice = await context.ShipmentInvoices
+            .Include(si => si.Items)
+            .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
+        if (existingShipmentInvoice is null)
+        {
+            return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
+        }
+
+        mapper.Map(request, existingShipmentInvoice);
+        existingShipmentInvoice.LastUpdatedById = userId;
+
+        context.ShipmentInvoices.Update(existingShipmentInvoice);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> UpdateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid shipmentDiscrepancyId, Guid userId)
+    {
+        var existingShipmentDiscrepancy = await context.ShipmentDiscrepancies
+            .Include(sd => sd.Items)
+            .FirstOrDefaultAsync(sd => sd.Id == shipmentDiscrepancyId);
+        if (existingShipmentDiscrepancy is null)
+        {
+            return Error.NotFound("ShipmentDiscrepancy.NotFound", "Shipment discrepancy not found");
+        }
+
+        mapper.Map(request, existingShipmentDiscrepancy);
+        existingShipmentDiscrepancy.LastUpdatedById = userId;
+
+        context.ShipmentDiscrepancies.Update(existingShipmentDiscrepancy);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // Delete operations for ShipmentInvoice and ShipmentDiscrepancy
+    public async Task<Result> DeleteShipmentInvoice(Guid shipmentInvoiceId, Guid userId)
+    {
+        var shipmentInvoice = await context.ShipmentInvoices.FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
+        if (shipmentInvoice is null)
+        {
+            return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
+        }
+
+        shipmentInvoice.DeletedAt = DateTime.UtcNow;
+        shipmentInvoice.LastDeletedById = userId;
+
+        context.ShipmentInvoices.Update(shipmentInvoice);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteShipmentDiscrepancy(Guid shipmentDiscrepancyId, Guid userId)
+    {
+        var shipmentDiscrepancy = await context.ShipmentDiscrepancies.FirstOrDefaultAsync(sd => sd.Id == shipmentDiscrepancyId);
+        if (shipmentDiscrepancy is null)
+        {
+            return Error.NotFound("ShipmentDiscrepancy.NotFound", "Shipment discrepancy not found");
+        }
+
+        shipmentDiscrepancy.DeletedAt = DateTime.UtcNow;
+        shipmentDiscrepancy.LastDeletedById = userId;
+
+        context.ShipmentDiscrepancies.Update(shipmentDiscrepancy);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 }
