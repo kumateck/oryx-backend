@@ -55,7 +55,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             await context.SaveChangesAsync();
         }
         
-        return await GetUser(user.Id);
+        return (await GetUser(user.Id)).Value;
     }
 
     public async Task<Result<LoginResponse>> CreateNewUser(CreateClientRequest request)
