@@ -10,3 +10,36 @@ public class ShipmentDocumentDto : WithAttachment
     public PurchaseOrderDto PurchaseOrder { get; set; }
     public string InvoiceNumber { get; set; }
 }
+
+public class ShipmentInvoiceDto
+{
+    public Guid ShipmentDocumentId { get; set; }
+    public ShipmentDocument ShipmentDocument { get; set; }
+    public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
+}
+
+public class ShipmentInvoiceItemDto
+{
+    public CollectionItemDto Material { get; set; }
+    public CollectionItemDto UoM { get; set; }
+    public decimal ExpectedQuantity { get; set; }
+    public decimal ReceivedQuantity { get; set; }
+    public string Reason { get; set; }
+}
+
+
+public class ShipmentDiscrepancyDto
+{
+    public ShipmentDocumentDto ShipmentDocument { get; set; }
+    public List<ShipmentDiscrepancyItemDto> Items { get; set; } = [];
+}
+
+public class ShipmentDiscrepancyItemDto
+{
+    public CollectionItemDto Material { get; set; }
+    public CollectionItemDto UoM { get; set; }
+    public decimal ReceivedQuantity { get; set; }
+    public ShipmentDiscrepancyType DiscrepancyType { get; set; }
+    public string Reason { get; set; }
+    public bool Resolved { get; set; }
+}

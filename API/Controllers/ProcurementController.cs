@@ -539,7 +539,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
-      /// <summary>
+    /// <summary>
     /// Creates a new shipment document.
     /// </summary>
     /// <param name="request">The CreateShipmentDocumentRequest object.</param>
@@ -623,6 +623,130 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteShipmentDocument(shipmentDocumentId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Creates a new shipment invoice.
+    /// </summary>
+    [HttpPost("shipment-invoice")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateShipmentInvoice([FromBody] CreateShipmentInvoice request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateShipmentInvoice(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a shipment invoice by its ID.
+    /// </summary>
+    [HttpGet("shipment-invoice/{shipmentInvoiceId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShipmentInvoice(Guid shipmentInvoiceId)
+    {
+        var result = await repository.GetShipmentInvoice(shipmentInvoiceId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific shipment invoice by its ID.
+    /// </summary>
+    [HttpPut("shipment-invoice/{shipmentInvoiceId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateShipmentInvoice([FromBody] CreateShipmentInvoice request, Guid shipmentInvoiceId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateShipmentInvoice(request, shipmentInvoiceId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific shipment invoice by its ID.
+    /// </summary>
+    [HttpDelete("shipment-invoice/{shipmentInvoiceId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteShipmentInvoice(Guid shipmentInvoiceId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteShipmentInvoice(shipmentInvoiceId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Creates a new shipment discrepancy.
+    /// </summary>
+    [HttpPost("shipment-discrepancy")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateShipmentDiscrepancy([FromBody] CreateShipmentDiscrepancy request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateShipmentDiscrepancy(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a shipment discrepancy by its ID.
+    /// </summary>
+    [HttpGet("shipment-discrepancy/{shipmentDiscrepancyId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentDiscrepancyDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShipmentDiscrepancy(Guid shipmentDiscrepancyId)
+    {
+        var result = await repository.GetShipmentDiscrepancy(shipmentDiscrepancyId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific shipment discrepancy by its ID.
+    /// </summary>
+    [HttpPut("shipment-discrepancy/{shipmentDiscrepancyId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateShipmentDiscrepancy([FromBody] CreateShipmentDiscrepancy request, Guid shipmentDiscrepancyId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateShipmentDiscrepancy(request, shipmentDiscrepancyId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific shipment discrepancy by its ID.
+    /// </summary>
+    [HttpDelete("shipment-discrepancy/{shipmentDiscrepancyId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteShipmentDiscrepancy(Guid shipmentDiscrepancyId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteShipmentDiscrepancy(shipmentDiscrepancyId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

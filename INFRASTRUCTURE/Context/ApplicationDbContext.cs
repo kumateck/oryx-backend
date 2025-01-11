@@ -203,6 +203,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Shipment Document
 
     public DbSet<ShipmentDocument> ShipmentDocuments { get; set; }
+    public DbSet<ShipmentInvoice> ShipmentInvoices { get; set; }
+    public DbSet<ShipmentDiscrepancy> ShipmentDiscrepancies { get; set; }
+
 
     #endregion
     
@@ -422,7 +425,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.BillOfMaterial.DeletedAt.HasValue);
         modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
-        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => !entity.ComponentMaterial.DeletedAt.HasValue);
+        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => 
+            !entity.DeletedAt.HasValue && 
+            (!entity.ComponentMaterialId.HasValue || !entity.ComponentMaterial.DeletedAt.HasValue));
         #endregion
 
         #region Route Filters

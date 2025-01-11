@@ -308,7 +308,17 @@ public class OryxMapper : Profile
         CreateMap<ShipmentDocument, ShipmentDocumentDto>()
             .ForMember(dest => dest.Attachments,
                 opt => opt.MapFrom<AttachmentsResolver>());
-        
+
+        CreateMap<CreateShipmentInvoice, ShipmentInvoice>();
+        CreateMap<CreateShipmentInvoiceItem, ShipmentInvoiceItem>();
+        CreateMap<ShipmentInvoice, ShipmentInvoiceDto>();
+        CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>();
+
+        CreateMap<CreateShipmentDiscrepancy, ShipmentDiscrepancy>();
+        CreateMap<CreateShipmentDiscrepancyItem, ShipmentDiscrepancyItem>();
+        CreateMap<ShipmentDiscrepancy, ShipmentDiscrepancyDto>();
+        CreateMap<ShipmentDiscrepancyItem, ShipmentDiscrepancyItemDto>();
+
         #endregion
     }
 }
