@@ -425,9 +425,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.BillOfMaterial.DeletedAt.HasValue);
         modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
-        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => 
-            !entity.DeletedAt.HasValue && 
-            (!entity.ComponentMaterialId.HasValue || !entity.ComponentMaterial.DeletedAt.HasValue));
+        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => entity.ComponentMaterial != null);
         #endregion
 
         #region Route Filters
@@ -538,9 +536,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Shipment Document
         
-        modelBuilder.Entity<ShipmentDocument>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<ShipmentDocument>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
-
+        modelBuilder.Entity<ShipmentDocument>().HasQueryFilter(a => !a.DeletedAt.HasValue && !a.PurchaseOrder.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentDiscrepancy>().HasQueryFilter(a => !a.DeletedAt.HasValue && !a.ShipmentDocument.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentDiscrepancyItem>().HasQueryFilter(a =>  !a.ShipmentDiscrepancy.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentInvoiceItem>().HasQueryFilter(a => !a.ShipmentInvoice.DeletedAt.HasValue);
+        
         #endregion
     }
 }
