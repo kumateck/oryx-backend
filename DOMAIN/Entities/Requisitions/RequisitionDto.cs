@@ -24,7 +24,7 @@ public class RequisitionItemDto
 {
     public MaterialDto Material { get; set; }
     public CollectionItemDto UoM { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 public class RequisitionApprovalDto

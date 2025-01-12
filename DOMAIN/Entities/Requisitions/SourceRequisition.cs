@@ -84,7 +84,7 @@ public class SupplierQuotationItemDto
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public CollectionItemDto UoM { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
     public decimal? QuotedPrice { get; set; }
 }
 

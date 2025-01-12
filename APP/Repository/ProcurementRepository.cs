@@ -72,16 +72,17 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     
     public async Task<Result> UpdateManufacturer(CreateManufacturerRequest request, Guid manufacturerId, Guid userId)
     {
-        var existingManufacturer = await context.Manufacturers.FirstOrDefaultAsync(m => m.Id == manufacturerId);
+        var existingManufacturer = await context.Manufacturers.Include(manufacturer => manufacturer.Materials).FirstOrDefaultAsync(m => m.Id == manufacturerId);
         if (existingManufacturer is null)
         {
             return Error.NotFound("Manufacturer.NotFound", "Manufacturer not found");
         }
 
+        context.ManufacturerMaterials.RemoveRange(existingManufacturer.Materials);
         mapper.Map(request, existingManufacturer);
         existingManufacturer.LastUpdatedById = userId;
-
         context.Manufacturers.Update(existingManufacturer);
+        await context.ManufacturerMaterials.AddRangeAsync(existingManufacturer.Materials);
         await context.SaveChangesAsync();
         return Result.Success();
     }
