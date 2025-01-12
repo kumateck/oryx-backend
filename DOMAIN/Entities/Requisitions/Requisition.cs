@@ -29,7 +29,7 @@ public class RequisitionItem : BaseEntity
     public Material Material { get; set; }
     public Guid? UomId { get; set; }
     public UnitOfMeasure UoM { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 public class RequisitionApproval : BaseEntity

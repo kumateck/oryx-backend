@@ -11,6 +11,7 @@ public class ShipmentDocument : BaseEntity
     public Guid PurchaseOrderId { get; set; }
     public PurchaseOrder PurchaseOrder { get; set; }
     [StringLength(255)] public string InvoiceNumber { get; set; }
+    public List<ShipmentDiscrepancy> Discrepancies { get; set; } = [];
 }
 
 public class ShipmentInvoice : BaseEntity

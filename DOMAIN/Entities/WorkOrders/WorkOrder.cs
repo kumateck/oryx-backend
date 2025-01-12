@@ -10,7 +10,7 @@ public class WorkOrder : BaseEntity
     [StringLength(100)] public string Code { get; set; }
     public Guid? ProductionScheduleId { get; set; }
     public ProductionSchedule ProductionSchedule { get; set; }
-    public int Quantity { get; set; } // Quantity of the product to be produced
+    public decimal Quantity { get; set; } // Quantity of the product to be produced
     public DateTime StartDate { get; set; } // Scheduled start date
     public DateTime EndDate { get; set; } // Scheduled end date
     public ProductionStatus Status { get; set; } // Status of the work order (e.g., Planned, In Progress, Completed, Canceled)
