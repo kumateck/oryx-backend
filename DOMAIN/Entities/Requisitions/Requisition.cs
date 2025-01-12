@@ -13,7 +13,6 @@ public class Requisition : BaseEntity
     public User RequestedBy { get; set; }
     public RequestStatus Status { get; set; }  
     public RequisitionType RequisitionType { get; set; }
-
     [StringLength(1000)] public string Comments { get; set; }
     public bool Approved { get; set; }
     public DateTime? ExpectedDelivery { get; set; }

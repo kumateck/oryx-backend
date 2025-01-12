@@ -136,7 +136,7 @@ public static class PdfTemplate
             content.AppendLine($@"
                       <tr>
                         <td>{item.Material.Name}</td>
-                        <td>{item.Quantity}</td>
+                        <td>{Math.Round(item.Quantity, 2)}</td>
                         <td>{item.UoM.Name}</td>
                       </tr>");
         }
@@ -287,7 +287,7 @@ public static class PdfTemplate
             content.AppendLine($@"
                           <tr>
                             <td>{item.Material.Name}</td>
-                            <td>{item.Quantity}</td>
+                            <td>{Math.Round(item.Quantity, 2)}</td>
                             <td>{item.UoM.Name}</td>
                             <td>{item.Price}</td>
                           </tr>");
@@ -437,7 +437,7 @@ public static class PdfTemplate
           <tr>
           <td>{item.Material.Name}</td>
           <td>{item.UoM.Name}</td>
-          <td>{item.Quantity}</td>
+          <td>{Math.Round(item.Quantity, 2)}</td>
           <td>{purchaseOrder.Supplier?.Currency?.Symbol}{item.Price}</td>
           <td>{purchaseOrder.Supplier?.Currency?.Symbol}{Math.Round(item.Price * item.Quantity, 2)}</td>
           </tr>");
