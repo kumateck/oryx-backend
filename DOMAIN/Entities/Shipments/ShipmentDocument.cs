@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.PurchaseOrders;
 
 namespace DOMAIN.Entities.Shipments;
@@ -29,6 +30,8 @@ public class ShipmentInvoiceItem : BaseEntity
     public Material Material { get; set; }
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
+    public Guid ManufacturerId { get; set; }
+    public Manufacturer Manufacturer { get; set; }
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }

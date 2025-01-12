@@ -643,15 +643,15 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
 
     /// <summary>
-    /// Retrieves a shipment invoice by its ID.
+    /// Retrieves a shipment invoice by the shipment document ID.
     /// </summary>
-    [HttpGet("shipment-invoice/{shipmentInvoiceId}")]
+    [HttpGet("shipment-invoice/{shipmentDocumentId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetShipmentInvoice(Guid shipmentInvoiceId)
+    public async Task<IResult> GetShipmentInvoice(Guid shipmentDocumentId)
     {
-        var result = await repository.GetShipmentInvoice(shipmentInvoiceId);
+        var result = await repository.GetShipmentInvoice(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

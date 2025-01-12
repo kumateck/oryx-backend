@@ -607,7 +607,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .ThenInclude(item => item.Material)
             .Include(si => si.Items)
                 .ThenInclude(item => item.UoM)
-            .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
+            .FirstOrDefaultAsync(si => si.ShipmentDocumentId == shipmentInvoiceId);
 
         return shipmentInvoice is null
             ? Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found")
