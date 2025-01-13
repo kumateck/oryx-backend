@@ -224,7 +224,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var result =  mapper.Map<PurchaseOrderDto>(purchaseOrder, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
         foreach (var item in result.Items)
         {
-            if (item.Material.Id != null)
+            if (item.Material?.Id != null)
                 item.Manufacturers = (await GetManufacturersByMaterial(item.Material.Id.Value)).Value;
         }
         return result;
