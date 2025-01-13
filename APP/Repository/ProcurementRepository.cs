@@ -66,7 +66,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
        return mapper.Map<List<ManufacturerDto>>( await context.Manufacturers
             .Include(m => m.Materials).ThenInclude(m => m.Material)
-            .Where(m => m.Materials.Select(ma => ma.MaterialId).Contains(materialId))
+            .Where(m => m.Materials.Any(ma => ma.MaterialId == materialId))
             .ToListAsync());
     }
     
@@ -108,6 +108,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result<Guid>> CreateSupplier(CreateSupplierRequest request, Guid userId)
     {
+        var existingSupplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Name == request.Name);
+        if(existingSupplier is not null) return Error.Validation("Supplier.Name", $"Supplier with name {request.Name} already exists");
+        
         var supplier = mapper.Map<Supplier>(request);
         supplier.CreatedById = userId;
         await context.Suppliers.AddAsync(supplier);
@@ -224,7 +227,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var result =  mapper.Map<PurchaseOrderDto>(purchaseOrder, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
         foreach (var item in result.Items)
         {
-            if (item.Material.Id != null)
+            if (item.Material?.Id != null)
                 item.Manufacturers = (await GetManufacturersByMaterial(item.Material.Id.Value)).Value;
         }
         return result;
@@ -337,14 +340,14 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.ProformaInvoiceTemplate(purchaseOrder));
         mailAttachments.Add((fileContent, $"Proforma Invoice from Entrance",  "application/pdf"));
 
-        // try
-        // {
-        //     emailService.SendMail(purchaseOrder.Supplier.Email, "Proforma Invoice From Entrance", "Please find attached a proforma invoice.", mailAttachments);
-        // }
-        // catch (Exception e)
-        // {
-        //     return Error.Validation("Supplier.Quotation", e.Message);
-        // }
+        try
+        {
+            emailService.SendMail(purchaseOrder.Supplier.Email, "Proforma Invoice From Entrance", "Please find attached a proforma invoice.", mailAttachments);
+        }
+        catch (Exception e)
+        {
+            return Error.Validation("Supplier.Quotation", e.Message);
+        }
         
         purchaseOrder.Status = PurchaseOrderStatus.Delivered;
         context.PurchaseOrders.Update(purchaseOrder);
