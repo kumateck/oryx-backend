@@ -108,6 +108,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result<Guid>> CreateSupplier(CreateSupplierRequest request, Guid userId)
     {
+        var existingSupplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Name == request.Name);
+        if(existingSupplier is not null) return Error.Validation("Supplier.Name", $"Supplier with name {request.Name} already exists");
+        
         var supplier = mapper.Map<Supplier>(request);
         supplier.CreatedById = userId;
         await context.Suppliers.AddAsync(supplier);
