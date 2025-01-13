@@ -337,14 +337,14 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.ProformaInvoiceTemplate(purchaseOrder));
         mailAttachments.Add((fileContent, $"Proforma Invoice from Entrance",  "application/pdf"));
 
-        // try
-        // {
-        //     emailService.SendMail(purchaseOrder.Supplier.Email, "Proforma Invoice From Entrance", "Please find attached a proforma invoice.", mailAttachments);
-        // }
-        // catch (Exception e)
-        // {
-        //     return Error.Validation("Supplier.Quotation", e.Message);
-        // }
+        try
+        {
+            emailService.SendMail(purchaseOrder.Supplier.Email, "Proforma Invoice From Entrance", "Please find attached a proforma invoice.", mailAttachments);
+        }
+        catch (Exception e)
+        {
+            return Error.Validation("Supplier.Quotation", e.Message);
+        }
         
         purchaseOrder.Status = PurchaseOrderStatus.Delivered;
         context.PurchaseOrders.Update(purchaseOrder);
