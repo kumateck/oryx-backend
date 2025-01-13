@@ -13,7 +13,7 @@ public class ProductionScheduleDto : BaseDto
     public DateTime ScheduledEndTime { get; set; }
     public ProductDto Product { get; set; }
     public ProductionStatus Status { get; set; } 
-    public int Quantity { get; set; } 
+    public decimal Quantity { get; set; } 
     public string Remarks { get; set; } 
     public List<ProductionScheduleItemDto> Items { get; set; } = [];
 

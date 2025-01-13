@@ -200,7 +200,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public List<CurrentLocationDto> GetCurrentLocations(MaterialBatchDto batch)
     {
         // Dictionary to track the total quantity at each location
-        var locationQuantities = new Dictionary<CollectionItemDto, int>();
+        var locationQuantities = new Dictionary<CollectionItemDto, decimal>();
 
         // Track the movements and update the locations accordingly
         foreach (var movement in batch.Movements)
@@ -211,20 +211,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             // If moving to a location, increase the quantity at the destination
             if (toLocation is not null)
             {
-                if (!locationQuantities.ContainsKey(toLocation))
-                {
-                    locationQuantities[toLocation] = 0;
-                }
+                locationQuantities.TryAdd(toLocation, 0);
                 locationQuantities[toLocation] += movement.Quantity;
             }
 
             // If moving from a location, decrease the quantity at the origin
             if (fromLocation is not null)
             {
-                if (!locationQuantities.ContainsKey(fromLocation))
-                {
-                    locationQuantities[fromLocation] = 0; 
-                }
+                locationQuantities.TryAdd(fromLocation, 0);
                 locationQuantities[fromLocation] -= movement.Quantity;
 
                 // Ensure no negative quantities

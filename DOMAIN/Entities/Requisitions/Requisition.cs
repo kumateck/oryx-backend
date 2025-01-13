@@ -13,7 +13,6 @@ public class Requisition : BaseEntity
     public User RequestedBy { get; set; }
     public RequestStatus Status { get; set; }  
     public RequisitionType RequisitionType { get; set; }
-
     [StringLength(1000)] public string Comments { get; set; }
     public bool Approved { get; set; }
     public DateTime? ExpectedDelivery { get; set; }
@@ -29,7 +28,7 @@ public class RequisitionItem : BaseEntity
     public Material Material { get; set; }
     public Guid? UomId { get; set; }
     public UnitOfMeasure UoM { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 public class RequisitionApproval : BaseEntity

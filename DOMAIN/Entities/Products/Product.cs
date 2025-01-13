@@ -30,7 +30,7 @@ public class ProductBillOfMaterial : BaseEntity
     public Product Product { get; set; }  // The final product this BOM is for
     public Guid BillOfMaterialId { get; set; }
     public BillOfMaterial BillOfMaterial { get; set; }
-    public int Quantity { get; set; }  // Quantity of the component needed
+    public decimal Quantity { get; set; }  // Quantity of the component needed
     public int Version { get; set; }   // Version of the BOM
     public DateTime EffectiveDate { get; set; }
     public bool IsActive { get; set; } = true;

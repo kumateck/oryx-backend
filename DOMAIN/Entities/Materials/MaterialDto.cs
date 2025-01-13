@@ -13,5 +13,5 @@ public class MaterialDto
     public MaterialKind Kind { get; set; }
     public CollectionItemDto MaterialCategory { get; set; }
     public List<MaterialBatchDto> Batches { get; set; } = [];
-    public int TotalStock => Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity);
+    public decimal TotalStock => Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity);
 }

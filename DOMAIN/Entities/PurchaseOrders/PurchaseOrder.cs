@@ -3,6 +3,7 @@ using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using SHARED;
 
@@ -63,5 +64,6 @@ public class PurchaseOrderItemDto
     public decimal Quantity { get; set; }
     public decimal Price { get; set; }
     public CollectionItemDto Currency { get; set; }
+    public List<ManufacturerDto> Manufacturers { get; set; } = [];
     public decimal Cost => Price * Quantity;
 }
