@@ -62,7 +62,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         );
     }
     
-    public async Task<Result<IEnumerable<ManufacturerDto>>> GetManufacturersByMaterial(Guid materialId)
+    public async Task<Result<List<ManufacturerDto>>> GetManufacturersByMaterial(Guid materialId)
     {
        return mapper.Map<List<ManufacturerDto>>( await context.Manufacturers
             .Include(m => m.Materials).ThenInclude(m => m.Material)
@@ -217,10 +217,17 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(po => po.Items).ThenInclude(i => i.Material)
             .Include(po => po.Items).ThenInclude(i => i.UoM)
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
-
-        return purchaseOrder is null
-            ? Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found")
-            : mapper.Map<PurchaseOrderDto>(purchaseOrder, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
+        
+        if (purchaseOrder is null)
+            return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        
+        var result =  mapper.Map<PurchaseOrderDto>(purchaseOrder, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
+        foreach (var item in result.Items)
+        {
+            if (item.Material.Id != null)
+                item.Manufacturers = (await GetManufacturersByMaterial(item.Material.Id.Value)).Value;
+        }
+        return result;
     }
 
     public async Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status)
