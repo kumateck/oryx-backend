@@ -66,7 +66,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
        return mapper.Map<List<ManufacturerDto>>( await context.Manufacturers
             .Include(m => m.Materials).ThenInclude(m => m.Material)
-            .Where(m => m.Materials.Select(ma => ma.MaterialId).Contains(materialId))
+            .Where(m => m.Materials.Any(ma => ma.MaterialId == materialId))
             .ToListAsync());
     }
     
