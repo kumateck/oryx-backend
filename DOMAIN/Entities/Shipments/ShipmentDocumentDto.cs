@@ -41,7 +41,7 @@ public class ShipmentDiscrepancyItemDto
     public CollectionItemDto Material { get; set; }
     public CollectionItemDto UoM { get; set; }
     public decimal ReceivedQuantity { get; set; }
-    public ShipmentDiscrepancyType DiscrepancyType { get; set; }
+    public CollectionItemDto DType { get; set; }
     public string Reason { get; set; }
     public bool Resolved { get; set; }
 }

@@ -37,6 +37,6 @@ public class CreateShipmentDiscrepancyItem
     public Guid MaterialId { get; set; }
     public Guid UoMId { get; set; }
     public decimal ReceivedQuantity { get; set; }
-    public ShipmentDiscrepancyType DiscrepancyType { get; set; }
+    public Guid? TypeId { get; set; }
     [StringLength(255)] public string Reason { get; set; }
 }

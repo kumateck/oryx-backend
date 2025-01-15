@@ -54,13 +54,14 @@ public class ShipmentDiscrepancyItem : BaseEntity
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal ReceivedQuantity { get; set; }
-    public ShipmentDiscrepancyType DiscrepancyType { get; set; }
+    public Guid? TypeId { get; set; }
+    public ShipmentDiscrepancyType Type { get; set; }
     [StringLength(255)] public string Reason { get; set; }
     public bool Resolved { get; set; }
 }
 
-public enum ShipmentDiscrepancyType
+public class ShipmentDiscrepancyType : BaseEntity
 {
-    UnderDelivery = 0,
-    OverDelivery = 1
+    [StringLength(255)] public string Name { get; set; }
+    [StringLength(1000)] public string Description { get; set; }
 }

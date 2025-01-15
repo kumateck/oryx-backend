@@ -6,6 +6,7 @@ using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
@@ -37,6 +38,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(WarehouseLocationRack) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationRacks.OrderBy(c => c.Name).ToListAsync()),
             nameof(WarehouseLocationShelf) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync()),
             nameof(Currency) => mapper.Map<List<CollectionItemDto>>(await context.Currencies.OrderBy(c => c.Name).ToListAsync()),
+            nameof(ShipmentDiscrepancyType) => mapper.Map<List<CollectionItemDto>>(await context.ShipmentDiscrepancyTypes.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -129,6 +131,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var warehouseLocationShelves = await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationShelves);
                     break;
+                
+                case nameof(ShipmentDiscrepancyType):
+                    var shipmentDiscrepancyTypes = await context.ShipmentDiscrepancyTypes.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(shipmentDiscrepancyTypes);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -156,7 +163,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(User),
             nameof(Role),
             nameof(Country),
-            nameof(WarehouseLocation)
+            nameof(WarehouseLocation),
+            nameof(ShipmentDiscrepancyType)
         };
     }
     
@@ -217,6 +225,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.Currencies.AddAsync(currency);
                 await context.SaveChangesAsync();
                 return currency.Id;
+            
+            case nameof(ShipmentDiscrepancyType):
+                var shipmentDiscrepancyType = mapper.Map<ShipmentDiscrepancyType>(request);
+                await context.ShipmentDiscrepancyTypes.AddAsync(shipmentDiscrepancyType);
+                await context.SaveChangesAsync();
+                return shipmentDiscrepancyType.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -298,6 +312,14 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Currencies.Update(currency);
                 await context.SaveChangesAsync();
                 return currency.Id;
+            
+            case nameof(ShipmentDiscrepancyType):
+                var shipmentDiscrepancyType = await context.ShipmentDiscrepancyTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, shipmentDiscrepancyType);
+                shipmentDiscrepancyType.LastUpdatedById = userId;
+                context.ShipmentDiscrepancyTypes.Update(shipmentDiscrepancyType);
+                await context.SaveChangesAsync();
+                return shipmentDiscrepancyType.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -397,6 +419,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 currency.DeletedAt = currentTime;
                 currency.LastDeletedById = userId;
                 context.Currencies.Update(currency);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(ShipmentDiscrepancyType):
+                var shipmentDiscrepancyType = await context.ShipmentDiscrepancyTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (shipmentDiscrepancyType == null)
+                    return Error.Validation("ShipmentDiscrepancy", "Not found");
+                shipmentDiscrepancyType.DeletedAt = currentTime;
+                shipmentDiscrepancyType.LastDeletedById = userId;
+                context.ShipmentDiscrepancyTypes.Update(shipmentDiscrepancyType);
                 await context.SaveChangesAsync();
                 return Result.Success();
             
