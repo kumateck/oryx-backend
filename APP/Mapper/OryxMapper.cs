@@ -86,6 +86,7 @@ public class OryxMapper : Profile
         CreateMap<Requisition, CollectionItemDto>();
         CreateMap<Currency, CollectionItemDto>();
         CreateMap<PurchaseOrder, CollectionItemDto>();
+        CreateMap<RevisedPurchaseOrder, CollectionItemDto>();
         CreateMap<PurchaseOrderInvoice, CollectionItemDto>();
         CreateMap<BillingSheet, CollectionItemDto>();
         CreateMap<ShipmentDiscrepancyType, CollectionItemDto>();
@@ -300,6 +301,11 @@ public class OryxMapper : Profile
 
         CreateMap<CreateBillingSheetRequest, BillingSheet>();
         CreateMap<BillingSheet, BillingSheetDto>();
+
+        CreateMap<CreatePurchaseOrderRequest, RevisedPurchaseOrder>();
+        CreateMap<CreatePurchaseOrderItemRequest, RevisedPurchaseOrderItem>();
+        CreateMap<RevisedPurchaseOrder, RevisedPurchaseOrderDto>();
+        CreateMap<RevisedPurchaseOrderItem, RevisedPurchaseOrderItemDto>();
 
         #endregion
 

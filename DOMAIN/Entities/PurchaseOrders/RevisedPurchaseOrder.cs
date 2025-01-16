@@ -1,32 +1,27 @@
-using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
-using DOMAIN.Entities.Procurement.Suppliers;
 using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
 
-public class PurchaseOrder : BaseEntity
-{
-    [StringLength(100)] public string Code { get; set; }
-    public Guid SupplierId { get; set; }
-    public Supplier Supplier { get; set; }
-    public DateTime RequestDate { get; set; }
-    public DateTime? ExpectedDeliveryDate { get; set; }
-    public List<PurchaseOrderItem> Items { get; set; } = [];
-    public DateTime? DeliveryDate { get; set; }
-    public DateTime? SentAt { get; set; }
-    public PurchaseOrderStatus Status { get; set; }
-    public List<RevisedPurchaseOrder> RevisedPurchaseOrders { get; set; } = [];
-}
-
-public class PurchaseOrderItem : BaseEntity
+public class RevisedPurchaseOrder : BaseEntity
 {
     public Guid PurchaseOrderId { get; set; }
     public PurchaseOrder PurchaseOrder { get; set; }
+    public DateTime RequestDate { get; set; }
+    public DateTime? ExpectedDeliveryDate { get; set; }
+    public List<RevisedPurchaseOrderItem> Items { get; set; } = [];
+    public DateTime? DeliveryDate { get; set; }
+    public DateTime? SentAt { get; set; }
+    public PurchaseOrderStatus Status { get; set; }
+}
+
+public class RevisedPurchaseOrderItem : BaseEntity
+{
+    public Guid RevisedPurchaseOrderId { get; set; }
+    public RevisedPurchaseOrder RevisedPurchaseOrder { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid UoMId { get; set; }
@@ -37,35 +32,24 @@ public class PurchaseOrderItem : BaseEntity
     public Currency Currency { get; set; }
 }
 
-public enum PurchaseOrderStatus
+public class RevisedPurchaseOrderDto : BaseDto
 {
-    Pending,
-    Delivered,
-    Attached,
-    Completed
-}
-
-public class PurchaseOrderDto : WithAttachment
-{
-    public Guid Id { get; set; }
     public string Code { get; set; }
     public CollectionItemDto Supplier { get; set; }
     public DateTime RequestDate { get; set; }
     public DateTime? ExpectedDeliveryDate { get; set; }
     public List<PurchaseOrderItemDto> Items { get; set; } = [];
     public PurchaseOrderStatus Status { get; set; }
-    public List<RevisedPurchaseOrderDto> RevisedPurchaseOrders { get; set; } = [];
-    public DateTime CreatedAt { get; set; }
 }
 
-public class PurchaseOrderItemDto
+public class RevisedPurchaseOrderItemDto
 {
-    public CollectionItemDto PurchaseOrder { get; set; }
+    public CollectionItemDto RevisedPurchaseOrder { get; set; }
     public CollectionItemDto Material { get; set; }
+    public CollectionItemDto Currency { get; set; }
     public CollectionItemDto Uom { get; set; }
     public decimal Quantity { get; set; }
     public decimal Price { get; set; }
-    public CollectionItemDto Currency { get; set; }
     public List<ManufacturerDto> Manufacturers { get; set; } = [];
     public decimal Cost => Price * Quantity;
 }

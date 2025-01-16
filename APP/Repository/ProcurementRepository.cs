@@ -219,6 +219,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(po => po.Supplier)
             .Include(po => po.Items).ThenInclude(i => i.Material)
             .Include(po => po.Items).ThenInclude(i => i.UoM)
+            .Include(po => po.RevisedPurchaseOrders).ThenInclude(po => po.Items)
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         
         if (purchaseOrder is null)
@@ -271,12 +272,17 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
-
-        mapper.Map(request, existingOrder);
-        existingOrder.LastUpdatedById = userId;
-
-        context.PurchaseOrders.Update(existingOrder);
+        
+        var purchaseOrder = mapper.Map<RevisedPurchaseOrder>(request);
+        purchaseOrder.CreatedById = userId;
+        await context.RevisedPurchaseOrders.AddAsync(purchaseOrder);
         await context.SaveChangesAsync();
+
+        // mapper.Map(request, existingOrder);
+        // existingOrder.LastUpdatedById = userId;
+        //
+        // context.PurchaseOrders.Update(existingOrder);
+        // await context.SaveChangesAsync();
         return Result.Success();
     }
 
