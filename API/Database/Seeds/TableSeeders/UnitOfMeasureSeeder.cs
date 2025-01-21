@@ -1,0 +1,33 @@
+using APP.Utils;
+using DOMAIN.Entities.Base;
+using INFRASTRUCTURE.Context;
+
+namespace API.Database.Seeds.TableSeeders;
+
+public class UnitOfMeasureSeeder : ISeeder
+{
+    public void Handle(IServiceScope scope)
+    {
+        var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
+
+        if (dbContext.UnitOfMeasures.Any()) return;
+
+        SeedUnitOfMeasures(dbContext);
+    }
+
+    private static void SeedUnitOfMeasures(ApplicationDbContext dbContext)
+    {
+        foreach (var unit in UnitOfMeasureUtils.All())
+        {
+            dbContext.UnitOfMeasures.Add(new UnitOfMeasure
+            {
+                Name = unit.Name,
+                Description = unit.Description,
+                Symbol = unit.Symbol,
+                IsScalable = unit.IsScalable
+            });
+        }
+        
+        dbContext.SaveChanges();
+    }
+}

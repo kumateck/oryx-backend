@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
@@ -23,7 +24,7 @@ public class RequisitionDto
 public class RequisitionItemDto 
 {
     public MaterialDto Material { get; set; }
-    public CollectionItemDto UoM { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
 }
 

@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Warehouses;
@@ -162,7 +163,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return new ProductionScheduleProcurementDto
             {
                 Material = mapper.Map<MaterialDto>(item.Material),
-                UoM = mapper.Map<CollectionItemDto>(item.UoM),
+                UoM = mapper.Map<UnitOfMeasureDto>(item.UoM),
                 QuantityRequested = item.Quantity,
                 QuantityOnHand = quantityOnHand,
             };

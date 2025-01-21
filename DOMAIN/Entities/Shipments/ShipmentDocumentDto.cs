@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Attachments;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.PurchaseOrders;
 using SHARED;
 
@@ -22,7 +23,7 @@ public class ShipmentInvoiceDto
 public class ShipmentInvoiceItemDto
 {
     public CollectionItemDto Material { get; set; }
-    public CollectionItemDto UoM { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public CollectionItemDto Manufacturer { get; set; }
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
@@ -39,9 +40,9 @@ public class ShipmentDiscrepancyDto
 public class ShipmentDiscrepancyItemDto
 {
     public CollectionItemDto Material { get; set; }
-    public CollectionItemDto UoM { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public decimal ReceivedQuantity { get; set; }
-    public CollectionItemDto DType { get; set; }
+    public CollectionItemDto Type { get; set; }
     public string Reason { get; set; }
     public bool Resolved { get; set; }
 }

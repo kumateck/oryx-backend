@@ -93,6 +93,12 @@ public class OryxMapper : Profile
         
         #endregion
 
+        #region UoM
+
+        CreateMap<UnitOfMeasure, UnitOfMeasureDto>();
+
+        #endregion
+
         #region Country
 
         CreateMap<Country, CountryDto>();

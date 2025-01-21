@@ -7,6 +7,11 @@ public class CreateProductRequest
     [StringLength(255)] public string Code { get; set; } // Unique identifier for the product
     [StringLength(255)] public string Name { get; set; }
     [StringLength(255)] public string Description { get; set; }
+    [StringLength(255)] public string GenericName { get; set; }
+    [StringLength(255)] public string StorageCondition { get; set; }
+    [StringLength(255)] public string PackageStyle { get; set; }
+    [StringLength(255)] public string FilledWeight { get; set; }
+    [StringLength(255)] public string ShelfLife { get; set; }
     public Guid CategoryId { get; set; } // e.g., Tablet, Syrup, Injectable
     public List<CreateFinishedProductRequest> FinishedProducts { get; set; }
 }

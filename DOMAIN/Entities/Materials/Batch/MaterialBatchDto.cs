@@ -8,7 +8,7 @@ public class MaterialBatchDto
 {
     public Guid Id { get; set; }
     public string Code { get; set; }
-    public CollectionItemDto UoM { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }
     public DateTime? DateApproved { get; set; }

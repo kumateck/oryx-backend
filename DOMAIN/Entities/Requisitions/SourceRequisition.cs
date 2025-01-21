@@ -83,7 +83,7 @@ public class SupplierQuotationItemDto
 {
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
-    public CollectionItemDto UoM { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public decimal? QuotedPrice { get; set; }
 }
@@ -93,7 +93,7 @@ public class SourceRequisitionItemDto
     public Guid Id { get; set; }
     public CollectionItemDto SourceRequisition { get; set; }
     public CollectionItemDto Material { get; set; }
-    public CollectionItemDto UoM { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public ProcurementSource Source { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -116,7 +116,7 @@ public class SupplierQuotationResponseDto
 public class SupplierPriceComparison
 {
     public CollectionItemDto Material { get; set; }
-    public CollectionItemDto UoM { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public List<SupplierPrice> SupplierQuotation { get; set; } = [];
 }

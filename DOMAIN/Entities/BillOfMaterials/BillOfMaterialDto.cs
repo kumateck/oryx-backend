@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Base;
 using SHARED;
 
 namespace DOMAIN.Entities.BillOfMaterials;
@@ -17,7 +18,7 @@ public class BillOfMaterialItemDto
     public CollectionItemDto ComponentProduct { get; set; }
     public CollectionItemDto MaterialType { get; set; }
     public decimal Quantity { get; set; } 
-    public CollectionItemDto UoM { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public bool IsSubstitutable { get; set; } 
     public string Grade { get; set; }
     public string CasNumber { get; set; }

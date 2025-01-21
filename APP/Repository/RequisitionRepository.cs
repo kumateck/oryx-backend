@@ -4,6 +4,7 @@ using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -592,7 +593,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Select(item => new SupplierPriceComparison
             {
                 Material = mapper.Map<CollectionItemDto>(item.Key.Material),
-                UoM = mapper.Map<CollectionItemDto>(item.Key.UoM),
+                UoM = mapper.Map<UnitOfMeasureDto>(item.Key.UoM),
                 Quantity = item.Select(s => s.Quantity).First(),
                 SupplierQuotation = item
                     .GroupBy(s => s.SupplierQuotation.SupplierId)

@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Base;
 using SHARED;
 
 namespace DOMAIN.Entities.Products;
@@ -10,5 +11,5 @@ public class ProductPackageDto
     public CollectionItemDto PackageType { get; set; }
     public string MaterialThickness { get; set; }
     public string OtherStandards { get; set; }
-    public CollectionItemDto UoM { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
 }

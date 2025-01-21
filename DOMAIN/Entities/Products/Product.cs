@@ -9,11 +9,16 @@ public class Product : BaseEntity
 {
     [StringLength(255)] public string Code { get; set; } 
     [StringLength(255)] public string Name { get; set; }
+    [StringLength(255)] public string GenericName { get; set; }
+    [StringLength(255)] public string StorageCondition { get; set; }
+    [StringLength(255)] public string PackageStyle { get; set; }
+    [StringLength(255)] public string FilledWeight { get; set; }
+    [StringLength(255)] public string ShelfLife { get; set; }
     [StringLength(255)] public string Description { get; set; }
-    public Guid CategoryId { get; set; } // e.g., Tablet, Syrup, Injectable
+    public Guid CategoryId { get; set; }
     public ProductCategory Category { get; set; }
     public List<FinishedProduct> FinishedProducts { get; set; }
-    public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = []; // List of BOMs associated with this product
+    public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = [];
     public List<ProductPackage> Packages { get; set; } = [];
     public List<Route> Routes { get; set; } = [];
 }

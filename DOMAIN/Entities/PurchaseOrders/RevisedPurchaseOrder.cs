@@ -47,7 +47,7 @@ public class RevisedPurchaseOrderItemDto
     public CollectionItemDto RevisedPurchaseOrder { get; set; }
     public CollectionItemDto Material { get; set; }
     public CollectionItemDto Currency { get; set; }
-    public CollectionItemDto Uom { get; set; }
+    public UnitOfMeasureDto Uom { get; set; }
     public decimal Quantity { get; set; }
     public decimal Price { get; set; }
     public List<ManufacturerDto> Manufacturers { get; set; } = [];
