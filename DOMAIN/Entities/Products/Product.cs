@@ -14,6 +14,7 @@ public class Product : BaseEntity
     [StringLength(255)] public string PackageStyle { get; set; }
     [StringLength(255)] public string FilledWeight { get; set; }
     [StringLength(255)] public string ShelfLife { get; set; }
+    [StringLength(255)] public string ActionUse { get; set; }
     [StringLength(255)] public string Description { get; set; }
     public Guid CategoryId { get; set; }
     public ProductCategory Category { get; set; }

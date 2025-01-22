@@ -12,6 +12,7 @@ public class CreateProductRequest
     [StringLength(255)] public string PackageStyle { get; set; }
     [StringLength(255)] public string FilledWeight { get; set; }
     [StringLength(255)] public string ShelfLife { get; set; }
+    [StringLength(255)] public string ActionUse { get; set; }
     public Guid CategoryId { get; set; } // e.g., Tablet, Syrup, Injectable
     public List<CreateFinishedProductRequest> FinishedProducts { get; set; }
 }

@@ -13,6 +13,7 @@ public class ProductListDto
     public string PackageStyle { get; set; }
     public string FilledWeight { get; set; }
     public string ShelfLife { get; set; }
+    public string ActionUse { get; set; }
     public CollectionItemDto Category { get; set; }
     public DateTime CreatedAt { get; set; }
 }
