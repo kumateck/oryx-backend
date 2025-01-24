@@ -16,6 +16,9 @@ public class ProductPackage : BaseEntity
     [StringLength(255)] public string OtherStandards { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
+    public decimal BaseQuantity { get; set; } 
+    public Guid? BaseUoMId { get; set; } 
+    public UnitOfMeasure BaseUoM { get; set; }
 }
 
 public class PackageType : BaseEntity

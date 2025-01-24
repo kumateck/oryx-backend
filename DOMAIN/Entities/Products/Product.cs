@@ -18,6 +18,12 @@ public class Product : BaseEntity
     [StringLength(255)] public string Description { get; set; }
     public Guid CategoryId { get; set; }
     public ProductCategory Category { get; set; }
+    public decimal BaseQuantity { get; set; } 
+    public decimal BasePackingQuantity { get; set; } 
+    public Guid? BaseUomId { get; set; }
+    public UnitOfMeasure BaseUoM { get; set; }
+    public Guid? BasePackingUomId { get; set; }
+    public UnitOfMeasure BasePackingUoM { get; set; }
     public List<FinishedProduct> FinishedProducts { get; set; }
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = [];
     public List<ProductPackage> Packages { get; set; } = [];

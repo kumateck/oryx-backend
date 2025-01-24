@@ -7,6 +7,7 @@ using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Organizations;
@@ -209,6 +210,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ShipmentDiscrepancyType> ShipmentDiscrepancyTypes { get; set; }
 
     #endregion
+
+    #region Form
+
+    public DbSet<Form> Forms { get; set; }
+    public DbSet<FormSection> FormSections { get; set; }
+    public DbSet<FormField> FormFields { get; set; }
+    public DbSet<Question> Questions { get; set; }
+    public DbSet<QuestionOption> QuestionOptions { get; set; }
+    public DbSet<Response> Responses { get; set; }
+    public DbSet<FormResponse> FormResponses { get; set; }
+    public DbSet<FormReviewer> FormReviewers { get; set; }
+    public DbSet<FormAssignee> FormAssignees { get; set; }
+
+    #endregion
     
 
     // #region TenantFilter
@@ -391,6 +406,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Supplier>().Navigation(p => p.Currency).AutoInclude();
 
         #endregion
+
+        #region Form Entities
+
+        modelBuilder.Entity<Form>().Navigation(p => p.Sections).AutoInclude();
+        modelBuilder.Entity<FormSection>().Navigation(p => p.Fields).AutoInclude();
+        modelBuilder.Entity<FormField>().Navigation(p => p.Question).AutoInclude();
+        
+        #endregion
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
@@ -549,6 +572,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ShipmentDiscrepancyItem>().HasQueryFilter(a =>  !a.ShipmentDiscrepancy.DeletedAt.HasValue);
         modelBuilder.Entity<ShipmentInvoiceItem>().HasQueryFilter(a => !a.ShipmentInvoice.DeletedAt.HasValue);
         
+        #endregion
+
+        #region Form
+
+        modelBuilder.Entity<Form>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<FormSection>().HasQueryFilter(a => !a.Form.DeletedAt.HasValue);
+        modelBuilder.Entity<FormField>().HasQueryFilter(a => !a.FormSection.DeletedAt.HasValue);
+        modelBuilder.Entity<FormAssignee>().HasQueryFilter(a => !a.User.DeletedAt.HasValue && !a.Form.DeletedAt.HasValue);
+        modelBuilder.Entity<FormReviewer>().HasQueryFilter(a => !a.User.DeletedAt.HasValue && !a.Form.DeletedAt.HasValue);
+        modelBuilder.Entity<FormResponse>().HasQueryFilter(a => !a.FormField.DeletedAt.HasValue);
+        modelBuilder.Entity<Response>().HasQueryFilter(a => !a.Form.DeletedAt.HasValue);
+
         #endregion
     }
 }

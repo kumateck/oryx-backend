@@ -23,5 +23,7 @@ public class BillOfMaterialItemDto
     public string Grade { get; set; }
     public string CasNumber { get; set; }
     public string Function { get; set; }
+    public decimal BaseQuantity { get; set; } 
+    public UnitOfMeasureDto BaseUoM { get; set; }
     public int Order { get; set; }
 }

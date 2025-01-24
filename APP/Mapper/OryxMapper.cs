@@ -4,11 +4,14 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.BillOfMaterials.Request;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
+using DOMAIN.Entities.Forms;
+using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -90,6 +93,8 @@ public class OryxMapper : Profile
         CreateMap<PurchaseOrderInvoice, CollectionItemDto>();
         CreateMap<BillingSheet, CollectionItemDto>();
         CreateMap<ShipmentDiscrepancyType, CollectionItemDto>();
+        CreateMap<Form, CollectionItemDto>();
+        CreateMap<FormSection, CollectionItemDto>();
         
         #endregion
 
@@ -331,6 +336,28 @@ public class OryxMapper : Profile
         CreateMap<CreateShipmentDiscrepancyItem, ShipmentDiscrepancyItem>();
         CreateMap<ShipmentDiscrepancy, ShipmentDiscrepancyDto>();
         CreateMap<ShipmentDiscrepancyItem, ShipmentDiscrepancyItemDto>();
+
+        #endregion
+
+        #region Form
+
+        CreateMap<CreateFormRequest, Form>();
+        CreateMap<CreateFormSectionRequest, FormSection>();
+        CreateMap<CreateFormFieldRequest, FormField>();
+        CreateMap<CreateFormAssigneeRequest, FormAssignee>();
+        CreateMap<CreateFormReviewerRequest, FormReviewer>();
+
+        CreateMap<Form, FormDto>();
+        CreateMap<FormSection, FormSectionDto>();
+        CreateMap<FormField, FormFieldDto>();
+        CreateMap<Question, QuestionDto>();
+        CreateMap<QuestionOption, QuestionOptionDto>();
+        CreateMap<Response, ResponseDto>();
+        CreateMap<FormResponse, FormResponseDto>()
+            .ForMember(dest => dest.Attachments,
+                opt => opt.MapFrom<AttachmentsResolver>());
+        CreateMap<FormAssignee, FormAssigneeDto>();
+        CreateMap<FormReviewer, FormReviewerDto>();
 
         #endregion
     }

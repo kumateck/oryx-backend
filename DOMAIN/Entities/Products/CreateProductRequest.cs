@@ -15,4 +15,8 @@ public class CreateProductRequest
     [StringLength(255)] public string ActionUse { get; set; }
     public Guid CategoryId { get; set; } // e.g., Tablet, Syrup, Injectable
     public List<CreateFinishedProductRequest> FinishedProducts { get; set; }
+    public decimal BaseQuantity { get; set; } 
+    public Guid? BaseUomId { get; set; }
+    public decimal BasePackingQuantity { get; set; } 
+    public Guid? BasePackingUomId { get; set; }
 }

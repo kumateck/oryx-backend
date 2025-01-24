@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Base;
 using SHARED;
 
 namespace DOMAIN.Entities.Products;
@@ -15,5 +16,9 @@ public class ProductListDto
     public string ShelfLife { get; set; }
     public string ActionUse { get; set; }
     public CollectionItemDto Category { get; set; }
+    public decimal BaseQuantity { get; set; } 
+    public decimal BasePackingQuantity { get; set; } 
+    public UnitOfMeasureDto BaseUoM { get; set; }
+    public UnitOfMeasureDto BasePackingUoM { get; set; }
     public DateTime CreatedAt { get; set; }
 }

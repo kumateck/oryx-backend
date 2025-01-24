@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SHARED;
 
 namespace APP.Utils;
 
@@ -129,22 +130,67 @@ public static class PaginationHelper
         };
     }
     
-    /*public static async Task<Paginateable<TDto>> GetPaginatedsResultAsync<TEntity, TDto>(
+   public static async Task<Paginateable<IEnumerable<TDto>>> GetPaginatedResultAsync<TEntity, TDto>(
         IQueryable<TEntity> query,
-        int pageNumber,
-        int pageSize,
+        PagedQuery pagedQuery,
         Func<TEntity, TDto> mapFunc)
         where TEntity : class
     {
-        pageNumber = pageNumber == 0 ? 1 : pageNumber;
-        pageSize = pageSize == 0 ? 10 : pageSize;
-        int count = await query.CountAsync();
-        pageNumber = pageNumber <= 0 ? 1 : pageNumber;
+        if (!string.IsNullOrEmpty(pagedQuery.SortLabel))
+        {
+            query = ApplySorting(query, pagedQuery.SortLabel, pagedQuery.SortDirection);
+        }
 
-        List<TEntity> items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+        // Get total count before pagination
+        var totalCount = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pagedQuery.PageSize);
 
-        var dto = items.Select(mapFunc).ToList();
+        // Apply pagination
+        var entities = await query
+            .Skip((pagedQuery.PageNumber - 1) * pagedQuery.PageSize)
+            .Take(pagedQuery.PageSize)
+            .ToListAsync();
 
-        return new Paginateables<TDto>(dto, count, pageNumber, pageSize);
-    }*/
+        var dto = entities.Select(mapFunc);
+
+        // Calculate start and stop page indices
+        var halfPagesToShow = pagedQuery.PageSize / 2;
+        var startPageIndex = Math.Max(1, pagedQuery.PageNumber - halfPagesToShow);
+        var stopPageIndex = Math.Min(totalPages, pagedQuery.PageNumber + halfPagesToShow);
+
+        if (stopPageIndex - startPageIndex + 1 < pagedQuery.PageSize)
+        {
+            if (startPageIndex == 1)
+            {
+                stopPageIndex = Math.Min(totalPages, startPageIndex + pagedQuery.PageSize - 1);
+            }
+            else if (stopPageIndex == totalPages)
+            {
+                startPageIndex = Math.Max(1, stopPageIndex - pagedQuery.PageSize + 1);
+            }
+        }
+
+        return new Paginateable<IEnumerable<TDto>>
+        {
+            Data = dto,
+            PageIndex = pagedQuery.PageNumber,
+            PageCount = totalPages,
+            TotalRecordCount = totalCount,
+            NumberOfPagesToShow = pagedQuery.PageSize,
+            StartPageIndex = startPageIndex,
+            StopPageIndex = stopPageIndex
+        };
+    }
+
+    // Optional: Apply sorting logic if needed
+    private static IQueryable<TEntity> ApplySorting<TEntity>(IQueryable<TEntity> query, string sortLabel, SortDirection sortDirection)
+    {
+        query = sortDirection switch
+        {
+            SortDirection.Ascending => query.OrderBy(e => EF.Property<object>(e, sortLabel)),
+            SortDirection.Descending => query.OrderByDescending(e => EF.Property<object>(e, sortLabel)),
+            _ => query
+        };
+        return query;
+    }
 }

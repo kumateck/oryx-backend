@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.BillOfMaterials.Request;
 using DOMAIN.Entities.Products;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;

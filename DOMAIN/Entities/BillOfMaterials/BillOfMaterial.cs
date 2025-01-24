@@ -30,8 +30,11 @@ public class BillOfMaterialItem : BaseEntity
     [StringLength(255)] public string CasNumber { get; set; }
     [StringLength(255)] public string Function { get; set; }
     public int Order { get; set; }
-    public decimal Quantity { get; set; } = 0; // Quantity of the component required 
-    public Guid? UoMId { get; set; }  // Unit of Measure, e.g., grams, liters, pieces
+    public decimal Quantity { get; set; } 
+    public Guid? UoMId { get; set; } 
     public UnitOfMeasure UoM { get; set; }
-    public bool IsSubstitutable { get; set; }  // Allows for substitution in production
+    public bool IsSubstitutable { get; set; }
+    public decimal BaseQuantity { get; set; } 
+    public Guid? BaseUoMId { get; set; } 
+    public UnitOfMeasure BaseUoM { get; set; }
 }
