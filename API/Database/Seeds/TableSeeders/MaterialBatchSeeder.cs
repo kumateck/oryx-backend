@@ -1,3 +1,4 @@
+using APP.Utils;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Base;
 using INFRASTRUCTURE.Context;
@@ -18,13 +19,16 @@ namespace API.Database.Seeds.TableSeeders
         {
             if (dbContext.UnitOfMeasures.Any()) return; // Prevent re-seeding if already present
             
-            var unitOfMeasures = new[]
+            foreach (var unit in UnitOfMeasureUtils.All())
             {
-                new UnitOfMeasure { Name = "Kilogram", Description = "Unit of mass" },
-                new UnitOfMeasure { Name = "Litre", Description = "Unit of volume" }
-            };
-
-            dbContext.UnitOfMeasures.AddRange(unitOfMeasures);
+                dbContext.UnitOfMeasures.Add(new UnitOfMeasure
+                {
+                    Name = unit.Name,
+                    Description = unit.Description,
+                    Symbol = unit.Symbol,
+                    IsScalable = unit.IsScalable
+                });
+            }
             dbContext.SaveChanges();
         }
 
