@@ -193,28 +193,24 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialBatches(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Moves a material batch from one location to another.
     /// </summary>
-    /// <param name="batchId">The ID of the material batch to move.</param>
-    /// <param name="fromLocationId">The ID of the warehouse source location.</param>
-    /// <param name="toLocationId">The ID of the warehouse destination location.</param>
-    /// <param name="quantity">The quantity to move.</param>
+    /// <param name="request">The move material to location request object</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("batch/move")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> MoveMaterialBatch(
-        Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity)
+    public async Task<IResult> MoveMaterialBatch([FromBody] MoveMaterialBatchRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.MoveMaterialBatch(batchId, fromLocationId, toLocationId, quantity, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        var result = await repository.MoveMaterialBatchByMaterial(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -247,7 +243,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.ConsumeMaterialAtLocation(batchId, locationId, quantity, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>

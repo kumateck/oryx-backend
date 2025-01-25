@@ -10,8 +10,7 @@ public class CreateBillOfMaterialRequest
 
 public class CreateBoMItemsRequest
 {
-    public Guid? ComponentMaterialId { get; set; }
-    public Guid? ComponentProductId { get; set; }
+    public Guid? MaterialId { get; set; }
     public Guid? UoMId { get; set; }  
     public bool IsSubstitutable { get; set; }  // Allows for substitution in production
     public Guid? MaterialTypeId { get; set; }

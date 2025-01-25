@@ -347,8 +347,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Bill of Material Entities
         modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Items).AutoInclude();
         modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Product).AutoInclude();
-        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.ComponentMaterial).AutoInclude();
-        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.ComponentProduct).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.Material).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.MaterialType).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.UoM).AutoInclude();
         #endregion
@@ -453,7 +452,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.BillOfMaterial.DeletedAt.HasValue);
         modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
-        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => entity.ComponentMaterial != null);
+        modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => entity.Material != null);
         #endregion
 
         #region Route Filters

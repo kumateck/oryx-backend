@@ -50,9 +50,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
     { 
         var billOfMaterial = await context.BillOfMaterials
             .Include(b => b.Items)
-            .ThenInclude(i => i.ComponentMaterial)
-            .Include(b => b.Items)
-            .ThenInclude(i => i.ComponentProduct)
+            .ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(b => b.Id == billOfMaterialId);
 
         return billOfMaterial is null ? BillOfMaterialErrors.NotFound(billOfMaterialId) : mapper.Map<BillOfMaterialDto>(billOfMaterial);
@@ -62,8 +60,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
     { 
         var query = context.BillOfMaterials
             .AsSplitQuery()
-            .Include(b => b.Items).ThenInclude(i => i.ComponentMaterial)
-            .Include(b => b.Items).ThenInclude(i => i.ComponentProduct)
+            .Include(b => b.Items).ThenInclude(i => i.Material)
             .Include(b => b.Items).ThenInclude(i => i.MaterialType)
             .Include(b => b.Items).ThenInclude(i => i.UoM)
             .AsQueryable();

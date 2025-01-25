@@ -127,7 +127,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 var movement = new MaterialBatchMovement
                 {
                     BatchId = batch.Id,
-                    FromLocationId = Guid.Empty,  // Assuming it's coming from a "default" location (new batch creation)
                     ToLocationId = initialLocationId.Value,
                     Quantity = batch.TotalQuantity, // All material moved to the initial location
                     MovedAt = DateTime.UtcNow,
@@ -285,8 +284,105 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return totalStock;
     }
+    
+    public async Task<Result> MoveMaterialBatchByMaterial(MoveMaterialBatchRequest request, Guid userId)
+    {
+        var material = await context.Materials
+            .Include(m => m.Batches) // Include batches for detailed processing
+            .FirstOrDefaultAsync(m => m.Id == request.MaterialId);
 
-    public async Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity, Guid userId)
+        if (material is null)
+        {
+            return MaterialErrors.NotFound(request.MaterialId);
+        }
+
+        var remainingQuantityToMove = request.Quantity;
+
+        // Iterate through batches, prioritizing those with earlier expiry dates
+        foreach (var batch in material.Batches.OrderBy(m => m.ExpiryDate))
+        {
+            // Get the stock for this specific batch at the fromLocation
+            var batchStockAtFromLocation = await GetBatchStockInLocation(batch.Id, request.FromLocationId);
+
+            if (batchStockAtFromLocation <= 0)
+            {
+                continue; // Skip batches with no stock at this location
+            }
+
+            // Determine how much to move from this batch
+            var quantityToMoveFromBatch = Math.Min(remainingQuantityToMove, batchStockAtFromLocation);
+
+            // Create a movement entry for the batch
+            var movement = new MaterialBatchMovement
+            {
+                BatchId = batch.Id,
+                FromLocationId = request.FromLocationId,
+                ToLocationId = request.ToLocationId,
+                Quantity = quantityToMoveFromBatch,
+                MovedAt = DateTime.UtcNow,
+                MovedById = userId,
+                MovementType = MovementType.BetweenLocations
+            };
+
+            await context.MaterialBatchMovements.AddAsync(movement);
+
+            // Create a corresponding event for the move
+            var batchEvent = new MaterialBatchEvent
+            {
+                BatchId = batch.Id,
+                Quantity = quantityToMoveFromBatch,
+                Type = EventType.Moved,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await context.MaterialBatchEvents.AddAsync(batchEvent);
+
+            // Reduce the remaining quantity to move
+            remainingQuantityToMove -= quantityToMoveFromBatch;
+
+            if (remainingQuantityToMove <= 0)
+            {
+                break; // Exit the loop if the desired quantity is moved
+            }
+        }
+
+        if (remainingQuantityToMove > 0)
+        {
+            // Not enough stock across all batches to fulfill the request
+            return MaterialErrors.InsufficientStock;
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    private async Task<decimal> GetBatchStockInLocation(Guid batchId, Guid locationId)
+    {
+        // Sum of quantities moved to this location for the specific batch
+        var quantityMovedToLocation = await context.MaterialBatchMovements
+            .Where(m => m.BatchId == batchId && m.ToLocationId == locationId)
+            .SumAsync(m => m.Quantity);
+
+        // Sum of quantities moved out of this location for the specific batch
+        var quantityMovedOutOfLocation = await context.MaterialBatchMovements
+            .Where(m => m.BatchId == batchId && m.FromLocationId == locationId)
+            .SumAsync(m => m.Quantity);
+
+        // Sum of quantities consumed at this location for the specific batch
+        var quantityConsumedAtLocation = await context.MaterialBatchEvents
+            .Where(e => e.BatchId == batchId 
+                        && e.ConsumedLocationId == locationId 
+                        && e.Type == EventType.Consumed)
+            .SumAsync(e => e.Quantity);
+
+        // Calculate the total available quantity for the batch in this location
+        var totalBatchStockInLocation = quantityMovedToLocation - quantityMovedOutOfLocation - quantityConsumedAtLocation;
+
+        return totalBatchStockInLocation;
+    }
+
+    public async Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, decimal quantity, Guid userId)
     {
         var batch = await context.MaterialBatches
             .FirstOrDefaultAsync(b => b.Id == batchId);
