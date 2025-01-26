@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace DOMAIN.Entities.Materials.Batch;
 
 public class CreateMaterialBatchRequest
 {
+    [StringLength(255)] public string Code { get; set; } 
     public Guid MaterialId { get; set; }         // ID of the material being added
     public decimal Quantity { get; set; }            // Quantity of the material batch
     public Guid InitialLocationId { get; set; }  // ID of the location where the batch is first stored (e.g., warehouse)

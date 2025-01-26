@@ -15,6 +15,8 @@ public class ProductListDto
     public string FilledWeight { get; set; }
     public string ShelfLife { get; set; }
     public string ActionUse { get; set; }
+    public string FdaRegistrationNumber { get; set; }
+    public string MasterFormulaNumber { get; set; }
     public CollectionItemDto Category { get; set; }
     public decimal BaseQuantity { get; set; } 
     public decimal BasePackingQuantity { get; set; } 
