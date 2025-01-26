@@ -115,7 +115,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <returns>Returns a collection of uom items.</returns>
     [HttpGet("uom")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<CollectionItemDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UnitOfMeasureDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetUoM()
     {
