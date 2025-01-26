@@ -5,6 +5,7 @@ using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.Requisitions;
 using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
@@ -12,6 +13,8 @@ namespace DOMAIN.Entities.PurchaseOrders;
 public class PurchaseOrder : BaseEntity
 {
     [StringLength(100)] public string Code { get; set; }
+    public Guid? SourceRequisitionId { get; set; }
+    public SourceRequisition SourceRequisition { get; set; }
     public Guid SupplierId { get; set; }
     public Supplier Supplier { get; set; }
     public DateTime RequestDate { get; set; }

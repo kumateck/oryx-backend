@@ -32,7 +32,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var result = await repository.CreateRequisition(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of requisitions.
     /// </summary>
@@ -40,13 +40,15 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="status">Filter by status of the requisition.</param>
+    /// <param name="type">Filter between stock and purchase requisitions. (Stock = 0, Purchase =  1)</param>
     /// <returns>Returns a paginated list of requisitions.</returns>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
-    public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] RequestStatus? status = null)
+    public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
+        [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null)
     {
-        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status);
+        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

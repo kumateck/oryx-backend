@@ -68,7 +68,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     // Get paginated list of Stock Requisitions
-    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status)
+    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status, RequisitionType? requisitionType)
     {
         var query = context.Requisitions
             .Include(r => r.RequestedBy)
@@ -81,6 +81,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (status.HasValue)
         {
             query = query.Where(r => r.Status == status);
+        }
+
+        if (requisitionType.HasValue)
+        {
+            query = query.Where(r => r.RequisitionType == requisitionType);
         }
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -508,6 +513,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var supplierQuotation = new SupplierQuotation
         {
             SupplierId = sourceRequisition.SupplierId,
+            SourceRequisitionId = sourceRequisition.Id,
             Items = sourceRequisition.Items.Select(i => new SupplierQuotationItem
             {
                 MaterialId = i.MaterialId,
@@ -585,6 +591,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(s => s.Material)
             .Include(s => s.UoM)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
+            .Include(s => s.SupplierQuotation).ThenInclude(s => s.SourceRequisition)
             .Where(s => s.QuotedPrice != null && !s.SupplierQuotation.Processed && s.SupplierQuotation.Supplier.Type == supplierType)
             .ToListAsync();
 
@@ -601,6 +608,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     .Select(s => new SupplierPrice
                     {
                         Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                        SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
                         Price = s.QuotedPrice
                     }).ToList()
             }).ToList();
@@ -621,6 +629,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             {
                 Code = await GeneratePurchaseOrderCode(),
                 SupplierId = quotation.SupplierId,
+                SourceRequisitionId = quotation.SourceRequisitionId,
                 RequestDate = DateTime.UtcNow,
                 Items = quotation.Items
             }, userId);
