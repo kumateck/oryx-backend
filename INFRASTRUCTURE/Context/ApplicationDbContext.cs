@@ -349,7 +349,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Product).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.Material).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.MaterialType).AutoInclude();
-        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.UoM).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.BaseUoM).AutoInclude();
         #endregion
 
         #region Route Entities

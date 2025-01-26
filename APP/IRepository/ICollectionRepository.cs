@@ -7,7 +7,8 @@ public interface ICollectionRepository
 { 
     Task<Result<Dictionary<string, IEnumerable<CollectionItemDto>>>> GetItemCollection(
         List<string> itemTypes);
-    Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType);
+    Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType); 
+    Task<Result<IEnumerable<UnitOfMeasureDto>>> GetUoM();
     Result<IEnumerable<string>> GetItemTypes();
     Task<Result<Guid>> CreateItem(CreateItemRequest request, string itemType);
     Task<Result<Guid>> UpdateItem(CreateItemRequest request, Guid itemId, string itemType, Guid userId);

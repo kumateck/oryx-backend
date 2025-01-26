@@ -108,4 +108,18 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.SoftDeleteItem(itemId, itemType, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a units of measures in the system.
+    /// </summary>
+    /// <returns>Returns a collection of uom items.</returns>
+    [HttpGet("uom")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<CollectionItemDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetUoM()
+    {
+        var result = await repository.GetUoM();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

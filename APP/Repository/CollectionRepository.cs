@@ -147,6 +147,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         var invalidItems = string.Join(", ", invalidItemTypes);
         return Error.Validation("Item", $"Invalid item types: {invalidItems}");
     }
+    
+    public async Task<Result<IEnumerable<UnitOfMeasureDto>>> GetUoM()
+    {
+       return mapper.Map<List<UnitOfMeasureDto>>(await context.UnitOfMeasures.ToListAsync());
+    }
 
     public Result<IEnumerable<string>> GetItemTypes()
     {

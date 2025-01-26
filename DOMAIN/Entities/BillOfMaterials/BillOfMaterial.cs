@@ -28,9 +28,6 @@ public class BillOfMaterialItem : BaseEntity
     [StringLength(255)] public string CasNumber { get; set; }
     [StringLength(255)] public string Function { get; set; }
     public int Order { get; set; }
-    public decimal Quantity { get; set; } 
-    public Guid? UoMId { get; set; } 
-    public UnitOfMeasure UoM { get; set; }
     public bool IsSubstitutable { get; set; }
     public decimal BaseQuantity { get; set; } 
     public Guid? BaseUoMId { get; set; } 

@@ -62,7 +62,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
             .AsSplitQuery()
             .Include(b => b.Items).ThenInclude(i => i.Material)
             .Include(b => b.Items).ThenInclude(i => i.MaterialType)
-            .Include(b => b.Items).ThenInclude(i => i.UoM)
+            .Include(b => b.Items).ThenInclude(i => i.BaseUoM)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

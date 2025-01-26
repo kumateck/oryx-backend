@@ -16,8 +16,6 @@ public class BillOfMaterialItemDto
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public CollectionItemDto MaterialType { get; set; }
-    public decimal Quantity { get; set; } 
-    public UnitOfMeasureDto UoM { get; set; }
     public bool IsSubstitutable { get; set; } 
     public string Grade { get; set; }
     public string CasNumber { get; set; }
