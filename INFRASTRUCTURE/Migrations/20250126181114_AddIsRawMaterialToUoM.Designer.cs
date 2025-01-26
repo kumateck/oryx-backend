@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250126181114_AddIsRawMaterialToUoM")]
+    partial class AddIsRawMaterialToUoM
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2278,9 +2281,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DirectLinkMaterialId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -2304,9 +2304,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("UnitCapacity")
-                        .HasColumnType("numeric");
-
                     b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
 
@@ -2318,8 +2315,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("BaseUoMId");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("DirectLinkMaterialId");
 
                     b.HasIndex("LastDeletedById");
 
@@ -5617,10 +5612,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Materials.Material", "DirectLinkMaterial")
-                        .WithMany()
-                        .HasForeignKey("DirectLinkMaterialId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -5654,8 +5645,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("BaseUoM");
 
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("DirectLinkMaterial");
 
                     b.Navigation("LastDeletedBy");
 

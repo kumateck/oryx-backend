@@ -13,4 +13,6 @@ public class CreateProductPackageRequest
     public Guid? UoMId { get; set; }
     public decimal BaseQuantity { get; set; } 
     public Guid? BaseUoMId { get; set; } 
+    public decimal UnitCapacity { get; set; } 
+    public Guid? DirectLinkMaterialId { get; set; }
 }

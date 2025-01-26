@@ -26,7 +26,8 @@ namespace API.Database.Seeds.TableSeeders
                     Name = unit.Name,
                     Description = unit.Description,
                     Symbol = unit.Symbol,
-                    IsScalable = unit.IsScalable
+                    IsScalable = unit.IsScalable,
+                    IsRawMaterial = unit.IsRawMaterial
                 });
             }
             dbContext.SaveChanges();

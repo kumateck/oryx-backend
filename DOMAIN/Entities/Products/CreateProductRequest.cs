@@ -4,7 +4,7 @@ namespace DOMAIN.Entities.Products;
 
 public class CreateProductRequest
 { 
-    [StringLength(255)] public string Code { get; set; } // Unique identifier for the product
+    [StringLength(255)] public string Code { get; set; } 
     [StringLength(255)] public string Name { get; set; }
     [StringLength(255)] public string Description { get; set; }
     [StringLength(255)] public string GenericName { get; set; }

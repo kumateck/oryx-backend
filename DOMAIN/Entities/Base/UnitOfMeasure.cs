@@ -8,6 +8,7 @@ public class UnitOfMeasure : BaseEntity
     [StringLength(20)] public string Symbol { get; set; }
     [StringLength(1000)] public string Description { get; set; }
     public bool IsScalable { get; set; }
+    public bool IsRawMaterial { get; set; }
 }
 
 public class UnitOfMeasureDto : BaseDto
@@ -16,4 +17,5 @@ public class UnitOfMeasureDto : BaseDto
     public string Symbol { get; set; }
     public string Description { get; set; }
     public bool IsScalable { get; set; }
+    public bool IsRawMaterial { get; set; }
 }

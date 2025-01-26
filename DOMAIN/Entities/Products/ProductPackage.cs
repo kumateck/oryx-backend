@@ -19,6 +19,9 @@ public class ProductPackage : BaseEntity
     public decimal BaseQuantity { get; set; } 
     public Guid? BaseUoMId { get; set; } 
     public UnitOfMeasure BaseUoM { get; set; }
+    public decimal UnitCapacity { get; set; } 
+    public Guid? DirectLinkMaterialId { get; set; }
+    public Material DirectLinkMaterial { get; set; }
 }
 
 public class PackageType : BaseEntity
