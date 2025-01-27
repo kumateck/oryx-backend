@@ -11,7 +11,6 @@ public class ProductPackageDto
     public CollectionItemDto PackageType { get; set; }
     public string MaterialThickness { get; set; }
     public string OtherStandards { get; set; }
-    public UnitOfMeasureDto UoM { get; set; }
     public decimal BaseQuantity { get; set; } 
     public UnitOfMeasureDto BaseUoM { get; set; }
     public decimal UnitCapacity { get; set; } 
