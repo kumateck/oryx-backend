@@ -59,6 +59,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         );
     }
     
+    public async Task<Result<List<MaterialCategoryDto>>> GetMaterialCategories(MaterialKind? materialKind)
+    {
+        var materialCategories = materialKind != null
+            ? await context.MaterialCategories.Where(m => m.MaterialKind == materialKind)
+                .ToListAsync()
+            : await context.MaterialCategories
+                .ToListAsync();
+        return mapper.Map<List<MaterialCategoryDto>>(materialCategories);
+    }
+    
     public async Task<Result<List<MaterialDto>>> GetMaterials()
     {
         return mapper.Map<List<MaterialDto>>(await context.Materials

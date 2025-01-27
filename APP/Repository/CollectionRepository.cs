@@ -17,7 +17,7 @@ namespace APP.Repository;
 
 public class CollectionRepository(ApplicationDbContext context, IMapper mapper) : ICollectionRepository
 {
-    public async Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType)
+    public async Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType, MaterialKind? materialKind)
     {
         return itemType switch
         {
@@ -28,7 +28,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(WorkCenter) => mapper.Map<List<CollectionItemDto>>(await context.WorkCenters.ToListAsync()),
             nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
-            nameof(MaterialCategory) => mapper.Map<List<CollectionItemDto>>(await context.MaterialCategories.ToListAsync()),
+            nameof(MaterialCategory) => await GetMaterialCategories(materialKind), 
             nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
             nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
             nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
@@ -43,7 +43,17 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         };
     }
     
-    public async Task<Result<Dictionary<string, IEnumerable<CollectionItemDto>>>> GetItemCollection(List<string> itemTypes)
+    private async Task<List<CollectionItemDto>> GetMaterialCategories(MaterialKind? materialKind)
+    {
+        var materialCategories = await context.MaterialCategories.ToListAsync();
+        if (materialKind != null)
+        {
+            materialCategories = materialCategories.Where(m => m.MaterialKind == materialKind).ToList();
+        }
+        return mapper.Map<List<CollectionItemDto>>(materialCategories);
+    }
+    
+    public async Task<Result<Dictionary<string, IEnumerable<CollectionItemDto>>>> GetItemCollection(List<string> itemTypes, MaterialKind? materialKind = null)
     {
         var result = new Dictionary<string, IEnumerable<CollectionItemDto>>();
         var invalidItemTypes = new List<string>();
@@ -84,6 +94,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 
                 case nameof(MaterialCategory):
                     var materialCategory = await context.MaterialCategories.ToListAsync();
+                    if(materialKind != null) materialCategory = materialCategory.Where(m => m.MaterialKind == materialKind).ToList();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(materialCategory);
                     break;
                 

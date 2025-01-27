@@ -202,6 +202,8 @@ public class OryxMapper : Profile
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
         CreateMap<MaterialBatchMovement, MaterialBatchMovementDto>();
 
+        CreateMap<MaterialCategory, MaterialCategoryDto>();
+
         #endregion
 
         #region Requisition

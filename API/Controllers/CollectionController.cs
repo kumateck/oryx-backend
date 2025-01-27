@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using SHARED;
 
 namespace API.Controllers;
@@ -14,29 +15,34 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <summary>
     /// Retrieves a collection of items based on the item type.
     /// </summary>
+    /// <param name="itemTypes">The types of items to retrieve</param>
+    /// <param name="materialKind">The kind of material</param>
     /// <returns>Returns a collection of items.</returns>
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, IEnumerable<CollectionItemDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetItemCollection([FromBody] List<string> itemTypes)
+    public async Task<IResult> GetItemCollection([FromBody] List<string> itemTypes,
+        [FromQuery] MaterialKind? materialKind = null)
     {
-        var result = await repository.GetItemCollection(itemTypes);
+        var result = await repository.GetItemCollection(itemTypes, materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a collection of items based on the item type.
     /// </summary>
     /// <param name="itemType">The type of item to retrieve.</param>
+    /// <param name="materialKind">The kind of material</param>
     /// <returns>Returns a collection of items.</returns>
     [HttpGet("{itemType}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<CollectionItemDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetItemCollection(string itemType)
+    public async Task<IResult> GetItemCollection(string itemType,
+        [FromQuery] MaterialKind? materialKind = null)
     {
-        var result = await repository.GetItemCollection(itemType);
+        var result = await repository.GetItemCollection(itemType, materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

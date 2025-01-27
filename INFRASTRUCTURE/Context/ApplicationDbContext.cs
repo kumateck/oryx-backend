@@ -340,7 +340,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Product>().Navigation(p => p.Category).AutoInclude();
         modelBuilder.Entity<FinishedProduct>().Navigation(fp => fp.UoM).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Material).AutoInclude();
-        modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.PackageType).AutoInclude();
         modelBuilder.Entity<ProductBillOfMaterial>().Navigation(pbm => pbm.BillOfMaterial).AutoInclude();
         #endregion
 

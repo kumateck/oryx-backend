@@ -64,6 +64,20 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     }
     
     /// <summary>
+    /// Retrieves a list of all material categories.
+    /// </summary>
+    /// <param name="materialKind">The kind of material being requested</param>
+    /// <returns>Returns a paginated list of material categories.</returns>
+    [HttpGet("category")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialCategoryDto>))]
+    public async Task<IResult> GetMaterialCategories([FromQuery] MaterialKind? materialKind = null)
+    {
+        var result = await repository.GetMaterialCategories(materialKind);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Retrieves a list of all materials.
     /// </summary>
     /// <returns>Returns a paginated list of materials.</returns>
