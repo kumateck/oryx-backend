@@ -186,7 +186,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The CreateQuestionRequest object containing updated question data.</param>
     /// <param name="questionId">The ID of the question to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPut("questions/{questionId}")]
+    [HttpPut("question/{questionId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -205,7 +205,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// </summary>
     /// <param name="questionId">The ID of the question to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpDelete("questions/{questionId}")]
+    [HttpDelete("question/{questionId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
