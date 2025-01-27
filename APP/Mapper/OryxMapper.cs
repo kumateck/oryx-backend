@@ -352,14 +352,17 @@ public class OryxMapper : Profile
         CreateMap<Form, FormDto>();
         CreateMap<FormSection, FormSectionDto>();
         CreateMap<FormField, FormFieldDto>();
-        CreateMap<Question, QuestionDto>();
-        CreateMap<QuestionOption, QuestionOptionDto>();
         CreateMap<Response, ResponseDto>();
         CreateMap<FormResponse, FormResponseDto>()
             .ForMember(dest => dest.Attachments,
                 opt => opt.MapFrom<AttachmentsResolver>());
         CreateMap<FormAssignee, FormAssigneeDto>();
         CreateMap<FormReviewer, FormReviewerDto>();
+
+        CreateMap<CreateQuestionRequest, Question>();
+        CreateMap<CreateQuestionOptionsRequest, QuestionOption>();
+        CreateMap<Question, QuestionDto>();
+        CreateMap<QuestionOption, QuestionOptionDto>();
 
         #endregion
     }

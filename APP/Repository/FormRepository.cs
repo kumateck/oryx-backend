@@ -165,4 +165,71 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         return mapper.Map<FormResponseDto>(formResponse);
     }
+
+    public async Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId)
+    {
+        var question = mapper.Map<Question>(request);
+        question.CreatedById = userId;
+        
+        await context.Questions.AddAsync(question);
+        await context.SaveChangesAsync();
+        return question.Id;
+    }
+
+    public async Task<Result<QuestionDto>> GetQuestion(Guid questionId)
+    {
+        return mapper.Map<QuestionDto>(await context.Questions.FirstOrDefaultAsync(q => q.Id == questionId));
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(PagedQuery filter, string searchQuery)
+    {
+        var query = context.Questions
+            .AsSplitQuery()
+            .OrderByDescending(f => f.CreatedAt)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.Label, q => q.CreatedBy.FirstName, q => q.CreatedBy.LastName);
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            filter,
+            mapper.Map<QuestionDto>
+        );
+    }
+
+    public async Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId)
+    {
+        var question = await context.Questions.Include(question => question.Options)
+            .FirstOrDefaultAsync(f => f.Id == id);
+
+        if (question == null)
+            return FormErrors.NotFound(id);
+        
+        context.QuestionOptions.RemoveRange(question.Options);
+        mapper.Map(request, question);
+
+        question.LastUpdatedById = userId;
+        question.UpdatedAt = DateTime.UtcNow;
+        context.Questions.Update(question);
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteQuestion(Guid id, Guid userId)
+    {
+        var question = await context.Questions.FirstOrDefaultAsync(q => q.Id == id);
+        
+        if (question == null)
+            return FormErrors.NotFound(id);
+
+        question.LastDeletedById = userId;
+        question.DeletedAt = DateTime.UtcNow;
+        context.Questions.Update(question);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 }

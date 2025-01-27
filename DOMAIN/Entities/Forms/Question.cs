@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using SHARED;
 
@@ -5,7 +6,7 @@ namespace DOMAIN.Entities.Forms;
 
 public class Question : BaseEntity
 {
-    public string Label { get; set; }
+    [StringLength(1000)] public string Label { get; set; }
     public QuestionType Type { get; set; }
     public QuestionValidationType Validation { get; set; }
     public List<QuestionOption> Options { get; set; } = [];
@@ -15,7 +16,7 @@ public class QuestionOption : BaseEntity
 {
     public Guid QuestionId { get; set; }
     public Question Question { get; set; }
-    public string Name { get; set; }
+    [StringLength(1000)]  public string Name { get; set; }
 }
 
 public class QuestionDto : BaseDto
@@ -42,8 +43,7 @@ public enum QuestionType
     Dropdown,
     Checkbox, 
     FileUpload,
-    Signature,
-    Reference
+    Signature
 }
 
 public enum QuestionValidationType

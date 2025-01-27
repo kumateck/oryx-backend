@@ -15,4 +15,11 @@ public interface IFormRepository
     Task<Result> DeleteForm(Guid formId, Guid userId);
     Task<Result> SubmitFormResponse(CreateResponseRequest request, Guid userId);
     Task<Result<FormResponseDto>> GetFormResponse(Guid formResponseId);
+
+   Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId);
+   Task<Result<QuestionDto>> GetQuestion(Guid questionId);
+   Task<Result<Paginateable<IEnumerable<QuestionDto>>>>
+       GetQuestions(PagedQuery filter, string searchQuery);
+   Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId);
+   Task<Result> DeleteQuestion(Guid id, Guid userId);
 }

@@ -147,7 +147,7 @@ public static class PaginationHelper
 
         // Apply pagination
         var entities = await query
-            .Skip((pagedQuery.PageNumber - 1) * pagedQuery.PageSize)
+            .Skip((pagedQuery.Page - 1) * pagedQuery.PageSize)
             .Take(pagedQuery.PageSize)
             .ToListAsync();
 
@@ -155,8 +155,8 @@ public static class PaginationHelper
 
         // Calculate start and stop page indices
         var halfPagesToShow = pagedQuery.PageSize / 2;
-        var startPageIndex = Math.Max(1, pagedQuery.PageNumber - halfPagesToShow);
-        var stopPageIndex = Math.Min(totalPages, pagedQuery.PageNumber + halfPagesToShow);
+        var startPageIndex = Math.Max(1, pagedQuery.Page - halfPagesToShow);
+        var stopPageIndex = Math.Min(totalPages, pagedQuery.Page + halfPagesToShow);
 
         if (stopPageIndex - startPageIndex + 1 < pagedQuery.PageSize)
         {
@@ -173,7 +173,7 @@ public static class PaginationHelper
         return new Paginateable<IEnumerable<TDto>>
         {
             Data = dto,
-            PageIndex = pagedQuery.PageNumber,
+            PageIndex = pagedQuery.Page,
             PageCount = totalPages,
             TotalRecordCount = totalCount,
             NumberOfPagesToShow = pagedQuery.PageSize,

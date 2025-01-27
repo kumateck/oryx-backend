@@ -411,6 +411,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FormSection>().Navigation(p => p.Fields).AutoInclude();
         modelBuilder.Entity<FormField>().Navigation(p => p.Question).AutoInclude();
         
+        modelBuilder.Entity<Question>().Navigation(p => p.Options).AutoInclude();
+        
         #endregion
     }
 
@@ -581,7 +583,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FormReviewer>().HasQueryFilter(a => !a.User.DeletedAt.HasValue && !a.Form.DeletedAt.HasValue);
         modelBuilder.Entity<FormResponse>().HasQueryFilter(a => !a.FormField.DeletedAt.HasValue);
         modelBuilder.Entity<Response>().HasQueryFilter(a => !a.Form.DeletedAt.HasValue);
-
+        
+        modelBuilder.Entity<Question>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<QuestionOption>().HasQueryFilter(a => !a.Question.DeletedAt.HasValue);
         #endregion
     }
 }

@@ -5,6 +5,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SHARED;
 
 namespace API.Controllers;
 
@@ -129,5 +130,91 @@ public class FormController(IFormRepository repository) : ControllerBase
     {
         var result = await repository.GetFormResponse(formResponseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Creates a new question.
+    /// </summary>
+    /// <param name="request">The CreateQuestionRequest object containing question data.</param>
+    /// <returns>Returns the ID of the created question.</returns>
+    [HttpPost("question")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateQuestion([FromBody] CreateQuestionRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateQuestion(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific question by its ID.
+    /// </summary>
+    /// <param name="questionId">The ID of the question.</param>
+    /// <returns>Returns the question details.</returns>
+    [HttpGet("question/{questionId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QuestionDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetQuestion(Guid questionId)
+    {
+        var result = await repository.GetQuestion(questionId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of questions.
+    /// </summary>
+    /// <param name="filter">The PagedQuery object for pagination and filtering.</param>
+    /// <param name="searchQuery">Search query for filtering questions.</param>
+    /// <returns>Returns a paginated list of questions.</returns>
+    [HttpGet("question")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<QuestionDto>>))]
+    public async Task<IResult> GetQuestions([FromQuery] PagedQuery filter, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetQuestions(filter, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific question by its ID.
+    /// </summary>
+    /// <param name="request">The CreateQuestionRequest object containing updated question data.</param>
+    /// <param name="questionId">The ID of the question to be updated.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("questions/{questionId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateQuestion([FromBody] CreateQuestionRequest request, Guid questionId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateQuestion(request, questionId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific question by its ID.
+    /// </summary>
+    /// <param name="questionId">The ID of the question to be deleted.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpDelete("questions/{questionId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteQuestion(Guid questionId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteQuestion(questionId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

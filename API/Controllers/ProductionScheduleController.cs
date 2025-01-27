@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.ProductionSchedules;
 using SHARED.Requests;
 
