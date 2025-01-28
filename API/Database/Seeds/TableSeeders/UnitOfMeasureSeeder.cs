@@ -17,9 +17,11 @@ public class UnitOfMeasureSeeder : ISeeder
 
     private static void SeedUnitOfMeasures(ApplicationDbContext dbContext)
     {
+        var uom = new List<UnitOfMeasure>();
+        
         foreach (var unit in UnitOfMeasureUtils.All())
         {
-            dbContext.UnitOfMeasures.Add(new UnitOfMeasure
+            uom.Add(new UnitOfMeasure
             {
                 Name = unit.Name,
                 Description = unit.Description,
@@ -28,7 +30,7 @@ public class UnitOfMeasureSeeder : ISeeder
                 IsRawMaterial = unit.IsRawMaterial
             });
         }
-        
+        dbContext.UnitOfMeasures.AddRange(uom);
         dbContext.SaveChanges();
     }
 }

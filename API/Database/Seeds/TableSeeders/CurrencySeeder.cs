@@ -17,15 +17,16 @@ public class CurrencySeeder : ISeeder
 
     private void SeedCurrencies(ApplicationDbContext dbContext)
     {
+        var currencies = new List<Currency>();
         foreach (var currency in CurrencyUtils.All())
         {
-            dbContext.Currencies.Add(new Currency
+            currencies.Add(new Currency
             {
                 Name = currency.Name,
                 Symbol = currency.Symbol
             });
         }
-        
+        dbContext.Currencies.AddRange(currencies);
         dbContext.SaveChanges();
     }
 }
