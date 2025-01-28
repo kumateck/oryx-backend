@@ -274,4 +274,25 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialStockAcrossWarehouses(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Imports materials from an Excel file.
+    /// </summary>
+    /// <param name="file">The uploaded Excel file containing materials.</param>
+    /// <param name="kind">The kind of materials being imported.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("upload")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadMaterials(IFormFile file, [FromQuery] MaterialKind kind)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportMaterialsFromExcel(file, kind);
+
+        return result.IsSuccess
+            ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

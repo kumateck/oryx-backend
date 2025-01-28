@@ -8,6 +8,9 @@ using SHARED;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
+using Microsoft.AspNetCore.Http;
+using OfficeOpenXml;
+using SHARED.Requests;
 
 namespace APP.Repository;
 
@@ -552,39 +555,124 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return Result.Success(warehouseStockList);
     }
-
-
-
-
-    // ************* Check if Requisition Can Be Fulfilled *************
-
-    // Checks if the requisition can be fulfilled with the current stock level
-    /*public async Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId)
+    
+    
+    public async Task<Result> ImportMaterialsFromExcel(IFormFile file, MaterialKind kind)
     {
-        var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
-        if (material == null)
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        var materials = new List<Material>();
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial; 
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
+
+        // Read headers
+        var headers = new Dictionary<string, int>();
+        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
-            return MaterialErrors.NotFound(materialId);
+            headers[worksheet.Cells[1, col].Text.Trim()] = col;
         }
 
-        var requisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r => r.Id == requisitionId);
-
-        if (requisition is null)
+        // Validate required headers
+        var requiredHeaders = new[] { "Code", "Name", "Description", "Pharmacopoeia", "Category", "MinimumStockLevel", "MaximumStockLevel" };
+        foreach (var header in requiredHeaders)
         {
-            return RequisitionErrors.NotFound(requisitionId);
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
         }
 
-        // Get the total available stock for the material in the warehouse
-        var totalAvailableStock = await context.MaterialBatches
-            .Where(b => b.MaterialId == materialId && b.Status == BatchStatus.Available)
-            .SumAsync(b => b.RemainingQuantity);
+        // Read data rows
+        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim();
+            var category = context.MaterialCategories.FirstOrDefault(m => m.Name == categoryName);
 
-        // Calculate the remaining stock after fulfilling the requisition
-        var remainingStockAfterRequisition = totalAvailableStock - requisition.Items.Where(i => i.MaterialId == ).Sum(i => i.Quantity);
+            if (category == null)
+                return UploadErrors.CategoryNotFound(categoryName);
 
-        // Check if the requested quantity can be fulfilled AND ensure the remaining stock doesn't drop below the minimum stock level
-        // Requisition can be fulfilled without violating the minimum stock level
-        // Not enough stock to fulfill requisition without going below minimum stock
-        return remainingStockAfterRequisition >= material.MinimumStockLevel;
-    }*/
+            var material = new Material
+            {
+                Code = worksheet.Cells[row, headers["Code"]].Text.Trim(),
+                Name = worksheet.Cells[row, headers["Name"]].Text.Trim(),
+                Description = worksheet.Cells[row, headers["Description"]].Text.Trim(),
+                Pharmacopoeia = worksheet.Cells[row, headers["Pharmacopoeia"]].Text.Trim(),
+                MaterialCategoryId = category.Id,
+                MinimumStockLevel = int.TryParse(worksheet.Cells[row, headers["MinimumStockLevel"]].Text.Trim(), out var minStock) ? minStock : 0,
+                MaximumStockLevel = int.TryParse(worksheet.Cells[row, headers["MaximumStockLevel"]].Text.Trim(), out var maxStock) ? maxStock : 0,
+                Kind = kind // Replace with your logic for Kind if needed
+            };
+
+            materials.Add(material);
+        }
+        
+        await context.Materials.AddRangeAsync(materials); 
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> ImportMaterialsFromExcel(string filePath, MaterialKind kind)
+    {
+        if (!File.Exists(filePath))
+            return UploadErrors.EmptyFile;
+
+        var materials = new List<Material>();
+
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial; 
+        using var package = new ExcelPackage(new FileInfo(filePath));
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
+
+        // Read headers
+        var headers = new Dictionary<string, int>();
+        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            headers[worksheet.Cells[1, col].Text.Trim()] = col;
+        }
+
+        // Validate required headers
+        var requiredHeaders = new[] { "Code", "Name", "Description", "Pharmacopoeia", "Category", "MinimumStockLevel", "MaximumStockLevel" };
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
+
+        // Read data rows
+        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim();
+            var category = await context.MaterialCategories.FirstOrDefaultAsync(m => m.Name == categoryName);
+
+            if (category == null)
+                return UploadErrors.CategoryNotFound(categoryName);
+
+            var material = new Material
+            {
+                Code = worksheet.Cells[row, headers["Code"]].Text.Trim(),
+                Name = worksheet.Cells[row, headers["Name"]].Text.Trim(),
+                Description = worksheet.Cells[row, headers["Description"]].Text.Trim(),
+                Pharmacopoeia = worksheet.Cells[row, headers["Pharmacopoeia"]].Text.Trim(),
+                MaterialCategoryId = category.Id,
+                MinimumStockLevel = int.TryParse(worksheet.Cells[row, headers["MinimumStockLevel"]].Text.Trim(), out var minStock) ? minStock : 0,
+                MaximumStockLevel = int.TryParse(worksheet.Cells[row, headers["MaximumStockLevel"]].Text.Trim(), out var maxStock) ? maxStock : 0,
+                Kind = kind
+            };
+
+            materials.Add(material);
+        }
+
+        await context.Materials.AddRangeAsync(materials);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 }

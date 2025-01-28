@@ -1,3 +1,4 @@
+/*
 using APP.Utils;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Base;
@@ -136,3 +137,4 @@ namespace API.Database.Seeds.TableSeeders
         }
     }
 }
+*/

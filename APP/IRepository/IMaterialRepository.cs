@@ -2,6 +2,7 @@ using APP.Utils;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
+using Microsoft.AspNetCore.Http;
 using SHARED;
 
 namespace APP.IRepository;
@@ -26,5 +27,7 @@ public interface IMaterialRepository
         Guid userId);
     Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId); 
     Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, int quantity, Guid userId); 
-    Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId);
+    Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId); 
+    Task<Result> ImportMaterialsFromExcel(IFormFile file, MaterialKind kind); 
+    Task<Result> ImportMaterialsFromExcel(string filePath, MaterialKind kind);
 }
