@@ -17,6 +17,9 @@ public class ProductListDto
     public string ActionUse { get; set; }
     public string FdaRegistrationNumber { get; set; }
     public string MasterFormulaNumber { get; set; }
+    public string PrimaryPackDescription { get; set; }
+    public string SecondaryPackDescription { get; set; }
+    public string TertiaryPackDescription { get; set; }
     public CollectionItemDto Category { get; set; }
     public decimal BaseQuantity { get; set; } 
     public decimal BasePackingQuantity { get; set; } 

@@ -18,6 +18,9 @@ public class Product : BaseEntity
     [StringLength(255)] public string Description { get; set; }
     [StringLength(255)] public string FdaRegistrationNumber { get; set; }
     [StringLength(255)] public string MasterFormulaNumber { get; set; }
+    [StringLength(1000000)] public string PrimaryPackDescription { get; set; }
+    [StringLength(1000000)] public string SecondaryPackDescription { get; set; }
+    [StringLength(1000000)] public string TertiaryPackDescription { get; set; }
     public Guid CategoryId { get; set; }
     public ProductCategory Category { get; set; }
     public decimal BaseQuantity { get; set; } 
