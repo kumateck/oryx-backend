@@ -10,6 +10,7 @@ public class MaterialDto
     public string Pharmacopoeia { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
+    public string Alphabet { get; set; }
     public MaterialKind Kind { get; set; }
     public MaterialCategoryDto MaterialCategory { get; set; }
     public List<MaterialBatchDto> Batches { get; set; } = [];
