@@ -582,7 +582,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // Validate required headers
-        var requiredHeaders = new[] { "Code", "Name", "Description", "Pharmacopoeia", "Category", "MinimumStockLevel", "MaximumStockLevel" };
+        var requiredHeaders = new[] { "Code", "Name", "Pharmacopoeia", "Category" };
         foreach (var header in requiredHeaders)
         {
             if (!headers.ContainsKey(header))
@@ -594,19 +594,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim();
             var category = context.MaterialCategories.FirstOrDefault(m => m.Name == categoryName);
-
-            if (category == null)
-                return UploadErrors.CategoryNotFound(categoryName);
-
+            
             var material = new Material
             {
                 Code = worksheet.Cells[row, headers["Code"]].Text.Trim(),
                 Name = worksheet.Cells[row, headers["Name"]].Text.Trim(),
-                Description = worksheet.Cells[row, headers["Description"]].Text.Trim(),
+                Description = "",
                 Pharmacopoeia = worksheet.Cells[row, headers["Pharmacopoeia"]].Text.Trim(),
-                MaterialCategoryId = category.Id,
-                MinimumStockLevel = int.TryParse(worksheet.Cells[row, headers["MinimumStockLevel"]].Text.Trim(), out var minStock) ? minStock : 0,
-                MaximumStockLevel = int.TryParse(worksheet.Cells[row, headers["MaximumStockLevel"]].Text.Trim(), out var maxStock) ? maxStock : 0,
+                MaterialCategoryId = category?.Id,
                 Kind = kind // Replace with your logic for Kind if needed
             };
 
