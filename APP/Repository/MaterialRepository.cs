@@ -582,7 +582,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // Validate required headers
-        var requiredHeaders = new[] { "Code", "Name", "Pharmacopoeia", "Category" };
+        var requiredHeaders = new[] { "Code", "Name", "Category" };
         foreach (var header in requiredHeaders)
         {
             if (!headers.ContainsKey(header))
@@ -593,14 +593,24 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim();
-            var category = context.MaterialCategories.FirstOrDefault(m => m.Name == categoryName);
+            var category = context.MaterialCategories.FirstOrDefault(m => m.Name.Equals(categoryName, StringComparison.CurrentCultureIgnoreCase));
+            string pharmacopoeia = null;
+
+            try
+            {
+                pharmacopoeia = worksheet.Cells[row, headers["Pharmacopoeia"]].Text.Trim();
+            }
+            catch (Exception)
+            {
+                //ignore
+            }
             
             var material = new Material
             {
                 Code = worksheet.Cells[row, headers["Code"]].Text.Trim(),
                 Name = worksheet.Cells[row, headers["Name"]].Text.Trim(),
                 Description = "",
-                Pharmacopoeia = worksheet.Cells[row, headers["Pharmacopoeia"]].Text.Trim(),
+                Pharmacopoeia = pharmacopoeia,
                 MaterialCategoryId = category?.Id,
                 Kind = kind // Replace with your logic for Kind if needed
             };
