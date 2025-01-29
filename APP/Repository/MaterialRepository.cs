@@ -592,8 +592,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Read data rows
         for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim();
-            var category = context.MaterialCategories.FirstOrDefault(m => m.Name.Equals(categoryName, StringComparison.CurrentCultureIgnoreCase));
+            var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim().ToLower();
+            var category = context.MaterialCategories.FirstOrDefault(m => m.Name != null && m.Name.ToLower() == categoryName);
             string pharmacopoeia = null;
 
             try
