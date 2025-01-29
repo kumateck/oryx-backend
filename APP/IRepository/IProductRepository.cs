@@ -27,4 +27,6 @@ public interface IProductRepository
     Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId,
         Guid userId);
      Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId);
+     Task<Result> UpdateProductPackageDescription(UpdateProductPackageDescriptionRequest request,
+         Guid productId, Guid userId);
 }

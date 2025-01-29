@@ -71,6 +71,23 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.UpdateProduct(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates a specific product package description by its ID.
+    /// </summary>
+    [HttpPut("package-description/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateProductPackage([FromBody] UpdateProductPackageDescriptionRequest request, Guid productId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.UpdateProductPackageDescription(request, productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Deletes a specific product by its ID.

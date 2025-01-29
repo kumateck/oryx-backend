@@ -72,6 +72,23 @@ namespace APP.Repository;
          await context.SaveChangesAsync();
          return Result.Success();
      }
+     
+     public async Task<Result> UpdateProductPackageDescription(UpdateProductPackageDescriptionRequest request, Guid productId, Guid userId)
+     {
+         var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+         if (existingProduct is null)
+         {
+             return ProductErrors.NotFound(productId);
+         }
+
+         existingProduct.PrimaryPackDescription = request.PrimaryPackDescription;
+         existingProduct.SecondaryPackDescription = request.SecondaryPackDescription;
+         existingProduct.TertiaryPackDescription = request.TertiaryPackDescription;
+         existingProduct.LastUpdatedById = userId;
+         context.Products.Update(existingProduct);
+         await context.SaveChangesAsync();
+         return Result.Success();
+     }
 
      public async Task<Result> DeleteProduct(Guid productId, Guid userId)
      {
