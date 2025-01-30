@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -413,6 +414,100 @@ namespace APP.Repository;
             await context.SaveChangesAsync();
         }
 
+        return Result.Success();
+    }
+    
+    public async Task<Result<Guid>> CreateBatchManufacturingRecord(CreateBatchManufacturingRecord request)
+    {
+        var batchRecord = mapper.Map<BatchManufacturingRecord>(request);
+        await context.BatchManufacturingRecords.AddAsync(batchRecord);
+        await context.SaveChangesAsync();
+        return batchRecord.Id;
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null)
+    {
+        var query = context.BatchManufacturingRecords
+            .Include(p => p.Product)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, p => p.BatchNumber, p => p.Product.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<BatchManufacturingRecordDto>
+        );
+    }
+
+    public async Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecord(Guid id)
+    {
+        return mapper.Map<BatchManufacturingRecordDto>(
+            await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == id));
+    }
+
+    public async Task<Result> UpdateBatchManufacturingRecord(CreateBatchManufacturingRecord request, Guid id)
+    {
+        var batchRecord = await context.BatchManufacturingRecords.FirstOrDefaultAsync(p => p.Id == id);
+        if (batchRecord is null)
+        {
+            return ProductErrors.NotFound(id);
+        }
+
+        mapper.Map(request, batchRecord);
+        context.BatchManufacturingRecords.Update(batchRecord);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result<Guid>> CreateBatchPackagingRecord(CreateBatchPackagingRecord request)
+    {
+        var batchRecord = mapper.Map<BatchManufacturingRecord>(request);
+        await context.BatchManufacturingRecords.AddAsync(batchRecord);
+        await context.SaveChangesAsync();
+        return batchRecord.Id;
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<BatchPackagingRecordDto>>>> GetBatchPackagingRecords(int page, int pageSize, string searchQuery = null)
+    {
+        var query = context.BatchPackagingRecords
+            .Include(p => p.Product)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, p => p.BatchNumber, p => p.Product.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<BatchPackagingRecordDto>
+        );
+    }
+
+    public async Task<Result<BatchPackagingRecordDto>> GetBatchPackagingRecord(Guid id)
+    {
+        return mapper.Map<BatchPackagingRecordDto>(
+            await context.BatchPackagingRecords.FirstOrDefaultAsync(b => b.Id == id));
+    }
+
+    public async Task<Result> UpdateBatchPackagingRecord(CreateBatchManufacturingRecord request, Guid id)
+    {
+        var batchRecord = await context.BatchPackagingRecords.FirstOrDefaultAsync(p => p.Id == id);
+        if (batchRecord is null)
+        {
+            return ProductErrors.NotFound(id);
+        }
+
+        mapper.Map(request, batchRecord);
+        context.BatchPackagingRecords.Update(batchRecord);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 }

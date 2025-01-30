@@ -1,7 +1,6 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
-using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.BillOfMaterials.Request;
@@ -18,6 +17,7 @@ using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions;
@@ -363,6 +363,17 @@ public class OryxMapper : Profile
         CreateMap<CreateQuestionOptionsRequest, QuestionOption>();
         CreateMap<Question, QuestionDto>();
         CreateMap<QuestionOption, QuestionOptionDto>();
+
+        #endregion
+
+        #region Production
+
+        CreateMap<CreateBatchManufacturingRecord, BatchManufacturingRecord>();
+        CreateMap<UpdateBatchManufacturingRecord, BatchManufacturingRecord>();
+        CreateMap<BatchManufacturingRecord, BatchManufacturingRecordDto>();
+
+        CreateMap<CreateBatchPackagingRecord, BatchPackagingRecord>();
+        CreateMap<BatchPackagingRecord, BatchPackagingRecordDto>();
 
         #endregion
     }

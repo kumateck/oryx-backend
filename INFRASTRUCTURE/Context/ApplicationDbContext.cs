@@ -15,6 +15,7 @@ using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
@@ -222,6 +223,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FormResponse> FormResponses { get; set; }
     public DbSet<FormReviewer> FormReviewers { get; set; }
     public DbSet<FormAssignee> FormAssignees { get; set; }
+
+    #endregion
+
+    #region Production
+
+    public DbSet<BatchManufacturingRecord> BatchManufacturingRecords { get; set; }
+    public DbSet<BatchPackagingRecord> BatchPackagingRecords { get; set; }
 
     #endregion
     
@@ -586,6 +594,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         modelBuilder.Entity<Question>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<QuestionOption>().HasQueryFilter(a => !a.Question.DeletedAt.HasValue);
+        #endregion
+
+        #region Production
+
+        modelBuilder.Entity<BatchManufacturingRecord>().HasQueryFilter(a => !a.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<BatchPackagingRecord>().HasQueryFilter(a => !a.Product.DeletedAt.HasValue);
+
         #endregion
     }
 }
