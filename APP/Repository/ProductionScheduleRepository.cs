@@ -101,7 +101,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     { 
         var productionSchedule = await context.ProductionSchedules
             .Include(s => s.Items).ThenInclude(s => s.Material)
-            .Include(s => s.Product)
+            .Include(s => s.Products).ThenInclude(s => s.Product)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
         return productionSchedule is null ? Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found") : mapper.Map<ProductionScheduleDto>(productionSchedule);
@@ -177,13 +177,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     { 
         var query = context.ProductionSchedules
             .Include(s => s.Items).ThenInclude(s => s.Material)
-            .Include(s => s.Product)
+            .Include(s => s.Products).ThenInclude(s => s.Product)
             .AsQueryable();
 
-        if (!string.IsNullOrEmpty(searchQuery)) 
-        { 
-            query = query.WhereSearch(searchQuery, f => f.Product.Name);
-        }
+        // if (!string.IsNullOrEmpty(searchQuery)) 
+        // { 
+        //     query = query.WhereSearch(searchQuery, f => f.Product.Name);
+        // }
         
         return await PaginationHelper.GetPaginatedResultAsync(
             query, 

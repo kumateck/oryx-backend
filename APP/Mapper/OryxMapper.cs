@@ -180,6 +180,8 @@ public class OryxMapper : Profile
         CreateMap<ProductionScheduleItem, ProductionScheduleItemDto>();
         CreateMap<CreateMasterProductionScheduleRequest, MasterProductionSchedule>();
         CreateMap<MasterProductionSchedule, MasterProductionScheduleDto>();
+        CreateMap<CreateProductionScheduleProduct, ProductionScheduleProduct>();
+        CreateMap<ProductionScheduleProduct, ProductionScheduleProductDto>();
         #endregion
 
         #region Route

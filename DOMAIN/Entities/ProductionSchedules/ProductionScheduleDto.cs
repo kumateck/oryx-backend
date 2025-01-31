@@ -16,7 +16,7 @@ public class ProductionScheduleDto : BaseDto
     public decimal Quantity { get; set; } 
     public string Remarks { get; set; } 
     public List<ProductionScheduleItemDto> Items { get; set; } = [];
-
+    public List<ProductionScheduleProductDto> Products { get; set; } = [];
 }
 
 public class ProductionScheduleItemDto : BaseDto
@@ -34,3 +34,7 @@ public class ProductionScheduleProcurementDto
     public decimal QuantityOnHand { get; set; }
 }
 
+public class ProductionScheduleProductDto
+{
+    public CollectionItemDto Product { get; set; }
+}

@@ -103,6 +103,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionSchedule> ProductionSchedules { get; set; }
     public DbSet<ProductionScheduleItem> ProductionScheduleItems { get; set; }
     public DbSet<MasterProductionSchedule> MasterProductionSchedules { get; set; }
+    public DbSet<ProductionScheduleProduct> ProductionScheduleProducts { get; set; }
+
 
     #endregion
 
@@ -484,7 +486,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasQueryFilter(mps => !mps.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionSchedule>()
             .HasQueryFilter(mps => !mps.DeletedAt.HasValue);
-        modelBuilder.Entity<ProductionSchedule>()
+        modelBuilder.Entity<ProductionScheduleProduct>()
             .HasQueryFilter(mps => !mps.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionScheduleItem>()
             .HasQueryFilter(mps => !mps.ProductionSchedule.DeletedAt.HasValue);
