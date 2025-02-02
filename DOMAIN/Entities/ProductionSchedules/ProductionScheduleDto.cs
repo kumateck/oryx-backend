@@ -11,7 +11,6 @@ public class ProductionScheduleDto : BaseDto
     public string Code { get; set; }
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }
-    public ProductDto Product { get; set; }
     public ProductionStatus Status { get; set; } 
     public decimal Quantity { get; set; } 
     public string Remarks { get; set; } 

@@ -35,5 +35,7 @@ public class ProductionScheduleProduct
     public Guid ProductionScheduleId { get; set; }
     public ProductionSchedule ProductionSchedule { get; set; }
     public Guid ProductId { get; set; }
-    public Product Product { get; set; }
+    public Product Product { get; set; }   
+    public DateTime ScheduledStartTime { get; set; }
+    public DateTime ScheduledEndTime { get; set; }
 }
