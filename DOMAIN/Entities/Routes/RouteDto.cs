@@ -9,11 +9,23 @@ public class RouteDto
     public string EstimatedTime { get; set; }
     public List<CollectionItemDto> Resources { get; } = [];
     public int Order { get; set; }
-    public List<RouteResponsiblePartyDto> ResponsibleParties { get; set; } = [];
+    public List<RouteResponsibleUserDto> ResponsibleUsers { get; set; } = [];
+    public List<RouteResponsibleRole> ResponsibleRoles { get; set; } = [];
+    public List<RouteWorkCenterDto> WorkCenters { get; set; } = [];
 }
 
-public class RouteResponsiblePartyDto 
+public class RouteResponsibleUserDto 
 {
     public CollectionItemDto User { get; set; }
+}
+
+
+public class RouteResponsibleRoleDto
+{
     public CollectionItemDto Role { get; set; }
+}
+
+public class RouteWorkCenterDto
+{
+    public CollectionItemDto WorkCenter { get; set; }
 }

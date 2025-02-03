@@ -124,6 +124,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Route> Routes { get; set; }
     public DbSet<RouteResource> RouteResources { get; set; }
+    public DbSet<RouteResponsibleUser> RouteResponsibleUsers { get; set; }
+    public DbSet<RouteResponsibleRole> RouteResponsibleRoles { get; set; }
+    public DbSet<RouteWorkCenter> RouteWorkCenters { get; set; }
 
     #endregion
 
@@ -363,11 +366,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Route Entities
         modelBuilder.Entity<Route>().Navigation(r => r.Operation).AutoInclude();
-        modelBuilder.Entity<Route>().Navigation(r => r.WorkCenter).AutoInclude();
-        modelBuilder.Entity<Route>().Navigation(r => r.Resources).AutoInclude();
-        modelBuilder.Entity<Route>().Navigation(r => r.ResponsibleParties).AutoInclude();
-        modelBuilder.Entity<RouteResponsibleParty>().Navigation(r => r.User).AutoInclude();
-        modelBuilder.Entity<RouteResponsibleParty>().Navigation(r => r.Role).AutoInclude();
+        modelBuilder.Entity<RouteResponsibleUser>().Navigation(r => r.User).AutoInclude();
+        modelBuilder.Entity<RouteResponsibleRole>().Navigation(r => r.Role).AutoInclude();
+        modelBuilder.Entity<RouteWorkCenter>().Navigation(r => r.WorkCenter).AutoInclude();
         modelBuilder.Entity<RouteResource>().Navigation(rr => rr.Resource).AutoInclude();
         #endregion
 
@@ -471,7 +472,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Route Filters
         modelBuilder.Entity<Route>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Operation.DeletedAt.HasValue);
-        modelBuilder.Entity<RouteResponsibleParty>().HasQueryFilter(entity => !entity.Route.DeletedAt.HasValue);
+        modelBuilder.Entity<RouteResponsibleUser>().HasQueryFilter(entity => !entity.Route.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue);
+        modelBuilder.Entity<RouteResponsibleRole>().HasQueryFilter(entity => !entity.Route.DeletedAt.HasValue && !entity.Role.DeletedAt.HasValue);
+        modelBuilder.Entity<RouteWorkCenter>().HasQueryFilter(entity => !entity.Route.DeletedAt.HasValue && !entity.WorkCenter.DeletedAt.HasValue);
         modelBuilder.Entity<RouteResource>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Resource.DeletedAt.HasValue);
         #endregion
 

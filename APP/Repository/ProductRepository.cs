@@ -193,7 +193,9 @@ namespace APP.Repository;
     {
         var route = await context.Routes
             .Include(r => r.Operation)
-            .Include(r => r.WorkCenter)
+            .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
+            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
+            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .FirstOrDefaultAsync(r => r.Id == routeId);
 
@@ -209,13 +211,15 @@ namespace APP.Repository;
         var query = context.Routes
             .OrderBy(r => r.Order)
             .Include(r => r.Operation)
-            .Include(r => r.WorkCenter)
+            .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
+            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
+            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.Where(r => r.Operation.Name.Contains(searchQuery) || r.WorkCenter.Name.Contains(searchQuery));
+            query = query.WhereSearch(searchQuery, q => q.Operation.Name);
         }
 
         var paginatedRoutes = await PaginationHelper.GetPaginatedResultAsync(
