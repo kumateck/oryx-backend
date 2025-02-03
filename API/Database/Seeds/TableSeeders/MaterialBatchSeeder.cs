@@ -1,7 +1,3 @@
-/*
-using APP.Utils;
-using DOMAIN.Entities.Materials;
-using DOMAIN.Entities.Base;
 using INFRASTRUCTURE.Context;
 using DOMAIN.Entities.Materials.Batch;
 
@@ -12,129 +8,114 @@ namespace API.Database.Seeds.TableSeeders
         public void Handle(IServiceScope scope)
         {
             var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
-            SeedUnitOfMeasures(dbContext); // Ensure unit of measures are seeded before materials
-            SeedMaterialAndBatches(dbContext);
+            SeedMaterialBatches(dbContext);
         }
 
-        private void SeedUnitOfMeasures(ApplicationDbContext dbContext)
+        private void SeedMaterialBatches(ApplicationDbContext dbContext)
         {
-            if (dbContext.UnitOfMeasures.Any()) return; // Prevent re-seeding if already present
-            
-            foreach (var unit in UnitOfMeasureUtils.All())
-            {
-                dbContext.UnitOfMeasures.Add(new UnitOfMeasure
-                {
-                    Name = unit.Name,
-                    Description = unit.Description,
-                    Symbol = unit.Symbol,
-                    IsScalable = unit.IsScalable,
-                    IsRawMaterial = unit.IsRawMaterial
-                });
-            }
-            dbContext.SaveChanges();
-        }
-
-        private void SeedMaterialAndBatches(ApplicationDbContext dbContext)
-        {
-            // Get some existing warehouse locations to move the material to
             var warehouseLocations = dbContext.WarehouseLocations.Take(2).ToList();
             if (warehouseLocations.Count == 0)
             {
                 return;
             }
-            
-            // Check if the material already exists
-            var existingMaterial = dbContext.Materials.FirstOrDefault(m => m.Name == "Paracetamol 500mg Tablet");
-            if (existingMaterial is not null) return;
-            
-            // Seeding a valid material
-            var testMaterial = new Material
-            {
-                Name = "Paracetamol 500mg Tablet",
-                Code = "M-001",
-                Description = "Paracetamol 500mg tablet for pain relief.",
-                MinimumStockLevel = 100,
-                MaximumStockLevel = 20000
-            };
 
-            dbContext.Materials.Add(testMaterial);
-            dbContext.SaveChanges(); // Save to ensure we have the MaterialId
-
-            // Get unit of measures to link with batches
-            var kgUoM = dbContext.UnitOfMeasures.First(u => u.Name == "Kilogram").Id;
-            var litreUoM = dbContext.UnitOfMeasures.First(u => u.Name == "Litre").Id;
-
-            // Seeding multiple material batches for the test material
-            var batches = new[]
-            {
-                new MaterialBatch
-                {
-                    Code = "MB-001",
-                    MaterialId = testMaterial.Id,
-                    TotalQuantity = 500,
-                    UoMId = kgUoM,
-                    Status = BatchStatus.Available,
-                    DateReceived = DateTime.UtcNow,
-                    ExpiryDate = DateTime.UtcNow.AddYears(1)
-                },
-                new MaterialBatch
-                {
-                    Code = "MB-002",
-                    MaterialId = testMaterial.Id,
-                    TotalQuantity = 300,
-                    UoMId = litreUoM,
-                    Status = BatchStatus.Available,
-                    DateReceived = DateTime.UtcNow.AddDays(-5),
-                    ExpiryDate = DateTime.UtcNow.AddYears(1)
-                },
-                new MaterialBatch
-                {
-                    Code = "MB-003",
-                    MaterialId = testMaterial.Id,
-                    TotalQuantity = 200,
-                    UoMId = kgUoM,
-                    Status = BatchStatus.Available,
-                    DateReceived = DateTime.UtcNow.AddDays(-10),
-                    ExpiryDate = DateTime.UtcNow.AddYears(1)
-                }
-            };
-
-            dbContext.MaterialBatches.AddRange(batches);
-            dbContext.SaveChanges();
-            
             var userId = dbContext.Users.First(u => u.Email == "dkadusei@kumateck.com").Id;
-            
-            // Now we need to add MaterialBatchMovements and MaterialBatchEvents
-            foreach (var batch in batches)
+
+            var materials = new[]
             {
-                // Creating a movement to simulate moving the entire batch to the warehouse
-                var movement = new MaterialBatchMovement
+                new { Name = "Menthol Crystals (Race menthol)", Code = "M-001", UoM = "mg" },
+                new { Name = "Propylene Glycol (Mono Propylene Glycol)", Code = "M-002", UoM = "ml" },
+                new { Name = "Peppermint Oil", Code = "M-003", UoM = "mg" },
+                new { Name = "Ethanol 99%", Code = "M-004", UoM = "ml" },
+                new { Name = "Sorbitol Solution 70% (Non-Crystalline)", Code = "M-005", UoM = "mg" },
+                new { Name = "Sodium Benzoate", Code = "M-006", UoM = "mg" },
+                new { Name = "Citric Acid Monohydrate", Code = "M-007", UoM = "mg" },
+                new { Name = "Saccharin Sodium", Code = "M-008", UoM = "mg" },
+                new { Name = "Dextromethorphan HBR", Code = "M-009", UoM = "mg" },
+                new { Name = "Sucrose BP (White Crystalline Sugar)", Code = "M-010", UoM = "mg" },
+                new { Name = "Tartrazine Yellow Lake", Code = "M-011", UoM = "mg" },
+                new { Name = "Phenylephrine Hydrochloride", Code = "M-012", UoM = "mg" },
+                new { Name = "Citric Acid Anhydrous", Code = "M-013", UoM = "mg" },
+                new { Name = "Shippers (479x435x375mm)", Code = "P-001", UoM = "unit" },
+                new { Name = "Labels Alvite Syrup", Code = "P-002", UoM = "unit" },
+                new { Name = "Double sided Spoon (5 & 2.5 ml) White Opaque", Code = "P-003", UoM = "unit" },
+                new { Name = "Glass Amber Bottles 150ml (28 mm)", Code = "P-004", UoM = "unit" },
+                new { Name = "Plastic Measuring Cups 28mm", Code = "P-005", UoM = "unit" },
+                new { Name = "Shipper Labels Vital-X", Code = "P-006", UoM = "unit" },
+                new { Name = "25mm white plastic Caps 30ml", Code = "P-007", UoM = "unit" },
+                new { Name = "Leaflets Petogel", Code = "P-008", UoM = "unit" },
+                new { Name = "Tapes BOPP (Printed) 72 mm", Code = "P-009", UoM = "unit" },
+                new { Name = "28mm ROPP Caps (Metal)", Code = "P-010", UoM = "unit" }
+            };
+
+            foreach (var materialData in materials)
+            {
+                var existingMaterial = dbContext.Materials.FirstOrDefault(m => m.Name == materialData.Name);
+                if (existingMaterial == null) continue;
+
+                var uomId = dbContext.UnitOfMeasures.First(u => u.Name == materialData.UoM).Id;
+
+                var existingBatches = dbContext.MaterialBatches
+                    .Where(b => b.MaterialId == existingMaterial.Id && b.Code.StartsWith(materialData.Code))
+                    .ToList();
+
+                if (existingBatches.Any()) continue;
+
+                var batches = new[]
                 {
-                    BatchId = batch.Id,
-                    ToLocationId = warehouseLocations[0].Id, // Move to the first warehouse
-                    Quantity = batch.TotalQuantity, // Move the entire batch quantity
-                    MovedAt = DateTime.UtcNow,
-                    MovedById = userId, // Simulate a user ID
-                    MovementType = MovementType.ToWarehouse
+                    new MaterialBatch
+                    {
+                        Code = $"{materialData.Code}-B01",
+                        MaterialId = existingMaterial.Id,
+                        TotalQuantity = 500,
+                        UoMId = uomId,
+                        Status = BatchStatus.Available,
+                        DateReceived = DateTime.UtcNow,
+                        ExpiryDate = DateTime.UtcNow.AddYears(1)
+                    },
+                    new MaterialBatch
+                    {
+                        Code = $"{materialData.Code}-B02",
+                        MaterialId = existingMaterial.Id,
+                        TotalQuantity = 300,
+                        UoMId = uomId,
+                        Status = BatchStatus.Available,
+                        DateReceived = DateTime.UtcNow.AddDays(-5),
+                        ExpiryDate = DateTime.UtcNow.AddYears(1)
+                    }
                 };
 
-                dbContext.MaterialBatchMovements.Add(movement);
+                dbContext.MaterialBatches.AddRange(batches);
+                dbContext.SaveChanges();
 
-                // Log the movement as an event
-                var batchEvent = new MaterialBatchEvent
+                foreach (var batch in batches)
                 {
-                    BatchId = batch.Id,
-                    Type = EventType.Moved,
-                    Quantity = movement.Quantity,
-                    UserId = movement.MovedById,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    var movement = new MaterialBatchMovement
+                    {
+                        BatchId = batch.Id,
+                        ToLocationId = warehouseLocations[0].Id,
+                        Quantity = batch.TotalQuantity,
+                        MovedAt = DateTime.UtcNow,
+                        MovedById = userId,
+                        MovementType = MovementType.ToWarehouse
+                    };
 
-                dbContext.MaterialBatchEvents.Add(batchEvent);
+                    dbContext.MaterialBatchMovements.Add(movement);
+
+                    var batchEvent = new MaterialBatchEvent
+                    {
+                        BatchId = batch.Id,
+                        Type = EventType.Moved,
+                        Quantity = movement.Quantity,
+                        UserId = movement.MovedById,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    dbContext.MaterialBatchEvents.Add(batchEvent);
+                }
+
+                dbContext.SaveChanges();
             }
-
-            dbContext.SaveChanges();
         }
     }
 }
-*/

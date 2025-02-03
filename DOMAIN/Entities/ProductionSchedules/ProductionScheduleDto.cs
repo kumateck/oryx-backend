@@ -1,7 +1,5 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
-using DOMAIN.Entities.Products;
-using DOMAIN.Entities.WorkOrders;
 using SHARED;
 
 namespace DOMAIN.Entities.ProductionSchedules;
