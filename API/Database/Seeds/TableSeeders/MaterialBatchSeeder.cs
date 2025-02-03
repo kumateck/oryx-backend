@@ -36,16 +36,16 @@ namespace API.Database.Seeds.TableSeeders
                 new { Name = "Tartrazine Yellow Lake", Code = "M-011", UoM = "mg" },
                 new { Name = "Phenylephrine Hydrochloride", Code = "M-012", UoM = "mg" },
                 new { Name = "Citric Acid Anhydrous", Code = "M-013", UoM = "mg" },
-                new { Name = "Shippers (479x435x375mm)", Code = "P-001", UoM = "unit" },
-                new { Name = "Labels Alvite Syrup", Code = "P-002", UoM = "unit" },
-                new { Name = "Double sided Spoon (5 & 2.5 ml) White Opaque", Code = "P-003", UoM = "unit" },
-                new { Name = "Glass Amber Bottles 150ml (28 mm)", Code = "P-004", UoM = "unit" },
-                new { Name = "Plastic Measuring Cups 28mm", Code = "P-005", UoM = "unit" },
-                new { Name = "Shipper Labels Vital-X", Code = "P-006", UoM = "unit" },
-                new { Name = "25mm white plastic Caps 30ml", Code = "P-007", UoM = "unit" },
-                new { Name = "Leaflets Petogel", Code = "P-008", UoM = "unit" },
-                new { Name = "Tapes BOPP (Printed) 72 mm", Code = "P-009", UoM = "unit" },
-                new { Name = "28mm ROPP Caps (Metal)", Code = "P-010", UoM = "unit" }
+                new { Name = "Shippers (479x435x375mm)", Code = "P-001", UoM = "piece" },
+                new { Name = "Labels Alvite Syrup", Code = "P-002", UoM = "piece" },
+                new { Name = "Double sided Spoon (5 & 2.5 ml) White Opaque", Code = "P-003", UoM = "piece" },
+                new { Name = "Glass Amber Bottles 150ml (28 mm)", Code = "P-004", UoM = "piece" },
+                new { Name = "Plastic Measuring Cups 28mm", Code = "P-005", UoM = "piece" },
+                new { Name = "Shipper Labels Vital-X", Code = "P-006", UoM = "piece" },
+                new { Name = "25mm white plastic Caps 30ml", Code = "P-007", UoM = "piece" },
+                new { Name = "Leaflets Petogel", Code = "P-008", UoM = "piece" },
+                new { Name = "Tapes BOPP (Printed) 72 mm", Code = "P-009", UoM = "piece" },
+                new { Name = "28mm ROPP Caps (Metal)", Code = "P-010", UoM = "piece" }
             };
 
             foreach (var materialData in materials)
@@ -53,7 +53,7 @@ namespace API.Database.Seeds.TableSeeders
                 var existingMaterial = dbContext.Materials.FirstOrDefault(m => m.Name == materialData.Name);
                 if (existingMaterial == null) continue;
 
-                var uomId = dbContext.UnitOfMeasures.First(u => u.Name == materialData.UoM).Id;
+                var uomId = dbContext.UnitOfMeasures.First(u => u.Symbol == materialData.UoM).Id;
 
                 var existingBatches = dbContext.MaterialBatches
                     .Where(b => b.MaterialId == existingMaterial.Id && b.Code.StartsWith(materialData.Code))
