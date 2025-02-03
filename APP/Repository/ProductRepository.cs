@@ -173,18 +173,14 @@ namespace APP.Repository;
           {
               context.Routes.RemoveRange(product.Routes);
           }
+
+          var routes = new List<Route>();
           
           foreach (var routeRequest in request)
           {
-              var route = mapper.Map<Route>(routeRequest);
-              route.Resources = routeRequest.ResourceIds.Select(r => new RouteResource 
-              { 
-                  ResourceId = r
-              }).ToList();
-              route.CreatedById = userId;
-              
-              product.Routes.Add(route);
+              routes.Add(mapper.Map<Route>(routeRequest));
           }
+          product.Routes.AddRange(routes);
           await context.SaveChangesAsync();
           return Result.Success();
       }
@@ -236,31 +232,22 @@ namespace APP.Repository;
     {
         var route = await context.Routes
             .Include(r => r.Resources)
+            .Include(route => route.ResponsibleRoles)
+            .Include(route => route.ResponsibleUsers)
+            .Include(route => route.WorkCenters)
             .FirstOrDefaultAsync(r => r.Id == routeId);
 
         if (route == null)
             return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
-
+        
+        context.RouteResources.RemoveRange(route.Resources);
+        context.RouteResponsibleRoles.RemoveRange(route.ResponsibleRoles);
+        context.RouteResponsibleUsers.RemoveRange(route.ResponsibleUsers);
+        context.RouteWorkCenters.RemoveRange(route.WorkCenters);
+        
         mapper.Map(request, route);
         route.LastUpdatedById = userId;
-
-        // Update Route details
-        // route.OperationId = request.OperationId;
-        // route.WorkCenterId = request.WorkCenterId;
-        // route.BillOfMaterialItemId = request.BillOfMaterialItemId;
-        // route.EstimatedTime = request.EstimatedTime;
-        // route.LastUpdatedById = userId;
-
-        // Remove existing resources
-        context.RouteResources.RemoveRange(route.Resources);
-
-        // Add new resources
-        route.Resources = request.ResourceIds.Select(r => new RouteResource
-        {
-            ResourceId = r,
-            RouteId = routeId
-        }).ToList();
-
+        
         context.Routes.Update(route);
         await context.SaveChangesAsync();
 

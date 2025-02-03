@@ -187,6 +187,7 @@ public class OryxMapper : Profile
         #region Route
         CreateMap<CreateRouteRequest, Route>();
         CreateMap<Route, RouteDto>();
+        CreateMap<CreateRouteResource, RouteResource>();
         CreateMap<CreateRouteResponsibleUser, RouteResponsibleUser>();
         CreateMap<CreateRouteResponsibleRole, RouteResponsibleRole>();
         CreateMap<CreateRouteWorkCenter, RouteWorkCenter>();

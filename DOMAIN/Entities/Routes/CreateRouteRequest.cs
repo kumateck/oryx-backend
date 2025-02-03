@@ -5,11 +5,16 @@ public class CreateRouteRequest
     public Guid OperationId { get; set; }
     public Guid WorkCenterId { get; set; }
     public string EstimatedTime { get; set; }
-    public List<Guid> ResourceIds { get; set; } = [];
+    public List<CreateRouteResource> Resources { get; set; } = [];
     public List<CreateRouteResponsibleUser> ResponsibleUsers { get; set; } = [];
     public List<CreateRouteResponsibleRole> ResponsibleRoles { get; set; } = [];
     public List<CreateRouteWorkCenter> WorkCenters { get; set; } = [];
     public int Order { get; set; }
+}
+
+public class CreateRouteResource
+{
+    public Guid ResourceId { get; set; }
 }
 
 public class CreateRouteResponsibleUser
