@@ -314,9 +314,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             query = query.Where(pa => pa.Steps.Any(step => step.ResponsibleUsers.Any(ru => filter.UserIds.Contains(ru.UserId))));
         }
 
-        if (filter.Statuses.Count != 0)
+        if (filter.Status.HasValue)
         {
-            query = query.Where(pa => filter.Statuses.Contains(pa.Status));
+            query = query.Where(pa => pa.Status == filter.Status);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -376,9 +376,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             query = query.Where(pas => pas.ResponsibleUsers.Any(ru => filter.UserIds.Contains(ru.UserId)));
         }
 
-        if (filter.Statuses.Count != 0)
+        if (filter.Status.HasValue)
         {
-            query = query.Where(pas => filter.Statuses.Contains(pas.Status));
+            query = query.Where(pa => pa.Status == filter.Status);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

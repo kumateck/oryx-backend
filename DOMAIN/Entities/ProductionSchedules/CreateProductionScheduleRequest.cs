@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.Base;
 
 namespace DOMAIN.Entities.ProductionSchedules;
 
@@ -9,8 +8,7 @@ public class CreateProductionScheduleRequest
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }
     public List<CreateProductionScheduleProduct> Products { get; set; } = [];
-    public ProductionStatus Status { get; set; } 
-    [StringLength(1000)] public string Remarks { get; set; } // Optional remarks for additional notes
+    [StringLength(1000)] public string Remarks { get; set; }
 }
 
 public class CreateProductionScheduleItemRequest

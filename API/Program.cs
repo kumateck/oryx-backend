@@ -139,7 +139,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddAutoMapper(typeof(OryxMapper));
 
 //configure database
-var defaultDbConnectionString = Environment.GetEnvironmentVariable("connectionString") ?? "Host=164.90.142.68;Port=5432;Username=root;Password=SNsiilzMRr9UCzz;Database=oryxdb;Timeout=120;CommandTimeout=120";
+var defaultDbConnectionString = Environment.GetEnvironmentVariable("connectionString") ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<ApplicationDbContext>(o =>
     o.UseNpgsql(defaultDbConnectionString)

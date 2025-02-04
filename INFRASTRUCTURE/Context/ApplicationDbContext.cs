@@ -240,8 +240,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionActivityStepUser> ProductionActivityStepUsers { get; set; }
     public DbSet<ProductionActivityStepResource> ProductionActivityStepResources { get; set; }
     public DbSet<ProductionActivityStepWorkCenter> ProductionActivityStepWorkCenters { get; set; }
-
-
+    
     #endregion
     
 

@@ -95,6 +95,7 @@ public class OryxMapper : Profile
         CreateMap<ShipmentDiscrepancyType, CollectionItemDto>();
         CreateMap<Form, CollectionItemDto>();
         CreateMap<FormSection, CollectionItemDto>();
+        CreateMap<ProductionSchedule, CollectionItemDto>();
         
         #endregion
 

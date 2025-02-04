@@ -112,7 +112,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <param name="request">The CreateProductionScheduleRequest object.</param>
     /// <returns>Returns the ID of the created Production Schedule.</returns>
-    [HttpPost("schedule")]
+    [HttpPost]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -130,7 +130,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <param name="scheduleId">The ID of the Production Schedule.</param>
     /// <returns>Returns the Production Schedule.</returns>
-    [HttpGet("schedule/{scheduleId}")]
+    [HttpGet("{scheduleId}")]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionScheduleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -147,7 +147,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of Production Schedules.</returns>
-    [HttpGet("schedules")]
+    [HttpGet]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionScheduleDto>>))]
     public async Task<IResult> GetProductionSchedules([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
@@ -162,7 +162,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="request">The UpdateProductionScheduleRequest object containing updated data.</param>
     /// <param name="scheduleId">The ID of the Production Schedule to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPut("schedule/{scheduleId}")]
+    [HttpPut("{scheduleId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -181,7 +181,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <param name="scheduleId">The ID of the Production Schedule to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpDelete("schedule/{scheduleId}")]
+    [HttpDelete("{scheduleId}")]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -198,7 +198,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Gets a list of all Production Status.
     /// </summary>
     /// <remarks>
-    /// This endpoint returns a list of all availableproduction status along with their integer values.
+    /// This endpoint returns a list of all available production status along with their integer values.
     /// </remarks>
     /// <returns>A list of Naming Types with their corresponding value and name.</returns>
     /// <response code="200">Returns the list of production status</response>
@@ -261,7 +261,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <param name="filter">Filter parameters for retrieving production activities.</param>
     /// <returns>Returns a paginated list of Production Activities.</returns>
-    [HttpGet("activities")]
+    [HttpGet("activity")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionActivityDto>>))]
     public async Task<IResult> GetProductionActivities([FromQuery] ProductionFilter filter)
