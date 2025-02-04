@@ -333,6 +333,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
+            .Include(pa => pa.Steps.OrderBy(p => p.Order))
             .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
@@ -352,6 +353,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
+            .Include(pa => pa.Steps.OrderBy(p => p.Order))
             .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
@@ -415,6 +417,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var groupedData = await context.ProductionActivities
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
+            .Include(pa => pa.Steps.OrderBy(p => p.Order))
             .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
