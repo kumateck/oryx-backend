@@ -307,6 +307,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
             .AsQueryable();
 
         if (filter.UserIds.Count != 0)
@@ -336,6 +337,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
             .FirstOrDefaultAsync(pa => pa.Id == productionActivityId);
 
         if (productionActivity is null)
@@ -354,6 +356,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
             .FirstOrDefaultAsync(pa => pa.ProductionScheduleId == productionScheduleId && pa.ProductId == productId);
 
         if (productionActivity is null)
@@ -369,6 +372,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pas => pas.ResponsibleUsers)
             .Include(pas => pas.Resources)
             .Include(pas => pas.WorkCenters)
+            .Include(psa => psa.Operation)
             .AsQueryable();
 
         if (filter.UserIds.Count != 0)
@@ -397,6 +401,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pas => pas.Resources)
             .Include(pas => pas.WorkCenters)
             .Include(pas => pas.WorkFlow)
+            .Include(psa => psa.Operation)
             .FirstOrDefaultAsync(pas => pas.Id == productionActivityStepId);
 
         if (productionActivityStep is null)
@@ -414,6 +419,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
             .GroupBy(pas => pas.Status)
             .ToDictionaryAsync(
                 g => g.Key.ToString(),
@@ -432,6 +438,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pas => pas.Resources)
             .Include(pas => pas.WorkCenters)
             .Include(pas => pas.WorkFlow)
+            .Include(pas => pas.Operation)
             .GroupBy(pas => pas.Status)
             .ToDictionaryAsync(
                 g => g.Key.ToString(),
