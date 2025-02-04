@@ -1,8 +1,9 @@
+using DOMAIN.Entities.Base;
 using SHARED;
 
 namespace DOMAIN.Entities.Routes;
 
-public class RouteDto
+public class RouteDto : BaseDto
 {
     public CollectionItemDto Operation { get; set; }
     public string EstimatedTime { get; set; }
