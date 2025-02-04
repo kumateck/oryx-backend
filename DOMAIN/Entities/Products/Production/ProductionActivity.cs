@@ -71,8 +71,9 @@ public class ProductionActivityDto : BaseDto
     public DateTime? CompletedAt { get; set; }
 
     public ProductionActivityStepDto CurrentStep =>
-        Steps.OrderBy(s => s.Order).FirstOrDefault(s => !s.CompletedAt.HasValue) ?? Steps.OrderBy(s => s.Order).Last();
-    
+        Steps.Count != 0
+            ? Steps.OrderBy(s => s.Order).FirstOrDefault(s => !s.CompletedAt.HasValue) ?? Steps.OrderBy(s => s.Order).Last()
+            : null;
 }
 
 public class ProductionActivityStepDto : BaseDto
