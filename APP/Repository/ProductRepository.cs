@@ -27,6 +27,8 @@ namespace APP.Repository;
      { 
          var product = await context.Products
              .AsSplitQuery()
+             .Include(p => p.BaseUoM)
+             .Include(p => p.BasePackingUoM)
              .Include(p => p.BillOfMaterials)
              .ThenInclude(p => p.BillOfMaterial)
              .ThenInclude(p => p.Items.OrderBy(i => i.Order))
@@ -46,6 +48,8 @@ namespace APP.Repository;
      public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize, string searchQuery)
      {
          var query = context.Products
+             .Include(p => p.BaseUoM)
+             .Include(p => p.BasePackingUoM)
              .Include(p => p.Category)
              .AsQueryable();
 
