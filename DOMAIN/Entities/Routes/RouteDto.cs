@@ -10,7 +10,7 @@ public class RouteDto
     public List<CollectionItemDto> Resources { get; } = [];
     public int Order { get; set; }
     public List<RouteResponsibleUserDto> ResponsibleUsers { get; set; } = [];
-    public List<RouteResponsibleRole> ResponsibleRoles { get; set; } = [];
+    public List<RouteResponsibleRoleDto> ResponsibleRoles { get; set; } = [];
     public List<RouteWorkCenterDto> WorkCenters { get; set; } = [];
 }
 

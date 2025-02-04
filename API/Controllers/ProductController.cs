@@ -124,7 +124,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     [HttpPost("{productId}/routes")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateRoute([FromBody] List<CreateRouteRequest> request, Guid productId)
     {

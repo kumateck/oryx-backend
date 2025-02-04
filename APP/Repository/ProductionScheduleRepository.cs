@@ -2,10 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
-using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
-using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -100,7 +97,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId) 
     { 
         var productionSchedule = await context.ProductionSchedules
-            .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Products).ThenInclude(s => s.Product)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
@@ -111,8 +107,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         // Fetch the production schedule with related data
         var productionSchedule = await context.ProductionSchedules
-            .Include(s => s.Items).ThenInclude(s => s.Material)
-            .Include(s => s.Items).ThenInclude(s => s.UoM)
+            .Include(s => s.Products).ThenInclude(s => s.Product)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
         if (productionSchedule is null)
@@ -129,8 +124,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         // Initialize a dictionary to store stock levels
         var stockLevels = new Dictionary<Guid, decimal>();
 
-        
-        if (user.Department != null && user.Department.Warehouses.Count != 0)
+        return new List<ProductionScheduleProcurementDto>();
+
+
+        /*if (user.Department != null && user.Department.Warehouses.Count != 0)
         {
             var warehouseId = user.Department.Warehouses.FirstOrDefault(i => i.Warehouse.Type == WarehouseType.Production)?.WarehouseId;
             if (warehouseId.HasValue)
@@ -143,7 +140,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 }
             }
         }
-        
+
         // if (user.Department?.WarehouseId != null)
         // {
         //     var warehouseId = user.Department.WarehouseId.Value;
@@ -169,14 +166,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             };
         }).ToList();
 
-        return procurementDetails;
+        return procurementDetails;*/
     }
     
 
     public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page, int pageSize, string searchQuery) 
     { 
         var query = context.ProductionSchedules
-            .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Products).ThenInclude(s => s.Product)
             .AsQueryable();
 

@@ -12,9 +12,7 @@ public class ProductionSchedule : BaseEntity
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }
     public ProductionStatus Status { get; set; } 
-    public decimal Quantity { get; set; }
     [StringLength(1000)] public string Remarks { get; set; }
-    public List<ProductionScheduleItem> Items { get; set; } = [];
     public List<ProductionScheduleProduct> Products { get; set; } = [];
 }
 
@@ -38,4 +36,5 @@ public class ProductionScheduleProduct
     public Product Product { get; set; }   
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }
+    public decimal Quantity { get; set; }
 }
