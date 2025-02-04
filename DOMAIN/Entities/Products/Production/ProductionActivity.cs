@@ -1,4 +1,4 @@
-/*using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Routes;
 
@@ -27,8 +27,13 @@ public class ProductionActivityStep : BaseEntity
     public ProductionActivity ProductionActivity { get; set; }
     public Guid ProductRouteId { get; set; }
     public Route ProductRoute { get; set; }
-    public List<>
+    public List<ProuductionActivityStepUser> ResponsibleUsers { get; set; } = [];
+    
     
 }
 
-public class Prouduction*/
+public class ProuductionActivityStepUser : BaseEntity
+{
+    public Guid ProductionActivityStepId { get; set; }
+    public ProductionActivityStep ProductionActivityStep { get; set; }
+}
