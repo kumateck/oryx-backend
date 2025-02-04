@@ -385,6 +385,13 @@ public class OryxMapper : Profile
         CreateMap<CreateBatchPackagingRecord, BatchPackagingRecord>();
         CreateMap<BatchPackagingRecord, BatchPackagingRecordDto>();
 
+        CreateMap<ProductionActivity, ProductionActivityDto>();
+        CreateMap<ProductionActivityStep, ProductionActivityStepDto>();
+        CreateMap<ProductionActivityStepResource, ProductionActivityStepResourceDto>();
+        CreateMap<ProductionActivityStepWorkCenter, ProductionActivityStepWorkCenterDto>();
+        CreateMap<ProductionActivityStepUser, ProductionActivityStepUserDto>();
+
+
         #endregion
     }
 }

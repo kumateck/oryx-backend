@@ -2,14 +2,18 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository) : IProductionScheduleRepository
+public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager) : IProductionScheduleRepository
 {
      public async Task<Result<Guid>> CreateMasterProductionSchedule(CreateMasterProductionScheduleRequest request, Guid userId)
      { 
@@ -125,48 +129,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var stockLevels = new Dictionary<Guid, decimal>();
 
         return new List<ProductionScheduleProcurementDto>();
-
-
-        /*if (user.Department != null && user.Department.Warehouses.Count != 0)
-        {
-            var warehouseId = user.Department.Warehouses.FirstOrDefault(i => i.Warehouse.Type == WarehouseType.Production)?.WarehouseId;
-            if (warehouseId.HasValue)
-            {
-                // Fetch stock levels for each material ID individually
-                foreach (var materialId in productionSchedule.Items.Select(item => item.MaterialId).Distinct())
-                {
-                    var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouseId.Value);
-                    stockLevels[materialId] = stockLevel.Value;
-                }
-            }
-        }
-
-        // if (user.Department?.WarehouseId != null)
-        // {
-        //     var warehouseId = user.Department.WarehouseId.Value;
-        //
-        //     // Fetch stock levels for each material ID individually
-        //     foreach (var materialId in productionSchedule.Items.Select(item => item.MaterialId).Distinct())
-        //     {
-        //         var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouseId);
-        //         stockLevels[materialId] = stockLevel.Value;
-        //     }
-        // }
-
-        var procurementDetails = productionSchedule.Items.Select(item =>
-        {
-            var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
-
-            return new ProductionScheduleProcurementDto
-            {
-                Material = mapper.Map<MaterialDto>(item.Material),
-                UoM = mapper.Map<UnitOfMeasureDto>(item.UoM),
-                QuantityRequested = item.Quantity,
-                QuantityOnHand = quantityOnHand,
-            };
-        }).ToList();
-
-        return procurementDetails;*/
     }
     
 
@@ -175,11 +137,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var query = context.ProductionSchedules
             .Include(s => s.Products).ThenInclude(s => s.Product)
             .AsQueryable();
-
-        // if (!string.IsNullOrEmpty(searchQuery)) 
-        // { 
-        //     query = query.WhereSearch(searchQuery, f => f.Product.Name);
-        // }
         
         return await PaginationHelper.GetPaginatedResultAsync(
             query, 
@@ -219,5 +176,268 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         context.ProductionSchedules.Update(schedule); 
         await context.SaveChangesAsync(); 
         return Result.Success();
+    }
+
+    public async Task<Result<Guid>> StartProductionActivity(Guid productionScheduleId, Guid productId)
+    {
+
+        if (context.ProductionActivities.Any(p =>
+                p.ProductionScheduleId == productionScheduleId && p.ProductId == productId))
+        {
+            return Error.NotFound("ProductionActivity.AlreadyExist", "A production activity already exists for this product and schedule");
+
+        }
+        
+        var productionSchedule =
+            await context.ProductionSchedules.FirstOrDefaultAsync(p => p.Id == productionScheduleId);
+        if(productionSchedule is null)
+            return Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found");
+
+        var product = await context.Products.Include(product => product.Routes).ThenInclude(route => route.Resources)
+            .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
+            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)
+            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles).FirstOrDefaultAsync(p => p.Id == productId);
+        if(product is null)
+            return Error.NotFound("Product.NotFound", "Product was not found");
+
+        var users = product.Routes.SelectMany(r => r.ResponsibleUsers).Select(r => r.User).ToList();
+
+        var roles = product.Routes.SelectMany(r => r.ResponsibleRoles).Select(r => r.Role).ToList();
+
+        var usersInRole = new List<User>();
+
+        foreach (var role in roles)
+        {
+            usersInRole.AddRange(await userManager.GetUsersInRoleAsync(role?.Name ?? ""));
+        }
+
+        var totalUsers = users.Concat(usersInRole).Distinct().ToList();
+
+        var activity = new ProductionActivity
+        {
+            ProductId = productId,
+            ProductionScheduleId = productionScheduleId,
+            Code = Guid.NewGuid().ToString(),
+            StartedAt = DateTime.UtcNow,
+            Steps = product.Routes.Select(r => new ProductionActivityStep
+            {
+                OperationId = r.OperationId,
+                WorkflowId = r.WorkflowId,
+                Order = r.Order,
+                Resources = r.Resources.Select(re => new ProductionActivityStepResource
+                {
+                    ResourceId = re.ResourceId
+                }).ToList(),
+                WorkCenters = r.WorkCenters.Select(re => new ProductionActivityStepWorkCenter
+                {
+                    WorkCenterId = re.WorkCenterId
+                }).ToList(),
+                ResponsibleUsers = totalUsers.Select(u => new ProductionActivityStepUser
+                {
+                    UserId = u.Id
+                }).ToList()
+            }).ToList()
+
+        };
+
+        await context.ProductionActivities.AddAsync(activity);
+        await context.SaveChangesAsync();
+        return activity.Id;
+    }
+
+    public async Task<Result> UpdateStatusOfProductionActivityStep(Guid productionStepId, ProductionStatus status, Guid userId)
+    {
+        var activityStep = await context.ProductionActivitySteps
+            .Include(productionActivityStep => productionActivityStep.ResponsibleUsers)
+            .Include(productionActivityStep => productionActivityStep.ProductionActivity).FirstOrDefaultAsync(p => p.Id == productionStepId);
+        if(activityStep is null)
+            return Error.NotFound("ProductActivity.NotFound", "Activity step was not found");
+
+        if (activityStep.ResponsibleUsers.All(u => u.UserId != userId))
+            return Error.Validation("ProductActivity.Validation", "You are not responsible for changing the status of this activity");
+        
+        activityStep.Status = status;
+
+        switch (status)
+        {
+            case ProductionStatus.InProgress:
+                activityStep.StartedAt = DateTime.UtcNow;
+                
+                bool isFirstStep = await context.ProductionActivitySteps
+                    .Where(s => s.ProductionActivityId == activityStep.ProductionActivityId)
+                    .OrderBy(s => s.Order)
+                    .Select(s => s.Id)
+                    .FirstOrDefaultAsync() == productionStepId;
+
+                if (isFirstStep)
+                {
+                    activityStep.ProductionActivity.Status = ProductionStatus.InProgress;
+                }
+                break;
+            
+            case ProductionStatus.Completed:
+                activityStep.CompletedAt = DateTime.UtcNow;
+
+                bool isLastStep = await context.ProductionActivitySteps
+                    .Where(s => s.ProductionActivityId == activityStep.ProductionActivityId)
+                    .OrderByDescending(s => s.Order)
+                    .Select(s => s.Id)
+                    .FirstOrDefaultAsync() == productionStepId;
+
+                if (isLastStep)
+                {
+                    activityStep.ProductionActivity.CompletedAt = DateTime.UtcNow;
+                    activityStep.ProductionActivity.Status = ProductionStatus.Completed;
+                }
+                break;
+        }
+
+        context.ProductionActivitySteps.Update(activityStep);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<ProductionActivityDto>>>> GetProductionActivities(ProductionFilter filter)
+    {
+        var query = context.ProductionActivities
+            .AsSplitQuery()
+            .Include(pa => pa.ProductionSchedule)
+            .Include(pa => pa.Product)
+            .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
+            .AsQueryable();
+
+        if (filter.UserIds.Count != 0)
+        {
+            query = query.Where(pa => pa.Steps.Any(step => step.ResponsibleUsers.Any(ru => filter.UserIds.Contains(ru.UserId))));
+        }
+
+        if (filter.Statuses.Count != 0)
+        {
+            query = query.Where(pa => filter.Statuses.Contains(pa.Status));
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query, 
+            filter,
+            mapper.Map<ProductionActivityDto>
+        );
+    }
+    
+    public async Task<Result<ProductionActivityDto>> GetProductionActivityById(Guid productionActivityId)
+    {
+        var productionActivity = await context.ProductionActivities
+            .AsSplitQuery()
+            .Include(pa => pa.ProductionSchedule)
+            .Include(pa => pa.Product)
+            .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
+            .FirstOrDefaultAsync(pa => pa.Id == productionActivityId);
+
+        if (productionActivity is null)
+            return Error.NotFound("ProductionActivity.NotFound", "Production activity not found");
+
+        return Result.Success(mapper.Map<ProductionActivityDto>(productionActivity));
+    }
+    
+    public async Task<Result<ProductionActivityDto>> GetProductionActivityByProductionScheduleIdAndProductId(Guid productionScheduleId, Guid productId)
+    {
+        var productionActivity = await context.ProductionActivities
+            .AsSplitQuery()
+            .Include(pa => pa.ProductionSchedule)
+            .Include(pa => pa.Product)
+            .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
+            .FirstOrDefaultAsync(pa => pa.ProductionScheduleId == productionScheduleId && pa.ProductId == productId);
+
+        if (productionActivity is null)
+            return Error.NotFound("ProductionActivity.NotFound", "Production activity not found");
+
+        return Result.Success(mapper.Map<ProductionActivityDto>(productionActivity));
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<ProductionActivityStepDto>>>> GetProductionActivitySteps(ProductionFilter filter)
+    {
+        var query = context.ProductionActivitySteps
+            .Include(pas => pas.ProductionActivity)
+            .Include(pas => pas.ResponsibleUsers)
+            .Include(pas => pas.Resources)
+            .Include(pas => pas.WorkCenters)
+            .AsQueryable();
+
+        if (filter.UserIds.Count != 0)
+        {
+            query = query.Where(pas => pas.ResponsibleUsers.Any(ru => filter.UserIds.Contains(ru.UserId)));
+        }
+
+        if (filter.Statuses.Count != 0)
+        {
+            query = query.Where(pas => filter.Statuses.Contains(pas.Status));
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query, 
+            filter,
+            mapper.Map<ProductionActivityStepDto>
+        );
+    }
+    
+    public async Task<Result<ProductionActivityStepDto>> GetProductionActivityStepById(Guid productionActivityStepId)
+    {
+        var productionActivityStep = await context.ProductionActivitySteps
+            .AsSplitQuery()
+            .Include(pas => pas.ProductionActivity)
+            .Include(pas => pas.ResponsibleUsers)
+            .Include(pas => pas.Resources)
+            .Include(pas => pas.WorkCenters)
+            .Include(pas => pas.WorkFlow)
+            .FirstOrDefaultAsync(pas => pas.Id == productionActivityStepId);
+
+        if (productionActivityStep is null)
+            return Error.NotFound("ProductionActivityStep.NotFound", "Production activity step not found");
+
+        return Result.Success(mapper.Map<ProductionActivityStepDto>(productionActivityStep));
+    }
+    
+    public async Task<Result<Dictionary<string, List<ProductionActivityDto>>>> GetProductionActivityGroupedByStatus()
+    {
+        var groupedData = await context.ProductionActivities
+            .Include(pa => pa.ProductionSchedule)
+            .Include(pa => pa.Product)
+            .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
+            .GroupBy(pas => pas.Status)
+            .ToDictionaryAsync(
+                g => g.Key.ToString(),
+                g => g.Select(mapper.Map<ProductionActivityDto>).ToList()
+            );
+
+        return groupedData;
+    }
+
+    
+    public async Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>> GetProductionActivityStepsGroupedByStatus()
+    {
+        var groupedData = await context.ProductionActivitySteps
+            .Include(pas => pas.ProductionActivity)
+            .Include(pas => pas.ResponsibleUsers)
+            .Include(pas => pas.Resources)
+            .Include(pas => pas.WorkCenters)
+            .Include(pas => pas.WorkFlow)
+            .GroupBy(pas => pas.Status)
+            .ToDictionaryAsync(
+                g => g.Key.ToString(),
+                g => g.Select(mapper.Map<ProductionActivityStepDto>).ToList()
+            );
+
+        return groupedData;
     }
 }

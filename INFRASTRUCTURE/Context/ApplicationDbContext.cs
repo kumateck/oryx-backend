@@ -235,6 +235,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<BatchManufacturingRecord> BatchManufacturingRecords { get; set; }
     public DbSet<BatchPackagingRecord> BatchPackagingRecords { get; set; }
+    public DbSet<ProductionActivity> ProductionActivities { get; set; }
+    public DbSet<ProductionActivityStep> ProductionActivitySteps { get; set; }
+    public DbSet<ProductionActivityStepUser> ProductionActivityStepUsers { get; set; }
+    public DbSet<ProductionActivityStepResource> ProductionActivityStepResources { get; set; }
+    public DbSet<ProductionActivityStepWorkCenter> ProductionActivityStepWorkCenters { get; set; }
+
 
     #endregion
     
@@ -428,6 +434,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Question>().Navigation(p => p.Options).AutoInclude();
         
         #endregion
+
+        #region Production Activity
+
+        modelBuilder.Entity<ProductionActivityStepResource>().Navigation(p => p.Resource).AutoInclude();
+        modelBuilder.Entity<ProductionActivityStepUser>().Navigation(p => p.User).AutoInclude();
+        modelBuilder.Entity<ProductionActivityStepWorkCenter>().Navigation(p => p.WorkCenter).AutoInclude();
+
+        #endregion
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
@@ -609,6 +623,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<BatchManufacturingRecord>().HasQueryFilter(a => !a.Product.DeletedAt.HasValue);
         modelBuilder.Entity<BatchPackagingRecord>().HasQueryFilter(a => !a.Product.DeletedAt.HasValue);
+        
+        modelBuilder.Entity<ProductionActivity>().HasQueryFilter(a => !a.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(a => !a.Operation.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionActivityStepResource>().HasQueryFilter(a => !a.Resource.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionActivityStepWorkCenter>().HasQueryFilter(a => !a.WorkCenter.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionActivityStepUser>().HasQueryFilter(a => !a.User.DeletedAt.HasValue);
 
         #endregion
     }

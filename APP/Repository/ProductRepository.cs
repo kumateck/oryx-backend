@@ -26,6 +26,7 @@ namespace APP.Repository;
      public async Task<Result<ProductDto>> GetProduct(Guid productId) 
      { 
          var product = await context.Products
+             .AsSplitQuery()
              .Include(p => p.BillOfMaterials)
              .ThenInclude(p => p.BillOfMaterial)
              .ThenInclude(p => p.Items.OrderBy(i => i.Order))

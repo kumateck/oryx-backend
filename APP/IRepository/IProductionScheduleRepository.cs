@@ -1,5 +1,7 @@
 using APP.Utils;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Products.Production;
 using SHARED;
 
 namespace APP.IRepository;
@@ -23,4 +25,22 @@ public interface IProductionScheduleRepository
     Task<Result> DeleteProductionSchedule(Guid scheduleId, Guid userId);
     Task<Result<List<ProductionScheduleProcurementDto>>> GetProductionScheduleDetail(
         Guid scheduleId, Guid userId);
+
+    Task<Result<Guid>> StartProductionActivity(Guid productionScheduleId, Guid productId);
+    Task<Result> UpdateStatusOfProductionActivityStep(Guid productionStepId, ProductionStatus status,
+        Guid userId); 
+    Task<Result<Paginateable<IEnumerable<ProductionActivityDto>>>> GetProductionActivities(
+        ProductionFilter filter); 
+    Task<Result<ProductionActivityDto>> GetProductionActivityById(Guid productionActivityId);
+    Task<Result<ProductionActivityDto>> GetProductionActivityByProductionScheduleIdAndProductId(
+        Guid productionScheduleId, Guid productId);
+    Task<Result<Paginateable<IEnumerable<ProductionActivityStepDto>>>> GetProductionActivitySteps(
+        ProductionFilter filter);
+
+    Task<Result<ProductionActivityStepDto>> GetProductionActivityStepById(Guid productionActivityStepId);
+    Task<Result<Dictionary<string, List<ProductionActivityDto>>>> GetProductionActivityGroupedByStatus();
+
+    Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>>
+        GetProductionActivityStepsGroupedByStatus();
+
 }

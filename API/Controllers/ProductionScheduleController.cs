@@ -5,6 +5,7 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Products.Production;
 using SHARED.Requests;
 
 namespace API.Controllers;
@@ -235,5 +236,147 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    #endregion
+    
+     #region Production Activities
+
+    /// <summary>
+    /// Starts a Production Activity for a given Production Schedule and Product.
+    /// </summary>
+    /// <param name="productionScheduleId">The Production Schedule ID.</param>
+    /// <param name="productId">The Product ID.</param>
+    /// <returns>Returns the ID of the started Production Activity.</returns>
+    [HttpPost("activity/start/{productionScheduleId}/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> StartProductionActivity(Guid productionScheduleId, Guid productId)
+    {
+        var result = await repository.StartProductionActivity(productionScheduleId, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of Production Activities with optional filters.
+    /// </summary>
+    /// <param name="filter">Filter parameters for retrieving production activities.</param>
+    /// <returns>Returns a paginated list of Production Activities.</returns>
+    [HttpGet("activities")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionActivityDto>>))]
+    public async Task<IResult> GetProductionActivities([FromQuery] ProductionFilter filter)
+    {
+        var result = await repository.GetProductionActivities(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific Production Activity by its ID.
+    /// </summary>
+    /// <param name="productionActivityId">The ID of the Production Activity.</param>
+    /// <returns>Returns the details of the Production Activity.</returns>
+    [HttpGet("activity/{productionActivityId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionActivityDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionActivityById(Guid productionActivityId)
+    {
+        var result = await repository.GetProductionActivityById(productionActivityId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific Production Activity by production schedule id and product id.
+    /// </summary>
+    /// <param name="productionScheduleId">The Production Schedule ID.</param>
+    /// <param name="productId">The Product ID.</param>
+    /// <returns>Returns the details of the Production Activity.</returns>
+    [HttpGet("activity/{productionScheduleId}/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionActivityDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionActivityByProductionScheduleAndProductId(Guid productionScheduleId, Guid productId)
+    {
+        var result = await repository.GetProductionActivityByProductionScheduleIdAndProductId(productionScheduleId, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Groups Production Activities by their status.
+    /// </summary>
+    /// <returns>Returns a dictionary grouping Production Activities by their status.</returns>
+    [HttpGet("activities/grouped")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityDto>>))]
+    public async Task<IResult> GetProductionActivityGroupedByStatus()
+    {
+        var result = await repository.GetProductionActivityGroupedByStatus();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    #endregion
+
+    #region Production Activity Steps
+
+    /// <summary>
+    /// Updates the status of a specific Production Activity Step.
+    /// </summary>
+    /// <param name="productionStepId">The ID of the Production Step.</param>
+    /// <param name="status">The new status to set.</param>
+    /// <param name="userId">The ID of the user performing the update.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("activity-step/{productionStepId}/status")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateStatusOfProductionActivityStep(Guid productionStepId, ProductionStatus status, Guid userId)
+    {
+        var result = await repository.UpdateStatusOfProductionActivityStep(productionStepId, status, userId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of Production Activity Steps with optional filters.
+    /// </summary>
+    /// <param name="filter">Filter parameters for retrieving production activity steps.</param>
+    /// <returns>Returns a paginated list of Production Activity Steps.</returns>
+    [HttpGet("activity-steps")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionActivityStepDto>>))]
+    public async Task<IResult> GetProductionActivitySteps([FromQuery] ProductionFilter filter)
+    {
+        var result = await repository.GetProductionActivitySteps(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific Production Activity Step by its ID.
+    /// </summary>
+    /// <param name="productionActivityStepId">The ID of the Production Activity Step.</param>
+    /// <returns>Returns the details of the Production Activity Step.</returns>
+    [HttpGet("activity-step/{productionActivityStepId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionActivityStepDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionActivityStepById(Guid productionActivityStepId)
+    {
+        var result = await repository.GetProductionActivityStepById(productionActivityStepId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Groups Production Activity Steps by their status.
+    /// </summary>
+    /// <returns>Returns a dictionary grouping Production Activity Steps by their status.</returns>
+    [HttpGet("activity-steps/grouped")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityStepDto>>))]
+    public async Task<IResult> GetProductionActivityStepsGroupedByStatus()
+    {
+        var result = await repository.GetProductionActivityStepsGroupedByStatus();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     #endregion
 }
