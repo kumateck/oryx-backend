@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Products;
 using SHARED;
 
 namespace DOMAIN.Entities.ProductionSchedules;
@@ -31,6 +32,6 @@ public class ProductionScheduleProcurementDto
 
 public class ProductionScheduleProductDto
 {
-    public CollectionItemDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public decimal Quantity { get; set; }
 }
