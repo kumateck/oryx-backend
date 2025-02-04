@@ -305,7 +305,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Groups Production Activities by their status.
     /// </summary>
     /// <returns>Returns a dictionary grouping Production Activities by their status.</returns>
-    [HttpGet("activities/grouped")]
+    [HttpGet("activiy/grouped")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityDto>>))]
     public async Task<IResult> GetProductionActivityGroupedByStatus()
@@ -323,16 +323,18 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <param name="productionStepId">The ID of the Production Step.</param>
     /// <param name="status">The new status to set.</param>
-    /// <param name="userId">The ID of the user performing the update.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("activity-step/{productionStepId}/status")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateStatusOfProductionActivityStep(Guid productionStepId, ProductionStatus status, Guid userId)
+    public async Task<IResult> UpdateStatusOfProductionActivityStep(Guid productionStepId,[FromQuery]ProductionStatus status)
     {
-        var result = await repository.UpdateStatusOfProductionActivityStep(productionStepId, status, userId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.UpdateStatusOfProductionActivityStep(productionStepId, status, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -341,7 +343,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <param name="filter">Filter parameters for retrieving production activity steps.</param>
     /// <returns>Returns a paginated list of Production Activity Steps.</returns>
-    [HttpGet("activity-steps")]
+    [HttpGet("activity-step")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionActivityStepDto>>))]
     public async Task<IResult> GetProductionActivitySteps([FromQuery] ProductionFilter filter)
@@ -369,7 +371,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Groups Production Activity Steps by their status.
     /// </summary>
     /// <returns>Returns a dictionary grouping Production Activity Steps by their status.</returns>
-    [HttpGet("activity-steps/grouped")]
+    [HttpGet("activity-step/grouped")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityStepDto>>))]
     public async Task<IResult> GetProductionActivityStepsGroupedByStatus()

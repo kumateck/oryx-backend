@@ -96,6 +96,8 @@ public class OryxMapper : Profile
         CreateMap<Form, CollectionItemDto>();
         CreateMap<FormSection, CollectionItemDto>();
         CreateMap<ProductionSchedule, CollectionItemDto>();
+        CreateMap<ProductionActivity, CollectionItemDto>();
+        CreateMap<ProductionSchedule, CollectionItemDto>();
         
         #endregion
 

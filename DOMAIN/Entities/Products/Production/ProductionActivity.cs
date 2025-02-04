@@ -65,7 +65,7 @@ public class ProductionActivityDto : BaseDto
 {
     public CollectionItemDto ProductionSchedule { get; set; }
     public CollectionItemDto Product { get; set; }
-    private List<ProductionActivityStepDto> Steps { get; set; } = [];
+    public List<ProductionActivityStepDto> Steps { get; set; } = [];
     public ProductionStatus Status { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
