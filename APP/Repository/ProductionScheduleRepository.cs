@@ -495,7 +495,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var stockLevels = new Dictionary<Guid, decimal>();
         if (user.Department != null && user.Department.Warehouses.Count != 0)
          {
-             var warehouses = user.Department.Warehouses.Where(i => i.Warehouse.Type == WarehouseType.Production).ToList();
+             var warehouses = user.Department.Warehouses.Where(i => i.Warehouse.Type == WarehouseType.Production).Select(w => w.Warehouse).ToList();
              foreach (var warehouse in warehouses)
              {
                  // Fetch stock levels for each material ID individually

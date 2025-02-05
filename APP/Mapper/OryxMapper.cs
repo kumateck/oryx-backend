@@ -390,6 +390,7 @@ public class OryxMapper : Profile
 
         CreateMap<ProductionActivity, ProductionActivityDto>();
         CreateMap<ProductionActivity, ProductionActivityListDto>();
+        CreateMap<ProductionActivityLog, ProductionActivityLogDto>();
         CreateMap<ProductionActivityStep, ProductionActivityStepDto>();
         CreateMap<ProductionActivityStepResource, ProductionActivityStepResourceDto>();
         CreateMap<ProductionActivityStepWorkCenter, ProductionActivityStepWorkCenterDto>();

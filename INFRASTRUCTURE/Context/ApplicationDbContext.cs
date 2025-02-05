@@ -442,6 +442,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProductionActivityStepResource>().Navigation(p => p.Resource).AutoInclude();
         modelBuilder.Entity<ProductionActivityStepUser>().Navigation(p => p.User).AutoInclude();
         modelBuilder.Entity<ProductionActivityStepWorkCenter>().Navigation(p => p.WorkCenter).AutoInclude();
+        modelBuilder.Entity<ProductionActivityLog>().Navigation(p => p.User).AutoInclude();
 
         #endregion
     }
