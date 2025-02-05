@@ -3,9 +3,12 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +16,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager) : IProductionScheduleRepository
+public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMaterialRepository materialRepository) : IProductionScheduleRepository
 {
      public async Task<Result<Guid>> CreateMasterProductionSchedule(CreateMasterProductionScheduleRequest request, Guid userId)
      { 
@@ -467,5 +470,62 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             );
 
         return groupedData;
+    }
+
+    public async Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productId, decimal quantityRequired, Guid userId)
+    {
+        var product = await context.Products.Include(product => product.BillOfMaterials)
+            .ThenInclude(p => p.BillOfMaterial)
+            .ThenInclude(p => p.Items)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+        if (product is null)
+            return ProductErrors.NotFound(productId);
+
+        var activeBoM = product.BillOfMaterials
+            .OrderByDescending(p => p.EffectiveDate)
+            .FirstOrDefault(p => p.IsActive);
+
+        if (activeBoM is null)
+            return Error.NotFound("Product.BoM", "No active bom found for this product");
+
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+        
+        var stockLevels = new Dictionary<Guid, decimal>();
+        if (user.Department != null && user.Department.Warehouses.Count != 0)
+         {
+             var warehouses = user.Department.Warehouses.Where(i => i.Warehouse.Type == WarehouseType.Production).ToList();
+             foreach (var warehouse in warehouses)
+             {
+                 // Fetch stock levels for each material ID individually
+                 foreach (var materialId in activeBoM.BillOfMaterial.Items.Select(item => item.MaterialId).Distinct())
+                 {
+                     var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouse.Id);
+                     stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
+                 }
+             }
+         }
+        
+         var materialDetails = activeBoM.BillOfMaterial.Items.Select(item =>
+         {
+             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
+
+             return new ProductionScheduleProcurementDto
+             {
+                 Material = mapper.Map<MaterialDto>(item.Material),
+                 BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
+                 BaseQuantity = item.BaseQuantity,
+                 QuantityNeeded = CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BaseQuantity),
+                 QuantityOnHand = quantityOnHand,
+             };
+         }).ToList();
+
+         return materialDetails;
+    }
+    
+    private static decimal CalculateRequiredItemQuantity(decimal targetProductQuantity, decimal itemBaseQuantity, decimal productBaseQuantity)
+    {
+        return Math.Round(targetProductQuantity * itemBaseQuantity / productBaseQuantity, 2);
     }
 }

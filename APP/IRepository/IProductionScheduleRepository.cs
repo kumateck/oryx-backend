@@ -42,5 +42,6 @@ public interface IProductionScheduleRepository
 
     Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>>
         GetProductionActivityStepsGroupedByStatus();
-
+    Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productId,
+        decimal quantityRequired, Guid userId);
 }

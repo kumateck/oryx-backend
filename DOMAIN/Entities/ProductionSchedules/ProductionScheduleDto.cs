@@ -25,8 +25,9 @@ public class ProductionScheduleItemDto : BaseDto
 public class ProductionScheduleProcurementDto 
 {
     public MaterialDto Material { get; set; }
-    public UnitOfMeasureDto UoM { get; set; }
-    public decimal QuantityRequested { get; set; }
+    public UnitOfMeasureDto BaseUoM { get; set; }
+    public decimal BaseQuantity { get; set; }
+    public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
 }
 

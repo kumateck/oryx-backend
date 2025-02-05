@@ -19,7 +19,7 @@ public class BillOfMaterialItem : BaseEntity
     public Guid BillOfMaterialId { get; set; }
     public BillOfMaterial BillOfMaterial { get; set; }
 
-    public Guid? MaterialId { get; set; }
+    public Guid MaterialId { get; set; }
     public Material Material { get; set; }
 
     public Guid? MaterialTypeId { get; set; }
