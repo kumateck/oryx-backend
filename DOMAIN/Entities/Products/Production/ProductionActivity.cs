@@ -18,6 +18,7 @@ public class ProductionActivity : BaseEntity
     public ProductionStatus Status { get; set; } = ProductionStatus.New;
     public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public List<ProductionActivityLog> ActivityLogs { get; set; } = [];
 }
 
 public class ProductionActivityStep : BaseEntity
@@ -61,7 +62,23 @@ public class ProductionActivityStepWorkCenter : BaseEntity
     public WorkCenter WorkCenter { get; set; }
 }
 
-public class ProductionActivityDto : BaseDto
+public class ProductionActivityLog : BaseEntity
+{
+    public Guid ProductionActivityId { get; set; }
+    public ProductionActivity ProductionActivity { get; set; }
+    [StringLength(1000)] public string Message { get; set; }  
+    public Guid? UserId { get; set; }  
+    public User User { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+
+public class ProductionActivityDto : ProductionActivityListDto
+{
+    public List<ProductionActivityLogDto> ActivityLogs { get; set; }
+}
+
+public class ProductionActivityListDto : BaseDto
 {
     public CollectionItemDto ProductionSchedule { get; set; }
     public CollectionItemDto Product { get; set; }
@@ -103,4 +120,11 @@ public class ProductionActivityStepResourceDto : BaseDto
 public class ProductionActivityStepWorkCenterDto : BaseDto
 {
     public CollectionItemDto WorkCenter { get; set; }
+}
+
+public class ProductionActivityLogDto : BaseDto
+{
+    public string Message { get; set; }  
+    public UserDto User { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }

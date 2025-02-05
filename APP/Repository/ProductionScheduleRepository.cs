@@ -178,7 +178,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
 
-    public async Task<Result<Guid>> StartProductionActivity(Guid productionScheduleId, Guid productId)
+    public async Task<Result<Guid>> StartProductionActivity(Guid productionScheduleId, Guid productId, Guid userId)
     {
 
         if (context.ProductionActivities.Any(p =>
@@ -235,9 +235,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 ResponsibleUsers = totalUsers.Select(u => new ProductionActivityStepUser
                 {
                     UserId = u.Id
-                }).ToList()
-            }).ToList()
-
+                }).ToList(),
+            }).ToList(),
+            ActivityLogs =
+            [
+                new ProductionActivityLog
+                {
+                    Message = "Production activity started.",
+                    UserId = userId, 
+                    Timestamp = DateTime.UtcNow
+                }
+            ]
         };
 
         await context.ProductionActivities.AddAsync(activity);
@@ -291,13 +299,22 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 }
                 break;
         }
+        
+        // 🔹 Add Activity Log Entry
+        var logMessage = $"Step {activityStep.Order} status changed to {status.ToString()}.";
+        activityStep.ProductionActivity.ActivityLogs.Add(new ProductionActivityLog
+        {
+            Message = logMessage,
+            UserId = userId,
+            Timestamp = DateTime.UtcNow
+        });
 
         context.ProductionActivitySteps.Update(activityStep);
         await context.SaveChangesAsync();
         return Result.Success();
     }
     
-    public async Task<Result<Paginateable<IEnumerable<ProductionActivityDto>>>> GetProductionActivities(ProductionFilter filter)
+    public async Task<Result<Paginateable<IEnumerable<ProductionActivityListDto>>>> GetProductionActivities(ProductionFilter filter)
     {
         var query = context.ProductionActivities
             .AsSplitQuery()
@@ -323,7 +340,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return await PaginationHelper.GetPaginatedResultAsync(
             query, 
             filter,
-            mapper.Map<ProductionActivityDto>
+            mapper.Map<ProductionActivityListDto>
         );
     }
     
@@ -339,6 +356,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
             .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
+            .Include(pa => pa.ActivityLogs).ThenInclude(a => a.User)
             .FirstOrDefaultAsync(pa => pa.Id == productionActivityId);
 
         if (productionActivity is null)

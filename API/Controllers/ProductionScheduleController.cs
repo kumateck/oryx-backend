@@ -252,7 +252,10 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> StartProductionActivity(Guid productionScheduleId, Guid productId)
     {
-        var result = await repository.StartProductionActivity(productionScheduleId, productId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.StartProductionActivity(productionScheduleId, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

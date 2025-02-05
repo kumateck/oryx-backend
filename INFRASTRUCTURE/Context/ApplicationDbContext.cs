@@ -240,6 +240,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionActivityStepUser> ProductionActivityStepUsers { get; set; }
     public DbSet<ProductionActivityStepResource> ProductionActivityStepResources { get; set; }
     public DbSet<ProductionActivityStepWorkCenter> ProductionActivityStepWorkCenters { get; set; }
+    public DbSet<ProductionActivityLog> ProductionActivityLogs { get; set; }
     
     #endregion
     
@@ -630,6 +631,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProductionActivityStepResource>().HasQueryFilter(a => !a.Resource.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityStepWorkCenter>().HasQueryFilter(a => !a.WorkCenter.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityStepUser>().HasQueryFilter(a => !a.User.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionActivityLog>().HasQueryFilter(a => a.ProductionActivity != null);
 
         #endregion
     }

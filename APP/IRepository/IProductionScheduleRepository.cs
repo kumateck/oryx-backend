@@ -26,10 +26,10 @@ public interface IProductionScheduleRepository
     Task<Result<List<ProductionScheduleProcurementDto>>> GetProductionScheduleDetail(
         Guid scheduleId, Guid userId);
 
-    Task<Result<Guid>> StartProductionActivity(Guid productionScheduleId, Guid productId);
+    Task<Result<Guid>> StartProductionActivity(Guid productionScheduleId, Guid productId, Guid userId);
     Task<Result> UpdateStatusOfProductionActivityStep(Guid productionStepId, ProductionStatus status,
         Guid userId); 
-    Task<Result<Paginateable<IEnumerable<ProductionActivityDto>>>> GetProductionActivities(
+    Task<Result<Paginateable<IEnumerable<ProductionActivityListDto>>>> GetProductionActivities(
         ProductionFilter filter); 
     Task<Result<ProductionActivityDto>> GetProductionActivityById(Guid productionActivityId);
     Task<Result<ProductionActivityDto>> GetProductionActivityByProductionScheduleIdAndProductId(
