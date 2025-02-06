@@ -23,7 +23,7 @@ public class ProductListDto
     public CollectionItemDto Category { get; set; }
     public decimal BaseQuantity { get; set; } 
     public decimal BasePackingQuantity { get; set; } 
-    public decimal PackingErrorMargin { get; set; }
+    public decimal PackingExcessMargin { get; set; }
     public UnitOfMeasureDto BaseUoM { get; set; }
     public UnitOfMeasureDto BasePackingUoM { get; set; }
     public DateTime CreatedAt { get; set; }

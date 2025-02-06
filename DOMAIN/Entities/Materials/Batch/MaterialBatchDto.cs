@@ -42,6 +42,6 @@ public class MaterialBatchMovementDto : BaseDto
 
 public class CurrentLocationDto
 {
-    public string LocationName { get; set; }
+    public CollectionItemDto Location { get; set; }
     public decimal QuantityAtLocation { get; set; }
 }

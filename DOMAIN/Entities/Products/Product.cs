@@ -29,7 +29,7 @@ public class Product : BaseEntity
     public UnitOfMeasure BaseUoM { get; set; }
     public Guid? BasePackingUomId { get; set; }
     public UnitOfMeasure BasePackingUoM { get; set; }
-    public decimal PackingErrorMargin { get; set; }
+    public decimal PackingExcessMargin { get; set; }
     public List<FinishedProduct> FinishedProducts { get; set; } = [];
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = [];
     public List<ProductPackage> Packages { get; set; } = [];

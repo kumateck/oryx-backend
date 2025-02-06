@@ -209,7 +209,36 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return result;
     }
     
-    public List<CurrentLocationDto> GetCurrentLocations(MaterialBatchDto batch)
+    public async Task<Result<List<MaterialBatchDto>>> GetMaterialBatchesByMaterialId(Guid materialId)
+    {
+        var query =  await context.MaterialBatches
+            .Include(b => b.Material)
+            .Include(b => b.Events).ThenInclude(m => m.User)
+            .Include(b => b.Events).ThenInclude(m => m.ConsumedLocation)
+            .Include(b => b.Movements).ThenInclude(m => m.FromLocation)
+            .Include(b => b.Movements).ThenInclude(m => m.ToLocation)
+            .Where(b => b.MaterialId == materialId)
+            .ToListAsync();
+
+        var batches = mapper.Map<List<MaterialBatchDto>>(query);
+
+        foreach (var batch in batches)
+        {
+            batch.Locations = GetCurrentLocations(batch);
+        }
+
+        return batches;
+    }
+
+    public async Task<Result<decimal>> GetMaterialsInTransit(Guid materialId)
+    {
+        return await context.ShipmentInvoicesItems
+            .Include(s => s.ShipmentInvoice)
+            .Where(s => s.MaterialId == materialId && !s.ShipmentInvoice.ShipmentArrived.HasValue)
+            .SumAsync(s => s.ExpectedQuantity);
+    }
+
+    private List<CurrentLocationDto> GetCurrentLocations(MaterialBatchDto batch)
     {
         // Dictionary to track the total quantity at each location
         var locationQuantities = new Dictionary<CollectionItemDto, decimal>();
@@ -244,7 +273,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Convert dictionary to list of CurrentLocationDto and return
         return locationQuantities.Select(kvp => new CurrentLocationDto
         {
-            LocationName = kvp.Key.Name,
+            Location = kvp.Key,
             QuantityAtLocation = kvp.Value
         }).ToList();
     }

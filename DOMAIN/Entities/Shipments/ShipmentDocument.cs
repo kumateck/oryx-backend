@@ -19,6 +19,7 @@ public class ShipmentInvoice : BaseEntity
 {
     public Guid ShipmentDocumentId { get; set; }
     public ShipmentDocument ShipmentDocument { get; set; }
+    public DateTime? ShipmentArrived { get; set; }
     public List<ShipmentInvoiceItem> Items { get; set; } = [];
 }
 

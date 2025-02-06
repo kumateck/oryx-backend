@@ -142,22 +142,36 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.CheckStockLevel(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-
-    /*/// <summary>
-    /// Checks if a requisition can be fulfilled for a specific material.
+    
+    /// <summary>
+    /// Retrieves a list of material batches by material ID.
     /// </summary>
     /// <param name="materialId">The ID of the material.</param>
-    /// <param name="requisitionId">The ID of the requisition.</param>
-    /// <returns>Returns a boolean indicating if the requisition can be fulfilled.</returns>
-    [HttpGet("{materialId}/can-fulfill-requisition/{requisitionId}")]
+    /// <returns>Returns a list of material batches.</returns>
+    [HttpGet("{materialId}/batches")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> CanFulfillRequisition(Guid materialId, Guid requisitionId)
+    public async Task<IResult> GetMaterialBatchesByMaterialId(Guid materialId)
     {
-        var result = await repository.CanFulfillRequisition(materialId, requisitionId);
+        var result = await repository.GetMaterialBatchesByMaterialId(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }*/
+    }
+    
+    /// <summary>
+    /// Retrieves the stock of materials in transit.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <returns>Returns the stock of material in transit.</returns>
+    [HttpGet("{materialId}/in-transit")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(decimal))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialsInTransit(Guid materialId)
+    {
+        var result = await repository.GetMaterialsInTransit(materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Creates a new material batch.

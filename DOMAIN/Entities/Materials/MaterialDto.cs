@@ -1,5 +1,4 @@
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Materials.Batch;
 
 namespace DOMAIN.Entities.Materials;
 
@@ -13,8 +12,7 @@ public class MaterialDto
     public string Alphabet { get; set; }
     public MaterialKind Kind { get; set; }
     public MaterialCategoryDto MaterialCategory { get; set; }
-    public List<MaterialBatchDto> Batches { get; set; } = [];
-    public decimal TotalStock => Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity);
+    public decimal TotalStock { get; set; }
 }
 
 public class MaterialCategoryDto : BaseDto

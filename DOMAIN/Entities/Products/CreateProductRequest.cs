@@ -24,5 +24,5 @@ public class CreateProductRequest
     public Guid? BaseUomId { get; set; }
     public decimal BasePackingQuantity { get; set; } 
     public Guid? BasePackingUomId { get; set; }
-    public decimal PackingErrorMargin { get; set; }
+    public decimal PackingExcessMargin { get; set; }
 }

@@ -383,7 +383,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .FirstOrDefaultAsync(pa => pa.ProductionScheduleId == productionScheduleId && pa.ProductId == productId);
 
         if (productionActivity is null)
-            return Error.NotFound("ProductionActivity.NotFound", "Production activity not found");
+            return Error.NotFound("ProductionActivity.NotFound", "Production activity not started");
 
         return Result.Success(mapper.Map<ProductionActivityDto>(productionActivity));
     }
@@ -563,7 +563,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                  BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
                  BaseQuantity = item.BaseQuantity,
                  UnitCapacity = item.UnitCapacity,
-                 QuantityNeeded = item.DirectLinkMaterialId.HasValue ? item.UnitCapacity * CalculateRequiredItemQuantity(quantityRequired, product.Packages.FirstOrDefault(p => p.MaterialId == item.DirectLinkMaterialId)?.BaseQuantity ?? 0, product.BaseQuantity)  : CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BaseQuantity),
+                 QuantityNeeded = item.DirectLinkMaterialId.HasValue ? item.UnitCapacity * CalculateRequiredItemQuantity(quantityRequired, product.Packages.FirstOrDefault(p => p.MaterialId == item.DirectLinkMaterialId)?.BaseQuantity ?? 0, product.BasePackingQuantity)  
+                     : CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BasePackingQuantity),
                  QuantityOnHand = quantityOnHand,
              };
          }).ToList();
