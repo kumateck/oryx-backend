@@ -577,7 +577,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Math.Round(targetProductQuantity * itemBaseQuantity / productBaseQuantity, 2);
     }
     
-    private decimal GetQuantityNeeded(ProductPackage item, List<ProductPackage> allPackages, decimal quantityRequired, decimal basePackingQuantity, bool isFirstCall = true)
+    private decimal GetQuantityNeeded(ProductPackage item, List<ProductPackage> allPackages, decimal quantityRequired, decimal basePackingQuantity)
     {
         if (!item.DirectLinkMaterialId.HasValue)
         {
@@ -597,6 +597,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
 
         // Recursively go down the chain, but track if it's the first call
-        return GetQuantityNeeded(linkedPackage, allPackages, quantityRequired, basePackingQuantity, false)/ item.UnitCapacity;
+        return GetQuantityNeeded(linkedPackage, allPackages, quantityRequired, basePackingQuantity)/ item.UnitCapacity;
     }
 }
