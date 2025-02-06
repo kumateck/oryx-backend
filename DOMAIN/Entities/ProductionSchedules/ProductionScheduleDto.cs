@@ -31,6 +31,17 @@ public class ProductionScheduleProcurementDto
     public decimal QuantityOnHand { get; set; }
 }
 
+public class ProductionScheduleProcurementPackageDto 
+{
+    public MaterialDto Material { get; set; }
+    public MaterialDto DirectLinkMaterial { get; set; }
+    public UnitOfMeasureDto BaseUoM { get; set; }
+    public decimal BaseQuantity { get; set; }
+    public decimal QuantityNeeded { get; set; }
+    public decimal QuantityOnHand { get; set; }
+    public decimal UnitCapacity { get; set; }
+}
+
 public class ProductionScheduleProductDto
 {
     public ProductListDto Product { get; set; }

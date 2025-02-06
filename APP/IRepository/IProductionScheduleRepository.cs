@@ -44,4 +44,6 @@ public interface IProductionScheduleRepository
         GetProductionActivityStepsGroupedByStatus();
     Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productId,
         decimal quantityRequired, Guid userId);
+    Task<Result<List<ProductionScheduleProcurementPackageDto>>>
+        CheckPackageMaterialStockLevelsForProductionSchedule(Guid productId, decimal quantityRequired, Guid userId);
 }

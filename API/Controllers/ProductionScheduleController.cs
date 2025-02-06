@@ -236,6 +236,32 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    [HttpGet("material-stock/{productId}/{quantityRequired}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetRequiredMaterialStock(Guid productId, decimal quantityRequired)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productId, quantityRequired, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    [HttpGet("package-material-stock/{productId}/{quantityRequired}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetRequiredPackageMaterialStock(Guid productId, decimal quantityRequired)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productId, quantityRequired, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     #endregion
     
      #region Production Activities
@@ -382,20 +408,6 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetProductionActivityStepsGroupedByStatus();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    [HttpGet("material-stock/{productId}/{quantityRequired}")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetRequiredMaterialStock(Guid productId, decimal quantityRequired)
-    {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
-        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productId, quantityRequired, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-
 
     #endregion
 }

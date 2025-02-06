@@ -524,6 +524,53 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
          return materialDetails;
     }
     
+    public async Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productId, decimal quantityRequired, Guid userId)
+    {
+        var product = await context.Products.Include(product => product.BillOfMaterials)
+            .Include(product => product.Packages).ThenInclude(productPackage => productPackage.BaseUoM)
+            .Include(product => product.Packages).ThenInclude(productPackage => productPackage.DirectLinkMaterial)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+        if (product is null)
+            return ProductErrors.NotFound(productId);
+        
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+        
+        var stockLevels = new Dictionary<Guid, decimal>();
+        if (user.Department != null && user.Department.Warehouses.Count != 0)
+         {
+             var warehouses = user.Department.Warehouses.Where(i => i.Warehouse.Type == WarehouseType.Production).Select(w => w.Warehouse).ToList();
+             foreach (var warehouse in warehouses)
+             {
+                 // Fetch stock levels for each material ID individually
+                 foreach (var materialId in product.Packages.Select(item => item.MaterialId).Distinct())
+                 {
+                     var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouse.Id);
+                     stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
+                 }
+             }
+         }
+        
+         var materialDetails = product.Packages.Select(item =>
+         {
+             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
+
+             return new ProductionScheduleProcurementPackageDto
+             {
+                 Material = mapper.Map<MaterialDto>(item.Material),
+                 DirectLinkMaterial = mapper.Map<MaterialDto>(item.DirectLinkMaterial),
+                 BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
+                 BaseQuantity = item.BaseQuantity,
+                 UnitCapacity = item.UnitCapacity,
+                 QuantityNeeded = item.DirectLinkMaterialId.HasValue ? item.UnitCapacity * CalculateRequiredItemQuantity(quantityRequired, product.Packages.FirstOrDefault(p => p.MaterialId == item.DirectLinkMaterialId)?.BaseQuantity ?? 0, product.BaseQuantity)  : CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BaseQuantity),
+                 QuantityOnHand = quantityOnHand,
+             };
+         }).ToList();
+
+         return materialDetails;
+    }
+    
     private static decimal CalculateRequiredItemQuantity(decimal targetProductQuantity, decimal itemBaseQuantity, decimal productBaseQuantity)
     {
         return Math.Round(targetProductQuantity * itemBaseQuantity / productBaseQuantity, 2);
