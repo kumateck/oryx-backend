@@ -251,7 +251,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     
     [HttpGet("package-material-stock/{productId}/{quantityRequired}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementPackageDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetRequiredPackageMaterialStock(Guid productId, decimal quantityRequired)
     {

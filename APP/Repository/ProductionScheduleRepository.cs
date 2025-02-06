@@ -563,7 +563,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                  BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
                  BaseQuantity = item.BaseQuantity,
                  UnitCapacity = item.UnitCapacity,
-                 QuantityNeeded = item.DirectLinkMaterialId.HasValue ? item.UnitCapacity * CalculateRequiredItemQuantity(quantityRequired, product.Packages.FirstOrDefault(p => p.MaterialId == item.DirectLinkMaterialId)?.BaseQuantity ?? 0, product.BasePackingQuantity)  
+                 QuantityNeeded = item.DirectLinkMaterialId.HasValue ? CalculateRequiredItemQuantity(quantityRequired, product.Packages.FirstOrDefault(p => p.MaterialId == item.DirectLinkMaterialId)?.BaseQuantity ?? 1, product.BasePackingQuantity) / item.UnitCapacity 
                      : CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BasePackingQuantity),
                  QuantityOnHand = quantityOnHand,
              };

@@ -7,6 +7,8 @@ namespace DOMAIN.Entities.Products.Production;
 public class CreateBatchManufacturingRecord
 {
     public Guid ProductId { get; set; }
+    //public Guid ProductionScheduleId { get; set; }
+    //public Guid? ActivityStepId { get; set; }
     public string BatchNumber { get; set; }
     public DateTime ManufacturingDate { get; set; }
     public DateTime ExpiryDate { get; set; }
