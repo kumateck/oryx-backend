@@ -59,7 +59,7 @@ namespace API.Database.Seeds.TableSeeders
                     .Where(b => b.MaterialId == existingMaterial.Id && b.Code.StartsWith(materialData.Code))
                     .ToList();
 
-                if (existingBatches.Any()) continue;
+                if (existingBatches.Count != 0) continue;
 
                 var batches = new[]
                 {
