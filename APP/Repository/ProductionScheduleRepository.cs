@@ -529,6 +529,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var product = await context.Products.Include(product => product.BillOfMaterials)
             .Include(product => product.Packages).ThenInclude(productPackage => productPackage.BaseUoM)
             .Include(product => product.Packages).ThenInclude(productPackage => productPackage.DirectLinkMaterial)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null)
             return ProductErrors.NotFound(productId);
@@ -563,8 +564,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                  BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
                  BaseQuantity = item.BaseQuantity,
                  UnitCapacity = item.UnitCapacity,
-                 QuantityNeeded = item.DirectLinkMaterialId.HasValue ? CalculateRequiredItemQuantity(quantityRequired, GetResolvedBaseQuantity(item, product.Packages), product.BasePackingQuantity) / item.UnitCapacity 
-                     : CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BasePackingQuantity),
+                 QuantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired, product.BasePackingQuantity),
                  QuantityOnHand = quantityOnHand,
              };
          }).ToList();
@@ -577,23 +577,26 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Math.Round(targetProductQuantity * itemBaseQuantity / productBaseQuantity, 2);
     }
     
-    private decimal GetResolvedBaseQuantity(ProductPackage item, List<ProductPackage> allPackages)
+    private decimal GetQuantityNeeded(ProductPackage item, List<ProductPackage> allPackages, decimal quantityRequired, decimal basePackingQuantity, bool isFirstCall = true)
     {
         if (!item.DirectLinkMaterialId.HasValue)
         {
-            return item.BaseQuantity;
+            return CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, basePackingQuantity);
         }
 
-        // Find the linked package
         var linkedPackage = allPackages.FirstOrDefault(p => p.MaterialId == item.DirectLinkMaterialId);
 
-        if (linkedPackage is not { DirectLinkMaterialId: not null })
+        if (linkedPackage is null)
         {
-            // If no further link, return the BaseQuantity from the found package
-            return linkedPackage?.BaseQuantity ?? 1;
+            return CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, basePackingQuantity);
         }
 
-        // Recursively go down the chain
-        return GetResolvedBaseQuantity(linkedPackage, allPackages);
+        if (!linkedPackage.DirectLinkMaterialId.HasValue)
+        {
+            return CalculateRequiredItemQuantity(quantityRequired, linkedPackage.BaseQuantity, basePackingQuantity) / item.UnitCapacity;
+        }
+
+        // Recursively go down the chain, but track if it's the first call
+        return GetQuantityNeeded(linkedPackage, allPackages, quantityRequired, basePackingQuantity, false)/ item.UnitCapacity;
     }
 }
