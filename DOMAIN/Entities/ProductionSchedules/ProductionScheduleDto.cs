@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using SHARED;
 
@@ -29,6 +30,7 @@ public class ProductionScheduleProcurementDto
     public decimal BaseQuantity { get; set; }
     public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
+    public List<BatchLocation> Batches { get; set; } = [];
 }
 
 public class ProductionScheduleProcurementPackageDto 

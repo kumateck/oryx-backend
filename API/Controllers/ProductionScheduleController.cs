@@ -410,4 +410,112 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     #endregion
+
+    #region Manufacturing Record
+
+       /// <summary>
+    /// Creates a new batch manufacturing record.
+    /// </summary>
+    [HttpPost("manufacturing")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateBatchManufacturingRecord([FromBody] CreateBatchManufacturingRecord request)
+    {
+        var result = await repository.CreateBatchManufacturingRecord(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of batch manufacturing records.
+    /// </summary>
+    [HttpGet("manufacturing")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IResult> GetBatchManufacturingRecords([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetBatchManufacturingRecords(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific batch manufacturing record by its ID.
+    /// </summary>
+    [HttpGet("manufacturing/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchManufacturingRecordDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetBatchManufacturingRecord(Guid id)
+    {
+        var result = await repository.GetBatchManufacturingRecord(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific batch manufacturing record by its ID.
+    /// </summary>
+    [HttpPut("manufacturing/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateBatchManufacturingRecord([FromBody] CreateBatchManufacturingRecord request, Guid id)
+    {
+        var result = await repository.UpdateBatchManufacturingRecord(request, id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Creates a new batch packaging record.
+    /// </summary>
+    [HttpPost("packaging")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateBatchPackagingRecord([FromBody] CreateBatchPackagingRecord request)
+    {
+        var result = await repository.CreateBatchPackagingRecord(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of batch packaging records.
+    /// </summary>
+    [HttpGet("packaging")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IResult> GetBatchPackagingRecords([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetBatchPackagingRecords(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific batch packaging record by its ID.
+    /// </summary>
+    [HttpGet("packaging/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchPackagingRecordDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetBatchPackagingRecord(Guid id)
+    {
+        var result = await repository.GetBatchPackagingRecord(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific batch packaging record by its ID.
+    /// </summary>
+    [HttpPut("packaging/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateBatchPackagingRecord([FromBody] CreateBatchManufacturingRecord request, Guid id)
+    {
+        var result = await repository.UpdateBatchPackagingRecord(request, id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    #endregion
 }

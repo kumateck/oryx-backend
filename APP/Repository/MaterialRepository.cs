@@ -277,6 +277,46 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             QuantityAtLocation = kvp.Value
         }).ToList();
     }
+    
+    private List<CurrentLocation> GetCurrentLocations(MaterialBatch batch)
+    {
+        // Dictionary to track the total quantity at each location
+        var locationQuantities = new Dictionary<WarehouseLocation, decimal>();
+
+        // Track the movements and update the locations accordingly
+        foreach (var movement in batch.Movements)
+        {
+            var fromLocation = movement.FromLocation;
+            var toLocation = movement.ToLocation;
+
+            // If moving to a location, increase the quantity at the destination
+            if (toLocation is not null)
+            {
+                locationQuantities.TryAdd(toLocation, 0);
+                locationQuantities[toLocation] += movement.Quantity;
+            }
+
+            // If moving from a location, decrease the quantity at the origin
+            if (fromLocation is not null)
+            {
+                locationQuantities.TryAdd(fromLocation, 0);
+                locationQuantities[fromLocation] -= movement.Quantity;
+
+                // Ensure no negative quantities
+                if (locationQuantities[fromLocation] < 0)
+                {
+                    locationQuantities[fromLocation] = 0;
+                }
+            }
+        }
+
+        // Convert dictionary to list of CurrentLocationDto and return
+        return locationQuantities.Select(kvp => new CurrentLocation
+        {
+            Location = kvp.Key,
+            QuantityAtLocation = kvp.Value
+        }).ToList();
+    }
 
     // Update Material Batch
     public async Task<Result> UpdateMaterialBatch(CreateMaterialBatchRequest request, Guid batchId, Guid userId)
@@ -510,8 +550,62 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return totalQuantityInLocation;
     }
+
+   public Result<List<BatchLocation>> BatchesNeededToBeConsumed(Guid materialId, Guid warehouseId, decimal quantity)
+    {
+        var result = new List<BatchLocation>();
+        decimal remainingQuantityToFulfill = quantity;
+
+        // Fetch batches sorted by expiry date (FIFO order)
+        var batches =  context.MaterialBatches
+            .OrderBy(b => b.ExpiryDate)
+            .Where(b => b.MaterialId == materialId)
+            .Include(b => b.Movements).ThenInclude(b => b.FromLocation)
+            .Include(b => b.Movements).ThenInclude(b => b.ToLocation)
+            .AsSplitQuery()
+            .ToList();
+
+        foreach (var batch in batches)
+        {
+            if (remainingQuantityToFulfill <= 0)
+                break; // Stop once the required quantity is fulfilled
+
+            var currentLocations = GetCurrentLocations(batch);
+            foreach (var currentLocation in currentLocations)
+            {
+                if (currentLocation.Location.WarehouseId != warehouseId) 
+                    continue; // Ensure we're looking at the correct warehouse
+
+                if (remainingQuantityToFulfill <= 0)
+                    break; // Stop if we've met the required quantity
+
+                if (currentLocation.QuantityAtLocation <= 0)
+                    continue; // Skip batches with no remaining stock
+
+                // Determine how much could potentially be taken from this batch
+                decimal quantityToConsider = Math.Min(currentLocation.QuantityAtLocation, remainingQuantityToFulfill);
+
+                // Add batch to the result list
+                result.Add(new BatchLocation
+                {
+                    ConsumptionLocation = mapper.Map<WareHouseLocationDto>(currentLocation.Location),
+                    Batch = mapper.Map<MaterialBatchDto>(batch)
+                });
+
+                remainingQuantityToFulfill -= quantityToConsider; // Reduce the required quantity
+            }
+        }
+
+        if (remainingQuantityToFulfill > 0)
+        {
+            return Error.Failure("Batch.Failure",$"Not enough stock available to fulfill {quantity}. Short by {remainingQuantityToFulfill}.");
+        }
+
+        return result;
+    }
+
     
-    public async Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, int quantity, Guid userId)
+    public async Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, decimal quantity, Guid userId)
     {
         var materialBatchEvent = new MaterialBatchEvent
         {
@@ -539,6 +633,55 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> ConsumeMaterialAtLocation(Material material, Guid locationId, decimal quantity, Guid userId)
+    {
+        var materialBatchEvents = new List<MaterialBatchEvent>();
+        decimal remainingQuantityToConsume = quantity;
+
+        foreach (var batch in material.Batches.OrderBy(b => b.ExpiryDate))
+        {
+            if (remainingQuantityToConsume <= 0)
+                break; // Stop if we've consumed all the required quantity
+
+            if (batch.RemainingQuantity <= 0)
+                continue; // Skip batches with no remaining stock
+
+            // Consume the minimum of what's available in the batch or the remaining needed quantity
+            decimal quantityToConsumeFromThisBatch = Math.Min(batch.RemainingQuantity, remainingQuantityToConsume);
+
+            // Create a batch event for this consumption
+            var materialBatchEvent = new MaterialBatchEvent
+            {
+                BatchId = batch.Id,
+                Quantity = quantityToConsumeFromThisBatch,
+                UserId = userId,
+                Type = EventType.Consumed,
+                ConsumedLocationId = locationId,
+                ConsumedAt = DateTime.UtcNow
+            };
+
+            // Update batch quantities
+            batch.ConsumedQuantity += quantityToConsumeFromThisBatch;
+            remainingQuantityToConsume -= quantityToConsumeFromThisBatch;
+
+            materialBatchEvents.Add(materialBatchEvent);
+            context.MaterialBatches.Update(batch);
+        }
+
+        if (remainingQuantityToConsume > 0)
+        {
+            return Error.Failure("Batch.Consume", $"Not enough stock available to consume the requested quantity. Remaining: {remainingQuantityToConsume}");
+        }
+
+        // Add all batch events to the context
+        await context.MaterialBatchEvents.AddRangeAsync(materialBatchEvents);
+
+        // Save changes to the database
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     
     public async Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId)
     {

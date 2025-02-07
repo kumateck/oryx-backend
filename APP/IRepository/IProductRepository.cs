@@ -30,15 +30,4 @@ public interface IProductRepository
      Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId);
      Task<Result> UpdateProductPackageDescription(UpdateProductPackageDescriptionRequest request,
          Guid productId, Guid userId);
-
-     Task<Result<Guid>> CreateBatchManufacturingRecord(CreateBatchManufacturingRecord request);
-     Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(
-         int page, int pageSize, string searchQuery = null);
-     Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecord(Guid id);
-     Task<Result> UpdateBatchManufacturingRecord(CreateBatchManufacturingRecord request, Guid id); 
-     Task<Result<Guid>> CreateBatchPackagingRecord(CreateBatchPackagingRecord request);
-     Task<Result<Paginateable<IEnumerable<BatchPackagingRecordDto>>>> GetBatchPackagingRecords(int page,
-         int pageSize, string searchQuery = null);
-     Task<Result<BatchPackagingRecordDto>> GetBatchPackagingRecord(Guid id); 
-     Task<Result> UpdateBatchPackagingRecord(CreateBatchManufacturingRecord request, Guid id);
 }

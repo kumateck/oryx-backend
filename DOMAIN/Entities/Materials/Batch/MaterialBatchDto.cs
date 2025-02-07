@@ -40,6 +40,17 @@ public class MaterialBatchMovementDto : BaseDto
     public MovementType MovementType { get; set; }  
 }
 
+public class BatchLocation
+{
+    public WareHouseLocationDto ConsumptionLocation { get; set; }
+    public MaterialBatchDto Batch { get; set; }
+}
+public class CurrentLocation
+{
+    public WarehouseLocation Location { get; set; }
+    public decimal QuantityAtLocation { get; set; }
+}
+
 public class CurrentLocationDto
 {
     public CollectionItemDto Location { get; set; }
