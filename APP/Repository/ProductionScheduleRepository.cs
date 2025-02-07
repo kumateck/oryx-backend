@@ -223,6 +223,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         var totalUsers = users.Concat(usersInRole).Distinct().ToList();
 
+        if (totalUsers.Count == 0)
+            return Error.Validation("Product.Validation", "This product has no users associated for procedures defined hence a production activity cannot commence.");
+        
+        var quantity = productionSchedule.Products.First(p => p.ProductId == productId).Quantity;
+
+        await ConsumeMaterialInProduction(productId,  quantity,  userId);
+        
         var activity = new ProductionActivity
         {
             ProductId = productId,
@@ -752,7 +759,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
 
-    public async Task ConsumeMaterialInProduction(Guid productId, decimal quantity ,Guid userId)
+    public async Task ConsumeMaterialInProduction(Guid productId, decimal quantity, Guid userId)
     {
         var materialResult = await CheckMaterialStockLevelsForProductionSchedule(productId, quantity, userId);
         if (materialResult.IsFailure) return;
