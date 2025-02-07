@@ -53,8 +53,8 @@ public enum QuestionType
 
 public enum QuestionValidationType
 {
-    Number,
-    Letter,
-    Alphanumeric,
-    None
+    Number = 0,
+    Letter = 1,
+    Alphanumeric= 2,
+    None = 3
 }

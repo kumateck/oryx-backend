@@ -682,7 +682,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 .FirstOrDefaultAsync(b => b.Id == id));
     }
 
-    public async Task<Result> UpdateBatchManufacturingRecord(CreateBatchManufacturingRecord request, Guid id)
+    public async Task<Result> UpdateBatchManufacturingRecord(UpdateBatchManufacturingRecord request, Guid id)
     {
         var batchRecord = await context.BatchManufacturingRecords
             .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionActivityStep).FirstOrDefaultAsync(p => p.Id == id);
@@ -693,6 +693,22 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         mapper.Map(request, batchRecord);
         batchRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
+        context.BatchManufacturingRecords.Update(batchRecord);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> IssueBatchManufacturingRecord(Guid id, Guid userId)
+    {
+        var batchRecord = await context.BatchManufacturingRecords
+            .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionActivityStep).FirstOrDefaultAsync(p => p.Id == id);
+        if (batchRecord is null)
+        {
+            return ProductErrors.NotFound(id);
+        }
+
+        batchRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
+        batchRecord.IssuedById = userId;
         context.BatchManufacturingRecords.Update(batchRecord);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -743,7 +759,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 .FirstOrDefaultAsync(b => b.Id == id));
     }
 
-    public async Task<Result> UpdateBatchPackagingRecord(CreateBatchManufacturingRecord request, Guid id)
+    public async Task<Result> UpdateBatchPackagingRecord(UpdateBatchPackagingRecord request, Guid id)
     {
         var batchRecord = await context.BatchPackagingRecords
             .Include(batchPackagingRecord => batchPackagingRecord.ProductionActivityStep).FirstOrDefaultAsync(p => p.Id == id);
@@ -758,6 +774,23 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> IssueBatchPackagingRecord(Guid id, Guid userId)
+    {
+        var batchRecord = await context.BatchPackagingRecords
+            .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionActivityStep).FirstOrDefaultAsync(p => p.Id == id);
+        if (batchRecord is null)
+        {
+            return ProductErrors.NotFound(id);
+        }
+
+        batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
+        batchRecord.IssuedById = userId;
+        context.BatchPackagingRecords.Update(batchRecord);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
 
     public async Task ConsumeMaterialInProduction(Guid productId, decimal quantity, Guid userId)
     {

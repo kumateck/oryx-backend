@@ -51,10 +51,12 @@ public interface IProductionScheduleRepository
     Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(
         int page, int pageSize, string searchQuery = null, ProductionStatus? status = null);
     Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecord(Guid id);
-    Task<Result> UpdateBatchManufacturingRecord(CreateBatchManufacturingRecord request, Guid id); 
+    Task<Result> UpdateBatchManufacturingRecord(UpdateBatchManufacturingRecord request, Guid id);
+    Task<Result> IssueBatchManufacturingRecord(Guid id, Guid userId);
     Task<Result<Guid>> CreateBatchPackagingRecord(CreateBatchPackagingRecord request);
     Task<Result<Paginateable<IEnumerable<BatchPackagingRecordDto>>>> GetBatchPackagingRecords(int page,
         int pageSize, string searchQuery = null, ProductionStatus? status = null);
     Task<Result<BatchPackagingRecordDto>> GetBatchPackagingRecord(Guid id); 
-    Task<Result> UpdateBatchPackagingRecord(CreateBatchManufacturingRecord request, Guid id);
+    Task<Result> UpdateBatchPackagingRecord(UpdateBatchPackagingRecord request, Guid id);
+    Task<Result> IssueBatchPackagingRecord(Guid id, Guid userId);
 }

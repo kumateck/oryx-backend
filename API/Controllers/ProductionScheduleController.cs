@@ -459,9 +459,26 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateBatchManufacturingRecord([FromBody] CreateBatchManufacturingRecord request, Guid id)
+    public async Task<IResult> UpdateBatchManufacturingRecord([FromBody] UpdateBatchManufacturingRecord request, Guid id)
     {
         var result = await repository.UpdateBatchManufacturingRecord(request, id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Issues a specific batch manufacturing record by its ID.
+    /// </summary>
+    [HttpPut("manufacturing/issue/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> IssueBatchManufacturingRecord(Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.IssueBatchManufacturingRecord(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -511,9 +528,26 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateBatchPackagingRecord([FromBody] CreateBatchManufacturingRecord request, Guid id)
+    public async Task<IResult> UpdateBatchPackagingRecord([FromBody] UpdateBatchPackagingRecord request, Guid id)
     {
         var result = await repository.UpdateBatchPackagingRecord(request, id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Issues a specific batch packing record by its ID.
+    /// </summary>
+    [HttpPut("packaging/issue/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> IssueBatchPackagingRecord(Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.IssueBatchPackagingRecord(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

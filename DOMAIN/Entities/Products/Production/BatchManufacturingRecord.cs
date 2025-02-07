@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Users;
 using SHARED;
 
 namespace DOMAIN.Entities.Products.Production;
@@ -18,8 +19,9 @@ public class CreateBatchManufacturingRecord
 
 public class UpdateBatchManufacturingRecord
 { 
-    public DateTime ManufacturingDate { get; set; } 
-    public DateTime ExpiryDate { get; set; } 
+    public string BatchNumber { get; set; }
+    public DateTime? ManufacturingDate { get; set; } 
+    public DateTime? ExpiryDate { get; set; } 
     public decimal BatchQuantity { get; set; }
 }
 
@@ -35,6 +37,8 @@ public class BatchManufacturingRecord : BaseEntity
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public decimal BatchQuantity { get; set; }
+    public Guid? IssuedById { get; set; }
+    public User IssuedBy { get; set; }
 }
 
 public class BatchManufacturingRecordDto : BaseDto
