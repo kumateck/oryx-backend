@@ -33,7 +33,7 @@ public class BatchPackagingRecord : BaseEntity
     public ProductionSchedule ProductionSchedule { get; set; }
     public Guid ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
-    [StringLength(100) ]public string BatchNumber { get; set; }
+    [StringLength(100)] public string BatchNumber { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public decimal BatchQuantity { get; set; }

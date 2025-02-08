@@ -195,7 +195,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var product = await context.Products.Include(product => product.Routes).ThenInclude(route => route.Resources)
             .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
             .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)
-            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles).FirstOrDefaultAsync(p => p.Id == productId);
+            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles).AsSplitQuery().FirstOrDefaultAsync(p => p.Id == productId);
         
         
         if(productionSchedule is null)
@@ -716,8 +716,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
     public async Task<Result<Guid>> CreateBatchPackagingRecord(CreateBatchPackagingRecord request)
     {
-        var batchRecord = mapper.Map<BatchManufacturingRecord>(request);
-        await context.BatchManufacturingRecords.AddAsync(batchRecord);
+        var batchRecord = mapper.Map<BatchPackagingRecord>(request);
+        await context.BatchPackagingRecords.AddAsync(batchRecord);
         await context.SaveChangesAsync();
         return batchRecord.Id;
     }
