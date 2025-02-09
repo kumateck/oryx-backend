@@ -5,14 +5,15 @@ namespace DOMAIN.Entities.Shipments.Request;
 public class CreateShipmentDocumentRequest
 {
     public string Code { get; set; }
-    public string InvoiceNumber { get; set; }
-    public Guid PurchaseOrderId { get; set; }
+    public Guid? ShipmentInvoiceId { get; set; }
 }
 
 public class CreateShipmentInvoice 
 {
-    public Guid ShipmentDocumentId { get; set; }
+    public string Code { get; set; }
+    public DateTime? ShipmentArrivedAt { get; set; }
     public List<CreateShipmentInvoiceItem> Items { get; set; } = [];
+    public List<Guid> PurchaseOrderIds { get; set; } = [];
 }
 
 public class CreateShipmentInvoiceItem 

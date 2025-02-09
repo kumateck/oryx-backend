@@ -600,9 +600,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Shipment Document
         
-        modelBuilder.Entity<ShipmentDocument>().HasQueryFilter(a => !a.DeletedAt.HasValue && !a.PurchaseOrder.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentDocument>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<ShipmentDiscrepancy>().HasQueryFilter(a => !a.DeletedAt.HasValue && !a.ShipmentDocument.DeletedAt.HasValue);
-        modelBuilder.Entity<ShipmentInvoice>().HasQueryFilter(a => !a.DeletedAt.HasValue && !a.ShipmentDocument.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentInvoice>().HasQueryFilter(a => !a.DeletedAt.HasValue );
         modelBuilder.Entity<ShipmentDiscrepancyItem>().HasQueryFilter(a =>  !a.ShipmentDiscrepancy.DeletedAt.HasValue);
         modelBuilder.Entity<ShipmentInvoiceItem>().HasQueryFilter(a => !a.ShipmentInvoice.DeletedAt.HasValue);
         

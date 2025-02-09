@@ -528,7 +528,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId)
     {
         var shipmentDocument = await context.ShipmentDocuments
-            .Include(s => s.PurchaseOrder)
+            .Include(s => s.ShipmentInvoice)
             .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 
         return shipmentDocument is null
@@ -539,12 +539,12 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page, int pageSize, string searchQuery)
     {
         var query = context.ShipmentDocuments
-            .Include(s => s.PurchaseOrder)
+            .Include(s => s.ShipmentInvoice)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, bs => bs.Code, bs => bs.InvoiceNumber);
+            query = query.WhereSearch(searchQuery, bs => bs.Code);
         }
         
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
@@ -618,12 +618,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<ShipmentInvoiceDto>> GetShipmentInvoice(Guid shipmentInvoiceId)
     {
         var shipmentInvoice = await context.ShipmentInvoices
-            .Include(si => si.ShipmentDocument)
             .Include(si => si.Items)
                 .ThenInclude(item => item.Material)
             .Include(si => si.Items)
                 .ThenInclude(item => item.UoM)
-            .FirstOrDefaultAsync(si => si.ShipmentDocumentId == shipmentInvoiceId);
+            .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
 
         return shipmentInvoice is null
             ? Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found")

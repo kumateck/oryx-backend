@@ -8,15 +8,15 @@ namespace DOMAIN.Entities.Shipments;
 public class ShipmentDocumentDto : WithAttachment
 {
     public string Code { get; set; }
-    public PurchaseOrderDto PurchaseOrder { get; set; }
-    public string InvoiceNumber { get; set; }
+    public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public List<ShipmentDiscrepancyDto> Discrepancies { get; set; } = [];
 }
 
 public class ShipmentInvoiceDto
 {
-    public Guid ShipmentDocumentId { get; set; }
-    public ShipmentDocument ShipmentDocument { get; set; }
+    public Guid Id { get; set; }
+    public string Code { get; set; }
+    public DateTime? ShipmentArrivedAt { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
 }
 
