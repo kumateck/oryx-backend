@@ -13,7 +13,6 @@ public class CreateShipmentInvoice
     public string Code { get; set; }
     public DateTime? ShipmentArrivedAt { get; set; }
     public List<CreateShipmentInvoiceItem> Items { get; set; } = [];
-    public List<Guid> PurchaseOrderIds { get; set; } = [];
 }
 
 public class CreateShipmentInvoiceItem 
@@ -21,6 +20,7 @@ public class CreateShipmentInvoiceItem
     public Guid MaterialId { get; set; }
     public Guid UoMId { get; set; }
     public Guid ManufacturerId { get; set; }
+    public Guid PurchaseOrderId { get; set; }
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }

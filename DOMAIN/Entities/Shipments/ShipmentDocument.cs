@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.PurchaseOrders;
 
 namespace DOMAIN.Entities.Shipments;
 
@@ -18,7 +19,6 @@ public class ShipmentInvoice : BaseEntity
     [StringLength(255)] public string Code { get; set; }
     public DateTime? ShipmentArrived { get; set; }
     public List<ShipmentInvoiceItem> Items { get; set; } = [];
-    public List<Guid> PurchaseOrderIds { get; set; } = [];
 }
 
 public class ShipmentInvoiceItem : BaseEntity
@@ -31,6 +31,8 @@ public class ShipmentInvoiceItem : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public Guid ManufacturerId { get; set; }
     public Manufacturer Manufacturer { get; set; }
+    public Guid PurchaseOrderId { get; set; }
+    public PurchaseOrder PurchaseOrder { get; set; }
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
