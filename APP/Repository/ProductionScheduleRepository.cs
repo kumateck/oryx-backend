@@ -649,6 +649,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
         var query = context.BatchManufacturingRecords
+            .Include(b => b.CreatedBy)
             .Include(p => p.ProductionActivityStep)
             .Include(p => p.ProductionSchedule)
             .Include(p => p.Product)
@@ -676,6 +677,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         return mapper.Map<BatchManufacturingRecordDto>(
             await context.BatchManufacturingRecords
+                .Include(b => b.CreatedBy)
                 .Include(p => p.ProductionActivityStep)
                 .Include(p => p.ProductionSchedule)
                 .Include(p => p.Product)
@@ -725,6 +727,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<BatchPackagingRecordDto>>>> GetBatchPackagingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
         var query = context.BatchPackagingRecords
+            .Include(b => b.CreatedBy)
             .Include(p => p.ProductionActivityStep)
             .Include(p => p.ProductionSchedule)
             .Include(p => p.Product)
@@ -753,6 +756,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         return mapper.Map<BatchPackagingRecordDto>(
             await context.BatchPackagingRecords
+                .Include(b => b.CreatedBy)
                 .Include(p => p.ProductionActivityStep)
                 .Include(p => p.ProductionSchedule)
                 .Include(p => p.Product)
