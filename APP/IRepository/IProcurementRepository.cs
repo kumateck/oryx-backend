@@ -1,5 +1,6 @@
 using SHARED;
 using APP.Utils;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
@@ -72,4 +73,10 @@ public interface IProcurementRepository
     Task<Result<ShipmentDiscrepancyDto>> GetShipmentDiscrepancy(Guid shipmentDiscrepancyId);
     Task<Result> UpdateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid shipmentDiscrepancyId, Guid userId);
     Task<Result> DeleteShipmentDiscrepancy(Guid shipmentDiscrepancyId, Guid userId);
+
+    Task<Result<List<SupplierDto>>> GetPurchaseOrdersNotLinkedOrPartiallyUsed();
+
+    Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(
+        Guid supplierId);
+    Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds);
 }

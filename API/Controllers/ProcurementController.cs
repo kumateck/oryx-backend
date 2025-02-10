@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
@@ -748,5 +749,49 @@ public class ProcurementController(IProcurementRepository repository) : Controll
 
         var result = await repository.DeleteShipmentDiscrepancy(shipmentDiscrepancyId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves purchase orders that are either not linked to any shipment invoice or are partially used.
+    /// </summary>
+    /// <returns>Returns a list of purchase orders.</returns>
+    [HttpGet("purchase-order/not-linked")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchaseOrderDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetPurchaseOrdersNotLinkedOrPartiallyUsed()
+    {
+        var result = await repository.GetPurchaseOrdersNotLinkedOrPartiallyUsed();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves purchase orders for a specific supplier that are either not linked to any shipment invoice or are partially used.
+    /// </summary>
+    /// <param name="supplierId">The ID of the supplier.</param>
+    /// <returns>Returns a list of purchase orders.</returns>
+    [HttpGet("purchase-order/supplier/{supplierId}/not-linked")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchaseOrderDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
+    {
+        var result = await repository.GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(supplierId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves all materials associated with a list of purchase order IDs.
+    /// </summary>
+    /// <param name="purchaseOrderIds">A list of purchase order IDs.</param>
+    /// <returns>Returns a list of materials.</returns>
+    [HttpPost("materials/by-purchase-orders")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetMaterialsByPurchaseOrderIdsAsync([FromBody] List<Guid> purchaseOrderIds)
+    {
+        var result = await repository.GetMaterialsByPurchaseOrderIdsAsync(purchaseOrderIds);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

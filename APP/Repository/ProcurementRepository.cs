@@ -4,6 +4,7 @@ using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Materials;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -713,4 +714,85 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
         return Result.Success();
     }
+
+    public async Task<Result<List<SupplierDto>>> GetPurchaseOrdersNotLinkedOrPartiallyUsed()
+    {
+        var linkedPurchaseOrderIds = await context.ShipmentInvoicesItems
+            .Select(sii => sii.PurchaseOrderId)
+            .Distinct()
+            .ToListAsync(); // Get all PO IDs that have been used in shipment invoice items
+
+        // Get purchase orders that are NOT linked at all
+        var notLinkedPurchaseOrders = await context.PurchaseOrders
+            .Where(po => !linkedPurchaseOrderIds.Contains(po.Id))
+            .ToListAsync();
+
+        // Find purchase orders that have been partially used
+        var partiallyUsedPurchaseOrders = await context.PurchaseOrders
+            .Where(po => context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id)
+                         && context.ShipmentInvoices.Any(si =>
+                             si.Items.Any(sii => sii.PurchaseOrderId == po.Id) && 
+                             si.Items.Any(sii => sii.PurchaseOrderId != po.Id)))
+            .ToListAsync();
+
+        // Combine the results
+        var suppliers = notLinkedPurchaseOrders
+            .Concat(partiallyUsedPurchaseOrders)
+            .Distinct()
+            .Select(p => p.Supplier)
+            .ToList();
+        
+        return mapper.Map<List<SupplierDto>>(suppliers);
+    }
+    
+    public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
+    {
+        var allSupplierPurchaseOrderIds = await context.PurchaseOrders
+            .Where(po => po.SupplierId == supplierId)
+            .Select(po => po.Id)
+            .ToListAsync(); // Get all purchase order IDs for the supplier
+
+        var linkedPurchaseOrderIds = await context.ShipmentInvoicesItems
+            .Where(sii => allSupplierPurchaseOrderIds.Contains(sii.PurchaseOrderId))
+            .Select(sii => sii.PurchaseOrderId)
+            .Distinct()
+            .ToListAsync(); // Get all supplier PO IDs that are linked to shipment invoice items
+
+        // Get supplier purchase orders that are NOT linked at all
+        var notLinkedPurchaseOrders = await context.PurchaseOrders
+            .Where(po => po.SupplierId == supplierId && !linkedPurchaseOrderIds.Contains(po.Id))
+            .ToListAsync();
+
+        // Find supplier purchase orders that have been partially used
+        var partiallyUsedPurchaseOrders = await context.PurchaseOrders
+            .Where(po => po.SupplierId == supplierId &&
+                         context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id) &&
+                         context.ShipmentInvoices.Any(si =>
+                             si.Items.Any(sii => sii.PurchaseOrderId == po.Id) &&
+                             si.Items.Any(sii => sii.PurchaseOrderId != po.Id)))
+            .ToListAsync();
+
+        var resultPurchaseOrders = notLinkedPurchaseOrders
+            .Concat(partiallyUsedPurchaseOrders)
+            .Distinct()
+            .ToList();
+
+        return mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders);
+    }
+    
+    public async Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds)
+    {
+        if (purchaseOrderIds == null || purchaseOrderIds.Count == 0)
+            return Error.Failure("PurchaseOrder.Materials", "No Purchase Order IDs provided.");
+
+        var materials = await context.ShipmentInvoicesItems
+            .Where(sii => purchaseOrderIds.Contains(sii.PurchaseOrderId))
+            .Select(sii => sii.Material)
+            .Distinct()
+            .ToListAsync();
+
+        return mapper.Map<List<MaterialDto>>(materials);
+    }
+
+
 }
