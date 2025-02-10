@@ -44,9 +44,10 @@ public class BatchManufacturingRecord : BaseEntity
 public class BatchManufacturingRecordDto : BaseDto
 {
     public CollectionItemDto ProductionSchedule { get; set; }
-    public CollectionItemDto Product { get; set; }
+    public ProductDto Product { get; set; }
     public string BatchNumber { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public decimal BatchQuantity { get; set; }
+    public decimal ExpectedQuantity => BatchQuantity / Product.BasePackingQuantity;
 }

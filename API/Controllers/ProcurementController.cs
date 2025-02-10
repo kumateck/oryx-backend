@@ -757,11 +757,11 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <returns>Returns a list of purchase orders.</returns>
     [HttpGet("purchase-order/not-linked")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchaseOrderDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetPurchaseOrdersNotLinkedOrPartiallyUsed()
+    public async Task<IResult> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed()
     {
-        var result = await repository.GetPurchaseOrdersNotLinkedOrPartiallyUsed();
+        var result = await repository.GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

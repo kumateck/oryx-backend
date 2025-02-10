@@ -74,7 +74,7 @@ public interface IProcurementRepository
     Task<Result> UpdateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid shipmentDiscrepancyId, Guid userId);
     Task<Result> DeleteShipmentDiscrepancy(Guid shipmentDiscrepancyId, Guid userId);
 
-    Task<Result<List<SupplierDto>>> GetPurchaseOrdersNotLinkedOrPartiallyUsed();
+    Task<Result<List<SupplierDto>>> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed();
 
     Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(
         Guid supplierId);

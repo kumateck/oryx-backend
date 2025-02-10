@@ -715,7 +715,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    public async Task<Result<List<SupplierDto>>> GetPurchaseOrdersNotLinkedOrPartiallyUsed()
+    public async Task<Result<List<SupplierDto>>> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed()
     {
         var linkedPurchaseOrderIds = await context.ShipmentInvoicesItems
             .Select(sii => sii.PurchaseOrderId)
@@ -724,11 +724,13 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         // Get purchase orders that are NOT linked at all
         var notLinkedPurchaseOrders = await context.PurchaseOrders
+            .Include(p => p.Supplier)
             .Where(po => !linkedPurchaseOrderIds.Contains(po.Id))
             .ToListAsync();
 
         // Find purchase orders that have been partially used
         var partiallyUsedPurchaseOrders = await context.PurchaseOrders
+            .Include(p => p.Supplier)
             .Where(po => context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id)
                          && context.ShipmentInvoices.Any(si =>
                              si.Items.Any(sii => sii.PurchaseOrderId == po.Id) && 
@@ -748,6 +750,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
     {
         var allSupplierPurchaseOrderIds = await context.PurchaseOrders
+            .Include(p => p.Supplier)
+            .Include(p => p.Items)
             .Where(po => po.SupplierId == supplierId)
             .Select(po => po.Id)
             .ToListAsync(); // Get all purchase order IDs for the supplier
@@ -765,6 +769,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         // Find supplier purchase orders that have been partially used
         var partiallyUsedPurchaseOrders = await context.PurchaseOrders
+            .Include(p => p.Supplier)
+            .Include(p => p.Items)
             .Where(po => po.SupplierId == supplierId &&
                          context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id) &&
                          context.ShipmentInvoices.Any(si =>
@@ -777,7 +783,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Distinct()
             .ToList();
 
-        return mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders);
+        return mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
     }
     
     public async Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds)
