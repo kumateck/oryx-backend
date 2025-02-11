@@ -802,13 +802,15 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result> MarkShipmentAsArrived(Guid shipmentDocumentId, Guid userId)
     {
-        var shipmentDocument = await context.ShipmentDocuments.FirstOrDefaultAsync(sd => sd.Id == shipmentDocumentId);
+        var shipmentDocument = await context.ShipmentDocuments
+            .Include(shipmentDocument => shipmentDocument.ShipmentInvoice).FirstOrDefaultAsync(sd => sd.Id == shipmentDocumentId);
         if (shipmentDocument is null)
         {
             return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
         }
 
         shipmentDocument.ArrivedAt = DateTime.UtcNow;
+        shipmentDocument.ShipmentInvoice.ShipmentArrived = DateTime.UtcNow;
         shipmentDocument.LastUpdatedById = userId;
 
         context.ShipmentDocuments.Update(shipmentDocument);
