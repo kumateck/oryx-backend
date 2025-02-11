@@ -12,6 +12,7 @@ public class ShipmentDocument : BaseEntity
     public List<ShipmentDiscrepancy> Discrepancies { get; set; } = [];
     public Guid? ShipmentInvoiceId { get; set; }
     public ShipmentInvoice ShipmentInvoice { get; set; }
+    public DateTime? ArrivedAt { get; set; }
 }
 
 public class ShipmentInvoice : BaseEntity

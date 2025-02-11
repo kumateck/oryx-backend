@@ -628,6 +628,24 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
     
     /// <summary>
+    /// Marks a shipment as arrived by updating the ArrivedAt property.
+    /// </summary>
+    /// <param name="shipmentDocumentId">The ID of the shipment document.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("shipment-document/{shipmentDocumentId}/arrived")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MarkShipmentAsArrived(Guid shipmentDocumentId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.MarkShipmentAsArrived(shipmentDocumentId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Creates a new shipment invoice.
     /// </summary>
     [HttpPost("shipment-invoice")]

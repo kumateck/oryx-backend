@@ -79,4 +79,5 @@ public interface IProcurementRepository
     Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(
         Guid supplierId);
     Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds);
+    Task<Result> MarkShipmentAsArrived(Guid shipmentDocumentId, Guid userId);
 }
