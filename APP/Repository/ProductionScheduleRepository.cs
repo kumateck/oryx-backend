@@ -481,6 +481,27 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         return groupedData;
     }
+    
+    public async Task<Result<Dictionary<string, List<ProductionActivityDto>>>> GetProductionActivityGroupedByOperation()
+    {
+        var productionActivities = mapper.Map<List<ProductionActivityDto>>(await context.ProductionActivities
+            .Include(pa => pa.ProductionSchedule)
+            .Include(pa => pa.Product)
+            .Include(pa => pa.Steps.OrderBy(p => p.Order))
+            .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
+            .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
+            .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
+           .ToListAsync());
+
+        return productionActivities
+            .GroupBy(p => p.CurrentStep)
+            .ToDictionary(
+                g => g.Key.Operation.Name,
+                g => g.ToList()
+            );
+    }
 
     
     public async Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>> GetProductionActivityStepsGroupedByStatus()
@@ -495,6 +516,24 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .GroupBy(pas => pas.Status)
             .ToDictionaryAsync(
                 g => g.Key.ToString(),
+                g => g.Select(mapper.Map<ProductionActivityStepDto>).ToList()
+            );
+
+        return groupedData;
+    }
+    
+    public async Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>> GetProductionActivityStepsGroupedByOperation()
+    {
+        var groupedData = await context.ProductionActivitySteps
+            .Include(pas => pas.ProductionActivity)
+            .Include(pas => pas.ResponsibleUsers)
+            .Include(pas => pas.Resources)
+            .Include(pas => pas.WorkCenters)
+            .Include(pas => pas.WorkFlow)
+            .Include(pas => pas.Operation)
+            .GroupBy(pas => pas.Operation)
+            .ToDictionaryAsync(
+                g => g.Key.Name.ToString(),
                 g => g.Select(mapper.Map<ProductionActivityStepDto>).ToList()
             );
 

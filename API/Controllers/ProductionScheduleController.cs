@@ -334,12 +334,25 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Groups Production Activities by their status.
     /// </summary>
     /// <returns>Returns a dictionary grouping Production Activities by their status.</returns>
-    [HttpGet("activiy/grouped")]
+    [HttpGet("activity/status-grouped")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityDto>>))]
     public async Task<IResult> GetProductionActivityGroupedByStatus()
     {
         var result = await repository.GetProductionActivityGroupedByStatus();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Groups Production Activities by their current step.
+    /// </summary>
+    /// <returns>Returns a dictionary grouping Production Activities by their status.</returns>
+    [HttpGet("activity/operation-grouped")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityDto>>))]
+    public async Task<IResult> GetProductionActivityGroupedByOperation()
+    {
+        var result = await repository.GetProductionActivityGroupedByOperation();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -400,12 +413,25 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Groups Production Activity Steps by their status.
     /// </summary>
     /// <returns>Returns a dictionary grouping Production Activity Steps by their status.</returns>
-    [HttpGet("activity-step/grouped")]
+    [HttpGet("activity-step/status-grouped")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityStepDto>>))]
     public async Task<IResult> GetProductionActivityStepsGroupedByStatus()
     {
         var result = await repository.GetProductionActivityStepsGroupedByStatus();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Groups Production Activity Steps by their operation.
+    /// </summary>
+    /// <returns>Returns a dictionary grouping Production Activity Steps by their status.</returns>
+    [HttpGet("activity-step/operation-grouped")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityStepDto>>))]
+    public async Task<IResult> GetProductionActivityStepsGroupedByOperation()
+    {
+        var result = await repository.GetProductionActivityStepsGroupedByOperation();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
