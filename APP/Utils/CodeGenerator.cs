@@ -23,7 +23,7 @@ public static class CodeGenerator
 
                     if (maxLength < minLength)
                     {
-                        return $"{config.Prefix}-{Guid.NewGuid()}";
+                        return $"{config.Prefix}{Guid.NewGuid()}";
                     }
 
                     var random = new Random();
@@ -52,7 +52,7 @@ public static class CodeGenerator
                 generatedCode = generatedCode[..(config.MaximumNameLength - (config.Prefix.Length + 1))];
             }
 
-            return $"{config.Prefix}-{generatedCode}";
+            return $"{config.Prefix}{generatedCode}";
         }
         catch (Exception e)
         {

@@ -783,7 +783,18 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Distinct()
             .ToList();
 
-        return mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
+        var result = mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
+
+        foreach (var po in result)
+        {
+            foreach (var item in po.Items)
+            {
+                if (item.Material?.Id != null)
+                    item.Manufacturers = (await GetManufacturersByMaterial(item.Material.Id.Value)).Value;
+            }
+        }
+
+        return result;
     }
     
     public async Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds)
