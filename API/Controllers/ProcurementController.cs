@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
@@ -811,5 +812,32 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     {
         var result = await repository.GetMaterialsByPurchaseOrderIdsAsync(purchaseOrderIds);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves material distribution details for a specific shipment document.
+    /// </summary>
+    /// <param name="shipmentDocumentId">The ID of the shipment document.</param>
+    /// <returns>Returns the material distribution details.</returns>
+    [HttpGet("shipment-document/{shipmentDocumentId}/material-distribution")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDistributionDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialDistribution(Guid shipmentDocumentId)
+    {
+        var result = await repository.GetMaterialDistribution(shipmentDocumentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Confirms the distribution of materials.
+    /// </summary>
+    /// <param name="section">The MaterialDistributionSection object.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPost("confirm-distribution")]
+    public async Task<IResult> ConfirmDistribution([FromBody] MaterialDistributionSection section)
+    {
+        var result = await repository.ConfirmDistribution(section);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

@@ -37,6 +37,7 @@ public class ShipmentInvoiceItem : BaseEntity
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
+    public bool Distributed { get; set; } = false;
 }
 
 
