@@ -1,4 +1,7 @@
+using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Shipments;
 
 namespace DOMAIN.Entities.Procurement.Distribution;
 
@@ -9,19 +12,31 @@ public class MaterialDistributionDto
 
 public class MaterialDistributionSection
 {
-    public Guid MaterialId { get; set; }
-    public string MaterialName { get; set; }
-    public Guid ShipmentInvoiceItemId { get; set; }
+    public MaterialDto Material { get; set; }
+    public ShipmentInvoiceItemDto ShipmentInvoiceItem { get; set; }
     public decimal TotalQuantity { get; set; }
     public List<DistributionRequisitionItem> Items { get; set; }
 }
 
+public class MaterialDistributionSectionRequest
+{
+    //public Guid MaterialId { get; set; }
+    public Guid ShipmentInvoiceItemId { get; set; }
+    public List<DistributionRequisitionItemRequest> Items { get; set; }
+}
+
 public class DistributionRequisitionItem
 {
-    public string DepartmentName { get; set; }
-    public Guid DepartmentId { get; set; }
-    public Guid RequistionItemId { get; set; }
+    public DepartmentDto Department { get; set; }
+    public RequisitionItemDto RequistionItem { get; set; }
     public decimal QuantityRequested { get; set; }
     public decimal QuantityAllocated { get; set; }
     public decimal QuantityRemaining { get; set; }
+}
+
+public class DistributionRequisitionItemRequest
+{
+    public Guid DepartmentId { get; set; }
+    public Guid RequistionItemId { get; set; }
+    public decimal QuantityAllocated { get; set; }
 }

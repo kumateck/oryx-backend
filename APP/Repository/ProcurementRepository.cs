@@ -14,6 +14,7 @@ using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
+using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 
@@ -835,8 +836,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             var materialDistributionSection = new MaterialDistributionSection
             {
-                MaterialName = item.Material.Name,
-                MaterialId = item.MaterialId,
+                Material = mapper.Map<MaterialDto>(item.Material),
                 TotalQuantity = item.ReceivedQuantity
             };
             var requisitionMaterialRequests =  await context.RequisitionItems.Where(r => r.MaterialId == item.MaterialId && (r.Quantity - r.QuantityReceived != 0)).ToListAsync();//update this to create DistributionRequisitionItem item for each requisition item and add to the materialDistributionSection
@@ -845,9 +845,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 var department = await GetRequisitionDepartment(requisitionItem.RequisitionId);
                 var distributionRequisitionItem = new DistributionRequisitionItem
                 {
-                    RequistionItemId = requisitionItem.Id,
-                    DepartmentName = department.Name,
-                    DepartmentId = department.Id,
+                    RequistionItem = mapper.Map<RequisitionItemDto>(requisitionItem),
+                    Department = mapper.Map<DepartmentDto>(department),
                     QuantityRequested = requisitionItem.Quantity
                 };
 
@@ -861,7 +860,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return materialDistribution;
     }
 
-    public async Task<Result> ConfirmDistribution(MaterialDistributionSection section)
+    public async Task<Result> ConfirmDistribution(MaterialDistributionSectionRequest section)
     {
         foreach (var item in section.Items)
         {

@@ -835,7 +835,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="section">The MaterialDistributionSection object.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPost("confirm-distribution")]
-    public async Task<IResult> ConfirmDistribution([FromBody] MaterialDistributionSection section)
+    public async Task<IResult> ConfirmDistribution([FromBody] MaterialDistributionSectionRequest section)
     {
         var result = await repository.ConfirmDistribution(section);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();

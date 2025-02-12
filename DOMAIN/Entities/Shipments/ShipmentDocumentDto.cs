@@ -22,6 +22,7 @@ public class ShipmentInvoiceDto
 
 public class ShipmentInvoiceItemDto
 {
+    public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public CollectionItemDto Manufacturer { get; set; }
