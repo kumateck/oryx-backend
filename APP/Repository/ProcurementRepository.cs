@@ -4,7 +4,9 @@ using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Distribution;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -12,6 +14,7 @@ using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
+using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 
@@ -828,5 +831,77 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
 
         return Result.Success();
+    }
+
+    public async Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId)
+    {
+        var shipmentDocument = await context.ShipmentDocuments
+            .Include(s => s.ShipmentInvoice).ThenInclude(shipmentInvoice => shipmentInvoice.Items).ThenInclude(item => item.Material)
+            .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
+
+        var items = shipmentDocument.ShipmentInvoice.Items.Where(i=>!i.Distributed);
+        
+        var materialDistribution = new MaterialDistributionDto();
+
+        foreach (var item in items)
+        {
+            var materialDistributionSection = new MaterialDistributionSection
+            {
+                Material = mapper.Map<MaterialDto>(item.Material),
+                TotalQuantity = item.ReceivedQuantity
+            };
+            var requisitionMaterialRequests =  await context.RequisitionItems.Where(r => r.MaterialId == item.MaterialId && (r.Quantity - r.QuantityReceived != 0)).ToListAsync();//update this to create DistributionRequisitionItem item for each requisition item and add to the materialDistributionSection
+            foreach (var requisitionItem in requisitionMaterialRequests)
+            {
+                var department = await GetRequisitionDepartment(requisitionItem.RequisitionId);
+                var distributionRequisitionItem = new DistributionRequisitionItem
+                {
+                    RequistionItem = mapper.Map<RequisitionItemDto>(requisitionItem),
+                    Department = mapper.Map<DepartmentDto>(department),
+                    QuantityRequested = requisitionItem.Quantity
+                };
+
+                materialDistributionSection.Items.Add(distributionRequisitionItem);
+            }
+
+            CalculateDistributions(materialDistributionSection);
+            materialDistribution.Sections.Add(materialDistributionSection);
+        }
+
+        return materialDistribution;
+    }
+
+    public async Task<Result> ConfirmDistribution(MaterialDistributionSectionRequest section)
+    {
+        foreach (var item in section.Items)
+        {
+            var requisitionItem = await context.RequisitionItems.FirstOrDefaultAsync(r => r.Id == item.RequistionItemId);
+            requisitionItem.QuantityReceived += item.QuantityAllocated;
+            //todo: send to warehouse receiving area
+        }
+
+        var invoiceItem =
+            await context.ShipmentInvoicesItems.FirstOrDefaultAsync(s => s.Id == section.ShipmentInvoiceItemId);
+        invoiceItem.Distributed = true;
+        await context.SaveChangesAsync();
+        return Result.Success();
+    } 
+
+    private void CalculateDistributions(MaterialDistributionSection materialDistributionSection)
+    {
+        var totalRequestedQuantity = materialDistributionSection.Items.Sum(i => i.QuantityRequested);
+        foreach(var item in materialDistributionSection.Items)
+        {
+            item.QuantityAllocated = item.QuantityRequested / totalRequestedQuantity * materialDistributionSection.TotalQuantity;
+            item.QuantityRemaining = item.QuantityRequested - item.QuantityAllocated;
+        }
+    }
+
+    private async Task<Department> GetRequisitionDepartment(Guid requisitionId)
+    {
+        var requisition = await context.Requisitions
+            .Include(r => r.RequestedBy)
+            .FirstOrDefaultAsync(r => r.Id == requisitionId);
+        return requisition.RequestedBy.Department;
     }
 }

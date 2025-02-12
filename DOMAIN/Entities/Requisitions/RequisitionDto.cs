@@ -23,6 +23,7 @@ public class RequisitionDto
 
 public class RequisitionItemDto 
 {
+    public Guid Id { get; set; }
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }

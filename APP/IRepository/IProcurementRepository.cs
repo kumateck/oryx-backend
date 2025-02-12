@@ -1,6 +1,7 @@
 using SHARED;
 using APP.Utils;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
@@ -80,4 +81,6 @@ public interface IProcurementRepository
         Guid supplierId);
     Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds);
     Task<Result> MarkShipmentAsArrived(Guid shipmentDocumentId, Guid userId);
+    Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId);
+    Task<Result> ConfirmDistribution(MaterialDistributionSectionRequest section);
 }
