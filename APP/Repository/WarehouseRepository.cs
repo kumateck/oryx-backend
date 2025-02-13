@@ -357,4 +357,72 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success();
     }
 
+    public async Task<Result<WarehouseArrivalLocationDto>> GetArrivalLocationDetails(Guid warehouseId)
+    {
+        var warehouse = await context.Warehouses
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .FirstOrDefaultAsync(w => w.Id == warehouseId);
+
+        if (warehouse == null || warehouse.ArrivalLocation == null)
+        {
+            return Error.NotFound("Warehouse.ArrivalLocationNotFound", "Arrival location not found for the specified warehouse.");
+        }
+
+        var arrivalLocationDto = mapper.Map<WarehouseArrivalLocationDto>(warehouse.ArrivalLocation);
+        return Result.Success(arrivalLocationDto);
+    }
+    
+    public async Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request)
+    {
+        var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == request.WarehouseId);
+        if (warehouse == null)
+        {
+            return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
+        }
+
+        var arrivalLocation = mapper.Map<WarehouseArrivalLocation>(request);
+        arrivalLocation.WarehouseId = request.WarehouseId;
+
+        await context.WarehouseArrivalLocations.AddAsync(arrivalLocation);
+        await context.SaveChangesAsync();
+
+        return Result.Success(arrivalLocation.Id);
+    }
+    
+    public async Task<Result> UpdateArrivalLocation(UpdateArrivalLocationRequest request)
+    {
+        var arrivalLocation = await context.WarehouseArrivalLocations.FirstOrDefaultAsync(al => al.Id == request.Id);
+        if (arrivalLocation == null)
+        {
+            return Error.NotFound("WarehouseArrivalLocation.NotFound", "Arrival location not found");
+        }
+
+        mapper.Map(request, arrivalLocation);
+        context.WarehouseArrivalLocations.Update(arrivalLocation);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+    
+    public async Task<Result> ConfirmArrival(Guid distributedMaterialId)
+    {
+        var distributedMaterial = await context.DistributedRequisitionMaterials
+            .FirstOrDefaultAsync(dm => dm.Id == distributedMaterialId);
+
+        if (distributedMaterial == null)
+        {
+            return Error.NotFound("DistributedMaterial.NotFound", "Distributed material not found");
+        }
+
+        distributedMaterial.ConfirmArrival = true;
+        distributedMaterial.ArrivedAt = DateTime.UtcNow;
+
+        context.DistributedRequisitionMaterials.Update(distributedMaterial);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+    
+    
 }

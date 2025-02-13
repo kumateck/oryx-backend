@@ -261,6 +261,8 @@ public class OryxMapper : Profile
         CreateMap<Manufacturer, ManufacturerDto>();
         CreateMap<CreateManufacturerMaterialRequest, ManufacturerMaterial>();
         CreateMap<ManufacturerMaterial, ManufacturerMaterialDto>();
+        
+        //distribution
 
         #endregion
 
@@ -277,7 +279,10 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationRack, WarehouseLocationRackDto>();
         CreateMap<WarehouseLocationRack, WareHouseLocationRackDto>();
         CreateMap<WarehouseLocationShelf, WarehouseLocationShelfDto>();
-        
+        CreateMap<WarehouseArrivalLocation,WarehouseArrivalLocationDto>();
+        CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>();
+        CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
+        CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
         #endregion
 
         #region Department

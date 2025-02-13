@@ -320,4 +320,59 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     #endregion
+    
+    #region Arrival Location CRUD
+    /// <summary>
+    /// Retrieves the arrival location details of a specific warehouse by its ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/arrival-location")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseArrivalLocationDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetArrivalLocationDetails(Guid warehouseId)
+    {
+        var result = await repository.GetArrivalLocationDetails(warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Creates a new arrival location for a warehouse.
+    /// </summary>
+    [HttpPost("arrival-location")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CreateArrivalLocation([FromBody] CreateArrivalLocationRequest request)
+    {
+        var result = await repository.CreateArrivalLocation(request);
+        return result.IsSuccess ? TypedResults.Created($"/api/v1/warehouse/arrival-location/{result.Value}", result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Updates an existing arrival location.
+    /// </summary>
+    [HttpPut("arrival-location")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateArrivalLocation([FromBody] UpdateArrivalLocationRequest request)
+    {
+        var result = await repository.UpdateArrivalLocation(request);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Confirms the arrival of a distributed material.
+    /// </summary>
+    [HttpPost("confirm-arrival/{distributedMaterialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ConfirmArrival(Guid distributedMaterialId)
+    {
+        var result = await repository.ConfirmArrival(distributedMaterialId);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+    #endregion
 }
