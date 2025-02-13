@@ -346,7 +346,9 @@ public class OryxMapper : Profile
 
         CreateMap<CreateShipmentInvoice, ShipmentInvoice>();
         CreateMap<CreateShipmentInvoiceItem, ShipmentInvoiceItem>();
-        CreateMap<ShipmentInvoice, ShipmentInvoiceDto>();
+        CreateMap<ShipmentInvoice, ShipmentInvoiceDto>()
+            .ForMember(dest => dest.Status,
+                opt => opt.MapFrom<ShipmentInvoiceResolver>());
         CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>();
 
         CreateMap<CreateShipmentDiscrepancy, ShipmentDiscrepancy>();

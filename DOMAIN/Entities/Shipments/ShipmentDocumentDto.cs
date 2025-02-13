@@ -17,6 +17,14 @@ public class ShipmentInvoiceDto : BaseDto
     public string Code { get; set; }
     public DateTime? ShipmentArrivedAt { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
+    public ShipmentInvoiceStatus Status { get; set; }
+}
+
+public enum ShipmentInvoiceStatus
+{
+    None,
+    Partial,
+    Full
 }
 
 public class ShipmentInvoiceItemDto
