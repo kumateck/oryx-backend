@@ -1,6 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.Procurement.Suppliers;
 using SHARED;
 
 namespace DOMAIN.Entities.Shipments;
@@ -10,21 +10,16 @@ public class ShipmentDocumentDto : WithAttachment
     public string Code { get; set; }
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public List<ShipmentDiscrepancyDto> Discrepancies { get; set; } = [];
+    public DateTime? ArrivedAt { get; set; }
 }
 
 public class ShipmentInvoiceDto : BaseDto
 { 
     public string Code { get; set; }
+    public SupplierDto Supplier { get; set; }
     public DateTime? ShipmentArrivedAt { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
-    public ShipmentInvoiceStatus Status { get; set; }
-}
-
-public enum ShipmentInvoiceStatus
-{
-    None,
-    Partial,
-    Full
+    public bool IsAttached { get; set; }
 }
 
 public class ShipmentInvoiceItemDto
@@ -36,6 +31,7 @@ public class ShipmentInvoiceItemDto
     public CollectionItemDto PurchaseOrder { get; set; }
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
+    public decimal Price { get; set; }
     public string Reason { get; set; }
 }
 

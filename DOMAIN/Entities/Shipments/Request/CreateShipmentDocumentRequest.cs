@@ -12,6 +12,7 @@ public class CreateShipmentInvoice
 {
     public string Code { get; set; }
     public DateTime? ShipmentArrivedAt { get; set; }
+    public Guid SupplierId { get; set; }
     public List<CreateShipmentInvoiceItem> Items { get; set; } = [];
 }
 

@@ -69,7 +69,8 @@ public interface IProcurementRepository
     Task<Result<ShipmentInvoiceDto>> GetShipmentInvoice(Guid shipmentInvoiceId);
     Task<Result<ShipmentInvoiceDto>> GetShipmentInvoiceByShipmentDocument(Guid shipmentDocumentId);
     Task<Result<Paginateable<IEnumerable<ShipmentInvoiceDto>>>> GetShipmentInvoices(int page, int pageSize,
-        string searchQuery);
+        string searchQuery); 
+    Task<Result<IEnumerable<ShipmentInvoiceDto>>> GetUnattachedShipmentInvoices();
     Task<Result> UpdateShipmentInvoice(CreateShipmentInvoice request, Guid shipmentInvoiceId, Guid userId);
     Task<Result> DeleteShipmentInvoice(Guid shipmentInvoiceId, Guid userId);
 

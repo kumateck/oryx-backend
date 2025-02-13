@@ -412,6 +412,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Charge>().Navigation(b => b.Currency).AutoInclude();
 
         modelBuilder.Entity<BillingSheet>().Navigation(b => b.Supplier).AutoInclude();
+        modelBuilder.Entity<ShipmentInvoice>().Navigation(b => b.Supplier).AutoInclude();
 
         #endregion
 

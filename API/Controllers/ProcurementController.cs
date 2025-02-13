@@ -674,6 +674,19 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetShipmentInvoice(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves all shipment invoices that have not been linked to a shipment document.
+    /// </summary>
+    [HttpGet("shipment-invoice/unattached")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetUnattachedShipmentInvoices()
+    {
+        var result = await repository.GetUnattachedShipmentInvoices();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a shipment invoice by the shipment document ID.

@@ -1,6 +1,8 @@
+using DOMAIN.Entities.Base;
+
 namespace DOMAIN.Entities.Attachments;
 
-public class WithAttachment
+public class WithAttachment : BaseDto
 {
     public IEnumerable<AttachmentDto> Attachments { get; set; }
 }

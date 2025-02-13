@@ -690,8 +690,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         
         return new Paginateable<IEnumerable<ShipmentInvoiceDto>>
         {
-            Data = mapper.Map<IEnumerable<ShipmentInvoiceDto>>(shipmentInvoices, 
-                opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentInvoice)),
+            Data = mapper.Map<IEnumerable<ShipmentInvoiceDto>>(shipmentInvoices),
             PageIndex = page,
             PageCount = paginatedResult.PageCount,
             TotalRecordCount = paginatedResult.TotalRecordCount,
@@ -699,6 +698,25 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             StopPageIndex = paginatedResult.StopPageIndex
         };
     }
+    public async Task<Result<IEnumerable<ShipmentInvoiceDto>>> GetUnattachedShipmentInvoices()
+    {
+        var unattachedShipmentInvoices = await context.ShipmentInvoices
+            .Where(si => !context.ShipmentDocuments.Any(sd => sd.ShipmentInvoiceId == si.Id))
+            .Include(si => si.Items)
+            .ThenInclude(item => item.Material)
+            .Include(si => si.Items)
+            .ThenInclude(item => item.UoM)
+            .Include(si => si.Items)
+            .ThenInclude(item => item.Manufacturer)
+            .Include(si => si.Items)
+            .ThenInclude(item => item.PurchaseOrder)
+            .AsSplitQuery()
+            .ToListAsync();
+
+        return
+            mapper.Map<List<ShipmentInvoiceDto>>(unattachedShipmentInvoices);
+    }
+
 
     public async Task<Result<ShipmentDiscrepancyDto>> GetShipmentDiscrepancy(Guid shipmentDiscrepancyId)
     {

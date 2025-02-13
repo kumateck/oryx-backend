@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
 
 namespace DOMAIN.Entities.Shipments;
@@ -18,6 +19,8 @@ public class ShipmentDocument : BaseEntity
 public class ShipmentInvoice : BaseEntity
 {
     [StringLength(255)] public string Code { get; set; }
+    public Guid SupplierId { get; set; }
+    public Supplier Supplier { get; set; }
     public DateTime? ShipmentArrived { get; set; }
     public List<ShipmentInvoiceItem> Items { get; set; } = [];
 }

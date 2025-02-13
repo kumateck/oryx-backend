@@ -317,7 +317,9 @@ public class OryxMapper : Profile
         CreateMap<CreatePurchaseOrderItemRequest, PurchaseOrderItem>();
         CreateMap<PurchaseOrder, PurchaseOrderDto>()
             .ForMember(dest => dest.Attachments,
-                opt => opt.MapFrom<AttachmentsResolver>());
+                opt => opt.MapFrom<AttachmentsResolver>())
+            .ForMember(dest => dest.AttachmentStatus,
+                opt => opt.MapFrom<PurchaseOrderStatusResolver>());
         CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>();
 
         CreateMap<CreatePurchaseOrderInvoiceRequest, PurchaseOrderInvoice>();
@@ -346,10 +348,10 @@ public class OryxMapper : Profile
 
         CreateMap<CreateShipmentInvoice, ShipmentInvoice>();
         CreateMap<CreateShipmentInvoiceItem, ShipmentInvoiceItem>();
-        CreateMap<ShipmentInvoice, ShipmentInvoiceDto>()
-            .ForMember(dest => dest.Status,
-                opt => opt.MapFrom<ShipmentInvoiceResolver>());
-        CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>();
+        CreateMap<ShipmentInvoice, ShipmentInvoiceDto>();
+        CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>()
+            .ForMember(dest => dest.Price,
+                opt => opt.MapFrom(src => src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).Price));
 
         CreateMap<CreateShipmentDiscrepancy, ShipmentDiscrepancy>();
         CreateMap<CreateShipmentDiscrepancyItem, ShipmentDiscrepancyItem>();

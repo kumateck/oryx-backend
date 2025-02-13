@@ -48,6 +48,13 @@ public enum PurchaseOrderStatus
     Completed
 }
 
+public enum PurchaseOrderAttachmentStatus
+{
+    None,
+    Partial,
+    Full
+}
+
 public class PurchaseOrderDto : WithAttachment
 {
     public Guid Id { get; set; }
@@ -58,6 +65,7 @@ public class PurchaseOrderDto : WithAttachment
     public List<PurchaseOrderItemDto> Items { get; set; } = [];
     public PurchaseOrderStatus Status { get; set; }
     public List<RevisedPurchaseOrderDto> RevisedPurchaseOrders { get; set; } = [];
+    public PurchaseOrderAttachmentStatus AttachmentStatus { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
