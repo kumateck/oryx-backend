@@ -228,7 +228,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         var quantity = productionSchedule.Products.First(p => p.ProductId == productId).Quantity;
 
-        await ConsumeMaterialInProduction(productId,  quantity,  userId);
+        await FreezeMaterialInProduction(productId,  quantity,  userId);
         
         var activity = new ProductionActivity
         {
@@ -833,7 +833,19 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task FreezeMaterialInProduction(Guid productId, decimal quantity, Guid userId)
+    {
+        var materialResult = await CheckMaterialStockLevelsForProductionSchedule(productId, quantity, userId);
+        if (materialResult.IsFailure) return;
 
+        var materialDetails = materialResult.Value;
+
+        foreach (var batch in materialDetails.SelectMany(material => material.Batches))
+        {
+            await materialRepository.FreezeMaterialBatchAsync(batch.Batch.Id);
+        }
+    }
 
     public async Task ConsumeMaterialInProduction(Guid productId, decimal quantity, Guid userId)
     {

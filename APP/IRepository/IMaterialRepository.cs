@@ -27,7 +27,11 @@ public interface IMaterialRepository
     Task<Result> MoveMaterialBatchByMaterial(MoveMaterialBatchRequest request, Guid userId);
     Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, decimal quantity,
         Guid userId);
-    Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId); 
+    Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
+    Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
+    Task<Result<List<MaterialBatchDto>>> GetFrozenMaterialBatchesInWarehouse(Guid materialId,
+        Guid warehouseId);
+    Task<Result> FreezeMaterialBatchAsync(Guid batchId);
     Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, decimal quantity, Guid userId);
     Task<Result> ConsumeMaterialAtLocation(Material material, Guid locationId, decimal quantity,
         Guid userId);

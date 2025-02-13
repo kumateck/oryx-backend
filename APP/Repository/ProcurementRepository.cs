@@ -632,6 +632,35 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             ? Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found")
             : mapper.Map<ShipmentInvoiceDto>(shipmentInvoice);
     }
+    
+    public async Task<Result<Paginateable<IEnumerable<ShipmentInvoiceDto>>>> GetShipmentInvoices(int page, int pageSize, string searchQuery)
+    {
+        var query = context.ShipmentInvoices
+            .Include(si => si.Items)
+            .ThenInclude(item => item.Material)
+            .Include(si => si.Items)
+            .ThenInclude(item => item.UoM)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, bs => bs.Code);
+        }
+        
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var shipmentInvoices = await paginatedResult.Data.ToListAsync();
+        
+        return new Paginateable<IEnumerable<ShipmentInvoiceDto>>
+        {
+            Data = mapper.Map<IEnumerable<ShipmentInvoiceDto>>(shipmentInvoices, 
+                opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentInvoice)),
+            PageIndex = page,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+    }
 
     public async Task<Result<ShipmentDiscrepancyDto>> GetShipmentDiscrepancy(Guid shipmentDiscrepancyId)
     {

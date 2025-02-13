@@ -20,6 +20,7 @@ public class MaterialBatch : BaseEntity
     public DateTime? DateApproved { get; set; }
     public DateTime? DateRejected { get; set; }
     public DateTime ExpiryDate { get; set; }
+    public bool IsFrozen { get; set; }  
     public List<MaterialBatchEvent> Events { get; set; } = [];
     public List<MaterialBatchMovement> Movements { get; set; } = [];
 }

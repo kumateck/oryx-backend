@@ -550,6 +550,59 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return totalQuantityInLocation;
     }
+    
+    public async Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
+    {
+        // Sum of quantities moved to this location (incoming batches)
+        var batchesInLocation = await context.MaterialBatchMovements
+            .IgnoreQueryFilters()
+            .Include(m => m.Batch)
+            .Include(m => m.ToLocation)
+            .Where(m => m.Batch.IsFrozen && m.Batch.MaterialId == materialId
+                        && m.ToLocation.WarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of quantities moved out of this location (outgoing batches)
+        var batchesMovedOut = await context.MaterialBatchMovements
+            .IgnoreQueryFilters()
+            .Include(m => m.Batch)
+            .Include(m => m.FromLocation)
+            .Where(m =>  m.Batch.IsFrozen && m.Batch.MaterialId == materialId
+                                          && m.FromLocation != null && m.FromLocation.WarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of the consumed quantities at this location for the given material
+        var batchesConsumedAtLocation = await context.MaterialBatchEvents
+            .IgnoreQueryFilters()
+            .Include(m => m.Batch)
+            .Include(m => m.ConsumedLocation)
+            .Where(e =>  e.Batch.IsFrozen && e.Batch.MaterialId == materialId
+                                          && e.ConsumedLocation != null 
+                                          && e.ConsumedLocation.WarehouseId == warehouseId
+                                          && e.Type == EventType.Consumed)
+            .SumAsync(e => e.Quantity);
+
+        // Calculate the total available quantity for the material in this location
+        var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
+
+        return totalQuantityInLocation;
+    }
+    
+    
+    public async Task<Result<List<MaterialBatchDto>>> GetFrozenMaterialBatchesInWarehouse(Guid materialId, Guid warehouseId)
+    {
+        var frozenBatches = await context.MaterialBatches
+            .IgnoreQueryFilters()
+            .Include(b => b.Material)
+            .Include(b => b.UoM)
+            .Where(b => b.IsFrozen && b.MaterialId == materialId &&
+                        context.MaterialBatchMovements.Any(m => m.BatchId == b.Id && m.ToLocation.WarehouseId == warehouseId) &&
+                        !context.MaterialBatchMovements.Any(m => m.BatchId == b.Id && m.FromLocation.WarehouseId == warehouseId))
+            .ToListAsync();
+
+        return mapper.Map<List<MaterialBatchDto>>(frozenBatches);
+    }
+
 
    public Result<List<BatchLocation>> BatchesNeededToBeConsumed(Guid materialId, Guid warehouseId, decimal quantity)
     {
@@ -620,11 +673,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Optionally update the batch's consumed quantity
         var materialBatch = await context.MaterialBatches
             .FirstOrDefaultAsync(b => b.Id == batchId);
-        if (materialBatch != null)
-        {
-            materialBatch.ConsumedQuantity += quantity;
-            context.MaterialBatches.Update(materialBatch);
-        }
+        
+        if (materialBatch == null)
+            return Error.Failure("Material.Batch", "Material batch not found.");
+        
+        if (!materialBatch.IsFrozen)
+            return Error.Failure("Material.Batch", "Cannot consume from an unfrozen batch. Please freeze the batch first.");
+
+        materialBatch.ConsumedQuantity += quantity;
+        context.MaterialBatches.Update(materialBatch);
 
         // Add the event to the context
         await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
@@ -633,6 +690,22 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> FreezeMaterialBatchAsync(Guid batchId)
+    {
+        var materialBatch = await context.MaterialBatches
+            .FirstOrDefaultAsync(b => b.Id == batchId);
+
+        if (materialBatch == null)
+            return Error.Failure("Material.Batch", "Material batch not found.");
+
+        materialBatch.IsFrozen = true;
+        context.MaterialBatches.Update(materialBatch);
+    
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     
     public async Task<Result> ConsumeMaterialAtLocation(Material material, Guid locationId, decimal quantity, Guid userId)
     {
