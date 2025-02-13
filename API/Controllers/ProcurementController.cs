@@ -661,17 +661,30 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.CreateShipmentInvoice(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a shipment invoice by the ID.
+    /// </summary>
+    [HttpGet("shipment-invoice/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShipmentInvoice(Guid id)
+    {
+        var result = await repository.GetShipmentInvoice(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a shipment invoice by the shipment document ID.
     /// </summary>
-    [HttpGet("shipment-invoice/{shipmentDocumentId}")]
+    [HttpGet("shipment-invoice/shipment-document/{shipmentDocumentId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetShipmentInvoice(Guid shipmentDocumentId)
+    public async Task<IResult> GetShipmentInvoiceByDocument(Guid shipmentDocumentId)
     {
-        var result = await repository.GetShipmentInvoice(shipmentDocumentId);
+        var result = await repository.GetShipmentInvoiceByShipmentDocument(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

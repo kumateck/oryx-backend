@@ -67,6 +67,7 @@ public interface IProcurementRepository
     
     Task<Result<Guid>> CreateShipmentInvoice(CreateShipmentInvoice request, Guid userId);
     Task<Result<ShipmentInvoiceDto>> GetShipmentInvoice(Guid shipmentInvoiceId);
+    Task<Result<ShipmentInvoiceDto>> GetShipmentInvoiceByShipmentDocument(Guid shipmentDocumentId);
     Task<Result<Paginateable<IEnumerable<ShipmentInvoiceDto>>>> GetShipmentInvoices(int page, int pageSize,
         string searchQuery);
     Task<Result> UpdateShipmentInvoice(CreateShipmentInvoice request, Guid shipmentInvoiceId, Guid userId);

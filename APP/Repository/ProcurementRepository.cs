@@ -536,7 +536,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 
         return shipmentDocument is null
-            ? Error.NotFound("BillingSheet.NotFound", "Billing sheet not found")
+            ? Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found")
             : mapper.Map<ShipmentDocumentDto>(shipmentDocument, opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentDocument));
     }
     
@@ -633,6 +633,34 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .AsSplitQuery()
             .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
 
+        return shipmentInvoice is null
+            ? Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found")
+            : mapper.Map<ShipmentInvoiceDto>(shipmentInvoice);
+    }
+    
+    public async Task<Result<ShipmentInvoiceDto>> GetShipmentInvoiceByShipmentDocument(Guid shipmentDocumentId)
+    {
+        var shipmentDocument = await context.ShipmentDocuments
+            .Include(s => s.ShipmentInvoice)
+            .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
+
+        if (shipmentDocument is not { ShipmentInvoiceId: not null })
+        {
+            return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
+        }
+        
+        var shipmentInvoice = await context.ShipmentInvoices
+            .Include(si => si.Items)
+            .ThenInclude(item => item.Material)
+            .Include(si => si.Items)
+            .ThenInclude(item => item.UoM)
+            .Include(si => si.Items)
+            .ThenInclude(si => si.Manufacturer)
+            .Include(si => si.Items)
+            .ThenInclude(si => si.PurchaseOrder)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(si => si.Id == shipmentDocument.ShipmentInvoiceId);
+        
         return shipmentInvoice is null
             ? Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found")
             : mapper.Map<ShipmentInvoiceDto>(shipmentInvoice);
