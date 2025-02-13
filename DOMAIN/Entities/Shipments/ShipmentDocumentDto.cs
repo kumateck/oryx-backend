@@ -12,9 +12,8 @@ public class ShipmentDocumentDto : WithAttachment
     public List<ShipmentDiscrepancyDto> Discrepancies { get; set; } = [];
 }
 
-public class ShipmentInvoiceDto
-{
-    public Guid Id { get; set; }
+public class ShipmentInvoiceDto : BaseDto
+{ 
     public string Code { get; set; }
     public DateTime? ShipmentArrivedAt { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
