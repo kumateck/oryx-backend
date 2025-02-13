@@ -680,7 +680,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// </summary>
     [HttpGet("shipment-invoice/unattached")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShipmentInvoiceDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetUnattachedShipmentInvoices()
     {
