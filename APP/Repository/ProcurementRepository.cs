@@ -626,6 +626,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .ThenInclude(item => item.Material)
             .Include(si => si.Items)
                 .ThenInclude(item => item.UoM)
+            .Include(si => si.Items)
+                .ThenInclude(si => si.Manufacturer)
+            .Include(si => si.Items)
+            .ThenInclude(si => si.PurchaseOrder)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
 
         return shipmentInvoice is null
@@ -640,6 +645,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(item => item.Material)
             .Include(si => si.Items)
             .ThenInclude(item => item.UoM)
+            .Include(si => si.Items)
+            .ThenInclude(si => si.Manufacturer)
+            .Include(si => si.Items)
+            .ThenInclude(si => si.PurchaseOrder)
+            .AsSplitQuery()
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -762,11 +772,12 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         // Find purchase orders that have been partially used
         var partiallyUsedPurchaseOrders = await context.PurchaseOrders
-            .Include(p => p.Supplier)
-            .Where(po => context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id)
-                         && context.ShipmentInvoices.Any(si =>
-                             si.Items.Any(sii => sii.PurchaseOrderId == po.Id) && 
-                             si.Items.Any(sii => sii.PurchaseOrderId != po.Id)))
+            .Include(po => po.Supplier)
+            .Where(po =>
+                    po.Items.Any(poi => context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) // At least one item used
+                    && 
+                    po.Items.Any(poi => !context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) // At least one item NOT used
+            )
             .ToListAsync();
 
         // Combine the results
@@ -801,13 +812,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         // Find supplier purchase orders that have been partially used
         var partiallyUsedPurchaseOrders = await context.PurchaseOrders
-            .Include(p => p.Supplier)
-            .Include(p => p.Items)
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
             .Where(po => po.SupplierId == supplierId &&
-                         context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id) &&
-                         context.ShipmentInvoices.Any(si =>
-                             si.Items.Any(sii => sii.PurchaseOrderId == po.Id) &&
-                             si.Items.Any(sii => sii.PurchaseOrderId != po.Id)))
+                         po.Items.Any(poi => context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) && // At least one item used
+                         po.Items.Any(poi => !context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId))) // At least one item NOT used
             .ToListAsync();
 
         var resultPurchaseOrders = notLinkedPurchaseOrders

@@ -26,6 +26,7 @@ public class ShipmentInvoiceItemDto
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public CollectionItemDto Manufacturer { get; set; }
+    public CollectionItemDto PurchaseOrder { get; set; }
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     public string Reason { get; set; }
