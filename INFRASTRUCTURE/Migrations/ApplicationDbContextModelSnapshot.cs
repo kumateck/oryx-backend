@@ -4306,7 +4306,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("ShipmentArrived")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("SupplierId")
+                    b.Property<Guid?>("SupplierId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -7626,9 +7626,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
                         .WithMany()
-                        .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("SupplierId");
 
                     b.Navigation("CreatedBy");
 

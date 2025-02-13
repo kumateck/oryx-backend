@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace INFRASTRUCTURE.Migrations
 {
     /// <inheritdoc />
-    public partial class AddSupplierToShipmentInvoice : Migration
+    public partial class AddSupplierToInvoice : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,8 +15,7 @@ namespace INFRASTRUCTURE.Migrations
                 name: "SupplierId",
                 table: "ShipmentInvoices",
                 type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+                nullable: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ShipmentInvoices_SupplierId",
@@ -28,8 +27,7 @@ namespace INFRASTRUCTURE.Migrations
                 table: "ShipmentInvoices",
                 column: "SupplierId",
                 principalTable: "Suppliers",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                principalColumn: "Id");
         }
 
         /// <inheritdoc />

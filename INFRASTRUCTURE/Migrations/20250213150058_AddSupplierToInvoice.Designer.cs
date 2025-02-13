@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250213142843_AddSupplierToShipmentInvoice")]
-    partial class AddSupplierToShipmentInvoice
+    [Migration("20250213150058_AddSupplierToInvoice")]
+    partial class AddSupplierToInvoice
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -4309,7 +4309,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("ShipmentArrived")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("SupplierId")
+                    b.Property<Guid?>("SupplierId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -7629,9 +7629,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
                         .WithMany()
-                        .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("SupplierId");
 
                     b.Navigation("CreatedBy");
 
