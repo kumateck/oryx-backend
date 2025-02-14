@@ -918,6 +918,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         return Result.Success();
     }
+    
+    public async Task<Result<List<ShipmentDocumentDto>>> GetArrivedShipments()
+    {
+        var arrivedShipments = await context.ShipmentDocuments
+            .Where(sd => sd.ArrivedAt != null && sd.CompletedDistributionAt == null)
+            .ToListAsync();
+
+        var arrivedShipmentDtos = mapper.Map<List<ShipmentDocumentDto>>(arrivedShipments);
+        return Result.Success(arrivedShipmentDtos);
+    }
 
     public async Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId)
     {
@@ -996,6 +1006,18 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var invoiceItem =
             await context.ShipmentInvoicesItems.FirstOrDefaultAsync(s => s.Id == section.ShipmentInvoiceItemId);
         invoiceItem.Distributed = true;
+        
+        var shipmentDocument = await context.ShipmentDocuments
+            .Include(s => s.ShipmentInvoice).ThenInclude(shipmentInvoice => shipmentInvoice.Items)
+            .FirstOrDefaultAsync(bs => bs.ShipmentInvoiceId == invoiceItem.ShipmentInvoiceId);
+
+        var allItemsDistributed = shipmentDocument.ShipmentInvoice.Items.All(item => item.Distributed);
+
+        if (allItemsDistributed)
+        {
+            shipmentDocument.CompletedDistributionAt = DateTime.UtcNow;
+        }
+        
         await context.SaveChangesAsync();
         return Result.Success();
     } 
