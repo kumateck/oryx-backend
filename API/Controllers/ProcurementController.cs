@@ -651,10 +651,10 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// </summary>
     [HttpGet("shipment-document/arrived")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShipmentDocumentDto>))]
-    public async Task<IResult> GetArrivedShipments()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShipmentDocumentDto>>))]
+    public async Task<IResult> GetArrivedShipments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetArrivedShipments();
+        var result = await repository.GetArrivedShipments(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

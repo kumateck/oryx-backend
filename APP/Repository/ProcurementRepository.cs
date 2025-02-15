@@ -919,14 +919,32 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
     
-    public async Task<Result<List<ShipmentDocumentDto>>> GetArrivedShipments()
+    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize, string searchQuery)
     {
-        var arrivedShipments = await context.ShipmentDocuments
+        var query = context.ShipmentDocuments
+            .Include(shipmentDoc => shipmentDoc.ShipmentInvoice)
+            .ThenInclude(shipmenInvoice => shipmenInvoice.Items)
             .Where(sd => sd.ArrivedAt != null && sd.CompletedDistributionAt == null)
-            .ToListAsync();
+            .AsQueryable();
 
-        var arrivedShipmentDtos = mapper.Map<List<ShipmentDocumentDto>>(arrivedShipments);
-        return Result.Success(arrivedShipmentDtos);
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, bs => bs.Code);
+        }
+        
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var shipmentDocuments = await paginatedResult.Data.ToListAsync();
+        
+        return new Paginateable<IEnumerable<ShipmentDocumentDto>>
+        {
+            Data = mapper.Map<IEnumerable<ShipmentDocumentDto>>(shipmentDocuments, 
+                opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentDocument)),
+            PageIndex = page,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
     }
 
     public async Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId)
