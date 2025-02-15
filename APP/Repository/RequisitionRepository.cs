@@ -15,11 +15,12 @@ using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions.Request;
+using DOMAIN.Entities.Warehouses;
 
 namespace APP.Repository;
 
 public class RequisitionRepository(ApplicationDbContext context, IMapper mapper, IProcurementRepository procurementRepository, 
-    IEmailService emailService, IPdfService pdfService, IConfigurationRepository configurationRepository) : IRequisitionRepository
+    IEmailService emailService, IPdfService pdfService, IConfigurationRepository configurationRepository, IMaterialRepository materialRepository) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
 
@@ -47,6 +48,19 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 await context.RequisitionApprovals.AddAsync(approval);
             }
         }
+
+        if (request.ActivityStepId.HasValue)
+        {
+            var activityStep =
+                await context.ProductionActivitySteps.FirstOrDefaultAsync(p => p.Id == request.ActivityStepId);
+
+            if (activityStep is not null)
+            {
+                activityStep.Status = ProductionStatus.InProgress;
+                context.ProductionActivitySteps.Update(activityStep);
+            }
+        }
+        
         await context.SaveChangesAsync();
         return Result.Success(requisition.Id);
     }
@@ -142,7 +156,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         // Get the requisition and its approvals
         var requisition = await context.Requisitions
-            .Include(r => r.Approvals)
+            .Include(r => r.Approvals).Include(requisition => requisition.ActivityStep)
+            .Include(requisition => requisition.RequestedBy).ThenInclude(r => r.Department)
+            .ThenInclude(d => d.Warehouses).ThenInclude(w => w.Warehouse).Include(requisition => requisition.Items)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
         if (requisition == null)
@@ -172,6 +189,27 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (allApproved)
         {
             requisition.Approved = true;
+            requisition.ActivityStep.Status = ProductionStatus.Completed;
+            context.ProductionActivitySteps.Update(requisition.ActivityStep);
+
+            var warehouse =
+                requisition.RequestedBy.Department?.Warehouses.FirstOrDefault(w =>
+                    w.Warehouse.Type == WarehouseType.Production)?.Warehouse;
+
+            if (warehouse is not null)
+            {
+                foreach (var item in requisition.Items)
+                {
+                    var frozenMaterialsResult = await materialRepository.GetFrozenMaterialBatchesInWarehouse(item.MaterialId, warehouse.Id);
+                    if (frozenMaterialsResult.IsFailure) continue;
+
+                    var frozenMaterial = frozenMaterialsResult.Value;
+                    foreach (var materialBatch in frozenMaterial)
+                    {
+                        await materialRepository.ConsumeMaterialAtLocation(materialBatch.Id, warehouse.Id, item.Quantity, userId);
+                    }
+                }
+            }
         }
         
         await context.SaveChangesAsync();

@@ -524,6 +524,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
     public async Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>> GetProductionActivityStepsGroupedByOperation()
     {
+        // Retrieve all operations
+        var allOperations = await context.Operations
+            .Select(o => o.Name)
+            .Where(name => name != "Dispatch")
+            .ToListAsync();
+
+        // Retrieve existing grouped ProductionActivitySteps
         var groupedData = await context.ProductionActivitySteps
             .Include(pas => pas.ProductionActivity)
             .Include(pas => pas.ResponsibleUsers)
@@ -531,14 +538,21 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pas => pas.WorkCenters)
             .Include(pas => pas.WorkFlow)
             .Include(pas => pas.Operation)
-            .GroupBy(pas => pas.Operation)
+            .GroupBy(pas => pas.Operation.Name)
             .ToDictionaryAsync(
-                g => g.Key.Name.ToString(),
+                g => g.Key,
                 g => g.Select(mapper.Map<ProductionActivityStepDto>).ToList()
             );
 
-        return groupedData;
+        // Ensure all operations are included in the dictionary, even if empty
+        var result = allOperations.ToDictionary(
+            op => op,
+            op => groupedData.TryGetValue(op, out var value) ? value : []
+        );
+
+        return result;
     }
+
 
     public async Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productId, decimal quantityRequired, Guid userId)
     {
@@ -847,7 +861,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
     }
 
-    public async Task ConsumeMaterialInProduction(Guid productId, decimal quantity, Guid userId)
+    /*public async Task ConsumeMaterialInProduction(Guid productId, decimal quantity, Guid userId)
     {
         var materialResult = await CheckMaterialStockLevelsForProductionSchedule(productId, quantity, userId);
         if (materialResult.IsFailure) return;
@@ -858,5 +872,5 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         {
             await materialRepository.ConsumeMaterialAtLocation(batch.Batch.Id, batch.ConsumptionLocation.Id, quantity, userId);
         }
-    }
+    }*/
 }

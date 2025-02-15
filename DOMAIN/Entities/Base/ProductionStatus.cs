@@ -6,5 +6,5 @@ public enum ProductionStatus
     InProgress,
     Completed,
     Delayed,
-    Canceled
+    Cancelled
 }

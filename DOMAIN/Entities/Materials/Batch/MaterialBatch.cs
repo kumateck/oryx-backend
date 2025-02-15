@@ -45,7 +45,7 @@ public class MaterialBatchEvent : BaseEntity
     public EventType Type { get; set; }
     // Nullable fields for tracking consumption location and timestamp
     public Guid? ConsumedLocationId { get; set; }
-    public WarehouseLocation ConsumedLocation { get; set; }
+    public Warehouse ConsumedLocation { get; set; }
     public DateTime? ConsumedAt { get; set; }
 }
 

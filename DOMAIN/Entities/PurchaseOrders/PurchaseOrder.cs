@@ -57,7 +57,6 @@ public enum PurchaseOrderAttachmentStatus
 
 public class PurchaseOrderDto : WithAttachment
 {
-    public Guid Id { get; set; }
     public string Code { get; set; }
     public SupplierDto Supplier { get; set; }
     public DateTime RequestDate { get; set; }
@@ -66,7 +65,6 @@ public class PurchaseOrderDto : WithAttachment
     public PurchaseOrderStatus Status { get; set; }
     public List<RevisedPurchaseOrderDto> RevisedPurchaseOrders { get; set; } = [];
     public PurchaseOrderAttachmentStatus AttachmentStatus { get; set; }
-    public DateTime CreatedAt { get; set; }
 }
 
 public class PurchaseOrderItemDto

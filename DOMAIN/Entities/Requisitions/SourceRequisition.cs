@@ -42,12 +42,10 @@ public enum ProcurementSource
 
 public class SourceRequisitionDto :  WithAttachment
 {
-    public Guid Id { get; set; }
     public string Code { get; set; }
     public CollectionItemDto Requisition { get; set; }
     public CollectionItemDto Supplier { get; set; }
     public List<SourceRequisitionItemDto> Items { get; set; } = [];
-    public DateTime CreatedAt { get; set; }
 }
 
 public class SupplierQuotation : BaseEntity

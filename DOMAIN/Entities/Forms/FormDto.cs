@@ -40,10 +40,8 @@ public class ResponseDto : BaseDto
 
 public class FormResponseDto :  WithAttachment
 {
-    public Guid Id { get; set; }
     public FormFieldDto FormField { get; set; }
     public string Value { get; set; }
-    public DateTime CreatedAt { get; set; }
 }
 
 public class FormAssigneeDto : BaseDto

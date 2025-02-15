@@ -541,7 +541,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(m => m.ConsumedLocation)
             .Where(e => e.Batch.MaterialId == materialId
                         && e.ConsumedLocation != null 
-                        && e.ConsumedLocation.WarehouseId == warehouseId
+                        && e.ConsumedLocationId == warehouseId
                         && e.Type == EventType.Consumed)
             .SumAsync(e => e.Quantity);
 
@@ -578,7 +578,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(m => m.ConsumedLocation)
             .Where(e =>  e.Batch.IsFrozen && e.Batch.MaterialId == materialId
                                           && e.ConsumedLocation != null 
-                                          && e.ConsumedLocation.WarehouseId == warehouseId
+                                          && e.ConsumedLocationId == warehouseId
                                           && e.Type == EventType.Consumed)
             .SumAsync(e => e.Quantity);
 
