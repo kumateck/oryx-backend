@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 
@@ -10,6 +11,8 @@ public class MaterialBatch : BaseEntity
     [StringLength(10000)] public string Code { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
+    public Guid? ChecklistId { get; set; }
+    public Checklist Checklist { get; set; }
     public decimal TotalQuantity { get; set; }        
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity;
@@ -21,8 +24,19 @@ public class MaterialBatch : BaseEntity
     public DateTime? DateRejected { get; set; }
     public DateTime ExpiryDate { get; set; }
     public bool IsFrozen { get; set; }  
+    public List<Sr> SampleWeights { get; set; } = [];
     public List<MaterialBatchEvent> Events { get; set; } = [];
     public List<MaterialBatchMovement> Movements { get; set; } = [];
+}
+
+public class Sr:BaseEntity
+{
+    public Guid MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
+    [StringLength(10000)] public string SrNumber { get; set; }
+    public decimal GrossWeight { get; set; }
+    public Guid UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
 }
 
 public enum BatchStatus

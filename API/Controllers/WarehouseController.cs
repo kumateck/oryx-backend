@@ -1,6 +1,8 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
 using Microsoft.AspNetCore.Authorization;
@@ -335,6 +337,19 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
+    /// </summary>
+    [HttpGet("{warehouseId}/distributed-requisition-materials")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributedRequisitionMaterials(Guid warehouseId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetDistributedRequisitionMaterials(warehouseId, page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     
     /// <summary>
     /// Creates a new arrival location for a warehouse.
@@ -375,4 +390,66 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
     #endregion
+    
+    #region Checklist CRUD
+
+    /// <summary>
+    /// Creates a new checklist.
+    /// </summary>
+    [HttpPost("checklist")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateChecklist([FromBody] CreateChecklistRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return TypedResults.BadRequest(ModelState);
+        }
+
+        var result = await repository.CreateChecklist(request);
+
+        return result.IsSuccess 
+            ? TypedResults.Created($"/api/v1/warehouse/checklist/{result.Value}", result.Value) 
+            : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the details of a specific checklist by its ID.
+    /// </summary>
+    [HttpGet("checklist/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ChecklistDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetChecklist(Guid id)
+    {
+        var result = await repository.GetChecklist(id);
+
+        return result.IsSuccess 
+            ? TypedResults.Ok(result.Value) 
+            : result.ToProblemDetails();
+    }
+    
+    #region MaterialBatch by DistributedRequisitionMaterial
+
+    /// <summary>
+    /// Retrieves the material batch details by distributed requisition material ID.
+    /// </summary>
+    [HttpGet("distributed-material/{distributedMaterialId}/material-batch")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialBatchDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId)
+    {
+        var result = await repository.GetMaterialBatchByDistributedMaterial(distributedMaterialId);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+
+    #endregion
+
+    #endregion
+    
 }

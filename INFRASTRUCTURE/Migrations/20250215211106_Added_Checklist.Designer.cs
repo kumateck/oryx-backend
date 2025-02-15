@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250215211106_Added_Checklist")]
+    partial class Added_Checklist
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -288,9 +291,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("Name")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1351,7 +1351,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("ConsumedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ConsumptionWarehouseId")
+                    b.Property<Guid?>("ConsumedLocationId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -1385,7 +1385,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("BatchId");
 
-                    b.HasIndex("ConsumptionWarehouseId");
+                    b.HasIndex("ConsumedLocationId");
 
                     b.HasIndex("CreatedById");
 
@@ -3538,9 +3538,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ActivityStepId")
-                        .HasColumnType("uuid");
-
                     b.Property<bool>("Approved")
                         .HasColumnType("boolean");
 
@@ -3583,8 +3580,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ActivityStepId");
 
                     b.HasIndex("CreatedById");
 
@@ -6028,9 +6023,9 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "ConsumptionWarehouse")
+                    b.HasOne("DOMAIN.Entities.Warehouses.WarehouseLocation", "ConsumedLocation")
                         .WithMany()
-                        .HasForeignKey("ConsumptionWarehouseId");
+                        .HasForeignKey("ConsumedLocationId");
 
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
@@ -6052,7 +6047,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("Batch");
 
-                    b.Navigation("ConsumptionWarehouse");
+                    b.Navigation("ConsumedLocation");
 
                     b.Navigation("CreatedBy");
 
@@ -7405,10 +7400,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ActivityStep")
-                        .WithMany()
-                        .HasForeignKey("ActivityStepId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -7426,8 +7417,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("RequestedById")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("ActivityStep");
 
                     b.Navigation("CreatedBy");
 

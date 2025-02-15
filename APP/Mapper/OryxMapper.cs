@@ -4,6 +4,7 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.BillOfMaterials.Request;
+using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
@@ -362,6 +363,13 @@ public class OryxMapper : Profile
         CreateMap<CreateShipmentDiscrepancyItem, ShipmentDiscrepancyItem>();
         CreateMap<ShipmentDiscrepancy, ShipmentDiscrepancyDto>();
         CreateMap<ShipmentDiscrepancyItem, ShipmentDiscrepancyItemDto>();
+
+        #endregion
+        
+        #region Checklist
+
+        CreateMap<Checklist, ChecklistDto>();
+        CreateMap<CreateChecklistRequest, Checklist>();
 
         #endregion
 
