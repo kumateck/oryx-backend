@@ -647,6 +647,18 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
     
     /// <summary>
+    /// Retrieves all shipments that have arrived.
+    /// </summary>
+    [HttpGet("shipment-document/arrived")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShipmentDocumentDto>))]
+    public async Task<IResult> GetArrivedShipments()
+    {
+        var result = await repository.GetArrivedShipments();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Creates a new shipment invoice.
     /// </summary>
     [HttpPost("shipment-invoice")]

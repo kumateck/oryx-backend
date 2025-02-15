@@ -64,6 +64,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialBatch> MaterialBatches { get; set; }
     public DbSet<MaterialBatchEvent> MaterialBatchEvents { get; set; }
     public DbSet<MaterialBatchMovement> MaterialBatchMovements { get; set; }
+    public DbSet<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
     
     #endregion
 
@@ -162,6 +163,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WarehouseLocation> WarehouseLocations { get; set; }
     public DbSet<WarehouseLocationRack> WarehouseLocationRacks { get; set; }
     public DbSet<WarehouseLocationShelf> WarehouseLocationShelves { get; set; }
+    public DbSet<WarehouseArrivalLocation> WarehouseArrivalLocations { get; set; }
 
     #endregion
 

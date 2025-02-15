@@ -17,6 +17,8 @@ using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
+using DOMAIN.Entities.Warehouses;
+using QueryableExtensions = System.Data.Entity.QueryableExtensions;
 
 namespace APP.Repository;
 
@@ -916,6 +918,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         return Result.Success();
     }
+    
+    public async Task<Result<List<ShipmentDocumentDto>>> GetArrivedShipments()
+    {
+        var arrivedShipments = await context.ShipmentDocuments
+            .Where(sd => sd.ArrivedAt != null && sd.CompletedDistributionAt == null)
+            .ToListAsync();
+
+        var arrivedShipmentDtos = mapper.Map<List<ShipmentDocumentDto>>(arrivedShipments);
+        return Result.Success(arrivedShipmentDtos);
+    }
 
     public async Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId)
     {
@@ -961,12 +973,51 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             var requisitionItem = await context.RequisitionItems.FirstOrDefaultAsync(r => r.Id == item.RequistionItemId);
             requisitionItem.QuantityReceived += item.QuantityAllocated;
-            //todo: send to warehouse receiving area
+            var departmentWarehouse = context.DepartmentWarehouses.Include(s => s.Warehouse)
+                .ThenInclude(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.DepartmentId && w.Warehouse.Type == WarehouseType.Storage);
+            if (departmentWarehouse != null)
+            {
+                var warehouse = departmentWarehouse.Warehouse;
+                if (warehouse.ArrivalLocation == null)
+                {
+                    warehouse.ArrivalLocation = new WarehouseArrivalLocation
+                    {
+                        WarehouseId = warehouse.Id,
+                        Name = "Default Arrival Location",
+                        FloorName = "Ground Floor",
+                        Description = "Automatically created arrival location"
+                    };
+                    context.WarehouseArrivalLocations.Add(warehouse.ArrivalLocation);
+                }
+                
+                var distributedRequisitionMaterial = new DistributedRequisitionMaterial
+                    {
+                        RequisitionItemId = requisitionItem.Id,
+                        MaterialId = requisitionItem.MaterialId,
+                        UomId = requisitionItem.UomId,
+                        Quantity = item.QuantityAllocated,
+                        ConfirmArrival = false,
+                        WarehouseArrivalLocationId = warehouse.ArrivalLocation.Id
+                    };
+                    context.DistributedRequisitionMaterials.Add(distributedRequisitionMaterial);
+            }
         }
 
         var invoiceItem =
             await context.ShipmentInvoicesItems.FirstOrDefaultAsync(s => s.Id == section.ShipmentInvoiceItemId);
         invoiceItem.Distributed = true;
+        
+        var shipmentDocument = await context.ShipmentDocuments
+            .Include(s => s.ShipmentInvoice).ThenInclude(shipmentInvoice => shipmentInvoice.Items)
+            .FirstOrDefaultAsync(bs => bs.ShipmentInvoiceId == invoiceItem.ShipmentInvoiceId);
+
+        var allItemsDistributed = shipmentDocument.ShipmentInvoice.Items.All(item => item.Distributed);
+
+        if (allItemsDistributed)
+        {
+            shipmentDocument.CompletedDistributionAt = DateTime.UtcNow;
+        }
+        
         await context.SaveChangesAsync();
         return Result.Success();
     } 
