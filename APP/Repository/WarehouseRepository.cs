@@ -2,6 +2,8 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
 using INFRASTRUCTURE.Context;
@@ -389,6 +391,31 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success(arrivalLocationDto);
     }
     
+    public async Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(Guid warehouseId,int page, int pageSize, string searchQuery)
+    {
+        var query = context.DistributedRequisitionMaterials
+            .Include(drm => drm.ShipmentInvoice)
+            .Include(drm => drm.Manufacturer)
+            .Include(drm => drm.Supplier)
+            .Include(drm => drm.Material)
+            .Include(drm => drm.ShipmentInvoiceItem)
+            .Include(drm => drm.RequisitionItem)
+            .Where(drm => drm.Id == warehouseId)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, drm => drm.Material.Name, drm => drm.Supplier.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<DistributedRequisitionMaterialDto>
+        );
+    }
+    
     public async Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request)
     {
         var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == request.WarehouseId);
@@ -440,34 +467,59 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success();
     }
     
-  
-    // public async Task<Result<Guid>> CreateChecklist(ChecklistDto checklistDto)
+    // public async Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request)
     // {
-    //     var checklist = new Checklist
-    //     {
-    //         MaterialId = checklistDto.Material.Id,
-    //         ShipmentInvoiceItemId = checklistDto.ShipmentInvoiceItem.Id,
-    //         CertificateOfAnalysisDelivered = checklistDto.CertificateOfAnalysisDelivered,
-    //         VisibleLabelling = checklistDto.VisibleLabelling,
-    //         IntactnessStatus = checklistDto.IntactnessStatus,
-    //         ConsignmentCarrierStatus = checklistDto.ConsignmentCarrierStatus,
-    //         CheckedAt = DateTime.UtcNow
-    //     };
-    //     
+    //     var checklist = mapper.Map<Checklist>(request);
     //     await context.Checklists.AddAsync(checklist);
-    //     
-    //     foreach (var materialBatchDto in checklistDto.MaterialBatches)
+    //
+    //     var distributedMaterial = await context.DistributedRequisitionMaterials
+    //         .FirstOrDefaultAsync(dm => dm.Id == request.DistributedRequisitionMaterialId);
+    //
+    //     if (distributedMaterial == null)
     //     {
-    //         var materialBatch = mapper.Map<MaterialBatch>(materialBatchDto);
-    //         materialBatch.ChecklistId = checklist.Id;
-    //         await context.MaterialBatches.AddAsync(materialBatch);
-    //         await context.SaveChangesAsync();
-    //         materialBatchDto.Id = materialBatch.Id; 
+    //         return Error.NotFound("DistributedMaterial.NotFound", "Distributed material not found");
     //     }
-    //     
+    //
+    //     distributedMaterial.IsChecked = true;
     //     await context.SaveChangesAsync();
     //
     //     return Result.Success(checklist.Id);
+    // }
+    //
+    // public async Task<Result<ChecklistMaterialBatchDto>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId)
+    // {
+    //     var checklist = await context.Checklists
+    //         .Include(c => c.MaterialBatches)
+    //         .FirstOrDefaultAsync(c => c.DistributedRequisitionMaterialId == distributedMaterialId);
+    //
+    //     if (checklist == null)
+    //     {
+    //         return Error.NotFound("Checklist.NotFound", "Checklist not found for the specified distributed requisition material.");
+    //     }
+    //
+    //     var materialBatch = checklist.MaterialBatches.FirstOrDefault();
+    //     if (materialBatch == null)
+    //     {
+    //         return Error.NotFound("MaterialBatch.NotFound", "Material batch not found for the specified checklist.");
+    //     }
+    //
+    //     var materialBatchDto = mapper.Map<ChecklistMaterialBatchDto>(materialBatch);
+    //     return Result.Success(materialBatchDto);
+    // }
+    //
+    // public async Task<Result<ChecklistDto>> GetChecklist(Guid id)
+    // {
+    //     var checklist = await context.Checklists
+    //         .Include(c => c.MaterialBatches)
+    //         .FirstOrDefaultAsync(c => c.Id == id);
+    //
+    //     if (checklist == null)
+    //     {
+    //         return Error.NotFound("Checklist.NotFound", "Checklist not found");
+    //     }
+    //
+    //     var checklistDto = mapper.Map<ChecklistDto>(checklist);
+    //     return Result.Success(checklistDto);
     // }
     
     

@@ -1,4 +1,6 @@
 using APP.Utils;
+using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
 using SHARED;
@@ -38,7 +40,12 @@ public interface IWarehouseRepository
         Guid userId);
     Task<Result> DeleteWarehouseLocationShelf(Guid shelfId, Guid userId);
     Task<Result<WarehouseArrivalLocationDto>> GetArrivalLocationDetails(Guid warehouseId);
+    Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(
+        Guid warehouseId, int page, int pageSize, string searchQuery);
     Task<Result> UpdateArrivalLocation(UpdateArrivalLocationRequest request);
     Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request);
     Task<Result> ConfirmArrival(Guid distributedMaterialId);
+    // Task<Result<ChecklistDto>> GetChecklist(Guid id);
+    // Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request);
+    // Task<Result<ChecklistMaterialBatchDto>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId);
 }
