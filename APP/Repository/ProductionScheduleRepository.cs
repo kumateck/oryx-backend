@@ -484,7 +484,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
     public async Task<Result<Dictionary<string, List<ProductionActivityDto>>>> GetProductionActivityGroupedByOperation()
     {
-        var productionActivities = mapper.Map<List<ProductionActivityDto>>(await context.ProductionActivities
+        // Fetch all unique operation names
+        var allOperations = await context.Operations
+            .Select(o => o.Name)
+            .Distinct() // Ensure no duplicate operation names
+            .ToListAsync();
+
+        // Fetch production activities along with necessary relations
+        var productionActivities = await context.ProductionActivities
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps.OrderBy(p => p.Order))
@@ -493,14 +500,27 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
             .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
-           .ToListAsync());
+            .ToListAsync();
 
-        return productionActivities
-            .GroupBy(p => p.CurrentStep)
+        // Map to DTO
+        var productionActivityDtos = mapper.Map<List<ProductionActivityDto>>(productionActivities);
+
+        // Group activities by CurrentStep's Operation name
+        var groupedData = productionActivityDtos
+            .Where(p => p.CurrentStep?.Operation != null) // Ensure CurrentStep & Operation exist
+            .GroupBy(p => p.CurrentStep.Operation.Name)
             .ToDictionary(
-                g => g.Key.Operation.Name,
+                g => g.Key,
                 g => g.ToList()
             );
+
+        // Ensure all operations exist in the dictionary, even if they have no activities
+        var result = allOperations.Distinct().ToDictionary(
+            op => op,
+            op => groupedData.TryGetValue(op, out var value) ? value : []
+        );
+
+        return result;
     }
 
     
