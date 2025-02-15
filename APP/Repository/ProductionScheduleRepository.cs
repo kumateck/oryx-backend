@@ -486,9 +486,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         // Fetch all unique operation names in the correct order
         var allOperations = await context.Operations
+            .OrderBy(o => o.Order) 
             .Select(o => new CollectionItemDto { Id = o.Id, Name = o.Name })
-            .Distinct()
-            .OrderBy(o => o.Name) // Preserve ordering
             .AsNoTracking()
             .ToListAsync();
 
