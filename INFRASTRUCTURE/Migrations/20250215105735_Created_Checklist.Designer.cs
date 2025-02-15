@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250215105735_Created_Checklist")]
+    partial class Created_Checklist
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4581,25 +4584,25 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ManufacturerId")
+                    b.Property<Guid>("ManufacturerId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("MaterialId")
+                    b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid?>("RequisitionItemId")
+                    b.Property<Guid>("RequisitionItemId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ShipmentInvoiceId")
+                    b.Property<Guid>("ShipmentInvoiceId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ShipmentInvoiceItemId")
+                    b.Property<Guid>("ShipmentInvoiceItemId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("SupplierId")
+                    b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("UomId")
@@ -4608,7 +4611,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("WarehouseArrivalLocationId")
+                    b.Property<Guid>("WarehouseArrivalLocationId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -7884,27 +7887,40 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Procurement.Manufacturers.Manufacturer", "Manufacturer")
                         .WithMany()
-                        .HasForeignKey("ManufacturerId");
+                        .HasForeignKey("ManufacturerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
                         .WithMany()
-                        .HasForeignKey("MaterialId");
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("DOMAIN.Entities.Requisitions.RequisitionItem", "RequisitionItem")
                         .WithMany()
-                        .HasForeignKey("RequisitionItemId");
+                        .HasForeignKey("RequisitionItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Shipments.ShipmentInvoice", "ShipmentInvoice")
+                    b.HasOne("DOMAIN.Entities.Shipments.ShipmentInvoiceItem", "ShipmentInvoice")
                         .WithMany()
-                        .HasForeignKey("ShipmentInvoiceId");
+                        .HasForeignKey("ShipmentInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("DOMAIN.Entities.Shipments.ShipmentInvoiceItem", "ShipmentInvoiceItem")
                         .WithMany()
-                        .HasForeignKey("ShipmentInvoiceItemId");
+                        .HasForeignKey("ShipmentInvoiceItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_DistributedRequisitionMaterials_ShipmentInvoicesItems_Ship~1");
 
                     b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
                         .WithMany()
-                        .HasForeignKey("SupplierId");
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
@@ -7912,7 +7928,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Warehouses.WarehouseArrivalLocation", "WarehouseArrivalLocation")
                         .WithMany("DistributedRequisitionMaterials")
-                        .HasForeignKey("WarehouseArrivalLocationId");
+                        .HasForeignKey("WarehouseArrivalLocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("CreatedBy");
 

@@ -1,3 +1,9 @@
+using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Shipments;
 using SHARED;
 
 namespace DOMAIN.Entities.Warehouses;
@@ -33,7 +39,7 @@ public class WarehouseLocationRackDto
 public class WarehouseArrivalLocationDto
 {
     public Guid Id { get; set; }
-    public Guid WarehouseId { get; set; }
+    public WarehouseDto Warehouse { get; set; }
     public string Name { get; set; }
     public string FloorName { get; set; }
     public string Description { get; set; }
@@ -43,11 +49,14 @@ public class WarehouseArrivalLocationDto
 public class DistributedRequisitionMaterialDto
 {
     public Guid Id { get; set; }
-    public Guid RequisitionItemId { get; set; }
-    public Guid MaterialId { get; set; }
-    public string MaterialName { get; set; }
-    public Guid? UomId { get; set; }
-    public string UomName { get; set; }
+    public RequisitionItemDto RequisitionItem { get; set; }
+    public WarehouseArrivalLocationDto WarehouseArrivalLocation { get; set; }
+    public MaterialDto Material { get; set; }
+    public UnitOfMeasureDto Uom { get; set; }
+    public SupplierDto Supplier { get; set; }
+    public ManufacturerDto Manufacturer { get; set; }
+    public ShipmentInvoiceItemDto ShipmentInvoiceItem { get; set; }
+    public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public decimal Quantity { get; set; }
     public bool ConfirmArrival { get; set; }
 }
