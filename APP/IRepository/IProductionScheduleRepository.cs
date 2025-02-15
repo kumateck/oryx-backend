@@ -40,8 +40,7 @@ public interface IProductionScheduleRepository
     Task<Result<ProductionActivityStepDto>> GetProductionActivityStepById(Guid productionActivityStepId);
     Task<Result<Dictionary<string, List<ProductionActivityDto>>>> GetProductionActivityGroupedByStatus();
 
-    Task<Result<Dictionary<CollectionItemDto, List<ProductionActivityGroupDto>>>>
-        GetProductionActivityGroupedByOperation();
+    Task<Result<List<ProductionActivityGroupResultDto>>>  GetProductionActivityGroupedByOperation();
 
     Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>>
         GetProductionActivityStepsGroupedByOperation();

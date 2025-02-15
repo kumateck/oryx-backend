@@ -103,6 +103,13 @@ public class ProductionActivityGroupDto : BaseDto
     public ProductionActivityStepDto CurrentStep { get; set; }
 }
 
+public class ProductionActivityGroupResultDto
+{
+    public CollectionItemDto Operation { get; set; } // Operation name and ID
+    public List<ProductionActivityGroupDto> Activities { get; set; } = [];
+}
+
+
 public class ProductionActivityStepDto : BaseDto
 {
     public CollectionItemDto ProductionActivity { get; set; }

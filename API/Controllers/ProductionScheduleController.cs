@@ -349,7 +349,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>Returns a dictionary grouping Production Activities by their status.</returns>
     [HttpGet("activity/operation-grouped")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionActivityGroupResultDto>))]
     public async Task<IResult> GetProductionActivityGroupedByOperation()
     {
         var result = await repository.GetProductionActivityGroupedByOperation();

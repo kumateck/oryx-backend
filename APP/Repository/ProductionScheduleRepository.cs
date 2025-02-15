@@ -482,29 +482,31 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return groupedData;
     }
     
-    public async Task<Result<Dictionary<CollectionItemDto, List<ProductionActivityGroupDto>>>> GetProductionActivityGroupedByOperation()
+   public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
     {
-        // Fetch all unique operation names, ordered correctly
+        // Fetch all unique operation names in the correct order
         var allOperations = await context.Operations
-            .OrderBy(o => o.Order)
             .Select(o => new CollectionItemDto { Id = o.Id, Name = o.Name })
             .Distinct()
+            .OrderBy(o => o.Name) // Preserve ordering
             .AsNoTracking()
             .ToListAsync();
 
-        // Fetch production activities with only the necessary data
+        // Fetch production activities with only necessary data
         var productionActivities = await context.ProductionActivities
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
-            .Include(pa => pa.Steps) // Load Steps but handle filtering in memory
-                .ThenInclude(s => s.Operation)
+            .Include(pa => pa.Steps)
+                .ThenInclude(s => s.Operation) // Load only needed relations
             .AsNoTracking()
             .ToListAsync();
 
-        // Process CurrentStep in memory to avoid translation issues
+        // Process CurrentStep in memory
         var productionActivityDtos = productionActivities
             .Select(pa => new ProductionActivityGroupDto
             {
+                Id = pa.Id,
+                CreatedAt = pa.CreatedAt,
                 ProductionSchedule = mapper.Map<CollectionItemDto>(pa.ProductionSchedule),
                 Product = mapper.Map<CollectionItemDto>(pa.Product),
                 Status = pa.Status,
@@ -513,26 +515,26 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 CurrentStep = mapper.Map<ProductionActivityStepDto>(
                     pa.Steps
                         .OrderBy(s => s.Order)
-                        .FirstOrDefault(s => !s.CompletedAt.HasValue) ?? // Get first unfinished step
-                    pa.Steps.OrderBy(s => s.Order).LastOrDefault() // Fallback: Get last step if all are completed
+                        .FirstOrDefault(s => !s.CompletedAt.HasValue) ?? // First unfinished step
+                    pa.Steps.OrderBy(s => s.Order).LastOrDefault() // Fallback: last step
                 )
             })
-            .Where(p => p.CurrentStep?.Operation != null) // Ensure the current step has an operation
+            .Where(p => p.CurrentStep?.Operation != null) // Ensure CurrentStep has an operation
             .ToList();
 
-        // Group activities by CurrentStep's Operation (using CollectionItemDto)
-        var groupedData = productionActivityDtos
-            .GroupBy(p => new CollectionItemDto { Id = p.CurrentStep.Operation.Id, Name = p.CurrentStep.Operation.Name }) 
-            .ToDictionary(
-                g => g.Key,
-                g => g.ToList()
-            );
+        // Group activities by operation
+        var groupedActivities = productionActivityDtos
+            .GroupBy(p => new CollectionItemDto { Id = p.CurrentStep.Operation.Id, Name = p.CurrentStep.Operation.Name })
+            .ToList();
 
-        // Ensure all operations exist in the dictionary, even if they have no activities
-        var result = allOperations.ToDictionary(
-            op => op,
-            op => groupedData.TryGetValue(op, out var value) ? value : new List<ProductionActivityGroupDto>()
-        );
+        // Construct response list
+        var result = allOperations
+            .Select(op => new ProductionActivityGroupResultDto
+            {
+                Operation = op,
+                Activities = groupedActivities.FirstOrDefault(g => g.Key.Id == op.Id)?.ToList() ?? []
+            })
+            .ToList();
 
         return result;
     }
