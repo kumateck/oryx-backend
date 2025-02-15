@@ -1,7 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Shipments;
 
 namespace DOMAIN.Entities.Warehouses;
 
@@ -26,11 +29,20 @@ public class WarehouseArrivalLocation:BaseEntity
 
 public class DistributedRequisitionMaterial:BaseEntity
 {
-    public Guid RequisitionItemId { get; set; }
-    public Guid WarehouseArrivalLocationId{get;set;}
+    public Guid? RequisitionItemId { get; set; }
     public RequisitionItem RequisitionItem { get; set; }
-    public Guid MaterialId { get; set; }
+    public Guid? WarehouseArrivalLocationId{get;set;}
+    public WarehouseArrivalLocation WarehouseArrivalLocation { get; set; }
+    public Guid? ShipmentInvoiceItemId { get; set; }
+    public ShipmentInvoiceItem ShipmentInvoiceItem { get; set; }
+    public Guid? ShipmentInvoiceId { get; set; }
+    public ShipmentInvoice ShipmentInvoice { get; set; }
+    public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
+    public Guid? SupplierId { get; set; }
+    public Supplier Supplier { get; set; }
+    public Guid? ManufacturerId { get; set; }
+    public Manufacturer Manufacturer { get; set; }
     public Guid? UomId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }

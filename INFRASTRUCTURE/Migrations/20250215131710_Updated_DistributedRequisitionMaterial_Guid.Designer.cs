@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250215131710_Updated_DistributedRequisitionMaterial_Guid")]
+    partial class Updated_DistributedRequisitionMaterial_Guid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -7894,13 +7897,14 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("RequisitionItemId");
 
-                    b.HasOne("DOMAIN.Entities.Shipments.ShipmentInvoice", "ShipmentInvoice")
+                    b.HasOne("DOMAIN.Entities.Shipments.ShipmentInvoiceItem", "ShipmentInvoice")
                         .WithMany()
                         .HasForeignKey("ShipmentInvoiceId");
 
                     b.HasOne("DOMAIN.Entities.Shipments.ShipmentInvoiceItem", "ShipmentInvoiceItem")
                         .WithMany()
-                        .HasForeignKey("ShipmentInvoiceItemId");
+                        .HasForeignKey("ShipmentInvoiceItemId")
+                        .HasConstraintName("FK_DistributedRequisitionMaterials_ShipmentInvoicesItems_Ship~1");
 
                     b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
                         .WithMany()

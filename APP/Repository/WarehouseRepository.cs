@@ -362,6 +362,16 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         var warehouse = await context.Warehouses
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(drm => drm.ShipmentInvoice)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(drm => drm.Manufacturer)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(drm => drm.Supplier)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(drm => drm.Material)
             .FirstOrDefaultAsync(w => w.Id == warehouseId);
 
         if (warehouse == null || warehouse.ArrivalLocation == null)
@@ -423,6 +433,36 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
 
         return Result.Success();
     }
+    
+  
+    // public async Task<Result<Guid>> CreateChecklist(ChecklistDto checklistDto)
+    // {
+    //     var checklist = new Checklist
+    //     {
+    //         MaterialId = checklistDto.Material.Id,
+    //         ShipmentInvoiceItemId = checklistDto.ShipmentInvoiceItem.Id,
+    //         CertificateOfAnalysisDelivered = checklistDto.CertificateOfAnalysisDelivered,
+    //         VisibleLabelling = checklistDto.VisibleLabelling,
+    //         IntactnessStatus = checklistDto.IntactnessStatus,
+    //         ConsignmentCarrierStatus = checklistDto.ConsignmentCarrierStatus,
+    //         CheckedAt = DateTime.UtcNow
+    //     };
+    //     
+    //     await context.Checklists.AddAsync(checklist);
+    //     
+    //     foreach (var materialBatchDto in checklistDto.MaterialBatches)
+    //     {
+    //         var materialBatch = mapper.Map<MaterialBatch>(materialBatchDto);
+    //         materialBatch.ChecklistId = checklist.Id;
+    //         await context.MaterialBatches.AddAsync(materialBatch);
+    //         await context.SaveChangesAsync();
+    //         materialBatchDto.Id = materialBatch.Id; 
+    //     }
+    //     
+    //     await context.SaveChangesAsync();
+    //
+    //     return Result.Success(checklist.Id);
+    // }
     
     
 }
