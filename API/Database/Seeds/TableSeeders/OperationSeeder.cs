@@ -17,7 +17,7 @@ public class OperationSeeder : ISeeder
 
     private static void SeedOperations(ApplicationDbContext dbContext)
     {
-        var operations = OperationUtils.All().Select(operation => new Operation { Name = operation.Name, Description = operation.Description }).ToList();
+        var operations = OperationUtils.All().Select(operation => new Operation { Name = operation.Name, Description = operation.Description, Order = operation.Order}).ToList();
 
         dbContext.Operations.AddRange(operations);
         dbContext.SaveChanges();

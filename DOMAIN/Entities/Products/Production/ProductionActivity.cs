@@ -75,7 +75,7 @@ public class ProductionActivityLog : BaseEntity
 
 public class ProductionActivityDto : ProductionActivityListDto
 {
-    public List<ProductionActivityLogDto> ActivityLogs { get; set; }
+    public List<ProductionActivityLogDto> ActivityLogs { get; set; } = [];
 }
 
 public class ProductionActivityListDto : BaseDto
@@ -91,6 +91,16 @@ public class ProductionActivityListDto : BaseDto
         Steps.Count != 0
             ? Steps.OrderBy(s => s.Order).FirstOrDefault(s => !s.CompletedAt.HasValue) ?? Steps.OrderBy(s => s.Order).Last()
             : null;
+}
+
+public class ProductionActivityGroupDto : BaseDto
+{
+    public CollectionItemDto ProductionSchedule { get; set; }
+    public CollectionItemDto Product { get; set; }
+    public ProductionStatus Status { get; set; }
+    public DateTime StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public ProductionActivityStepDto CurrentStep { get; set; }
 }
 
 public class ProductionActivityStepDto : BaseDto
