@@ -4,6 +4,7 @@ using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.Checklists;
 // using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
@@ -250,7 +251,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #region Checklist
 
-    // public DbSet<Checklist> Checklists { get; set; }
+    public DbSet<Checklist> Checklists { get; set; }
 
     #endregion
     

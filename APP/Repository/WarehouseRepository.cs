@@ -467,60 +467,60 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success();
     }
     
-    // public async Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request)
-    // {
-    //     var checklist = mapper.Map<Checklist>(request);
-    //     await context.Checklists.AddAsync(checklist);
-    //
-    //     var distributedMaterial = await context.DistributedRequisitionMaterials
-    //         .FirstOrDefaultAsync(dm => dm.Id == request.DistributedRequisitionMaterialId);
-    //
-    //     if (distributedMaterial == null)
-    //     {
-    //         return Error.NotFound("DistributedMaterial.NotFound", "Distributed material not found");
-    //     }
-    //
-    //     distributedMaterial.IsChecked = true;
-    //     await context.SaveChangesAsync();
-    //
-    //     return Result.Success(checklist.Id);
-    // }
-    //
-    // public async Task<Result<ChecklistMaterialBatchDto>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId)
-    // {
-    //     var checklist = await context.Checklists
-    //         .Include(c => c.MaterialBatches)
-    //         .FirstOrDefaultAsync(c => c.DistributedRequisitionMaterialId == distributedMaterialId);
-    //
-    //     if (checklist == null)
-    //     {
-    //         return Error.NotFound("Checklist.NotFound", "Checklist not found for the specified distributed requisition material.");
-    //     }
-    //
-    //     var materialBatch = checklist.MaterialBatches.FirstOrDefault();
-    //     if (materialBatch == null)
-    //     {
-    //         return Error.NotFound("MaterialBatch.NotFound", "Material batch not found for the specified checklist.");
-    //     }
-    //
-    //     var materialBatchDto = mapper.Map<ChecklistMaterialBatchDto>(materialBatch);
-    //     return Result.Success(materialBatchDto);
-    // }
-    //
-    // public async Task<Result<ChecklistDto>> GetChecklist(Guid id)
-    // {
-    //     var checklist = await context.Checklists
-    //         .Include(c => c.MaterialBatches)
-    //         .FirstOrDefaultAsync(c => c.Id == id);
-    //
-    //     if (checklist == null)
-    //     {
-    //         return Error.NotFound("Checklist.NotFound", "Checklist not found");
-    //     }
-    //
-    //     var checklistDto = mapper.Map<ChecklistDto>(checklist);
-    //     return Result.Success(checklistDto);
-    // }
+    public async Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request)
+    {
+        var checklist = mapper.Map<Checklist>(request);
+        await context.Checklists.AddAsync(checklist);
+
+        var distributedMaterial = await context.DistributedRequisitionMaterials
+            .FirstOrDefaultAsync(dm => dm.Id == request.DistributedRequisitionMaterialId);
+
+        if (distributedMaterial == null)
+        {
+            return Error.NotFound("DistributedMaterial.NotFound", "Distributed material not found");
+        }
+
+        distributedMaterial.IsChecked = true;
+        await context.SaveChangesAsync();
+
+        return Result.Success(checklist.Id);
+    }
+
+    public async Task<Result<MaterialBatchDto>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId)
+    {
+        var checklist = await context.Checklists
+            .Include(c => c.MaterialBatches)
+            .FirstOrDefaultAsync(c => c.DistributedRequisitionMaterialId == distributedMaterialId);
+
+        if (checklist == null)
+        {
+            return Error.NotFound("Checklist.NotFound", "Checklist not found for the specified distributed requisition material.");
+        }
+
+        var materialBatch = checklist.MaterialBatches.FirstOrDefault();
+        if (materialBatch == null)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found for the specified checklist.");
+        }
+
+        var materialBatchDto = mapper.Map<MaterialBatchDto>(materialBatch);
+        return Result.Success(materialBatchDto);
+    }
+
+    public async Task<Result<ChecklistDto>> GetChecklist(Guid id)
+    {
+        var checklist = await context.Checklists
+            .Include(c => c.MaterialBatches)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (checklist == null)
+        {
+            return Error.NotFound("Checklist.NotFound", "Checklist not found");
+        }
+
+        var checklistDto = mapper.Map<ChecklistDto>(checklist);
+        return Result.Success(checklistDto);
+    }
     
     
 }

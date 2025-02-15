@@ -48,6 +48,7 @@ public class DistributedRequisitionMaterial:BaseEntity
     public decimal Quantity { get; set; }
     public bool ConfirmArrival { get; set; }
     public DateTime? ArrivedAt { get; set; }
+    public bool IsChecked { get; set; }
 }
 
 public class WarehouseLocation : BaseEntity
