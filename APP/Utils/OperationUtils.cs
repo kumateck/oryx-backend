@@ -7,7 +7,7 @@ public static class OperationUtils
         return new List<(string Name, string Description, int Order)>
         {
             ("Requisition & Issuing of BMR", "Managing requisitions and issuing Batch Manufacturing Records.", 1),
-            ("Stock Requisition", "Requesting and managing stock or purchases.", 2),
+            ("Requisition & Issue of Stock Materials", "Requesting and managing stock or purchases.", 2),
             ("Line Clearance: Dispensing of Stock Materials", "Ensuring the line is clear for dispensing stock materials.", 3),
             ("Equipment Clearance", "Ensuring equipment is ready and cleared for use.", 4),
             ("Production Preparation", "Preparation for the production process.", 5),

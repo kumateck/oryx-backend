@@ -484,42 +484,44 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
     public async Task<Result<Dictionary<CollectionItemDto, List<ProductionActivityGroupDto>>>> GetProductionActivityGroupedByOperation()
     {
-        // Fetch all unique operation names
+        // Fetch all unique operation names, ordered correctly
         var allOperations = await context.Operations
             .OrderBy(o => o.Order)
             .Select(o => new CollectionItemDto { Id = o.Id, Name = o.Name })
             .Distinct()
+            .AsNoTracking()
             .ToListAsync();
 
-        // Fetch production activities with minimal required data
+        // Fetch production activities with only the necessary data
         var productionActivities = await context.ProductionActivities
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
-            .Include(pa => pa.Steps.OrderBy(s => s.Order)) // Order only, does not load all steps
-            .Select(pa => new
-            {
-                ProductionActivity = pa,
-                CurrentStep = pa.Steps
-                    .OrderBy(s => s.Order)
-                    .FirstOrDefault(s => !s.CompletedAt.HasValue) ?? pa.Steps.OrderBy(s => s.Order).LastOrDefault() // Fetch only the needed step
-            })
-            .Where(p => p.CurrentStep != null && p.CurrentStep.Operation != null) // Ensure a valid CurrentStep with an Operation
+            .Include(pa => pa.Steps) // Load Steps but handle filtering in memory
+                .ThenInclude(s => s.Operation)
+            .AsNoTracking()
             .ToListAsync();
 
-        // Map to DTOs
-        var productionActivityDtos = productionActivities.Select(p => new ProductionActivityGroupDto
-        {
-            ProductionSchedule = mapper.Map<CollectionItemDto>(p.ProductionActivity.ProductionSchedule),
-            Product = mapper.Map<CollectionItemDto>(p.ProductionActivity.Product),
-            Status = p.ProductionActivity.Status,
-            StartedAt = p.ProductionActivity.StartedAt,
-            CompletedAt = p.ProductionActivity.CompletedAt,
-            CurrentStep = mapper.Map<ProductionActivityStepDto>(p.CurrentStep)
-        }).ToList();
+        // Process CurrentStep in memory to avoid translation issues
+        var productionActivityDtos = productionActivities
+            .Select(pa => new ProductionActivityGroupDto
+            {
+                ProductionSchedule = mapper.Map<CollectionItemDto>(pa.ProductionSchedule),
+                Product = mapper.Map<CollectionItemDto>(pa.Product),
+                Status = pa.Status,
+                StartedAt = pa.StartedAt,
+                CompletedAt = pa.CompletedAt,
+                CurrentStep = mapper.Map<ProductionActivityStepDto>(
+                    pa.Steps
+                        .OrderBy(s => s.Order)
+                        .FirstOrDefault(s => !s.CompletedAt.HasValue) ?? // Get first unfinished step
+                    pa.Steps.OrderBy(s => s.Order).LastOrDefault() // Fallback: Get last step if all are completed
+                )
+            })
+            .Where(p => p.CurrentStep?.Operation != null) // Ensure the current step has an operation
+            .ToList();
 
-        // Group activities by CurrentStep's Operation name
+        // Group activities by CurrentStep's Operation (using CollectionItemDto)
         var groupedData = productionActivityDtos
-            .Where(p => p.CurrentStep?.Operation != null)
             .GroupBy(p => new CollectionItemDto { Id = p.CurrentStep.Operation.Id, Name = p.CurrentStep.Operation.Name }) 
             .ToDictionary(
                 g => g.Key,
@@ -529,12 +531,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         // Ensure all operations exist in the dictionary, even if they have no activities
         var result = allOperations.ToDictionary(
             op => op,
-            op => groupedData.TryGetValue(op, out var value) ? value : []
+            op => groupedData.TryGetValue(op, out var value) ? value : new List<ProductionActivityGroupDto>()
         );
 
         return result;
     }
-
     
     public async Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>> GetProductionActivityStepsGroupedByStatus()
     {
