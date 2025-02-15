@@ -165,7 +165,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var batch = await context.MaterialBatches
             .Include(b => b.Material)
             .Include(b => b.Events).ThenInclude(m => m.User)
-            .Include(b => b.Events).ThenInclude(m => m.ConsumedLocation)
+            .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
             .Include(b => b.Movements).ThenInclude(m => m.FromLocation)
             .Include(b => b.Movements).ThenInclude(m => m.ToLocation)
             .FirstOrDefaultAsync(b => b.Id == batchId);
@@ -183,7 +183,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = context.MaterialBatches
             .Include(b => b.Material)
             .Include(b => b.Events).ThenInclude(m => m.User)
-            .Include(b => b.Events).ThenInclude(m => m.ConsumedLocation)
+            .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
             .Include(b => b.Movements).ThenInclude(m => m.FromLocation)
             .Include(b => b.Movements).ThenInclude(m => m.ToLocation)
             .AsQueryable();
@@ -214,7 +214,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query =  await context.MaterialBatches
             .Include(b => b.Material)
             .Include(b => b.Events).ThenInclude(m => m.User)
-            .Include(b => b.Events).ThenInclude(m => m.ConsumedLocation)
+            .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
             .Include(b => b.Movements).ThenInclude(m => m.FromLocation)
             .Include(b => b.Movements).ThenInclude(m => m.ToLocation)
             .Where(b => b.MaterialId == materialId)
@@ -454,7 +454,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Sum of quantities consumed at this location for the specific batch
         var quantityConsumedAtLocation = await context.MaterialBatchEvents
             .Where(e => e.BatchId == batchId 
-                        && e.ConsumedLocationId == locationId 
+                        && e.ConsumptionWarehouseId == locationId 
                         && e.Type == EventType.Consumed)
             .SumAsync(e => e.Quantity);
 
@@ -538,10 +538,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Sum of the consumed quantities at this location for the given material
         var batchesConsumedAtLocation = await context.MaterialBatchEvents
             .Include(m => m.Batch)
-            .Include(m => m.ConsumedLocation)
+            .Include(m => m.ConsumptionWarehouse)
             .Where(e => e.Batch.MaterialId == materialId
-                        && e.ConsumedLocation != null 
-                        && e.ConsumedLocationId == warehouseId
+                        && e.ConsumptionWarehouse != null 
+                        && e.ConsumptionWarehouseId == warehouseId
                         && e.Type == EventType.Consumed)
             .SumAsync(e => e.Quantity);
 
@@ -575,10 +575,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var batchesConsumedAtLocation = await context.MaterialBatchEvents
             .IgnoreQueryFilters()
             .Include(m => m.Batch)
-            .Include(m => m.ConsumedLocation)
+            .Include(m => m.ConsumptionWarehouse)
             .Where(e =>  e.Batch.IsFrozen && e.Batch.MaterialId == materialId
-                                          && e.ConsumedLocation != null 
-                                          && e.ConsumedLocationId == warehouseId
+                                          && e.ConsumptionWarehouse != null 
+                                          && e.ConsumptionWarehouseId == warehouseId
                                           && e.Type == EventType.Consumed)
             .SumAsync(e => e.Quantity);
 
@@ -666,7 +666,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             Quantity = quantity,
             UserId = userId,
             Type = EventType.Consumed,
-            ConsumedLocationId = locationId,
+            ConsumptionWarehouseId = locationId,
             ConsumedAt = DateTime.UtcNow 
         };
 
@@ -730,7 +730,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 Quantity = quantityToConsumeFromThisBatch,
                 UserId = userId,
                 Type = EventType.Consumed,
-                ConsumedLocationId = locationId,
+                ConsumptionWarehouseId = locationId,
                 ConsumedAt = DateTime.UtcNow
             };
 

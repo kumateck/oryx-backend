@@ -572,6 +572,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<WarehouseLocationShelf>().HasQueryFilter(
             a => !a.DeletedAt.HasValue && !a.WarehouseLocationRack.DeletedAt.HasValue);
+        modelBuilder.Entity<WarehouseArrivalLocation>().HasQueryFilter(
+            a => !a.DeletedAt.HasValue && !a.Warehouse.DeletedAt.HasValue);
 
         #endregion
 

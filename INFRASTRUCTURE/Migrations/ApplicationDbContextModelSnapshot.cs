@@ -1271,7 +1271,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("ConsumedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ConsumedLocationId")
+                    b.Property<Guid?>("ConsumptionWarehouseId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -1305,7 +1305,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("BatchId");
 
-                    b.HasIndex("ConsumedLocationId");
+                    b.HasIndex("ConsumptionWarehouseId");
 
                     b.HasIndex("CreatedById");
 
@@ -5826,9 +5826,9 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "ConsumedLocation")
+                    b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "ConsumptionWarehouse")
                         .WithMany()
-                        .HasForeignKey("ConsumedLocationId");
+                        .HasForeignKey("ConsumptionWarehouseId");
 
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
@@ -5850,7 +5850,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("Batch");
 
-                    b.Navigation("ConsumedLocation");
+                    b.Navigation("ConsumptionWarehouse");
 
                     b.Navigation("CreatedBy");
 
