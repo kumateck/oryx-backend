@@ -372,6 +372,12 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(drm => drm.Material)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(ss=>ss.ShipmentInvoiceItem)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(sr=>sr.RequisitionItem)
             .FirstOrDefaultAsync(w => w.Id == warehouseId);
 
         if (warehouse == null || warehouse.ArrivalLocation == null)

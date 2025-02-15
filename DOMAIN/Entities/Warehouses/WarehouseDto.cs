@@ -50,7 +50,6 @@ public class DistributedRequisitionMaterialDto
 {
     public Guid Id { get; set; }
     public RequisitionItemDto RequisitionItem { get; set; }
-    public WarehouseArrivalLocationDto WarehouseArrivalLocation { get; set; }
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto Uom { get; set; }
     public SupplierDto Supplier { get; set; }
