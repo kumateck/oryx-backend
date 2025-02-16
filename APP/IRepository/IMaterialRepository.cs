@@ -39,4 +39,5 @@ public interface IMaterialRepository
     Task<Result> ImportMaterialsFromExcel(IFormFile file, MaterialKind kind); 
     Task<Result> ImportMaterialsFromExcel(string filePath, MaterialKind kind);
     Result<List<BatchLocation>> BatchesNeededToBeConsumed(Guid materialId, Guid warehouseId, decimal quantity);
+    Task<Result> UpdateBatchStatus(UpdateBatchStatusRequest request, Guid userId);
 }

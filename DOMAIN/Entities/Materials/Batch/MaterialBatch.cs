@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 
@@ -13,6 +14,8 @@ public class MaterialBatch : BaseEntity
     public Material Material { get; set; }
     public Guid? ChecklistId { get; set; }
     public Checklist Checklist { get; set; }
+    public Guid? GrnId { get; set; }
+    public Grn Grn { get; set; }
     public decimal TotalQuantity { get; set; }        
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity;

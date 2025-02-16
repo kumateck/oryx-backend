@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
@@ -47,5 +48,7 @@ public interface IWarehouseRepository
     Task<Result> ConfirmArrival(Guid distributedMaterialId);
     Task<Result<ChecklistDto>> GetChecklist(Guid id);
     Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request,Guid userId);
-    Task<Result<MaterialBatchDto>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId);
+    Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId);
+    Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds, Guid userId);
+    Task<Result<GrnDto>> GetGrn(Guid id);
 }

@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
@@ -439,7 +440,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// </summary>
     [HttpGet("distributed-material/{distributedMaterialId}/material-batch")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialBatchDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId)
     {
@@ -451,6 +452,50 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     #endregion
+        
+    #region GRN CRUD
+    /// <summary>
+    /// Creates a new GRN and assigns it to the specified material batches.
+    /// </summary>
+    [HttpPost("grn")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateGrn([FromBody] CreateGrnRequest request, [FromQuery] List<Guid> materialBatchIds)
+    {
+        if (!ModelState.IsValid)
+        {
+            return TypedResults.BadRequest(ModelState);
+        }
+
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateGrn(request, materialBatchIds, Guid.Parse(userId));
+
+        return result.IsSuccess
+            ? TypedResults.Created($"/api/v1/warehouse/grn/{result.Value}", result.Value)
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets a GRN by its ID.
+    /// </summary>
+    [HttpGet("grn/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GrnDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetGrn(Guid id)
+    {
+        var result = await repository.GetGrn(id);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+    
+    #endregion
+    
 
     #endregion
     

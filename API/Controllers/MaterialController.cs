@@ -309,4 +309,23 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         return result.IsSuccess
             ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates the batch status of the specified material batches.
+    /// </summary>
+    /// <param name="request">The UpdateBatchStatusRequest object.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("batch/status")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateBatchStatus([FromBody] UpdateBatchStatusRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateBatchStatus(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }
