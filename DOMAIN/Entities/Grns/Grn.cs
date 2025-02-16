@@ -9,6 +9,7 @@ public class Grn:BaseEntity
     [StringLength(10000)]public string CarrierName { get; set; }
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
+    [StringLength(10000)]public string GrnNumber { get; set; }
     public List<MaterialBatch> MaterialBatches { get; set; }
 }
 
@@ -17,6 +18,7 @@ public class CreateGrnRequest
     [StringLength(10000)]public string CarrierName { get; set; }
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
+    [StringLength(10000)]public string GrnNumber { get; set; }
 }
 
 public class GrnDto
@@ -24,5 +26,6 @@ public class GrnDto
     [StringLength(10000)]public string CarrierName { get; set; }
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
+    [StringLength(10000)]public string GrnNumber { get; set; }
     List<MaterialBatchDto> MaterialBatches { get; set; }
 }
