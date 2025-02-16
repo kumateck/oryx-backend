@@ -496,7 +496,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps)
-                .ThenInclude(s => s.Operation) // Load only needed relations
+                .ThenInclude(s => s.Operation) 
+            .Include(pa => pa.Steps)
+                .ThenInclude(s => s.ResponsibleUsers) 
             .AsNoTracking()
             .ToListAsync();
 
