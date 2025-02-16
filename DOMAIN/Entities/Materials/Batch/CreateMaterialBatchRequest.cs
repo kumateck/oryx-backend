@@ -16,7 +16,6 @@ public class CreateMaterialBatchRequest
 
 public class CreateSrRequest
 {
-    public Guid MaterialBatchId { get; set; }
     [StringLength(10000)] public string SrNumber { get; set; }
     public decimal GrossWeight { get; set; }
 }

@@ -393,27 +393,34 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     
     public async Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(Guid warehouseId,int page, int pageSize, string searchQuery)
     {
-        var query = context.DistributedRequisitionMaterials
-            .Include(drm => drm.ShipmentInvoice)
-            .Include(drm => drm.Manufacturer)
-            .Include(drm => drm.Supplier)
-            .Include(drm => drm.Material)
-            .Include(drm => drm.ShipmentInvoiceItem)
-            .Include(drm => drm.RequisitionItem)
-            .Where(drm => drm.Id == warehouseId)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(searchQuery))
+        try
         {
-            query = query.WhereSearch(searchQuery, drm => drm.Material.Name, drm => drm.Supplier.Name);
-        }
+            var query = context.DistributedRequisitionMaterials
+                .Include(drm => drm.ShipmentInvoice)
+                .Include(drm => drm.Manufacturer)
+                .Include(drm => drm.Supplier)
+                .Include(drm => drm.Material)
+                .Include(drm => drm.ShipmentInvoiceItem)
+                .Include(drm => drm.RequisitionItem)
+                .Where(drm => drm.WarehouseArrivalLocation.WarehouseId == warehouseId)
+                .AsQueryable();
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<DistributedRequisitionMaterialDto>
-        );
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                query = query.WhereSearch(searchQuery, drm => drm.Material.Name, drm => drm.Supplier.Name);
+            }
+
+            return await PaginationHelper.GetPaginatedResultAsync(
+                query,
+                page,
+                pageSize,
+                mapper.Map<DistributedRequisitionMaterialDto>
+            );
+        }
+        catch (Exception e)
+        {
+            return Result.Failure<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>(Error.Failure("500",e.Message));
+        }
     }
     
     public async Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request)
@@ -467,9 +474,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success();
     }
     
-    public async Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request)
+    public async Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request, Guid userId)
     {
         var checklist = mapper.Map<Checklist>(request);
+        checklist.CreatedById = userId;
         await context.Checklists.AddAsync(checklist);
 
         var distributedMaterial = await context.DistributedRequisitionMaterials

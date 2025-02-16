@@ -1010,7 +1010,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         }
     }
 
-    public async Task<Result> ConfirmDistribution(MaterialDistributionSectionRequest section)
+    public async Task<Result> ConfirmDistribution(MaterialDistributionSectionRequest section,Guid userId)
     {
         var invoiceItem =
             await context.ShipmentInvoicesItems.FirstOrDefaultAsync(s => s.Id == section.ShipmentInvoiceItemId);
@@ -1066,6 +1066,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         ConfirmArrival = false,
                         WarehouseArrivalLocationId = warehouse.ArrivalLocation.Id
                     };
+                distributedRequisitionMaterial.CreatedById = userId;
                     await context.DistributedRequisitionMaterials.AddAsync(distributedRequisitionMaterial);
             }
         }

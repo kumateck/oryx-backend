@@ -46,6 +46,6 @@ public interface IWarehouseRepository
     Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request);
     Task<Result> ConfirmArrival(Guid distributedMaterialId);
     Task<Result<ChecklistDto>> GetChecklist(Guid id);
-    Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request);
+    Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request,Guid userId);
     Task<Result<MaterialBatchDto>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId);
 }
