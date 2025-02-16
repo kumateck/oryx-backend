@@ -798,7 +798,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return ProductErrors.NotFound(id);
         }
 
-        batchRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
+        batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
         batchRecord.IssuedById = userId;
         context.BatchManufacturingRecords.Update(batchRecord);
         await context.SaveChangesAsync();
