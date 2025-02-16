@@ -21,20 +21,6 @@ public class MaterialBatchDto
     public List<CurrentLocationDto> Locations { get; set; } = [];
 }
 
-public class ChecklistMaterialBatchDto
-{
-    public Guid Id { get; set; }
-    public string Code { get; set; }
-    public UnitOfMeasureDto UoM { get; set; }
-    public BatchStatus Status { get; set; }  
-    public DateTime DateReceived { get; set; }
-    public DateTime? DateApproved { get; set; }
-    public decimal TotalQuantity { get; set; }        
-    public decimal ConsumedQuantity { get; set; }  
-    public decimal RemainingQuantity { get; set; }
-    public DateTime ExpiryDate { get; set; }
-}
-
 public class MaterialBatchEventDto 
 {
     public EventType Type { get; set; }
