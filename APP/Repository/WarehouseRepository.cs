@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
@@ -494,7 +495,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success(checklist.Id);
     }
 
-    public async Task<Result<MaterialBatchDto>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId)
+    public async Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId)
     {
         var checklist = await context.Checklists
             .Include(c => c.MaterialBatches)
@@ -505,13 +506,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             return Error.NotFound("Checklist.NotFound", "Checklist not found for the specified distributed requisition material.");
         }
 
-        var materialBatch = checklist.MaterialBatches.FirstOrDefault();
-        if (materialBatch == null)
-        {
-            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found for the specified checklist.");
-        }
+        var materialBatches = checklist.MaterialBatches.ToList();
 
-        var materialBatchDto = mapper.Map<MaterialBatchDto>(materialBatch);
+        var materialBatchDto = mapper.Map<List<MaterialBatchDto>>(materialBatches);
         return Result.Success(materialBatchDto);
     }
 
@@ -528,6 +525,44 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
 
         var checklistDto = mapper.Map<ChecklistDto>(checklist);
         return Result.Success(checklistDto);
+    }
+    
+    public async Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds, Guid userId)
+    {
+        var grn = mapper.Map<Grn>(request);
+        await context.Grns.AddAsync(grn);
+        await context.SaveChangesAsync();
+
+        var materialBatches = await context.MaterialBatches
+            .Where(mb => materialBatchIds.Contains(mb.Id))
+            .ToListAsync();
+
+        if (materialBatches.Count != materialBatchIds.Count)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "One or more material batches not found");
+        }
+
+        foreach (var batch in materialBatches)
+        {
+            batch.GrnId = grn.Id;
+            batch.Status = BatchStatus.Quarantine;
+        }
+
+        context.MaterialBatches.UpdateRange(materialBatches);
+        await context.SaveChangesAsync();
+
+        return Result.Success(grn.Id);
+    }
+    
+    public async Task<Result<GrnDto>> GetGrn(Guid id)
+    {
+        var grn = await context.Grns
+            .Include(g => g.MaterialBatches)
+            .FirstOrDefaultAsync(g => g.Id == id);
+
+        return grn is null
+            ? Error.NotFound("Grn.NotFound", "GRN not found")
+            : mapper.Map<GrnDto>(grn);
     }
     
     
