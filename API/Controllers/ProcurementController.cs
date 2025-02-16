@@ -891,7 +891,9 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [HttpPost("confirm-distribution")]
     public async Task<IResult> ConfirmDistribution([FromBody] MaterialDistributionSectionRequest section)
     {
-        var result = await repository.ConfirmDistribution(section);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        var result = await repository.ConfirmDistribution(section,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

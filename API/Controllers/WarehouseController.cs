@@ -406,8 +406,10 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         {
             return TypedResults.BadRequest(ModelState);
         }
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateChecklist(request);
+        var result = await repository.CreateChecklist(request,Guid.Parse(userId));
 
         return result.IsSuccess 
             ? TypedResults.Created($"/api/v1/warehouse/checklist/{result.Value}", result.Value) 

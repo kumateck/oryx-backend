@@ -474,9 +474,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success();
     }
     
-    public async Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request)
+    public async Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request, Guid userId)
     {
         var checklist = mapper.Map<Checklist>(request);
+        checklist.CreatedById = userId;
         await context.Checklists.AddAsync(checklist);
 
         var distributedMaterial = await context.DistributedRequisitionMaterials
