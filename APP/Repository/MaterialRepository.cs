@@ -925,4 +925,33 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> UpdateBatchStatus(UpdateBatchStatusRequest request, Guid userId)
+    {
+        if (!Enum.TryParse(typeof(BatchStatus), request.Status, true, out var status))
+        {
+            return Error.Validation("BatchStatus.Invalid", "Invalid batch status.");
+        }
+
+        var materialBatches = await context.MaterialBatches
+            .Where(mb => request.MaterialBatchIds.Contains(mb.Id))
+            .ToListAsync();
+
+        if (materialBatches.Count != request.MaterialBatchIds.Count)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "One or more material batches not found");
+        }
+
+        foreach (var batch in materialBatches)
+        {
+            batch.Status = (BatchStatus)status;
+            batch.UpdatedAt = DateTime.UtcNow;
+            batch.LastUpdatedById = userId;
+        }
+
+        context.MaterialBatches.UpdateRange(materialBatches);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 }
