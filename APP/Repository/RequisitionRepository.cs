@@ -49,10 +49,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             }
         }
 
-        if (request.ActivityStepId.HasValue)
+        if (request.ProductionActivityStepId.HasValue)
         {
             var activityStep =
-                await context.ProductionActivitySteps.FirstOrDefaultAsync(p => p.Id == request.ActivityStepId);
+                await context.ProductionActivitySteps.FirstOrDefaultAsync(p => p.Id == request.ProductionActivityStepId);
 
             if (activityStep is not null)
             {
@@ -156,7 +156,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         // Get the requisition and its approvals
         var requisition = await context.Requisitions
-            .Include(r => r.Approvals).Include(requisition => requisition.ActivityStep)
+            .Include(r => r.Approvals).Include(requisition => requisition.ProductionActivityStep)
             .Include(requisition => requisition.RequestedBy).ThenInclude(r => r.Department)
             .ThenInclude(d => d.Warehouses).ThenInclude(w => w.Warehouse).Include(requisition => requisition.Items)
             .AsSplitQuery()
@@ -189,8 +189,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (allApproved)
         {
             requisition.Approved = true;
-            requisition.ActivityStep.Status = ProductionStatus.Completed;
-            context.ProductionActivitySteps.Update(requisition.ActivityStep);
+            requisition.ProductionActivityStep.Status = ProductionStatus.Completed;
+            context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
 
             var warehouse =
                 requisition.RequestedBy.Department?.Warehouses.FirstOrDefault(w =>

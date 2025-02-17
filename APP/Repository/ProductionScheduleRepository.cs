@@ -496,7 +496,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps)
-                .ThenInclude(s => s.Operation) // Load only needed relations
+                .ThenInclude(s => s.Operation) 
+            .Include(pa => pa.Steps)
+                .ThenInclude(s => s.ResponsibleUsers) 
             .AsNoTracking()
             .ToListAsync();
 
@@ -740,6 +742,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(p => p.ProductionActivityStep)
             .Include(p => p.ProductionSchedule)
             .Include(p => p.Product)
+            .Where(p => !p.ProductionActivityStep.CompletedAt.HasValue)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -782,6 +785,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         mapper.Map(request, batchRecord);
         batchRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
+        batchRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
         context.BatchManufacturingRecords.Update(batchRecord);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -796,7 +800,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return ProductErrors.NotFound(id);
         }
 
-        batchRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
+        batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
+        batchRecord.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         batchRecord.IssuedById = userId;
         context.BatchManufacturingRecords.Update(batchRecord);
         await context.SaveChangesAsync();
