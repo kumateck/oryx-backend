@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 
@@ -14,18 +16,21 @@ public class MaterialBatch : BaseEntity
     public Material Material { get; set; }
     public Guid? ChecklistId { get; set; }
     public Checklist Checklist { get; set; }
+    [StringLength(10000)] public string BatchNumber { get; set; }
     public Guid? GrnId { get; set; }
     public Grn Grn { get; set; }
-    public decimal TotalQuantity { get; set; }        
+    public decimal TotalQuantity { get; set; }  
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity;
-    public Guid UoMId { get; set; }
+    public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }
     public DateTime? DateApproved { get; set; }
     public DateTime? DateRejected { get; set; }
-    public DateTime ExpiryDate { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public DateTime? ManufacturingDate { get; set; }
+    public DateTime? RetestDate { get; set; }
     public bool IsFrozen { get; set; }  
     public List<Sr> SampleWeights { get; set; } = [];
     public List<MaterialBatchEvent> Events { get; set; } = [];
@@ -38,7 +43,7 @@ public class Sr:BaseEntity
     public MaterialBatch MaterialBatch { get; set; }
     [StringLength(10000)] public string SrNumber { get; set; }
     public decimal GrossWeight { get; set; }
-    public Guid UoMId { get; set; }
+    public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
 }
 

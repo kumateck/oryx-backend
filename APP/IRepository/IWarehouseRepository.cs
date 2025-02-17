@@ -51,4 +51,5 @@ public interface IWarehouseRepository
     Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId);
     Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds, Guid userId);
     Task<Result<GrnDto>> GetGrn(Guid id);
+    Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery);
 }

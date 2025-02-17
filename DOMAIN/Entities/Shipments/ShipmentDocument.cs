@@ -36,6 +36,7 @@ public class ShipmentInvoiceItem : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public Guid ManufacturerId { get; set; }
     public Manufacturer Manufacturer { get; set; }
+    //add manufacturing date
     public Guid PurchaseOrderId { get; set; }
     public PurchaseOrder PurchaseOrder { get; set; }
     public decimal ExpectedQuantity { get; set; }

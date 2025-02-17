@@ -12,6 +12,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -217,6 +218,8 @@ public class OryxMapper : Profile
         CreateMap<MaterialBatch, MaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
         CreateMap<MaterialBatchMovement, MaterialBatchMovementDto>();
+        CreateMap<CreateSrRequest, Sr>();
+        //CreateMap<Sr, SrDto>();
 
         CreateMap<MaterialCategory, MaterialCategoryDto>();
 
@@ -372,6 +375,12 @@ public class OryxMapper : Profile
         CreateMap<CreateChecklistRequest, Checklist>();
 
         #endregion
+        
+        #region Grn
+        CreateMap<CreateGrnRequest, Grn>();
+        CreateMap<Grn, GrnDto>();
+        #endregion
+        
 
         #region Form
 

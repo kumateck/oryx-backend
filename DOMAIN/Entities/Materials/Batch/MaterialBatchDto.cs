@@ -1,4 +1,8 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
@@ -8,6 +12,7 @@ public class MaterialBatchDto
 {
     public Guid Id { get; set; }
     public string Code { get; set; }
+    public BatchChecklistDto Checklist { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }
@@ -19,6 +24,21 @@ public class MaterialBatchDto
     public List<MaterialBatchEventDto> Events { get; set; } = [];
     public List<MaterialBatchMovementDto> Movements { get; set; } = [];
     public List<CurrentLocationDto> Locations { get; set; } = [];
+}
+
+public class BatchChecklistDto
+{
+    public DistributedRequisitionMaterialDto DistributedRequisitionMaterial { get; set; }
+    public MaterialDto Material { get; set; }
+    public DateTime? CheckedAt { get; set; }
+    public ShipmentInvoiceDto ShipmentInvoice { get; set; }
+    public SupplierDto Supplier { get; set; }
+    public ManufacturerDto Manufacturer { get; set; }
+    public bool CertificateOfAnalysisDelivered { get; set; }
+    public bool VisibleLabelling { get; set; }
+    public Intactness IntactnessStatus { get; set; }
+    public ConsignmentCarrier ConsignmentCarrierStatus { get; set; }
+    public List<MaterialBatchDto> MaterialBatches { get; set; }
 }
 
 public class MaterialBatchEventDto 

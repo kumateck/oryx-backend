@@ -494,6 +494,18 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Retrieves a paginated list of GRNs based on search criteria.
+    /// </summary>
+    [HttpGet("grns")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnDto>>))]
+    public async Task<IResult> GetGrns([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetGrns(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     #endregion
     
 
