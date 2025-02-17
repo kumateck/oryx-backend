@@ -61,7 +61,11 @@ public class CreateChecklistRequest
 public enum ConsignmentCarrier
 {
     Dirty,
-    Clean
+    Clean,
+    Wet,
+    InsectInfested,
+    ExcessiveDust,
+    Damaged
 }
 
 public enum Intactness
