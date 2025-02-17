@@ -6,7 +6,7 @@ public class CreateMaterialBatchRequest
 {
     [StringLength(255)] public string Code { get; set; } 
     public Guid MaterialId { get; set; }         // ID of the material being added
-    public decimal Quantity { get; set; }            // Quantity of the material batch
+    public decimal TotalQuantity { get; set; }             // Quantity of the material batch
     public string BatchNumber { get; set; }      // Batch number of the material
     public DateTime? ManufacturingDate { get; set; }
     public Guid? UoMId { get; set; }               // ID of the unit of measure for the quantity
