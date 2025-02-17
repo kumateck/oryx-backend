@@ -450,6 +450,22 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves the material batch details by distributed requisition material IDs.
+    /// </summary>
+    [HttpPost("distributed-material/material-batch")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialBatchByDistributedMaterials([FromBody]List<Guid> distributedMaterialIds)
+    {
+        var result = await repository.GetMaterialBatchByDistributedMaterials(distributedMaterialIds);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
 
     #endregion
         
