@@ -38,7 +38,6 @@ public class BatchChecklistDto
     public bool VisibleLabelling { get; set; }
     public Intactness IntactnessStatus { get; set; }
     public ConsignmentCarrier ConsignmentCarrierStatus { get; set; }
-    public List<MaterialBatchDto> MaterialBatches { get; set; }
 }
 
 public class MaterialBatchEventDto 
