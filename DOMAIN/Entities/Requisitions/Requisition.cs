@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
@@ -17,8 +19,12 @@ public class Requisition : BaseEntity
     [StringLength(1000)] public string Comments { get; set; }
     public bool Approved { get; set; }
     public DateTime? ExpectedDelivery { get; set; }
-    public Guid? ActivityStepId { get; set; }
-    public ProductionActivityStep ActivityStep { get; set; }
+    public Guid? ProductId { get; set; }
+    public Product Product { get; set; }
+    public Guid? ProductionScheduleId { get; set; }
+    public ProductionSchedule ProductionSchedule { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+    public ProductionActivityStep ProductionActivityStep { get; set; }
     public List<RequisitionApproval> Approvals { get; set; }
     public List<RequisitionItem> Items { get; set; }
 }

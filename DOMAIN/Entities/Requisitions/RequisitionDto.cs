@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using SHARED;
@@ -18,6 +19,8 @@ public class RequisitionDto
     public DateTime? ExpectedDelivery { get; set; }
     public DateTime CreatedAt { get; set; }
     public RequestStatus Status { get; set; }  
+    public CollectionItemDto ProductionSchedule { get; set; }
+    public ProductDto Product { get; set; }
     public string Comments { get; set; }
 }
 
