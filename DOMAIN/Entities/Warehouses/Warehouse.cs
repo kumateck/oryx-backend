@@ -50,6 +50,7 @@ public class DistributedRequisitionMaterial:BaseEntity
     public bool ConfirmArrival { get; set; }
     public DateTime? ArrivedAt { get; set; }
     public bool IsChecked { get; set; }
+    public bool GrnGenerated { get; set; }
 }
 
 public class WarehouseLocation : BaseEntity
