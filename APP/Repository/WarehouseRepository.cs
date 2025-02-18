@@ -424,6 +424,26 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         }
     }
     
+    public async Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialById(Guid id)
+    {
+        var distributedMaterial = await context.DistributedRequisitionMaterials
+            .Include(drm => drm.ShipmentInvoice)
+            .Include(drm => drm.Manufacturer)
+            .Include(drm => drm.Supplier)
+            .Include(drm => drm.Material)
+            .Include(drm => drm.ShipmentInvoiceItem)
+            .Include(drm => drm.RequisitionItem)
+            .FirstOrDefaultAsync(drm => drm.Id == id);
+
+        if (distributedMaterial == null)
+        {
+            return Error.NotFound("DistributedRequisitionMaterial.NotFound", "Distributed requisition material not found");
+        }
+
+        var distributedMaterialDto = mapper.Map<DistributedRequisitionMaterialDto>(distributedMaterial);
+        return Result.Success(distributedMaterialDto);
+    }
+    
     public async Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request)
     {
         var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == request.WarehouseId);
@@ -501,6 +521,20 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var checklist = await context.Checklists
             .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Manufacturer)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Supplier)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.ShipmentInvoice)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Material)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.DistributedRequisitionMaterial)
             .FirstOrDefaultAsync(c => c.DistributedRequisitionMaterialId == distributedMaterialId);
 
         if (checklist == null)
@@ -518,6 +552,20 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var checklists = await context.Checklists
             .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Manufacturer)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Supplier)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.ShipmentInvoice)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Material)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.DistributedRequisitionMaterial)
             .Where(c => distributedMaterialIds.Contains(c.DistributedRequisitionMaterialId))
             .ToListAsync();
 
