@@ -1,5 +1,7 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
@@ -91,4 +93,13 @@ public class WareHouseLocationRackDto
     public WareHouseLocationDto WarehouseLocation { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
+}
+
+public class ShelfMaterialBatchDto
+{
+    public WarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
+    public MaterialBatchDto MaterialBatch { get; set; }
+    public decimal Quantity { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public string Note { get; set; }
 }

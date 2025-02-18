@@ -69,6 +69,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialBatch> MaterialBatches { get; set; }
     public DbSet<MaterialBatchEvent> MaterialBatchEvents { get; set; }
     public DbSet<MaterialBatchMovement> MaterialBatchMovements { get; set; }
+    public DbSet<MassMaterialBatchMovement> MassMaterialBatchMovements { get; set; }
     public DbSet<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
     
     #endregion
@@ -168,6 +169,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WarehouseLocation> WarehouseLocations { get; set; }
     public DbSet<WarehouseLocationRack> WarehouseLocationRacks { get; set; }
     public DbSet<WarehouseLocationShelf> WarehouseLocationShelves { get; set; }
+    public DbSet<ShelfMaterialBatch> ShelfMaterialBatches { get; set; } 
     public DbSet<WarehouseArrivalLocation> WarehouseArrivalLocations { get; set; }
 
     #endregion
@@ -487,6 +489,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<MaterialBatch>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Material.DeletedAt.HasValue);// && entity.Status == BatchStatus.Available);
         modelBuilder.Entity<MaterialBatchEvent>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Batch.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue && !entity.Batch.IsFrozen);
         modelBuilder.Entity<MaterialBatchMovement>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Batch.DeletedAt.HasValue  && !entity.Batch.IsFrozen);
+        modelBuilder.Entity<MassMaterialBatchMovement>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Batch.DeletedAt.HasValue  && !entity.Batch.IsFrozen);
         modelBuilder.Entity<MaterialCategory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialType>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         #endregion

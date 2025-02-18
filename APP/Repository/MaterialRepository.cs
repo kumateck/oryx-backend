@@ -137,10 +137,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         
             if (initialLocationId.HasValue)
             {
-                var movement = new MaterialBatchMovement
+                var movement = new MassMaterialBatchMovement
                 {
                     BatchId = batch.Id,
-                    ToLocationId = initialLocationId.Value,
+                    ToWarehouseId = initialLocationId.Value,
                     Quantity = batch.TotalQuantity, // All material moved to the initial location
                     MovedAt = DateTime.UtcNow,
                     MovedById = userId,
@@ -148,7 +148,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 };
 
                 // Add the movement entry to the context
-                await context.MaterialBatchMovements.AddAsync(movement);
+                await context.MassMaterialBatchMovements.AddAsync(movement);
             }
         }
 
@@ -166,8 +166,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(b => b.Material)
             .Include(b => b.Events).ThenInclude(m => m.User)
             .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.Movements).ThenInclude(m => m.FromLocation)
-            .Include(b => b.Movements).ThenInclude(m => m.ToLocation)
+            .Include(b => b.MassMovements).ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.MassMovements).ThenInclude(m => m.ToWarehouse)
             .FirstOrDefaultAsync(b => b.Id == batchId);
 
         if (batch is null) return MaterialErrors.NotFound(batchId); 
@@ -184,8 +184,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(b => b.Material)
             .Include(b => b.Events).ThenInclude(m => m.User)
             .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.Movements).ThenInclude(m => m.FromLocation)
-            .Include(b => b.Movements).ThenInclude(m => m.ToLocation)
+            .Include(b => b.MassMovements).ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.MassMovements).ThenInclude(m => m.ToWarehouse)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -215,8 +215,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(b => b.Material)
             .Include(b => b.Events).ThenInclude(m => m.User)
             .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.Movements).ThenInclude(m => m.FromLocation)
-            .Include(b => b.Movements).ThenInclude(m => m.ToLocation)
+            .Include(b => b.MassMovements).ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.MassMovements).ThenInclude(m => m.ToWarehouse)
             .Where(b => b.MaterialId == materialId)
             .ToListAsync();
 
@@ -244,10 +244,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var locationQuantities = new Dictionary<CollectionItemDto, decimal>();
 
         // Track the movements and update the locations accordingly
-        foreach (var movement in batch.Movements)
+        foreach (var movement in batch.MassMovements)
         {
-            var fromLocation = movement.FromLocation;
-            var toLocation = movement.ToLocation;
+            var fromLocation = movement.FromWarehouse;
+            var toLocation = movement.ToWarehouse;
 
             // If moving to a location, increase the quantity at the destination
             if (toLocation is not null)
@@ -281,13 +281,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     private List<CurrentLocation> GetCurrentLocations(MaterialBatch batch)
     {
         // Dictionary to track the total quantity at each location
-        var locationQuantities = new Dictionary<WarehouseLocation, decimal>();
+        var locationQuantities = new Dictionary<Warehouse, decimal>();
 
         // Track the movements and update the locations accordingly
-        foreach (var movement in batch.Movements)
+        foreach (var movement in batch.MassMovements)
         {
-            var fromLocation = movement.FromLocation;
-            var toLocation = movement.ToLocation;
+            var fromLocation = movement.FromWarehouse;
+            var toLocation = movement.ToWarehouse;
 
             // If moving to a location, increase the quantity at the destination
             if (toLocation is not null)
@@ -384,29 +384,29 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         foreach (var batch in material.Batches.OrderBy(m => m.ExpiryDate))
         {
             // Get the stock for this specific batch at the fromLocation
-            var batchStockAtFromLocation = await GetBatchStockInLocation(batch.Id, request.FromLocationId);
+            var batchStockAtFromWarehouse = await GetBatchStockInLocation(batch.Id, request.FromWarehouseId);
 
-            if (batchStockAtFromLocation <= 0)
+            if (batchStockAtFromWarehouse <= 0)
             {
                 continue; // Skip batches with no stock at this location
             }
 
             // Determine how much to move from this batch
-            var quantityToMoveFromBatch = Math.Min(remainingQuantityToMove, batchStockAtFromLocation);
+            var quantityToMoveFromBatch = Math.Min(remainingQuantityToMove, batchStockAtFromWarehouse);
 
             // Create a movement entry for the batch
-            var movement = new MaterialBatchMovement
+            var movement = new MassMaterialBatchMovement
             {
                 BatchId = batch.Id,
-                FromLocationId = request.FromLocationId,
-                ToLocationId = request.ToLocationId,
+                FromWarehouseId = request.FromWarehouseId,
+                ToWarehouseId = request.ToWarehouseId,
                 Quantity = quantityToMoveFromBatch,
                 MovedAt = DateTime.UtcNow,
                 MovedById = userId,
                 MovementType = MovementType.BetweenLocations
             };
 
-            await context.MaterialBatchMovements.AddAsync(movement);
+            await context.MassMaterialBatchMovements.AddAsync(movement);
 
             // Create a corresponding event for the move
             var batchEvent = new MaterialBatchEvent
@@ -442,13 +442,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     private async Task<decimal> GetBatchStockInLocation(Guid batchId, Guid locationId)
     {
         // Sum of quantities moved to this location for the specific batch
-        var quantityMovedToLocation = await context.MaterialBatchMovements
-            .Where(m => m.BatchId == batchId && m.ToLocationId == locationId)
+        var quantityMovedToWarehouse = await context.MassMaterialBatchMovements
+            .Where(m => m.BatchId == batchId && m.ToWarehouseId == locationId)
             .SumAsync(m => m.Quantity);
 
         // Sum of quantities moved out of this location for the specific batch
-        var quantityMovedOutOfLocation = await context.MaterialBatchMovements
-            .Where(m => m.BatchId == batchId && m.FromLocationId == locationId)
+        var quantityMovedOutOfLocation = await context.MassMaterialBatchMovements
+            .Where(m => m.BatchId == batchId && m.FromWarehouseId == locationId)
             .SumAsync(m => m.Quantity);
 
         // Sum of quantities consumed at this location for the specific batch
@@ -459,7 +459,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(e => e.Quantity);
 
         // Calculate the total available quantity for the batch in this location
-        var totalBatchStockInLocation = quantityMovedToLocation - quantityMovedOutOfLocation - quantityConsumedAtLocation;
+        var totalBatchStockInLocation = quantityMovedToWarehouse - quantityMovedOutOfLocation - quantityConsumedAtLocation;
 
         return totalBatchStockInLocation;
     }
@@ -475,19 +475,19 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // Get the current stock at the source location using the existing method
-        var currentStockAtFromLocation = await GetMaterialStockInWarehouse(batch.MaterialId, fromLocationId);
+        var currentStockAtFromWarehouse = await GetMassMaterialStockInWarehouse(batch.MaterialId, fromLocationId);
 
-        if (currentStockAtFromLocation.Value < quantity)
+        if (currentStockAtFromWarehouse.Value < quantity)
         {
             return MaterialErrors.InsufficientStock; // Not enough stock in source location to move
         }
 
         // Proceed with the movement - updating the batch (no need to adjust ConsumedQuantity here)
-        var movement = new MaterialBatchMovement
+        var movement = new MassMaterialBatchMovement
         {
             BatchId = batchId,
-            FromLocationId = fromLocationId,
-            ToLocationId = toLocationId,
+            FromWarehouseId = fromLocationId,
+            ToWarehouseId = toLocationId,
             Quantity = quantity,
             MovedAt = DateTime.UtcNow,
             MovedById = userId,
@@ -495,7 +495,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         };
 
         // Add the movement entry to the context
-        await context.MaterialBatchMovements.AddAsync(movement);
+        await context.MassMaterialBatchMovements.AddAsync(movement);
 
         // Create the corresponding event for the move
         var batchEvent = new MaterialBatchEvent
@@ -516,23 +516,112 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
+    public async Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId)
+    {
+        var materialBatch = await context.MaterialBatches
+            .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
+
+        if (materialBatch == null)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
+        }
+
+        foreach (var shelfBatch in request.ShelfMaterialBatches)
+        {
+            var shelf = await context.WarehouseLocationShelves
+                .Include(warehouseLocationShelf => warehouseLocationShelf.WarehouseLocationRack)
+                .ThenInclude(warehouseLocationRack => warehouseLocationRack.WarehouseLocation)
+                .ThenInclude(warehouseLocation => warehouseLocation.Warehouse)
+                .FirstOrDefaultAsync(s => s.Id == shelfBatch.WarehouseLocationShelfId);
+
+            if (shelf == null)
+            {
+                return Error.NotFound("Shelf.NotFound", $"Shelf with ID {shelfBatch.WarehouseLocationShelfId} not found");
+            }
+
+            var shelfMaterialBatch = mapper.Map<ShelfMaterialBatch>(request.ShelfMaterialBatches);
+
+            await context.ShelfMaterialBatches.AddAsync(shelfMaterialBatch);
+            
+            var movement = new MassMaterialBatchMovement
+            {
+                BatchId = request.MaterialBatchId,
+                ToWarehouseId = shelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id,
+                Quantity = shelfBatch.Quantity,
+                MovedAt = DateTime.UtcNow,
+                MovedById = userId,
+                MovementType = MovementType.ToWarehouse
+            };
+            
+            await context.MassMaterialBatchMovements.AddAsync(movement);
+            
+            var batchEvent = new MaterialBatchEvent
+            {
+                BatchId = request.MaterialBatchId,
+                Quantity = shelfBatch.Quantity,
+                Type = EventType.Supplied, 
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+            
+            await context.MaterialBatchEvents.AddAsync(batchEvent);
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     
     public async Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {
         // Sum of quantities moved to this location (incoming batches)
-        var batchesInLocation = await context.MaterialBatchMovements
+        var batchesInLocation = await context.MassMaterialBatchMovements
             .Include(m => m.Batch)
-            .Include(m => m.ToLocation)
+            .Include(m => m.ToWarehouse)
             .Where(m => m.Batch.MaterialId == materialId
-                        && m.ToLocation.WarehouseId == warehouseId)
+                        && m.ToWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of quantities moved out of this location (outgoing batches)
-        var batchesMovedOut = await context.MaterialBatchMovements
+        var batchesMovedOut = await context.MassMaterialBatchMovements
             .Include(m => m.Batch)
-            .Include(m => m.FromLocation)
+            .Include(m => m.FromWarehouse)
             .Where(m => m.Batch.MaterialId == materialId
-                        && m.FromLocation != null && m.FromLocation.WarehouseId == warehouseId)
+                        && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of the consumed quantities at this location for the given material
+        var batchesConsumedAtLocation = await context.MaterialBatchEvents
+            .Include(m => m.Batch)
+            .Include(m => m.ConsumptionWarehouse)
+            .Where(e => e.Batch.MaterialId == materialId
+                        && e.ConsumptionWarehouse != null 
+                        && e.ConsumptionWarehouseId == warehouseId
+                        && e.Type == EventType.Consumed)
+            .SumAsync(e => e.Quantity);
+
+        // Calculate the total available quantity for the material in this location
+        var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
+
+        return totalQuantityInLocation;
+    }
+    
+    public async Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
+    {
+        // Sum of quantities moved to this location (incoming batches)
+        var batchesInLocation = await context.MassMaterialBatchMovements
+            .Include(m => m.Batch)
+            .Include(m => m.ToWarehouse)
+            .Where(m => m.Batch.MaterialId == materialId
+                        && m.ToWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of quantities moved out of this location (outgoing batches)
+        var batchesMovedOut = await context.MassMaterialBatchMovements
+            .Include(m => m.Batch)
+            .Include(m => m.FromWarehouse)
+            .Where(m => m.Batch.MaterialId == materialId
+                        && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of the consumed quantities at this location for the given material
@@ -554,21 +643,21 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {
         // Sum of quantities moved to this location (incoming batches)
-        var batchesInLocation = await context.MaterialBatchMovements
+        var batchesInLocation = await context.MassMaterialBatchMovements
             .IgnoreQueryFilters()
             .Include(m => m.Batch)
-            .Include(m => m.ToLocation)
+            .Include(m => m.ToWarehouse)
             .Where(m => m.Batch.IsFrozen && m.Batch.MaterialId == materialId
-                        && m.ToLocation.WarehouseId == warehouseId)
+                        && m.ToWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of quantities moved out of this location (outgoing batches)
-        var batchesMovedOut = await context.MaterialBatchMovements
+        var batchesMovedOut = await context.MassMaterialBatchMovements
             .IgnoreQueryFilters()
             .Include(m => m.Batch)
-            .Include(m => m.FromLocation)
+            .Include(m => m.FromWarehouse)
             .Where(m =>  m.Batch.IsFrozen && m.Batch.MaterialId == materialId
-                                          && m.FromLocation != null && m.FromLocation.WarehouseId == warehouseId)
+                                          && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of the consumed quantities at this location for the given material
@@ -596,8 +685,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(b => b.Material)
             .Include(b => b.UoM)
             .Where(b => b.IsFrozen && b.MaterialId == materialId &&
-                        context.MaterialBatchMovements.Any(m => m.BatchId == b.Id && m.ToLocation.WarehouseId == warehouseId) &&
-                        !context.MaterialBatchMovements.Any(m => m.BatchId == b.Id && m.FromLocation.WarehouseId == warehouseId))
+                        context.MassMaterialBatchMovements.Any(m => m.BatchId == b.Id && m.ToWarehouseId == warehouseId) &&
+                        !context.MassMaterialBatchMovements.Any(m => m.BatchId == b.Id && m.FromWarehouseId == warehouseId))
             .ToListAsync();
 
         return mapper.Map<List<MaterialBatchDto>>(frozenBatches);
@@ -613,8 +702,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var batches =  context.MaterialBatches
             .OrderBy(b => b.ExpiryDate)
             .Where(b => b.MaterialId == materialId)
-            .Include(b => b.Movements).ThenInclude(b => b.FromLocation)
-            .Include(b => b.Movements).ThenInclude(b => b.ToLocation)
+            .Include(b => b.MassMovements).ThenInclude(b => b.FromWarehouse)
+            .Include(b => b.MassMovements).ThenInclude(b => b.ToWarehouse)
             .AsSplitQuery()
             .ToList();
 
@@ -626,7 +715,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var currentLocations = GetCurrentLocations(batch);
             foreach (var currentLocation in currentLocations)
             {
-                if (currentLocation.Location.WarehouseId != warehouseId) 
+                if (currentLocation.Location.Id != warehouseId) 
                     continue; // Ensure we're looking at the correct warehouse
 
                 if (remainingQuantityToFulfill <= 0)
@@ -758,19 +847,19 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId)
     {
-        // Get all material batch movements for the given materialId, including both FromLocation and ToLocation
-        var batchMovements = await context.MaterialBatchMovements
+        // Get all material batch movements for the given materialId, including both FromWarehouse and ToWarehouse
+        var batchMovements = await context.MassMaterialBatchMovements
             .Where(m => m.Batch.MaterialId == materialId)
-            .Include(m => m.ToLocation)
-            .Include(m => m.FromLocation)
+            .Include(m => m.ToWarehouse)
+            .Include(m => m.FromWarehouse)
             .ToListAsync();
 
         // Get all unique warehouse IDs (both from and to locations)
         var warehouseIds = batchMovements
             .SelectMany(m => new[]
             {
-                m.ToLocation.WarehouseId, 
-                m.FromLocation?.WarehouseId
+                m.ToWarehouseId, 
+                m.FromWarehouseId
             })
             .Where(warehouseId => warehouseId.HasValue)
             .Distinct()
@@ -782,7 +871,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // For each warehouse ID, retrieve the stock and warehouse info
         foreach (var warehouseId in warehouseIds.Where(warehouseId => warehouseId.HasValue))
         {
-            var stockResult = await GetMaterialStockInWarehouse(materialId, warehouseId.Value);
+            var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouseId.Value);
             if (!stockResult.IsSuccess) continue;
 
             // Get warehouse details (you can map this from your Warehouse entity)
@@ -954,4 +1043,330 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return Result.Success();
     }
+    
+    // public async Task<Result> ConsumeMaterialAtLocationShelves(Guid batchId, Guid locationId, int quantity, Guid userId)
+    // {
+    //     var materialBatchEvent = new MaterialBatchEvent
+    //     {
+    //         BatchId = batchId,
+    //         Quantity = quantity,
+    //         UserId = userId,
+    //         Type = EventType.Consumed,
+    //         ConsumedLocationId = locationId,
+    //         ConsumedAt = DateTime.UtcNow 
+    //     };
+    //
+    //     // Optionally update the batch's consumed quantity
+    //     var materialBatch = await context.MaterialBatches
+    //         .FirstOrDefaultAsync(b => b.Id == batchId);
+    //     if (materialBatch != null)
+    //     {
+    //         materialBatch.ConsumedQuantity += quantity;
+    //         context.MaterialBatches.Update(materialBatch);
+    //     }
+    //
+    //     // Fetch shelves in the specified location that contain the material batch
+    //     var shelves = await context.WarehouseLocationShelves
+    //         .Where(s => s.WarehouseLocationRack.WarehouseLocationId == locationId && s.MaterialBatches.Any(mb => mb.MaterialBatchId == batchId))
+    //         .Include(s => s.MaterialBatches)
+    //         .ToListAsync();
+    //
+    //     // Deduct the quantity from the shelves
+    //     foreach (var shelf in shelves)
+    //     {
+    //         var batchInShelf = shelf.MaterialBatches.FirstOrDefault(mb => mb.MaterialBatchId == batchId);
+    //         if (batchInShelf != null)
+    //         {
+    //             var quantityToRemove = Math.Min(quantity, batchInShelf.Quantity);
+    //             batchInShelf.Quantity -= quantityToRemove;
+    //             quantity -= (int)quantityToRemove;
+    //
+    //             if (batchInShelf.Quantity == 0)
+    //             {
+    //                 shelf.MaterialBatches.Remove(batchInShelf);
+    //             }
+    //
+    //             if (quantity <= 0)
+    //             {
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //
+    //     // Add the event to the context
+    //     await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
+    //
+    //     // Save changes to the database
+    //     await context.SaveChangesAsync();
+    //     return Result.Success();
+    // }
+    //
+    // public async Task<Result> MoveMaterialBatchToShelves(Guid batchId, Guid fromLocationId, Guid toLocationId, decimal quantity, Guid userId)
+    // {
+    //     var batch = await context.MaterialBatches
+    //         .FirstOrDefaultAsync(b => b.Id == batchId);
+    //
+    //     if (batch is null)
+    //     {
+    //         return MaterialErrors.NotFound(batchId);
+    //     }
+    //
+    //     // Get the current stock at the source location using the existing method
+    //     var currentStockAtFromWarehouse = await GetMaterialStockInWarehouse(batch.MaterialId, fromLocationId);
+    //
+    //     if (currentStockAtFromWarehouse.Value < quantity)
+    //     {
+    //         return MaterialErrors.InsufficientStock; // Not enough stock in source location to move
+    //     }
+    //     
+    //     var availableShelves = await context.WarehouseLocationShelves
+    //         .Where(s => s.WarehouseLocationRack.WarehouseLocationId == toLocationId && s.CurrentCapacity < s.MaxCapacity)
+    //         .Include(s => s.MaterialBatches)
+    //         .ToListAsync();
+    //     
+    //     var totalAvailableCapacity = availableShelves.Sum(s => s.MaxCapacity - s.CurrentCapacity);
+    //
+    //     if (totalAvailableCapacity < quantity)
+    //     {
+    //         return MaterialErrors.InsufficientShelves(quantity, totalAvailableCapacity);
+    //     }
+    //     
+    //     var fromShelves = await context.WarehouseLocationShelves
+    //         .Where(s => s.WarehouseLocationRack.WarehouseLocationId == fromLocationId && s.MaterialBatches.Any(mb => mb.MaterialBatchId == batchId))
+    //         .Include(s => s.MaterialBatches)
+    //         .ToListAsync();
+    //
+    //     foreach (var shelf in fromShelves)
+    //     {
+    //         var batchInShelf = shelf.MaterialBatches.FirstOrDefault(mb => mb.MaterialBatchId == batchId);
+    //         if (batchInShelf != null)
+    //         {
+    //             var quantityToRemove = Math.Min(quantity, batchInShelf.Quantity);
+    //             batchInShelf.Quantity -= quantityToRemove;
+    //             quantity -= quantityToRemove;
+    //
+    //             if (batchInShelf.Quantity == 0)
+    //             {
+    //                 shelf.MaterialBatches.Remove(batchInShelf);
+    //             }
+    //
+    //             if (quantity <= 0)
+    //             {
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //
+    //     foreach (var shelf in availableShelves)
+    //     {
+    //         var capacityToFill = Math.Min(quantity, shelf.MaxCapacity - shelf.CurrentCapacity);
+    //         shelf.MaterialBatches.Add(new ShelfMaterialBatch
+    //         {
+    //             MaterialBatchId = batchId,
+    //             Quantity = capacityToFill,
+    //             CreatedAt = DateTime.UtcNow
+    //         });
+    //         quantity -= capacityToFill;
+    //
+    //         if (quantity <= 0)
+    //         {
+    //             break;
+    //         }
+    //     }
+    //
+    //     // Proceed with the movement - updating the batch (no need to adjust ConsumedQuantity here)
+    //     var movement = new MassMaterialBatchMovement
+    //     {
+    //         BatchId = batchId,
+    //         FromWarehouseId = fromLocationId,
+    //         ToWarehouseId = toLocationId,
+    //         //assign shelf ids to List of Shelves needed for said quantity
+    //         Quantity = quantity,
+    //         MovedAt = DateTime.UtcNow,
+    //         MovedById = userId,
+    //         MovementType = MovementType.BetweenLocations // Regular movement
+    //     };
+    //
+    //     // Add the movement entry to the context
+    //     await context.MassMaterialBatchMovements.AddAsync(movement);
+    //
+    //     // Create the corresponding event for the move
+    //     var batchEvent = new MaterialBatchEvent
+    //     {
+    //         BatchId = batchId,
+    //         Quantity = quantity,
+    //         Type = EventType.Moved,  // Reflecting the movement event
+    //         UserId = userId,
+    //         CreatedAt = DateTime.UtcNow
+    //     };
+    //
+    //     // Add the event entry to the context
+    //     await context.MaterialBatchEvents.AddAsync(batchEvent);
+    //
+    //     // Save changes to the database
+    //     await context.SaveChangesAsync();
+    //
+    //     return Result.Success();
+    // }
+    //
+    // public async Task<Result<List<WarehouseLocationShelfDto>>> GetLocationShelves(Guid locationId, List<Guid> batchIds)
+    // {
+    //     var shelves = await context.WarehouseLocationShelves
+    //         .Where(s => s.WarehouseLocationRack.WarehouseLocationId == locationId && s.MaterialBatches.Any(mb => batchIds.Contains(mb.MaterialBatchId)))
+    //         .Include(s => s.WarehouseLocationRack)
+    //         .ThenInclude(r => r.WarehouseLocation)
+    //         .Include(s => s.MaterialBatches)
+    //         .ToListAsync();
+    //
+    //     var shelfDtos = shelves.Select(shelf => new WarehouseLocationShelfDto
+    //     {
+    //         Id = shelf.Id,
+    //         Code = shelf.Code,
+    //         Name = shelf.Name,
+    //         Description = shelf.Description,
+    //         MaxCapacity = shelf.MaxCapacity,
+    //         CurrentCapacity = shelf.CurrentCapacity,
+    //         MaterialBatches = shelf.GetMaterialBatches(),
+    //         WarehouseLocationRack = new WareHouseLocationRackDto
+    //         {
+    //             Id = shelf.WarehouseLocationRack.Id,
+    //             Name = shelf.WarehouseLocationRack.Name,
+    //             Description = shelf.WarehouseLocationRack.Description,
+    //             WarehouseLocation = new WareHouseLocationDto
+    //             {
+    //                 Id = shelf.WarehouseLocationRack.WarehouseLocation.Id,
+    //                 Name = shelf.WarehouseLocationRack.WarehouseLocation.Name,
+    //                 FloorName = shelf.WarehouseLocationRack.WarehouseLocation.FloorName,
+    //                 Description = shelf.WarehouseLocationRack.WarehouseLocation.Description
+    //             }
+    //         }
+    //     }).ToList();
+    //
+    //     return Result.Success(shelfDtos);
+    // }
+    //
+    // public async Task<Result> MoveMaterialsBatchFromShelvesByMaterial(MoveMaterialBatchRequest request, Guid userId)
+    // {
+    //     var material = await context.Materials
+    //         .Include(m => m.Batches) // Include batches for detailed processing
+    //         .FirstOrDefaultAsync(m => m.Id == request.MaterialId);
+    //
+    //     if (material is null)
+    //     {
+    //         return MaterialErrors.NotFound(request.MaterialId);
+    //     }
+    //
+    //     var remainingQuantityToMove = request.Quantity;
+    //
+    //     // Iterate through batches, prioritizing those with earlier expiry dates
+    //     foreach (var batch in material.Batches.OrderBy(m => m.ExpiryDate))
+    //     {
+    //         // Get the stock for this specific batch at the fromLocation
+    //         var batchStockAtFromWarehouse = await GetBatchStockInLocation(batch.Id, request.FromWarehouseId);
+    //
+    //         if (batchStockAtFromWarehouse <= 0)
+    //         {
+    //             continue; // Skip batches with no stock at this location
+    //         }
+    //
+    //         // Determine how much to move from this batch
+    //         var quantityToMoveFromBatch = Math.Min(remainingQuantityToMove, batchStockAtFromWarehouse);
+    //
+    //         // Fetch shelves in the fromLocation that contain the material batch
+    //         var fromShelves = await context.WarehouseLocationShelves
+    //             .Where(s => s.WarehouseLocationRack.WarehouseLocationId == request.FromWarehouseId && s.MaterialBatches.Any(mb => mb.MaterialBatchId == batch.Id))
+    //             .Include(s => s.MaterialBatches)
+    //             .ToListAsync();
+    //
+    //         // Deduct the quantity from the shelves in the fromLocation
+    //         foreach (var shelf in fromShelves)
+    //         {
+    //             var batchInShelf = shelf.MaterialBatches.FirstOrDefault(mb => mb.MaterialBatchId == batch.Id);
+    //             if (batchInShelf != null)
+    //             {
+    //                 var quantityToRemove = Math.Min(quantityToMoveFromBatch, batchInShelf.Quantity);
+    //                 batchInShelf.Quantity -= quantityToRemove;
+    //                 quantityToMoveFromBatch -= quantityToRemove;
+    //
+    //                 if (batchInShelf.Quantity == 0)
+    //                 {
+    //                     shelf.MaterialBatches.Remove(batchInShelf);
+    //                 }
+    //
+    //                 if (quantityToMoveFromBatch <= 0)
+    //                 {
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //
+    //         // Fetch shelves in the toLocation
+    //         var toShelves = await context.WarehouseLocationShelves
+    //             .Where(s => s.WarehouseLocationRack.WarehouseLocationId == request.ToWarehouseId)
+    //             .Include(s => s.MaterialBatches)
+    //             .ToListAsync();
+    //
+    //         // Add the quantity to the shelves in the toLocation
+    //         foreach (var shelf in toShelves)
+    //         {
+    //             var capacityToFill = Math.Min(quantityToMoveFromBatch, shelf.MaxCapacity - shelf.CurrentCapacity);
+    //             shelf.MaterialBatches.Add(new ShelfMaterialBatch
+    //             {
+    //                 MaterialBatchId = batch.Id,
+    //                 Quantity = capacityToFill
+    //             });
+    //             quantityToMoveFromBatch -= capacityToFill;
+    //
+    //             if (quantityToMoveFromBatch <= 0)
+    //             {
+    //                 break;
+    //             }
+    //         }
+    //
+    //         // Create a movement entry for the batch
+    //         var movement = new MassMaterialBatchMovement
+    //         {
+    //             BatchId = batch.Id,
+    //             FromWarehouseId = request.FromWarehouseId,
+    //             ToWarehouseId = request.ToWarehouseId,
+    //             Quantity = quantityToMoveFromBatch,
+    //             MovedAt = DateTime.UtcNow,
+    //             MovedById = userId,
+    //             MovementType = MovementType.BetweenLocations
+    //         };
+    //
+    //         await context.MassMaterialBatchMovements.AddAsync(movement);
+    //
+    //         // Create a corresponding event for the move
+    //         var batchEvent = new MaterialBatchEvent
+    //         {
+    //             BatchId = batch.Id,
+    //             Quantity = quantityToMoveFromBatch,
+    //             Type = EventType.Moved,
+    //             UserId = userId,
+    //             CreatedAt = DateTime.UtcNow
+    //         };
+    //
+    //         await context.MaterialBatchEvents.AddAsync(batchEvent);
+    //
+    //         // Reduce the remaining quantity to move
+    //         remainingQuantityToMove -= quantityToMoveFromBatch;
+    //
+    //         if (remainingQuantityToMove <= 0)
+    //         {
+    //             break; // Exit the loop if the desired quantity is moved
+    //         }
+    //     }
+    //
+    //     if (remainingQuantityToMove > 0)
+    //     {
+    //         // Not enough stock across all batches to fulfill the request
+    //         return MaterialErrors.InsufficientStock;
+    //     }
+    //
+    //     await context.SaveChangesAsync();
+    //     return Result.Success();
+    // }
+
+
 }

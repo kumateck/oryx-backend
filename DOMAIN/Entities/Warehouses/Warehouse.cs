@@ -89,6 +89,9 @@ public class ShelfMaterialBatch:BaseEntity
     public Guid MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
     public decimal Quantity { get; set; }
+    public Guid? UomId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
+    [StringLength(1000)] public string Note { get; set; }
 }
 
 public enum WarehouseType

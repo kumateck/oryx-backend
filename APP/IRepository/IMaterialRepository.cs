@@ -28,6 +28,7 @@ public interface IMaterialRepository
     Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, decimal quantity,
         Guid userId);
     Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
+    Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<List<MaterialBatchDto>>> GetFrozenMaterialBatchesInWarehouse(Guid materialId,
         Guid warehouseId);
@@ -40,4 +41,5 @@ public interface IMaterialRepository
     Task<Result> ImportMaterialsFromExcel(string filePath, MaterialKind kind);
     Result<List<BatchLocation>> BatchesNeededToBeConsumed(Guid materialId, Guid warehouseId, decimal quantity);
     Task<Result> UpdateBatchStatus(UpdateBatchStatusRequest request, Guid userId);
+    Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId);
 }
