@@ -28,5 +28,5 @@ public class GrnDto
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
     [StringLength(10000)]public string GrnNumber { get; set; }
-    List<MaterialBatchDto> MaterialBatches { get; set; }
+    public List<MaterialBatchDto> MaterialBatches { get; set; }
 }
