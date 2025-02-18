@@ -625,7 +625,21 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<GrnDto>> GetGrn(Guid id)
     {
         var grn = await context.Grns
-            .Include(g => g.MaterialBatches)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Manufacturer)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Supplier)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.ShipmentInvoice)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Material)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.DistributedRequisitionMaterial)
             .FirstOrDefaultAsync(g => g.Id == id);
 
         return grn is null
@@ -636,7 +650,21 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery)
     {
         var query = context.Grns
-            .Include(g => g.MaterialBatches)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Manufacturer)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Supplier)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.ShipmentInvoice)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Material)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.DistributedRequisitionMaterial)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
