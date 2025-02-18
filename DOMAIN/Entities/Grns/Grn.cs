@@ -23,6 +23,7 @@ public class CreateGrnRequest
 
 public class GrnDto
 {
+    public Guid Id { get; set; }
     [StringLength(10000)]public string CarrierName { get; set; }
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
