@@ -12,6 +12,7 @@ public class MaterialBatchDto
 {
     public Guid Id { get; set; }
     public string Code { get; set; }
+    public string BatchNumber { get; set; }
     public BatchChecklistDto Checklist { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public BatchStatus Status { get; set; }  
