@@ -831,8 +831,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         // Combine the results
         var suppliers = notLinkedPurchaseOrders
             .Concat(partiallyUsedPurchaseOrders)
-            .Distinct()
             .Select(p => p.Supplier)
+            .DistinctBy(s => s.Id)
             .ToList();
         
         return mapper.Map<List<SupplierDto>>(suppliers);
