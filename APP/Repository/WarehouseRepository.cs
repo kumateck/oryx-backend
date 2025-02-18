@@ -479,6 +479,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var checklist = mapper.Map<Checklist>(request);
         checklist.CreatedById = userId;
+        checklist.MaterialBatches.ForEach(mb => mb.CreatedById = userId);
+        checklist.MaterialBatches.ForEach(mb => mb.SampleWeights.ForEach(sw=>sw.CreatedById = userId));
         await context.Checklists.AddAsync(checklist);
 
         var distributedMaterial = await context.DistributedRequisitionMaterials
@@ -507,6 +509,24 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         }
 
         var materialBatches = checklist.MaterialBatches.ToList();
+
+        var materialBatchDto = mapper.Map<List<MaterialBatchDto>>(materialBatches);
+        return Result.Success(materialBatchDto);
+    }
+    
+    public async Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterials(List<Guid> distributedMaterialIds)
+    {
+        var checklists = await context.Checklists
+            .Include(c => c.MaterialBatches)
+            .Where(c => distributedMaterialIds.Contains(c.DistributedRequisitionMaterialId))
+            .ToListAsync();
+
+        if (!checklists.Any())
+        {
+            return Error.NotFound("Checklist.NotFound", "Checklists not found for the specified distributed requisition materials.");
+        }
+
+        var materialBatches = checklists.SelectMany(c => c.MaterialBatches).ToList();
 
         var materialBatchDto = mapper.Map<List<MaterialBatchDto>>(materialBatches);
         return Result.Success(materialBatchDto);
@@ -563,6 +583,25 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         return grn is null
             ? Error.NotFound("Grn.NotFound", "GRN not found")
             : mapper.Map<GrnDto>(grn);
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery)
+    {
+        var query = context.Grns
+            .Include(g => g.MaterialBatches)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, w => w.GrnNumber, w => w.CarrierName);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<GrnDto>
+        );
     }
     
     

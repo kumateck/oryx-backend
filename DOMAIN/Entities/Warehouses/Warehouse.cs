@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
@@ -77,7 +78,19 @@ public class WarehouseLocationShelf : BaseEntity
     [StringLength(255)] public string Code { get; set; }
     [StringLength(255)] public string Name { get; set; }
     [StringLength(1000)] public string Description { get; set; }
+    public List<ShelfMaterialBatch> MaterialBatches { get; set; } = new();
+    public List<ShelfMaterialBatch> GetMaterialBatches() => MaterialBatches;
 }
+
+public class ShelfMaterialBatch:BaseEntity
+{
+    public Guid WarehouseLocationShelfId { get; set; }
+    public WarehouseLocationShelf WarehouseLocationShelf { get; set; }
+    public Guid MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
+    public decimal Quantity { get; set; }
+}
+
 public enum WarehouseType
 {
     Storage, 

@@ -64,6 +64,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialType> MaterialTypes { get; set; }
     public DbSet<MaterialCategory> MaterialCategories { get; set; }
     
+    public DbSet<Sr> Srs { get; set; }
+    
     public DbSet<MaterialBatch> MaterialBatches { get; set; }
     public DbSet<MaterialBatchEvent> MaterialBatchEvents { get; set; }
     public DbSet<MaterialBatchMovement> MaterialBatchMovements { get; set; }
@@ -482,7 +484,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Material Filters
         modelBuilder.Entity<Material>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
-        modelBuilder.Entity<MaterialBatch>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Material.DeletedAt.HasValue && entity.Status == BatchStatus.Available);
+        modelBuilder.Entity<MaterialBatch>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Material.DeletedAt.HasValue);// && entity.Status == BatchStatus.Available);
         modelBuilder.Entity<MaterialBatchEvent>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Batch.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue && !entity.Batch.IsFrozen);
         modelBuilder.Entity<MaterialBatchMovement>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Batch.DeletedAt.HasValue  && !entity.Batch.IsFrozen);
         modelBuilder.Entity<MaterialCategory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);

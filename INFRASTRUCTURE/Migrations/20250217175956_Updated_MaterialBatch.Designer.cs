@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250217175956_Updated_MaterialBatch")]
+    partial class Updated_MaterialBatch
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1380,7 +1383,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("TotalQuantity")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid?>("UoMId")
+                    b.Property<Guid>("UoMId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -1559,7 +1562,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(10000)
                         .HasColumnType("character varying(10000)");
 
-                    b.Property<Guid?>("UoMId")
+                    b.Property<Guid>("UoMId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -1577,7 +1580,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("Srs");
+                    b.ToTable("Sr");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Material", b =>
@@ -3604,6 +3607,9 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ActivityStepId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("Approved")
                         .HasColumnType("boolean");
 
@@ -3633,15 +3639,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ProductionActivityStepId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ProductionScheduleId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("RequestedById")
                         .HasColumnType("uuid");
 
@@ -3656,17 +3653,13 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ActivityStepId");
+
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductionActivityStepId");
-
-                    b.HasIndex("ProductionScheduleId");
 
                     b.HasIndex("RequestedById");
 
@@ -4855,54 +4848,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("WarehouseArrivalLocationId");
 
                     b.ToTable("DistributedRequisitionMaterials");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Warehouses.ShelfMaterialBatch", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MaterialBatchId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("WarehouseLocationShelfId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialBatchId");
-
-                    b.HasIndex("WarehouseLocationShelfId");
-
-                    b.ToTable("ShelfMaterialBatch");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.Warehouse", b =>
@@ -6144,7 +6089,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
-                        .HasForeignKey("UoMId");
+                        .HasForeignKey("UoMId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Checklist");
 
@@ -6277,7 +6224,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
-                        .HasForeignKey("UoMId");
+                        .HasForeignKey("UoMId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("CreatedBy");
 
@@ -7544,6 +7493,10 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
                 {
+                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ActivityStep")
+                        .WithMany()
+                        .HasForeignKey("ActivityStepId");
+
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -7556,35 +7509,19 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId");
-
-                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
-                        .WithMany()
-                        .HasForeignKey("ProductionActivityStepId");
-
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
-                        .WithMany()
-                        .HasForeignKey("ProductionScheduleId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "RequestedBy")
                         .WithMany()
                         .HasForeignKey("RequestedById")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("ActivityStep");
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Product");
-
-                    b.Navigation("ProductionActivityStep");
-
-                    b.Navigation("ProductionSchedule");
 
                     b.Navigation("RequestedBy");
                 });
@@ -8341,43 +8278,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("WarehouseArrivalLocation");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Warehouses.ShelfMaterialBatch", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
-                        .WithMany()
-                        .HasForeignKey("MaterialBatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Warehouses.WarehouseLocationShelf", "WarehouseLocationShelf")
-                        .WithMany("MaterialBatches")
-                        .HasForeignKey("WarehouseLocationShelfId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("MaterialBatch");
-
-                    b.Navigation("WarehouseLocationShelf");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.Warehouse", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -8831,11 +8731,6 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.WarehouseLocationRack", b =>
                 {
                     b.Navigation("Shelves");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Warehouses.WarehouseLocationShelf", b =>
-                {
-                    b.Navigation("MaterialBatches");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.WorkOrders.WorkOrder", b =>

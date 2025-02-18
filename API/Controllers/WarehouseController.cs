@@ -450,6 +450,22 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves the material batch details by distributed requisition material IDs.
+    /// </summary>
+    [HttpPost("distributed-material/material-batch")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialBatchByDistributedMaterials([FromBody]List<Guid> distributedMaterialIds)
+    {
+        var result = await repository.GetMaterialBatchByDistributedMaterials(distributedMaterialIds);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
 
     #endregion
         
@@ -492,6 +508,18 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of GRNs based on search criteria.
+    /// </summary>
+    [HttpGet("grns")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnDto>>))]
+    public async Task<IResult> GetGrns([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetGrns(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     #endregion
