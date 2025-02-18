@@ -351,6 +351,21 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Retrieves the details of a specific distributed requisition material by its ID.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpGet("distributed-material/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DistributedRequisitionMaterialDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributedRequisitionMaterialById(Guid id)
+    {
+        var result = await repository.GetDistributedRequisitionMaterialById(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     
     /// <summary>
     /// Creates a new arrival location for a warehouse.

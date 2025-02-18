@@ -43,6 +43,7 @@ public interface IWarehouseRepository
     Task<Result<WarehouseArrivalLocationDto>> GetArrivalLocationDetails(Guid warehouseId);
     Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(
         Guid warehouseId, int page, int pageSize, string searchQuery);
+    Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialById(Guid id);
     Task<Result> UpdateArrivalLocation(UpdateArrivalLocationRequest request);
     Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request);
     Task<Result> ConfirmArrival(Guid distributedMaterialId);
