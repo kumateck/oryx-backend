@@ -63,17 +63,20 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetRequisition(Guid requisitionId)
     {
-        var result = await repository.GetRequisition(requisitionId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetRequisition(requisitionId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
-    /// Approves a Stock Requisition.
+    /// Issues a Stock Requisition.
     /// </summary>
     /// <param name="request">The ApproveRequisitionRequest object.</param>
-    /// <param name="requisitionId">The ID of the Stock Requisition being approved.</param>
+    /// <param name="requisitionId">The ID of the Stock Requisition being issued.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("{requisitionId}/approve")]
+    [HttpPost("{requisitionId}/issue")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
