@@ -14,9 +14,9 @@ public class RequisitionDto
     public string Code { get; set; }
     public RequisitionType RequisitionType { get; set; }
     public UserDto RequestedBy { get; set; }
-    public List<RequisitionItemDto> Items { get; set; }
+    public List<RequisitionItemDto> Items { get; set; } = [];
     public bool Approved { get; set; }
-    public List<RequisitionApprovalDto> Approvals { get; set; }
+    public List<RequisitionApprovalDto> Approvals { get; set; } = [];
     public DateTime? ExpectedDelivery { get; set; }
     public DateTime CreatedAt { get; set; }
     public RequestStatus Status { get; set; }  
