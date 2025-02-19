@@ -35,6 +35,7 @@ public class MaterialBatch : BaseEntity
     public List<Sr> SampleWeights { get; set; } = [];
     public List<MaterialBatchEvent> Events { get; set; } = [];
     public List<MaterialBatchMovement> Movements { get; set; } = [];
+    public List<MassMaterialBatchMovement> MassMovements { get; set; } = [];
 }
 
 public class Sr:BaseEntity
@@ -97,6 +98,21 @@ public class MaterialBatchMovement : BaseEntity
     public Guid MovedById { get; set; }
     public User MovedBy { get; set; }
 
+    public MovementType MovementType { get; set; }  
+}
+
+public class MassMaterialBatchMovement : BaseEntity
+{
+    public Guid BatchId { get; set; }
+    public MaterialBatch Batch { get; set; }
+    public Warehouse FromWarehouse { get; set; }
+    public Guid? FromWarehouseId { get; set; }
+    public Warehouse ToWarehouse { get; set; }
+    public Guid? ToWarehouseId { get; set; }
+    public decimal Quantity { get; set; }
+    public DateTime MovedAt { get; set; }
+    public Guid MovedById { get; set; }
+    public User MovedBy { get; set; }
     public MovementType MovementType { get; set; }  
 }
 

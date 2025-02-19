@@ -21,9 +21,12 @@ public class MaterialBatchDto
     public decimal TotalQuantity { get; set; }        
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity { get; set; }
-    public DateTime ExpiryDate { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public DateTime? ManufacturingDate { get; set; }
+    public DateTime? RetestDate { get; set; }
     public List<MaterialBatchEventDto> Events { get; set; } = [];
     public List<MaterialBatchMovementDto> Movements { get; set; } = [];
+    public List<MassMaterialBatchMovementDto> MassMovements { get; set; } = [];
     public List<CurrentLocationDto> Locations { get; set; } = [];
 }
 
@@ -60,6 +63,17 @@ public class MaterialBatchMovementDto : BaseDto
     public MovementType MovementType { get; set; }  
 }
 
+public class MassMaterialBatchMovementDto : BaseDto
+{
+    public CollectionItemDto Batch { get; set; }
+    public CollectionItemDto FromWarehouse { get; set; }
+    public CollectionItemDto ToWarehouse { get; set; }
+    public decimal Quantity { get; set; }
+    public DateTime MovedAt { get; set; }
+    public CollectionItemDto MovedBy { get; set; }
+    public MovementType MovementType { get; set; }  
+}
+
 public class BatchLocation
 {
     public WareHouseLocationDto ConsumptionLocation { get; set; }
@@ -67,7 +81,7 @@ public class BatchLocation
 }
 public class CurrentLocation
 {
-    public WarehouseLocation Location { get; set; }
+    public Warehouse Location { get; set; }
     public decimal QuantityAtLocation { get; set; }
 }
 

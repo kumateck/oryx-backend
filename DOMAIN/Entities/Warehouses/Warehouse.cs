@@ -50,6 +50,7 @@ public class DistributedRequisitionMaterial:BaseEntity
     public bool ConfirmArrival { get; set; }
     public DateTime? ArrivedAt { get; set; }
     public bool IsChecked { get; set; }
+    public bool GrnGenerated { get; set; }
 }
 
 public class WarehouseLocation : BaseEntity
@@ -89,6 +90,9 @@ public class ShelfMaterialBatch:BaseEntity
     public Guid MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
     public decimal Quantity { get; set; }
+    public Guid? UomId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
+    [StringLength(1000)] public string Note { get; set; }
 }
 
 public enum WarehouseType

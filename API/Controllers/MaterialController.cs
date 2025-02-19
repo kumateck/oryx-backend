@@ -253,7 +253,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetWarehouseStock(Guid materialId, Guid warehouseId)
     {
-        var result = await repository.GetMaterialStockInWarehouse(materialId, warehouseId);
+        var result = await repository.GetMassMaterialStockInWarehouse(materialId, warehouseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -327,5 +327,24 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
 
         var result = await repository.UpdateBatchStatus(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Supplies a material batch to warehouse shelves.
+    /// </summary>
+    /// <param name="request">The SupplyMaterialBatchRequest object.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("batch/supply")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SupplyMaterialBatchToWarehouse([FromBody] SupplyMaterialBatchRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.SupplyMaterialBatchToWarehouse(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 }

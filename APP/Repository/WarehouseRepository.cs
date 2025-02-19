@@ -403,7 +403,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
                 .Include(drm => drm.Material)
                 .Include(drm => drm.ShipmentInvoiceItem)
                 .Include(drm => drm.RequisitionItem)
-                .Where(drm => drm.WarehouseArrivalLocation.WarehouseId == warehouseId)
+                .Where(drm => drm.WarehouseArrivalLocation.WarehouseId == warehouseId && !drm.GrnGenerated)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(searchQuery))
@@ -603,6 +603,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
 
         var materialBatches = await context.MaterialBatches
             .Where(mb => materialBatchIds.Contains(mb.Id))
+            .Include(mb=>mb.Checklist.DistributedRequisitionMaterial)
             .ToListAsync();
 
         if (materialBatches.Count != materialBatchIds.Count)
@@ -614,6 +615,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         {
             batch.GrnId = grn.Id;
             batch.Status = BatchStatus.Quarantine;
+            batch.Checklist.DistributedRequisitionMaterial.GrnGenerated = true;
         }
 
         context.MaterialBatches.UpdateRange(materialBatches);
