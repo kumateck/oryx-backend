@@ -57,6 +57,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             if (activityStep is not null)
             {
                 activityStep.Status = ProductionStatus.InProgress;
+                activityStep.StartedAt = DateTime.UtcNow;
                 context.ProductionActivitySteps.Update(activityStep);
             }
         }
