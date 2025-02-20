@@ -4843,6 +4843,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("ArrivedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("CheckedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -4850,6 +4853,12 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DistributedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("GrnGeneratedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("LastDeletedById")
