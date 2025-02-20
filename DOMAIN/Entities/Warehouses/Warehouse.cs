@@ -47,7 +47,10 @@ public class DistributedRequisitionMaterial:BaseEntity
     public Guid? UomId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
+    public DateTime? DistributedAt { get; set; }
     public DateTime? ArrivedAt { get; set; }
+    public DateTime? CheckedAt { get; set; }
+    public DateTime? GrnGeneratedAt { get; set; }
     public DistributedRequisitionMaterialStatus Status { get; set; }
 }
 

@@ -512,6 +512,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         }
 
         distributedMaterial.Status = DistributedRequisitionMaterialStatus.Checked;
+        distributedMaterial.CheckedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
 
         return Result.Success(checklist.Id);
@@ -616,6 +617,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             batch.GrnId = grn.Id;
             batch.Status = BatchStatus.Quarantine;
             batch.Checklist.DistributedRequisitionMaterial.Status = DistributedRequisitionMaterialStatus.GrnGenerated;
+            batch.Checklist.DistributedRequisitionMaterial.GrnGeneratedAt = DateTime.UtcNow;
         }
 
         context.MaterialBatches.UpdateRange(materialBatches);
