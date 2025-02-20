@@ -588,6 +588,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
         }
+        
+        var totalQuantityToAssign = request.ShelfMaterialBatches.Sum(s => s.Quantity);
+
+        if (totalQuantityToAssign > materialBatch.QuantityUnassigned)
+        {
+            return MaterialErrors.InsufficientStock; // Not enough stock in source shelf to move
+        }
 
         foreach (var shelfBatch in request.ShelfMaterialBatches)
         {
@@ -602,7 +609,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 return Error.NotFound("Shelf.NotFound", $"Shelf with ID {shelfBatch.WarehouseLocationShelfId} not found");
             }
 
-            var shelfMaterialBatch = mapper.Map<ShelfMaterialBatch>(request.ShelfMaterialBatches);
+            var shelfMaterialBatch = mapper.Map<ShelfMaterialBatch>(shelfBatch);
+            shelfMaterialBatch.MaterialBatchId = request.MaterialBatchId;
 
             await context.ShelfMaterialBatches.AddAsync(shelfMaterialBatch);
             
@@ -629,6 +637,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             
             await context.MaterialBatchEvents.AddAsync(batchEvent);
         }
+
+        materialBatch.QuantityAssigned = totalQuantityToAssign;
 
         await context.SaveChangesAsync();
         return Result.Success();

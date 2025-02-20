@@ -19,6 +19,8 @@ public class MaterialBatch : BaseEntity
     [StringLength(10000)] public string BatchNumber { get; set; }
     public Guid? GrnId { get; set; }
     public Grn Grn { get; set; }
+    public decimal QuantityAssigned { get; set; }
+    public decimal QuantityUnassigned => TotalQuantity - QuantityAssigned;
     public decimal TotalQuantity { get; set; }  
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity;
