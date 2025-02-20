@@ -59,8 +59,8 @@ public class DistributedRequisitionMaterialDto
     public ShipmentInvoiceItemDto ShipmentInvoiceItem { get; set; }
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public decimal Quantity { get; set; }
-    public bool ConfirmArrival { get; set; }
-    public bool IsChecked { get; set; }
+    public DateTime? ArrivedAt { get; set; }
+    public DistributedRequisitionMaterialStatus Status { get; set; }
 }
 
 public class WarehouseLocationShelfDto

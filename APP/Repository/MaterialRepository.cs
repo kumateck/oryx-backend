@@ -515,6 +515,69 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return Result.Success();
     }
+    
+    public async Task<Result> MoveMaterialBatchV2(MoveShelfMaterialBatchRequest request, Guid userId)
+    {
+        var shelfMaterialBatch = await context.ShelfMaterialBatches
+            .FirstOrDefaultAsync(b => b.Id == request.ShelfMaterialBatchId);
+
+        if (shelfMaterialBatch is null)
+        {
+            return MaterialErrors.NotFound(request.ShelfMaterialBatchId);
+        }
+        
+        // Calculate the total quantity to be moved
+        var totalQuantityToMove = request.MovedShelfBatchMaterials.Sum(m => m.Quantity);
+
+        if (totalQuantityToMove > shelfMaterialBatch.Quantity)
+        {
+            return MaterialErrors.InsufficientStock; // Not enough stock in source shelf to move
+        }
+
+        foreach (var movedBatch in request.MovedShelfBatchMaterials)
+        {
+            
+
+            var newShelfMaterialBatch = new ShelfMaterialBatch
+            {
+                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
+                MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
+                Quantity = movedBatch.Quantity,
+                UoM = await context.UnitOfMeasures.FindAsync(movedBatch.UomId),
+                Note = movedBatch.Note,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await context.ShelfMaterialBatches.AddAsync(newShelfMaterialBatch);
+
+            shelfMaterialBatch.Quantity -= movedBatch.Quantity;
+
+            if (shelfMaterialBatch.Quantity == 0)
+            {
+                context.ShelfMaterialBatches.Remove(shelfMaterialBatch);
+            }
+            else
+            {
+                context.ShelfMaterialBatches.Update(shelfMaterialBatch);
+            }
+
+            var batchEvent = new MaterialBatchEvent
+            {
+                BatchId = shelfMaterialBatch.MaterialBatchId,
+                Quantity = movedBatch.Quantity,
+                Type = EventType.Moved,  
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await context.MaterialBatchEvents.AddAsync(batchEvent);
+        }
+
+        // Save changes to the database
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 
     public async Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId)
     {
@@ -1043,330 +1106,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return Result.Success();
     }
-    
-    // public async Task<Result> ConsumeMaterialAtLocationShelves(Guid batchId, Guid locationId, int quantity, Guid userId)
-    // {
-    //     var materialBatchEvent = new MaterialBatchEvent
-    //     {
-    //         BatchId = batchId,
-    //         Quantity = quantity,
-    //         UserId = userId,
-    //         Type = EventType.Consumed,
-    //         ConsumedLocationId = locationId,
-    //         ConsumedAt = DateTime.UtcNow 
-    //     };
-    //
-    //     // Optionally update the batch's consumed quantity
-    //     var materialBatch = await context.MaterialBatches
-    //         .FirstOrDefaultAsync(b => b.Id == batchId);
-    //     if (materialBatch != null)
-    //     {
-    //         materialBatch.ConsumedQuantity += quantity;
-    //         context.MaterialBatches.Update(materialBatch);
-    //     }
-    //
-    //     // Fetch shelves in the specified location that contain the material batch
-    //     var shelves = await context.WarehouseLocationShelves
-    //         .Where(s => s.WarehouseLocationRack.WarehouseLocationId == locationId && s.MaterialBatches.Any(mb => mb.MaterialBatchId == batchId))
-    //         .Include(s => s.MaterialBatches)
-    //         .ToListAsync();
-    //
-    //     // Deduct the quantity from the shelves
-    //     foreach (var shelf in shelves)
-    //     {
-    //         var batchInShelf = shelf.MaterialBatches.FirstOrDefault(mb => mb.MaterialBatchId == batchId);
-    //         if (batchInShelf != null)
-    //         {
-    //             var quantityToRemove = Math.Min(quantity, batchInShelf.Quantity);
-    //             batchInShelf.Quantity -= quantityToRemove;
-    //             quantity -= (int)quantityToRemove;
-    //
-    //             if (batchInShelf.Quantity == 0)
-    //             {
-    //                 shelf.MaterialBatches.Remove(batchInShelf);
-    //             }
-    //
-    //             if (quantity <= 0)
-    //             {
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //
-    //     // Add the event to the context
-    //     await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
-    //
-    //     // Save changes to the database
-    //     await context.SaveChangesAsync();
-    //     return Result.Success();
-    // }
-    //
-    // public async Task<Result> MoveMaterialBatchToShelves(Guid batchId, Guid fromLocationId, Guid toLocationId, decimal quantity, Guid userId)
-    // {
-    //     var batch = await context.MaterialBatches
-    //         .FirstOrDefaultAsync(b => b.Id == batchId);
-    //
-    //     if (batch is null)
-    //     {
-    //         return MaterialErrors.NotFound(batchId);
-    //     }
-    //
-    //     // Get the current stock at the source location using the existing method
-    //     var currentStockAtFromWarehouse = await GetMaterialStockInWarehouse(batch.MaterialId, fromLocationId);
-    //
-    //     if (currentStockAtFromWarehouse.Value < quantity)
-    //     {
-    //         return MaterialErrors.InsufficientStock; // Not enough stock in source location to move
-    //     }
-    //     
-    //     var availableShelves = await context.WarehouseLocationShelves
-    //         .Where(s => s.WarehouseLocationRack.WarehouseLocationId == toLocationId && s.CurrentCapacity < s.MaxCapacity)
-    //         .Include(s => s.MaterialBatches)
-    //         .ToListAsync();
-    //     
-    //     var totalAvailableCapacity = availableShelves.Sum(s => s.MaxCapacity - s.CurrentCapacity);
-    //
-    //     if (totalAvailableCapacity < quantity)
-    //     {
-    //         return MaterialErrors.InsufficientShelves(quantity, totalAvailableCapacity);
-    //     }
-    //     
-    //     var fromShelves = await context.WarehouseLocationShelves
-    //         .Where(s => s.WarehouseLocationRack.WarehouseLocationId == fromLocationId && s.MaterialBatches.Any(mb => mb.MaterialBatchId == batchId))
-    //         .Include(s => s.MaterialBatches)
-    //         .ToListAsync();
-    //
-    //     foreach (var shelf in fromShelves)
-    //     {
-    //         var batchInShelf = shelf.MaterialBatches.FirstOrDefault(mb => mb.MaterialBatchId == batchId);
-    //         if (batchInShelf != null)
-    //         {
-    //             var quantityToRemove = Math.Min(quantity, batchInShelf.Quantity);
-    //             batchInShelf.Quantity -= quantityToRemove;
-    //             quantity -= quantityToRemove;
-    //
-    //             if (batchInShelf.Quantity == 0)
-    //             {
-    //                 shelf.MaterialBatches.Remove(batchInShelf);
-    //             }
-    //
-    //             if (quantity <= 0)
-    //             {
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //
-    //     foreach (var shelf in availableShelves)
-    //     {
-    //         var capacityToFill = Math.Min(quantity, shelf.MaxCapacity - shelf.CurrentCapacity);
-    //         shelf.MaterialBatches.Add(new ShelfMaterialBatch
-    //         {
-    //             MaterialBatchId = batchId,
-    //             Quantity = capacityToFill,
-    //             CreatedAt = DateTime.UtcNow
-    //         });
-    //         quantity -= capacityToFill;
-    //
-    //         if (quantity <= 0)
-    //         {
-    //             break;
-    //         }
-    //     }
-    //
-    //     // Proceed with the movement - updating the batch (no need to adjust ConsumedQuantity here)
-    //     var movement = new MassMaterialBatchMovement
-    //     {
-    //         BatchId = batchId,
-    //         FromWarehouseId = fromLocationId,
-    //         ToWarehouseId = toLocationId,
-    //         //assign shelf ids to List of Shelves needed for said quantity
-    //         Quantity = quantity,
-    //         MovedAt = DateTime.UtcNow,
-    //         MovedById = userId,
-    //         MovementType = MovementType.BetweenLocations // Regular movement
-    //     };
-    //
-    //     // Add the movement entry to the context
-    //     await context.MassMaterialBatchMovements.AddAsync(movement);
-    //
-    //     // Create the corresponding event for the move
-    //     var batchEvent = new MaterialBatchEvent
-    //     {
-    //         BatchId = batchId,
-    //         Quantity = quantity,
-    //         Type = EventType.Moved,  // Reflecting the movement event
-    //         UserId = userId,
-    //         CreatedAt = DateTime.UtcNow
-    //     };
-    //
-    //     // Add the event entry to the context
-    //     await context.MaterialBatchEvents.AddAsync(batchEvent);
-    //
-    //     // Save changes to the database
-    //     await context.SaveChangesAsync();
-    //
-    //     return Result.Success();
-    // }
-    //
-    // public async Task<Result<List<WarehouseLocationShelfDto>>> GetLocationShelves(Guid locationId, List<Guid> batchIds)
-    // {
-    //     var shelves = await context.WarehouseLocationShelves
-    //         .Where(s => s.WarehouseLocationRack.WarehouseLocationId == locationId && s.MaterialBatches.Any(mb => batchIds.Contains(mb.MaterialBatchId)))
-    //         .Include(s => s.WarehouseLocationRack)
-    //         .ThenInclude(r => r.WarehouseLocation)
-    //         .Include(s => s.MaterialBatches)
-    //         .ToListAsync();
-    //
-    //     var shelfDtos = shelves.Select(shelf => new WarehouseLocationShelfDto
-    //     {
-    //         Id = shelf.Id,
-    //         Code = shelf.Code,
-    //         Name = shelf.Name,
-    //         Description = shelf.Description,
-    //         MaxCapacity = shelf.MaxCapacity,
-    //         CurrentCapacity = shelf.CurrentCapacity,
-    //         MaterialBatches = shelf.GetMaterialBatches(),
-    //         WarehouseLocationRack = new WareHouseLocationRackDto
-    //         {
-    //             Id = shelf.WarehouseLocationRack.Id,
-    //             Name = shelf.WarehouseLocationRack.Name,
-    //             Description = shelf.WarehouseLocationRack.Description,
-    //             WarehouseLocation = new WareHouseLocationDto
-    //             {
-    //                 Id = shelf.WarehouseLocationRack.WarehouseLocation.Id,
-    //                 Name = shelf.WarehouseLocationRack.WarehouseLocation.Name,
-    //                 FloorName = shelf.WarehouseLocationRack.WarehouseLocation.FloorName,
-    //                 Description = shelf.WarehouseLocationRack.WarehouseLocation.Description
-    //             }
-    //         }
-    //     }).ToList();
-    //
-    //     return Result.Success(shelfDtos);
-    // }
-    //
-    // public async Task<Result> MoveMaterialsBatchFromShelvesByMaterial(MoveMaterialBatchRequest request, Guid userId)
-    // {
-    //     var material = await context.Materials
-    //         .Include(m => m.Batches) // Include batches for detailed processing
-    //         .FirstOrDefaultAsync(m => m.Id == request.MaterialId);
-    //
-    //     if (material is null)
-    //     {
-    //         return MaterialErrors.NotFound(request.MaterialId);
-    //     }
-    //
-    //     var remainingQuantityToMove = request.Quantity;
-    //
-    //     // Iterate through batches, prioritizing those with earlier expiry dates
-    //     foreach (var batch in material.Batches.OrderBy(m => m.ExpiryDate))
-    //     {
-    //         // Get the stock for this specific batch at the fromLocation
-    //         var batchStockAtFromWarehouse = await GetBatchStockInLocation(batch.Id, request.FromWarehouseId);
-    //
-    //         if (batchStockAtFromWarehouse <= 0)
-    //         {
-    //             continue; // Skip batches with no stock at this location
-    //         }
-    //
-    //         // Determine how much to move from this batch
-    //         var quantityToMoveFromBatch = Math.Min(remainingQuantityToMove, batchStockAtFromWarehouse);
-    //
-    //         // Fetch shelves in the fromLocation that contain the material batch
-    //         var fromShelves = await context.WarehouseLocationShelves
-    //             .Where(s => s.WarehouseLocationRack.WarehouseLocationId == request.FromWarehouseId && s.MaterialBatches.Any(mb => mb.MaterialBatchId == batch.Id))
-    //             .Include(s => s.MaterialBatches)
-    //             .ToListAsync();
-    //
-    //         // Deduct the quantity from the shelves in the fromLocation
-    //         foreach (var shelf in fromShelves)
-    //         {
-    //             var batchInShelf = shelf.MaterialBatches.FirstOrDefault(mb => mb.MaterialBatchId == batch.Id);
-    //             if (batchInShelf != null)
-    //             {
-    //                 var quantityToRemove = Math.Min(quantityToMoveFromBatch, batchInShelf.Quantity);
-    //                 batchInShelf.Quantity -= quantityToRemove;
-    //                 quantityToMoveFromBatch -= quantityToRemove;
-    //
-    //                 if (batchInShelf.Quantity == 0)
-    //                 {
-    //                     shelf.MaterialBatches.Remove(batchInShelf);
-    //                 }
-    //
-    //                 if (quantityToMoveFromBatch <= 0)
-    //                 {
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //
-    //         // Fetch shelves in the toLocation
-    //         var toShelves = await context.WarehouseLocationShelves
-    //             .Where(s => s.WarehouseLocationRack.WarehouseLocationId == request.ToWarehouseId)
-    //             .Include(s => s.MaterialBatches)
-    //             .ToListAsync();
-    //
-    //         // Add the quantity to the shelves in the toLocation
-    //         foreach (var shelf in toShelves)
-    //         {
-    //             var capacityToFill = Math.Min(quantityToMoveFromBatch, shelf.MaxCapacity - shelf.CurrentCapacity);
-    //             shelf.MaterialBatches.Add(new ShelfMaterialBatch
-    //             {
-    //                 MaterialBatchId = batch.Id,
-    //                 Quantity = capacityToFill
-    //             });
-    //             quantityToMoveFromBatch -= capacityToFill;
-    //
-    //             if (quantityToMoveFromBatch <= 0)
-    //             {
-    //                 break;
-    //             }
-    //         }
-    //
-    //         // Create a movement entry for the batch
-    //         var movement = new MassMaterialBatchMovement
-    //         {
-    //             BatchId = batch.Id,
-    //             FromWarehouseId = request.FromWarehouseId,
-    //             ToWarehouseId = request.ToWarehouseId,
-    //             Quantity = quantityToMoveFromBatch,
-    //             MovedAt = DateTime.UtcNow,
-    //             MovedById = userId,
-    //             MovementType = MovementType.BetweenLocations
-    //         };
-    //
-    //         await context.MassMaterialBatchMovements.AddAsync(movement);
-    //
-    //         // Create a corresponding event for the move
-    //         var batchEvent = new MaterialBatchEvent
-    //         {
-    //             BatchId = batch.Id,
-    //             Quantity = quantityToMoveFromBatch,
-    //             Type = EventType.Moved,
-    //             UserId = userId,
-    //             CreatedAt = DateTime.UtcNow
-    //         };
-    //
-    //         await context.MaterialBatchEvents.AddAsync(batchEvent);
-    //
-    //         // Reduce the remaining quantity to move
-    //         remainingQuantityToMove -= quantityToMoveFromBatch;
-    //
-    //         if (remainingQuantityToMove <= 0)
-    //         {
-    //             break; // Exit the loop if the desired quantity is moved
-    //         }
-    //     }
-    //
-    //     if (remainingQuantityToMove > 0)
-    //     {
-    //         // Not enough stock across all batches to fulfill the request
-    //         return MaterialErrors.InsufficientStock;
-    //     }
-    //
-    //     await context.SaveChangesAsync();
-    //     return Result.Success();
-    // }
 
 
 }
