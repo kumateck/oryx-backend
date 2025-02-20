@@ -1064,6 +1064,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         UomId = requisitionItem.UomId,
                         Quantity = item.QuantityAllocated,
                         Status = DistributedRequisitionMaterialStatus.Distributed,
+                        DistributedAt = DateTime.UtcNow,
                         WarehouseArrivalLocationId = warehouse.ArrivalLocation.Id
                     };
                 distributedRequisitionMaterial.CreatedById = userId;
