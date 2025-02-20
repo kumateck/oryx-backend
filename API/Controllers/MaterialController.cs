@@ -347,4 +347,23 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.SupplyMaterialBatchToWarehouse(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Moves a shelf material batch from one shelf to another.
+    /// </summary>
+    /// <param name="request">The MoveShelfMaterialBatchRequest object.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("batch/move/v2")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MoveMaterialBatchV2([FromBody] MoveShelfMaterialBatchRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.MoveMaterialBatchV2(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
 }

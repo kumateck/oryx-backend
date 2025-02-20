@@ -403,7 +403,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
                 .Include(drm => drm.Material)
                 .Include(drm => drm.ShipmentInvoiceItem)
                 .Include(drm => drm.RequisitionItem)
-                .Where(drm => drm.WarehouseArrivalLocation.WarehouseId == warehouseId && !drm.GrnGenerated)
+                .Where(drm => drm.WarehouseArrivalLocation.WarehouseId == warehouseId && !drm.Status.Equals(DistributedRequisitionMaterialStatus.GrnGenerated))
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(searchQuery))
@@ -486,7 +486,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             return Error.NotFound("DistributedMaterial.NotFound", "Distributed material not found");
         }
 
-        distributedMaterial.ConfirmArrival = true;
+        distributedMaterial.Status = DistributedRequisitionMaterialStatus.Arrived;
         distributedMaterial.ArrivedAt = DateTime.UtcNow;
 
         context.DistributedRequisitionMaterials.Update(distributedMaterial);
@@ -511,7 +511,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             return Error.NotFound("DistributedMaterial.NotFound", "Distributed material not found");
         }
 
-        distributedMaterial.IsChecked = true;
+        distributedMaterial.Status = DistributedRequisitionMaterialStatus.Checked;
         await context.SaveChangesAsync();
 
         return Result.Success(checklist.Id);
@@ -615,7 +615,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         {
             batch.GrnId = grn.Id;
             batch.Status = BatchStatus.Quarantine;
-            batch.Checklist.DistributedRequisitionMaterial.GrnGenerated = true;
+            batch.Checklist.DistributedRequisitionMaterial.Status = DistributedRequisitionMaterialStatus.GrnGenerated;
         }
 
         context.MaterialBatches.UpdateRange(materialBatches);

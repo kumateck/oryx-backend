@@ -1063,7 +1063,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         ShipmentInvoiceId = invoiceItem.ShipmentInvoiceId,
                         UomId = requisitionItem.UomId,
                         Quantity = item.QuantityAllocated,
-                        ConfirmArrival = false,
+                        Status = DistributedRequisitionMaterialStatus.Distributed,
                         WarehouseArrivalLocationId = warehouse.ArrivalLocation.Id
                     };
                 distributedRequisitionMaterial.CreatedById = userId;

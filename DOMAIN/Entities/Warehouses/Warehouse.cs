@@ -47,10 +47,16 @@ public class DistributedRequisitionMaterial:BaseEntity
     public Guid? UomId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
-    public bool ConfirmArrival { get; set; }
     public DateTime? ArrivedAt { get; set; }
-    public bool IsChecked { get; set; }
-    public bool GrnGenerated { get; set; }
+    public DistributedRequisitionMaterialStatus Status { get; set; }
+}
+
+public enum DistributedRequisitionMaterialStatus
+{
+    Distributed,
+    Arrived,
+    Checked,
+    GrnGenerated
 }
 
 public class WarehouseLocation : BaseEntity
