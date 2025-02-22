@@ -18,6 +18,8 @@ public class MaterialBatchDto
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }
     public DateTime? DateApproved { get; set; }
+    public decimal QuantityAssigned { get; set; }
+    public decimal QuantityUnassigned { get; set; }
     public decimal TotalQuantity { get; set; }        
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity { get; set; }
