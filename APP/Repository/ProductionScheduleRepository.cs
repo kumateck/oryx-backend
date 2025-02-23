@@ -688,7 +688,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
              {
                  Material = mapper.Map<MaterialDto>(item.Material),
                  DirectLinkMaterial = mapper.Map<MaterialDto>(item.DirectLinkMaterial),
-                 BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
+                 BaseUoM = mapper.Map<UnitOfMeasureDto>(product.BasePackingUoM),
                  BaseQuantity = item.BaseQuantity,
                  UnitCapacity = item.UnitCapacity,
                  QuantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired, product.BasePackingQuantity),

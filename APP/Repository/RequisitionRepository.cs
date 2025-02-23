@@ -57,6 +57,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             if (activityStep is not null)
             {
                 activityStep.Status = ProductionStatus.InProgress;
+                activityStep.StartedAt = DateTime.UtcNow;
                 context.ProductionActivitySteps.Update(activityStep);
             }
         }
@@ -66,7 +67,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     // Get Stock Requisition by ID
-    public async Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId)
+    public async Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId)
     {
         var requisition = await context.Requisitions
             .Include(r => r.RequestedBy)
@@ -76,9 +77,30 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
-        return requisition is null
-            ? RequisitionErrors.NotFound(requisitionId)
-            : mapper.Map<RequisitionDto>(requisition);
+        if (requisition is null)
+        {
+            return RequisitionErrors.NotFound(requisitionId);
+        }
+
+        var user = await context.Users.Include(u => u.Department)
+            .ThenInclude(u => u.Warehouses)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        var warehouse = user?.GetUserProductionWarehouse();
+        
+        var result = mapper.Map<RequisitionDto>(requisition);
+
+        if (warehouse is null) return result;
+
+        if (requisition.RequisitionType == RequisitionType.Purchase) return result;
+        
+        foreach (var item in result.Items)
+        {
+            var batchResult = await materialRepository.GetFrozenMaterialBatchesInWarehouse(item.Material.Id, warehouse.Id);
+            item.Batches = batchResult.IsSuccess ? batchResult.Value : [];
+        }
+
+        return result;
     }
 
     // Get paginated list of Stock Requisitions
@@ -168,7 +190,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         }
 
         // Find the next required approval
-        var pendingApproval = requisition.Approvals
+        /*var pendingApproval = requisition.Approvals
             .FirstOrDefault(a => !a.Approved &&
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))));
 
@@ -190,6 +212,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             requisition.Approved = true;
             requisition.ProductionActivityStep.Status = ProductionStatus.Completed;
+            requisition.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
             context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
 
             var warehouse =
@@ -208,6 +231,30 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     {
                         await materialRepository.ConsumeMaterialAtLocation(materialBatch.Id, warehouse.Id, item.Quantity, userId);
                     }
+                }
+            }
+        }*/
+        
+        requisition.Approved = true;
+        requisition.ProductionActivityStep.Status = ProductionStatus.Completed;
+        requisition.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
+        context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
+
+        var warehouse =
+            requisition.RequestedBy.Department?.Warehouses.FirstOrDefault(w =>
+                w.Warehouse.Type == WarehouseType.Production)?.Warehouse;
+
+        if (warehouse is not null)
+        {
+            foreach (var item in requisition.Items)
+            {
+                var frozenMaterialsResult = await materialRepository.GetFrozenMaterialBatchesInWarehouse(item.MaterialId, warehouse.Id);
+                if (frozenMaterialsResult.IsFailure) continue;
+
+                var frozenMaterial = frozenMaterialsResult.Value;
+                foreach (var materialBatch in frozenMaterial)
+                {
+                    await materialRepository.ConsumeMaterialAtLocation(materialBatch.Id, warehouse.Id, item.Quantity, userId);
                 }
             }
         }

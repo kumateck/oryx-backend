@@ -5,7 +5,6 @@ using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Checklists;
-// using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
@@ -36,7 +35,7 @@ using Configuration = DOMAIN.Entities.Configurations.Configuration;
 
 namespace INFRASTRUCTURE.Context;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService currentUserService /*, ITenantProvider tenantProvider*/) : IdentityDbContext<User, Role, Guid>(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService currentUserService) : IdentityDbContext<User, Role, Guid>(options)
 {
     
     #region Auth
