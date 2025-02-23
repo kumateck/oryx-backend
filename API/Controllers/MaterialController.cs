@@ -366,4 +366,43 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.MoveMaterialBatchV2(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a paginated list of approved raw materials for a specific warehouse.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="warehouseId">The ID of the warehouse.</param>
+    /// <returns>Returns a paginated list of approved raw materials.</returns>
+    [HttpGet("approved-raw-materials")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetApprovedRawMaterials([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery, [FromQuery] Guid warehouseId)
+    {
+        var result = await repository.GetApprovedRawMaterials(page, pageSize, searchQuery, warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of material batches by material ID for a specific warehouse.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <param name="warehouseId">The ID of the warehouse.</param>
+    /// <returns>Returns a paginated list of material batches.</returns>
+    [HttpGet("{materialId}/batches/v2")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShelfMaterialBatchDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialBatchesByMaterialIdV2([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery, [FromRoute] Guid materialId, [FromQuery] Guid warehouseId)
+    {
+        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize, searchQuery, materialId, warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

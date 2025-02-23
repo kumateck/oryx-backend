@@ -1,3 +1,4 @@
+using System.Collections;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -228,6 +229,57 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         return batches;
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid warehouseId)
+    {
+        var query = context.ShelfMaterialBatches
+            .AsSplitQuery()
+            .Include(m => m.MaterialBatch)
+            .ThenInclude(mb => mb.Material)
+            .Where(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId)
+            .Select(m => m.MaterialBatch.Material)
+            .Distinct()
+            .AsQueryable();
+        
+        
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialDto>);
+
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page, int pageSize, string searchQuery, Guid materialId, Guid warehouseId)
+    {
+        var query = context.ShelfMaterialBatches
+            .AsSplitQuery()
+            .Include(m=>m.WarehouseLocationShelf)
+            .Include(m => m.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
+            .ThenInclude(cl=>cl.Manufacturer)
+            .Where(m => m.MaterialBatch.MaterialId == materialId
+                        && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId)
+            .OrderBy(m=>m.MaterialBatch.ExpiryDate)
+            .AsQueryable();
+        
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<ShelfMaterialBatchDto>);
+            
     }
 
     public async Task<Result<decimal>> GetMaterialsInTransit(Guid materialId)
