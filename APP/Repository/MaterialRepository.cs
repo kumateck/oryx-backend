@@ -265,7 +265,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ThenInclude(mb=>mb.Checklist)
             .ThenInclude(cl=>cl.Manufacturer)
             .Where(m => m.MaterialBatch.MaterialId == materialId
-                        && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId)
+                        && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId && m.MaterialBatch.Status==BatchStatus.Available)
             .OrderBy(m=>m.MaterialBatch.ExpiryDate)
             .AsQueryable();
         
@@ -772,8 +772,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .IgnoreQueryFilters()
             .Include(m => m.Batch)
             .Include(m => m.ToWarehouse)
-            .Where(m => m.Batch.IsFrozen && m.Batch.MaterialId == materialId
-                        && m.ToWarehouseId == warehouseId)
+            .Where(m => m.Batch.Status==BatchStatus.Frozen && m.Batch.MaterialId == materialId
+                                                           && m.ToWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of quantities moved out of this location (outgoing batches)
@@ -781,8 +781,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .IgnoreQueryFilters()
             .Include(m => m.Batch)
             .Include(m => m.FromWarehouse)
-            .Where(m =>  m.Batch.IsFrozen && m.Batch.MaterialId == materialId
-                                          && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
+            .Where(m =>  m.Batch.Status==BatchStatus.Frozen && m.Batch.MaterialId == materialId
+                                                            && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of the consumed quantities at this location for the given material
@@ -790,7 +790,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .IgnoreQueryFilters()
             .Include(m => m.Batch)
             .Include(m => m.ConsumptionWarehouse)
-            .Where(e =>  e.Batch.IsFrozen && e.Batch.MaterialId == materialId
+            .Where(e =>  e.Batch.Status==BatchStatus.Frozen && e.Batch.MaterialId == materialId
                                           && e.ConsumptionWarehouse != null 
                                           && e.ConsumptionWarehouseId == warehouseId
                                           && e.Type == EventType.Consumed)
@@ -809,7 +809,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .IgnoreQueryFilters()
             .Include(b => b.Material)
             .Include(b => b.UoM)
-            .Where(b => b.IsFrozen && b.MaterialId == materialId &&
+            .Where(b => b.Status==BatchStatus.Frozen && b.MaterialId == materialId &&
                         context.MassMaterialBatchMovements.Any(m => m.BatchId == b.Id && m.ToWarehouseId == warehouseId) &&
                         !context.MassMaterialBatchMovements.Any(m => m.BatchId == b.Id && m.FromWarehouseId == warehouseId))
             .ToListAsync();
@@ -891,7 +891,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (materialBatch == null)
             return Error.Failure("Material.Batch", "Material batch not found.");
         
-        if (!materialBatch.IsFrozen)
+        if (materialBatch.Status!=BatchStatus.Frozen)
             return Error.Failure("Material.Batch", "Cannot consume from an unfrozen batch. Please freeze the batch first.");
 
         materialBatch.ConsumedQuantity += quantity;
@@ -913,7 +913,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (materialBatch == null)
             return Error.Failure("Material.Batch", "Material batch not found.");
 
-        materialBatch.IsFrozen = true;
+        materialBatch.Status = BatchStatus.Frozen;
         context.MaterialBatches.Update(materialBatch);
     
         await context.SaveChangesAsync();
