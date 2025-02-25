@@ -36,7 +36,6 @@ public class MaterialBatch : BaseEntity
     //public bool IsFrozen { get; set; }  
     public List<Sr> SampleWeights { get; set; } = [];
     public List<MaterialBatchEvent> Events { get; set; } = [];
-    public List<MaterialBatchMovement> Movements { get; set; } = [];
     public List<MassMaterialBatchMovement> MassMovements { get; set; } = [];
 }
 
@@ -81,28 +80,6 @@ public enum EventType
     Added,
     Moved,
     Consumed
-}
-
-
-public class MaterialBatchMovement : BaseEntity
-{
-    public Guid BatchId { get; set; }
-    public MaterialBatch Batch { get; set; }
-
-    public Guid? FromLocationId { get; set; }
-    public WarehouseLocation FromLocation { get; set; }
-
-    public Guid ToLocationId { get; set; }
-    public WarehouseLocation ToLocation { get; set; }
-
-    public decimal Quantity { get; set; }
-
-    public DateTime MovedAt { get; set; }
-
-    public Guid MovedById { get; set; }
-    public User MovedBy { get; set; }
-
-    public MovementType MovementType { get; set; }  
 }
 
 public class MassMaterialBatchMovement : BaseEntity

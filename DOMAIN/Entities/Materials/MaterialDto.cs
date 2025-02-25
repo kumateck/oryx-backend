@@ -15,6 +15,12 @@ public class MaterialDto
     public decimal TotalStock { get; set; }
 }
 
+public class MaterialDetailsDto
+{
+    public MaterialDto Material { get; set; }
+    public decimal TotalAvailableQuantity { get; set; }
+}
+
 public class MaterialCategoryDto : BaseDto
 {
     public string Name { get; set; }

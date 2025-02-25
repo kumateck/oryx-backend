@@ -101,6 +101,7 @@ public class WareHouseLocationRackDto
 
 public class ShelfMaterialBatchDto
 {
+    public Guid Id { get; set; }
     public MaterialWarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
     public MaterialBatchDto MaterialBatch { get; set; }
     public decimal Quantity { get; set; }

@@ -240,6 +240,19 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.MoveMaterialBatchByMaterial(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    [HttpPut("batch/{batchId}/approve")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ApproveMaterialBatch(Guid batchId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ApproveMaterialBatch(batchId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves the total stock of a material in a specific warehouse.
@@ -400,9 +413,9 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShelfMaterialBatchDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialBatchesByMaterialIdV2([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery, [FromRoute] Guid materialId, [FromQuery] Guid warehouseId)
+    public async Task<IResult> GetMaterialBatchesByMaterialIdV2([FromQuery] int page, [FromQuery] int pageSize, [FromRoute] Guid materialId, [FromQuery] Guid warehouseId)
     {
-        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize, searchQuery, materialId, warehouseId);
+        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize,  materialId, warehouseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

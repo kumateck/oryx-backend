@@ -4,6 +4,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Warehouses;
 using SHARED;
 
 namespace DOMAIN.Entities.Requisitions;
@@ -31,8 +32,20 @@ public class RequisitionItemDto
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
-    public List<MaterialBatchDto> Batches { get; set; } = [];
+    public List<MaterialBatchLocationsDto> BatchLocations { get; set; } = [];
 }
+
+public class MaterialBatchLocationsDto
+{
+    public MaterialBatchDto MaterialBatch { get; set; }
+    public List<ShelfMaterialBatchDto> ShelfMaterialBatches { get; set; }
+}
+
+// public class LocationDetails
+// {
+//     public ShelfMaterialBatchDto ShelfMaterialBatch { get; set; }
+//     public decimal Quantity { get; set; }
+// }
 
 public class RequisitionApprovalDto
 {

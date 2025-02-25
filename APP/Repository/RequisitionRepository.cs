@@ -97,10 +97,104 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         foreach (var item in result.Items)
         {
             var batchResult = await materialRepository.GetFrozenMaterialBatchesInWarehouse(item.Material.Id, warehouse.Id);
-            item.Batches = batchResult.IsSuccess ? batchResult.Value : [];
+            //item.Batches = batchResult.IsSuccess ? batchResult.Value : [];
+
+            foreach (var batch in batchResult.Value)
+            {
+                var batchLocation = new MaterialBatchLocationsDto
+                {
+                    MaterialBatch = batch,
+                    ShelfMaterialBatches =  await GetShelvesOfBatch(batch.Id,warehouse.Id)
+                };
+                item.BatchLocations.Add(batchLocation);
+            }
         }
 
         return result;
+    }
+
+   private async Task<List<ShelfMaterialBatchDto>> GetShelvesOfBatch(Guid batchId, Guid warehouseId)
+   {
+       var shelves = await context.ShelfMaterialBatches
+           .Include(smb => smb.WarehouseLocationShelf)
+           .Where(smb =>
+               smb.MaterialBatchId == batchId &&
+               smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId)
+           .ToListAsync();
+
+        return mapper.Map<List<ShelfMaterialBatchDto>>(shelves);
+    }
+
+    //todo: add issue endpoint
+    public async Task<Result> IssueStockRequisitionVoucher(List<(Guid ShelfMaterialBatchId, decimal Quantity)> batchQuantities, Guid userId)
+    {
+        foreach (var (shelfMaterialBatchId, quantity) in batchQuantities)
+        {
+            var shelfMaterialBatch = await context.ShelfMaterialBatches
+                .Include(smb => smb.WarehouseLocationShelf)
+                .ThenInclude(wls => wls.WarehouseLocationRack)
+                .ThenInclude(wlr => wlr.WarehouseLocation)
+                .ThenInclude(wl => wl.Warehouse)
+                .FirstOrDefaultAsync(smb => smb.Id == shelfMaterialBatchId);
+
+            if (shelfMaterialBatch == null)
+            {
+                return Error.Validation("ShelfMaterialBatch.NotFound", $"ShelfMaterialBatch with ID {shelfMaterialBatchId} not found.");
+            }
+
+            if (shelfMaterialBatch.Quantity < quantity)
+            {
+                return Error.Validation("ShelfMaterialBatch.InsufficientQuantity", $"Insufficient quantity in ShelfMaterialBatch with ID {shelfMaterialBatchId}.");
+            }
+
+            var productionWarehouse = await context.DepartmentWarehouses
+                .Where(dw => dw.WarehouseId == shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack
+                    .WarehouseLocation.Warehouse.Id)
+                .Select(dw => dw.Warehouse).Include(warehouse => warehouse.ArrivalLocation)
+                .FirstOrDefaultAsync(w => w.Type == WarehouseType.Production);
+                
+
+            if (productionWarehouse == null)
+            {
+                return Error.Validation("ProductionWarehouse.NotFound", "Production warehouse not found for the department.");
+            }
+
+            // Update the quantity in the shelf
+            shelfMaterialBatch.Quantity -= quantity;
+
+            if (shelfMaterialBatch.Quantity == 0)
+            {
+                context.ShelfMaterialBatches.Remove(shelfMaterialBatch);
+            }
+            else
+            {
+                context.ShelfMaterialBatches.Update(shelfMaterialBatch);
+            }
+
+            // Log the transfer event
+            var materialBatchEvent = new MaterialBatchEvent
+            {
+                BatchId = shelfMaterialBatch.MaterialBatchId,
+                Quantity = quantity,
+                Type = EventType.Moved,
+                UserId = userId
+            };
+
+            await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
+            
+            var batchMovement = new MassMaterialBatchMovement
+            {
+                BatchId = shelfMaterialBatch.MaterialBatchId,
+                FromWarehouseId = shelfMaterialBatch.WarehouseLocationShelf.Id,
+                ToWarehouseId = productionWarehouse.Id,
+                Quantity = quantity
+            };
+
+            await context.MassMaterialBatchMovements.AddAsync(batchMovement);
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 
     // Get paginated list of Stock Requisitions

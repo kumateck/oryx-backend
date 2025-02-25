@@ -219,7 +219,6 @@ public class OryxMapper : Profile
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
         CreateMap<MaterialBatch, MaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
-        CreateMap<MaterialBatchMovement, MaterialBatchMovementDto>();
         CreateMap<MassMaterialBatchMovement, MassMaterialBatchMovementDto>();
         CreateMap<CreateSrRequest, Sr>();
         //CreateMap<Sr, SrDto>();
@@ -286,6 +285,7 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationRack, WarehouseLocationRackDto>();
         CreateMap<WarehouseLocationRack, WareHouseLocationRackDto>();
         CreateMap<WarehouseLocationShelf, WarehouseLocationShelfDto>();
+        CreateMap<WarehouseLocationShelf,MaterialWarehouseLocationShelfDto>();
         CreateMap<WarehouseArrivalLocation,WarehouseArrivalLocationDto>();
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>();
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();

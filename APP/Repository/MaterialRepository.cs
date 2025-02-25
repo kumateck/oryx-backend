@@ -231,32 +231,58 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return batches;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid warehouseId)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid warehouseId)
     {
         var query = context.ShelfMaterialBatches
             .AsSplitQuery()
             .Include(m => m.MaterialBatch)
             .ThenInclude(mb => mb.Material)
-            .Where(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId)
+            .Where(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId && m.MaterialBatch.Status==BatchStatus.Available)
             .Select(m => m.MaterialBatch.Material)
             .Distinct()
             .AsQueryable();
-        
-        
+
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
             mapper.Map<MaterialDto>);
 
+        var materialIds = paginatedResult.Data.Select(m => m.Id).ToList();
+
+        //gets only those assigned to shelf locations
+        var totalAvailableQuantities = await context.ShelfMaterialBatches
+            .Where(smb => materialIds.Contains(smb.MaterialBatch.MaterialId) && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId && smb.MaterialBatch.Status==BatchStatus.Available)
+            .GroupBy(smb => smb.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(smb => smb.Quantity) })
+            .ToListAsync();
+
+        var materialDetails = paginatedResult.Data.Select(m => new MaterialDetailsDto
+        {
+            Material = m,
+            TotalAvailableQuantity = totalAvailableQuantities.FirstOrDefault(q => q.MaterialId == m.Id)?.TotalQuantity ?? 0
+        }).ToList();
+
+        var result = new Paginateable<IEnumerable<MaterialDetailsDto>>
+        {
+            Data = materialDetails,
+            PageIndex = paginatedResult.PageIndex,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            NumberOfPagesToShow = paginatedResult.NumberOfPagesToShow,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+
+        return Result.Success(result);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page, int pageSize, string searchQuery, Guid materialId, Guid warehouseId)
+    public async Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page, int pageSize, Guid materialId, Guid warehouseId)
     {
         var query = context.ShelfMaterialBatches
             .AsSplitQuery()
@@ -268,11 +294,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId && m.MaterialBatch.Status==BatchStatus.Available)
             .OrderBy(m=>m.MaterialBatch.ExpiryDate)
             .AsQueryable();
-        
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery);
-        }
 
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
@@ -488,6 +509,23 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> ApproveMaterialBatch(Guid batchId, Guid userId)
+    {
+        var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(mb => mb.Id == batchId);
+        if (materialBatch == null)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found.");
+        }
+
+        materialBatch.Status = BatchStatus.Available;
+        materialBatch.DateApproved = DateTime.UtcNow;
+
+        context.MaterialBatches.Update(materialBatch);
+        await context.SaveChangesAsync();
+
         return Result.Success();
     }
 
