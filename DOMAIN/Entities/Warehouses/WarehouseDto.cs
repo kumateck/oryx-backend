@@ -73,6 +73,7 @@ public class WarehouseLocationShelfDto
     public string Code { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
+    public List<ShelfMaterialBatchDto> MaterialBatches { get; set; }
 }
 
 public class WarehouseStockDto
@@ -100,9 +101,18 @@ public class WareHouseLocationRackDto
 
 public class ShelfMaterialBatchDto
 {
-    public WarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
+    public MaterialWarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
     public MaterialBatchDto MaterialBatch { get; set; }
     public decimal Quantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public string Note { get; set; }
+}
+
+public class MaterialWarehouseLocationShelfDto
+{
+    public Guid Id { get; set; }
+    public WareHouseLocationRackDto WarehouseLocationRack { get; set; }
+    public string Code { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
 }

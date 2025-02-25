@@ -43,4 +43,8 @@ public interface IMaterialRepository
     Task<Result> UpdateBatchStatus(UpdateBatchStatusRequest request, Guid userId);
     Task<Result> MoveMaterialBatchV2(MoveShelfMaterialBatchRequest request, Guid userId);
     Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId);
+    Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid warehouseId);
+
+    Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page,
+        int pageSize, string searchQuery, Guid materialId, Guid warehouseId);
 }

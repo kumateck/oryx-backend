@@ -33,7 +33,7 @@ public class MaterialBatch : BaseEntity
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
-    public bool IsFrozen { get; set; }  
+    //public bool IsFrozen { get; set; }  
     public List<Sr> SampleWeights { get; set; } = [];
     public List<MaterialBatchEvent> Events { get; set; } = [];
     public List<MaterialBatchMovement> Movements { get; set; } = [];
@@ -57,7 +57,9 @@ public enum BatchStatus
     Testing,
     Available,
     Rejected,
-    Retest
+    Retest,
+    Frozen,
+    Consumed
 }
 
 public class MaterialBatchEvent : BaseEntity

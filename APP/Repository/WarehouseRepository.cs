@@ -295,6 +295,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var shelf = await context.WarehouseLocationShelves
             .Include(s => s.WarehouseLocationRack).ThenInclude(s => s.WarehouseLocation)
+            .Include(w=>w.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
             .FirstOrDefaultAsync(s => s.Id == shelfId);
 
         return shelf is null
