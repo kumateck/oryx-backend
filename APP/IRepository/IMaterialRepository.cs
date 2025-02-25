@@ -25,6 +25,7 @@ public interface IMaterialRepository
     Task<Result<List<MaterialBatchDto>>> GetMaterialBatchesByMaterialId(Guid materialId);
     Task<Result<decimal>> GetMaterialsInTransit(Guid materialId);
     Task<Result> MoveMaterialBatchByMaterial(MoveMaterialBatchRequest request, Guid userId);
+    Task<Result> ApproveMaterialBatch(Guid batchId, Guid userId);
     Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, decimal quantity,
         Guid userId);
     Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
@@ -43,8 +44,8 @@ public interface IMaterialRepository
     Task<Result> UpdateBatchStatus(UpdateBatchStatusRequest request, Guid userId);
     Task<Result> MoveMaterialBatchV2(MoveShelfMaterialBatchRequest request, Guid userId);
     Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId);
-    Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid warehouseId);
+    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid warehouseId);
 
     Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page,
-        int pageSize, string searchQuery, Guid materialId, Guid warehouseId);
+        int pageSize, Guid materialId, Guid warehouseId);
 }

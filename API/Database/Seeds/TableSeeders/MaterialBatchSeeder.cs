@@ -90,17 +90,17 @@ namespace API.Database.Seeds.TableSeeders
 
                 foreach (var batch in batches)
                 {
-                    var movement = new MaterialBatchMovement
+                    var movement = new MassMaterialBatchMovement
                     {
                         BatchId = batch.Id,
-                        ToLocationId = warehouseLocations[0].Id,
+                        ToWarehouseId = warehouseLocations[0].WarehouseId,
                         Quantity = batch.TotalQuantity,
                         MovedAt = DateTime.UtcNow,
                         MovedById = userId,
                         MovementType = MovementType.ToWarehouse
                     };
 
-                    dbContext.MaterialBatchMovements.Add(movement);
+                    dbContext.MassMaterialBatchMovements.Add(movement);
 
                     var batchEvent = new MaterialBatchEvent
                     {
