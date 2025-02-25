@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
@@ -12,7 +13,7 @@ public interface IRequisitionRepository
     Task<Result<Guid>> CreateRequisition(CreateRequisitionRequest request, Guid userId);
     Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId);
 
-    Task<Result> IssueStockRequisitionVoucher(List<(Guid ShelfMaterialBatchId, decimal Quantity)> batchQuantities,
+    Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities,
         Guid userId);
     Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize,
         string searchQuery,  RequestStatus? status, RequisitionType? requisitionType);

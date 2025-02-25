@@ -21,6 +21,12 @@ public class MaterialDetailsDto
     public decimal TotalAvailableQuantity { get; set; }
 }
 
+public class BatchQuantityDto
+{
+    public Guid ShelfMaterialBatchId { get; set; }
+    public decimal Quantity { get; set; }
+}
+
 public class MaterialCategoryDto : BaseDto
 {
     public string Name { get; set; }

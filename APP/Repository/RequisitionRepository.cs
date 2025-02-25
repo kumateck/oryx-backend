@@ -126,25 +126,25 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     //todo: add issue endpoint
-    public async Task<Result> IssueStockRequisitionVoucher(List<(Guid ShelfMaterialBatchId, decimal Quantity)> batchQuantities, Guid userId)
+    public async Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities, Guid userId)
     {
-        foreach (var (shelfMaterialBatchId, quantity) in batchQuantities)
+        foreach (var batch in batchQuantities)
         {
             var shelfMaterialBatch = await context.ShelfMaterialBatches
                 .Include(smb => smb.WarehouseLocationShelf)
                 .ThenInclude(wls => wls.WarehouseLocationRack)
                 .ThenInclude(wlr => wlr.WarehouseLocation)
                 .ThenInclude(wl => wl.Warehouse)
-                .FirstOrDefaultAsync(smb => smb.Id == shelfMaterialBatchId);
+                .FirstOrDefaultAsync(smb => smb.Id == batch.ShelfMaterialBatchId);
 
             if (shelfMaterialBatch == null)
             {
-                return Error.Validation("ShelfMaterialBatch.NotFound", $"ShelfMaterialBatch with ID {shelfMaterialBatchId} not found.");
+                return Error.Validation("ShelfMaterialBatch.NotFound", $"ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId} not found.");
             }
 
-            if (shelfMaterialBatch.Quantity < quantity)
+            if (shelfMaterialBatch.Quantity < batch.Quantity)
             {
-                return Error.Validation("ShelfMaterialBatch.InsufficientQuantity", $"Insufficient quantity in ShelfMaterialBatch with ID {shelfMaterialBatchId}.");
+                return Error.Validation("ShelfMaterialBatch.InsufficientQuantity", $"Insufficient quantity in ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId}.");
             }
 
             var productionWarehouse = await context.DepartmentWarehouses
@@ -160,7 +160,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             }
 
             // Update the quantity in the shelf
-            shelfMaterialBatch.Quantity -= quantity;
+            shelfMaterialBatch.Quantity -= batch.Quantity;
 
             if (shelfMaterialBatch.Quantity == 0)
             {
@@ -175,7 +175,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             var materialBatchEvent = new MaterialBatchEvent
             {
                 BatchId = shelfMaterialBatch.MaterialBatchId,
-                Quantity = quantity,
+                Quantity = batch.Quantity,
                 Type = EventType.Moved,
                 UserId = userId
             };
@@ -187,7 +187,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 BatchId = shelfMaterialBatch.MaterialBatchId,
                 FromWarehouseId = shelfMaterialBatch.WarehouseLocationShelf.Id,
                 ToWarehouseId = productionWarehouse.Id,
-                Quantity = quantity
+                Quantity = batch.Quantity
             };
 
             await context.MassMaterialBatchMovements.AddAsync(batchMovement);

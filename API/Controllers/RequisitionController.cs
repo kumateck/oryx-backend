@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Requisitions;
 using APP.Utils;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions.Request;
 
@@ -74,7 +75,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> IssueStockRequisition([FromBody] List<(Guid ShelfMaterialBatchId, decimal Quantity)> batchQuantities)
+    public async Task<IResult> IssueStockRequisition([FromBody] List<BatchQuantityDto> batchQuantities)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
