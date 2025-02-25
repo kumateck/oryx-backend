@@ -1,10 +1,14 @@
+using System.Runtime.InteropServices.JavaScript;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
@@ -898,18 +902,118 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         {
             await materialRepository.FreezeMaterialBatchAsync(batch.Batch.Id);
         }
+        
+        // var packageMaterialResult = await CheckPackageMaterialStockLevelsForProductionSchedule(productId, quantity, userId);
+        // if (packageMaterialResult.IsFailure) return;
+        //
+        // var packageMaterialDetails = packageMaterialResult.Value;
+        //
+        // foreach (var batch in packageMaterialDetails.SelectMany(material => material.Batches))
+        // {
+        //     await materialRepository.FreezeMaterialBatchAsync(batch.Batch.Id);
+        // }
+    }
+    
+     public async Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid materialId, Guid userId)
+     {
+         var stockTransfer = mapper.Map<StockTransfer>(request);
+         if (stockTransfer.Sources.Count == 0)
+             return Error.Validation("StockTransfer.Validation", "Stock transfer sources cannot be empty");
+
+         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+         if (user is null)
+             return UserErrors.NotFound(userId);
+
+         if (!user.DepartmentId.HasValue)
+             return Error.NotFound("User.Department", "User is not associated with any department");
+         
+         foreach (var source in stockTransfer.Sources)
+         {
+             source.ToDepartmentId = user.DepartmentId.Value;
+         }
+         
+         await context.StockTransfers.AddAsync(stockTransfer);
+         await context.SaveChangesAsync();
+         return Result.Success(stockTransfer.Id);
     }
 
-    /*public async Task ConsumeMaterialInProduction(Guid productId, decimal quantity, Guid userId)
+    // Get Stock Transfers
+    public async Task<Result<IEnumerable<StockTransferDto>>> GetStockTransfers(Guid? fromDepartmentId = null, Guid? toDepartmentId = null, Guid? materialId = null)
     {
-        var materialResult = await CheckMaterialStockLevelsForProductionSchedule(productId, quantity, userId);
-        if (materialResult.IsFailure) return;
-
-        var materialDetails = materialResult.Value;
-
-        foreach (var batch in materialDetails.SelectMany(material => material.Batches))
+        var query = context.StockTransfers
+            .Include(st => st.Sources).ThenInclude(s => s.FromDepartment)
+            .Include(st => st.Sources).ThenInclude(s => s.UoM)
+            .Include(st => st.Material)
+            .AsQueryable();
+        
+        if (fromDepartmentId.HasValue)
         {
-            await materialRepository.ConsumeMaterialAtLocation(batch.Batch.Id, batch.ConsumptionLocation.Id, quantity, userId);
+            query = query.Where(st => st.Sources.Any(s => s.FromDepartmentId == fromDepartmentId.Value));
         }
-    }*/
+        
+        if (toDepartmentId.HasValue)
+        {
+            query = query.Where(st => st.Sources.Any(s => s.FromDepartmentId == toDepartmentId.Value));
+        }
+        
+        if (materialId.HasValue)
+        {
+            query = query.Where(st => st.MaterialId == materialId.Value);
+        }
+        
+        var transfers = await query.ToListAsync();
+        return mapper.Map<List<StockTransferDto>>(transfers);
+    }
+
+    // Issue Stock Transfer with Batch Selection
+    public async Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId)
+    {
+        var stockTransfer = await context.StockTransfers
+            .Include(st => st.Material)
+            .FirstOrDefaultAsync(st => st.Id == request.StockTransferId);
+        
+        if (stockTransfer == null)
+        {
+            return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
+        }
+
+        decimal remainingQuantity = stockTransfer.RequiredQuantity;
+
+        foreach (var batchRequest in request.Batches)
+        {
+            var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == batchRequest.BatchId);
+            
+            if (batch == null || batch.RemainingQuantity < batchRequest.Quantity)
+            {
+                return Error.Failure("Batch.InsufficientStock", $"Not enough stock in batch {batchRequest.BatchId}");
+            }
+
+            var movement = new MassMaterialBatchMovement
+            {
+                BatchId = batch.Id,
+                FromWarehouseId = batchRequest.FromWarehouseId,
+                ToWarehouseId = batchRequest.ToWarehouseId,
+                Quantity = batchRequest.Quantity,
+                MovedAt = DateTime.UtcNow,
+                MovedById = userId
+            };
+            
+            await context.MassMaterialBatchMovements.AddAsync(movement);
+            context.MaterialBatches.Update(batch);
+
+            remainingQuantity -= batchRequest.Quantity;
+
+            if (remainingQuantity <= 0) break;
+        }
+
+        if (remainingQuantity > 0)
+        {
+            return Error.Failure("StockTransfer.InsufficientStock", "Not enough batches to fulfill the transfer");
+        }
+
+        stockTransfer.ApprovedAt = DateTime.UtcNow;
+        context.StockTransfers.Update(stockTransfer);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 }

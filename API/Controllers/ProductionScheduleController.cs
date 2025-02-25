@@ -5,6 +5,8 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products.Production;
 using SHARED.Requests;
 
@@ -574,6 +576,54 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.IssueBatchPackagingRecord(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    #endregion
+
+    #region Stock Transfer
+
+    /// <summary>
+    /// Creates a new Stock Transfer.
+    /// </summary>
+    [HttpPost("stocker-transfer")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateStockTransfer([FromBody] CreateStockTransferRequest request, Guid materialId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.CreateStockTransfer(request, materialId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a list of Stock Transfers with optional filters.
+    /// </summary>
+    [HttpGet("stock-transfer")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StockTransferDto>))]
+    public async Task<IResult> GetStockTransfers([FromQuery] Guid? fromDepartmentId = null, [FromQuery] Guid? toDepartmentId = null, [FromQuery] Guid? materialId = null)
+    {
+        var result = await repository.GetStockTransfers(fromDepartmentId, toDepartmentId, materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Issues a Stock Transfer with batch selection.
+    /// </summary>
+    [HttpPut("stocker-transfer/issue")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> IssueStockTransfer([FromBody] IssueStockTransferRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.IssueStockTransfer(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

@@ -1,6 +1,8 @@
 using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products.Production;
 using SHARED;
 
@@ -64,4 +66,9 @@ public interface IProductionScheduleRepository
     Task<Result<BatchPackagingRecordDto>> GetBatchPackagingRecord(Guid id); 
     Task<Result> UpdateBatchPackagingRecord(UpdateBatchPackagingRecord request, Guid id);
     Task<Result> IssueBatchPackagingRecord(Guid id, Guid userId);
+
+    Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid materialId, Guid userId);
+    Task<Result<IEnumerable<StockTransferDto>>> GetStockTransfers(Guid? fromDepartmentId = null,
+        Guid? toDepartmentId = null, Guid? materialId = null);
+    Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId);
 }
