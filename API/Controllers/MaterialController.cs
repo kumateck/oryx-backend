@@ -390,7 +390,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of approved raw materials.</returns>
     [HttpGet("approved-raw-materials")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetApprovedRawMaterials([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery, [FromQuery] Guid warehouseId)
