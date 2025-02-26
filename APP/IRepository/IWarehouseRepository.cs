@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials.Batch;
@@ -54,4 +55,5 @@ public interface IWarehouseRepository
     Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds, Guid userId);
     Task<Result<GrnDto>> GetGrn(Guid id);
     Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery);
 }

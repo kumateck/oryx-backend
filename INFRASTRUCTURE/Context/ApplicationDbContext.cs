@@ -4,6 +4,7 @@ using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
@@ -169,6 +170,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WarehouseLocationShelf> WarehouseLocationShelves { get; set; }
     public DbSet<ShelfMaterialBatch> ShelfMaterialBatches { get; set; } 
     public DbSet<WarehouseArrivalLocation> WarehouseArrivalLocations { get; set; }
+
+    #endregion
+
+    #region BinCardInformation
+
+    public DbSet<BinCardInformation> BinCardInformation { get; set; }
 
     #endregion
 

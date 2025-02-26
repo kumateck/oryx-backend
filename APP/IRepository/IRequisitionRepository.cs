@@ -13,7 +13,7 @@ public interface IRequisitionRepository
     Task<Result<Guid>> CreateRequisition(CreateRequisitionRequest request, Guid userId);
     Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId);
 
-    Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities,
+    Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities,Guid productId,
         Guid userId);
     Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize,
         string searchQuery,  RequestStatus? status, RequisitionType? requisitionType);

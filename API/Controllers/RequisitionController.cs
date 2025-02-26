@@ -71,16 +71,16 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    [HttpPost("issue-stock-requisition")]
+    [HttpPost("issue-stock-requisition/{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> IssueStockRequisition([FromBody] List<BatchQuantityDto> batchQuantities)
+    public async Task<IResult> IssueStockRequisition([FromBody] List<BatchQuantityDto> batchQuantities,[FromRoute] Guid productId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.IssueStockRequisitionVoucher(batchQuantities, Guid.Parse(userId));
+        var result = await repository.IssueStockRequisitionVoucher(batchQuantities, productId,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
