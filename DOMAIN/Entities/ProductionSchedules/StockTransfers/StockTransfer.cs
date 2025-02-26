@@ -17,6 +17,8 @@ public class StockTransfer : BaseEntity
 
 public class StockTransferSource : BaseEntity
 {
+    public Guid StockTransferId { get; set; }
+    public StockTransfer StockTransfer { get; set; }
     public Guid FromDepartmentId { get; set; }
     public Department FromDepartment { get; set; }
     public Guid ToDepartmentId { get; set; }

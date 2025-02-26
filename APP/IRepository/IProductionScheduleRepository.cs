@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
@@ -67,8 +68,13 @@ public interface IProductionScheduleRepository
     Task<Result> UpdateBatchPackagingRecord(UpdateBatchPackagingRecord request, Guid id);
     Task<Result> IssueBatchPackagingRecord(Guid id, Guid userId);
 
-    Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid materialId, Guid userId);
+    Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid userId);
     Task<Result<IEnumerable<StockTransferDto>>> GetStockTransfers(Guid? fromDepartmentId = null,
         Guid? toDepartmentId = null, Guid? materialId = null);
     Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId);
+
+    Task<Result<List<MaterialDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId,
+        Guid productId, Guid userId);
+    Task<Result<List<MaterialDto>>> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId,
+        Guid productId, Guid userId);
 }

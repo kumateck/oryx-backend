@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
@@ -263,6 +264,45 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productId, quantityRequired, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+        /// <summary>
+    /// Retrieves materials with insufficient stock for a given production schedule and product.
+    /// </summary>
+    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
+    /// <param name="productId">The ID of the Product.</param>
+    /// <returns>Returns a list of materials with insufficient stock.</returns>
+    [HttpGet("{productionScheduleId}/materials-with-insufficient-stock/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetMaterialsWithInsufficientStock(productionScheduleId, productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves packaging materials with insufficient stock for a given production schedule and product.
+    /// </summary>
+    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
+    /// <param name="productId">The ID of the Product.</param>
+    /// <returns>Returns a list of packaging materials with insufficient stock.</returns>
+    [HttpGet("{productionScheduleId}/package-materials-with-insufficient-stock/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetPackageMaterialsWithInsufficientStock(productionScheduleId, productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     
     #endregion
     
@@ -590,12 +630,12 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateStockTransfer([FromBody] CreateStockTransferRequest request, Guid materialId)
+    public async Task<IResult> CreateStockTransfer([FromBody] CreateStockTransferRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.CreateStockTransfer(request, materialId, Guid.Parse(userId));
+        var result = await repository.CreateStockTransfer(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

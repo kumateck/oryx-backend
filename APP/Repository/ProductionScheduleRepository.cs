@@ -914,7 +914,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         // }
     }
     
-     public async Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid materialId, Guid userId)
+     public async Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid userId)
      {
          var stockTransfer = mapper.Map<StockTransfer>(request);
          if (stockTransfer.Sources.Count == 0)
@@ -1015,5 +1015,71 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         context.StockTransfers.Update(stockTransfer);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+    
+    public async Task<Result<List<MaterialDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId, Guid userId)
+    {
+        var productionSchedule = await context.ProductionSchedules
+            .Include(ps => ps.Products)
+            .FirstOrDefaultAsync(ps => ps.Id == productionScheduleId);
+        
+        if (productionSchedule == null)
+        {
+            return Error.NotFound("ProductionSchedule.NotFound", "Production schedule not found");
+        }
+
+        var product = productionSchedule.Products.FirstOrDefault(p => p.ProductId == productId);
+        if (product == null)
+        {
+            return Error.NotFound("Product.NotFound", "Product not found in the schedule");
+        }
+
+        var materialStockDetails =
+            await CheckMaterialStockLevelsForProductionSchedule(productId, product.Quantity, userId);
+        
+        if (!materialStockDetails.IsSuccess)
+        {
+            return materialStockDetails.Error;
+        }
+
+        var insufficientMaterials = materialStockDetails.Value
+            .Where(m => m.QuantityOnHand < m.QuantityNeeded)
+            .Select(m => m.Material)
+            .ToList();
+
+        return insufficientMaterials;
+    }
+    
+    public async Task<Result<List<MaterialDto>>> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId, Guid userId)
+    {
+        var productionSchedule = await context.ProductionSchedules
+            .Include(ps => ps.Products)
+            .FirstOrDefaultAsync(ps => ps.Id == productionScheduleId);
+        
+        if (productionSchedule == null)
+        {
+            return Error.NotFound("ProductionSchedule.NotFound", "Production schedule not found");
+        }
+
+        var product = productionSchedule.Products.FirstOrDefault(p => p.ProductId == productId);
+        if (product == null)
+        {
+            return Error.NotFound("Product.NotFound", "Product not found in the schedule");
+        }
+
+        var materialStockDetails =
+            await CheckPackageMaterialStockLevelsForProductionSchedule(productId, product.Quantity, userId);
+        
+        if (!materialStockDetails.IsSuccess)
+        {
+            return materialStockDetails.Error;
+        }
+
+        var insufficientMaterials = materialStockDetails.Value
+            .Where(m => m.QuantityOnHand < m.QuantityNeeded)
+            .Select(m => m.Material)
+            .ToList();
+
+        return insufficientMaterials;
     }
 }
