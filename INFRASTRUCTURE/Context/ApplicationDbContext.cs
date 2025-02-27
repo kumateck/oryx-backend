@@ -17,6 +17,7 @@ using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
@@ -110,7 +111,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionScheduleItem> ProductionScheduleItems { get; set; }
     public DbSet<MasterProductionSchedule> MasterProductionSchedules { get; set; }
     public DbSet<ProductionScheduleProduct> ProductionScheduleProducts { get; set; }
-
+    public DbSet<StockTransfer> StockTransfers { get; set; }
+    public DbSet<StockTransferSource> StockTransferSources { get; set; }
 
     #endregion
 
@@ -492,6 +494,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Material Filters
         modelBuilder.Entity<Material>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialBatch>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Material.DeletedAt.HasValue);// && entity.Status == BatchStatus.Available);
+        modelBuilder.Entity<Sr>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.MaterialBatch.DeletedAt.HasValue);// && entity.Status == BatchStatus.Available);
+        modelBuilder.Entity<ShelfMaterialBatch>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.MaterialBatch.DeletedAt.HasValue);// && entity.Status == BatchStatus.Available);
         modelBuilder.Entity<MaterialBatchEvent>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue && !entity.Batch.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue);// && !entity.Batch.IsFrozen);
         modelBuilder.Entity<MassMaterialBatchMovement>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Batch.DeletedAt.HasValue);//  && !entity.Batch.IsFrozen);
@@ -663,6 +667,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProductionActivityStepWorkCenter>().HasQueryFilter(a => !a.WorkCenter.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityStepUser>().HasQueryFilter(a => !a.User.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityLog>().HasQueryFilter(a => a.ProductionActivity != null);
+
+        #endregion
+
+        #region Stock Transfer
+
+        modelBuilder.Entity<StockTransfer>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Material.DeletedAt.HasValue);// && entity.Status == BatchStatus.Available);
+        modelBuilder.Entity<StockTransferSource>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.FromDepartment.DeletedAt.HasValue && !entity.ToDepartment.DeletedAt.HasValue);// && entity.Status == BatchStatus.Available);
+
 
         #endregion
     }

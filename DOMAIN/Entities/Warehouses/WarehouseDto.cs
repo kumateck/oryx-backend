@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -16,6 +15,7 @@ public class WarehouseDto
     public string Name { get; set; }
     public string Description { get; set; }
     public WarehouseType Type { get; set; }
+    public MaterialKind? MaterialKind { get; set; }
     public List<CollectionItemDto> Locations { get; set; } = [];
 }
 
@@ -45,7 +45,7 @@ public class WarehouseArrivalLocationDto
     public string Name { get; set; }
     public string FloorName { get; set; }
     public string Description { get; set; }
-    public List<DistributedRequisitionMaterialDto> DistributedRequisitionMaterials { get; set; } = new();
+    public List<DistributedRequisitionMaterialDto> DistributedRequisitionMaterials { get; set; } = [];
 }
 
 public class DistributedRequisitionMaterialDto

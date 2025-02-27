@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250226085750_AddStockTransferToSource")]
+    partial class AddStockTransferToSource
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -568,77 +571,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("MaterialTypeId");
 
                     b.ToTable("BillOfMaterialItems");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.BinCards.BinCardInformation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ArNumber")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<decimal>("BalanceQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("MaterialBatchId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("QuantityIssued")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("QuantityReceived")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid?>("UoMId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("WayBill")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialBatchId");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("UoMId");
-
-                    b.ToTable("BinCardInformation");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Checklists.Checklist", b =>
@@ -5878,45 +5810,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Material");
 
                     b.Navigation("MaterialType");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.BinCards.BinCardInformation", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
-                        .WithMany()
-                        .HasForeignKey("MaterialBatchId");
-
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId");
-
-                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
-                        .WithMany()
-                        .HasForeignKey("UoMId");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("MaterialBatch");
-
-                    b.Navigation("Product");
-
-                    b.Navigation("UoM");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Checklists.Checklist", b =>

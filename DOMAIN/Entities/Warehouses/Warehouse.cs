@@ -16,6 +16,7 @@ public class Warehouse : BaseEntity
     public List<WarehouseLocation> Locations { get; set; } = [];
     public WarehouseArrivalLocation ArrivalLocation { get; set; }
     public WarehouseType Type { get; set; }
+    public MaterialKind? MaterialKind { get; set; }
 }
 
 public class WarehouseArrivalLocation:BaseEntity

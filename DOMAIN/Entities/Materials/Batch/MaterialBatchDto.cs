@@ -92,3 +92,15 @@ public class CurrentLocationDto
     public CollectionItemDto Location { get; set; }
     public decimal QuantityAtLocation { get; set; }
 }
+
+public class MaterialStockByWarehouseDto
+{
+    public CollectionItemDto Warehouse { get; set; }
+    public decimal TotalQuantity { get; set; }
+}
+
+public class MaterialStockByDepartmentDto
+{
+    public CollectionItemDto Department { get; set; }
+    public decimal TotalQuantity { get; set; }
+}

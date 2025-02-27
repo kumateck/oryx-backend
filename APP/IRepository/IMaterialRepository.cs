@@ -48,4 +48,6 @@ public interface IMaterialRepository
 
     Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page,
         int pageSize, Guid materialId, Guid warehouseId);
+    Task<List<MaterialStockByWarehouseDto>> GetStockByWarehouse(Guid materialId);
+    Task<List<MaterialStockByDepartmentDto>> GetStockByDepartment(Guid materialId);
 }
