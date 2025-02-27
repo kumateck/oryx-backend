@@ -687,13 +687,19 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         );
     }
     
-    public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
     {
-        var query = context.BinCardInformation.AsQueryable();
+        var query = context.BinCardInformation
+            .Include(bci => bci.MaterialBatch)
+            .ThenInclude(mb => mb.Material)
+            .Include(bci => bci.Product)
+            .Include(bci => bci.UoM)
+            .Where(bci => bci.MaterialBatch.MaterialId == materialId)
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, b => b.BatchNumber, b => b.Description, b => b.ProductName);
+            query = query.WhereSearch(searchQuery, b => b.Description);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -703,5 +709,4 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             mapper.Map<BinCardInformationDto>
         );
     }
-    
 }

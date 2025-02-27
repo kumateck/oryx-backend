@@ -55,5 +55,7 @@ public interface IWarehouseRepository
     Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds, Guid userId);
     Task<Result<GrnDto>> GetGrn(Guid id);
     Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery);
-    Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery);
+
+    Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize,
+        string searchQuery, Guid materialId);
 }

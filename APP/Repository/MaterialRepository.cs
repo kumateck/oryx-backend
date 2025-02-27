@@ -738,12 +738,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         
         var binCardEvent = new BinCardInformation
         {
-            BatchNumber = materialBatch.BatchNumber,
+            MaterialBatchId = materialBatch.Id,
             Description = warehouse.Name,
             WayBill = "N/A",
             ArNumber = "N/A",
-            ManufacturingDate = materialBatch.ManufacturingDate,
-            ExpiryDate = materialBatch.ExpiryDate,
             QuantityReceived = totalQuantityToAssign,
             QuantityIssued = 0,
             BalanceQuantity = (await GetMaterialStockInWarehouse(materialBatch.MaterialId, warehouse.Id)).Value + totalQuantityToAssign,
