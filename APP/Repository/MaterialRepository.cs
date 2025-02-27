@@ -812,7 +812,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             {
                 stockByDepartment.Add(new MaterialStockByDepartmentDto
                 {
-                    Department = mapper.Map<DepartmentDto>(department),
+                    Department = mapper.Map<CollectionItemDto>(department),
                     TotalQuantity = totalStock
                 });
             }
