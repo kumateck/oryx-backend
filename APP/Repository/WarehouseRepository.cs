@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials.Batch;
@@ -686,5 +687,21 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         );
     }
     
+    public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery)
+    {
+        var query = context.BinCardInformation.AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.BatchNumber, b => b.Description, b => b.ProductName);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<BinCardInformationDto>
+        );
+    }
     
 }

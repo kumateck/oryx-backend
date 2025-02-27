@@ -4,6 +4,7 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.BillOfMaterials.Request;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
@@ -290,6 +291,12 @@ public class OryxMapper : Profile
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>();
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
+        #endregion
+
+        #region BinCardInformation
+
+        CreateMap<BinCardInformation, BinCardInformationDto>();
+
         #endregion
 
         #region Department

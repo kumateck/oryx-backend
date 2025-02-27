@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials.Batch;
@@ -537,6 +538,20 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    #endregion
+
+    #region BinCardInformation
+
+    [HttpGet("bincardinformation")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BinCardInformationDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetBinCardInformation([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    {
+        var result = await repository.GetBinCardInformation(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     #endregion
     
 

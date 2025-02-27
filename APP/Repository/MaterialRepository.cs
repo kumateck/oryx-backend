@@ -3,6 +3,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.BinCards;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -726,7 +727,31 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             };
             
             await context.MaterialBatchEvents.AddAsync(batchEvent);
+
+            
         }
+
+        var warehouse = await context.Warehouses
+            .FirstOrDefaultAsync(w => w.Id == context.WarehouseLocationShelves
+                .FirstOrDefault(s => s.Id == request.ShelfMaterialBatches.First().WarehouseLocationShelfId)
+                .WarehouseLocationRack.WarehouseLocation.Warehouse.Id);
+        
+        var binCardEvent = new BinCardInformation
+        {
+            BatchNumber = materialBatch.BatchNumber,
+            Description = warehouse.Name,
+            WayBill = "N/A",
+            ArNumber = "N/A",
+            ManufacturingDate = materialBatch.ManufacturingDate,
+            ExpiryDate = materialBatch.ExpiryDate,
+            QuantityReceived = totalQuantityToAssign,
+            QuantityIssued = 0,
+            BalanceQuantity = (await GetMaterialStockInWarehouse(materialBatch.MaterialId, warehouse.Id)).Value + totalQuantityToAssign,
+            UoMId = materialBatch.UoMId,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        await context.BinCardInformation.AddAsync(binCardEvent);
 
         materialBatch.QuantityAssigned = totalQuantityToAssign;
 

@@ -5,6 +5,7 @@ using APP.Services.Pdf;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -124,35 +125,37 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         return mapper.Map<List<ShelfMaterialBatchDto>>(shelves);
     }
-
-    //todo: add issue endpoint
-    public async Task<Result> IssueStockRequisitionVoucher(List<(Guid ShelfMaterialBatchId, decimal Quantity)> batchQuantities, Guid userId)
+   
+    public async Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities, Guid productId, Guid userId)
     {
-        foreach (var (shelfMaterialBatchId, quantity) in batchQuantities)
+        decimal quantityIssued = 0;
+        var product = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+        foreach (var batch in batchQuantities)
         {
             var shelfMaterialBatch = await context.ShelfMaterialBatches
                 .Include(smb => smb.WarehouseLocationShelf)
                 .ThenInclude(wls => wls.WarehouseLocationRack)
                 .ThenInclude(wlr => wlr.WarehouseLocation)
                 .ThenInclude(wl => wl.Warehouse)
-                .FirstOrDefaultAsync(smb => smb.Id == shelfMaterialBatchId);
+                .Include(shelfMaterialBatch => shelfMaterialBatch.MaterialBatch)
+                .FirstOrDefaultAsync(smb => smb.Id == batch.ShelfMaterialBatchId);
 
             if (shelfMaterialBatch == null)
             {
-                return Error.Validation("ShelfMaterialBatch.NotFound", $"ShelfMaterialBatch with ID {shelfMaterialBatchId} not found.");
+                return Error.Validation("ShelfMaterialBatch.NotFound", $"ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId} not found.");
             }
 
-            if (shelfMaterialBatch.Quantity < quantity)
+            if (shelfMaterialBatch.Quantity < batch.Quantity)
             {
-                return Error.Validation("ShelfMaterialBatch.InsufficientQuantity", $"Insufficient quantity in ShelfMaterialBatch with ID {shelfMaterialBatchId}.");
+                return Error.Validation("ShelfMaterialBatch.InsufficientQuantity", $"Insufficient quantity in ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId}.");
             }
 
             var productionWarehouse = await context.DepartmentWarehouses
                 .Where(dw => dw.WarehouseId == shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.Warehouse.Id)
-                .Select(dw => dw.Warehouse).Include(warehouse => warehouse.ArrivalLocation)
+                .Select(dw => dw.Warehouse)
+                .Include(warehouse => warehouse.ArrivalLocation)
                 .FirstOrDefaultAsync(w => w.Type == WarehouseType.Production);
-                
 
             if (productionWarehouse == null)
             {
@@ -160,7 +163,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             }
 
             // Update the quantity in the shelf
-            shelfMaterialBatch.Quantity -= quantity;
+            shelfMaterialBatch.Quantity -= batch.Quantity;
 
             if (shelfMaterialBatch.Quantity == 0)
             {
@@ -175,22 +178,63 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             var materialBatchEvent = new MaterialBatchEvent
             {
                 BatchId = shelfMaterialBatch.MaterialBatchId,
-                Quantity = quantity,
+                Quantity = batch.Quantity,
                 Type = EventType.Moved,
                 UserId = userId
             };
 
             await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
-            
+
             var batchMovement = new MassMaterialBatchMovement
             {
                 BatchId = shelfMaterialBatch.MaterialBatchId,
-                FromWarehouseId = shelfMaterialBatch.WarehouseLocationShelf.Id,
+                FromWarehouseId = shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id,
                 ToWarehouseId = productionWarehouse.Id,
-                Quantity = quantity
+                Quantity = batch.Quantity,
+                CreatedById = userId
             };
 
             await context.MassMaterialBatchMovements.AddAsync(batchMovement);
+
+            quantityIssued += batch.Quantity;
+
+            var toBinCardEvent = new BinCardInformation
+            {
+                BatchNumber = shelfMaterialBatch.MaterialBatch.BatchNumber,
+                Description = shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Name,
+                WayBill = "N/A",
+                ArNumber = "N/A",
+                ManufacturingDate = shelfMaterialBatch.MaterialBatch.ManufacturingDate,
+                ExpiryDate = shelfMaterialBatch.MaterialBatch.ExpiryDate,
+                QuantityReceived = 0,
+                QuantityIssued = batch.Quantity,
+                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id)).Value - quantityIssued,
+                UoMId = shelfMaterialBatch.MaterialBatch.UoMId,
+                ProductName = product.Name,
+                CreatedAt = DateTime.UtcNow,
+                CreatedById = userId
+            };
+
+            await context.BinCardInformation.AddAsync(toBinCardEvent);
+
+            var fromBinCardEvent = new BinCardInformation
+            {
+                BatchNumber = shelfMaterialBatch.MaterialBatch.BatchNumber,
+                Description = productionWarehouse.Name,
+                WayBill = "N/A",
+                ArNumber = "N/A",
+                ManufacturingDate = shelfMaterialBatch.MaterialBatch.ManufacturingDate,
+                ExpiryDate = shelfMaterialBatch.MaterialBatch.ExpiryDate,
+                QuantityReceived = batch.Quantity,
+                QuantityIssued = 0,
+                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, productionWarehouse.Id)).Value + batch.Quantity,
+                UoMId = shelfMaterialBatch.MaterialBatch.UoMId,
+                ProductName = product.Name,
+                CreatedAt = DateTime.UtcNow,
+                CreatedById = userId
+            };
+
+            await context.BinCardInformation.AddAsync(fromBinCardEvent);
         }
 
         await context.SaveChangesAsync();
