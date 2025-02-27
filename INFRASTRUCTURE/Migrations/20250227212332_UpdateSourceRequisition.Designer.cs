@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250227212332_UpdateSourceRequisition")]
+    partial class UpdateSourceRequisition
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -582,6 +585,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("BalanceQuantity")
                         .HasColumnType("numeric");
 
+                    b.Property<string>("BatchNumber")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -595,17 +602,21 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("MaterialBatchId")
-                        .HasColumnType("uuid");
+                    b.Property<DateTime?>("ManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ProductId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("ProductName")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<decimal>("QuantityIssued")
                         .HasColumnType("numeric");
@@ -630,10 +641,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialBatchId");
-
-                    b.HasIndex("ProductId");
 
                     b.HasIndex("UoMId");
 
@@ -5903,14 +5910,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
-                        .WithMany()
-                        .HasForeignKey("MaterialBatchId");
-
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId");
-
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
                         .HasForeignKey("UoMId");
@@ -5920,10 +5919,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("MaterialBatch");
-
-                    b.Navigation("Product");
 
                     b.Navigation("UoM");
                 });

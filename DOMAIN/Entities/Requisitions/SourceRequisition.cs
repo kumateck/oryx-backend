@@ -11,13 +11,12 @@ namespace DOMAIN.Entities.Requisitions;
 public class SourceRequisition : BaseEntity
 {
     [StringLength(100)] public string Code { get; set; }
-    public Guid RequisitionId { get; set; }
-    public Requisition Requisition { get; set; }
+    // public Guid RequisitionId { get; set; }
+    // public Requisition Requisition { get; set; }
     public Guid SupplierId { get; set; }
     public Supplier Supplier { get; set; }
     public DateTime? SentQuotationRequestAt { get; set; }
     public List<SourceRequisitionItem> Items { get; set; } = [];
-    public List<Guid> RequisitionIds { get; set; } = [];
 }
 
 public class SourceRequisitionItem : BaseEntity
@@ -30,6 +29,7 @@ public class SourceRequisitionItem : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
     public ProcurementSource Source { get; set; }
+    public Guid RequisitionId { get; set; }
 }
 
 public enum ProcurementSource
@@ -43,9 +43,29 @@ public enum ProcurementSource
 public class SourceRequisitionDto :  WithAttachment
 {
     public string Code { get; set; }
-    public CollectionItemDto Requisition { get; set; }
     public CollectionItemDto Supplier { get; set; }
-    public List<SourceRequisitionItemDto> Items { get; set; } = [];
+    private List<SourceRequisitionItemDto> _items = [];
+    
+    public List<SourceRequisitionItemDto> Items
+    {
+        get
+        {
+            return _items
+                .GroupBy(i => i.Material.Id) // Group by Material ID
+                .Select(g => new SourceRequisitionItemDto
+                {
+                    Id = g.First().Id,  // Keep the first ID (arbitrary, can be changed)
+                    SourceRequisition = g.First().SourceRequisition,
+                    Material = g.First().Material,
+                    UoM = g.First().UoM,
+                    Quantity = g.Sum(i => i.Quantity), // Sum quantities
+                    Source = g.First().Source,
+                    CreatedAt = g.First().CreatedAt
+                })
+                .ToList();
+        }
+        set => _items = value; // Ensure list can be modified externally
+    }
 }
 
 public class SupplierQuotation : BaseEntity
