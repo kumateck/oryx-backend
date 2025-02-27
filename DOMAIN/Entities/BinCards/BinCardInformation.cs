@@ -21,6 +21,8 @@ public class BinCardInformation:BaseEntity
 
 public class BinCardInformationDto
 {
+    public Guid Id { get; set; }
+    public DateTime CreatedAt { get; set; }
     public string BatchNumber { get; set; }
     public string Description { get; set; }
     public string WayBill { get; set; }
