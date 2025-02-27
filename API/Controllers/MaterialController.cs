@@ -404,7 +404,6 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
-    /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="materialId">The ID of the material.</param>
     /// <param name="warehouseId">The ID of the warehouse.</param>
     /// <returns>Returns a paginated list of material batches.</returns>
@@ -417,5 +416,35 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize,  materialId, warehouseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the stock of a material in different warehouses.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <returns>Returns the stock of the material in all warehouses.</returns>
+    [HttpGet("{materialId}/stock/warehouses")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStockByWarehouseDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStockByWarehouse(Guid materialId)
+    {
+        var result = await repository.GetStockByWarehouse(materialId);
+        return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves the stock of a material in different departments.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <returns>Returns the stock of the material in all departments.</returns>
+    [HttpGet("{materialId}/stock/departments")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStockByDepartmentDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStockByDepartment(Guid materialId)
+    {
+        var result = await repository.GetStockByDepartment(materialId);
+        return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
     }
 }

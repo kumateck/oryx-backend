@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.BinCards;
+using DOMAIN.Entities.Departments;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -758,7 +759,67 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<List<MaterialStockByWarehouseDto>> GetStockByWarehouse(Guid materialId)
+    {
+        // Get all warehouses
+        var warehouses = await context.Warehouses.ToListAsync();
+        var stockByWarehouse = new List<MaterialStockByWarehouseDto>();
 
+        foreach (var warehouse in warehouses)
+        {
+            var stockResult = await GetMaterialStockInWarehouse(materialId, warehouse.Id);
+            if (stockResult.IsSuccess && stockResult.Value > 0)
+            {
+                stockByWarehouse.Add(new MaterialStockByWarehouseDto
+                {
+                    Warehouse = mapper.Map<CollectionItemDto>(warehouse),
+                    TotalQuantity = stockResult.Value
+                });
+            }
+        }
+
+        return stockByWarehouse;
+    }
+
+    
+    public async Task<List<MaterialStockByDepartmentDto>> GetStockByDepartment(Guid materialId)
+    {
+        // Get all departments
+        var departments = await context.Departments.ToListAsync();
+        var stockByDepartment = new List<MaterialStockByDepartmentDto>();
+
+        foreach (var department in departments)
+        {
+            // Get all warehouses associated with this department
+            var warehouseIds = await context.DepartmentWarehouses
+                .Where(dw => dw.DepartmentId == department.Id)
+                .Select(dw => dw.WarehouseId)
+                .ToListAsync();
+
+            decimal totalStock = 0;
+
+            foreach (var warehouseId in warehouseIds)
+            {
+                var stockResult = await GetMaterialStockInWarehouse(materialId, warehouseId);
+                if (stockResult.IsSuccess)
+                {
+                    totalStock += stockResult.Value;
+                }
+            }
+
+            if (totalStock > 0)
+            {
+                stockByDepartment.Add(new MaterialStockByDepartmentDto
+                {
+                    Department = mapper.Map<DepartmentDto>(department),
+                    TotalQuantity = totalStock
+                });
+            }
+        }
+
+        return stockByDepartment;
+    }
     
     public async Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {

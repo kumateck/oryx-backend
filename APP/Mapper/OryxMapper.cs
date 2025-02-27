@@ -103,6 +103,7 @@ public class OryxMapper : Profile
         CreateMap<ProductionSchedule, CollectionItemDto>();
         CreateMap<ProductionActivity, CollectionItemDto>();
         CreateMap<ProductionSchedule, CollectionItemDto>();
+        CreateMap<Department, CollectionItemDto>();
         
         #endregion
 
