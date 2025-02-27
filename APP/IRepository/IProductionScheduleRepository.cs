@@ -73,8 +73,8 @@ public interface IProductionScheduleRepository
         Guid? toDepartmentId = null, Guid? materialId = null);
     Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId);
 
-    Task<Result<List<MaterialDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId,
+    Task<Result<List<ProductionScheduleProcurementDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId,
         Guid productId, Guid userId);
-    Task<Result<List<MaterialDto>>> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId,
+    Task<Result<List<ProductionScheduleProcurementPackageDto>>> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId,
         Guid productId, Guid userId);
 }

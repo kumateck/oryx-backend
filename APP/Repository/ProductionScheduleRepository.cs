@@ -1017,7 +1017,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
     
-    public async Task<Result<List<MaterialDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId, Guid userId)
+    public async Task<Result<List<ProductionScheduleProcurementDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId, Guid userId)
     {
         var productionSchedule = await context.ProductionSchedules
             .Include(ps => ps.Products)
@@ -1044,13 +1044,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         var insufficientMaterials = materialStockDetails.Value
             .Where(m => m.QuantityOnHand < m.QuantityNeeded)
-            .Select(m => m.Material)
             .ToList();
 
         return insufficientMaterials;
     }
     
-    public async Task<Result<List<MaterialDto>>> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId, Guid userId)
+    public async Task<Result<List<ProductionScheduleProcurementPackageDto>>> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId, Guid userId)
     {
         var productionSchedule = await context.ProductionSchedules
             .Include(ps => ps.Products)
@@ -1077,7 +1076,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         var insufficientMaterials = materialStockDetails.Value
             .Where(m => m.QuantityOnHand < m.QuantityNeeded)
-            .Select(m => m.Material)
             .ToList();
 
         return insufficientMaterials;

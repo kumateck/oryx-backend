@@ -273,7 +273,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>Returns a list of materials with insufficient stock.</returns>
     [HttpGet("{productionScheduleId}/materials-with-insufficient-stock/{productId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId)
     {
@@ -292,7 +292,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>Returns a list of packaging materials with insufficient stock.</returns>
     [HttpGet("{productionScheduleId}/package-materials-with-insufficient-stock/{productId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementPackageDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId)
     {
