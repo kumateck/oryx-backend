@@ -200,17 +200,15 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             var toBinCardEvent = new BinCardInformation
             {
-                BatchNumber = shelfMaterialBatch.MaterialBatch.BatchNumber,
+                MaterialBatchId = shelfMaterialBatch.MaterialBatch.Id,
                 Description = shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Name,
                 WayBill = "N/A",
                 ArNumber = "N/A",
-                ManufacturingDate = shelfMaterialBatch.MaterialBatch.ManufacturingDate,
-                ExpiryDate = shelfMaterialBatch.MaterialBatch.ExpiryDate,
                 QuantityReceived = 0,
                 QuantityIssued = batch.Quantity,
                 BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id)).Value - quantityIssued,
                 UoMId = shelfMaterialBatch.MaterialBatch.UoMId,
-                ProductName = product.Name,
+                ProductId = product.Id,
                 CreatedAt = DateTime.UtcNow,
                 CreatedById = userId
             };
@@ -219,17 +217,15 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             var fromBinCardEvent = new BinCardInformation
             {
-                BatchNumber = shelfMaterialBatch.MaterialBatch.BatchNumber,
+                MaterialBatchId = shelfMaterialBatch.MaterialBatch.Id,
                 Description = productionWarehouse.Name,
                 WayBill = "N/A",
                 ArNumber = "N/A",
-                ManufacturingDate = shelfMaterialBatch.MaterialBatch.ManufacturingDate,
-                ExpiryDate = shelfMaterialBatch.MaterialBatch.ExpiryDate,
                 QuantityReceived = batch.Quantity,
                 QuantityIssued = 0,
                 BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, productionWarehouse.Id)).Value + batch.Quantity,
                 UoMId = shelfMaterialBatch.MaterialBatch.UoMId,
-                ProductName = product.Name,
+                ProductId = product.Id,
                 CreatedAt = DateTime.UtcNow,
                 CreatedById = userId
             };
