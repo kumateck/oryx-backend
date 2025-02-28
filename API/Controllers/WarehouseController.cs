@@ -449,6 +449,27 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             : result.ToProblemDetails();
     }
     
+    [HttpGet("{warehouseId}/shelves/by-material/{materialId}")]
+    public async Task<IActionResult> GetShelvesByMaterialId(Guid warehouseId, Guid materialId)
+    {
+        var result = await repository.GetShelvesByMaterialId(warehouseId, materialId);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
+
+    [HttpGet("{warehouseId}/shelves/by-materialbatch/{materialBatchId}")]
+    public async Task<IActionResult> GetShelvesByMaterialBatchId(Guid warehouseId, Guid materialBatchId)
+    {
+        var result = await repository.GetShelvesByMaterialBatchId(warehouseId, materialBatchId);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
+
+    [HttpGet("{warehouseId}/shelves")]
+    public async Task<IActionResult> GetAllShelves(Guid warehouseId)
+    {
+        var result = await repository.GetAllShelves(warehouseId);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
+    
     #region MaterialBatch by DistributedRequisitionMaterial
 
     /// <summary>
