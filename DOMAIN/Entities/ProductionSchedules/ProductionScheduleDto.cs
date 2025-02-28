@@ -54,10 +54,9 @@ public class ProductionScheduleProductDto
 
 public enum MaterialRequisitionStatus
 {
-    None,
-    StockTransfer,
-    Requisition,
-    Local,
-    Foreign
-    
+    None = 0,
+    StockTransfer = 1,
+    Requisition = 2,
+    Local = 3,
+    Foreign= 4
 }
