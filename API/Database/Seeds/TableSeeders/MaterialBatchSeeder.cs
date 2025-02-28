@@ -1,3 +1,4 @@
+/*
 using INFRASTRUCTURE.Context;
 using DOMAIN.Entities.Materials.Batch;
 
@@ -119,3 +120,4 @@ namespace API.Database.Seeds.TableSeeders
         }
     }
 }
+*/
