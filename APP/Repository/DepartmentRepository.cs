@@ -65,8 +65,8 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
         
         context.DepartmentWarehouses.RemoveRange(existingDepartment.Warehouses);
         mapper.Map(request, existingDepartment);
-        existingDepartment.LastUpdatedById = userId;
         context.Departments.Update(existingDepartment);
+        await context.DepartmentWarehouses.AddRangeAsync(existingDepartment.Warehouses);
         
         await context.SaveChangesAsync();
         return Result.Success();
