@@ -748,46 +748,76 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         );
     }
     
-    public async Task<Result<List<WarehouseLocationShelfDto>>> GetShelvesByMaterialId(Guid warehouseId, Guid materialId)
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialId)
     {
-        var shelves = await context.WarehouseLocationShelves
+        var query =  context.WarehouseLocationShelves
             .Include(s=>s.WarehouseLocationRack)
             .ThenInclude(r=>r.WarehouseLocation)
             .Include(s => s.MaterialBatches)
             .ThenInclude(smb => smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
             .Where(s => s.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId && s.MaterialBatches.Any(mb => mb.MaterialBatch.MaterialId == materialId))
-            .ToListAsync();
+            .AsQueryable();
 
-        return Result.Success(mapper.Map<List<WarehouseLocationShelfDto>>(shelves));
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<WarehouseLocationShelfDto>
+        );
     }
 
-    public async Task<Result<List<WarehouseLocationShelfDto>>> GetShelvesByMaterialBatchId(Guid warehouseId, Guid materialBatchId)
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialBatchId)
     {
-        var shelves = await context.WarehouseLocationShelves
+        var query =  context.WarehouseLocationShelves
             .Include(s=>s.WarehouseLocationRack)
             .ThenInclude(r=>r.WarehouseLocation)
             .Include(s => s.MaterialBatches)
             .ThenInclude(smb => smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
             .Where(s => s.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId && s.MaterialBatches.Any(mb => mb.MaterialBatchId == materialBatchId))
-            .ToListAsync();
+            .AsQueryable();
 
-        return Result.Success(mapper.Map<List<WarehouseLocationShelfDto>>(shelves));
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<WarehouseLocationShelfDto>
+        );
     }
 
-    public async Task<Result<List<WarehouseLocationShelfDto>>> GetAllShelves(Guid warehouseId)
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize, string searchQuery,Guid warehouseId)
     {
-        var shelves = await context.WarehouseLocationShelves
+        var query =  context.WarehouseLocationShelves
             .Include(s=>s.WarehouseLocationRack)
             .ThenInclude(r=>r.WarehouseLocation)
             .Include(s => s.MaterialBatches)
             .ThenInclude(smb => smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
             .Where(s => s.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId)
-            .ToListAsync();
+            .AsQueryable();
 
-        return Result.Success(mapper.Map<List<WarehouseLocationShelfDto>>(shelves));
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<WarehouseLocationShelfDto>
+        );
     }
     
     

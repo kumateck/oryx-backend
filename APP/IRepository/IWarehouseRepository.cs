@@ -59,7 +59,7 @@ public interface IWarehouseRepository
     Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize,
         string searchQuery, Guid materialId);
     
-    Task<Result<List<WarehouseLocationShelfDto>>> GetShelvesByMaterialId(Guid warehouseId, Guid materialId);
-    Task<Result<List<WarehouseLocationShelfDto>>> GetShelvesByMaterialBatchId(Guid warehouseId, Guid materialBatchId);
-    Task<Result<List<WarehouseLocationShelfDto>>> GetAllShelves(Guid warehouseId);
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialId);
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialBatchId);
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize, string searchQuery,Guid warehouseId);
 }
