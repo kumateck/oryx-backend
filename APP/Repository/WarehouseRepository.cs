@@ -29,6 +29,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var warehouse = await context.Warehouses
             .Include(w => w.Locations)
+            .ThenInclude(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
             .FirstOrDefaultAsync(w => w.Id == warehouseId);
 
         return warehouse is null
@@ -40,6 +45,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var query = context.Warehouses
             .Include(w => w.Locations)
+            .ThenInclude(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -112,6 +122,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var rack = await context.WarehouseLocations
             .Include(r => r.Warehouse)
+            .Include(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
             .FirstOrDefaultAsync(r => r.Id == locationId);
 
         return rack is null
@@ -123,6 +138,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var query = context.WarehouseLocations
             .Include(r => r.Warehouse)
+            .Include(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -141,6 +161,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<List<WarehouseLocationDto>>>  GetWarehouseLocations()
     {
         return mapper.Map<List<WarehouseLocationDto>>(await context.WarehouseLocations.Include(r => r.Warehouse)
+            .Include(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
             .ToListAsync());
     }
     
@@ -207,6 +232,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var rack = await context.WarehouseLocationRacks
             .Include(r => r.WarehouseLocation)
+            .Include(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
             .FirstOrDefaultAsync(r => r.Id == rackId);
 
         return rack is null
@@ -218,6 +247,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var query = context.WarehouseLocationRacks
             .Include(r => r.WarehouseLocation)
+            .Include(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -262,6 +295,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.NotFound("WarehouseLocationRack.NotFound", "Warehouse location rack not found");
         }
+        
 
         rack.DeletedAt = DateTime.UtcNow;
         rack.LastDeletedById = userId;
@@ -298,6 +332,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             .Include(s => s.WarehouseLocationRack).ThenInclude(s => s.WarehouseLocation)
             .Include(w=>w.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
             .FirstOrDefaultAsync(s => s.Id == shelfId);
 
         return shelf is null
@@ -310,6 +345,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         var query = context.WarehouseLocationShelves
             .Include(s => s.WarehouseLocationRack)
             .ThenInclude(s => s.WarehouseLocation).ThenInclude(s => s.Warehouse)
+            .Include(w=>w.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -709,4 +747,81 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             mapper.Map<BinCardInformationDto>
         );
     }
+    
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialId)
+    {
+        var query =  context.WarehouseLocationShelves
+            .Include(s=>s.WarehouseLocationRack)
+            .ThenInclude(r=>r.WarehouseLocation)
+            .Include(s => s.MaterialBatches)
+            .ThenInclude(smb => smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
+            .Where(s => s.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId && s.MaterialBatches.Any(mb => mb.MaterialBatch.MaterialId == materialId))
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<WarehouseLocationShelfDto>
+        );
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialBatchId)
+    {
+        var query =  context.WarehouseLocationShelves
+            .Include(s=>s.WarehouseLocationRack)
+            .ThenInclude(r=>r.WarehouseLocation)
+            .Include(s => s.MaterialBatches)
+            .ThenInclude(smb => smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
+            .Where(s => s.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId && s.MaterialBatches.Any(mb => mb.MaterialBatchId == materialBatchId))
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<WarehouseLocationShelfDto>
+        );
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize, string searchQuery,Guid warehouseId)
+    {
+        var query =  context.WarehouseLocationShelves
+            .Include(s=>s.WarehouseLocationRack)
+            .ThenInclude(r=>r.WarehouseLocation)
+            .Include(s => s.MaterialBatches)
+            .ThenInclude(smb => smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
+            .Where(s => s.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<WarehouseLocationShelfDto>
+        );
+    }
+    
+    
 }
+    
+    
+

@@ -322,6 +322,45 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.DeleteWarehouseLocationShelf(shelfId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a paginated list of shelves in a warehouse by material ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/shelves/by-material/{materialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetShelvesByMaterialId(Guid warehouseId, Guid materialId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetShelvesByMaterialId(page, pageSize, searchQuery, warehouseId, materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of shelves in a warehouse by material batch ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/shelves/by-materialbatch/{materialBatchId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetShelvesByMaterialBatchId(Guid warehouseId, Guid materialBatchId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetShelvesByMaterialBatchId(page, pageSize, searchQuery, warehouseId, materialBatchId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of all shelves in a warehouse.
+    /// </summary>
+    [HttpGet("{warehouseId}/shelves")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetAllShelves(Guid warehouseId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetAllShelves(page, pageSize, searchQuery, warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     #endregion
     
@@ -546,7 +585,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BinCardInformationDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetBinCardInformation([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery,[FromRoute] Guid materialId)
+    public async Task<IResult> GetBinCardInformation([FromRoute] Guid materialId,[FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetBinCardInformation(page, pageSize, searchQuery,materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
