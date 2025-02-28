@@ -295,6 +295,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.NotFound("WarehouseLocationRack.NotFound", "Warehouse location rack not found");
         }
+        
 
         rack.DeletedAt = DateTime.UtcNow;
         rack.LastDeletedById = userId;
