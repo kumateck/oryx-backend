@@ -1,10 +1,8 @@
-using System.Collections;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.BinCards;
-using DOMAIN.Entities.Departments;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;

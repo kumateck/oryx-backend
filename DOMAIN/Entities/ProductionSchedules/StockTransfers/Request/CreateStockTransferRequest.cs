@@ -5,6 +5,9 @@ public class CreateStockTransferRequest
     public Guid MaterialId { get; set; }
     public string Reason { get; set; }
     public decimal RequiredQuantity { get; set; }
+    public Guid? ProductId { get; set; }
+    public Guid? ProductionScheduleId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
     public List<StockTransferSourceRequest> Sources { get; set; } = [];
 }
 

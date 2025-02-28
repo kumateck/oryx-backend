@@ -55,16 +55,19 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
     
     public async Task<Result> UpdateDepartment(CreateDepartmentRequest request, Guid departmentId, Guid userId)
     {
-        var existingDepartment = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
+        var existingDepartment = await context.Departments
+            .Include(d => d.Warehouses)
+            .FirstOrDefaultAsync(d => d.Id == departmentId);
         if (existingDepartment is null)
         {
             return Error.NotFound("Department.NotFound", "Department not found");
         }
-
+        
+        context.DepartmentWarehouses.RemoveRange(existingDepartment.Warehouses);
         mapper.Map(request, existingDepartment);
-        existingDepartment.LastUpdatedById = userId;
-
         context.Departments.Update(existingDepartment);
+        await context.DepartmentWarehouses.AddRangeAsync(existingDepartment.Warehouses);
+        
         await context.SaveChangesAsync();
         return Result.Success();
     }

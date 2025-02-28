@@ -30,6 +30,7 @@ public class ProductionScheduleProcurementDto
     public decimal BaseQuantity { get; set; }
     public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
+    public MaterialRequisitionStatus Status { get; set; }
     public List<BatchLocation> Batches { get; set; } = [];
 }
 
@@ -42,10 +43,20 @@ public class ProductionScheduleProcurementPackageDto
     public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
     public decimal UnitCapacity { get; set; }
+    public MaterialRequisitionStatus Status { get; set; }
 }
 
 public class ProductionScheduleProductDto
 {
     public ProductListDto Product { get; set; }
     public decimal Quantity { get; set; }
+}
+
+public enum MaterialRequisitionStatus
+{
+    None = 0,
+    StockTransfer = 1,
+    Requisition = 2,
+    Local = 3,
+    Foreign= 4
 }

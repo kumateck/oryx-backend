@@ -1,6 +1,5 @@
 using APP.Utils;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
@@ -50,10 +49,8 @@ public interface IProductionScheduleRepository
 
     Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>>
         GetProductionActivityStepsGroupedByStatus();
-    Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productId,
-        decimal quantityRequired, Guid userId);
-    Task<Result<List<ProductionScheduleProcurementPackageDto>>>
-        CheckPackageMaterialStockLevelsForProductionSchedule(Guid productId, decimal quantityRequired, Guid userId);
+    Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, Guid userId);
+    Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, Guid userId);
     
     Task<Result<Guid>> CreateBatchManufacturingRecord(CreateBatchManufacturingRecord request);
     Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(

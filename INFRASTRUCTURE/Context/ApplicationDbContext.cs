@@ -558,8 +558,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<CompletedRequisitionItem>()
             .HasQueryFilter(r => !r.CompletedRequisition.DeletedAt.HasValue);
         modelBuilder.Entity<SourceRequisition>()
-            .HasQueryFilter(r => !r.Requisition.DeletedAt.HasValue);
-        modelBuilder.Entity<SourceRequisition>()
             .HasQueryFilter(r => !r.DeletedAt.HasValue);
         modelBuilder.Entity<SourceRequisitionItem>()
             .HasQueryFilter(r => !r.SourceRequisition.DeletedAt.HasValue);

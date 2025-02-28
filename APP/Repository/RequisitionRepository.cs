@@ -521,23 +521,16 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     var existingItem = existingSourceRequisition.Items
                         .FirstOrDefault(i => i.MaterialId == groupItem.item.MaterialId && i.UoMId == groupItem.item.UoMId);
 
-                    if (existingItem != null)
+                    existingSourceRequisition.Items.Add(new SourceRequisitionItem
                     {
-                        existingItem.Quantity += groupItem.item.Quantity;
-                    }
-                    else
-                    {
-                        existingSourceRequisition.Items.Add(new SourceRequisitionItem
-                        {
-                            MaterialId = groupItem.item.MaterialId,
-                            UoMId = groupItem.item.UoMId,
-                            Quantity = groupItem.item.Quantity,
-                            Source = groupItem.item.Source
-                        });
-                    }
+                        MaterialId = groupItem.item.MaterialId,
+                        UoMId = groupItem.item.UoMId,
+                        Quantity = groupItem.item.Quantity,
+                        Source = groupItem.item.Source,
+                        RequisitionId = request.RequisitionId
+                    });
                     
                 }
-                existingSourceRequisition.RequisitionIds.Add(request.RequisitionId);
                 context.SourceRequisitions.Update(existingSourceRequisition);
             }
             else
@@ -546,7 +539,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 var requisitionForSupplier = new SourceRequisition
                 {
                     Code = request.Code,
-                    RequisitionId = request.RequisitionId,
                     SupplierId = supplierId,
                     SentQuotationRequestAt = null, 
                     Items = supplierGroup.Select(x => new SourceRequisitionItem
@@ -554,9 +546,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                         MaterialId = x.item.MaterialId,
                         UoMId = x.item.UoMId,
                         Quantity = x.item.Quantity,
-                        Source = x.item.Source
+                        Source = x.item.Source,
+                        RequisitionId = request.RequisitionId
                     }).ToList(),
-                    RequisitionIds = [request.RequisitionId]
                 };
                 // Add to the main requisition's items
                 await context.SourceRequisitions.AddAsync(requisitionForSupplier);
@@ -573,7 +565,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<SourceRequisitionDto>> GetSourceRequisition(Guid sourceRequisitionId)
     {
         var sourceRequisition = await context.SourceRequisitions
-            .Include(sr => sr.Requisition)
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
@@ -591,7 +582,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<SourceRequisitionDto>>>> GetSourceRequisitions(int page, int pageSize, string searchQuery)
     {
         var query = context.SourceRequisitions
-            .Include(sr => sr.Requisition)
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
@@ -662,7 +652,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         // Base query
         var query = context.SourceRequisitions
-            .Include(sr => sr.Requisition)
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
@@ -696,7 +685,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> SendQuotationToSupplier(Guid supplierId)
     {
         var sourceRequisition = await context.SourceRequisitions
-            .Include(sr => sr.Requisition)
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
