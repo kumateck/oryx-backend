@@ -26,7 +26,7 @@ public class WarehouseLocationDto
     public string FloorName { get; set; }
     public string Description { get; set; }
     public CollectionItemDto Warehouse { get; set; }
-    public List<CollectionItemDto> Racks { get; set; } = [];
+    public List<WarehouseLocationRackDto> Racks { get; set; } = [];
 }
 
 public class WarehouseLocationRackDto 
@@ -35,7 +35,7 @@ public class WarehouseLocationRackDto
     public WareHouseLocationDto WarehouseLocation { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
-    public List<CollectionItemDto> Shelves { get; set; } = [];
+    public List<WarehouseLocationShelfDto> Shelves { get; set; } = [];
 }
 
 public class WarehouseArrivalLocationDto
