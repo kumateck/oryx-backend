@@ -594,7 +594,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
 
 
-    public async Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, Guid userId)
+    public async Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status, Guid userId)
     {
         var product = await context.Products.Include(product => product.BillOfMaterials)
             .ThenInclude(p => p.BillOfMaterial)
@@ -677,6 +677,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
              };
          }).ToList();
 
+         if (status.HasValue)
+         {
+             materialDetails = materialDetails.Where(m => m.Status == status).ToList();
+         }
+
          return materialDetails;
     }
     
@@ -697,7 +702,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return MaterialRequisitionStatus.None;
     }
     
-    public async Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, Guid userId)
+    public async Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status, Guid userId)
     {
         var product = await context.Products.Include(product => product.BillOfMaterials)
             .Include(product => product.Packages).ThenInclude(productPackage => productPackage.BaseUoM)
@@ -768,6 +773,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                  QuantityOnHand = quantityOnHand,
              };
          }).ToList();
+        
+        if (status.HasValue)
+        {
+            materialDetails = materialDetails.Where(m => m.Status == status).ToList();
+        }
 
          return materialDetails;
     }
@@ -962,7 +972,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
     public async Task FreezeMaterialInProduction(Guid productionScheduleId, Guid productId, Guid userId)
     {
-        var materialResult = await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, userId);
+        var materialResult = await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId,null, userId);
         if (materialResult.IsFailure) return;
 
         var materialDetails = materialResult.Value;
@@ -1104,7 +1114,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
 
         var materialStockDetails =
-            await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, userId);
+            await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, null, userId);
         
         if (!materialStockDetails.IsSuccess)
         {
@@ -1112,7 +1122,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
 
         var insufficientMaterials = materialStockDetails.Value
-            .Where(m => m.QuantityOnHand < m.QuantityNeeded)
+            .Where(m => m.Status == MaterialRequisitionStatus.None)
             .ToList();
 
         return insufficientMaterials;
@@ -1136,7 +1146,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
 
         var materialStockDetails =
-            await CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId,productId, userId);
+            await CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId,productId, null, userId);
         
         if (!materialStockDetails.IsSuccess)
         {
@@ -1144,7 +1154,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
 
         var insufficientMaterials = materialStockDetails.Value
-            .Where(m => m.QuantityOnHand < m.QuantityNeeded)
+            .Where(m => m.Status == MaterialRequisitionStatus.None)
             .ToList();
 
         return insufficientMaterials;
