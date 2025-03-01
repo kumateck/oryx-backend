@@ -28,6 +28,22 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // Create Stock Requisition
     public async Task<Result<Guid>> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
+
+        var existingRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
+            r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
+            r.RequisitionType == request.RequisitionType);
+
+        if (existingRequisition is { RequisitionType: RequisitionType.Stock })
+            return Error.Validation("Requisition.Validation",
+                $"A {request.RequisitionType.ToString()} requisition for this production schedule and product has already been created");
+
+        if (existingRequisition != null &&
+            existingRequisition.Items.Any(r => request.Items.Select(i => i.MaterialId).Contains(r.MaterialId)))
+        {
+            return Error.Validation("Requisition.Validation",
+                $"A {request.RequisitionType.ToString()} requisition for this production schedule and product with at least one of the materials has already been created");
+        }
+        
         var requisition = mapper.Map<Requisition>(request);
         requisition.RequestedById = userId;
         await context.Requisitions.AddAsync(requisition);
@@ -323,58 +339,17 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             return RequisitionErrors.NotFound(requisitionId);
         }
 
-        // Find the next required approval
-        /*var pendingApproval = requisition.Approvals
-            .FirstOrDefault(a => !a.Approved &&
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))));
-
-        if (pendingApproval == null)
+        if (!requisition.ProductionActivityStepId.HasValue || requisition.RequisitionType == RequisitionType.Purchase)
         {
-            return RequisitionErrors.NoPendingApprovals;
+            return Error.Validation("Requisition.Approve", "You cant approve a purchase requisition");
         }
-
-        // Mark approval as complete
-        pendingApproval.Approved = true;
-        pendingApproval.ApprovalTime = DateTime.UtcNow;
-        pendingApproval.Comments = request.Comments;
-
-        await context.SaveChangesAsync();
-
-        // Check if all required approvals are complete
-        var allApproved = requisition.Approvals.All(a => a.Approved);
-        if (allApproved)
-        {
-            requisition.Approved = true;
-            requisition.ProductionActivityStep.Status = ProductionStatus.Completed;
-            requisition.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
-            context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
-
-            var warehouse =
-                requisition.RequestedBy.Department?.Warehouses.FirstOrDefault(w =>
-                    w.Warehouse.Type == WarehouseType.Production)?.Warehouse;
-
-            if (warehouse is not null)
-            {
-                foreach (var item in requisition.Items)
-                {
-                    var frozenMaterialsResult = await materialRepository.GetFrozenMaterialBatchesInWarehouse(item.MaterialId, warehouse.Id);
-                    if (frozenMaterialsResult.IsFailure) continue;
-
-                    var frozenMaterial = frozenMaterialsResult.Value;
-                    foreach (var materialBatch in frozenMaterial)
-                    {
-                        await materialRepository.ConsumeMaterialAtLocation(materialBatch.Id, warehouse.Id, item.Quantity, userId);
-                    }
-                }
-            }
-        }*/
         
         requisition.Approved = true;
         requisition.ProductionActivityStep.Status = ProductionStatus.Completed;
         requisition.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
 
-        var warehouse =
+        /*var warehouse =
             requisition.RequestedBy.Department?.Warehouses.FirstOrDefault(w =>
                 w.Warehouse.Type == WarehouseType.Production)?.Warehouse;
 
@@ -391,7 +366,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     await materialRepository.ConsumeMaterialAtLocation(materialBatch.Id, warehouse.Id, item.Quantity, userId);
                 }
             }
-        }
+        }*/
         
         await context.SaveChangesAsync();
         return Result.Success();
@@ -832,14 +807,23 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
       
         foreach (var quotation in processQuotations)
         {
-            await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
+            try
             {
-                Code = await GeneratePurchaseOrderCode(),
-                SupplierId = quotation.SupplierId,
-                SourceRequisitionId = quotation.SourceRequisitionId,
-                RequestDate = DateTime.UtcNow,
-                Items = quotation.Items
-            }, userId);
+                await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
+                {
+                    Code = await GeneratePurchaseOrderCode(),
+                    SupplierId = quotation.SupplierId,
+                    SourceRequisitionId = quotation.SourceRequisitionId,
+                    RequestDate = DateTime.UtcNow,
+                    Items = quotation.Items
+                }, userId);
+            }
+            catch (Exception)
+            {
+                return Error.NotFound("PurchaseOrder.CodeSettings",
+                    "We could not create a purchase order. PLease check your code settings to ensure one for purchase order exists");
+            }
+           
         }
 
         foreach (var supplierQuotation in supplierQuotations)
@@ -857,10 +841,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         // Fetch the configuration for PurchaseOrder
         var config = await context.Configurations
             .FirstOrDefaultAsync(c => c.ModelType == nameof(PurchaseOrder));
-        if(config is null) return $"PO-{Guid.NewGuid()}";
+        if(config is null) throw new Exception("No configuration exists");
 
         var seriesCount =
             await configurationRepository.GetCountForCodeConfiguration(nameof(PurchaseOrder), config.Prefix);
-        return seriesCount.IsFailure ? $"PO-{Guid.NewGuid()}" : CodeGenerator.GenerateCode(config, seriesCount.Value);
+        return seriesCount.IsFailure ? throw new Exception("No configuration exists") : CodeGenerator.GenerateCode(config, seriesCount.Value);
     }
 }

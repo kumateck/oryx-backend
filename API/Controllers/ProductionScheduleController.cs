@@ -243,12 +243,12 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetRequiredMaterialStock(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetRequiredMaterialStock(Guid productionScheduleId, Guid productId, [FromQuery] MaterialRequisitionStatus? status = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, Guid.Parse(userId));
+        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -256,12 +256,12 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementPackageDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetRequiredPackageMaterialStock(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetRequiredPackageMaterialStock(Guid productionScheduleId, Guid productId, [FromQuery] MaterialRequisitionStatus? status = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, Guid.Parse(userId));
+        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

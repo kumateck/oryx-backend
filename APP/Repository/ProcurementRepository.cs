@@ -18,7 +18,6 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Warehouses;
-using QueryableExtensions = System.Data.Entity.QueryableExtensions;
 
 namespace APP.Repository;
 
@@ -969,8 +968,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .Include(s=>s.Supplier)
                 .FirstOrDefaultAsync(s => s.Id == shipmentDocument.ShipmentInvoice.Id);
             
-
-        
             var materialDistribution = new MaterialDistributionDto();
 
             List<DistributionShipmentInvoiceItemDto> distributionShipmentInvoiceItems = await GroupInvoiceItemsBasedOnMaterial(invoices);
@@ -1096,10 +1093,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         Quantity = item.QuantityAllocated,
                         Status = DistributedRequisitionMaterialStatus.Distributed,
                         DistributedAt = DateTime.UtcNow,
-                        WarehouseArrivalLocationId = warehouse.ArrivalLocation.Id
+                        WarehouseArrivalLocationId = warehouse.ArrivalLocation.Id,
+                        CreatedById = userId
                     };
-                distributedRequisitionMaterial.CreatedById = userId;
-                    await context.DistributedRequisitionMaterials.AddAsync(distributedRequisitionMaterial);
+                await context.DistributedRequisitionMaterials.AddAsync(distributedRequisitionMaterial);
             }
         }
         

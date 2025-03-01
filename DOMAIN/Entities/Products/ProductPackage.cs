@@ -18,6 +18,7 @@ public class ProductPackage : BaseEntity
     public decimal UnitCapacity { get; set; } 
     public Guid? DirectLinkMaterialId { get; set; }
     public Material DirectLinkMaterial { get; set; }
+    public decimal PackingExcessMargin { get; set; }
 }
 
 public class PackageType : BaseEntity

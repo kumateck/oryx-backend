@@ -19,6 +19,7 @@ using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
@@ -272,6 +273,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Grn> Grns { get; set; }
     
     #endregion
+
+    #region Equipment
+
+    public DbSet<Equipment> Equipments { get; set; }
+
+    #endregion
     
 
     // #region TenantFilter
@@ -475,6 +482,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProductionActivityLog>().Navigation(p => p.User).AutoInclude();
 
         #endregion
+
+        #region Equipment
+
+        modelBuilder.Entity<Equipment>().Navigation(p => p.Department).AutoInclude();
+        modelBuilder.Entity<Equipment>().Navigation(p => p.UoM).AutoInclude();
+
+        #endregion
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
@@ -667,12 +681,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProductionActivityLog>().HasQueryFilter(a => a.ProductionActivity != null);
 
         #endregion
-
+        
         #region Stock Transfer
 
         modelBuilder.Entity<StockTransfer>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Material.DeletedAt.HasValue);// && entity.Status == BatchStatus.Available);
         modelBuilder.Entity<StockTransferSource>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.FromDepartment.DeletedAt.HasValue && !entity.ToDepartment.DeletedAt.HasValue);// && entity.Status == BatchStatus.Available);
 
+
+        #endregion
+
+        #region Equipment
+
+        modelBuilder.Entity<Equipment>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Department.DeletedAt.HasValue);
 
         #endregion
     }

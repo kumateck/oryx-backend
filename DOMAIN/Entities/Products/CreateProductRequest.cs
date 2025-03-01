@@ -20,9 +20,9 @@ public class CreateProductRequest
     [StringLength(1000000)] public string TertiaryPackDescription { get; set; }
     public Guid CategoryId { get; set; } // e.g., Tablet, Syrup, Injectable
     public List<CreateFinishedProductRequest> FinishedProducts { get; set; }
+    public Guid? EquipmentId { get; set; }
     public decimal BaseQuantity { get; set; } 
     public Guid? BaseUomId { get; set; }
     public decimal BasePackingQuantity { get; set; } 
     public Guid? BasePackingUomId { get; set; }
-    public decimal PackingExcessMargin { get; set; }
 }

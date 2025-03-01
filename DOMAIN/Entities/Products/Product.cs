@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Routes;
 
 namespace DOMAIN.Entities.Products;
@@ -29,7 +30,8 @@ public class Product : BaseEntity
     public UnitOfMeasure BaseUoM { get; set; }
     public Guid? BasePackingUomId { get; set; }
     public UnitOfMeasure BasePackingUoM { get; set; }
-    public decimal PackingExcessMargin { get; set; }
+    public Guid? EquipmentId { get; set; }
+    public Equipment Equipment { get; set; }
     public List<FinishedProduct> FinishedProducts { get; set; } = [];
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = [];
     public List<ProductPackage> Packages { get; set; } = [];

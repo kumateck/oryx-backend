@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250301103703_AddEquipment")]
+    partial class AddEquipment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4820,9 +4823,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<bool>("Distributed")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid?>("DistributedRequisitionMaterialId")
-                        .HasColumnType("uuid");
-
                     b.Property<decimal>("ExpectedQuantity")
                         .HasColumnType("numeric");
 
@@ -4860,8 +4860,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("DistributedRequisitionMaterialId");
 
                     b.HasIndex("LastDeletedById");
 
@@ -5081,6 +5079,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("ShipmentInvoiceId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ShipmentInvoiceItemId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -5111,6 +5112,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("RequisitionItemId");
 
                     b.HasIndex("ShipmentInvoiceId");
+
+                    b.HasIndex("ShipmentInvoiceItemId");
 
                     b.HasIndex("SupplierId");
 
@@ -8635,10 +8638,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Warehouses.DistributedRequisitionMaterial", "DistributedRequisitionMaterial")
-                        .WithMany("ShipmentInvoiceItems")
-                        .HasForeignKey("DistributedRequisitionMaterialId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -8678,8 +8677,6 @@ namespace INFRASTRUCTURE.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("DistributedRequisitionMaterial");
 
                     b.Navigation("LastDeletedBy");
 
@@ -8756,6 +8753,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("ShipmentInvoiceId");
 
+                    b.HasOne("DOMAIN.Entities.Shipments.ShipmentInvoiceItem", "ShipmentInvoiceItem")
+                        .WithMany()
+                        .HasForeignKey("ShipmentInvoiceItemId");
+
                     b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId");
@@ -8781,6 +8782,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("RequisitionItem");
 
                     b.Navigation("ShipmentInvoice");
+
+                    b.Navigation("ShipmentInvoiceItem");
 
                     b.Navigation("Supplier");
 
@@ -9268,11 +9271,6 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentInvoice", b =>
                 {
                     b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedRequisitionMaterial", b =>
-                {
-                    b.Navigation("ShipmentInvoiceItems");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.Warehouse", b =>

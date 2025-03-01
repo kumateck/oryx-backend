@@ -14,4 +14,5 @@ public class ProductPackageDto
     public UnitOfMeasureDto BaseUoM { get; set; }
     public decimal UnitCapacity { get; set; } 
     public CollectionItemDto DirectLinkMaterial { get; set; }
+    public decimal PackingExcessMargin { get; set; }
 }
