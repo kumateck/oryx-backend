@@ -406,6 +406,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="materialId">The ID of the material.</param>
     /// <param name="warehouseId">The ID of the warehouse.</param>
+    /// <param name="searchQuery">Search material</param>
     /// <returns>Returns a paginated list of material batches.</returns>
     [HttpGet("{materialId}/batches/v2")]
     [Authorize]

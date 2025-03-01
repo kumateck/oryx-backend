@@ -807,14 +807,23 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
       
         foreach (var quotation in processQuotations)
         {
-            await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
+            try
             {
-                Code = await GeneratePurchaseOrderCode(),
-                SupplierId = quotation.SupplierId,
-                SourceRequisitionId = quotation.SourceRequisitionId,
-                RequestDate = DateTime.UtcNow,
-                Items = quotation.Items
-            }, userId);
+                await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
+                {
+                    Code = await GeneratePurchaseOrderCode(),
+                    SupplierId = quotation.SupplierId,
+                    SourceRequisitionId = quotation.SourceRequisitionId,
+                    RequestDate = DateTime.UtcNow,
+                    Items = quotation.Items
+                }, userId);
+            }
+            catch (Exception)
+            {
+                return Error.NotFound("PurchaseOrder.CodeSettings",
+                    "We could not create a purchase order. PLease check your code settings to ensure one for purchase order exists");
+            }
+           
         }
 
         foreach (var supplierQuotation in supplierQuotations)
@@ -832,10 +841,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         // Fetch the configuration for PurchaseOrder
         var config = await context.Configurations
             .FirstOrDefaultAsync(c => c.ModelType == nameof(PurchaseOrder));
-        if(config is null) return $"PO-{Guid.NewGuid()}";
+        if(config is null) throw new Exception("No configuration exists");
 
         var seriesCount =
             await configurationRepository.GetCountForCodeConfiguration(nameof(PurchaseOrder), config.Prefix);
-        return seriesCount.IsFailure ? $"PO-{Guid.NewGuid()}" : CodeGenerator.GenerateCode(config, seriesCount.Value);
+        return seriesCount.IsFailure ? throw new Exception("No configuration exists") : CodeGenerator.GenerateCode(config, seriesCount.Value);
     }
 }
