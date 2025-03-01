@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
 using INFRASTRUCTURE.Context;
@@ -28,6 +29,7 @@ namespace APP.Repository;
          var product = await context.Products
              .AsSplitQuery()
              .Include(p => p.BaseUoM)
+             .Include(p => p.Equipment)
              .Include(p => p.BasePackingUoM)
              .Include(p => p.BillOfMaterials)
              .ThenInclude(p => p.BillOfMaterial)
@@ -51,6 +53,7 @@ namespace APP.Repository;
              .Include(p => p.BaseUoM)
              .Include(p => p.BasePackingUoM)
              .Include(p => p.Category)
+             .Include(p => p.Equipment)
              .AsQueryable();
 
          if (!string.IsNullOrEmpty(searchQuery))
@@ -413,6 +416,97 @@ namespace APP.Repository;
             await context.SaveChangesAsync();
         }
 
+        return Result.Success();
+    }
+    
+     // Create Equipment
+    public async Task<Result<Guid>> CreateEquipment(CreateEquipmentRequest request, Guid userId)
+    {
+        var equipment = mapper.Map<Equipment>(request);
+        equipment.CreatedById = userId;
+
+        await context.Equipments.AddAsync(equipment);
+        await context.SaveChangesAsync();
+
+        return equipment.Id;
+    }
+
+    // Get Equipment by ID
+    public async Task<Result<EquipmentDto>> GetEquipment(Guid equipmentId)
+    {
+        var equipment = await context.Equipments
+            .Include(e => e.UoM)
+            .Include(e => e.Department)
+            .FirstOrDefaultAsync(e => e.Id == equipmentId);
+
+        return equipment is null
+            ? Error.NotFound("Equipment.NotFound", "Equipment with this Id not found")
+            : mapper.Map<EquipmentDto>(equipment);
+    }
+
+    // Get paginated list of Equipments
+    public async Task<Result<Paginateable<IEnumerable<EquipmentDto>>>> GetEquipments(int page, int pageSize, string searchQuery)
+    {
+        var query = context.Equipments
+            .AsSplitQuery()
+            .Include(e => e.UoM)
+            .Include(e => e.Department)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, e => e.Name, e => e.MachineId);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<EquipmentDto>
+        );
+    }
+
+    // Get all Equipments
+    public async Task<Result<List<EquipmentDto>>> GetEquipments()
+    {
+        return mapper.Map<List<EquipmentDto>>(await context.Equipments
+            .AsSplitQuery()
+            .Include(e => e.UoM)
+            .Include(e => e.Department)
+            .ToListAsync());
+    }
+
+    // Update Equipment
+    public async Task<Result> UpdateEquipment(CreateEquipmentRequest request, Guid equipmentId, Guid userId)
+    {
+        var existingEquipment = await context.Equipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        if (existingEquipment is null)
+        {
+            return Error.NotFound("Equipment.NotFound", "Equipment with this Id not found");
+        }
+
+        mapper.Map(request, existingEquipment);
+        existingEquipment.LastUpdatedById = userId;
+
+        context.Equipments.Update(existingEquipment);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // Delete Equipment (soft delete)
+    public async Task<Result> DeleteEquipment(Guid equipmentId, Guid userId)
+    {
+        var equipment = await context.Equipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        if (equipment is null)
+        {
+            return Error.NotFound("Equipment.NotFound", "Equipment with this Id not found");
+        }
+
+        equipment.DeletedAt = DateTime.UtcNow;
+        equipment.LastDeletedById = userId;
+
+        context.Equipments.Update(equipment);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 }

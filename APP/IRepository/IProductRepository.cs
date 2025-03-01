@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
 using SHARED;
@@ -30,4 +31,11 @@ public interface IProductRepository
      Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId);
      Task<Result> UpdateProductPackageDescription(UpdateProductPackageDescriptionRequest request,
          Guid productId, Guid userId);
+     
+    Task<Result<Guid>> CreateEquipment(CreateEquipmentRequest request, Guid userId);
+    Task<Result<EquipmentDto>> GetEquipment(Guid equipmentId);
+    Task<Result<Paginateable<IEnumerable<EquipmentDto>>>> GetEquipments(int page, int pageSize, string searchQuery);
+    Task<Result<List<EquipmentDto>>> GetEquipments();
+    Task<Result> UpdateEquipment(CreateEquipmentRequest request, Guid equipmentId, Guid userId);
+    Task<Result> DeleteEquipment(Guid equipmentId, Guid userId);
 }

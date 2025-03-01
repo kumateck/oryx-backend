@@ -22,6 +22,7 @@ using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
@@ -104,6 +105,7 @@ public class OryxMapper : Profile
         CreateMap<ProductionActivity, CollectionItemDto>();
         CreateMap<ProductionSchedule, CollectionItemDto>();
         CreateMap<Department, CollectionItemDto>();
+        CreateMap<Equipment, CollectionItemDto>();
         
         #endregion
 
@@ -450,6 +452,13 @@ public class OryxMapper : Profile
         CreateMap<StockTransfer, StockTransferDto>();
         CreateMap<StockTransferSource, StockTransferSourceDto>();
 
+
+        #endregion
+
+        #region Equipment
+
+        CreateMap<CreateEquipmentRequest, Equipment>();
+        CreateMap<Equipment, EquipmentDto>();
 
         #endregion
     }
