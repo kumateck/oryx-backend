@@ -5,7 +5,6 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
-using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
 
 namespace API.Controllers;

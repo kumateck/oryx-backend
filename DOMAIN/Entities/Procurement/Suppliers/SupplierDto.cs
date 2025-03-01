@@ -3,7 +3,6 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
-using SHARED;
 
 namespace DOMAIN.Entities.Procurement.Suppliers;
 
