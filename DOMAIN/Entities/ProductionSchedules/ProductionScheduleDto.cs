@@ -56,7 +56,9 @@ public enum MaterialRequisitionStatus
 {
     None = 0,
     StockTransfer = 1,
-    Requisition = 2,
+    PurchaseRequisition = 2,
     Local = 3,
-    Foreign= 4
+    Foreign= 4,
+    StockRequisition = 5,
+    Issued = 6
 }

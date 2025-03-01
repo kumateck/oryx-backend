@@ -28,6 +28,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // Create Stock Requisition
     public async Task<Result<Guid>> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
+
+        if (context.Requisitions.Any(r =>
+                r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
+                r.RequisitionType == request.RequisitionType))
+            return Error.Validation("Requisition.Validation",
+                $"A {request.RequisitionType.ToString()} requisition for this production schedule and product has already been created");
+        
         var requisition = mapper.Map<Requisition>(request);
         requisition.RequestedById = userId;
         await context.Requisitions.AddAsync(requisition);
@@ -323,58 +330,17 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             return RequisitionErrors.NotFound(requisitionId);
         }
 
-        // Find the next required approval
-        /*var pendingApproval = requisition.Approvals
-            .FirstOrDefault(a => !a.Approved &&
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))));
-
-        if (pendingApproval == null)
+        if (!requisition.ProductionActivityStepId.HasValue || requisition.RequisitionType == RequisitionType.Purchase)
         {
-            return RequisitionErrors.NoPendingApprovals;
+            return Error.Validation("Requisition.Approve", "You cant approve a purchase requisition");
         }
-
-        // Mark approval as complete
-        pendingApproval.Approved = true;
-        pendingApproval.ApprovalTime = DateTime.UtcNow;
-        pendingApproval.Comments = request.Comments;
-
-        await context.SaveChangesAsync();
-
-        // Check if all required approvals are complete
-        var allApproved = requisition.Approvals.All(a => a.Approved);
-        if (allApproved)
-        {
-            requisition.Approved = true;
-            requisition.ProductionActivityStep.Status = ProductionStatus.Completed;
-            requisition.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
-            context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
-
-            var warehouse =
-                requisition.RequestedBy.Department?.Warehouses.FirstOrDefault(w =>
-                    w.Warehouse.Type == WarehouseType.Production)?.Warehouse;
-
-            if (warehouse is not null)
-            {
-                foreach (var item in requisition.Items)
-                {
-                    var frozenMaterialsResult = await materialRepository.GetFrozenMaterialBatchesInWarehouse(item.MaterialId, warehouse.Id);
-                    if (frozenMaterialsResult.IsFailure) continue;
-
-                    var frozenMaterial = frozenMaterialsResult.Value;
-                    foreach (var materialBatch in frozenMaterial)
-                    {
-                        await materialRepository.ConsumeMaterialAtLocation(materialBatch.Id, warehouse.Id, item.Quantity, userId);
-                    }
-                }
-            }
-        }*/
         
         requisition.Approved = true;
         requisition.ProductionActivityStep.Status = ProductionStatus.Completed;
         requisition.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
 
-        var warehouse =
+        /*var warehouse =
             requisition.RequestedBy.Department?.Warehouses.FirstOrDefault(w =>
                 w.Warehouse.Type == WarehouseType.Production)?.Warehouse;
 
@@ -391,7 +357,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     await materialRepository.ConsumeMaterialAtLocation(materialBatch.Id, warehouse.Id, item.Quantity, userId);
                 }
             }
-        }
+        }*/
         
         await context.SaveChangesAsync();
         return Result.Success();
