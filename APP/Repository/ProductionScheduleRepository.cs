@@ -691,12 +691,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     private MaterialRequisitionStatus GetStatusOfProductionMaterial(StockTransfer stockTransfer,
         List<RequisitionItem> stockRequisitionItems, List<RequisitionItem> purchaseRequisitionItems, List<SourceRequisitionItem> sourceRequisitionItems, Guid materialId)
     {
-        var material =  context.Materials.FirstOrDefault(m => m.Id == materialId);
-        if (material?.Name != "Citric Acid Monohydrate")
-        {
-            return MaterialRequisitionStatus.None;
-        }
-
         if (stockRequisitionItems.Count != 0 && stockRequisitionItems.Any(r => r.MaterialId == materialId))
         {
             return stockRequisitionItems.First(r => r.MaterialId == materialId).Requisition.Approved
@@ -714,7 +708,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         if (purchaseRequisitionItems.Count != 0 && purchaseRequisitionItems.Any(r => r.MaterialId == materialId))
             return MaterialRequisitionStatus.PurchaseRequisition;
-        
 
         return MaterialRequisitionStatus.None;
     }
