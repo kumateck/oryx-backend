@@ -29,11 +29,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Guid>> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
 
-        if (context.Requisitions.Any(r =>
-                r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
-                r.RequisitionType == request.RequisitionType))
+        var existingRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
+            r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
+            r.RequisitionType == request.RequisitionType);
+
+        if (existingRequisition is { RequisitionType: RequisitionType.Stock })
             return Error.Validation("Requisition.Validation",
                 $"A {request.RequisitionType.ToString()} requisition for this production schedule and product has already been created");
+
+        if (existingRequisition != null &&
+            existingRequisition.Items.Any(r => request.Items.Select(i => i.MaterialId).Contains(r.MaterialId)))
+        {
+            return Error.Validation("Requisition.Validation",
+                $"A {request.RequisitionType.ToString()} requisition for this production schedule and product with at least one of the materials has already been created");
+        }
         
         var requisition = mapper.Map<Requisition>(request);
         requisition.RequestedById = userId;
