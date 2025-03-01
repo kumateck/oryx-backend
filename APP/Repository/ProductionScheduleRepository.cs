@@ -631,7 +631,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if(user.Department.Warehouses.Count == 0)
             return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
         
-        var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Warehouse.Type == WarehouseType.Production)?.Warehouse;
+        var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
         if (warehouse is null)
             return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
 
@@ -739,8 +739,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var stockLevels = new Dictionary<Guid, decimal>();
         if (user.Department != null && user.Department.Warehouses.Count != 0)
         {
-            var warehouses = user.Department.Warehouses.Where(i => i.Warehouse.Type == WarehouseType.Production)
-                .Select(w => w.Warehouse).ToList();
+            var warehouses = user.Department.Warehouses.Where(i => i.Type == WarehouseType.Production)
+                .ToList();
             foreach (var warehouse in warehouses)
             {
                 // Fetch stock levels for each material ID individually

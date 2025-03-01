@@ -10,19 +10,18 @@ public class Department
     [StringLength(100)] public string Code { get; set; }
     [StringLength(255)] public string Name { get; set; }
     [StringLength(1000)] public string Description { get; set; }
+    public DepartmentType Type { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public Guid? CreatedById { get; set; }
     public Guid? LastUpdatedById { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid? LastDeletedById { get; set; }
-    public List<DepartmentWarehouse> Warehouses { get; set; } = [];
+    public List<Warehouse> Warehouses { get; set; } = [];
 }
 
-public class DepartmentWarehouse : BaseEntity
+public enum DepartmentType
 {
-    public Guid DepartmentId { get; set; }
-    public Department Department { get; set; }
-    public Guid WarehouseId { get; set; }
-    public Warehouse Warehouse { get; set; }
+    Production,
+    NonProduction
 }

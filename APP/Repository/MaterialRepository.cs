@@ -788,9 +788,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         foreach (var department in departments)
         {
             // Get all warehouses associated with this department
-            var warehouseIds = await context.DepartmentWarehouses
+            var warehouseIds = await context.Warehouses
                 .Where(dw => dw.DepartmentId == department.Id)
-                .Select(dw => dw.WarehouseId)
+                .Select(dw => dw.Id)
                 .ToListAsync();
 
             decimal totalStock = 0;

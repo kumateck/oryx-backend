@@ -4,6 +4,8 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -18,6 +20,73 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
         department.CreatedById = userId;
         department.CreatedAt = DateTime.UtcNow;
         await context.Departments.AddAsync(department);
+
+        if (department.Type == DepartmentType.Production)
+        {
+            var productionWarehouse = new Warehouse
+            {
+                Id = Guid.NewGuid(),
+                Name = $"{department.Name} Production Floor",
+                Description = $"The {department.Name} production materials",
+                CreatedById = userId,
+                DepartmentId = department.Id,
+                CreatedAt = DateTime.UtcNow,
+                Type = WarehouseType.Production
+            };
+        
+            await context.Warehouses.AddAsync(productionWarehouse);
+        
+            department.Warehouses.Add(productionWarehouse);
+
+            var packagedMaterialWarehouse = new Warehouse
+            {
+                Id = Guid.NewGuid(),
+                Name = $"{department.Name} Packaged Materials Storage Warehouse",
+                Description = $"The {department.Name} packaged materials storage warehouse",
+                CreatedById = userId,
+                DepartmentId = department.Id,
+                CreatedAt = DateTime.UtcNow,
+                Type = WarehouseType.PackagedStorage,
+                MaterialKind = MaterialKind.Package
+
+            };
+            
+            await context.Warehouses.AddAsync(packagedMaterialWarehouse);
+            
+            department.Warehouses.Add(packagedMaterialWarehouse);
+            
+            var rawMaterialWarehouse = new Warehouse
+            {
+                Id = Guid.NewGuid(),
+                Name = $"{department.Name} Raw Materials Storage Warehouse",
+                Description = $"The {department.Name} raw materials storage warehouse",
+                CreatedById = userId,
+                DepartmentId = department.Id,
+                CreatedAt = DateTime.UtcNow,
+                Type = WarehouseType.RawMaterialStorage,
+                MaterialKind = MaterialKind.Raw
+            };
+        
+            await context.Warehouses.AddAsync(rawMaterialWarehouse);
+        
+            department.Warehouses.Add(rawMaterialWarehouse);
+            
+            var finishedGoodsWarehouse = new Warehouse
+            {
+                Id = Guid.NewGuid(),
+                Name = $"{department.Name} Finished Goods Warehouse",
+                Description = $"The {department.Name} finished goods warehouse",
+                CreatedById = userId,
+                DepartmentId = department.Id,
+                CreatedAt = DateTime.UtcNow,
+                Type = WarehouseType.FinishedGoodsStorage
+            };
+            
+            await context.Warehouses.AddAsync(finishedGoodsWarehouse);
+            
+            department.Warehouses.Add(finishedGoodsWarehouse);
+        }
+        
         await context.SaveChangesAsync();
 
         return department.Id;
@@ -26,7 +95,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
     public async Task<Result<DepartmentDto>> GetDepartment(Guid departmentId)
     {
         var department = await context.Departments
-            .Include(d => d.Warehouses).ThenInclude(d => d.Warehouse)
+            .Include(d => d.Warehouses)
             .FirstOrDefaultAsync(d => d.Id == departmentId);
 
         return department is null
@@ -37,7 +106,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
     public async Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> GetDepartments(int page, int pageSize, string searchQuery)
     {
         var query = context.Departments
-            .Include(d => d.Warehouses).ThenInclude(d => d.Warehouse)
+            .Include(d => d.Warehouses)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -63,7 +132,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             return Error.NotFound("Department.NotFound", "Department not found");
         }
         
-        context.DepartmentWarehouses.RemoveRange(existingDepartment.Warehouses);
+        context.Warehouses.RemoveRange(existingDepartment.Warehouses);
         mapper.Map(request, existingDepartment);
         context.Departments.Update(existingDepartment);
         

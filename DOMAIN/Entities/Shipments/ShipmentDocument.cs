@@ -4,6 +4,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.Shipments;
 
@@ -30,6 +31,8 @@ public class ShipmentInvoiceItem : BaseEntity
 {
     public Guid ShipmentInvoiceId { get; set; }
     public ShipmentInvoice ShipmentInvoice { get; set; }
+    public Guid? DistributedRequisitionMaterialId { get; set; }
+    public DistributedRequisitionMaterial DistributedRequisitionMaterial { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid UoMId { get; set; }
@@ -43,6 +46,14 @@ public class ShipmentInvoiceItem : BaseEntity
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
     public bool Distributed { get; set; } = false;
+}
+
+public class DistributionShipmentInvoiceItemDto 
+{
+    public List<ShipmentInvoiceItem> ShipmentInvoiceItems { get; set; }
+    public Guid MaterialId { get; set; }
+    public Material Material { get; set; }
+    public decimal ReceivedQuantity { get; set; }
 }
 
 

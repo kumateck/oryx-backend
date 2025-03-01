@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -12,6 +13,8 @@ namespace DOMAIN.Entities.Warehouses;
 public class Warehouse : BaseEntity
 {
     [StringLength(255)] public string Name { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public Department Department { get; set; }
     [StringLength(1000)] public string Description { get; set; }
     public List<WarehouseLocation> Locations { get; set; } = [];
     public WarehouseArrivalLocation ArrivalLocation { get; set; }
@@ -29,14 +32,13 @@ public class WarehouseArrivalLocation:BaseEntity
     public List<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
 }
 
-public class DistributedRequisitionMaterial:BaseEntity
+public class DistributedRequisitionMaterial : BaseEntity
 {
     public Guid? RequisitionItemId { get; set; }
     public RequisitionItem RequisitionItem { get; set; }
-    public Guid? WarehouseArrivalLocationId{get;set;}
+    public Guid? WarehouseArrivalLocationId { get; set; }
     public WarehouseArrivalLocation WarehouseArrivalLocation { get; set; }
-    public Guid? ShipmentInvoiceItemId { get; set; }
-    public ShipmentInvoiceItem ShipmentInvoiceItem { get; set; }
+    public List<ShipmentInvoiceItem> ShipmentInvoiceItems { get; set; } = new();
     public Guid? ShipmentInvoiceId { get; set; }
     public ShipmentInvoice ShipmentInvoice { get; set; }
     public Guid? MaterialId { get; set; }
@@ -107,6 +109,8 @@ public class ShelfMaterialBatch:BaseEntity
 
 public enum WarehouseType
 {
-    Storage, 
+    RawMaterialStorage, 
+    PackagedStorage,
+    FinishedGoodsStorage,
     Production
 }

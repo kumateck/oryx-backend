@@ -969,15 +969,17 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .FirstOrDefaultAsync(s => s.Id == shipmentDocument.ShipmentInvoice.Id);
             
             var materialDistribution = new MaterialDistributionDto();
-            
-            foreach (var item in invoices.Items)
+
+            List<DistributionShipmentInvoiceItemDto> distributionShipmentInvoiceItems = await GroupInvoiceItemsBasedOnMaterial(invoices);
+
+            foreach (var item in distributionShipmentInvoiceItems)
             {
                 var materialDistributionSection = new MaterialDistributionSection
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
                     TotalQuantity = item.ReceivedQuantity
                 };
-                var requisitionMaterialRequests =  await context.RequisitionItems.Where(r => r.MaterialId == item.MaterialId && (r.Quantity - r.QuantityReceived != 0)).ToListAsync();//update this to create DistributionRequisitionItem item for each requisition item and add to the materialDistributionSection
+                var requisitionMaterialRequests =  await context.RequisitionItems.Where(r => r.MaterialId == item.MaterialId && (r.Quantity - r.QuantityReceived != 0)).ToListAsync();
                 foreach (var requisitionItem in requisitionMaterialRequests)
                 {
                     var department = await GetRequisitionDepartment(requisitionItem.RequisitionId);
@@ -989,7 +991,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     };
 
                     materialDistributionSection.Items.Add(distributionRequisitionItem);
-                    materialDistributionSection.ShipmentInvoiceItem = mapper.Map<ShipmentInvoiceItemDto>(item);
+                    var shipmentInvoiceItems = mapper.Map<List<ShipmentInvoiceItemDto>>(item.ShipmentInvoiceItems);
+                    materialDistributionSection.ShipmentInvoiceItems = shipmentInvoiceItems;
                     materialDistributionSection.ShipmentInvoice = mapper.Map<ShipmentInvoiceDto>(shipmentDocument.ShipmentInvoice);
                 }
 
@@ -1005,19 +1008,38 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return Result.Failure<MaterialDistributionDto>(Error.Failure("500",ex.Message));
         }
     }
+    
+    private async Task<List<DistributionShipmentInvoiceItemDto>> GroupInvoiceItemsBasedOnMaterial(ShipmentInvoice invoices)
+    {
+        var groupedItems = invoices.Items
+            .GroupBy(item => item.MaterialId)
+            .Select(group => new DistributionShipmentInvoiceItemDto
+            {
+                MaterialId = group.Key,
+                Material = group.First().Material,
+                ReceivedQuantity = group.Sum(item => item.ReceivedQuantity),
+                ShipmentInvoiceItems = group.ToList()
+            })
+            .ToList();
+
+        return await Task.FromResult(groupedItems);
+    }
+    
 
     public async Task<Result> ConfirmDistribution(MaterialDistributionSectionRequest section,Guid userId)
     {
-        var invoiceItem =
-            await context.ShipmentInvoicesItems.FirstOrDefaultAsync(s => s.Id == section.ShipmentInvoiceItemId);
-        if (invoiceItem is null)
+        var invoiceItems = await context.ShipmentInvoicesItems
+            .Where(s => section.ShipmentInvoiceItemIds.Contains(s.Id))
+            .ToListAsync();
+
+        if (!invoiceItems.Any())
         {
             return Error.NotFound("ShipmentInvoiceItem.NotFound", "Shipment invoice item not found");
         }
         
         var shipmentDocument = await context.ShipmentDocuments
             .Include(s => s.ShipmentInvoice).ThenInclude(shipmentInvoice => shipmentInvoice.Items)
-            .FirstOrDefaultAsync(bs => bs.ShipmentInvoiceId == invoiceItem.ShipmentInvoiceId);
+            .FirstOrDefaultAsync(bs => bs.ShipmentInvoiceId == invoiceItems.FirstOrDefault().ShipmentInvoiceId);
 
         if (shipmentDocument is null)
         {
@@ -1026,17 +1048,27 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         
         foreach (var item in section.Items)
         {
-            var requisitionItem = await context.RequisitionItems.FirstOrDefaultAsync(r => r.Id == item.RequistionItemId);
+            var requisitionItem = await context.RequisitionItems.Include(r=>r.Material).FirstOrDefaultAsync(r => r.Id == item.RequistionItemId);
             if (requisitionItem is null)
             {
                 return Error.NotFound("RequisitionItem.NotFound", "Requisition item not found");
             }
             requisitionItem.QuantityReceived += item.QuantityAllocated;
-            var departmentWarehouse = context.DepartmentWarehouses.Include(s => s.Warehouse)
-                .ThenInclude(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.DepartmentId && w.Warehouse.Type == WarehouseType.Storage);
+            Warehouse departmentWarehouse = null;
+            if (requisitionItem.Material.Kind == MaterialKind.Package)
+            {
+                departmentWarehouse = context.Warehouses
+                    .Include(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.DepartmentId && w.Type == WarehouseType.PackagedStorage);
+            }
+            if(requisitionItem.Material.Kind == MaterialKind.Raw)
+            {
+                departmentWarehouse = context.Warehouses
+                    .Include(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.DepartmentId && w.Type == WarehouseType.RawMaterialStorage);
+            }
+            
             if (departmentWarehouse != null)
             {
-                var warehouse = departmentWarehouse.Warehouse;
+                var warehouse = departmentWarehouse;
                 if (warehouse.ArrivalLocation == null)
                 {
                     warehouse.ArrivalLocation = new WarehouseArrivalLocation
@@ -1055,8 +1087,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         MaterialId = requisitionItem.MaterialId,
                         ManufacturerId = section.ManufacturerId,
                         SupplierId = section.SupplierId,
-                        ShipmentInvoiceItemId = section.ShipmentInvoiceItemId,
-                        ShipmentInvoiceId = invoiceItem.ShipmentInvoiceId,
+                        ShipmentInvoiceId = invoiceItems.FirstOrDefault()?.ShipmentInvoiceId,
+                        ShipmentInvoiceItems = invoiceItems,
                         UomId = requisitionItem.UomId,
                         Quantity = item.QuantityAllocated,
                         Status = DistributedRequisitionMaterialStatus.Distributed,
@@ -1068,7 +1100,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             }
         }
         
-        invoiceItem.Distributed = true;
+        foreach (var item in invoiceItems)
+        {
+            item.Distributed = true;
+        }
         
         var allItemsDistributed = shipmentDocument.ShipmentInvoice.Items.All(item => item.Distributed);
 
@@ -1088,6 +1123,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             item.QuantityAllocated = item.QuantityRequested / totalRequestedQuantity * materialDistributionSection.TotalQuantity;
             item.QuantityRemaining = item.QuantityRequested - item.QuantityAllocated;
+            if (item.QuantityRemaining < 0)
+            {
+                item.QuantityRemaining = 0;
+            }
         }
     }
 
@@ -1099,3 +1138,4 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return requisition.RequestedBy.Department;
     }
 }
+
