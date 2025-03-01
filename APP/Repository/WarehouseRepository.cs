@@ -418,7 +418,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             .ThenInclude(drm => drm.Material)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
-            .ThenInclude(ss=>ss.ShipmentInvoiceItem)
+            .ThenInclude(ss=>ss.ShipmentInvoiceItems)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(sr=>sr.RequisitionItem)
@@ -442,7 +442,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
                 .Include(drm => drm.Manufacturer)
                 .Include(drm => drm.Supplier)
                 .Include(drm => drm.Material)
-                .Include(drm => drm.ShipmentInvoiceItem)
+                .Include(drm => drm.ShipmentInvoiceItems)
                 .Include(drm => drm.RequisitionItem)
                 .Where(drm => drm.WarehouseArrivalLocation.WarehouseId == warehouseId && !drm.Status.Equals(DistributedRequisitionMaterialStatus.GrnGenerated))
                 .AsQueryable();
@@ -472,7 +472,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             .Include(drm => drm.Manufacturer)
             .Include(drm => drm.Supplier)
             .Include(drm => drm.Material)
-            .Include(drm => drm.ShipmentInvoiceItem)
+            .Include(drm => drm.ShipmentInvoiceItems)
             .Include(drm => drm.RequisitionItem)
             .FirstOrDefaultAsync(drm => drm.Id == id);
 

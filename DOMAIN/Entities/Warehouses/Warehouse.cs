@@ -29,14 +29,13 @@ public class WarehouseArrivalLocation:BaseEntity
     public List<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
 }
 
-public class DistributedRequisitionMaterial:BaseEntity
+public class DistributedRequisitionMaterial : BaseEntity
 {
     public Guid? RequisitionItemId { get; set; }
     public RequisitionItem RequisitionItem { get; set; }
-    public Guid? WarehouseArrivalLocationId{get;set;}
+    public Guid? WarehouseArrivalLocationId { get; set; }
     public WarehouseArrivalLocation WarehouseArrivalLocation { get; set; }
-    public Guid? ShipmentInvoiceItemId { get; set; }
-    public ShipmentInvoiceItem ShipmentInvoiceItem { get; set; }
+    public List<ShipmentInvoiceItem> ShipmentInvoiceItems { get; set; } = new();
     public Guid? ShipmentInvoiceId { get; set; }
     public ShipmentInvoice ShipmentInvoice { get; set; }
     public Guid? MaterialId { get; set; }
@@ -107,6 +106,8 @@ public class ShelfMaterialBatch:BaseEntity
 
 public enum WarehouseType
 {
-    Storage, 
+    RawMaterialStorage, 
+    PackagedStorage,
+    FinishedGoodsStorage,
     Production
 }

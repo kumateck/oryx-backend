@@ -56,7 +56,7 @@ public class DistributedRequisitionMaterialDto
     public UnitOfMeasureDto Uom { get; set; }
     public SupplierDto Supplier { get; set; }
     public ManufacturerDto Manufacturer { get; set; }
-    public ShipmentInvoiceItemDto ShipmentInvoiceItem { get; set; }
+    public List<ShipmentInvoiceItemDto> ShipmentInvoiceItems { get; set; }
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public decimal Quantity { get; set; }
     public DateTime? ArrivedAt { get; set; }

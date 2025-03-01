@@ -14,14 +14,14 @@ public class MaterialDistributionSection
 {
     public MaterialDto Material { get; set; }
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
-    public ShipmentInvoiceItemDto ShipmentInvoiceItem { get; set; }
+    public List<ShipmentInvoiceItemDto> ShipmentInvoiceItems { get; set; }
     public decimal TotalQuantity { get; set; }
     public List<DistributionRequisitionItem> Items { get; set; } = new List<DistributionRequisitionItem>();
 }
 
 public class MaterialDistributionSectionRequest
 {
-    public Guid? ShipmentInvoiceItemId { get; set; }
+    public List<Guid> ShipmentInvoiceItemIds { get; set; }
     public Guid? SupplierId { get; set; }
     public Guid? ManufacturerId { get; set; }
     public List<DistributionRequisitionItemRequest> Items { get; set; }

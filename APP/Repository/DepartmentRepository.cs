@@ -4,6 +4,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
+using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -18,6 +19,26 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
         department.CreatedById = userId;
         department.CreatedAt = DateTime.UtcNow;
         await context.Departments.AddAsync(department);
+        
+        var productionWarehouse = new Warehouse
+        {
+            Id = Guid.NewGuid(),
+            Name = $"{department.Name} Production Floor",
+            Description = $"The {department.Name} production materials",
+            CreatedById = userId,
+            CreatedAt = DateTime.UtcNow,
+            Type = WarehouseType.Production
+        };
+        
+        await context.Warehouses.AddAsync(productionWarehouse);
+        
+        var departmentProduction = new DepartmentWarehouse
+        {
+            DepartmentId = department.Id,
+            WarehouseId = productionWarehouse.Id
+        };
+        
+        department.Warehouses.Add(departmentProduction);
         await context.SaveChangesAsync();
 
         return department.Id;
