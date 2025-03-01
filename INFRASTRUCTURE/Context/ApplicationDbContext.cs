@@ -200,7 +200,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Department
 
     public DbSet<Department> Departments { get; set; }
-    public DbSet<DepartmentWarehouse> DepartmentWarehouses { get; set; }
 
     #endregion
 
@@ -375,7 +374,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         #region Department Entities
         modelBuilder.Entity<Department>().Navigation(p => p.Warehouses).AutoInclude();
-        modelBuilder.Entity<DepartmentWarehouse>().Navigation(p => p.Warehouse).AutoInclude();
+        // modelBuilder.Entity<DepartmentWarehouse>().Navigation(p => p.Warehouse).AutoInclude();
         #endregion
         
         #region Warehouse Entities
@@ -591,7 +590,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Department Filters
         modelBuilder.Entity<Department>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<DepartmentWarehouse>().HasQueryFilter(a => !a.Department.DeletedAt.HasValue);
+        // modelBuilder.Entity<DepartmentWarehouse>().HasQueryFilter(a => !a.Department.DeletedAt.HasValue);
         #endregion
 
         #region Warehouse Filters

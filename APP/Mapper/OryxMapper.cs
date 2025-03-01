@@ -305,10 +305,8 @@ public class OryxMapper : Profile
         #region Department
         
         CreateMap<CreateDepartmentRequest, Department>();
-        CreateMap<CreateDepartmentWarehouseRequest, DepartmentWarehouse>();
         CreateMap<UpdateDepartmentRequest, Department>();
         CreateMap<Department, DepartmentDto>();
-        CreateMap<DepartmentWarehouse, DepartmentWarehouseDto>();
 
         #endregion
 

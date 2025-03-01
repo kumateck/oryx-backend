@@ -1054,21 +1054,21 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 return Error.NotFound("RequisitionItem.NotFound", "Requisition item not found");
             }
             requisitionItem.QuantityReceived += item.QuantityAllocated;
-            DepartmentWarehouse departmentWarehouse = null;
+            Warehouse departmentWarehouse = null;
             if (requisitionItem.Material.Kind == MaterialKind.Package)
             {
-                departmentWarehouse = context.DepartmentWarehouses.Include(s => s.Warehouse)
-                    .ThenInclude(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.DepartmentId && w.Warehouse.Type == WarehouseType.PackagedStorage);
+                departmentWarehouse = context.Warehouses
+                    .Include(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.DepartmentId && w.Type == WarehouseType.PackagedStorage);
             }
             if(requisitionItem.Material.Kind == MaterialKind.Raw)
             {
-                departmentWarehouse = context.DepartmentWarehouses.Include(s => s.Warehouse)
-                    .ThenInclude(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.DepartmentId && w.Warehouse.Type == WarehouseType.RawMaterialStorage);
+                departmentWarehouse = context.Warehouses
+                    .Include(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.DepartmentId && w.Type == WarehouseType.RawMaterialStorage);
             }
             
             if (departmentWarehouse != null)
             {
-                var warehouse = departmentWarehouse.Warehouse;
+                var warehouse = departmentWarehouse;
                 if (warehouse.ArrivalLocation == null)
                 {
                     warehouse.ArrivalLocation = new WarehouseArrivalLocation

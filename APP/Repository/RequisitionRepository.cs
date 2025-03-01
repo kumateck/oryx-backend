@@ -166,10 +166,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 return Error.Validation("ShelfMaterialBatch.InsufficientQuantity", $"Insufficient quantity in ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId}.");
             }
 
-            var productionWarehouse = await context.DepartmentWarehouses
-                .Where(dw => dw.WarehouseId == shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack
+            var productionWarehouse = await context.Warehouses
+                .Where(dw => dw.Id == shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.Warehouse.Id)
-                .Select(dw => dw.Warehouse)
                 .Include(warehouse => warehouse.ArrivalLocation)
                 .FirstOrDefaultAsync(w => w.Type == WarehouseType.Production);
 
@@ -330,7 +329,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var requisition = await context.Requisitions
             .Include(r => r.Approvals).Include(requisition => requisition.ProductionActivityStep)
             .Include(requisition => requisition.RequestedBy).ThenInclude(r => r.Department)
-            .ThenInclude(d => d.Warehouses).ThenInclude(w => w.Warehouse).Include(requisition => requisition.Items)
+            .ThenInclude(d => d.Warehouses).Include(requisition => requisition.Items)
             .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 

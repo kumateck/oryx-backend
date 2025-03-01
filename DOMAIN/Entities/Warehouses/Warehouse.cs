@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -12,6 +13,8 @@ namespace DOMAIN.Entities.Warehouses;
 public class Warehouse : BaseEntity
 {
     [StringLength(255)] public string Name { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public Department Department { get; set; }
     [StringLength(1000)] public string Description { get; set; }
     public List<WarehouseLocation> Locations { get; set; } = [];
     public WarehouseArrivalLocation ArrivalLocation { get; set; }

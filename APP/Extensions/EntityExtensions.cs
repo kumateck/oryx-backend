@@ -13,7 +13,7 @@ public static class EntityExtensions
 
     public static Warehouse GetUserProductionWarehouse(this User user)
     {
-        var warehouses = user.Department?.Warehouses.Select(w => w.Warehouse) ?? [];
+        var warehouses = user.Department?.Warehouses ?? [];
         return warehouses.FirstOrDefault(w => w.Type == WarehouseType.Production);
     }
 }
