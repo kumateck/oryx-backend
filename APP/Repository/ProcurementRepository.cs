@@ -4,6 +4,7 @@ using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Distribution;
@@ -977,7 +978,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 var materialDistributionSection = new MaterialDistributionSection
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
-                    TotalQuantity = item.ReceivedQuantity
+                    TotalQuantity = item.ReceivedQuantity,
+                    UoM = mapper.Map<UnitOfMeasureDto>(item.UoM)
                 };
                 var requisitionMaterialRequests =  await context.RequisitionItems.Where(r => r.MaterialId == item.MaterialId && (r.Quantity - r.QuantityReceived != 0)).ToListAsync();
                 foreach (var requisitionItem in requisitionMaterialRequests)
@@ -987,7 +989,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     {
                         RequistionItem = mapper.Map<RequisitionItemDto>(requisitionItem),
                         Department = mapper.Map<DepartmentDto>(department),
-                        QuantityRequested = requisitionItem.Quantity
+                        QuantityRequested = requisitionItem.Quantity,
+                        UoM = mapper.Map<UnitOfMeasureDto>(requisitionItem.UoM)
                     };
 
                     materialDistributionSection.Items.Add(distributionRequisitionItem);
@@ -1018,7 +1021,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 MaterialId = group.Key,
                 Material = group.First().Material,
                 ReceivedQuantity = group.Sum(item => item.ReceivedQuantity),
-                ShipmentInvoiceItems = group.ToList()
+                ShipmentInvoiceItems = group.ToList(),
+                UoM = group.First().UoM
             })
             .ToList();
 
@@ -1031,6 +1035,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var invoiceItems = await context.ShipmentInvoicesItems
             .Where(s => section.ShipmentInvoiceItemIds.Contains(s.Id))
             .ToListAsync();
+        
+        var manufacturers = await context.Manufacturers.Where(m => section.ManufacturerIds.Contains(m.Id)).ToListAsync();
 
         if (!invoiceItems.Any())
         {
@@ -1085,7 +1091,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     {
                         RequisitionItemId = requisitionItem.Id,
                         MaterialId = requisitionItem.MaterialId,
-                        ManufacturerId = section.ManufacturerId,
+                        Manufacturers = manufacturers,
                         SupplierId = section.SupplierId,
                         ShipmentInvoiceId = invoiceItems.FirstOrDefault()?.ShipmentInvoiceId,
                         ShipmentInvoiceItems = invoiceItems,

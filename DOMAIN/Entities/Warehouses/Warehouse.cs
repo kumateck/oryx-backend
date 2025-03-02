@@ -45,8 +45,7 @@ public class DistributedRequisitionMaterial : BaseEntity
     public Material Material { get; set; }
     public Guid? SupplierId { get; set; }
     public Supplier Supplier { get; set; }
-    public Guid? ManufacturerId { get; set; }
-    public Manufacturer Manufacturer { get; set; }
+    public List<Manufacturer> Manufacturers { get; set; }
     public Guid? UomId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }

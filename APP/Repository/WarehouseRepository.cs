@@ -409,7 +409,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             .ThenInclude(drm => drm.ShipmentInvoice)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
-            .ThenInclude(drm => drm.Manufacturer)
+            .ThenInclude(drm => drm.Manufacturers)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(drm => drm.Supplier)
@@ -439,7 +439,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         {
             var query = context.DistributedRequisitionMaterials
                 .Include(drm => drm.ShipmentInvoice)
-                .Include(drm => drm.Manufacturer)
+                .Include(drm => drm.Manufacturers)
                 .Include(drm => drm.Supplier)
                 .Include(drm => drm.Material)
                 .Include(drm => drm.ShipmentInvoiceItems)
@@ -469,7 +469,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var distributedMaterial = await context.DistributedRequisitionMaterials
             .Include(drm => drm.ShipmentInvoice)
-            .Include(drm => drm.Manufacturer)
+            .Include(drm => drm.Manufacturers)
             .Include(drm => drm.Supplier)
             .Include(drm => drm.Material)
             .Include(drm => drm.ShipmentInvoiceItems)

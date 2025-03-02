@@ -54,6 +54,7 @@ public class DistributionShipmentInvoiceItemDto
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public decimal ReceivedQuantity { get; set; }
+    public UnitOfMeasure UoM { get; set; }
 }
 
 
