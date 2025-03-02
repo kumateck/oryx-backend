@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Requisitions;
@@ -16,6 +17,7 @@ public class MaterialDistributionSection
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public List<ShipmentInvoiceItemDto> ShipmentInvoiceItems { get; set; }
     public decimal TotalQuantity { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public List<DistributionRequisitionItem> Items { get; set; } = new List<DistributionRequisitionItem>();
 }
 
@@ -31,6 +33,7 @@ public class DistributionRequisitionItem
 {
     public DepartmentDto Department { get; set; }
     public RequisitionItemDto RequistionItem { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public decimal? QuantityRequested { get; set; }
     public decimal? QuantityAllocated { get; set; }
     public decimal? QuantityRemaining { get; set; }
