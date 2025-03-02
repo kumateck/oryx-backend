@@ -1031,6 +1031,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var invoiceItems = await context.ShipmentInvoicesItems
             .Where(s => section.ShipmentInvoiceItemIds.Contains(s.Id))
             .ToListAsync();
+        
+        var manufacturers = await context.Manufacturers.Where(m => section.ManufacturerIds.Contains(m.Id)).ToListAsync();
 
         if (!invoiceItems.Any())
         {
@@ -1085,7 +1087,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     {
                         RequisitionItemId = requisitionItem.Id,
                         MaterialId = requisitionItem.MaterialId,
-                        ManufacturerId = section.ManufacturerId,
+                        Manufacturers = manufacturers,
                         SupplierId = section.SupplierId,
                         ShipmentInvoiceId = invoiceItems.FirstOrDefault()?.ShipmentInvoiceId,
                         ShipmentInvoiceItems = invoiceItems,

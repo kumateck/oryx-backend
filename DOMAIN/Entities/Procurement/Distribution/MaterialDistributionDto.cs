@@ -23,7 +23,7 @@ public class MaterialDistributionSectionRequest
 {
     public List<Guid> ShipmentInvoiceItemIds { get; set; }
     public Guid? SupplierId { get; set; }
-    public Guid? ManufacturerId { get; set; }
+    public List<Guid> ManufacturerIds { get; set; }
     public List<DistributionRequisitionItemRequest> Items { get; set; }
 }
 
