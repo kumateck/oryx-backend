@@ -41,7 +41,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             var packagedMaterialWarehouse = new Warehouse
             {
                 Id = Guid.NewGuid(),
-                Name = $"{department.Name} Packaged Materials Storage Warehouse",
+                Name = $"{department.Name} Package Warehouse",
                 Description = $"The {department.Name} packaged materials storage warehouse",
                 CreatedById = userId,
                 DepartmentId = department.Id,
@@ -58,7 +58,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             var rawMaterialWarehouse = new Warehouse
             {
                 Id = Guid.NewGuid(),
-                Name = $"{department.Name} Raw Materials Storage Warehouse",
+                Name = $"{department.Name} Raw Warehouse",
                 Description = $"The {department.Name} raw materials storage warehouse",
                 CreatedById = userId,
                 DepartmentId = department.Id,
