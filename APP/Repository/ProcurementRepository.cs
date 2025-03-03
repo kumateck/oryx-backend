@@ -983,7 +983,17 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     TotalQuantity = item.ReceivedQuantity,
                     UoM = mapper.Map<UnitOfMeasureDto>(item.UoM)
                 };
-                var requisitionMaterialRequests =  await context.RequisitionItems.Where(r => r.MaterialId == item.MaterialId && (r.Quantity - r.QuantityReceived != 0) && item.ShipmentInvoiceItems.Any(si => si.PurchaseOrder.SourceRequisition.Items.Any(sr => sr.RequisitionId == r.RequisitionId))).ToListAsync();
+                
+                var requisitionMaterialRequests = await (
+                    from r in context.RequisitionItems
+                    join si in context.ShipmentInvoiceItems on r.MaterialId equals item.MaterialId
+                    join po in context.PurchaseOrders on si.PurchaseOrderId equals po.Id
+                    join sr in context.SourceRequisitionItems on po.SourceRequisitionId equals sr.SourceRequisitionId
+                    where sr.RequisitionId == r.RequisitionId
+                          && r.MaterialId == item.MaterialId
+                          && (r.Quantity - r.QuantityReceived) != 0
+                    select r
+                ).Distinct().ToListAsync();
 
                 foreach (var requisitionItem in requisitionMaterialRequests)
                 {
