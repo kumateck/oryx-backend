@@ -631,7 +631,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if(user.Department.Warehouses.Count == 0)
             return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
         
-        var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
+        var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
         if (warehouse is null)
             return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
 
@@ -737,20 +737,15 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var quantityRequired = productionSchedule.Products.First(p => p.ProductId == productId).Quantity;
         
         var stockLevels = new Dictionary<Guid, decimal>();
-        if (user.Department != null && user.Department.Warehouses.Count != 0)
-        {
-            var warehouses = user.Department.Warehouses.Where(i => i.Type == WarehouseType.Production)
-                .ToList();
-            foreach (var warehouse in warehouses)
-            {
-                // Fetch stock levels for each material ID individually
-                foreach (var materialId in product.Packages.Select(item => item.MaterialId).Distinct())
-                {
-                    var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouse.Id);
-                    stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
-                }
-            }
-        }
+        if (user.Department == null)
+            return Error.NotFound("User.Department", "User has no association to any department");
+        
+        if(user.Department.Warehouses.Count == 0)
+            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
+        
+        var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
+        if (warehouse is null)
+            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
         
         var sourceRequisitionItems = new List<SourceRequisitionItem>();
 
@@ -768,6 +763,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             sourceRequisitionItems = await context.SourceRequisitionItems
                 .Where(sr => purchaseRequisition.Select(pr => pr.Id).Contains(sr.RequisitionId))
                 .ToListAsync();
+        }
+        
+        foreach (var materialId in product.Packages.Select(item => item.MaterialId).Distinct())
+        {
+            var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouse.Id);
+            stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
         
         var materialDetails = product.Packages.Select(item =>

@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250303003132_RenameShipmentInvoice")]
+    partial class RenameShipmentInvoice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1835,9 +1838,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DistributedRequisitionMaterialId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Email")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -1863,8 +1863,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("CountryId");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("DistributedRequisitionMaterialId");
 
                     b.HasIndex("LastDeletedById");
 
@@ -5029,6 +5027,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ManufacturerId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("MaterialId")
                         .HasColumnType("uuid");
 
@@ -5063,6 +5064,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ManufacturerId");
 
                     b.HasIndex("MaterialId");
 
@@ -6628,10 +6631,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Warehouses.DistributedRequisitionMaterial", null)
-                        .WithMany("Manufacturers")
-                        .HasForeignKey("DistributedRequisitionMaterialId");
 
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
@@ -8670,6 +8669,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.Procurement.Manufacturers.Manufacturer", "Manufacturer")
+                        .WithMany()
+                        .HasForeignKey("ManufacturerId");
+
                     b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
                         .WithMany()
                         .HasForeignKey("MaterialId");
@@ -8699,6 +8702,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Manufacturer");
 
                     b.Navigation("Material");
 
@@ -9202,8 +9207,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedRequisitionMaterial", b =>
                 {
-                    b.Navigation("Manufacturers");
-
                     b.Navigation("ShipmentInvoiceItems");
                 });
 

@@ -18,7 +18,7 @@ public class PurchaseOrderStatusResolver(ApplicationDbContext context)
         if (totalItems == 0)
             return PurchaseOrderAttachmentStatus.None;
 
-        var linkedItemsCount = context.ShipmentInvoicesItems
+        var linkedItemsCount = context.ShipmentInvoiceItems
             .Count(sii => sii.PurchaseOrderId == source.Id);
 
         if (linkedItemsCount == 0)

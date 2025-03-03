@@ -230,7 +230,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ShipmentInvoice> ShipmentInvoices { get; set; }
     public DbSet<ShipmentDiscrepancy> ShipmentDiscrepancies { get; set; }
     public DbSet<ShipmentDiscrepancyType> ShipmentDiscrepancyTypes { get; set; }
-    public DbSet<ShipmentInvoiceItem> ShipmentInvoicesItems { get; set; }
+    public DbSet<ShipmentInvoiceItem> ShipmentInvoiceItems { get; set; }
 
     #endregion
 

@@ -305,7 +305,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result<decimal>> GetMaterialsInTransit(Guid materialId)
     {
-        return await context.ShipmentInvoicesItems
+        return await context.ShipmentInvoiceItems
             .Include(s => s.ShipmentInvoice)
             .Where(s => s.MaterialId == materialId && !s.ShipmentInvoice.ShipmentArrived.HasValue)
             .SumAsync(s => s.ExpectedQuantity);

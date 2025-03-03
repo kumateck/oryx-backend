@@ -807,7 +807,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result<List<SupplierDto>>> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed()
     {
-        var linkedPurchaseOrderIds = await context.ShipmentInvoicesItems
+        var linkedPurchaseOrderIds = await context.ShipmentInvoiceItems
             .Select(sii => sii.PurchaseOrderId)
             .Distinct()
             .ToListAsync(); // Get all PO IDs that have been used in shipment invoice items
@@ -822,9 +822,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var partiallyUsedPurchaseOrders = await context.PurchaseOrders
             .Include(po => po.Supplier)
             .Where(po =>
-                    po.Items.Any(poi => context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) // At least one item used
+                    po.Items.Any(poi => context.ShipmentInvoiceItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) // At least one item used
                     && 
-                    po.Items.Any(poi => !context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) // At least one item NOT used
+                    po.Items.Any(poi => !context.ShipmentInvoiceItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) // At least one item NOT used
             )
             .ToListAsync();
 
@@ -847,7 +847,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Select(po => po.Id)
             .ToListAsync(); // Get all purchase order IDs for the supplier
 
-        var linkedPurchaseOrderIds = await context.ShipmentInvoicesItems
+        var linkedPurchaseOrderIds = await context.ShipmentInvoiceItems
             .Where(sii => allSupplierPurchaseOrderIds.Contains(sii.PurchaseOrderId))
             .Select(sii => sii.PurchaseOrderId)
             .Distinct()
@@ -863,8 +863,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(po => po.Supplier)
             .Include(po => po.Items)
             .Where(po => po.SupplierId == supplierId &&
-                         po.Items.Any(poi => context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) && // At least one item used
-                         po.Items.Any(poi => !context.ShipmentInvoicesItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId))) // At least one item NOT used
+                         po.Items.Any(poi => context.ShipmentInvoiceItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) && // At least one item used
+                         po.Items.Any(poi => !context.ShipmentInvoiceItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId))) // At least one item NOT used
             .ToListAsync();
 
         var resultPurchaseOrders = notLinkedPurchaseOrders
@@ -891,7 +891,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         if (purchaseOrderIds == null || purchaseOrderIds.Count == 0)
             return Error.Failure("PurchaseOrder.Materials", "No Purchase Order IDs provided.");
 
-        var materials = await context.ShipmentInvoicesItems
+        var materials = await context.ShipmentInvoiceItems
             .Where(sii => purchaseOrderIds.Contains(sii.PurchaseOrderId))
             .Select(sii => sii.Material)
             .Distinct()
@@ -981,7 +981,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     TotalQuantity = item.ReceivedQuantity,
                     UoM = mapper.Map<UnitOfMeasureDto>(item.UoM)
                 };
-                var requisitionMaterialRequests =  await context.RequisitionItems.Where(r => r.MaterialId == item.MaterialId && (r.Quantity - r.QuantityReceived != 0)).ToListAsync();
+                var requisitionMaterialRequests = await (
+                    from r in context.RequisitionItems
+                    join si in context.ShipmentInvoiceItems on r.MaterialId equals item.MaterialId
+                    join po in context.PurchaseOrders on si.PurchaseOrderId equals po.Id
+                    join sr in context.SourceRequisitionItems on po.SourceRequisitionId equals sr.SourceRequisitionId
+                    where sr.RequisitionId == r.RequisitionId
+                          && r.MaterialId == item.MaterialId
+                          && (r.Quantity - r.QuantityReceived) != 0
+                    select r
+                ).Distinct().ToListAsync();
                 foreach (var requisitionItem in requisitionMaterialRequests)
                 {
                     var department = await GetRequisitionDepartment(requisitionItem.RequisitionId);
@@ -1008,7 +1017,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         }
         catch(Exception ex )
         {
-            return Result.Failure<MaterialDistributionDto>(Error.Failure("500",ex.Message));
+            return Error.Failure("500",ex.Message);
         }
     }
     
@@ -1032,7 +1041,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result> ConfirmDistribution(MaterialDistributionSectionRequest section,Guid userId)
     {
-        var invoiceItems = await context.ShipmentInvoicesItems
+        var invoiceItems = await context.ShipmentInvoiceItems
             .Where(s => section.ShipmentInvoiceItemIds.Contains(s.Id))
             .ToListAsync();
         

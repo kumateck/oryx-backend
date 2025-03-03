@@ -8,7 +8,7 @@ namespace DOMAIN.Entities.Procurement.Distribution;
 
 public class MaterialDistributionDto
 {
-    public List<MaterialDistributionSection> Sections { get; set; } = new List<MaterialDistributionSection>();
+    public List<MaterialDistributionSection> Sections { get; set; } = [];
 }
 
 public class MaterialDistributionSection
@@ -18,7 +18,7 @@ public class MaterialDistributionSection
     public List<ShipmentInvoiceItemDto> ShipmentInvoiceItems { get; set; }
     public decimal TotalQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
-    public List<DistributionRequisitionItem> Items { get; set; } = new List<DistributionRequisitionItem>();
+    public List<DistributionRequisitionItem> Items { get; set; } = [];
 }
 
 public class MaterialDistributionSectionRequest
