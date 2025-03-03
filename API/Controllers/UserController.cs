@@ -47,6 +47,20 @@ public class UserController(IUserRepository repo) : ControllerBase
     }
     
     [Authorize]
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetUser()
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var response = await repo.GetUser(Guid.Parse(userId));
+        return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
+    }
+
+    
+    [Authorize]
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

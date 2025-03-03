@@ -969,7 +969,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .Include(s=>s.Supplier)
                 .Include(s=>s.Items.Where(i=>!i.Distributed))
                 .ThenInclude(s => s.PurchaseOrder).ThenInclude(p => p.SourceRequisition).ThenInclude(sr => sr.Items)
-                .FirstOrDefaultAsync(s => s.Id == shipmentDocument.ShipmentInvoice.Id);
+                .FirstOrDefaultAsync(s => s.Id == shipmentDocument.ShipmentInvoiceId);
             
             var materialDistribution = new MaterialDistributionDto();
 
