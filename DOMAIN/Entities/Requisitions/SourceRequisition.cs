@@ -72,7 +72,7 @@ public class SupplierQuotation : BaseEntity
 { 
     public Guid SupplierId { get; set; }
     public Supplier Supplier { get; set; } 
-    public Guid? SourceRequisitionId { get; set; }
+    public Guid SourceRequisitionId { get; set; }
     public SourceRequisition SourceRequisition { get; set; }
     public List<SupplierQuotationItem> Items { get; set; } = [];
     public bool ReceivedQuotation { get; set; }
@@ -152,6 +152,6 @@ public class SupplierPrice
 public class ProcessQuotation
 {
     public Guid SupplierId { get; set; }
-    public Guid? SourceRequisitionId { get; set; }
+    public Guid SourceRequisitionId { get; set; }
     public List<CreatePurchaseOrderItemRequest> Items { get; set; } = [];
 }

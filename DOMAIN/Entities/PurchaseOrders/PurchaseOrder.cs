@@ -13,7 +13,7 @@ namespace DOMAIN.Entities.PurchaseOrders;
 public class PurchaseOrder : BaseEntity
 {
     [StringLength(100)] public string Code { get; set; }
-    public Guid? SourceRequisitionId { get; set; }
+    public Guid SourceRequisitionId { get; set; }
     public SourceRequisition SourceRequisition { get; set; }
     public Guid SupplierId { get; set; }
     public Supplier Supplier { get; set; }
