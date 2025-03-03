@@ -967,11 +967,13 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .Include(s=>s.Items.Where(i=>!i.Distributed))
                 .ThenInclude(items=>items.Manufacturer)
                 .Include(s=>s.Supplier)
+                .Include(s=>s.Items.Where(i=>!i.Distributed))
+                .ThenInclude(s => s.PurchaseOrder).ThenInclude(p => p.SourceRequisition).ThenInclude(sr => sr.Items)
                 .FirstOrDefaultAsync(s => s.Id == shipmentDocument.ShipmentInvoice.Id);
             
             var materialDistribution = new MaterialDistributionDto();
 
-            List<DistributionShipmentInvoiceItemDto> distributionShipmentInvoiceItems = await GroupInvoiceItemsBasedOnMaterial(invoices);
+            var distributionShipmentInvoiceItems = await GroupInvoiceItemsBasedOnMaterial(invoices);
 
             foreach (var item in distributionShipmentInvoiceItems)
             {
@@ -991,6 +993,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                           && (r.Quantity - r.QuantityReceived) != 0
                     select r
                 ).Distinct().ToListAsync();
+
                 foreach (var requisitionItem in requisitionMaterialRequests)
                 {
                     var department = await GetRequisitionDepartment(requisitionItem.RequisitionId);
