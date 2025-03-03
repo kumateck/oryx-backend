@@ -116,7 +116,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="request">The CreateProductionScheduleRequest object.</param>
     /// <returns>Returns the ID of the created Production Schedule.</returns>
     [HttpPost]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProductionSchedule([FromBody] CreateProductionScheduleRequest request)
@@ -134,7 +134,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="scheduleId">The ID of the Production Schedule.</param>
     /// <returns>Returns the Production Schedule.</returns>
     [HttpGet("{scheduleId}")]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionScheduleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductionSchedule(Guid scheduleId)
@@ -151,7 +151,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of Production Schedules.</returns>
     [HttpGet]
-    //[Authorize]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionScheduleDto>>))]
     public async Task<IResult> GetProductionSchedules([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
