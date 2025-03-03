@@ -44,6 +44,7 @@ public class ProductionScheduleProcurementPackageDto
     public decimal QuantityOnHand { get; set; }
     public decimal UnitCapacity { get; set; }
     public MaterialRequisitionStatus Status { get; set; }
+    public decimal PackingExcessMargin { get; set; }
 }
 
 public class ProductionScheduleProductDto

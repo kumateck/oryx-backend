@@ -785,6 +785,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                  Status = GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                  QuantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired, product.BasePackingQuantity),
                  QuantityOnHand = quantityOnHand,
+                 PackingExcessMargin = item.PackingExcessMargin
              };
          }).ToList();
         
