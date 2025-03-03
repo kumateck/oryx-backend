@@ -798,31 +798,19 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, Guid userId)
     {
         var supplierQuotations =  await context.SupplierQuotations
-            .Include(s => s.Items).ThenInclude(i => i.Material)
-            .Include(s => s.Items).ThenInclude(i => i.UoM)
-            .Include(s => s.Supplier)
             .Where(s => s.ReceivedQuotation && !s.Processed).ToListAsync();
 
       
         foreach (var quotation in processQuotations)
         {
-            try
+            await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
-                await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
-                {
-                    Code = await GeneratePurchaseOrderCode(),
-                    SupplierId = quotation.SupplierId,
-                    SourceRequisitionId = quotation.SourceRequisitionId,
-                    RequestDate = DateTime.UtcNow,
-                    Items = quotation.Items
-                }, userId);
-            }
-            catch (Exception)
-            {
-                return Error.NotFound("PurchaseOrder.CodeSettings",
-                    "We could not create a purchase order. PLease check your code settings to ensure one for purchase order exists");
-            }
-           
+                Code = await GeneratePurchaseOrderCode(),
+                SupplierId = quotation.SupplierId,
+                SourceRequisitionId = quotation.SourceRequisitionId ?? supplierQuotations.First(s => s.SupplierId == quotation.SupplierId).SourceRequisitionId,
+                RequestDate = DateTime.UtcNow,
+                Items = quotation.Items
+            }, userId);
         }
 
         foreach (var supplierQuotation in supplierQuotations)

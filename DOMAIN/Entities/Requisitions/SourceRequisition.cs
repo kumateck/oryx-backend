@@ -11,8 +11,6 @@ namespace DOMAIN.Entities.Requisitions;
 public class SourceRequisition : BaseEntity
 {
     [StringLength(100)] public string Code { get; set; }
-    // public Guid RequisitionId { get; set; }
-    // public Requisition Requisition { get; set; }
     public Guid SupplierId { get; set; }
     public Supplier Supplier { get; set; }
     public DateTime? SentQuotationRequestAt { get; set; }
@@ -152,6 +150,6 @@ public class SupplierPrice
 public class ProcessQuotation
 {
     public Guid SupplierId { get; set; }
-    public Guid SourceRequisitionId { get; set; }
+    public Guid? SourceRequisitionId { get; set; }
     public List<CreatePurchaseOrderItemRequest> Items { get; set; } = [];
 }
