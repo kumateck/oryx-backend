@@ -245,9 +245,49 @@ public class OryxMapper : Profile
         CreateMap<CompletedRequisitionItem, RequisitionItemDto>();
         CreateMap<CreateSourceRequisitionRequest, SourceRequisition>();
         CreateMap<CreateSourceRequisitionItemRequest, SourceRequisitionItem>();
-        CreateMap<SourceRequisition, SourceRequisitionDto>(); 
-        CreateMap<SourceRequisition, SupplierQuotationRequest>(); 
         CreateMap<SourceRequisitionItem, SourceRequisitionItemDto>();
+        CreateMap<SourceRequisition, SourceRequisitionDto>()
+            .AfterMap((src, dest, context) =>
+            {
+                // Manually handle grouping inside AfterMap
+                var groupedItems = src.Items
+                    .GroupBy(i => i.Material.Id)
+                    .Select(g => new SourceRequisitionItemDto
+                    {
+                        Id = g.First().Id,  // Keep the first ID (arbitrary, can be changed)
+                        SourceRequisition = context.Mapper.Map<CollectionItemDto>(g.First().SourceRequisition),
+                        Material = context.Mapper.Map<MaterialDto>(g.First().Material),
+                        UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
+                        Quantity = g.Sum(i => i.Quantity), // Sum quantities
+                        Source = g.First().Source,
+                        CreatedAt = g.First().CreatedAt
+                    })
+                    .ToList();
+
+                // Assign the grouped list to the DTO
+                dest.Items = groupedItems;
+            });
+        CreateMap<SourceRequisition, SupplierQuotationRequest>()
+            .AfterMap((src, dest, context) =>
+            {
+                // Manually handle grouping inside AfterMap
+                var groupedItems = src.Items
+                    .GroupBy(i => i.Material.Id)
+                    .Select(g => new SourceRequisitionItemDto
+                    {
+                        Id = g.First().Id,  // Keep the first ID (arbitrary, can be changed)
+                        SourceRequisition = context.Mapper.Map<CollectionItemDto>(g.First().SourceRequisition),
+                        Material = context.Mapper.Map<MaterialDto>(g.First().Material),
+                        UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
+                        Quantity = g.Sum(i => i.Quantity), // Sum quantities
+                        Source = g.First().Source,
+                        CreatedAt = g.First().CreatedAt
+                    })
+                    .ToList();
+
+                // Assign the grouped list to the DTO
+                dest.Items = groupedItems;
+            });
         #endregion
 
         #region Approvals

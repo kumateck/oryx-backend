@@ -677,6 +677,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         }
         
         var supplierQuotationDto = mapper.Map<SupplierQuotationRequest>(sourceRequisition);
+
+        var sourceRequisitionDto = mapper.Map<SourceRequisitionDto>(sourceRequisition);
         
         if (supplierQuotationDto.Items.Count == 0)
         {
@@ -702,10 +704,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             SupplierId = sourceRequisition.SupplierId,
             SourceRequisitionId = sourceRequisition.Id,
-            Items = sourceRequisition.Items.Select(i => new SupplierQuotationItem
+            Items = sourceRequisitionDto.Items.Select(i => new SupplierQuotationItem
             {
-                MaterialId = i.MaterialId,
-                UoMId = i.UoMId,
+                MaterialId = i.Material.Id,
+                UoMId = i.UoM.Id,
                 Quantity = i.Quantity
             }).ToList()
         };

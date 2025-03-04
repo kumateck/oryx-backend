@@ -41,28 +41,7 @@ public class SourceRequisitionDto :  WithAttachment
 {
     public string Code { get; set; }
     public CollectionItemDto Supplier { get; set; }
-    private List<SourceRequisitionItemDto> _items = [];
-    
-    public List<SourceRequisitionItemDto> Items
-    {
-        get
-        {
-            return _items
-                .GroupBy(i => i.Material.Id) // Group by Material ID
-                .Select(g => new SourceRequisitionItemDto
-                {
-                    Id = g.First().Id,  // Keep the first ID (arbitrary, can be changed)
-                    SourceRequisition = g.First().SourceRequisition,
-                    Material = g.First().Material,
-                    UoM = g.First().UoM,
-                    Quantity = g.Sum(i => i.Quantity), // Sum quantities
-                    Source = g.First().Source,
-                    CreatedAt = g.First().CreatedAt
-                })
-                .ToList();
-        }
-        set => _items = value; // Ensure list can be modified externally
-    }
+    public List<SourceRequisitionItemDto> Items { get; set; } = [];
 }
 
 public class SupplierQuotation : BaseEntity
@@ -109,7 +88,7 @@ public class SourceRequisitionItemDto
 {
     public Guid Id { get; set; }
     public CollectionItemDto SourceRequisition { get; set; }
-    public CollectionItemDto Material { get; set; }
+    public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public ProcurementSource Source { get; set; }
