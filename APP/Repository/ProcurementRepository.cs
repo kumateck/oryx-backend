@@ -910,7 +910,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         }
 
         shipmentDocument.ArrivedAt = DateTime.UtcNow;
-        shipmentDocument.ShipmentInvoice.ShipmentArrived = DateTime.UtcNow;
         shipmentDocument.LastUpdatedById = userId;
 
         context.ShipmentDocuments.Update(shipmentDocument);
@@ -1008,7 +1007,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     materialDistributionSection.Items.Add(distributionRequisitionItem);
                 }
 
-                ProcessMaterialDistributions(materialDistributionSection, item.ShipmentInvoiceItems.ToList());
+                ProcessMaterialDistributions(materialDistributionSection, mapper.Map<List<ShipmentInvoiceItemDto>>(item.ShipmentInvoiceItems.ToList()));
                 materialDistribution.Sections.Add(materialDistributionSection);
             }
 
@@ -1116,9 +1115,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 await context.DistributedRequisitionMaterials.AddAsync(distributedRequisitionMaterial);
             }
         }
-        
+
+        var distributions = materialDistribution.Items.SelectMany(i => i.Distributions).ToList();
         var invoiceItems = await context.ShipmentInvoiceItems
-            .Where(si => si.ShipmentInvoiceId == shipmentDocument.ShipmentInvoiceId && !si.Distributed && si.MaterialId == materialId)
+            .Where(si => distributions.Select(d => d.ShipmentInvoiceItem.Id).Contains(si.Id) && !si.Distributed)
             .ToListAsync();
         
         foreach (var item in invoiceItems)
@@ -1126,9 +1126,15 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             item.Distributed = true;
         }
         
-        var allItemsDistributed = shipmentDocument.ShipmentInvoice.Items.All(item => item.Distributed);
+        context.ShipmentInvoiceItems.UpdateRange(invoiceItems);
+        await context.SaveChangesAsync();
 
-        if (allItemsDistributed)
+        
+        var allItemsDistributed = (await context.ShipmentDocuments
+            .Include(s => s.ShipmentInvoice).ThenInclude(si => si.Items)
+            .FirstOrDefaultAsync(s => s.Id == shipmentDocumentId))?.ShipmentInvoice?.Items.All(item => item.Distributed);
+
+        if (allItemsDistributed ?? false)
         {
             shipmentDocument.CompletedDistributionAt = DateTime.UtcNow;
         }
@@ -1347,7 +1353,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     } */
 
     private void ProcessMaterialDistributions(MaterialDistributionSection materialDistributionSection, 
-    List<ShipmentInvoiceItem> shipmentInvoiceItems)
+    List<ShipmentInvoiceItemDto> shipmentInvoiceItems)
     {
         // Step 1: Calculate allocations based on available stock
         var totalRequestedQuantity = materialDistributionSection.Items.Sum(i => i.QuantityRequested);

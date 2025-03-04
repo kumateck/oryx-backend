@@ -17,12 +17,11 @@ public class ShipmentInvoiceDto : BaseDto
 { 
     public string Code { get; set; }
     public SupplierDto Supplier { get; set; }
-    public DateTime? ShipmentArrivedAt { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
     public bool IsAttached { get; set; }
 }
 
-public class ShipmentInvoiceItemDto
+public class ShipmentInvoiceItemDto : BaseDto
 {
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }

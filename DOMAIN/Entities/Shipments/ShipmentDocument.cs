@@ -23,7 +23,6 @@ public class ShipmentInvoice : BaseEntity
     [StringLength(255)] public string Code { get; set; }
     public Guid? SupplierId { get; set; }
     public Supplier Supplier { get; set; }
-    public DateTime? ShipmentArrived { get; set; }
     public List<ShipmentInvoiceItem> Items { get; set; } = [];
 }
 
