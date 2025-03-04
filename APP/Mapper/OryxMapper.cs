@@ -247,6 +247,8 @@ public class OryxMapper : Profile
         CreateMap<CreateSourceRequisitionItemRequest, SourceRequisitionItem>();
         CreateMap<SourceRequisitionItem, SourceRequisitionItemDto>();
         CreateMap<SourceRequisition, SourceRequisitionDto>()
+            .ForMember(dest => dest.Attachments,
+                opt => opt.MapFrom<AttachmentsResolver>())
             .AfterMap((src, dest, context) =>
             {
                 // Manually handle grouping inside AfterMap
@@ -349,14 +351,6 @@ public class OryxMapper : Profile
         CreateMap<CreateDepartmentRequest, Department>();
         CreateMap<UpdateDepartmentRequest, Department>();
         CreateMap<Department, DepartmentDto>();
-
-        #endregion
-
-        #region Attachment
-
-        CreateMap<SourceRequisition, SourceRequisitionDto>()
-            .ForMember(dest => dest.Attachments,
-                opt => opt.MapFrom<AttachmentsResolver>());
 
         #endregion
 
