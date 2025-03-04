@@ -23,7 +23,6 @@ public class ShipmentInvoiceDto : BaseDto
 
 public class ShipmentInvoiceItemDto : BaseDto
 {
-    public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public CollectionItemDto Manufacturer { get; set; }
