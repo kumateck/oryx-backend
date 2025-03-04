@@ -1355,10 +1355,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         foreach (var item in materialDistributionSection.Items)
         {
             // Allocate proportionally based on total available quantity
-            item.QuantityAllocated = (item.QuantityRequested / totalRequestedQuantity) * materialDistributionSection.TotalQuantity;
+            item.QuantityAllocated = Math.Round(item.QuantityRequested / totalRequestedQuantity * materialDistributionSection.TotalQuantity, 2);
 
             // Track the shortfall (for display purposes)
-            item.QuantityRemaining = item.QuantityRequested - item.QuantityAllocated;
+            item.QuantityRemaining = Math.Round(item.QuantityRequested - item.QuantityAllocated, 2);
             if (item.QuantityRemaining < 0)
             {
                 item.QuantityRemaining = 0; // Ensure no negative values
