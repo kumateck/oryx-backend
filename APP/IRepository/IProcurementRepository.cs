@@ -89,5 +89,6 @@ public interface IProcurementRepository
     Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize,
         string searchQuery);
     Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId);
-    Task<Result> ConfirmDistribution(MaterialDistributionSectionRequest section, Guid userId);
+    Task<Result> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId);
+    Task<Result> ConfirmDistribution(Guid shipmentDocumentId);
 }

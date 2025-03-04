@@ -16,6 +16,7 @@ using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions.Request;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 
 namespace APP.Repository;
@@ -43,9 +44,14 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             return Error.Validation("Requisition.Validation",
                 $"A {request.RequisitionType.ToString()} requisition for this production schedule and product with at least one of the materials has already been created");
         }
+
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
         
         var requisition = mapper.Map<Requisition>(request);
         requisition.RequestedById = userId;
+        //requisition.DepartmentId = user.DepartmentId; 
         await context.Requisitions.AddAsync(requisition);
 
         var approvals = await context.Approvals.Include(approval => approval.ApprovalStages)
@@ -492,8 +498,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             {
                 foreach (var groupItem in supplierGroup)
                 {
-                    var existingItem = existingSourceRequisition.Items
-                        .FirstOrDefault(i => i.MaterialId == groupItem.item.MaterialId && i.UoMId == groupItem.item.UoMId);
+                    // var existingItem = existingSourceRequisition.Items
+                    //     .FirstOrDefault(i => i.MaterialId == groupItem.item.MaterialId && i.UoMId == groupItem.item.UoMId);
 
                     existingSourceRequisition.Items.Add(new SourceRequisitionItem
                     {

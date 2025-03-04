@@ -38,14 +38,11 @@ public class DistributedRequisitionMaterial : BaseEntity
     public RequisitionItem RequisitionItem { get; set; }
     public Guid? WarehouseArrivalLocationId { get; set; }
     public WarehouseArrivalLocation WarehouseArrivalLocation { get; set; }
-    public List<ShipmentInvoiceItem> ShipmentInvoiceItems { get; set; } = new();
+    public List<MaterialItemDistribution> MaterialItemDistributions { get; set; } = [];
     public Guid? ShipmentInvoiceId { get; set; }
     public ShipmentInvoice ShipmentInvoice { get; set; }
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
-    public Guid? SupplierId { get; set; }
-    public Supplier Supplier { get; set; }
-    public List<Manufacturer> Manufacturers { get; set; }
     public Guid? UomId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
@@ -54,6 +51,16 @@ public class DistributedRequisitionMaterial : BaseEntity
     public DateTime? CheckedAt { get; set; }
     public DateTime? GrnGeneratedAt { get; set; }
     public DistributedRequisitionMaterialStatus Status { get; set; }
+}
+
+public class MaterialItemDistribution
+{
+    public Guid Id { get; set; }
+    public Guid DistributedRequisitionMaterialId { get; set; }
+    public DistributedRequisitionMaterial DistributedRequisitionMaterial { get; set; }
+    public Guid ShipmentInvoiceItemId { get; set; }
+    public ShipmentInvoiceItem ShipmentInvoiceItem { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 public enum DistributedRequisitionMaterialStatus

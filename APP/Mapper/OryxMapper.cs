@@ -16,6 +16,7 @@ using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
@@ -294,6 +295,7 @@ public class OryxMapper : Profile
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>();
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
+        CreateMap<MaterialItemDistribution, MaterialItemDistributionDto>();
         #endregion
 
         #region BinCardInformation

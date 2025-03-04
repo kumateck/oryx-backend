@@ -409,16 +409,14 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             .ThenInclude(drm => drm.ShipmentInvoice)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
-            .ThenInclude(drm => drm.Manufacturers)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
-            .ThenInclude(drm => drm.Supplier)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(drm => drm.Material)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
-            .ThenInclude(ss=>ss.ShipmentInvoiceItems)
+            .ThenInclude(ss=>ss.MaterialItemDistributions)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(sr=>sr.RequisitionItem)
@@ -439,17 +437,15 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
         {
             var query = context.DistributedRequisitionMaterials
                 .Include(drm => drm.ShipmentInvoice)
-                .Include(drm => drm.Manufacturers)
-                .Include(drm => drm.Supplier)
                 .Include(drm => drm.Material)
-                .Include(drm => drm.ShipmentInvoiceItems)
                 .Include(drm => drm.RequisitionItem)
+                .Include(drm=>drm.MaterialItemDistributions)
                 .Where(drm => drm.WarehouseArrivalLocation.WarehouseId == warehouseId && !drm.Status.Equals(DistributedRequisitionMaterialStatus.GrnGenerated))
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(searchQuery))
             {
-                query = query.WhereSearch(searchQuery, drm => drm.Material.Name, drm => drm.Supplier.Name);
+                query = query.WhereSearch(searchQuery, drm => drm.Material.Name);
             }
 
             return await PaginationHelper.GetPaginatedResultAsync(
@@ -469,10 +465,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var distributedMaterial = await context.DistributedRequisitionMaterials
             .Include(drm => drm.ShipmentInvoice)
-            .Include(drm => drm.Manufacturers)
-            .Include(drm => drm.Supplier)
+            .Include(drm => drm.MaterialItemDistributions)
             .Include(drm => drm.Material)
-            .Include(drm => drm.ShipmentInvoiceItems)
             .Include(drm => drm.RequisitionItem)
             .FirstOrDefaultAsync(drm => drm.Id == id);
 

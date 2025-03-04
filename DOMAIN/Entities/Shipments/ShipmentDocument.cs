@@ -31,8 +31,6 @@ public class ShipmentInvoiceItem : BaseEntity
 {
     public Guid ShipmentInvoiceId { get; set; }
     public ShipmentInvoice ShipmentInvoice { get; set; }
-    public Guid? DistributedRequisitionMaterialId { get; set; }
-    public DistributedRequisitionMaterial DistributedRequisitionMaterial { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid UoMId { get; set; }

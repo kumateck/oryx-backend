@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
@@ -54,15 +55,13 @@ public class DistributedRequisitionMaterialDto
     public RequisitionItemDto RequisitionItem { get; set; }
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto Uom { get; set; }
-    public SupplierDto Supplier { get; set; }
-    public List<ManufacturerDto> Manufacturers { get; set; }
-    public List<ShipmentInvoiceItemDto> ShipmentInvoiceItems { get; set; }
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public decimal Quantity { get; set; }
     public DateTime? ArrivedAt { get; set; }
     public DateTime? CheckedAt { get; set; }
     public DateTime? DistributedAt { get; set; }
     public DateTime? GrnGeneratedAt { get; set; }
+    public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; }
     public DistributedRequisitionMaterialStatus Status { get; set; }
 }
 

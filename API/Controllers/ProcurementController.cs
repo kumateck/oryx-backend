@@ -882,18 +882,29 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetMaterialDistribution(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Confirms the distribution of materials.
+    /// </summary>
+    /// <param name="shipmentDocumentId">The shipment document id for which you want to approve distribution</param>
+    /// <param name="materialId"></param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPost("{shipmentDocumentId}/confirm-distribution/{materialId}")]
+    public async Task<IResult> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId)
+    {
+        var result = await repository.ConfirmDistribution(shipmentDocumentId,materialId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
     
     /// <summary>
     /// Confirms the distribution of materials.
     /// </summary>
-    /// <param name="section">The MaterialDistributionSection object.</param>
+    /// <param name="shipmentDocumentId">The shipment document id for which you want to approve distribution</param>
     /// <returns>Returns success or failure.</returns>
-    [HttpPost("confirm-distribution")]
-    public async Task<IResult> ConfirmDistribution([FromBody] MaterialDistributionSectionRequest section)
+    [HttpPost("{shipmentDocumentId}/confirm-distribution")]
+    public async Task<IResult> ConfirmDistribution(Guid shipmentDocumentId)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        var result = await repository.ConfirmDistribution(section,Guid.Parse(userId));
+        var result = await repository.ConfirmDistribution(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

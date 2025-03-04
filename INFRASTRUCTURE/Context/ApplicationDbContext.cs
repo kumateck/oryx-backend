@@ -72,6 +72,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialBatchEvent> MaterialBatchEvents { get; set; }
     public DbSet<MassMaterialBatchMovement> MassMaterialBatchMovements { get; set; }
     public DbSet<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
+    public DbSet<MaterialItemDistribution> MaterialItemDistributions { get; set; }
     
     #endregion
 
@@ -381,6 +382,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Warehouse>().Navigation(p => p.Locations).AutoInclude();
         modelBuilder.Entity<WarehouseLocation>().Navigation(p => p.Racks).AutoInclude();
         modelBuilder.Entity<WarehouseLocationRack>().Navigation(p => p.Shelves).AutoInclude();
+        modelBuilder.Entity<MaterialItemDistribution>().Navigation(p => p.ShipmentInvoiceItem).AutoInclude();
 
         #endregion
         
@@ -608,6 +610,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             a => !a.DeletedAt.HasValue && !a.WarehouseLocationRack.DeletedAt.HasValue);
         modelBuilder.Entity<WarehouseArrivalLocation>().HasQueryFilter(
             a => !a.DeletedAt.HasValue && !a.Warehouse.DeletedAt.HasValue);
+        
+        modelBuilder.Entity<MaterialItemDistribution>().HasQueryFilter(
+            a => a.ShipmentInvoiceItem != null);
 
         #endregion
 
