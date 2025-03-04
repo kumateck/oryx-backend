@@ -622,19 +622,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
     
-    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationRequest>>>> GetSuppliersWithSourceRequisitionItems(int page, int pageSize, ProcurementSource source, bool sent)
+    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationRequest>>>> GetSuppliersWithSourceRequisitionItems(int page, int pageSize, SupplierType source, bool sent)
     {
         // Base query
         var query = context.SourceRequisitions
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
+            .Where(sr => sr.Supplier.Type == source)
             .AsQueryable();
 
         query = sent 
             ?  query.Where(s => s.SentQuotationRequestAt != null) 
             : query.Where(s => s.SentQuotationRequestAt == null);
-
+        
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,

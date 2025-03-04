@@ -229,7 +229,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <summary>
     /// Retrieves a paginated list of suppliers with their associated source requisition items.
     /// </summary>
-    /// <param name="source">The source of the requisition. (example Local, Foreign, Internal)</param>
+    /// <param name="source">The source of the requisition. (example Local, Foreign)</param>
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="sent">Filter by whether a quotation has been sent.</param>
@@ -237,7 +237,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [HttpGet("source/supplier")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationDto>>))]
-    public async Task<IResult> GetSuppliersWithSourceRequisitionItems([FromQuery] ProcurementSource source,
+    public async Task<IResult> GetSuppliersWithSourceRequisitionItems([FromQuery] SupplierType source,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] bool sent = false)

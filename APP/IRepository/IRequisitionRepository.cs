@@ -29,7 +29,7 @@ public interface IRequisitionRepository
     Task<Result> DeleteSourceRequisition(Guid sourceRequisitionId);
 
     Task<Result<Paginateable<IEnumerable<SupplierQuotationRequest>>>> GetSuppliersWithSourceRequisitionItems(int page,
-        int pageSize,  ProcurementSource source, bool sent);
+        int pageSize, SupplierType source, bool sent);
 
    Task<Result<SupplierQuotationRequest>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
 

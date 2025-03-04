@@ -33,8 +33,7 @@ public class SourceRequisitionItem : BaseEntity
 public enum ProcurementSource
 {
     Foreign,
-    Local,
-    Internal
+    Local
 }
 
 
