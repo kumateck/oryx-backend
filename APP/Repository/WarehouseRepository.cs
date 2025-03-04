@@ -5,7 +5,9 @@ using AutoMapper;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
 using INFRASTRUCTURE.Context;
@@ -813,8 +815,45 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             mapper.Map<WarehouseLocationShelfDto>
         );
     }
-    
-    
+
+    public async Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId)
+    {
+
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+
+        var warehouses = await context.Warehouses.Where(w => w.DepartmentId == user.DepartmentId).ToListAsync();
+
+        var rawMaterialWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.RawMaterialStorage);
+
+        var packageMaterialWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.PackagedStorage);
+        
+        var query = context.DistributedRequisitionMaterials
+            .Include(drm => drm.ShipmentInvoice)
+            .Include(drm => drm.Material)
+            .Include(drm => drm.RequisitionItem)
+            .Include(drm => drm.WarehouseArrivalLocation)
+            .Include(drm=>drm.MaterialItemDistributions)
+            .Where(drm => !drm.Status.Equals(DistributedRequisitionMaterialStatus.GrnGenerated))
+            .AsQueryable();
+
+        query = kind == MaterialKind.Raw
+            ? query.Where(q => q.WarehouseArrivalLocation.WarehouseId == rawMaterialWarehouse.Id)
+            : query.Where(q => q.WarehouseArrivalLocation.WarehouseId == packageMaterialWarehouse.Id);
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, drm => drm.Material.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<DistributedRequisitionMaterialDto>
+        );
+    }
 }
     
     

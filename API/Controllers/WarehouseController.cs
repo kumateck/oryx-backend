@@ -4,6 +4,7 @@ using APP.Utils;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
@@ -388,6 +389,23 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     public async Task<IResult> GetDistributedRequisitionMaterials(Guid warehouseId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetDistributedRequisitionMaterials(warehouseId, page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
+    /// </summary>
+    [HttpGet("distributed-requisition-materials")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributedRequisitionMaterials([FromQuery] MaterialKind kind,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetDistributedRequisitionMaterials(page, pageSize, searchQuery, kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

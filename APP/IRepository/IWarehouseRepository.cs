@@ -2,6 +2,7 @@ using APP.Utils;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
@@ -61,5 +62,8 @@ public interface IWarehouseRepository
     
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialBatchId);
-    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize, string searchQuery,Guid warehouseId);
+
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize,
+        string searchQuery, Guid warehouseId);
+    Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
 }
