@@ -47,7 +47,7 @@ public class UserController(IUserRepository repo) : ControllerBase
     }
     
     [Authorize]
-    [HttpGet]
+    [HttpGet("authenticated")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetUser()
