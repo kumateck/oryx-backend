@@ -16,7 +16,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) : IWarehouseRepository
+public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository) : IWarehouseRepository
 {
     public async Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request, Guid userId)
     {
@@ -477,8 +477,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             return Error.NotFound("DistributedRequisitionMaterial.NotFound", "Distributed requisition material not found");
         }
 
-        var distributedMaterialDto = mapper.Map<DistributedRequisitionMaterialDto>(distributedMaterial);
-        return Result.Success(distributedMaterialDto);
+        return mapper.Map<DistributedRequisitionMaterialDto>(distributedMaterial);
     }
     
     public async Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request)
@@ -536,9 +535,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var checklist = mapper.Map<Checklist>(request);
         checklist.CreatedById = userId;
-        checklist.MaterialBatches.ForEach(mb => mb.CreatedById = userId);
-        checklist.MaterialBatches.ForEach(mb => mb.SampleWeights.ForEach(sw=>sw.CreatedById = userId));
         await context.Checklists.AddAsync(checklist);
+        
+        request.MaterialBatches.ForEach(mb => mb.ChecklistId = checklist.Id);
+        await materialRepository.CreateMaterialBatch(request.MaterialBatches, userId);
 
         var distributedMaterial = await context.DistributedRequisitionMaterials
             .FirstOrDefaultAsync(dm => dm.Id == request.DistributedRequisitionMaterialId);

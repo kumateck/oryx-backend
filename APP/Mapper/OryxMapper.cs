@@ -420,7 +420,9 @@ public class OryxMapper : Profile
 
         CreateMap<Checklist, ChecklistDto>();
         CreateMap<Checklist, BatchChecklistDto>();
-        CreateMap<CreateChecklistRequest, Checklist>();
+        CreateMap<CreateChecklistRequest, Checklist>()
+            .ForMember(dest => dest.MaterialBatches,
+                opt => opt.Ignore());
 
         #endregion
         

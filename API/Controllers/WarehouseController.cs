@@ -410,7 +410,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    /// <summary>
+    /*/// <summary>
     /// Retrieves a distributed requisition material by its id
     /// </summary>
     [HttpGet("distributed-requisition-materials/{id}")]
@@ -424,7 +424,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         
         var result = await repository.GetDistributedRequisitionMaterialById(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
+    }*/
     
     /// <summary>
     /// Retrieves the details of a specific distributed requisition material by its ID.

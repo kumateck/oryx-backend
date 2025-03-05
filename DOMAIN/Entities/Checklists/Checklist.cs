@@ -40,7 +40,7 @@ public class ChecklistDto
     public bool VisibleLabelling { get; set; }
     public Intactness IntactnessStatus { get; set; }
     public ConsignmentCarrier ConsignmentCarrierStatus { get; set; }
-    public List<MaterialBatchDto> MaterialBatches { get; set; }
+    public List<MaterialBatchDto> MaterialBatches { get; set; } = [];
 }
 
 public class CreateChecklistRequest
