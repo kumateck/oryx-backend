@@ -415,7 +415,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// </summary>
     [HttpGet("distributed-requisition-materials/{id}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DistributedRequisitionMaterialDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDistributedRequisitionMaterials(Guid id)
     {
