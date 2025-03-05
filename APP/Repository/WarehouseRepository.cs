@@ -827,7 +827,14 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
 
         var rawMaterialWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.RawMaterialStorage);
 
+        if (rawMaterialWarehouse is null)
+            return Error.NotFound("Warehouse.Raw", "This user has no raw material configured for his department");
+
         var packageMaterialWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.PackagedStorage);
+        
+        if (packageMaterialWarehouse is null)
+            return Error.NotFound("Warehouse.Package", "This user has no packaging material configured for his department");
+
         
         var query = context.DistributedRequisitionMaterials
             .Include(drm => drm.ShipmentInvoice)

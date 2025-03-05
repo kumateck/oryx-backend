@@ -491,6 +491,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Equipment>().Navigation(p => p.UoM).AutoInclude();
 
         #endregion
+
+        #region ShipmentInvoice
+
+        modelBuilder.Entity<ShipmentInvoiceItem>().Navigation(p => p.Manufacturer).AutoInclude();
+
+        #endregion
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
