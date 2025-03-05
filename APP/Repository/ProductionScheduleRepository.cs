@@ -629,11 +629,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("User.Department", "User has no association to any department");
         
         if(user.Department.Warehouses.Count == 0)
-            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
+            return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
         
         var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
         if (warehouse is null)
-            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
+            return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
 
         var sourceRequisitionItems = new List<SourceRequisitionItem>();
 
@@ -741,11 +741,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("User.Department", "User has no association to any department");
         
         if(user.Department.Warehouses.Count == 0)
-            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
+            return Error.NotFound("User.Warehouse", "No package material warehouse is associated with current user");
         
-        var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
+        var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
         if (warehouse is null)
-            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
+            return Error.NotFound("User.Warehouse", "No package material warehouse is associated with current user");
         
         var sourceRequisitionItems = new List<SourceRequisitionItem>();
 
