@@ -379,18 +379,19 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    /// <summary>
+    /*/// <summary>
     /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
     /// </summary>
     [HttpGet("{warehouseId}/distributed-requisition-materials")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetDistributedRequisitionMaterials(Guid warehouseId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetDistributedRequisitionMaterials( Guid warehouseId,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetDistributedRequisitionMaterials(warehouseId, page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
+    }*/
     
     /// <summary>
     /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
@@ -406,6 +407,22 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetDistributedRequisitionMaterials(page, pageSize, searchQuery, kind, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a distributed requisition material by its id
+    /// </summary>
+    [HttpGet("distributed-requisition-materials/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributedRequisitionMaterials(Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetDistributedRequisitionMaterialById(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

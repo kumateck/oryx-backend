@@ -861,6 +861,18 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper) :
             mapper.Map<DistributedRequisitionMaterialDto>
         );
     }
+
+    public async Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialsById(
+        Guid distributedMaterialId)
+    {
+        return mapper.Map<DistributedRequisitionMaterialDto>(await context.DistributedRequisitionMaterials
+            .Include(drm => drm.ShipmentInvoice)
+            .Include(drm => drm.Material)
+            .Include(drm => drm.RequisitionItem)
+            .Include(drm => drm.WarehouseArrivalLocation)
+            .Include(drm => drm.MaterialItemDistributions)
+            .FirstOrDefaultAsync(drm => drm.Id == distributedMaterialId));
+    }
 }
     
     
