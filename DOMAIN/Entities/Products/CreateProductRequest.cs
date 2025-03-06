@@ -25,4 +25,5 @@ public class CreateProductRequest
     public Guid? BaseUomId { get; set; }
     public decimal BasePackingQuantity { get; set; } 
     public Guid? BasePackingUomId { get; set; }
+    public Guid? DepartmentId { get; set; }
 }

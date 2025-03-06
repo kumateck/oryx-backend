@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Products.Equipments;
 using SHARED;
 
@@ -27,5 +28,6 @@ public class ProductListDto
     public UnitOfMeasureDto BaseUoM { get; set; }
     public UnitOfMeasureDto BasePackingUoM { get; set; }
     public EquipmentDto Equipment { get; set; }
+    public DepartmentDto Department { get; set; }
     public DateTime CreatedAt { get; set; }
 }

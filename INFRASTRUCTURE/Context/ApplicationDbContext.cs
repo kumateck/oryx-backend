@@ -397,6 +397,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Product>().Navigation(p => p.BaseUoM).AutoInclude();
         modelBuilder.Entity<Product>().Navigation(p => p.BasePackingUoM).AutoInclude();
         modelBuilder.Entity<Product>().Navigation(p => p.Equipment).AutoInclude();
+        modelBuilder.Entity<Product>().Navigation(p => p.Department).AutoInclude();
         modelBuilder.Entity<FinishedProduct>().Navigation(fp => fp.UoM).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Material).AutoInclude();
         modelBuilder.Entity<ProductBillOfMaterial>().Navigation(pbm => pbm.BillOfMaterial).AutoInclude();
@@ -507,10 +508,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #endregion
 
         #region Product Filters
-        modelBuilder.Entity<Product>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
-        modelBuilder.Entity<ProductPackage>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<Product>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && entity.DepartmentId == currentUserService.DepartmentId);
+        modelBuilder.Entity<ProductPackage>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
-        modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity => !entity.DeletedAt.HasValue &&  entity.Product != null && !entity.Product.DeletedAt.HasValue);
         #endregion
 
         #region Material Filters
@@ -535,9 +536,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #endregion
 
         #region BoM Filters
-        modelBuilder.Entity<BillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<BillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue &&  entity.Product != null && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.BillOfMaterial.DeletedAt.HasValue);
-        modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductBillOfMaterial>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<BillOfMaterialItem>().HasQueryFilter(entity => entity.Material != null);
         #endregion
 
@@ -561,11 +562,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region MasterProductionSchedule Filters
         modelBuilder.Entity<MasterProductionSchedule>()
-            .HasQueryFilter(mps => !mps.Product.DeletedAt.HasValue);
+            .HasQueryFilter(mps => mps.Product != null && !mps.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionSchedule>()
             .HasQueryFilter(mps => !mps.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionScheduleProduct>()
-            .HasQueryFilter(mps => !mps.Product.DeletedAt.HasValue);
+            .HasQueryFilter(mps => mps.Product != null && !mps.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionScheduleItem>()
             .HasQueryFilter(mps => !mps.ProductionSchedule.DeletedAt.HasValue);
         #endregion
@@ -681,10 +682,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Production
 
-        modelBuilder.Entity<BatchManufacturingRecord>().HasQueryFilter(a => !a.Product.DeletedAt.HasValue);
-        modelBuilder.Entity<BatchPackagingRecord>().HasQueryFilter(a => !a.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<BatchManufacturingRecord>().HasQueryFilter(a => a.Product != null && !a.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<BatchPackagingRecord>().HasQueryFilter(a => a.Product != null && !a.Product.DeletedAt.HasValue);
         
-        modelBuilder.Entity<ProductionActivity>().HasQueryFilter(a => !a.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionActivity>().HasQueryFilter(a => /*a.Product != null && */!a.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(a => !a.Operation.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityStepResource>().HasQueryFilter(a => !a.Resource.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityStepWorkCenter>().HasQueryFilter(a => !a.WorkCenter.DeletedAt.HasValue);
