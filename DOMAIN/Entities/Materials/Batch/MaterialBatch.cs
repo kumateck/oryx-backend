@@ -4,6 +4,7 @@ using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 
@@ -19,6 +20,10 @@ public class MaterialBatch : BaseEntity
     [StringLength(10000)] public string BatchNumber { get; set; }
     public Guid? GrnId { get; set; }
     public Grn Grn { get; set; }
+    public int NumberOfContainers { get; set; }
+    public Guid? ContainerUoMId { get; set; }
+    public UnitOfMeasure ContainerUoM { get; set; }
+    public decimal QuantityPerContainer { get; set; }
     public decimal QuantityAssigned { get; set; }
     public decimal QuantityUnassigned => TotalQuantity - QuantityAssigned;
     public decimal TotalQuantity { get; set; }  
@@ -65,6 +70,19 @@ public class MaterialBatchEvent : BaseEntity
 {
     public Guid BatchId { get; set; }            
     public MaterialBatch Batch { get; set; }     
+    public decimal Quantity { get; set; }     
+    public Guid UserId { get; set; }       
+    public User User { get; set; } 
+    public EventType Type { get; set; }
+    public Guid? ConsumptionWarehouseId { get; set; }
+    public Warehouse ConsumptionWarehouse { get; set; }
+    public DateTime? ConsumedAt { get; set; }
+}
+
+public class FinishedProductBatchEvent : BaseEntity
+{
+    public Guid BatchId { get; set; }            
+    public FinishedProduct Batch { get; set; }     
     public decimal Quantity { get; set; }     
     public Guid UserId { get; set; }       
     public User User { get; set; } 

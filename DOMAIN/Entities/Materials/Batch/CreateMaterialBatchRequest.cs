@@ -9,6 +9,9 @@ public class CreateMaterialBatchRequest
     public decimal TotalQuantity { get; set; }             // Quantity of the material batch
     public string BatchNumber { get; set; }      // Batch number of the material
     public DateTime? ManufacturingDate { get; set; }
+    public int NumberOfContainers { get; set; }
+    public Guid? ContainerUoMId { get; set; }
+    public decimal QuantityPerContainer { get; set; }
     public Guid? ChecklistId { get; set; }
     public Guid? UoMId { get; set; }               // ID of the unit of measure for the quantity
     public Guid InitialLocationId { get; set; }  // ID of the location where the batch is first stored (e.g., warehouse)
