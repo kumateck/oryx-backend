@@ -19,6 +19,7 @@ public class CreateGrnRequest
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
     [StringLength(10000)]public string GrnNumber { get; set; }
+    public List<Guid> MaterialBatchIds { get; set; }
 }
 
 public class GrnDto
