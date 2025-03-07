@@ -379,6 +379,19 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetShelvesByMaterialBatchId(page, pageSize, searchQuery, warehouseId, materialBatchId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a paginated list of shelves in a warehouse location rack.
+    /// </summary>
+    [HttpGet("rack/{rackId}/shelves")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetShelvesByRackId(Guid rackId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetShelvesByRackId(page, pageSize, searchQuery, rackId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a paginated list of all shelves in a warehouse.
