@@ -521,7 +521,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return Error.NotFound("MaterialBatch.NotFound", "Material batch not found.");
         }
 
-        materialBatch.Status = BatchStatus.Available;
+        materialBatch.Status = BatchStatus.Approved;
         materialBatch.DateApproved = DateTime.UtcNow;
 
         context.MaterialBatches.Update(materialBatch);
@@ -752,6 +752,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.BinCardInformation.AddAsync(binCardEvent);
 
         materialBatch.QuantityAssigned = totalQuantityToAssign;
+        
+        if(materialBatch.QuantityAssigned >= materialBatch.TotalQuantity)
+        {
+            materialBatch.Status = BatchStatus.Available;
+        }
 
         await context.SaveChangesAsync();
         return Result.Success();

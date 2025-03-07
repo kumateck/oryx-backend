@@ -63,7 +63,8 @@ public enum BatchStatus
     Rejected,
     Retest,
     Frozen,
-    Consumed
+    Consumed,
+    Approved
 }
 
 public class MaterialBatchEvent : BaseEntity
