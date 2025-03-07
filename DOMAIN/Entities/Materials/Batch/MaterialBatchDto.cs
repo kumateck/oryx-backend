@@ -81,7 +81,7 @@ public class MassMaterialBatchMovementDto : BaseDto
 
 public class BatchLocation
 {
-    public WareHouseLocationDto ConsumptionLocation { get; set; }
+    public WarehouseDto ConsumptionLocation { get; set; }
     public MaterialBatchDto Batch { get; set; }
 }
 public class CurrentLocation

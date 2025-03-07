@@ -979,7 +979,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 // Add batch to the result list
                 result.Add(new BatchLocation
                 {
-                    ConsumptionLocation = mapper.Map<WareHouseLocationDto>(currentLocation.Location),
+                    ConsumptionLocation = mapper.Map<WarehouseDto>(currentLocation.Location),
                     Batch = mapper.Map<MaterialBatchDto>(batch)
                 });
 
