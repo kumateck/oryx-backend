@@ -31,6 +31,7 @@ public interface IWarehouseRepository
     Task<Result<WarehouseLocationRackDto>> GetWarehouseLocationRack(Guid rackId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page,
         int pageSize, string searchQuery);
+    Task<Result<List<WarehouseLocationRackDto>>> GetWarehouseLocationRacks(MaterialKind kind, Guid userId);
     Task<Result> UpdateWarehouseLocationRack(CreateWarehouseLocationRackRequest request, Guid rackId,
         Guid userId); 
     Task<Result> DeleteWarehouseLocationRack(Guid rackId, Guid userId);
@@ -39,6 +40,8 @@ public interface IWarehouseRepository
     Task<Result<WarehouseLocationShelfDto>> GetWarehouseLocationShelf(Guid shelfId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetWarehouseLocationShelves(
         int page, int pageSize, string searchQuery);
+    Task<Result<List<WarehouseLocationShelfDto>>> GetWarehouseLocationShelves(MaterialKind kind,
+        Guid userId);
     Task<Result> UpdateWarehouseLocationShelf(CreateWarehouseLocationShelfRequest request, Guid shelfId,
         Guid userId);
     Task<Result> DeleteWarehouseLocationShelf(Guid shelfId, Guid userId);

@@ -61,5 +61,6 @@ public enum MaterialRequisitionStatus
     Local = 3,
     Foreign= 4,
     StockRequisition = 5,
-    Issued = 6
+    Issued = 6,
+    InHouse = 7
 }

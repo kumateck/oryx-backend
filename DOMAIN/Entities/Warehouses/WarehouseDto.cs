@@ -2,8 +2,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Distribution;
-using DOMAIN.Entities.Procurement.Manufacturers;
-using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using SHARED;

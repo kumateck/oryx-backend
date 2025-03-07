@@ -267,6 +267,30 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             mapper.Map<WarehouseLocationRackDto>
         );
     }
+    
+    public async Task<Result<List<WarehouseLocationRackDto>>> GetWarehouseLocationRacks(MaterialKind kind, Guid userId)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+
+        var warehouse = kind == MaterialKind.Raw ? user.GetUserRawWarehouse() : user.GetUserPackagingWarehouse();
+
+        if (warehouse is null)
+            return UserErrors.WarehouseNotFound(kind);
+        
+        var query = await context.WarehouseLocationRacks
+            .Include(r => r.WarehouseLocation)
+            .Include(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
+            .Where(r => r.WarehouseLocation.WarehouseId == warehouse.Id)
+            .ToListAsync();
+
+
+        return mapper.Map<List<WarehouseLocationRackDto>>(query);
+    }
 
 
     public async Task<Result> UpdateWarehouseLocationRack(CreateWarehouseLocationRackRequest request, Guid rackId, Guid userId)
@@ -363,6 +387,29 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             pageSize,
             mapper.Map<WarehouseLocationShelfDto>
         );
+    }
+    
+    public async Task<Result<List<WarehouseLocationShelfDto>>> GetWarehouseLocationShelves(MaterialKind kind, Guid userId)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+
+        var warehouse = kind == MaterialKind.Raw ? user.GetUserRawWarehouse() : user.GetUserPackagingWarehouse();
+
+        if (warehouse is null)
+            return UserErrors.WarehouseNotFound(kind);
+        
+        var query =  await context.WarehouseLocationShelves
+            .Include(s => s.WarehouseLocationRack)
+            .ThenInclude(s => s.WarehouseLocation).ThenInclude(s => s.Warehouse)
+            .Include(w=>w.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Material)
+            .Where(s => s.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id)
+            .ToListAsync();
+
+        return mapper.Map<List<WarehouseLocationShelfDto>>(query);
     }
 
     public async Task<Result> UpdateWarehouseLocationShelf(CreateWarehouseLocationShelfRequest request, Guid shelfId, Guid userId)

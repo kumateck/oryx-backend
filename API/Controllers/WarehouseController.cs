@@ -213,6 +213,21 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetWarehouseLocationRacks(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of racks in warehouse locations for logged-in user.
+    /// </summary>
+    [HttpGet("rack/by-department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<WarehouseLocationRackDto>))]
+    public async Task<IResult> GetWarehouseLocationRacks([FromQuery] MaterialKind kind)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetWarehouseLocationRacks(kind, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates an existing warehouse location rack.
@@ -288,6 +303,21 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     public async Task<IResult> GetWarehouseLocationShelves([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetWarehouseLocationShelves(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of shelves in warehouse locations.
+    /// </summary>
+    [HttpGet("shelf/by-department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<WarehouseLocationShelfDto>))]
+    public async Task<IResult> GetWarehouseLocationShelves([FromQuery] MaterialKind kind)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetWarehouseLocationShelves(kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

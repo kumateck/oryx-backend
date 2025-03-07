@@ -675,7 +675,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                  BaseQuantity = item.BaseQuantity,
                  QuantityNeeded = quantityNeeded,
                  QuantityOnHand = quantityOnHand,
-                 Status = GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                 Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                  Batches = batchResult.IsSuccess ? batchResult.Value : []
              };
          }).ToList();
@@ -1129,18 +1129,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
 
         var materialStockDetails =
-            await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, null, userId);
+            await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, MaterialRequisitionStatus.None, userId);
         
         if (!materialStockDetails.IsSuccess)
         {
             return materialStockDetails.Error;
         }
 
-        var insufficientMaterials = materialStockDetails.Value
-            .Where(m => m.Status == MaterialRequisitionStatus.None)
-            .ToList();
-
-        return insufficientMaterials;
+        return materialStockDetails.Value;
     }
     
     public async Task<Result<List<ProductionScheduleProcurementPackageDto>>> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId, Guid userId)
