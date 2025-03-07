@@ -294,8 +294,21 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success(result);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page, int pageSize, Guid materialId, Guid warehouseId)
+    public async Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page, int pageSize, Guid materialId, Guid userId)
     {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+
+        var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
+        if (material is null)
+            return MaterialErrors.NotFound(materialId);
+
+        var warehouse = material.Kind == MaterialKind.Raw ? user.GetUserRawWarehouse() : user.GetUserPackagingWarehouse();
+
+        if (warehouse is null)
+            return UserErrors.WarehouseNotFound(material.Kind);
+        
         var query = context.ShelfMaterialBatches
             .AsSplitQuery()
             .Include(m=>m.WarehouseLocationShelf)
@@ -303,7 +316,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ThenInclude(mb=>mb.Checklist)
             .ThenInclude(cl=>cl.Manufacturer)
             .Where(m => m.MaterialBatch.MaterialId == materialId
-                        && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId && m.MaterialBatch.Status==BatchStatus.Available)
+                        && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouse.Id && m.MaterialBatch.Status==BatchStatus.Available)
             .OrderBy(m=>m.MaterialBatch.ExpiryDate)
             .AsQueryable();
 

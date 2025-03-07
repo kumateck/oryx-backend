@@ -407,7 +407,6 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="materialId">The ID of the material.</param>
-    /// <param name="warehouseId">The ID of the warehouse.</param>
     /// <param name="searchQuery">Search material</param>
     /// <returns>Returns a paginated list of material batches.</returns>
     [HttpGet("{materialId}/batches/v2")]
@@ -415,9 +414,12 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShelfMaterialBatchDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialBatchesByMaterialIdV2([FromRoute] Guid materialId, [FromQuery] Guid warehouseId,[FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetMaterialBatchesByMaterialIdV2([FromRoute] Guid materialId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize,  materialId, warehouseId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize,  materialId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

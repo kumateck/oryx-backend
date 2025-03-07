@@ -47,7 +47,7 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid userId);
 
     Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page,
-        int pageSize, Guid materialId, Guid warehouseId);
+        int pageSize, Guid materialId, Guid userId);
     Task<List<MaterialStockByWarehouseDto>> GetStockByWarehouse(Guid materialId);
     Task<List<MaterialStockByDepartmentDto>> GetStockByDepartment(Guid materialId);
 }
