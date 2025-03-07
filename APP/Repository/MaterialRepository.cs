@@ -727,8 +727,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             };
             
             await context.MaterialBatchEvents.AddAsync(batchEvent);
-
-            
         }
 
         var warehouse = await context.Warehouses
@@ -751,7 +749,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         
         await context.BinCardInformation.AddAsync(binCardEvent);
 
-        materialBatch.QuantityAssigned = totalQuantityToAssign;
+        materialBatch.QuantityAssigned += totalQuantityToAssign;
         
         if(materialBatch.QuantityAssigned >= materialBatch.TotalQuantity)
         {

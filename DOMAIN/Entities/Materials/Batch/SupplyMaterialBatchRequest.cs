@@ -1,5 +1,3 @@
-using DOMAIN.Entities.Warehouses;
-
 namespace DOMAIN.Entities.Materials.Batch;
 
 public class SupplyMaterialBatchRequest
