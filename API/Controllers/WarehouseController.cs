@@ -307,7 +307,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
     
     /// <summary>
-    /// Retrieves a paginated list of shelves in warehouse locations.
+    /// Retrieves a list of shelves in warehouse locations by department.
     /// </summary>
     [HttpGet("shelf/by-department")]
     [Authorize]

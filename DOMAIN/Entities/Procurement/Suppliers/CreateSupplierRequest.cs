@@ -18,4 +18,5 @@ public class CreateSupplierManufacturerRequest
 {
     public Guid ManufacturerId { get; set; }
     public Guid? MaterialId { get; set; }
+    public decimal QuantityPerPack { get; set; }
 }

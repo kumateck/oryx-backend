@@ -386,16 +386,18 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
-    /// <param name="warehouseId">The ID of the warehouse.</param>
     /// <returns>Returns a paginated list of approved raw materials.</returns>
     [HttpGet("approved-raw-materials")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetApprovedRawMaterials([FromQuery] Guid warehouseId,[FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetApprovedRawMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetApprovedRawMaterials(page, pageSize, searchQuery, warehouseId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetApprovedRawMaterials(page, pageSize, searchQuery, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

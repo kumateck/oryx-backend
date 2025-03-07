@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using SHARED;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Http;
 using OfficeOpenXml;
@@ -231,14 +232,23 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return batches;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid warehouseId)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid userId)
     {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+
+        var warehouse =  user.GetUserRawWarehouse();
+
+        if (warehouse is null)
+            return UserErrors.WarehouseNotFound(MaterialKind.Raw);
+        
         var query = context.ShelfMaterialBatches
             .AsSplitQuery()
             .Include(m => m.MaterialBatch)
             .ThenInclude(mb => mb.Material)
             .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-            .Where(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId && m.MaterialBatch.Status == BatchStatus.Available)
+            .Where(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id && m.MaterialBatch.Status == BatchStatus.Available)
             .Select(m => m.MaterialBatch.Material)
             .Distinct()
             .AsQueryable();
@@ -259,7 +269,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         //gets only those assigned to shelf locations
         var totalAvailableQuantities = await context.ShelfMaterialBatches
             .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-            .Where(smb => materialIds.Contains(smb.MaterialBatch.MaterialId) && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId && smb.MaterialBatch.Status==BatchStatus.Available)
+            .Where(smb => materialIds.Contains(smb.MaterialBatch.MaterialId) && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id && smb.MaterialBatch.Status==BatchStatus.Available)
             .GroupBy(smb => smb.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(smb => smb.Quantity) })
             .ToListAsync();
