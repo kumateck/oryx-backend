@@ -767,6 +767,30 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             mapper.Map<WarehouseLocationShelfDto>
         );
     }
+    
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByRackId(int page, int pageSize, string searchQuery, Guid rackId)
+    {
+        var query = context.WarehouseLocationShelves
+            .Include(s => s.WarehouseLocationRack)
+            .ThenInclude(r => r.WarehouseLocation)
+            .Include(s => s.MaterialBatches)
+            .ThenInclude(smb => smb.MaterialBatch)
+            .ThenInclude(mb => mb.Material)
+            .Where(s => s.WarehouseLocationRackId == rackId)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, s => s.Name, s => s.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<WarehouseLocationShelfDto>
+        );
+    }
 
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialBatchId)
     {
