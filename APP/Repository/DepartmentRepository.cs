@@ -103,11 +103,17 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             : mapper.Map<DepartmentDto>(department);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> GetDepartments(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> GetDepartments(int page, int pageSize, string searchQuery, DepartmentType? type)
     {
         var query = context.Departments
+            .AsSplitQuery()
             .Include(d => d.Warehouses)
             .AsQueryable();
+        
+        if (type.HasValue)
+        {
+            query = query.Where(d => d.Type == type);
+        }
 
         if (!string.IsNullOrEmpty(searchQuery))
         {

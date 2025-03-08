@@ -51,13 +51,14 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="type">The type of the department. (Product or Non Product Department)</param>
     /// <returns>Returns a paginated list of departments.</returns>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentDto>>))]
-    public async Task<IResult> GetDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] DepartmentType? type = null)
     {
-        var result = await repository.GetDepartments(page, pageSize, searchQuery);
+        var result = await repository.GetDepartments(page, pageSize, searchQuery, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

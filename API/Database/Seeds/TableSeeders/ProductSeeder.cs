@@ -1,3 +1,4 @@
+/*
 using DOMAIN.Entities.Products;
 using INFRASTRUCTURE.Context;
 
@@ -56,3 +57,4 @@ public class ProductSeeder : ISeeder
         dbContext.SaveChanges();
     }
 }
+*/

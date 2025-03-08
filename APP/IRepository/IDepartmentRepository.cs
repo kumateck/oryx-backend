@@ -11,7 +11,7 @@ public interface IDepartmentRepository
 
     Task<Result<DepartmentDto>> GetDepartment(Guid departmentId);
 
-    Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> GetDepartments(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> GetDepartments(int page, int pageSize, string searchQuery, DepartmentType? type);
 
     Task<Result> UpdateDepartment(CreateDepartmentRequest request, Guid departmentId, Guid userId);
 
