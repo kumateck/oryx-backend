@@ -595,32 +595,32 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
         
-         var materialDetails = activeBoM.BillOfMaterial.Items.Select(item =>
-         {
-             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
-             var quantityNeeded =
-                 CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BaseQuantity);
-             var batchResult = materialRepository.BatchesNeededToBeConsumed(item.MaterialId, warehouse.Id,
-                 quantityNeeded);
+        var materialDetails = activeBoM.BillOfMaterial.Items.Select(item =>
+        {
+            var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
+            var quantityNeeded =
+                CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BaseQuantity);
+            var batchResult = materialRepository.BatchesNeededToBeConsumed(item.MaterialId, warehouse.Id,
+                quantityNeeded);
 
-             return new ProductionScheduleProcurementDto
-             {
-                 Material = mapper.Map<MaterialDto>(item.Material),
-                 BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
-                 BaseQuantity = item.BaseQuantity,
-                 QuantityNeeded = quantityNeeded,
-                 QuantityOnHand = quantityOnHand,
-                 Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
-                 Batches = batchResult.IsSuccess ? batchResult.Value : []
-             };
-         }).ToList();
+            return new ProductionScheduleProcurementDto
+            {
+                Material = mapper.Map<MaterialDto>(item.Material),
+                BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
+                BaseQuantity = item.BaseQuantity,
+                QuantityNeeded = quantityNeeded,
+                QuantityOnHand = quantityOnHand,
+                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                Batches = batchResult.IsSuccess ? batchResult.Value : []
+            };
+        }).ToList();
 
-         if (status.HasValue)
-         {
-             materialDetails = materialDetails.Where(m => m.Status == status).ToList();
-         }
+        if (status.HasValue)
+        {
+            materialDetails = materialDetails.Where(m => m.Status == status).ToList();
+        }
 
-         return materialDetails;
+        return materialDetails;
     }
     
     private MaterialRequisitionStatus GetStatusOfProductionMaterial(StockTransfer stockTransfer,
@@ -729,7 +729,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             materialDetails = materialDetails.Where(m => m.Status == status).ToList();
         }
 
-         return materialDetails;
+        return materialDetails;
     }
     
     private static decimal CalculateRequiredItemQuantity(decimal targetProductQuantity, decimal itemBaseQuantity, decimal productBaseQuantity)

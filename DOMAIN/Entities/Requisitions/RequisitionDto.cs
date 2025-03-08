@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
@@ -15,6 +16,7 @@ public class RequisitionDto
     public string Code { get; set; }
     public RequisitionType RequisitionType { get; set; }
     public UserDto RequestedBy { get; set; }
+    public DepartmentDto Department { get; set; }
     public List<RequisitionItemDto> Items { get; set; } = [];
     public bool Approved { get; set; }
     public List<RequisitionApprovalDto> Approvals { get; set; } = [];

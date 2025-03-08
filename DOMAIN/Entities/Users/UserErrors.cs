@@ -22,6 +22,9 @@ public static class UserErrors
     public static Error InvalidRoleName(string roleName) =>
         Error.Validation("Users.Roles", $"Role name: {roleName} is not valid.");
     
+    public static Error DepartmentNotFound =>
+        Error.Validation("Users.Department", $"User does not have an associated department.");
+    
     public static Error WarehouseNotFound(MaterialKind kind) =>
         Error.Validation("Users.Warehouse", $"User does not have an associated {kind.ToString()} warehouse.");
 }

@@ -48,10 +48,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
             return UserErrors.NotFound(userId);
+
+        if (!user.DepartmentId.HasValue)
+            return UserErrors.DepartmentNotFound;
         
         var requisition = mapper.Map<Requisition>(request);
         requisition.RequestedById = userId;
-        //requisition.DepartmentId = user.DepartmentId; 
+        requisition.DepartmentId = user.DepartmentId.Value; 
         await context.Requisitions.AddAsync(requisition);
 
         var approvals = await context.Approvals.Include(approval => approval.ApprovalStages)

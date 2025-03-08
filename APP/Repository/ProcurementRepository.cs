@@ -1406,15 +1406,15 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     private async Task<Department> GetRequisitionDepartment(Guid requisitionId)
     {
-        var requisition = await context.Requisitions
-            .Include(r => r.RequestedBy)
-            .FirstOrDefaultAsync(r => r.Id == requisitionId);
-        return requisition.RequestedBy.Department;
-        
         // var requisition = await context.Requisitions
-        //     .Include(r => r.Department)
+        //     .Include(r => r.RequestedBy)
         //     .FirstOrDefaultAsync(r => r.Id == requisitionId);
-        // return requisition.Department;
+        // return requisition.RequestedBy.Department;
+        
+        var requisition = await context.Requisitions
+            .Include(r => r.Department)
+            .FirstOrDefaultAsync(r => r.Id == requisitionId);
+        return requisition.Department;
     }
 }
 

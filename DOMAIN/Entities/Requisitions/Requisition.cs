@@ -15,8 +15,8 @@ public class Requisition : BaseEntity
     [StringLength(255)] public string Code { get; set; }
     public Guid RequestedById { get; set; }
     public User RequestedBy { get; set; }
-    // public Guid DepartmentId { get; set; }
-    // public Department Department { get; set; }
+    public Guid DepartmentId { get; set; }
+    public Department Department { get; set; }
     public RequestStatus Status { get; set; }  
     public RequisitionType RequisitionType { get; set; }
     [StringLength(1000)] public string Comments { get; set; }
