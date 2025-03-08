@@ -10,4 +10,5 @@ public class DepartmentDto : BaseDto
     public DepartmentType Type { get; set; }
     public string Description { get; set; }
     public List<WarehouseDto> Warehouses { get; set; } = [];
+    public bool IsBeta => Name == "Beta";
 }
