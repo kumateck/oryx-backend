@@ -563,10 +563,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region MasterProductionSchedule Filters
         modelBuilder.Entity<MasterProductionSchedule>()
             .HasQueryFilter(mps => mps.Product != null && !mps.Product.DeletedAt.HasValue);
-        modelBuilder.Entity<ProductionSchedule>()
-            .HasQueryFilter(mps => !mps.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionScheduleProduct>()
             .HasQueryFilter(mps => mps.Product != null && !mps.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionSchedule>()
+            .HasQueryFilter(mps => !mps.DeletedAt.HasValue && mps.Products.Count != 0);
         modelBuilder.Entity<ProductionScheduleItem>()
             .HasQueryFilter(mps => !mps.ProductionSchedule.DeletedAt.HasValue);
         #endregion

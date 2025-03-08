@@ -193,6 +193,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
     
     public async Task<Result<Guid>> CreateItem(CreateItemRequest request, string itemType)
     {
+        var nameExists = await CheckIfNameExists(itemType, request.Name);
+        if (nameExists)
+        {
+            return Error.Validation("Name", "An item with this name already exists.");
+        }
+
         switch (itemType)
         {
             case nameof(ProductCategory):
@@ -259,9 +265,15 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Error.Validation("Item", "Invalid item type");
         }
     }
-    
+
     public async Task<Result<Guid>> UpdateItem(CreateItemRequest request, Guid itemId, string itemType, Guid userId)
     {
+        bool nameExists = await CheckIfNameExists(itemType, request.Name, itemId);
+        if (nameExists)
+        {
+            return Error.Validation("Name", "An item with this name already exists.");
+        }
+
         switch (itemType)
         {
             case nameof(ProductCategory):
@@ -347,6 +359,25 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             default:
                 return Error.Validation("Item", "Invalid item type");
         }
+    }
+
+    // Helper Method to Check for Duplicate Names
+    private async Task<bool> CheckIfNameExists(string itemType, string name, Guid? excludedId = null)
+    {
+        return itemType switch
+        {
+            nameof(ProductCategory) => await context.ProductCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(Resource) => await context.Resources.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(UnitOfMeasure) => await context.UnitOfMeasures.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(WorkCenter) => await context.WorkCenters.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(Operation) => await context.Operations.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(MaterialType) => await context.MaterialTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(MaterialCategory) => await context.MaterialCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(PackageType) => await context.PackageTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(Currency) => await context.Currencies.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(ShipmentDiscrepancyType) => await context.ShipmentDiscrepancyTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            _ => false
+        };
     }
     
     public async Task<Result> SoftDeleteItem(Guid itemId, string itemType, Guid userId)

@@ -1225,7 +1225,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             materials.Add(material);
         }
-        
+
+        materials = materials.DistinctBy(m => m.Code).ToList();
         await context.Materials.AddRangeAsync(materials); 
         await context.SaveChangesAsync();
         return Result.Success();
