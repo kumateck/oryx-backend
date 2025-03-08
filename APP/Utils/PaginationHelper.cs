@@ -14,6 +14,8 @@ public static class PaginationHelper
     {
         var totalCount = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        
+        query = ApplySorting(query, "CreatedAt", SortDirection.Descending);
 
         var entities = await query
             .Skip((page - 1) * pageSize)

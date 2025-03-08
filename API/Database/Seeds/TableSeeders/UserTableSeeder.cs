@@ -64,6 +64,15 @@ public class UserTableSeeders : ISeeder
                 new Claim(JwtClaimTypes.GivenName, "Dumoga"),
                 new Claim(JwtClaimTypes.FamilyName, "Admin")
             ]);
+        
+        CreateUserIfNotExists(userManager, dbContext, 
+            "gyan@kumateck.com", "Anthony", "Gyan", "Pass123$1",
+            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [
+                new Claim(JwtClaimTypes.Name, "Anthony"),
+                new Claim(JwtClaimTypes.GivenName, "Gyan"),
+                new Claim(JwtClaimTypes.FamilyName, "Admin")
+            ]);
     }
 
     private static void CreateUserIfNotExists(
@@ -84,6 +93,7 @@ public class UserTableSeeders : ISeeder
             LastName = lastName,
             EmailConfirmed = true,
             PhoneNumberConfirmed = true,
+            DepartmentId = dbContext.Departments.FirstOrDefault()?.Id, 
             CreatedAt = DateTime.UtcNow
         };
 
