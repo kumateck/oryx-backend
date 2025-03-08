@@ -111,7 +111,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<ProductionSchedule> ProductionSchedules { get; set; }
     public DbSet<ProductionScheduleItem> ProductionScheduleItems { get; set; }
-    public DbSet<MasterProductionSchedule> MasterProductionSchedules { get; set; }
     public DbSet<ProductionScheduleProduct> ProductionScheduleProducts { get; set; }
     public DbSet<StockTransfer> StockTransfers { get; set; }
     public DbSet<StockTransferSource> StockTransferSources { get; set; }

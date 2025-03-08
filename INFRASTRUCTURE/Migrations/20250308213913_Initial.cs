@@ -2277,7 +2277,7 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MasterProductionSchedules",
+                name: "MasterProductionSchedule",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -2295,25 +2295,25 @@ namespace INFRASTRUCTURE.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MasterProductionSchedules", x => x.Id);
+                    table.PrimaryKey("PK_MasterProductionSchedule", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MasterProductionSchedules_Products_ProductId",
+                        name: "FK_MasterProductionSchedule_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MasterProductionSchedules_users_CreatedById",
+                        name: "FK_MasterProductionSchedule_users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MasterProductionSchedules_users_LastDeletedById",
+                        name: "FK_MasterProductionSchedule_users_LastDeletedById",
                         column: x => x.LastDeletedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MasterProductionSchedules_users_LastUpdatedById",
+                        name: "FK_MasterProductionSchedule_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
@@ -3004,9 +3004,9 @@ namespace INFRASTRUCTURE.Migrations
                 {
                     table.PrimaryKey("PK_WorkOrders", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_WorkOrders_MasterProductionSchedules_MasterProductionSchedu~",
+                        name: "FK_WorkOrders_MasterProductionSchedule_MasterProductionSchedul~",
                         column: x => x.MasterProductionScheduleId,
-                        principalTable: "MasterProductionSchedules",
+                        principalTable: "MasterProductionSchedule",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_WorkOrders_ProductionSchedules_ProductionScheduleId",
@@ -5538,23 +5538,23 @@ namespace INFRASTRUCTURE.Migrations
                 column: "ToWarehouseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MasterProductionSchedules_CreatedById",
-                table: "MasterProductionSchedules",
+                name: "IX_MasterProductionSchedule_CreatedById",
+                table: "MasterProductionSchedule",
                 column: "CreatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MasterProductionSchedules_LastDeletedById",
-                table: "MasterProductionSchedules",
+                name: "IX_MasterProductionSchedule_LastDeletedById",
+                table: "MasterProductionSchedule",
                 column: "LastDeletedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MasterProductionSchedules_LastUpdatedById",
-                table: "MasterProductionSchedules",
+                name: "IX_MasterProductionSchedule_LastUpdatedById",
+                table: "MasterProductionSchedule",
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MasterProductionSchedules_ProductId",
-                table: "MasterProductionSchedules",
+                name: "IX_MasterProductionSchedule_ProductId",
+                table: "MasterProductionSchedule",
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
@@ -7425,7 +7425,7 @@ namespace INFRASTRUCTURE.Migrations
                 name: "Questions");
 
             migrationBuilder.DropTable(
-                name: "MasterProductionSchedules");
+                name: "MasterProductionSchedule");
 
             migrationBuilder.DropTable(
                 name: "PurchaseOrders");

@@ -2097,7 +2097,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("MasterProductionSchedules");
+                    b.ToTable("MasterProductionSchedule");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>

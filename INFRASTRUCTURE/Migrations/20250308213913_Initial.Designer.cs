@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250308212917_Initial")]
+    [Migration("20250308213913_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -2100,7 +2100,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("MasterProductionSchedules");
+                    b.ToTable("MasterProductionSchedule");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>
