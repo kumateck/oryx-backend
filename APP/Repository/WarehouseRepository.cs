@@ -52,6 +52,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Where(w => w.Type != WarehouseType.Production)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
