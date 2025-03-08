@@ -9,5 +9,5 @@ public class DepartmentDto : BaseDto
     public string Name { get; set; }
     public DepartmentType Type { get; set; }
     public string Description { get; set; }
-    public List<WarehouseDto> Warehouses { get; set; }
+    public List<WarehouseDto> Warehouses { get; set; } = [];
 }

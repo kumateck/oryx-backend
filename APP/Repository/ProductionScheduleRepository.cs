@@ -596,10 +596,18 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
     public async Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status, Guid userId)
     {
-        var product = await context.Products.Include(product => product.BillOfMaterials)
+        var product = await context.Products
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .Include(product => product.BillOfMaterials)
             .ThenInclude(p => p.BillOfMaterial)
-            .ThenInclude(p => p.Items)
+            .ThenInclude(p => p.Items).ThenInclude(billOfMaterialItem => billOfMaterialItem.Material)
+            .Include(product => product.BillOfMaterials)
+            .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
+            .ThenInclude(billOfMaterial => billOfMaterial.Items)
+            .ThenInclude(billOfMaterialItem => billOfMaterialItem.BaseUoM)
             .FirstOrDefaultAsync(p => p.Id == productId);
+        
         if (product is null)
             return ProductErrors.NotFound(productId);
 
