@@ -25,6 +25,7 @@ public class ProductListDto
     public CollectionItemDto Category { get; set; }
     public decimal BaseQuantity { get; set; } 
     public decimal BasePackingQuantity { get; set; } 
+    public decimal FullBatchSize { get; set; }
     public UnitOfMeasureDto BaseUoM { get; set; }
     public UnitOfMeasureDto BasePackingUoM { get; set; }
     public EquipmentDto Equipment { get; set; }

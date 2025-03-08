@@ -50,10 +50,7 @@ namespace APP.Repository;
      public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize, string searchQuery)
      {
          var query = context.Products
-             .Include(p => p.BaseUoM)
-             .Include(p => p.BasePackingUoM)
-             .Include(p => p.Category)
-             .Include(p => p.Equipment)
+             .AsSplitQuery()
              .AsQueryable();
 
          if (!string.IsNullOrEmpty(searchQuery))

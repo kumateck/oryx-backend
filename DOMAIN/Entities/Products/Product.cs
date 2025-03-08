@@ -35,6 +35,7 @@ public class Product : BaseEntity
     public Equipment Equipment { get; set; }
     public Guid? DepartmentId { get; set; }
     public Department Department { get; set; }
+    public decimal FullBatchSize { get; set; }
     public List<FinishedProduct> FinishedProducts { get; set; } = [];
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = [];
     public List<ProductPackage> Packages { get; set; } = [];
