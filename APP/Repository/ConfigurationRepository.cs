@@ -135,6 +135,16 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
+           case "StockRequisition":
+               return await context.Requisitions
+                   .Where(m => m.RequisitionType == RequisitionType.Stock && m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "PurchaseRequisition":
+               return await context.Requisitions
+                   .Where(m => m.RequisitionType == RequisitionType.Purchase && m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
            case nameof(SourceRequisition):
                return await context.SourceRequisitions
                    .Where(m => m.Code.StartsWith(prefix))
