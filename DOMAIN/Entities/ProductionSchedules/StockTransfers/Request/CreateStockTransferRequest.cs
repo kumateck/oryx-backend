@@ -2,6 +2,7 @@ namespace DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 
 public class CreateStockTransferRequest
 {
+    public string Code { get; set; }
     public Guid MaterialId { get; set; }
     public string Reason { get; set; }
     public decimal RequiredQuantity { get; set; }

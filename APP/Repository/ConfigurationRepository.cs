@@ -7,6 +7,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
@@ -164,6 +165,15 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                return await context.Grns
                    .Where(m => m.GrnNumber.StartsWith(prefix))
                    .CountAsync();
+           
+           case nameof(StockTransfer):
+               return await context.StockTransfers
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "FinishedGoodsTransfer":
+               return 0;
+               
            default:
                return Error.Validation("ModelType", "Invalid model type sent");
         }

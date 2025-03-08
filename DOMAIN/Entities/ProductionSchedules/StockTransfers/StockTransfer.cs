@@ -10,6 +10,7 @@ namespace DOMAIN.Entities.ProductionSchedules.StockTransfers;
 
 public class StockTransfer : BaseEntity
 {
+    [StringLength(100)] public string Code { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     [StringLength(1000)] public string Reason { get; set; }
@@ -39,6 +40,7 @@ public class StockTransferSource : BaseEntity
 
 public class StockTransferDto : BaseDto
 {
+    public string Code { get; set; }
     public MaterialDto Material { get; set; }
     public CollectionItemDto Product { get; set; }
     public CollectionItemDto ProductionSchedule { get; set; }
