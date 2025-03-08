@@ -9,7 +9,7 @@ public class ProductSeeder : ISeeder
     {
         var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
         
-        if (dbContext.Products.Count() < 50) return;
+        if (dbContext.Products.Count() >= 50) return;
         
         SeedProducts(dbContext);
     }
