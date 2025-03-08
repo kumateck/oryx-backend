@@ -88,7 +88,7 @@ public class AuthRepository(IEmailService emailService, IConfiguration configura
 
         var url = $"https://{partialUrl}/reset-password?key={key}";
 
-        emailService.SendMail(user.Email, "Password Reset", url,null);
+        emailService.SendMail(user.Email, "Password Reset", url,[]);
         return Result.Success();
     }
     
