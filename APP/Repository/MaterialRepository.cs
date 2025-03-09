@@ -232,13 +232,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return batches;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedRawMaterials(int page, int pageSize, string searchQuery, Guid userId)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
             return UserErrors.NotFound(userId);
 
-        var warehouse =  user.GetUserRawWarehouse();
+        var warehouse =  kind == MaterialKind.Raw ?  user.GetUserRawWarehouse() : user.GetUserPackagingWarehouse();
 
         if (warehouse is null)
             return UserErrors.WarehouseNotFound(MaterialKind.Raw);
