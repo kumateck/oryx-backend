@@ -128,4 +128,18 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.GetUoM();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves all available package styles.
+    /// </summary>
+    /// <returns>Returns a collection of package styles.</returns>
+    [HttpGet("package-styles")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PackageStyleDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetPackageStyles()
+    {
+        var result = await repository.GetPackageStyles();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
