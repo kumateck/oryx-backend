@@ -19,3 +19,9 @@ public class UnitOfMeasureDto : BaseDto
     public bool IsScalable { get; set; }
     public bool IsRawMaterial { get; set; }
 }
+
+public class PackageStyleDto : BaseDto
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+}

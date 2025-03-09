@@ -81,6 +81,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<UnitOfMeasure> UnitOfMeasures { get; set; }
 
     #endregion
+    
+    #region PackageStyle
+
+    public DbSet<PackageStyle> PackageStyles { get; set; }
+
+    #endregion
 
     #region Products
 

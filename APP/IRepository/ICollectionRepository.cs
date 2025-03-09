@@ -14,4 +14,5 @@ public interface ICollectionRepository
     Task<Result<Guid>> CreateItem(CreateItemRequest request, string itemType);
     Task<Result<Guid>> UpdateItem(CreateItemRequest request, Guid itemId, string itemType, Guid userId);
     Task<Result> SoftDeleteItem(Guid itemId, string itemType, Guid userId);
+    Task<Result<IEnumerable<PackageStyleDto>>> GetPackageStyles();
 }

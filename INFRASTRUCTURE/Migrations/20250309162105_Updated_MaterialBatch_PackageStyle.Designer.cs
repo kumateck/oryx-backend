@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250309162105_Updated_MaterialBatch_PackageStyle")]
+    partial class Updated_MaterialBatch_PackageStyle
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1467,9 +1470,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("ConsumedQuantity")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid?>("ContainerPackageStyleId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1533,8 +1533,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChecklistId");
-
-                    b.HasIndex("ContainerPackageStyleId");
 
                     b.HasIndex("CreatedById");
 
@@ -6511,10 +6509,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany("MaterialBatches")
                         .HasForeignKey("ChecklistId");
 
-                    b.HasOne("DOMAIN.Entities.Base.PackageStyle", "ContainerPackageStyle")
-                        .WithMany()
-                        .HasForeignKey("ContainerPackageStyleId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -6542,8 +6536,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("UoMId");
 
                     b.Navigation("Checklist");
-
-                    b.Navigation("ContainerPackageStyle");
 
                     b.Navigation("CreatedBy");
 

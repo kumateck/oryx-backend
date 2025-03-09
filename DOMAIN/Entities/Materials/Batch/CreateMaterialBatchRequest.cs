@@ -10,7 +10,7 @@ public class CreateMaterialBatchRequest
     public string BatchNumber { get; set; }      // Batch number of the material
     public DateTime? ManufacturingDate { get; set; }
     public int NumberOfContainers { get; set; }
-    public Guid? ContainerUoMId { get; set; }
+    public Guid? ContainerPackageStyleId { get; set; }
     public decimal QuantityPerContainer { get; set; }
     public Guid? ChecklistId { get; set; }
     public Guid? UoMId { get; set; }               // ID of the unit of measure for the quantity
