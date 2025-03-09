@@ -16,7 +16,7 @@ public class MaterialBatchDto
     public BatchChecklistDto Checklist { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public int NumberOfContainers { get; set; }
-    public UnitOfMeasureDto ContainerUoM { get; set; }
+    public PackageStyleDto ContainerPackageStyle { get; set; }
     public decimal QuantityPerContainer { get; set; }
     public BatchStatus Status { get; set; }  
     public DateTime DateReceived { get; set; }

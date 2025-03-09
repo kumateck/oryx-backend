@@ -21,8 +21,8 @@ public class MaterialBatch : BaseEntity
     public Guid? GrnId { get; set; }
     public Grn Grn { get; set; }
     public int NumberOfContainers { get; set; }
-    public Guid? ContainerUoMId { get; set; }
-    public UnitOfMeasure ContainerUoM { get; set; }
+    public Guid? ContainerPackageStyleId { get; set; }
+    public PackageStyle ContainerPackageStyle { get; set; }
     public decimal QuantityPerContainer { get; set; }
     public decimal QuantityAssigned { get; set; }
     public decimal TotalQuantity { get; set; }  
