@@ -34,7 +34,7 @@ public interface IProcurementRepository
     // ************* PurchaseOrder *************
     Task<Result<Guid>> CreatePurchaseOrder(CreatePurchaseOrderRequest request, Guid userId);
     Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId);
-    Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status);
+    Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status, SupplierType? type);
     Task<Result> UpdatePurchaseOrder(CreatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId);
     Task<Result> DeletePurchaseOrder(Guid purchaseOrderId, Guid userId);
 
@@ -42,7 +42,7 @@ public interface IProcurementRepository
     Task<Result<Guid>> CreatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid userId);
     Task<Result<PurchaseOrderInvoiceDto>> GetPurchaseOrderInvoice(Guid invoiceId);
     Task<Result<Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>>> GetPurchaseOrderInvoices(int page,
-        int pageSize, string searchQuery);
+        int pageSize, string searchQuery, SupplierType? type);
     Task<Result> SendPurchaseOrderToSupplier(SendPurchaseOrderRequest request, Guid purchaseOrderId);
     Task<Result> SendProformaInvoiceToSupplier(Guid purchaseOrderId);
     Task<Result> UpdatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid invoiceId, Guid userId);

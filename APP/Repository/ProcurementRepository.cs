@@ -240,20 +240,25 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return result;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status)
+    public async Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status, SupplierType? type)
     {
         var query = context.PurchaseOrders
             .Include(po => po.Supplier)
             .AsQueryable();
 
-        if (!string.IsNullOrEmpty(searchQuery))
+        if (type.HasValue)
         {
-            query = query.WhereSearch(searchQuery, po => po.Code);
+            query = query.Where(po => po.Supplier.Type == type);
         }
-
+        
         if (status.HasValue)
         {
             query = query.Where(po => po.Status == status);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, po => po.Code);
         }
         
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
@@ -392,13 +397,18 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             : mapper.Map<PurchaseOrderInvoiceDto>(invoice);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>>> GetPurchaseOrderInvoices(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>>> GetPurchaseOrderInvoices(int page, int pageSize, string searchQuery, SupplierType? type)
     {
         var query = context.PurchaseOrderInvoices
             .Include(poi => poi.PurchaseOrder).ThenInclude(po => po.Supplier)
             .Include(poi => poi.BatchItems).ThenInclude(bi => bi.Manufacturer)
             .Include(poi => poi.Charges).ThenInclude(c => c.Currency)
             .AsQueryable();
+
+        if (type.HasValue)
+        {
+            query = query.Where(q => q.PurchaseOrder.Supplier.Type == type);
+        }
 
         if (!string.IsNullOrEmpty(searchQuery))
         {

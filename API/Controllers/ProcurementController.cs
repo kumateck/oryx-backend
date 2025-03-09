@@ -284,13 +284,15 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="status">Filter by the status of the purchase order. (Pending, Delivered, Completed)</param>
+    /// <param name="type">Filter by the supplier type</param>
     /// <returns>Returns a paginated list of purchase orders.</returns>
     [HttpGet("purchase-order")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<PurchaseOrderDto>>))]
-    public async Task<IResult> GetPurchaseOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] PurchaseOrderStatus? status = null)
+    public async Task<IResult> GetPurchaseOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, 
+        [FromQuery] PurchaseOrderStatus? status = null, [FromQuery] SupplierType? type = null)
     {
-        var result = await repository.GetPurchaseOrders(page, pageSize, searchQuery, status);
+        var result = await repository.GetPurchaseOrders(page, pageSize, searchQuery, status, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -404,13 +406,14 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="type">Filter by supplier type</param>
     /// <returns>Returns a paginated list of invoices.</returns>
     [HttpGet("purchase-order-invoice")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>))]
-    public async Task<IResult> GetPurchaseOrderInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetPurchaseOrderInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] SupplierType? type = null)
     {
-        var result = await repository.GetPurchaseOrderInvoices(page, pageSize, searchQuery);
+        var result = await repository.GetPurchaseOrderInvoices(page, pageSize, searchQuery, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
