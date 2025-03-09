@@ -156,6 +156,22 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             mapper.Map<SupplierDto>
         );
     }
+    
+    public async Task<Result> UpdateSupplierStatus(Guid supplierId, SupplierStatus status, Guid userId)
+    {
+        var supplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Id == supplierId);
+        if (supplier is null)
+        {
+            return Error.NotFound("Supplier.NotFound", "Supplier not found");
+        }
+    
+        supplier.Status = status;
+        supplier.LastUpdatedById = userId;
+        context.Suppliers.Update(supplier);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
     public async Task<Result<IEnumerable<SupplierDto>>> GetSupplierByMaterial(Guid materialId)
     {
         return mapper.Map<List<SupplierDto>>( await context.Suppliers
