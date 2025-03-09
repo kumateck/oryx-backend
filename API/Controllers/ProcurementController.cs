@@ -174,6 +174,26 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
     
     /// <summary>
+    /// Updates the status of a specific supplier by its ID.
+    /// </summary>
+    /// <param name="supplierId">The ID of the supplier to update.</param>
+    /// <param name="request">The new status of the supplier.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("supplier/{supplierId}/status")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateSupplierStatus(Guid supplierId, [FromBody]UpdateSupplierStatusRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+    
+        var result = await repository.UpdateSupplierStatus(supplierId, request.Status, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Retrieves a list of suppliers by their material ID.
     /// </summary>
     /// <param name="materialId">The ID of the material.</param>

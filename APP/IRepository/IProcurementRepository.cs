@@ -91,4 +91,5 @@ public interface IProcurementRepository
     Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId);
+    Task<Result> UpdateSupplierStatus(Guid supplierId, SupplierStatus status, Guid userId);
 }
