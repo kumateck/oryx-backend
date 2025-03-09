@@ -28,7 +28,7 @@ public class MaterialBatch : BaseEntity
     public decimal TotalQuantity { get; set; }  
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity;
-    public decimal QuantityUnassigned => RemainingQuantity - QuantityAssigned;
+    public decimal QuantityUnassigned => TotalQuantity - QuantityAssigned;
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public BatchStatus Status { get; set; }  
