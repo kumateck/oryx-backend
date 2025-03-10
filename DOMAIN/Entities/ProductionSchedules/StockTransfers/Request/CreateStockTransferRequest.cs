@@ -4,6 +4,7 @@ public class CreateStockTransferRequest
 {
     public string Code { get; set; }
     public Guid MaterialId { get; set; }
+    public Guid UoMId { get; set; }
     public string Reason { get; set; }
     public decimal RequiredQuantity { get; set; }
     public Guid? ProductId { get; set; }
@@ -16,7 +17,6 @@ public class StockTransferSourceRequest
 {
     public Guid FromDepartmentId { get; set; }
     public decimal Quantity { get; set; }
-    public Guid UoMId { get; set; }
 }
 
 public class IssueStockTransferRequest

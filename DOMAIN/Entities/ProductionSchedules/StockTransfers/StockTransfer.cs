@@ -13,6 +13,8 @@ public class StockTransfer : BaseEntity
     [StringLength(100)] public string Code { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
     [StringLength(1000)] public string Reason { get; set; }
     public decimal RequiredQuantity { get; set; }
     public Guid? ProductId { get; set; }
@@ -34,14 +36,14 @@ public class StockTransferSource : BaseEntity
     public Guid ToDepartmentId { get; set; }
     public Department ToDepartment { get; set; }
     public decimal Quantity { get; set; }
-    public Guid UoMId { get; set; }
-    public UnitOfMeasure UoM { get; set; }
+    
 }
 
 public class StockTransferDto : BaseDto
 {
     public string Code { get; set; }
     public MaterialDto Material { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public CollectionItemDto Product { get; set; }
     public CollectionItemDto ProductionSchedule { get; set; }
     [StringLength(1000)] public string Reason { get; set; }
@@ -55,5 +57,4 @@ public class StockTransferSourceDto : BaseDto
     public DepartmentDto FromDepartment { get; set; }
     public DepartmentDto ToDepartment { get; set; }
     public decimal Quantity { get; set; }
-    public UnitOfMeasureDto UoM { get; set; }
 }

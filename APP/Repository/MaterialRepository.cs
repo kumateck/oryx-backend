@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Departments;
 using INFRASTRUCTURE.Context;
@@ -270,14 +271,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         //gets only those assigned to shelf locations
         var totalAvailableQuantities = await context.ShelfMaterialBatches
             .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-            .Where(smb => materialIds.Contains(smb.MaterialBatch.MaterialId) && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id && smb.MaterialBatch.Status==BatchStatus.Available)
+            .Where(smb => materialIds.Contains(smb.MaterialBatch.MaterialId) && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id && smb.MaterialBatch.Status == BatchStatus.Available)
             .GroupBy(smb => smb.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(smb => smb.Quantity) })
+            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(smb => smb.Quantity), UnitOfMeasure = g.FirstOrDefault(h => h.MaterialBatch.MaterialId == g.Key).MaterialBatch.UoM })
             .ToListAsync();
-
+        
         var materialDetails = paginatedResult.Data.Select(m => new MaterialDetailsDto
         {
             Material = m,
+            UnitOfMeasure = mapper.Map<UnitOfMeasureDto>(totalAvailableQuantities.FirstOrDefault(q => q.MaterialId == m.Id)?.UnitOfMeasure),
             TotalAvailableQuantity = totalAvailableQuantities.FirstOrDefault(q => q.MaterialId == m.Id)?.TotalQuantity ?? 0
         }).ToList();
 
