@@ -628,6 +628,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #endregion
 
+        #region DistributedRequisitionMaterial Filters
+
+        modelBuilder.Entity<DistributedRequisitionMaterial>().HasQueryFilter(a => a.RequisitionItem.Requisition.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue);
+
+        #endregion
+
         #region Attachment Filter
 
         modelBuilder.Entity<Attachment>().HasQueryFilter(a => !a.DeletedAt.HasValue);
