@@ -282,27 +282,80 @@ namespace APP.Repository;
     
     public async Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId)
     {
-        var product = await context.Products.Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == productId);
+        var product = await context.Products
+            .Include(p => p.Packages)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+
         if (product is null)
         {
             return ProductErrors.NotFound(productId);
         }
 
+        // Build a HashSet of existing MaterialIds for fast lookup
+        var existingMaterialIds = product.Packages.Select(p => p.MaterialId).ToHashSet();
+
+        foreach (var newPackage in request)
+        {
+            if (newPackage.DirectLinkMaterialId.HasValue)
+            {
+                // Check if this new package introduces a cycle
+                if (HasCircularDependency(newPackage.MaterialId, newPackage.DirectLinkMaterialId.Value, product.Packages.ToList()))
+                {
+                    return Error.Failure("Product.Package", $"Circular dependency detected with MaterialId {newPackage.MaterialId} and DirectLinkMaterialId {newPackage.DirectLinkMaterialId}");
+                }
+            }
+        }
+
+        // Remove old packages if they exist
         if (product.Packages.Count != 0)
         {
             context.ProductPackages.RemoveRange(product.Packages);
         }
 
+        // Map and add new packages
         foreach (var newPackage in request.Select(mapper.Map<ProductPackage>))
         {
             newPackage.CreatedById = userId;
             product.Packages.Add(newPackage);
         }
-       
-        await context.SaveChangesAsync();
 
+        await context.SaveChangesAsync();
         return product.Id;
     }
+
+    
+    private bool HasCircularDependency(Guid materialId, Guid directLinkMaterialId, List<ProductPackage> existingPackages)
+    {
+        var visited = new HashSet<Guid>();  // Track visited materials
+        var currentMaterialId = directLinkMaterialId;
+
+        while (true)
+        {
+            // If we encounter the starting materialId again, it's a cycle
+            if (currentMaterialId == materialId)
+            {
+                return true;
+            }
+
+            // If this material was already checked, cycle detected
+            if (!visited.Add(currentMaterialId))
+            {
+                return true;
+            }
+
+            // Find the next linked material
+            var nextPackage = existingPackages.FirstOrDefault(p => p.MaterialId == currentMaterialId);
+            if (nextPackage == null || !nextPackage.DirectLinkMaterialId.HasValue)
+            {
+                break; // No more links, exit loop
+            }
+
+            currentMaterialId = nextPackage.DirectLinkMaterialId.Value;
+        }
+
+        return false;
+    }
+
 
     public async Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId)
     {
@@ -343,11 +396,29 @@ namespace APP.Repository;
     public async Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId)
     {
         var productPackage = await context.ProductPackages
-            .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
+            .Include(p => p.Product)
+            .ThenInclude(p => p.Packages) // Include related packages for validation
+            .FirstOrDefaultAsync(p => p.Id == productPackageId);
 
         if (productPackage == null)
             return Error.NotFound("ProductPackage.NotFound", $"Product package with ID {productPackageId} not found.");
 
+        // Prevent self-referencing update
+        if (request.DirectLinkMaterialId.HasValue && request.DirectLinkMaterialId.Value == request.MaterialId)
+        {
+            return Error.Failure("Product.Package", "DirectLinkMaterialId cannot be the same as MaterialId.");
+        }
+
+        // Check for circular dependency
+        if (request.DirectLinkMaterialId.HasValue)
+        {
+            if (HasCircularDependency(request.MaterialId, request.DirectLinkMaterialId.Value, productPackage.Product.Packages.ToList()))
+            {
+                return Error.Failure("Product.Package", $"Circular dependency detected with MaterialId {productPackage.MaterialId} and DirectLinkMaterialId {productPackage.DirectLinkMaterialId}");
+            }
+        }
+
+        // Map updated values
         mapper.Map(request, productPackage);
         productPackage.LastUpdatedById = userId;
 
@@ -356,6 +427,7 @@ namespace APP.Repository;
 
         return Result.Success();
     }
+
 
     public async Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId)
     {

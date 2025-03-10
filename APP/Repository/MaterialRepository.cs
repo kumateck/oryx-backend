@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.BinCards;
+using DOMAIN.Entities.Departments;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -807,6 +808,45 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return stockByWarehouse;
     }
 
+
+    public async Task<Result<List<DepartmentDto>>> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity)
+    {
+        var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
+        if (material is null)
+            return MaterialErrors.NotFound(materialId);
+
+        var warehouseType = material.Kind == MaterialKind.Raw
+            ? WarehouseType.RawMaterialStorage
+            : WarehouseType.PackagedStorage;
+        
+        var departments = await context.Departments
+            .ToListAsync();
+
+        var result = new List<DepartmentDto>();
+        
+        foreach (var department in departments)
+        {
+            // Get all warehouses associated with this department
+            var warehouse = await context.Warehouses
+                .FirstOrDefaultAsync(dw => dw.DepartmentId == department.Id && dw.Type == warehouseType);
+            
+            decimal totalStock = 0;
+            
+            var stockResult = await GetMaterialStockInWarehouse(materialId, warehouse.Id);
+            if (stockResult.IsSuccess)
+            {
+                totalStock = stockResult.Value;
+            }
+            
+            if (totalStock >= quantity)
+            {
+                result.Add(mapper.Map<DepartmentDto>(department));
+            }
+        }
+
+        return result;
+    }
+
     
     public async Task<List<MaterialStockByDepartmentDto>> GetStockByDepartment(Guid materialId)
     {
@@ -1123,6 +1163,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         // Get all material batch movements for the given materialId, including both FromWarehouse and ToWarehouse
         var batchMovements = await context.MassMaterialBatchMovements
+            .IgnoreQueryFilters()
             .Where(m => m.Batch.MaterialId == materialId)
             .Include(m => m.ToWarehouse)
             .Include(m => m.FromWarehouse)
@@ -1149,7 +1190,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             if (!stockResult.IsSuccess) continue;
 
             // Get warehouse details (you can map this from your Warehouse entity)
-            var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId.Value);
+            var warehouse = await context.Warehouses.IgnoreQueryFilters().FirstOrDefaultAsync(w => w.Id == warehouseId.Value);
         
             if (warehouse != null)
             {

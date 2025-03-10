@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
@@ -299,6 +300,22 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     public async Task<IResult> GetMaterialStockAcrossWarehouses(Guid materialId)
     {
         var result = await repository.GetMaterialStockAcrossWarehouses(materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the stock levels across all warehouses for a specific material.
+    /// </summary>
+    /// <param name="materialId"> The id of the material</param>
+    /// <param name="quantity">The minimum quantity of the stock the department should have.</param>
+    /// <returns></returns>
+    [HttpGet("{materialId}/department-stock/{quantity}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DepartmentDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity)
+    {
+        var result = await repository.GetDepartmentsWithEnoughStock(materialId, quantity);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
