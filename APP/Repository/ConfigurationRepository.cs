@@ -173,6 +173,11 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            
            case "FinishedGoodsTransfer":
                return 0;
+           
+           case "ArNumber":
+               return await context.BinCardInformation
+                   .Where(m => m.ArNumber.StartsWith(prefix))
+                   .CountAsync();
                
            default:
                return Error.Validation("ModelType", "Invalid model type sent");
