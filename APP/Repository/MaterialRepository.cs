@@ -829,6 +829,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             // Get all warehouses associated with this department
             var warehouse = await context.Warehouses
                 .FirstOrDefaultAsync(dw => dw.DepartmentId == department.Id && dw.Type == warehouseType);
+
+            if (warehouse is null)
+            {
+                continue;
+            }
             
             decimal totalStock = 0;
             
