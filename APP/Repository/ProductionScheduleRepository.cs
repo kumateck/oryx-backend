@@ -978,8 +978,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<IEnumerable<StockTransferDto>>> GetStockTransfers(Guid? fromDepartmentId = null, Guid? toDepartmentId = null, Guid? materialId = null)
     {
         var query = context.StockTransfers
+            .Include(s=>s.UoM)
             .Include(st => st.Sources).ThenInclude(s => s.FromDepartment)
-            .Include(st => st.Sources).ThenInclude(s => s.UoM)
             .Include(st => st.Material)
             .AsQueryable();
         

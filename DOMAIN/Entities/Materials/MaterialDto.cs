@@ -18,6 +18,7 @@ public class MaterialDto
 public class MaterialDetailsDto
 {
     public MaterialDto Material { get; set; }
+    public UnitOfMeasureDto UnitOfMeasure { get; set; }
     public decimal TotalAvailableQuantity { get; set; }
 }
 
