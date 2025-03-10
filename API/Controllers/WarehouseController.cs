@@ -599,6 +599,19 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves the checklist details by distributed material ID.
+    /// </summary>
+    [HttpGet("distributed-material/{distributedMaterialId}/checklist")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ChecklistDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetChecklistByDistributedMaterialId(Guid distributedMaterialId)
+    {
+        var result = await repository.GetChecklistByDistributedMaterialId(distributedMaterialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     #endregion
         

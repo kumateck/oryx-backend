@@ -682,6 +682,24 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         return Result.Success(materialBatchDto);
     }
     
+    public async Task<Result<ChecklistDto>> GetChecklistByDistributedMaterialId(Guid distributedMaterialId)
+    {
+        var checklist = await context.Checklists
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb => mb.Material)
+            .Include(c => c.Manufacturer)
+            .Include(c => c.Supplier)
+            .Include(c => c.ShipmentInvoice)
+            .FirstOrDefaultAsync(c => c.DistributedRequisitionMaterialId == distributedMaterialId);
+    
+        if (checklist == null)
+        {
+            return Error.NotFound("Checklist.NotFound", "Checklist not found for the specified distributed requisition material.");
+        }
+    
+        return Result.Success(mapper.Map<ChecklistDto>(checklist));
+    }
+    
     public async Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterials(List<Guid> distributedMaterialIds)
     {
         var checklists = await context.Checklists
