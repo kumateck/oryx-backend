@@ -56,6 +56,7 @@ public interface IWarehouseRepository
     Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request,Guid userId);
     Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId);
     Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterials(List<Guid> distributedMaterialIds);
+    Task<Result<ChecklistDto>> GetChecklistByDistributedMaterialId(Guid distributedMaterialId);
     Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds, Guid userId);
     Task<Result<GrnDto>> GetGrn(Guid id);
     Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery);
