@@ -737,8 +737,16 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Math.Round(targetProductQuantity * itemBaseQuantity / productBaseQuantity, 2);
     }
     
-    private decimal GetQuantityNeeded(ProductPackage item, List<ProductPackage> allPackages, decimal quantityRequired, decimal basePackingQuantity)
+    private decimal GetQuantityNeeded(ProductPackage item, List<ProductPackage> allPackages, decimal quantityRequired, decimal basePackingQuantity, HashSet<Guid> visitedMaterials = null)
     {
+        visitedMaterials ??= [];
+
+        // Check for circular reference
+        if (!visitedMaterials.Add(item.MaterialId))
+        {
+            throw new InvalidOperationException($"Circular reference detected for MaterialId: {item.MaterialId}");
+        }
+
         if (!item.DirectLinkMaterialId.HasValue)
         {
             return CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, basePackingQuantity);
@@ -756,8 +764,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return CalculateRequiredItemQuantity(quantityRequired, linkedPackage.BaseQuantity, basePackingQuantity) / item.UnitCapacity;
         }
 
-        // Recursively go down the chain, but track if it's the first call
-        return GetQuantityNeeded(linkedPackage, allPackages, quantityRequired, basePackingQuantity)/ item.UnitCapacity;
+        // Recursively calculate, now with a visited set to prevent infinite loops
+        return GetQuantityNeeded(linkedPackage, allPackages, quantityRequired, basePackingQuantity, visitedMaterials) / item.UnitCapacity;
     }
     
      public async Task<Result<Guid>> CreateBatchManufacturingRecord(CreateBatchManufacturingRecord request)
