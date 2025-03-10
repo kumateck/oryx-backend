@@ -25,7 +25,7 @@ public class BinCardInformationDto
 {
     public Guid Id { get; set; }
     public DateTime CreatedAt { get; set; }
-    public MaterialBatchDto Batch { get; set; }
+    public MaterialBatchDto MaterialBatch { get; set; }
     public string Description { get; set; }
     public string WayBill { get; set; }
     public string ArNumber { get; set; }
