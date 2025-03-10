@@ -827,7 +827,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         foreach (var department in departments)
         {
             // Get all warehouses associated with this department
-            var warehouse = await context.Warehouses
+            var warehouse = await context.Warehouses.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(dw => dw.DepartmentId == department.Id && dw.Type == warehouseType);
 
             if (warehouse is null)
