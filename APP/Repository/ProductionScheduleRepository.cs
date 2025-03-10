@@ -1089,16 +1089,34 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     // Issue Stock Transfer with Batch Selection
     public async Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId)
     {
-        var stockTransfer = await context.StockTransferSources
+        var stockTransferSource = await context.StockTransferSources
             .Include(st => st.StockTransfer).ThenInclude(st => st.Material)
             .FirstOrDefaultAsync(st => st.Id == request.StockTransferId);
         
-        if (stockTransfer == null)
+        if (stockTransferSource == null)
         {
             return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
         }
 
-        decimal remainingQuantity = stockTransfer.Quantity;
+        var fromWarehouse = stockTransferSource.StockTransfer.Material.Kind == MaterialKind.Raw
+            ? await context.Warehouses.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(w =>
+                    w.DepartmentId == stockTransferSource.FromDepartmentId &&
+                    w.Type == WarehouseType.RawMaterialStorage)
+            : await context.Warehouses.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(w =>
+                    w.DepartmentId == stockTransferSource.FromDepartmentId && w.Type == WarehouseType.PackagedStorage);
+        
+        var toWarehouse =  stockTransferSource.StockTransfer.Material.Kind == MaterialKind.Raw
+            ? await context.Warehouses.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(w =>
+                    w.DepartmentId == stockTransferSource.ToDepartmentId &&
+                    w.Type == WarehouseType.RawMaterialStorage)
+            : await context.Warehouses.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(w =>
+                    w.DepartmentId == stockTransferSource.ToDepartmentId && w.Type == WarehouseType.PackagedStorage);
+
+        decimal remainingQuantity = stockTransferSource.Quantity;
 
         foreach (var batchRequest in request.Batches)
         {
@@ -1112,8 +1130,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var movement = new MassMaterialBatchMovement
             {
                 BatchId = batch.Id,
-                FromWarehouseId = batchRequest.FromWarehouseId,
-                ToWarehouseId = batchRequest.ToWarehouseId,
+                FromWarehouseId = toWarehouse.Id,
+                ToWarehouseId = fromWarehouse.Id,
                 Quantity = batchRequest.Quantity,
                 MovedAt = DateTime.UtcNow,
                 MovedById = userId
@@ -1132,10 +1150,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.Failure("StockTransfer.InsufficientStock", "Not enough batches to fulfill the transfer");
         }
 
-        stockTransfer.IssuedAt = DateTime.UtcNow;
-        stockTransfer.IssuedById = userId;
-        stockTransfer.Status = StockTransferStatus.Issued;
-        context.StockTransferSources.Update(stockTransfer);
+        stockTransferSource.IssuedAt = DateTime.UtcNow;
+        stockTransferSource.IssuedById = userId;
+        stockTransferSource.Status = StockTransferStatus.Issued;
+        context.StockTransferSources.Update(stockTransferSource);
         await context.SaveChangesAsync();
         return Result.Success();
     }

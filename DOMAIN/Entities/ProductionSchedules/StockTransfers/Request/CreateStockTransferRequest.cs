@@ -28,7 +28,5 @@ public class IssueStockTransferRequest
 public class BatchTransferRequest
 {
     public Guid BatchId { get; set; }
-    public Guid FromWarehouseId { get; set; }
-    public Guid ToWarehouseId { get; set; }
     public decimal Quantity { get; set; }
 }
