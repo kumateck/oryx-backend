@@ -36,6 +36,12 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(w => w.Locations)
+            .ThenInclude(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .FirstOrDefaultAsync(w => w.Id == warehouseId);
 
         return warehouse is null
@@ -52,6 +58,12 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(w => w.Locations)
+            .ThenInclude(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .Where(w => w.Type != WarehouseType.Production)
             .AsQueryable();
 
@@ -130,6 +142,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .FirstOrDefaultAsync(r => r.Id == locationId);
 
         return rack is null
@@ -146,6 +163,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -169,6 +191,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(wl=>wl.Racks)
+            .ThenInclude(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .ToListAsync());
     }
     
@@ -238,6 +265,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(r=>r.Shelves)
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
+            .Include(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
             .FirstOrDefaultAsync(r => r.Id == rackId);
 
@@ -254,6 +285,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -286,6 +321,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(r=>r.Shelves)
+            .ThenInclude(s=>s.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .Where(r => r.WarehouseLocation.WarehouseId == warehouse.Id)
             .ToListAsync();
 
@@ -360,6 +399,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(w=>w.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(w=>w.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .FirstOrDefaultAsync(s => s.Id == shelfId);
 
         return shelf is null
@@ -375,6 +417,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(w=>w.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(w=>w.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -407,6 +452,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(w=>w.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Material)
+            .Include(w=>w.MaterialBatches)
+            .ThenInclude(smb=>smb.MaterialBatch)
+            .ThenInclude(mb=>mb.Checklist)
             .Where(s => s.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id)
             .ToListAsync();
 
