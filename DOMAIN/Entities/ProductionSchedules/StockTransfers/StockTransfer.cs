@@ -25,13 +25,6 @@ public class StockTransfer : BaseEntity
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public List<StockTransferSource> Sources { get; set; } = [];
-    public StockTransferStatus Status { get; set; }
-    public DateTime? ApprovedAt { get; set; }
-    public Guid? ApprovedById { get; set; }
-    public User ApprovedBy { get; set; }
-    public Guid? IssuedById { get; set; }
-    public User IssuedBy { get; set; }
-    public DateTime? IssuedAt { get; set; }
 }
 
 public enum StockTransferStatus
@@ -50,6 +43,13 @@ public class StockTransferSource : BaseEntity
     public Guid ToDepartmentId { get; set; }
     public Department ToDepartment { get; set; }
     public decimal Quantity { get; set; }
+    public StockTransferStatus Status { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public Guid? ApprovedById { get; set; }
+    public User ApprovedBy { get; set; }
+    public Guid? IssuedById { get; set; }
+    public User IssuedBy { get; set; }
+    public DateTime? IssuedAt { get; set; }
     
 }
 
@@ -64,7 +64,6 @@ public class StockTransferDto : BaseDto
     public decimal RequiredQuantity { get; set; }
     public StockTransferStatus Status { get; set; }
     public List<StockTransferSourceDto> Sources { get; set; } = [];
-    public DateTime? ApprovedAt { get; set; }
 }
 
 public class StockTransferSourceDto : BaseDto
@@ -72,4 +71,18 @@ public class StockTransferSourceDto : BaseDto
     public DepartmentDto FromDepartment { get; set; }
     public DepartmentDto ToDepartment { get; set; }
     public decimal Quantity { get; set; }
+    public StockTransferStatus Status { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public DateTime? IssuedAt { get; set; }
+}
+
+public class DepartmentStockTransferDto 
+{
+    public Guid Id { get; set; } 
+    public MaterialDto Material { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public StockTransferStatus Status { get; set; }
+    public decimal Quantity { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public DateTime? IssuedAt { get; set; }
 }

@@ -62,6 +62,9 @@ public interface IProductionScheduleRepository
         Guid? toDepartmentId = null, Guid? materialId = null);
     Task<Result<Paginateable<IEnumerable<StockTransferDto>>>> GetStockTransfersForUserDepartment(
         Guid userId, int page, int pageSize, string searchQuery = null, StockTransferStatus? status = null);
+    Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>>
+        GetStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null,
+            StockTransferStatus? status = null);
     Task<Result> ApproveStockTransfer(Guid id, Guid userId);
     Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId);
 

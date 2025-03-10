@@ -564,13 +564,13 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("stock-transfer/in-bound")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StockTransferDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentStockTransferDto>>))]
     public async Task<IResult> GetStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetStockTransfersForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery);
+        var result = await repository.GetStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
