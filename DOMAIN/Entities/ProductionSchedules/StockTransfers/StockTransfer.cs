@@ -4,6 +4,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Users;
 using SHARED;
 
 namespace DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -24,7 +25,20 @@ public class StockTransfer : BaseEntity
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public List<StockTransferSource> Sources { get; set; } = [];
+    public StockTransferStatus Status { get; set; }
     public DateTime? ApprovedAt { get; set; }
+    public Guid? ApprovedById { get; set; }
+    public User ApprovedBy { get; set; }
+    public Guid? IssuedById { get; set; }
+    public User IssuedBy { get; set; }
+    public DateTime? IssuedAt { get; set; }
+}
+
+public enum StockTransferStatus
+{
+    InProgress,
+    Approved,
+    Issued
 }
 
 public class StockTransferSource : BaseEntity
@@ -48,6 +62,7 @@ public class StockTransferDto : BaseDto
     public CollectionItemDto ProductionSchedule { get; set; }
     [StringLength(1000)] public string Reason { get; set; }
     public decimal RequiredQuantity { get; set; }
+    public StockTransferStatus Status { get; set; }
     public List<StockTransferSourceDto> Sources { get; set; } = [];
     public DateTime? ApprovedAt { get; set; }
 }

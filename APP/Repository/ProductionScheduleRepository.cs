@@ -876,7 +876,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             query = query.Where(b => b.ProductionActivityStep.Status == status);
         }
 
-
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
@@ -1001,6 +1000,58 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var transfers = await query.ToListAsync();
         return mapper.Map<List<StockTransferDto>>(transfers);
     }
+    
+    public async Task<Result<Paginateable<IEnumerable<StockTransferDto>>>> GetStockTransfersForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, StockTransferStatus? status = null)
+    {
+
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+        
+        var query = context.StockTransfers
+            .Include(st => st.Sources).ThenInclude(s => s.FromDepartment)
+            .Include(st => st.Sources).ThenInclude(s => s.ToDepartment)
+            .Include(st => st.Material)
+            .Where(st => st.Sources.Any(s => s.ToDepartmentId == user.DepartmentId))
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(q => q.Status == status);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<StockTransferDto>
+        );
+    }
+    
+    
+    public async Task<Result> ApproveStockTransfer(Guid id, Guid userId)
+    {
+        var stockTransfer = await context.StockTransfers
+            .Include(st => st.Material)
+            .FirstOrDefaultAsync(st => st.Id == id);
+        
+        if (stockTransfer == null)
+        {
+            return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
+        }
+
+        stockTransfer.ApprovedAt = DateTime.UtcNow;
+        stockTransfer.ApprovedById = userId;
+        stockTransfer.Status = StockTransferStatus.Approved;
+        context.StockTransfers.Update(stockTransfer);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
     // Issue Stock Transfer with Batch Selection
     public async Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId)
@@ -1048,7 +1099,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.Failure("StockTransfer.InsufficientStock", "Not enough batches to fulfill the transfer");
         }
 
-        stockTransfer.ApprovedAt = DateTime.UtcNow;
+        stockTransfer.IssuedAt = DateTime.UtcNow;
+        stockTransfer.IssuedById = userId;
+        stockTransfer.Status = StockTransferStatus.Issued;
         context.StockTransfers.Update(stockTransfer);
         await context.SaveChangesAsync();
         return Result.Success();

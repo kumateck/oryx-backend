@@ -534,7 +534,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Creates a new Stock Transfer.
     /// </summary>
-    [HttpPost("stocker-transfer")]
+    [HttpPost("stock-transfer")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -558,11 +558,42 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetStockTransfers(fromDepartmentId, toDepartmentId, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of Stock Transfers with optional filters.
+    /// </summary>
+    [HttpGet("stock-transfer/in-bound")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StockTransferDto>>))]
+    public async Task<IResult> GetStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetStockTransfersForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Issues a Stock Transfer with batch selection.
+    /// </summary>
+    [HttpPut("stock-transfer/approve/{stockTransferId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ApproveStockTransfer(Guid stockTransferId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.ApproveStockTransfer(stockTransferId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Issues a Stock Transfer with batch selection.
     /// </summary>
-    [HttpPut("stocker-transfer/issue")]
+    [HttpPut("stock-transfer/issue")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

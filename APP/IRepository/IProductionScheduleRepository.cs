@@ -60,6 +60,9 @@ public interface IProductionScheduleRepository
     Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid userId);
     Task<Result<IEnumerable<StockTransferDto>>> GetStockTransfers(Guid? fromDepartmentId = null,
         Guid? toDepartmentId = null, Guid? materialId = null);
+    Task<Result<Paginateable<IEnumerable<StockTransferDto>>>> GetStockTransfersForUserDepartment(
+        Guid userId, int page, int pageSize, string searchQuery = null, StockTransferStatus? status = null);
+    Task<Result> ApproveStockTransfer(Guid id, Guid userId);
     Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId);
 
     Task<Result<List<ProductionScheduleProcurementDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId,
