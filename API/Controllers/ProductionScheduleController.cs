@@ -596,7 +596,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
     
     /// <summary>
-    /// Issues a Stock Transfer with batch selection.
+    /// Approves a Stock Transfer.
     /// </summary>
     [HttpPut("stock-transfer/approve/{stockTransferId}")]
     [Authorize]
@@ -608,6 +608,22 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.ApproveStockTransfer(stockTransferId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+        /// Rejects a Stock Transfer.
+    /// </summary>
+    [HttpPut("stock-transfer/reject/{stockTransferId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> RejectStockTransfer(Guid stockTransferId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.RejectStockTransfer(stockTransferId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

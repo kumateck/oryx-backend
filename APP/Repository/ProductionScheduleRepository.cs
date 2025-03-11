@@ -1131,6 +1131,22 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> RejectStockTransfer(Guid id, Guid userId)
+    {
+        var stockTransfer = await context.StockTransferSources
+            .FirstOrDefaultAsync(st => st.Id == id);
+        
+        if (stockTransfer == null)
+        {
+            return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
+        }
+
+        stockTransfer.Status = StockTransferStatus.Rejected;
+        context.StockTransferSources.Update(stockTransfer);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
     // Issue Stock Transfer with Batch Selection
     public async Task<Result> IssueStockTransfer(Guid id, List<BatchTransferRequest> batches, Guid userId)
