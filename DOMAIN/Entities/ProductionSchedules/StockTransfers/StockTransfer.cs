@@ -31,7 +31,8 @@ public enum StockTransferStatus
 {
     InProgress,
     Approved,
-    Issued
+    Issued,
+    Rejected
 }
 
 public class StockTransferSource : BaseEntity
@@ -76,9 +77,8 @@ public class StockTransferSourceDto : BaseDto
     public DateTime? IssuedAt { get; set; }
 }
 
-public class DepartmentStockTransferDto 
+public class DepartmentStockTransferDto : BaseDto
 {
-    public Guid Id { get; set; } 
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public StockTransferStatus Status { get; set; }
