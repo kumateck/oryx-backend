@@ -33,7 +33,7 @@ public class UserTableSeeders : ISeeder
             [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
             [
                 new Claim(JwtClaimTypes.Name, "Des"),
-                new Claim(JwtClaimTypes.GivenName, "KUma"),
+                new Claim(JwtClaimTypes.GivenName, "Kuma"),
                 new Claim(JwtClaimTypes.FamilyName, "Admin")
             ]);
 
@@ -53,6 +53,24 @@ public class UserTableSeeders : ISeeder
             [
                 new Claim(JwtClaimTypes.Name, "Adu"),
                 new Claim(JwtClaimTypes.GivenName, "Joel"),
+                new Claim(JwtClaimTypes.FamilyName, "Admin")
+            ]);
+        
+        CreateUserIfNotExists(userManager, dbContext, 
+            "eugenedumoga@gmail.com", "Eugene", "Dumoga", "Pass123$1",
+            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [
+                new Claim(JwtClaimTypes.Name, "Eugene"),
+                new Claim(JwtClaimTypes.GivenName, "Dumoga"),
+                new Claim(JwtClaimTypes.FamilyName, "Admin")
+            ]);
+        
+        CreateUserIfNotExists(userManager, dbContext, 
+            "gyan@kumateck.com", "Anthony", "Gyan", "Pass123$1",
+            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [
+                new Claim(JwtClaimTypes.Name, "Anthony"),
+                new Claim(JwtClaimTypes.GivenName, "Gyan"),
                 new Claim(JwtClaimTypes.FamilyName, "Admin")
             ]);
     }
@@ -75,6 +93,7 @@ public class UserTableSeeders : ISeeder
             LastName = lastName,
             EmailConfirmed = true,
             PhoneNumberConfirmed = true,
+            DepartmentId = dbContext.Departments.FirstOrDefault()?.Id, 
             CreatedAt = DateTime.UtcNow
         };
 

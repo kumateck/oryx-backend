@@ -3,7 +3,6 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
-using SHARED;
 
 namespace DOMAIN.Entities.Procurement.Suppliers;
 
@@ -17,6 +16,7 @@ public class SupplierDto : BaseDto
     public CountryDto Country { get; set; }
     public CurrencyDto Currency { get; set; }
     public SupplierType Type { get; set; }
+    public SupplierStatus Status { get; set; }
     public List<SupplierManufacturerDto> AssociatedManufacturers { get; set; } = [];
 }
 
@@ -24,4 +24,5 @@ public class SupplierManufacturerDto : BaseDto
 {
     public ManufacturerDto Manufacturer { get; set; }
     public MaterialDto Material { get; set; }
+    public decimal QuantityPerPack { get; set; }
 }

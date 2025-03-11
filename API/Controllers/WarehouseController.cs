@@ -1,6 +1,11 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.BinCards;
+using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
 using Microsoft.AspNetCore.Authorization;
@@ -208,6 +213,21 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetWarehouseLocationRacks(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of racks in warehouse locations for logged-in user.
+    /// </summary>
+    [HttpGet("rack/by-department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<WarehouseLocationRackDto>))]
+    public async Task<IResult> GetWarehouseLocationRacks([FromQuery] MaterialKind kind)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetWarehouseLocationRacks(kind, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates an existing warehouse location rack.
@@ -285,6 +305,21 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetWarehouseLocationShelves(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of shelves in warehouse locations by department.
+    /// </summary>
+    [HttpGet("shelf/by-department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<WarehouseLocationShelfDto>))]
+    public async Task<IResult> GetWarehouseLocationShelves([FromQuery] MaterialKind kind)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetWarehouseLocationShelves(kind, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates an existing warehouse location shelf.
@@ -318,6 +353,338 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.DeleteWarehouseLocationShelf(shelfId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a paginated list of shelves in a warehouse by material ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/shelves/by-material/{materialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetShelvesByMaterialId(Guid warehouseId, Guid materialId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetShelvesByMaterialId(page, pageSize, searchQuery, warehouseId, materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of shelves in a warehouse by material batch ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/shelves/by-materialbatch/{materialBatchId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetShelvesByMaterialBatchId(Guid warehouseId, Guid materialBatchId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetShelvesByMaterialBatchId(page, pageSize, searchQuery, warehouseId, materialBatchId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of shelves in a warehouse location rack.
+    /// </summary>
+    [HttpGet("rack/{rackId}/shelves")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetShelvesByRackId(Guid rackId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetShelvesByRackId(page, pageSize, searchQuery, rackId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of all shelves in a warehouse.
+    /// </summary>
+    [HttpGet("{warehouseId}/shelves")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetAllShelves(Guid warehouseId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetAllShelves(page, pageSize, searchQuery, warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     #endregion
+    
+    #region Arrival Location CRUD
+    /// <summary>
+    /// Retrieves the arrival location details of a specific warehouse by its ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/arrival-location")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseArrivalLocationDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetArrivalLocationDetails(Guid warehouseId)
+    {
+        var result = await repository.GetArrivalLocationDetails(warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /*/// <summary>
+    /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
+    /// </summary>
+    [HttpGet("{warehouseId}/distributed-requisition-materials")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributedRequisitionMaterials( Guid warehouseId,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetDistributedRequisitionMaterials(warehouseId, page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }*/
+    
+    /// <summary>
+    /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
+    /// </summary>
+    [HttpGet("distributed-requisition-materials")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributedRequisitionMaterials([FromQuery] MaterialKind kind,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetDistributedRequisitionMaterials(page, pageSize, searchQuery, kind, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /*/// <summary>
+    /// Retrieves a distributed requisition material by its id
+    /// </summary>
+    [HttpGet("distributed-requisition-materials/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DistributedRequisitionMaterialDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributedRequisitionMaterials(Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetDistributedRequisitionMaterialById(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }*/
+    
+    /// <summary>
+    /// Retrieves the details of a specific distributed requisition material by its ID.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpGet("distributed-material/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DistributedRequisitionMaterialDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributedRequisitionMaterialById(Guid id)
+    {
+        var result = await repository.GetDistributedRequisitionMaterialById(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Creates a new arrival location for a warehouse.
+    /// </summary>
+    [HttpPost("arrival-location")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CreateArrivalLocation([FromBody] CreateArrivalLocationRequest request)
+    {
+        var result = await repository.CreateArrivalLocation(request);
+        return result.IsSuccess ? TypedResults.Created($"/api/v1/warehouse/arrival-location/{result.Value}", result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Updates an existing arrival location.
+    /// </summary>
+    [HttpPut("arrival-location")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateArrivalLocation([FromBody] UpdateArrivalLocationRequest request)
+    {
+        var result = await repository.UpdateArrivalLocation(request);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Confirms the arrival of a distributed material.
+    /// </summary>
+    [HttpPost("confirm-arrival/{distributedMaterialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ConfirmArrival(Guid distributedMaterialId)
+    {
+        var result = await repository.ConfirmArrival(distributedMaterialId);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+    #endregion
+    
+    #region Checklist CRUD
+
+    /// <summary>
+    /// Creates a new checklist.
+    /// </summary>
+    [HttpPost("checklist")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateChecklist([FromBody] CreateChecklistRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return TypedResults.BadRequest(ModelState);
+        }
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateChecklist(request,Guid.Parse(userId));
+
+        return result.IsSuccess 
+            ? TypedResults.Created($"/api/v1/warehouse/checklist/{result.Value}", result.Value) 
+            : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the details of a specific checklist by its ID.
+    /// </summary>
+    [HttpGet("checklist/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ChecklistDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetChecklist(Guid id)
+    {
+        var result = await repository.GetChecklist(id);
+
+        return result.IsSuccess 
+            ? TypedResults.Ok(result.Value) 
+            : result.ToProblemDetails();
+    }
+    
+    #region MaterialBatch by DistributedRequisitionMaterial
+
+    /// <summary>
+    /// Retrieves the material batch details by distributed requisition material ID.
+    /// </summary>
+    [HttpGet("distributed-material/{distributedMaterialId}/material-batch")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId)
+    {
+        var result = await repository.GetMaterialBatchByDistributedMaterial(distributedMaterialId);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the material batch details by distributed requisition material IDs.
+    /// </summary>
+    [HttpPost("distributed-material/material-batch")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialBatchByDistributedMaterials([FromBody]List<Guid> distributedMaterialIds)
+    {
+        var result = await repository.GetMaterialBatchByDistributedMaterials(distributedMaterialIds);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the checklist details by distributed material ID.
+    /// </summary>
+    [HttpGet("distributed-material/{distributedMaterialId}/checklist")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ChecklistDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetChecklistByDistributedMaterialId(Guid distributedMaterialId)
+    {
+        var result = await repository.GetChecklistByDistributedMaterialId(distributedMaterialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    #endregion
+        
+    #region GRN CRUD
+    /// <summary>
+    /// Creates a new GRN and assigns it to the specified material batches.
+    /// </summary>
+    [HttpPost("grn")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateGrn([FromBody] CreateGrnRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return TypedResults.BadRequest(ModelState);
+        }
+
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateGrn(request, request.MaterialBatchIds, Guid.Parse(userId));
+
+        return result.IsSuccess
+            ? TypedResults.Created($"/api/v1/warehouse/grn/{result.Value}", result.Value)
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets a GRN by its ID.
+    /// </summary>
+    [HttpGet("grn/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GrnDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetGrn(Guid id)
+    {
+        var result = await repository.GetGrn(id);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of GRNs based on search criteria.
+    /// </summary>
+    [HttpGet("grns")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnDto>>))]
+    public async Task<IResult> GetGrns([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetGrns(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    #endregion
+
+    #region BinCardInformation
+
+    [HttpGet("bincardinformation/{materialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BinCardInformationDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetBinCardInformation([FromRoute] Guid materialId,[FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetBinCardInformation(page, pageSize, searchQuery,materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    #endregion
+    
+
+    #endregion
+    
 }

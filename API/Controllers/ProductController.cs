@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Routes;
 
 namespace API.Controllers;
@@ -71,6 +72,23 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.UpdateProduct(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates a specific product package description by its ID.
+    /// </summary>
+    [HttpPut("package-description/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateProductPackage([FromBody] UpdateProductPackageDescriptionRequest request, Guid productId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.UpdateProductPackageDescription(request, productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Deletes a specific product by its ID.
@@ -106,7 +124,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     [HttpPost("{productId}/routes")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateRoute([FromBody] List<CreateRouteRequest> request, Guid productId)
     {
@@ -264,6 +282,92 @@ public class ProductController(IProductRepository repository) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.ArchiveBillOfMaterial(productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Creates a new equipment.
+    /// </summary>
+    [HttpPost("equipment")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateEquipment([FromBody] CreateEquipmentRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateEquipment(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves specific equipment by its ID.
+    /// </summary>
+    [HttpGet("equipment/{equipmentId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EquipmentDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetEquipment(Guid equipmentId)
+    {
+        var result = await repository.GetEquipment(equipmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of equipment.
+    /// </summary>
+    [HttpGet("equipment")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EquipmentDto>>))]
+    public async Task<IResult> GetEquipments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetEquipments(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a list of all equipment.
+    /// </summary>
+    [HttpGet("equipment/all")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EquipmentDto>))]
+    public async Task<IResult> GetAllEquipments()
+    {
+        var result = await repository.GetEquipments();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates specific equipment by its ID.
+    /// </summary>
+    [HttpPut("equipment/{equipmentId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateEquipment([FromBody] CreateEquipmentRequest request, Guid equipmentId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateEquipment(request, equipmentId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes specific equipment by its ID.
+    /// </summary>
+    [HttpDelete("equipment/{equipmentId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteEquipment(Guid equipmentId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteEquipment(equipmentId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

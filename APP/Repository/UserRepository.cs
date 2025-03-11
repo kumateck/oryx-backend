@@ -22,7 +22,8 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
     public async Task<Result<UserDto>> CreateUser(CreateUserRequest request)
     {
         var user = mapper.Map<User>(request);
-
+        user.CreatedAt = DateTime.UtcNow;
+        
         if (!await EmailIsUnique(request.Email))
             return UserErrors.EmailNotUnique;
 
@@ -62,6 +63,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
     {
         var user = mapper.Map<User>(request);
         user.UserName = request.Email;
+        user.CreatedAt = DateTime.UtcNow;
 
         if (!await EmailIsUnique(request.Email))
             return UserErrors.EmailNotUnique;

@@ -10,6 +10,7 @@ public class CreateSupplierRequest
     public Guid? CountryId { get; set; }
     public Guid? CurrencyId { get; set; }
     public SupplierType Type { get; set; }
+    public SupplierStatus Status { get; set; }
     public List<CreateSupplierManufacturerRequest> AssociatedManufacturers { get; set; } = [];
 }
 
@@ -17,4 +18,5 @@ public class CreateSupplierManufacturerRequest
 {
     public Guid ManufacturerId { get; set; }
     public Guid? MaterialId { get; set; }
+    public decimal QuantityPerPack { get; set; }
 }

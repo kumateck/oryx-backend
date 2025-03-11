@@ -27,7 +27,6 @@ public class BillingSheet : BaseEntity
 
 public class BillingSheetDto : WithAttachment
 {
-    public Guid Id { get; set; }
     public string Code { get; set; }
     public string BillOfLading { get; set; }
     public CollectionItemDto Supplier { get; set; }

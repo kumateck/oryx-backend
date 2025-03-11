@@ -4,8 +4,10 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
@@ -134,6 +136,16 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
+           case "StockRequisition":
+               return await context.Requisitions
+                   .Where(m => m.RequisitionType == RequisitionType.Stock && m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "PurchaseRequisition":
+               return await context.Requisitions
+                   .Where(m => m.RequisitionType == RequisitionType.Purchase && m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
            case nameof(SourceRequisition):
                return await context.SourceRequisitions
                    .Where(m => m.Code.StartsWith(prefix))
@@ -149,6 +161,24 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
+           case nameof(Grn):
+               return await context.Grns
+                   .Where(m => m.GrnNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(StockTransfer):
+               return await context.StockTransfers
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "FinishedGoodsTransfer":
+               return 0;
+           
+           case "ArNumber":
+               return await context.BinCardInformation
+                   .Where(m => m.ArNumber.StartsWith(prefix))
+                   .CountAsync();
+               
            default:
                return Error.Validation("ModelType", "Invalid model type sent");
         }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
@@ -60,6 +61,20 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     public async Task<IResult> GetMaterials([FromQuery] MaterialKind kind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetMaterials(page, pageSize, searchQuery, kind);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of all material categories.
+    /// </summary>
+    /// <param name="materialKind">The kind of material being requested</param>
+    /// <returns>Returns a paginated list of material categories.</returns>
+    [HttpGet("category")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialCategoryDto>))]
+    public async Task<IResult> GetMaterialCategories([FromQuery] MaterialKind? materialKind = null)
+    {
+        var result = await repository.GetMaterialCategories(materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -128,22 +143,36 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.CheckStockLevel(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-
-    /*/// <summary>
-    /// Checks if a requisition can be fulfilled for a specific material.
+    
+    /// <summary>
+    /// Retrieves a list of material batches by material ID.
     /// </summary>
     /// <param name="materialId">The ID of the material.</param>
-    /// <param name="requisitionId">The ID of the requisition.</param>
-    /// <returns>Returns a boolean indicating if the requisition can be fulfilled.</returns>
-    [HttpGet("{materialId}/can-fulfill-requisition/{requisitionId}")]
+    /// <returns>Returns a list of material batches.</returns>
+    [HttpGet("{materialId}/batches")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> CanFulfillRequisition(Guid materialId, Guid requisitionId)
+    public async Task<IResult> GetMaterialBatchesByMaterialId(Guid materialId)
     {
-        var result = await repository.CanFulfillRequisition(materialId, requisitionId);
+        var result = await repository.GetMaterialBatchesByMaterialId(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }*/
+    }
+    
+    /// <summary>
+    /// Retrieves the stock of materials in transit.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <returns>Returns the stock of material in transit.</returns>
+    [HttpGet("{materialId}/in-transit")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(decimal))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialsInTransit(Guid materialId)
+    {
+        var result = await repository.GetMaterialsInTransit(materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Creates a new material batch.
@@ -193,28 +222,37 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialBatches(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Moves a material batch from one location to another.
     /// </summary>
-    /// <param name="batchId">The ID of the material batch to move.</param>
-    /// <param name="fromLocationId">The ID of the warehouse source location.</param>
-    /// <param name="toLocationId">The ID of the warehouse destination location.</param>
-    /// <param name="quantity">The quantity to move.</param>
+    /// <param name="request">The move material to location request object</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("batch/move")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> MoveMaterialBatch(
-        Guid batchId, Guid fromLocationId, Guid toLocationId, int quantity)
+    public async Task<IResult> MoveMaterialBatch([FromBody] MoveMaterialBatchRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.MoveMaterialBatch(batchId, fromLocationId, toLocationId, quantity, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        var result = await repository.MoveMaterialBatchByMaterial(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    [HttpPut("batch/{batchId}/approve")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ApproveMaterialBatch(Guid batchId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ApproveMaterialBatch(batchId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -229,7 +267,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetWarehouseStock(Guid materialId, Guid warehouseId)
     {
-        var result = await repository.GetMaterialStockInWarehouse(materialId, warehouseId);
+        var result = await repository.GetMassMaterialStockInWarehouse(materialId, warehouseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -247,7 +285,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.ConsumeMaterialAtLocation(batchId, locationId, quantity, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -263,5 +301,173 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var result = await repository.GetMaterialStockAcrossWarehouses(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the stock levels across all warehouses for a specific material.
+    /// </summary>
+    /// <param name="materialId"> The id of the material</param>
+    /// <param name="quantity">The minimum quantity of the stock the department should have.</param>
+    /// <returns></returns>
+    [HttpGet("{materialId}/department-stock/{quantity}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DepartmentDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity)
+    {
+        var result = await repository.GetDepartmentsWithEnoughStock(materialId, quantity);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Imports materials from an Excel file.
+    /// </summary>
+    /// <param name="file">The uploaded Excel file containing materials.</param>
+    /// <param name="kind">The kind of materials being imported.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("upload")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadMaterials(IFormFile file, [FromQuery] MaterialKind kind)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportMaterialsFromExcel(file, kind);
+
+        return result.IsSuccess
+            ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Updates the batch status of the specified material batches.
+    /// </summary>
+    /// <param name="request">The UpdateBatchStatusRequest object.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("batch/status")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateBatchStatus([FromBody] UpdateBatchStatusRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateBatchStatus(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Supplies a material batch to warehouse shelves.
+    /// </summary>
+    /// <param name="request">The SupplyMaterialBatchRequest object.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("batch/supply")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SupplyMaterialBatchToWarehouse([FromBody] SupplyMaterialBatchRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.SupplyMaterialBatchToWarehouse(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Moves a shelf material batch from one shelf to another.
+    /// </summary>
+    /// <param name="request">The MoveShelfMaterialBatchRequest object.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("batch/move/v2")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MoveMaterialBatchV2([FromBody] MoveShelfMaterialBatchRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.MoveMaterialBatchV2(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of approved materials for a specific warehouse.
+    /// </summary>
+    /// <param name="kind">The kind of material needed.</param>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of approved raw materials.</returns>
+    [HttpGet("approved-materials")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetApprovedRawMaterials([FromQuery] MaterialKind kind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetApprovedMaterials(page, pageSize, searchQuery, kind, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of material batches by material ID for a specific warehouse.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <param name="searchQuery">Search material</param>
+    /// <returns>Returns a paginated list of material batches.</returns>
+    [HttpGet("{materialId}/batches/v2")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShelfMaterialBatchDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialBatchesByMaterialIdV2([FromRoute] Guid materialId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize,  materialId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the stock of a material in different warehouses.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <returns>Returns the stock of the material in all warehouses.</returns>
+    [HttpGet("{materialId}/stock/warehouses")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStockByWarehouseDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStockByWarehouse(Guid materialId)
+    {
+        var result = await repository.GetStockByWarehouse(materialId);
+        return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
+    }
+
+    /// <summary>
+    /// Retrieves the stock of a material in different departments.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <returns>Returns the stock of the material in all departments.</returns>
+    [HttpGet("{materialId}/stock/departments")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStockByDepartmentDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStockByDepartment(Guid materialId)
+    {
+        var result = await repository.GetStockByDepartment(materialId);
+        return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
     }
 }

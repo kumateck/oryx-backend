@@ -1,17 +1,14 @@
-using SHARED;
+using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.Departments;
 
-public class DepartmentDto 
+public class DepartmentDto : BaseDto
 { 
-    public Guid Id { get; set; }
     public string Code { get; set; }
     public string Name { get; set; }
+    public DepartmentType Type { get; set; }
     public string Description { get; set; }
-    public List<DepartmentWarehouseDto> Warehouses { get; set; }
-}
-
-public class DepartmentWarehouseDto
-{
-    public CollectionItemDto Warehouse { get; set; }
+    public List<WarehouseDto> Warehouses { get; set; } = [];
+    public bool IsBeta => Name == "Beta";
 }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Requisitions;
 using APP.Utils;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions.Request;
 
@@ -32,7 +33,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var result = await repository.CreateRequisition(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of requisitions.
     /// </summary>
@@ -40,13 +41,15 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="status">Filter by status of the requisition.</param>
+    /// <param name="type">Filter between stock and purchase requisitions. (Stock = 0, Purchase =  1)</param>
     /// <returns>Returns a paginated list of requisitions.</returns>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
-    public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] RequestStatus? status = null)
+    public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
+        [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null)
     {
-        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status);
+        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -61,17 +64,33 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetRequisition(Guid requisitionId)
     {
-        var result = await repository.GetRequisition(requisitionId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetRequisition(requisitionId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    [HttpPost("issue-stock-requisition/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> IssueStockRequisition([FromBody] List<BatchQuantityDto> batchQuantities,[FromRoute] Guid productId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.IssueStockRequisitionVoucher(batchQuantities, productId,Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
-    /// Approves a Stock Requisition.
+    /// Issues a Stock Requisition.
     /// </summary>
     /// <param name="request">The ApproveRequisitionRequest object.</param>
-    /// <param name="requisitionId">The ID of the Stock Requisition being approved.</param>
+    /// <param name="requisitionId">The ID of the Stock Requisition being issued.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("{requisitionId}/approve")]
+    [HttpPost("{requisitionId}/issue")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -210,7 +229,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <summary>
     /// Retrieves a paginated list of suppliers with their associated source requisition items.
     /// </summary>
-    /// <param name="source">The source of the requisition. (example Local, Foreign, Internal)</param>
+    /// <param name="source">The source of the requisition. (example Local, Foreign)</param>
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="sent">Filter by whether a quotation has been sent.</param>
@@ -218,7 +237,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [HttpGet("source/supplier")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationDto>>))]
-    public async Task<IResult> GetSuppliersWithSourceRequisitionItems([FromQuery] ProcurementSource source,
+    public async Task<IResult> GetSuppliersWithSourceRequisitionItems([FromQuery] SupplierType source,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] bool sent = false)

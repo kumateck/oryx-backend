@@ -3,6 +3,8 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Equipments;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -25,13 +27,20 @@ namespace APP.Repository;
      public async Task<Result<ProductDto>> GetProduct(Guid productId) 
      { 
          var product = await context.Products
+             .AsSplitQuery()
+             .Include(p => p.BaseUoM)
+             .Include(p => p.Equipment)
+             .Include(p => p.BasePackingUoM)
              .Include(p => p.BillOfMaterials)
              .ThenInclude(p => p.BillOfMaterial)
              .ThenInclude(p => p.Items.OrderBy(i => i.Order))
              .Include(p => p.Category)
              .Include(p => p.FinishedProducts)
              .Include(p => p.Packages)
-             .Include(p => p.Routes.OrderBy(r => r.Order))
+             .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.WorkCenters)
+             .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleUsers)
+             .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleRoles)
+             .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.Resources)
              .Include(p =>p.CreatedBy)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -41,7 +50,7 @@ namespace APP.Repository;
      public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize, string searchQuery)
      {
          var query = context.Products
-             .Include(p => p.Category)
+             .AsSplitQuery()
              .AsQueryable();
 
          if (!string.IsNullOrEmpty(searchQuery))
@@ -68,6 +77,23 @@ namespace APP.Repository;
          mapper.Map(request, existingProduct);
          existingProduct.LastUpdatedById = userId;
 
+         context.Products.Update(existingProduct);
+         await context.SaveChangesAsync();
+         return Result.Success();
+     }
+     
+     public async Task<Result> UpdateProductPackageDescription(UpdateProductPackageDescriptionRequest request, Guid productId, Guid userId)
+     {
+         var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+         if (existingProduct is null)
+         {
+             return ProductErrors.NotFound(productId);
+         }
+
+         existingProduct.PrimaryPackDescription = request.PrimaryPackDescription;
+         existingProduct.SecondaryPackDescription = request.SecondaryPackDescription;
+         existingProduct.TertiaryPackDescription = request.TertiaryPackDescription;
+         existingProduct.LastUpdatedById = userId;
          context.Products.Update(existingProduct);
          await context.SaveChangesAsync();
          return Result.Success();
@@ -155,18 +181,14 @@ namespace APP.Repository;
           {
               context.Routes.RemoveRange(product.Routes);
           }
+
+          var routes = new List<Route>();
           
           foreach (var routeRequest in request)
           {
-              var route = mapper.Map<Route>(routeRequest);
-              route.Resources = routeRequest.ResourceIds.Select(r => new RouteResource 
-              { 
-                  ResourceId = r
-              }).ToList();
-              route.CreatedById = userId;
-              
-              product.Routes.Add(route);
+              routes.Add(mapper.Map<Route>(routeRequest));
           }
+          product.Routes.AddRange(routes);
           await context.SaveChangesAsync();
           return Result.Success();
       }
@@ -175,7 +197,9 @@ namespace APP.Repository;
     {
         var route = await context.Routes
             .Include(r => r.Operation)
-            .Include(r => r.WorkCenter)
+            .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
+            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
+            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .FirstOrDefaultAsync(r => r.Id == routeId);
 
@@ -191,13 +215,15 @@ namespace APP.Repository;
         var query = context.Routes
             .OrderBy(r => r.Order)
             .Include(r => r.Operation)
-            .Include(r => r.WorkCenter)
+            .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
+            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
+            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.Where(r => r.Operation.Name.Contains(searchQuery) || r.WorkCenter.Name.Contains(searchQuery));
+            query = query.WhereSearch(searchQuery, q => q.Operation.Name);
         }
 
         var paginatedRoutes = await PaginationHelper.GetPaginatedResultAsync(
@@ -214,31 +240,22 @@ namespace APP.Repository;
     {
         var route = await context.Routes
             .Include(r => r.Resources)
+            .Include(route => route.ResponsibleRoles)
+            .Include(route => route.ResponsibleUsers)
+            .Include(route => route.WorkCenters)
             .FirstOrDefaultAsync(r => r.Id == routeId);
 
         if (route == null)
             return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
-
+        
+        context.RouteResources.RemoveRange(route.Resources);
+        context.RouteResponsibleRoles.RemoveRange(route.ResponsibleRoles);
+        context.RouteResponsibleUsers.RemoveRange(route.ResponsibleUsers);
+        context.RouteWorkCenters.RemoveRange(route.WorkCenters);
+        
         mapper.Map(request, route);
         route.LastUpdatedById = userId;
-
-        // Update Route details
-        // route.OperationId = request.OperationId;
-        // route.WorkCenterId = request.WorkCenterId;
-        // route.BillOfMaterialItemId = request.BillOfMaterialItemId;
-        // route.EstimatedTime = request.EstimatedTime;
-        // route.LastUpdatedById = userId;
-
-        // Remove existing resources
-        context.RouteResources.RemoveRange(route.Resources);
-
-        // Add new resources
-        route.Resources = request.ResourceIds.Select(r => new RouteResource
-        {
-            ResourceId = r,
-            RouteId = routeId
-        }).ToList();
-
+        
         context.Routes.Update(route);
         await context.SaveChangesAsync();
 
@@ -265,27 +282,80 @@ namespace APP.Repository;
     
     public async Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId)
     {
-        var product = await context.Products.Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == productId);
+        var product = await context.Products
+            .Include(p => p.Packages)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+
         if (product is null)
         {
             return ProductErrors.NotFound(productId);
         }
 
+        // Build a HashSet of existing MaterialIds for fast lookup
+        var existingMaterialIds = product.Packages.Select(p => p.MaterialId).ToHashSet();
+
+        foreach (var newPackage in request)
+        {
+            if (newPackage.DirectLinkMaterialId.HasValue)
+            {
+                // Check if this new package introduces a cycle
+                if (HasCircularDependency(newPackage.MaterialId, newPackage.DirectLinkMaterialId.Value, product.Packages.ToList()))
+                {
+                    return Error.Failure("Product.Package", $"Circular dependency detected with MaterialId {newPackage.MaterialId} and DirectLinkMaterialId {newPackage.DirectLinkMaterialId}");
+                }
+            }
+        }
+
+        // Remove old packages if they exist
         if (product.Packages.Count != 0)
         {
             context.ProductPackages.RemoveRange(product.Packages);
         }
 
+        // Map and add new packages
         foreach (var newPackage in request.Select(mapper.Map<ProductPackage>))
         {
             newPackage.CreatedById = userId;
             product.Packages.Add(newPackage);
         }
-       
-        await context.SaveChangesAsync();
 
+        await context.SaveChangesAsync();
         return product.Id;
     }
+
+    
+    private bool HasCircularDependency(Guid materialId, Guid directLinkMaterialId, List<ProductPackage> existingPackages)
+    {
+        var visited = new HashSet<Guid>();  // Track visited materials
+        var currentMaterialId = directLinkMaterialId;
+
+        while (true)
+        {
+            // If we encounter the starting materialId again, it's a cycle
+            if (currentMaterialId == materialId)
+            {
+                return true;
+            }
+
+            // If this material was already checked, cycle detected
+            if (!visited.Add(currentMaterialId))
+            {
+                return true;
+            }
+
+            // Find the next linked material
+            var nextPackage = existingPackages.FirstOrDefault(p => p.MaterialId == currentMaterialId);
+            if (nextPackage == null || !nextPackage.DirectLinkMaterialId.HasValue)
+            {
+                break; // No more links, exit loop
+            }
+
+            currentMaterialId = nextPackage.DirectLinkMaterialId.Value;
+        }
+
+        return false;
+    }
+
 
     public async Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId)
     {
@@ -326,11 +396,29 @@ namespace APP.Repository;
     public async Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId)
     {
         var productPackage = await context.ProductPackages
-            .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
+            .Include(p => p.Product)
+            .ThenInclude(p => p.Packages) // Include related packages for validation
+            .FirstOrDefaultAsync(p => p.Id == productPackageId);
 
         if (productPackage == null)
             return Error.NotFound("ProductPackage.NotFound", $"Product package with ID {productPackageId} not found.");
 
+        // Prevent self-referencing update
+        if (request.DirectLinkMaterialId.HasValue && request.DirectLinkMaterialId.Value == request.MaterialId)
+        {
+            return Error.Failure("Product.Package", "DirectLinkMaterialId cannot be the same as MaterialId.");
+        }
+
+        // Check for circular dependency
+        if (request.DirectLinkMaterialId.HasValue)
+        {
+            if (HasCircularDependency(request.MaterialId, request.DirectLinkMaterialId.Value, productPackage.Product.Packages.ToList()))
+            {
+                return Error.Failure("Product.Package", $"Circular dependency detected with MaterialId {productPackage.MaterialId} and DirectLinkMaterialId {productPackage.DirectLinkMaterialId}");
+            }
+        }
+
+        // Map updated values
         mapper.Map(request, productPackage);
         productPackage.LastUpdatedById = userId;
 
@@ -339,6 +427,7 @@ namespace APP.Repository;
 
         return Result.Success();
     }
+
 
     public async Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId)
     {
@@ -396,6 +485,97 @@ namespace APP.Repository;
             await context.SaveChangesAsync();
         }
 
+        return Result.Success();
+    }
+    
+     // Create Equipment
+    public async Task<Result<Guid>> CreateEquipment(CreateEquipmentRequest request, Guid userId)
+    {
+        var equipment = mapper.Map<Equipment>(request);
+        equipment.CreatedById = userId;
+
+        await context.Equipments.AddAsync(equipment);
+        await context.SaveChangesAsync();
+
+        return equipment.Id;
+    }
+
+    // Get Equipment by ID
+    public async Task<Result<EquipmentDto>> GetEquipment(Guid equipmentId)
+    {
+        var equipment = await context.Equipments
+            .Include(e => e.UoM)
+            .Include(e => e.Department)
+            .FirstOrDefaultAsync(e => e.Id == equipmentId);
+
+        return equipment is null
+            ? Error.NotFound("Equipment.NotFound", "Equipment with this Id not found")
+            : mapper.Map<EquipmentDto>(equipment);
+    }
+
+    // Get paginated list of Equipments
+    public async Task<Result<Paginateable<IEnumerable<EquipmentDto>>>> GetEquipments(int page, int pageSize, string searchQuery)
+    {
+        var query = context.Equipments
+            .AsSplitQuery()
+            .Include(e => e.UoM)
+            .Include(e => e.Department)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, e => e.Name, e => e.MachineId);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<EquipmentDto>
+        );
+    }
+
+    // Get all Equipments
+    public async Task<Result<List<EquipmentDto>>> GetEquipments()
+    {
+        return mapper.Map<List<EquipmentDto>>(await context.Equipments
+            .AsSplitQuery()
+            .Include(e => e.UoM)
+            .Include(e => e.Department)
+            .ToListAsync());
+    }
+
+    // Update Equipment
+    public async Task<Result> UpdateEquipment(CreateEquipmentRequest request, Guid equipmentId, Guid userId)
+    {
+        var existingEquipment = await context.Equipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        if (existingEquipment is null)
+        {
+            return Error.NotFound("Equipment.NotFound", "Equipment with this Id not found");
+        }
+
+        mapper.Map(request, existingEquipment);
+        existingEquipment.LastUpdatedById = userId;
+
+        context.Equipments.Update(existingEquipment);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // Delete Equipment (soft delete)
+    public async Task<Result> DeleteEquipment(Guid equipmentId, Guid userId)
+    {
+        var equipment = await context.Equipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        if (equipment is null)
+        {
+            return Error.NotFound("Equipment.NotFound", "Equipment with this Id not found");
+        }
+
+        equipment.DeletedAt = DateTime.UtcNow;
+        equipment.LastDeletedById = userId;
+
+        context.Equipments.Update(equipment);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 }

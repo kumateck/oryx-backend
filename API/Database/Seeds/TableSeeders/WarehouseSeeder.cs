@@ -1,3 +1,4 @@
+/*
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 
@@ -89,3 +90,4 @@ namespace API.Database.Seeds.TableSeeders
         }
     }
 }
+*/

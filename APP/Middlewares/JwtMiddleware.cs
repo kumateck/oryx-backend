@@ -23,7 +23,7 @@ public class JwtMiddleware(RequestDelegate next, IMemoryCache cache)
     {
         try
         {
-            if (!cache.TryGetValue(token, out (string UserId, List<Guid> RoleIds) cachedData))
+            if (!cache.TryGetValue(token, out (string UserId, string DepartmentId, List<Guid> RoleIds) cachedData))
             {
                 // Parse the token to extract user and roles information
                 var jwtToken = new JwtSecurityToken(token);
@@ -43,7 +43,7 @@ public class JwtMiddleware(RequestDelegate next, IMemoryCache cache)
                 // Cache the user and role information if the user exists
                 if (user != null)
                 {
-                    cachedData = (UserId: userId, RoleIds: roleIds);
+                    cachedData = (UserId: userId, DepartmentId: user.DepartmentId.ToString(), RoleIds: roleIds);
                     cache.Set(token, cachedData, new MemoryCacheEntryOptions
                     {
                         SlidingExpiration = TimeSpan.FromMinutes(5)
@@ -56,6 +56,7 @@ public class JwtMiddleware(RequestDelegate next, IMemoryCache cache)
             {
                 context.Items["Sub"] = cachedData.UserId;
                 context.Items["Roles"] = cachedData.RoleIds;
+                context.Items["Department"] = cachedData.DepartmentId;
             }
         }
         catch (Exception)

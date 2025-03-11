@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
@@ -10,9 +11,12 @@ namespace APP.IRepository;
 public interface IRequisitionRepository
 { 
     Task<Result<Guid>> CreateRequisition(CreateRequisitionRequest request, Guid userId);
-    Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId);
+    Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId);
+
+    Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities,Guid productId,
+        Guid userId);
     Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize,
-        string searchQuery,  RequestStatus? status);
+        string searchQuery,  RequestStatus? status, RequisitionType? requisitionType);
     Task<Result> ApproveRequisition(ApproveRequisitionRequest request, Guid requisitionId, Guid userId, List<Guid> roleIds);
      Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId);
      Task<Result> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId);
@@ -25,7 +29,7 @@ public interface IRequisitionRepository
     Task<Result> DeleteSourceRequisition(Guid sourceRequisitionId);
 
     Task<Result<Paginateable<IEnumerable<SupplierQuotationRequest>>>> GetSuppliersWithSourceRequisitionItems(int page,
-        int pageSize,  ProcurementSource source, bool sent);
+        int pageSize, SupplierType source, bool sent);
 
    Task<Result<SupplierQuotationRequest>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
 

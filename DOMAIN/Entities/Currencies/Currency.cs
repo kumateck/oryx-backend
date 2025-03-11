@@ -10,7 +10,7 @@ public class Currency : BaseEntity
     [StringLength(1000)] public string Description { get; set; }
 }
 
-public class CurrencyDto
+public class CurrencyDto : BaseDto
 {
     public string Name { get; set; }
     public string Symbol { get; set; }

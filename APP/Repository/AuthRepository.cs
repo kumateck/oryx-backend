@@ -4,15 +4,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
+using APP.Services.Email;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.Extensions.Configuration;
 using SHARED;
 using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
 namespace APP.Repository;
 
-public class AuthRepository(ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService /*, IEmailService emailService*/) 
+public class AuthRepository(IEmailService emailService, IConfiguration configuration,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService /*, IEmailService emailService*/) 
     : IAuthRepository
 {
     public async Task<Result<LoginResponse>> Login(LoginRequest request)
@@ -68,13 +70,13 @@ public class AuthRepository(ApplicationDbContext context, UserManager<User> user
         {
             return UserErrors.NotFoundByEmail(request.Email);
         }
-        
-        var partialUrl = Environment.GetEnvironmentVariable("clientBaseUrl");
+
+        var partialUrl = configuration.GetValue<string>("ClientBaseUrl");
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
 
         var key = Guid.NewGuid().ToString();
 
-        context.PasswordResets.Add(new PasswordReset
+        await context.PasswordResets.AddAsync(new PasswordReset
         {
             UserId = user.Id,
             Token = token,
@@ -84,14 +86,9 @@ public class AuthRepository(ApplicationDbContext context, UserManager<User> user
 
         await context.SaveChangesAsync();
 
-        var url = request.ClientId switch
-        {
-            "web" => $"https://{partialUrl}/reset-password?key={key}",
-            "mobile" => $"veilghehs-mobile://set-password/{key}",
-            _ => $"{partialUrl}/reset-password?key={key}"
-        };
+        var url = $"https://{partialUrl}/reset-password?key={key}";
 
-        //await emailService.SendForgotPasswordEmail(url, user);
+        emailService.SendMail(user.Email, "Password Reset", url,[]);
         return Result.Success();
     }
     

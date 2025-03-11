@@ -146,7 +146,7 @@ public static class PdfTemplate
                   </table>
                 </div>
                 <div class=""footer"">
-                  <p>&copy; 2024 Entrance Pharmaceuticals & Research Centre</p>
+                  <p>&copy; 2025 Entrance Pharmaceuticals & Research Centre</p>
                 </div>
               </div>
             </body>
@@ -297,7 +297,7 @@ public static class PdfTemplate
                     </table>
                   </div>
                   <div class=""footer"">
-                    <p>&copy; 2024 Entrance Pharmaceuticals & Research Centre</p>
+                    <p>&copy; 2025 Entrance Pharmaceuticals & Research Centre</p>
                   </div>
                 </div>
               </body>
@@ -448,7 +448,7 @@ public static class PdfTemplate
                     </table>
                   </div>
                   <div class=""footer"">
-                    <p>&copy; 2024 Entrance Pharmaceuticals & Research Centre</p>
+                    <p>&copy; 2025 Entrance Pharmaceuticals & Research Centre</p>
                   </div>
                 </div>
               </body>

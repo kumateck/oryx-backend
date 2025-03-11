@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.BillOfMaterials.Request;
 using DOMAIN.Entities.Products;
 using SHARED;
 

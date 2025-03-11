@@ -3,9 +3,11 @@ using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
@@ -16,7 +18,7 @@ namespace APP.Repository;
 
 public class CollectionRepository(ApplicationDbContext context, IMapper mapper) : ICollectionRepository
 {
-    public async Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType)
+    public async Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType, MaterialKind? materialKind)
     {
         return itemType switch
         {
@@ -24,10 +26,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.ProductCategories.ToListAsync()),
             nameof(Resource) => mapper.Map<List<CollectionItemDto>>(await context.Resources.ToListAsync()),
             nameof(UnitOfMeasure) => mapper.Map<List<CollectionItemDto>>(await context.UnitOfMeasures.ToListAsync()),
+            nameof(PackageStyle) => mapper.Map<List<CollectionItemDto>>(await context.PackageStyles.ToListAsync()),
             nameof(WorkCenter) => mapper.Map<List<CollectionItemDto>>(await context.WorkCenters.ToListAsync()),
             nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
-            nameof(MaterialCategory) => mapper.Map<List<CollectionItemDto>>(await context.MaterialCategories.ToListAsync()),
+            nameof(MaterialCategory) => await GetMaterialCategories(materialKind), 
             nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
             nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
             nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
@@ -37,11 +40,23 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(WarehouseLocationRack) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationRacks.OrderBy(c => c.Name).ToListAsync()),
             nameof(WarehouseLocationShelf) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync()),
             nameof(Currency) => mapper.Map<List<CollectionItemDto>>(await context.Currencies.OrderBy(c => c.Name).ToListAsync()),
+            nameof(ShipmentDiscrepancyType) => mapper.Map<List<CollectionItemDto>>(await context.ShipmentDiscrepancyTypes.OrderBy(c => c.Name).ToListAsync()),
+            nameof(Department) => mapper.Map<List<CollectionItemDto>>(await context.Departments.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
     
-    public async Task<Result<Dictionary<string, IEnumerable<CollectionItemDto>>>> GetItemCollection(List<string> itemTypes)
+    private async Task<List<CollectionItemDto>> GetMaterialCategories(MaterialKind? materialKind)
+    {
+        var materialCategories = await context.MaterialCategories.ToListAsync();
+        if (materialKind != null)
+        {
+            materialCategories = materialCategories.Where(m => m.MaterialKind == materialKind).ToList();
+        }
+        return mapper.Map<List<CollectionItemDto>>(materialCategories);
+    }
+    
+    public async Task<Result<Dictionary<string, IEnumerable<CollectionItemDto>>>> GetItemCollection(List<string> itemTypes, MaterialKind? materialKind = null)
     {
         var result = new Dictionary<string, IEnumerable<CollectionItemDto>>();
         var invalidItemTypes = new List<string>();
@@ -64,6 +79,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var units = await context.UnitOfMeasures.ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(units);
                     break;
+                
+                case nameof(PackageStyle):
+                    var packageStyles = await context.PackageStyles.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(packageStyles);
+                    break;
 
                 case nameof(WorkCenter):
                     var workCenters = await context.WorkCenters.ToListAsync();
@@ -82,6 +102,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 
                 case nameof(MaterialCategory):
                     var materialCategory = await context.MaterialCategories.ToListAsync();
+                    if(materialKind != null) materialCategory = materialCategory.Where(m => m.MaterialKind == materialKind).ToList();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(materialCategory);
                     break;
                 
@@ -129,6 +150,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var warehouseLocationShelves = await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationShelves);
                     break;
+                
+                case nameof(ShipmentDiscrepancyType):
+                    var shipmentDiscrepancyTypes = await context.ShipmentDiscrepancyTypes.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(shipmentDiscrepancyTypes);
+                    break;
+                
+                case nameof(Department):
+                    var departments = await context.Departments.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(departments);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -140,6 +171,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         var invalidItems = string.Join(", ", invalidItemTypes);
         return Error.Validation("Item", $"Invalid item types: {invalidItems}");
     }
+    
+    public async Task<Result<IEnumerable<UnitOfMeasureDto>>> GetUoM()
+    {
+       return mapper.Map<List<UnitOfMeasureDto>>(await context.UnitOfMeasures.ToListAsync());
+    }
+    
+    public async Task<Result<IEnumerable<PackageStyleDto>>> GetPackageStyles()
+    {
+        return mapper.Map<List<PackageStyleDto>>(await context.PackageStyles.ToListAsync());
+    }
 
     public Result<IEnumerable<string>> GetItemTypes()
     {
@@ -148,6 +189,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ProductCategory),
             nameof(Resource),
             nameof(UnitOfMeasure),
+            nameof(PackageStyle),
             nameof(WorkCenter),
             nameof(Operation),
             nameof(MaterialType),
@@ -156,12 +198,19 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(User),
             nameof(Role),
             nameof(Country),
-            nameof(WarehouseLocation)
+            nameof(WarehouseLocation),
+            nameof(ShipmentDiscrepancyType)
         };
     }
     
     public async Task<Result<Guid>> CreateItem(CreateItemRequest request, string itemType)
     {
+        var nameExists = await CheckIfNameExists(itemType, request.Name);
+        if (nameExists)
+        {
+            return Error.Validation("Name", "An item with this name already exists.");
+        }
+
         switch (itemType)
         {
             case nameof(ProductCategory):
@@ -181,6 +230,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.UnitOfMeasures.AddAsync(unitOfMeasure);
                 await context.SaveChangesAsync();
                 return unitOfMeasure.Id;
+            
+            case nameof(PackageStyle):
+                var packageStyle = mapper.Map<PackageStyle>(request);
+                await context.PackageStyles.AddAsync(packageStyle);
+                await context.SaveChangesAsync();
+                return packageStyle.Id;
             
             case nameof(WorkCenter):
                 var workCenter = mapper.Map<WorkCenter>(request);
@@ -218,13 +273,25 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.SaveChangesAsync();
                 return currency.Id;
             
+            case nameof(ShipmentDiscrepancyType):
+                var shipmentDiscrepancyType = mapper.Map<ShipmentDiscrepancyType>(request);
+                await context.ShipmentDiscrepancyTypes.AddAsync(shipmentDiscrepancyType);
+                await context.SaveChangesAsync();
+                return shipmentDiscrepancyType.Id;
+            
             default:
                 return Error.Validation("Item", "Invalid item type");
         }
     }
-    
+
     public async Task<Result<Guid>> UpdateItem(CreateItemRequest request, Guid itemId, string itemType, Guid userId)
     {
+        bool nameExists = await CheckIfNameExists(itemType, request.Name, itemId);
+        if (nameExists)
+        {
+            return Error.Validation("Name", "An item with this name already exists.");
+        }
+
         switch (itemType)
         {
             case nameof(ProductCategory):
@@ -250,6 +317,14 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.UnitOfMeasures.Update(unitOfMeasure);
                 await context.SaveChangesAsync();
                 return unitOfMeasure.Id;
+            
+            case nameof(PackageStyle):
+                var packageStyle = await context.PackageStyles.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, packageStyle);
+                packageStyle.LastUpdatedById = userId;
+                context.PackageStyles.Update(packageStyle);
+                await context.SaveChangesAsync();
+                return packageStyle.Id;
         
             case nameof(WorkCenter):
                 var workCenter = await context.WorkCenters.FirstOrDefaultAsync(p => p.Id == itemId);
@@ -298,10 +373,38 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Currencies.Update(currency);
                 await context.SaveChangesAsync();
                 return currency.Id;
+            
+            case nameof(ShipmentDiscrepancyType):
+                var shipmentDiscrepancyType = await context.ShipmentDiscrepancyTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, shipmentDiscrepancyType);
+                shipmentDiscrepancyType.LastUpdatedById = userId;
+                context.ShipmentDiscrepancyTypes.Update(shipmentDiscrepancyType);
+                await context.SaveChangesAsync();
+                return shipmentDiscrepancyType.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
         }
+    }
+
+    // Helper Method to Check for Duplicate Names
+    private async Task<bool> CheckIfNameExists(string itemType, string name, Guid? excludedId = null)
+    {
+        return itemType switch
+        {
+            nameof(ProductCategory) => await context.ProductCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(Resource) => await context.Resources.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(UnitOfMeasure) => await context.UnitOfMeasures.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(PackageStyle) => await context.PackageStyles.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(WorkCenter) => await context.WorkCenters.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(Operation) => await context.Operations.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(MaterialType) => await context.MaterialTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(MaterialCategory) => await context.MaterialCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(PackageType) => await context.PackageTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(Currency) => await context.Currencies.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(ShipmentDiscrepancyType) => await context.ShipmentDiscrepancyTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            _ => false
+        };
     }
     
     public async Task<Result> SoftDeleteItem(Guid itemId, string itemType, Guid userId)
@@ -337,6 +440,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 unitOfMeasure.DeletedAt = currentTime;
                 unitOfMeasure.LastDeletedById = userId;
                 context.UnitOfMeasures.Update(unitOfMeasure);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(PackageStyle):
+                var packageStyle = await context.PackageStyles.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (packageStyle == null)
+                    return Error.Validation("PackageStyle", "Not found");
+                packageStyle.DeletedAt = currentTime;
+                packageStyle.LastDeletedById = userId;
+                context.PackageStyles.Update(packageStyle);
                 await context.SaveChangesAsync();
                 return Result.Success();
             
@@ -397,6 +510,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 currency.DeletedAt = currentTime;
                 currency.LastDeletedById = userId;
                 context.Currencies.Update(currency);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(ShipmentDiscrepancyType):
+                var shipmentDiscrepancyType = await context.ShipmentDiscrepancyTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (shipmentDiscrepancyType == null)
+                    return Error.Validation("ShipmentDiscrepancy", "Not found");
+                shipmentDiscrepancyType.DeletedAt = currentTime;
+                shipmentDiscrepancyType.LastDeletedById = userId;
+                context.ShipmentDiscrepancyTypes.Update(shipmentDiscrepancyType);
                 await context.SaveChangesAsync();
                 return Result.Success();
             

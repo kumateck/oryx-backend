@@ -72,9 +72,9 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
         var claims = new List<Claim> 
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}" ?? ""), 
+            new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"), 
             new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-            
+            new("department", user.DepartmentId?.ToString() ?? "")
         }; 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
         

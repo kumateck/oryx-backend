@@ -13,7 +13,7 @@ public abstract class PagedQuery
     /// <summary>
     /// The page position to get
     /// </summary>
-    public int PageNumber { get; set; } = 1;
+    public int Page { get; set; } = 1;
 
     /// <summary>
     /// The sort name for sorting

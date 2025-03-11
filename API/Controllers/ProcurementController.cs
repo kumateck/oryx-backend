@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
@@ -172,6 +174,26 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
     
     /// <summary>
+    /// Updates the status of a specific supplier by its ID.
+    /// </summary>
+    /// <param name="supplierId">The ID of the supplier to update.</param>
+    /// <param name="request">The new status of the supplier.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("supplier/{supplierId}/status")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateSupplierStatus(Guid supplierId, [FromBody]UpdateSupplierStatusRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+    
+        var result = await repository.UpdateSupplierStatus(supplierId, request.Status, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Retrieves a list of suppliers by their material ID.
     /// </summary>
     /// <param name="materialId">The ID of the material.</param>
@@ -282,13 +304,15 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="status">Filter by the status of the purchase order. (Pending, Delivered, Completed)</param>
+    /// <param name="type">Filter by the supplier type</param>
     /// <returns>Returns a paginated list of purchase orders.</returns>
     [HttpGet("purchase-order")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<PurchaseOrderDto>>))]
-    public async Task<IResult> GetPurchaseOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] PurchaseOrderStatus? status = null)
+    public async Task<IResult> GetPurchaseOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, 
+        [FromQuery] PurchaseOrderStatus? status = null, [FromQuery] SupplierType? type = null)
     {
-        var result = await repository.GetPurchaseOrders(page, pageSize, searchQuery, status);
+        var result = await repository.GetPurchaseOrders(page, pageSize, searchQuery, status, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -402,13 +426,14 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="type">Filter by supplier type</param>
     /// <returns>Returns a paginated list of invoices.</returns>
     [HttpGet("purchase-order-invoice")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>))]
-    public async Task<IResult> GetPurchaseOrderInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetPurchaseOrderInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] SupplierType? type = null)
     {
-        var result = await repository.GetPurchaseOrderInvoices(page, pageSize, searchQuery);
+        var result = await repository.GetPurchaseOrderInvoices(page, pageSize, searchQuery, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -627,6 +652,36 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
     
     /// <summary>
+    /// Marks a shipment as arrived by updating the ArrivedAt property.
+    /// </summary>
+    /// <param name="shipmentDocumentId">The ID of the shipment document.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("shipment-document/{shipmentDocumentId}/arrived")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MarkShipmentAsArrived(Guid shipmentDocumentId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.MarkShipmentAsArrived(shipmentDocumentId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves all shipments that have arrived.
+    /// </summary>
+    [HttpGet("shipment-document/arrived")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShipmentDocumentDto>>))]
+    public async Task<IResult> GetArrivedShipments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetArrivedShipments(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Creates a new shipment invoice.
     /// </summary>
     [HttpPost("shipment-invoice")]
@@ -641,17 +696,59 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.CreateShipmentInvoice(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a shipment invoice by the ID.
+    /// </summary>
+    [HttpGet("shipment-invoice/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShipmentInvoice(Guid id)
+    {
+        var result = await repository.GetShipmentInvoice(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves all shipment invoices that have not been linked to a shipment document.
+    /// </summary>
+    [HttpGet("shipment-invoice/unattached")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShipmentInvoiceDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetUnattachedShipmentInvoices()
+    {
+        var result = await repository.GetUnattachedShipmentInvoices();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a shipment invoice by the shipment document ID.
     /// </summary>
-    [HttpGet("shipment-invoice/{shipmentDocumentId}")]
+    [HttpGet("shipment-invoice/shipment-document/{shipmentDocumentId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetShipmentInvoice(Guid shipmentDocumentId)
+    public async Task<IResult> GetShipmentInvoiceByDocument(Guid shipmentDocumentId)
     {
-        var result = await repository.GetShipmentInvoice(shipmentDocumentId);
+        var result = await repository.GetShipmentInvoiceByShipmentDocument(shipmentDocumentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of shipment invoices.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of shipment documents.</returns>
+    [HttpGet("shipment-invoice")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShipmentInvoiceDto>>))]
+    public async Task<IResult> GetShipmentInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetShipmentInvoices(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -747,6 +844,90 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteShipmentDiscrepancy(shipmentDiscrepancyId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves purchase orders that are either not linked to any shipment invoice or are partially used.
+    /// </summary>
+    /// <returns>Returns a list of purchase orders.</returns>
+    [HttpGet("purchase-order/not-linked")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed()
+    {
+        var result = await repository.GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves purchase orders for a specific supplier that are either not linked to any shipment invoice or are partially used.
+    /// </summary>
+    /// <param name="supplierId">The ID of the supplier.</param>
+    /// <returns>Returns a list of purchase orders.</returns>
+    [HttpGet("purchase-order/supplier/{supplierId}/not-linked")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchaseOrderDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
+    {
+        var result = await repository.GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(supplierId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves all materials associated with a list of purchase order IDs.
+    /// </summary>
+    /// <param name="purchaseOrderIds">A list of purchase order IDs.</param>
+    /// <returns>Returns a list of materials.</returns>
+    [HttpPost("materials/by-purchase-orders")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetMaterialsByPurchaseOrderIdsAsync([FromBody] List<Guid> purchaseOrderIds)
+    {
+        var result = await repository.GetMaterialsByPurchaseOrderIdsAsync(purchaseOrderIds);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves material distribution details for a specific shipment document.
+    /// </summary>
+    /// <param name="shipmentDocumentId">The ID of the shipment document.</param>
+    /// <returns>Returns the material distribution details.</returns>
+    [HttpGet("shipment-document/{shipmentDocumentId}/material-distribution")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDistributionDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialDistribution(Guid shipmentDocumentId)
+    {
+        var result = await repository.GetMaterialDistribution(shipmentDocumentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Confirms the distribution of materials.
+    /// </summary>
+    /// <param name="shipmentDocumentId">The shipment document id for which you want to approve distribution</param>
+    /// <param name="materialId"></param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPost("{shipmentDocumentId}/confirm-distribution/{materialId}")]
+    public async Task<IResult> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId)
+    {
+        var result = await repository.ConfirmDistribution(shipmentDocumentId,materialId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Confirms the distribution of materials.
+    /// </summary>
+    /// <param name="shipmentDocumentId">The shipment document id for which you want to approve distribution</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPost("{shipmentDocumentId}/confirm-distribution")]
+    public async Task<IResult> ConfirmDistribution(Guid shipmentDocumentId)
+    {
+        var result = await repository.ConfirmDistribution(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

@@ -1,5 +1,7 @@
 using SHARED;
 using APP.Utils;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
@@ -32,7 +34,7 @@ public interface IProcurementRepository
     // ************* PurchaseOrder *************
     Task<Result<Guid>> CreatePurchaseOrder(CreatePurchaseOrderRequest request, Guid userId);
     Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId);
-    Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status);
+    Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status, SupplierType? type);
     Task<Result> UpdatePurchaseOrder(CreatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId);
     Task<Result> DeletePurchaseOrder(Guid purchaseOrderId, Guid userId);
 
@@ -40,7 +42,7 @@ public interface IProcurementRepository
     Task<Result<Guid>> CreatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid userId);
     Task<Result<PurchaseOrderInvoiceDto>> GetPurchaseOrderInvoice(Guid invoiceId);
     Task<Result<Paginateable<IEnumerable<PurchaseOrderInvoiceDto>>>> GetPurchaseOrderInvoices(int page,
-        int pageSize, string searchQuery);
+        int pageSize, string searchQuery, SupplierType? type);
     Task<Result> SendPurchaseOrderToSupplier(SendPurchaseOrderRequest request, Guid purchaseOrderId);
     Task<Result> SendProformaInvoiceToSupplier(Guid purchaseOrderId);
     Task<Result> UpdatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid invoiceId, Guid userId);
@@ -65,6 +67,10 @@ public interface IProcurementRepository
     
     Task<Result<Guid>> CreateShipmentInvoice(CreateShipmentInvoice request, Guid userId);
     Task<Result<ShipmentInvoiceDto>> GetShipmentInvoice(Guid shipmentInvoiceId);
+    Task<Result<ShipmentInvoiceDto>> GetShipmentInvoiceByShipmentDocument(Guid shipmentDocumentId);
+    Task<Result<Paginateable<IEnumerable<ShipmentInvoiceDto>>>> GetShipmentInvoices(int page, int pageSize,
+        string searchQuery); 
+    Task<Result<IEnumerable<ShipmentInvoiceDto>>> GetUnattachedShipmentInvoices();
     Task<Result> UpdateShipmentInvoice(CreateShipmentInvoice request, Guid shipmentInvoiceId, Guid userId);
     Task<Result> DeleteShipmentInvoice(Guid shipmentInvoiceId, Guid userId);
 
@@ -72,4 +78,18 @@ public interface IProcurementRepository
     Task<Result<ShipmentDiscrepancyDto>> GetShipmentDiscrepancy(Guid shipmentDiscrepancyId);
     Task<Result> UpdateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid shipmentDiscrepancyId, Guid userId);
     Task<Result> DeleteShipmentDiscrepancy(Guid shipmentDiscrepancyId, Guid userId);
+
+    Task<Result<List<SupplierDto>>> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed();
+
+    Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(
+        Guid supplierId);
+    Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds);
+    Task<Result> MarkShipmentAsArrived(Guid shipmentDocumentId, Guid userId);
+
+    Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize,
+        string searchQuery);
+    Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId);
+    Task<Result> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId);
+    Task<Result> ConfirmDistribution(Guid shipmentDocumentId);
+    Task<Result> UpdateSupplierStatus(Guid supplierId, SupplierStatus status, Guid userId);
 }

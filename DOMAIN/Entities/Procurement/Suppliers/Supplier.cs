@@ -19,6 +19,7 @@ public class Supplier : BaseEntity
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
     public SupplierType Type { get; set; }
+    public SupplierStatus Status { get; set; }
     public List<SupplierManufacturer> AssociatedManufacturers { get; set; } = [];
 }
 
@@ -26,6 +27,13 @@ public enum SupplierType
 {
     Foreign, 
     Local
+}
+
+public enum SupplierStatus
+{
+    New = 0,
+    Approved = 1,
+    Rejected = 2
 }
 
 public class SupplierManufacturer : BaseEntity
@@ -36,4 +44,5 @@ public class SupplierManufacturer : BaseEntity
     public Manufacturer Manufacturer { get; set; }
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
+    public decimal QuantityPerPack { get; set; }
 }

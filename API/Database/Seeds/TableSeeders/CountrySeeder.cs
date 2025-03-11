@@ -18,13 +18,14 @@ public class CountrySeeder : ISeeder
     private static void SeedCountries(ApplicationDbContext dbContext)
     {
         if (dbContext.Countries.Any()) return;
-            
+
+        var countries = new List<Country>();
         foreach (var country in CountryUtils.GetAllCountries())
         {
             var existingCountry = dbContext.Countries.FirstOrDefault(c => c.Name == country.Name);
             if (existingCountry is null)  
             {
-                dbContext.Countries.Add(new Country
+                countries.Add(new Country
                 {
                     Name = country.Name,
                     Nationality = country.Nationality,
@@ -32,6 +33,7 @@ public class CountrySeeder : ISeeder
                 });
             }
         }
+        dbContext.Countries.AddRange(countries);
         dbContext.SaveChanges();
     }
 }

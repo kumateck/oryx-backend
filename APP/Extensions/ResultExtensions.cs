@@ -12,15 +12,17 @@ public static class ResultExtensions
             throw new InvalidOperationException("Problem Details cannot have a success results");
         }
         
+        var errors = result.Errors.Count != 0 ? result.Errors : [result.Error];
+
         return Results.Problem(
-            statusCode: GetStatusCode(result.Error.Type),
-            title: GetTitle(result.Error.Type),
-            type: GetType(result.Error.Type),
+            statusCode: GetStatusCode(errors.First().Type),
+            title: GetTitle(errors.First().Type),
+            type: GetType(errors.First().Type),
             extensions: new Dictionary<string, object>
             {
-                {"errors", new[] {result.Error}}
+                { "errors", errors.Select(e => new { e.Code, e.Description }).ToArray() }
             });
-
+        
         static int GetStatusCode(ErrorType errorType) =>
             errorType switch
             {
