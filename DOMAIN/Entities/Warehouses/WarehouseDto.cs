@@ -14,8 +14,15 @@ public class WarehouseDto
     public string Name { get; set; }
     public string Description { get; set; }
     public WarehouseType Type { get; set; }
-    public MaterialKind? MaterialKind { get; set; }
     public List<CollectionItemDto> Locations { get; set; } = [];
+}
+
+public class WarehouseWithoutLocationDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public WarehouseType Type { get; set; }
 }
 
 public class WarehouseLocationDto 
@@ -24,7 +31,7 @@ public class WarehouseLocationDto
     public string Name { get; set; }
     public string FloorName { get; set; }
     public string Description { get; set; }
-    public CollectionItemDto Warehouse { get; set; }
+    public WarehouseWithoutLocationDto Warehouse { get; set; }
     public List<WarehouseLocationRackDto> Racks { get; set; } = [];
 }
 

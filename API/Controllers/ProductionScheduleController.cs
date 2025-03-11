@@ -565,12 +565,15 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [HttpGet("stock-transfer/in-bound")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentStockTransferDto>>))]
-    public async Task<IResult> GetStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null, 
+        [FromQuery] StockTransferStatus? status = null, 
+        [FromQuery] Guid? fromDepartmentId = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery);
+        var result = await repository.GetStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, fromDepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

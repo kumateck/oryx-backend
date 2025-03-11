@@ -338,6 +338,7 @@ public class OryxMapper : Profile
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<MaterialItemDistribution, MaterialItemDistributionDto>();
+        CreateMap<Warehouse, WarehouseWithoutLocationDto>();
         #endregion
 
         #region BinCardInformation

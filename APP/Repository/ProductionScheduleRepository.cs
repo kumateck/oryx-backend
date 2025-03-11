@@ -1034,7 +1034,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
     
     
-    public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, StockTransferStatus? status = null)
+    public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, StockTransferStatus? status = null, Guid? fromDepartmentId = null)
     {
 
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -1052,6 +1052,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (status.HasValue)
         {
             query = query.Where(q => q.Status == status);
+        }
+
+        if (fromDepartmentId.HasValue)
+        {
+            query = query.Where(q => q.FromDepartmentId == fromDepartmentId);
         }
 
         if (!string.IsNullOrEmpty(searchQuery))
