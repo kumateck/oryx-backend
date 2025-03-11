@@ -342,9 +342,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
             .FirstOrDefaultAsync(pa => pa.ProductionScheduleId == productionScheduleId && pa.ProductId == productId);
 
-        if (productionActivity is null)
-            return Error.NotFound("ProductionActivity.NotFound", "Production activity not started");
-
         return Result.Success(mapper.Map<ProductionActivityDto>(productionActivity));
     }
     
