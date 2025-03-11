@@ -1021,10 +1021,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Fetch batches sorted by expiry date (FIFO order)
         var batches =  context.MaterialBatches
-            .OrderBy(b => b.ExpiryDate)
-            .Where(b => b.MaterialId == materialId)
-            .Include(b => b.MassMovements).ThenInclude(b => b.FromWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(b => b.ToWarehouse)
+            .Where(b => b.MaterialId == materialId &&
+                        b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)) // Ensure the batch is in the warehouse
+            .OrderBy(b => b.ExpiryDate) // FIFO
+            .Include(b => b.MassMovements)
+            .ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.MassMovements)
+            .ThenInclude(m => m.FromWarehouse)
             .AsSplitQuery()
             .ToList();
 
@@ -1066,6 +1069,59 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return result;
     }
+   
+    public async Task<Result<List<MaterialBatchDto>>> BatchesToSupplyForGivenQuantity(Guid materialId, Guid warehouseId, decimal quantity)
+    {
+        var result = new List<MaterialBatchDto>();
+        decimal remainingQuantityToFulfill = quantity;
+
+        // Fetch batches in the given warehouse, sorted by expiry date (FIFO)
+        var batches = await context.MaterialBatches
+            .Where(b => b.MaterialId == materialId &&
+                        b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)) // Only include batches in the specified warehouse
+            .OrderBy(b => b.ExpiryDate) // FIFO order
+            .Include(b => b.MassMovements)
+            .ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.MassMovements)
+            .ThenInclude(m => m.FromWarehouse)
+            .AsSplitQuery()
+            .ToListAsync();
+
+        foreach (var batch in batches)
+        {
+            if (remainingQuantityToFulfill <= 0)
+                break; // Stop if we've met the required quantity
+
+            // Get the available stock for the batch in the given warehouse
+            var availableQuantityResult = await GetMaterialStockInWarehouse(batch.Id, warehouseId);
+            if(availableQuantityResult.IsFailure)
+            {
+                continue;
+            }
+
+            decimal availableQuantity = availableQuantityResult.Value;
+
+            if (availableQuantity <= 0)
+                continue; // Skip batches with no stock
+
+            // Determine how much we can take from this batch
+            decimal quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
+
+            // Map and add batch to the result list
+            var batchDto = mapper.Map<MaterialBatchDto>(batch);
+            result.Add(batchDto);
+
+            remainingQuantityToFulfill -= quantityToTake; // Reduce the required quantity
+        }
+
+        if (remainingQuantityToFulfill > 0)
+        {
+            return Error.Failure("Batch.Failure", $"Not enough stock available to supply {quantity}. Short by {remainingQuantityToFulfill}.");
+        }
+
+        return result;
+    }
+
 
     
     public async Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, decimal quantity, Guid userId)

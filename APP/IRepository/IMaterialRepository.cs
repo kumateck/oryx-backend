@@ -52,4 +52,6 @@ public interface IMaterialRepository
         int pageSize, Guid materialId, Guid userId);
     Task<List<MaterialStockByWarehouseDto>> GetStockByWarehouse(Guid materialId);
     Task<List<MaterialStockByDepartmentDto>> GetStockByDepartment(Guid materialId);
+    Task<Result<List<MaterialBatchDto>>> BatchesToSupplyForGivenQuantity(Guid materialId,
+        Guid warehouseId, decimal quantity);
 }

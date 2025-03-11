@@ -1147,6 +1147,33 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result<List<MaterialBatchDto>>> BatchesToSupplyForStockTransfer(Guid stockTransferId)
+    {
+        var stockTransferSource = await context.StockTransferSources
+            .Include(st => st.StockTransfer).ThenInclude(s => s.Material)
+            .FirstOrDefaultAsync(st => st.Id == stockTransferId);
+        
+        if (stockTransferSource == null)
+        {
+            return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
+        }
+
+        var materialKind = stockTransferSource.StockTransfer.Material.Kind;
+
+        var warehouse = materialKind == MaterialKind.Raw
+            ? await context.Warehouses.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(w =>
+                    w.DepartmentId == stockTransferSource.FromDepartmentId && w.Type == WarehouseType.RawMaterialStorage)
+            : await context.Warehouses.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(
+                    w => w.DepartmentId == stockTransferSource.FromDepartmentId && w.Type == WarehouseType.PackagedStorage);
+
+        if (warehouse is null)
+            return UserErrors.WarehouseNotFound(materialKind);
+
+        return await materialRepository.BatchesToSupplyForGivenQuantity(stockTransferSource.StockTransfer.MaterialId, warehouse.Id, stockTransferSource.Quantity);
+    }
 
     // Issue Stock Transfer with Batch Selection
     public async Task<Result> IssueStockTransfer(Guid id, List<BatchTransferRequest> batches, Guid userId)

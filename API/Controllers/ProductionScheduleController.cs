@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
@@ -624,6 +625,19 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.RejectStockTransfer(stockTransferId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets a list of material batches to fulfill a Stock Transfer.
+    /// </summary>
+    [HttpGet("stock-transfer/batch/{stockTransferId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> BatchesForStockTransfer(Guid stockTransferId)
+    {
+        var result = await repository.BatchesToSupplyForStockTransfer(stockTransferId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

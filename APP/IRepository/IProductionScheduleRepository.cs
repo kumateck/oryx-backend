@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
@@ -70,6 +71,8 @@ public interface IProductionScheduleRepository
         StockTransferStatus? status = null, Guid? fromDepartmentId = null);
     Task<Result> ApproveStockTransfer(Guid id, Guid userId);
     Task<Result> RejectStockTransfer(Guid id, Guid userId);
+
+    Task<Result<List<MaterialBatchDto>>> BatchesToSupplyForStockTransfer(Guid stockTransferId);
     Task<Result> IssueStockTransfer(Guid id, List<BatchTransferRequest> batches, Guid userId);
 
     Task<Result<List<ProductionScheduleProcurementDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId,
