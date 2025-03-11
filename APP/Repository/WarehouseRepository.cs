@@ -639,7 +639,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         await context.Checklists.AddAsync(checklist);
         
         request.MaterialBatches.ForEach(mb => mb.ChecklistId = checklist.Id);
-        await materialRepository.CreateMaterialBatch(request.MaterialBatches, userId);
+        await materialRepository.CreateMaterialBatchWithoutBatchMovement(request.MaterialBatches, userId);
 
         var distributedMaterial = await context.DistributedRequisitionMaterials
             .FirstOrDefaultAsync(dm => dm.Id == request.DistributedRequisitionMaterialId);
