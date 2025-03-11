@@ -3,8 +3,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.Procurement.Manufacturers;
-using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 
@@ -18,8 +16,7 @@ public class Warehouse : BaseEntity
     [StringLength(1000)] public string Description { get; set; }
     public List<WarehouseLocation> Locations { get; set; } = [];
     public WarehouseArrivalLocation ArrivalLocation { get; set; }
-    public WarehouseType Type { get; set; }
-    public MaterialKind? MaterialKind { get; set; }
+    public WarehouseType Type { get; set; } 
 }
 
 public class WarehouseArrivalLocation:BaseEntity

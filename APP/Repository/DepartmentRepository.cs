@@ -46,9 +46,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
                 CreatedById = userId,
                 DepartmentId = department.Id,
                 CreatedAt = DateTime.UtcNow,
-                Type = WarehouseType.PackagedStorage,
-                MaterialKind = MaterialKind.Package
-
+                Type = WarehouseType.PackagedStorage
             };
             
             await context.Warehouses.AddAsync(packagedMaterialWarehouse);
@@ -63,8 +61,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
                 CreatedById = userId,
                 DepartmentId = department.Id,
                 CreatedAt = DateTime.UtcNow,
-                Type = WarehouseType.RawMaterialStorage,
-                MaterialKind = MaterialKind.Raw
+                Type = WarehouseType.RawMaterialStorage
             };
         
             await context.Warehouses.AddAsync(rawMaterialWarehouse);
