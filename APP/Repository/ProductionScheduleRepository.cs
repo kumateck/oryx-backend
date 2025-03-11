@@ -547,7 +547,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return ProductErrors.NotFound(productId);
 
         var productionSchedule =
-            await context.ProductionSchedules.Include(productionSchedule => productionSchedule.Products).FirstOrDefaultAsync(p => p.Id == productionScheduleId);
+            await context.ProductionSchedules.AsSplitQuery().Include(productionSchedule => productionSchedule.Products).FirstOrDefaultAsync(p => p.Id == productionScheduleId);
         if(productionSchedule is null)
             return ProductErrors.NotFound(productionScheduleId);
         
@@ -1042,7 +1042,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             mapper.Map<StockTransferDto>
         );
     }
-    
+
+    public async Task<Result<StockTransferSourceWithMaterialDto>> GetStockTransferSource(Guid stockTransferId)
+    {
+        return mapper.Map<StockTransferSourceWithMaterialDto>(
+            await context.StockTransferSources.FirstOrDefaultAsync(s => s.Id == stockTransferId));
+    }
     
     public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetInBoundStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, 
         StockTransferStatus? status = null, Guid? toDepartmentId = null)

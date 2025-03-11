@@ -11,6 +11,7 @@ namespace DOMAIN.Entities.Materials.Batch;
 public class MaterialBatchDto
 {
     public Guid Id { get; set; }
+    public CollectionItemDto Material { get; set; }
     public string Code { get; set; }
     public string BatchNumber { get; set; }
     public BatchChecklistDto Checklist { get; set; }
