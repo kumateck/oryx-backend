@@ -172,9 +172,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         return Error.Validation("Item", $"Invalid item types: {invalidItems}");
     }
     
-    public async Task<Result<IEnumerable<UnitOfMeasureDto>>> GetUoM()
+    public async Task<Result<IEnumerable<UnitOfMeasureDto>>> GetUoM(bool isRawMaterial)
     {
-       return mapper.Map<List<UnitOfMeasureDto>>(await context.UnitOfMeasures.ToListAsync());
+       return mapper.Map<List<UnitOfMeasureDto>>(await context.UnitOfMeasures.Where(u => u.IsRawMaterial == isRawMaterial).ToListAsync());
     }
     
     public async Task<Result<IEnumerable<PackageStyleDto>>> GetPackageStyles()

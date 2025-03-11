@@ -173,8 +173,10 @@ namespace APP.Repository;
      
       public async Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId)
       {
-          var product = await context.Products.Include(product => product.BillOfMaterials)
-              .Include(product => product.Routes).Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == productId);
+          var product = await context.Products
+              .AsSplitQuery()
+              .Include(product => product.Routes)
+              .FirstOrDefaultAsync(p => p.Id == productId);
           if (product is null) return ProductErrors.NotFound(productId);
           
           if (product.Routes.Count != 0)

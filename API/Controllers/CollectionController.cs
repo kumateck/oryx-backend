@@ -123,9 +123,9 @@ public class CollectionController(ICollectionRepository repository) : Controller
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UnitOfMeasureDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetUoM()
+    public async Task<IResult> GetUoM([FromQuery] bool isRawMaterial)
     {
-        var result = await repository.GetUoM();
+        var result = await repository.GetUoM(isRawMaterial);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

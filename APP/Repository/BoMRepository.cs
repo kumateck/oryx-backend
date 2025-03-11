@@ -16,7 +16,10 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
     public async Task<Result<Guid>> CreateBillOfMaterial(CreateBillOfMaterialRequest request, Guid userId)
     {
         var product = await context.Products
-            .Include(product => product.BillOfMaterials).FirstOrDefaultAsync(p => p.Id == request.ProductId);
+            .AsSplitQuery()
+            .Include(product => product.BillOfMaterials)
+            .FirstOrDefaultAsync(p => p.Id == request.ProductId);
+        
         if (product is null) return ProductErrors.NotFound(request.ProductId);
 
         if (product.BillOfMaterials.Count != 0)
