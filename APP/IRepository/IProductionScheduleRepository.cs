@@ -72,7 +72,7 @@ public interface IProductionScheduleRepository
     Task<Result> ApproveStockTransfer(Guid id, Guid userId);
     Task<Result> RejectStockTransfer(Guid id, Guid userId);
 
-    Task<Result<List<MaterialBatchDto>>> BatchesToSupplyForStockTransfer(Guid stockTransferId);
+    Task<Result<List<BatchToSupply>>> BatchesToSupplyForStockTransfer(Guid stockTransferId);
     Task<Result> IssueStockTransfer(Guid id, List<BatchTransferRequest> batches, Guid userId);
 
     Task<Result<List<ProductionScheduleProcurementDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId,

@@ -1103,9 +1103,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return result;
     }
    
-    public async Task<Result<List<MaterialBatchDto>>> BatchesToSupplyForGivenQuantity(Guid materialId, Guid warehouseId, decimal quantity)
+    public async Task<Result<List<BatchToSupply>>> BatchesToSupplyForGivenQuantity(Guid materialId, Guid warehouseId, decimal quantity)
     {
-        var result = new List<MaterialBatchDto>();
+        var result = new List<BatchToSupply>();
         decimal remainingQuantityToFulfill = quantity;
 
         // Fetch batches in the given warehouse, sorted by expiry date (FIFO)
@@ -1142,7 +1142,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             // Map and add batch to the result list
             var batchDto = mapper.Map<MaterialBatchDto>(batch);
-            result.Add(batchDto);
+            result.Add(new BatchToSupply
+            {
+                Batch = batchDto,
+                QuantityToTake = quantityToTake
+            });
 
             remainingQuantityToFulfill -= quantityToTake; // Reduce the required quantity
         }

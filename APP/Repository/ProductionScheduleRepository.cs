@@ -1150,7 +1150,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
     
-    public async Task<Result<List<MaterialBatchDto>>> BatchesToSupplyForStockTransfer(Guid stockTransferId)
+    public async Task<Result<List<BatchToSupply>>> BatchesToSupplyForStockTransfer(Guid stockTransferId)
     {
         var stockTransferSource = await context.StockTransferSources
             .Include(st => st.StockTransfer).ThenInclude(s => s.Material)

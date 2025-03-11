@@ -107,3 +107,9 @@ public class MaterialStockByDepartmentDto
     public CollectionItemDto Department { get; set; }
     public decimal TotalQuantity { get; set; }
 }
+
+public class BatchToSupply
+{
+    public MaterialBatchDto Batch { get; set; }
+    public decimal QuantityToTake { get; set; }
+}

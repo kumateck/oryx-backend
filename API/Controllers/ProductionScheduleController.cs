@@ -633,7 +633,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("stock-transfer/batch/{stockTransferId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<BatchToSupply>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> BatchesForStockTransfer(Guid stockTransferId)
     {
