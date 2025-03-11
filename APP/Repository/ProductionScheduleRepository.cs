@@ -342,9 +342,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
             .FirstOrDefaultAsync(pa => pa.ProductionScheduleId == productionScheduleId && pa.ProductId == productId);
 
-        if (productionActivity is null)
-            return Error.NotFound("ProductionActivity.NotFound", "Production activity not started");
-
         return Result.Success(mapper.Map<ProductionActivityDto>(productionActivity));
     }
     
@@ -415,56 +412,67 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
    public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
     {
-        // Fetch all unique operation names in the correct order
+        // Fetch all unique operations in the correct order
         var allOperations = await context.Operations
-            .OrderBy(o => o.Order) 
+            .OrderBy(o => o.Order)
             .Select(o => new CollectionItemDto { Id = o.Id, Name = o.Name })
             .AsNoTracking()
             .ToListAsync();
 
-        // Fetch production activities with only necessary data
+        // Fetch production activities with only required data
         var productionActivities = await context.ProductionActivities
-            .Include(pa => pa.ProductionSchedule)
-            .Include(pa => pa.Product)
-            .Include(pa => pa.Steps)
-                .ThenInclude(s => s.Operation) 
-            .Include(pa => pa.Steps)
-                .ThenInclude(s => s.ResponsibleUsers) 
+            .Select(pa => new
+            {
+                pa.Id,
+                pa.CreatedAt,
+                ProductionSchedule = new CollectionItemDto { Id = pa.ProductionSchedule.Id, Code = pa.ProductionSchedule.Code },
+                Product = new CollectionItemDto { Id = pa.Product.Id, Name = pa.Product.Name },
+                pa.Status,
+                pa.StartedAt,
+                pa.CompletedAt,
+                Steps = pa.Steps.Select(s => new
+                {
+                    s.Id,
+                    s.Order,
+                    s.CompletedAt,
+                    Operation = new CollectionItemDto { Id = s.Operation.Id, Name = s.Operation.Name }
+                })
+            })
             .AsNoTracking()
             .ToListAsync();
 
-        // Process CurrentStep in memory
+        // Process CurrentStep efficiently
         var productionActivityDtos = productionActivities
             .Select(pa => new ProductionActivityGroupDto
             {
                 Id = pa.Id,
                 CreatedAt = pa.CreatedAt,
-                ProductionSchedule = mapper.Map<CollectionItemDto>(pa.ProductionSchedule),
-                Product = mapper.Map<CollectionItemDto>(pa.Product),
+                ProductionSchedule = pa.ProductionSchedule,
+                Product = pa.Product,
                 Status = pa.Status,
                 StartedAt = pa.StartedAt,
                 CompletedAt = pa.CompletedAt,
-                CurrentStep = mapper.Map<ProductionActivityStepDto>(
-                    pa.Steps
-                        .OrderBy(s => s.Order)
-                        .FirstOrDefault(s => !s.CompletedAt.HasValue) ?? // First unfinished step
-                    pa.Steps.OrderBy(s => s.Order).LastOrDefault() // Fallback: last step
-                )
+                CurrentStep = pa.Steps
+                    .OrderBy(s => s.Order)
+                    .Where(s => s.CompletedAt == null) // First unfinished step
+                    .Select(s => new ProductionActivityStepDto { Id = s.Id, Order = s.Order, Operation = s.Operation })
+                    .FirstOrDefault() ??
+                    pa.Steps.OrderBy(s => s.Order).Select(s => new ProductionActivityStepDto { Id = s.Id, Order = s.Order, Operation = s.Operation }).LastOrDefault() // Fallback to last step
             })
             .Where(p => p.CurrentStep?.Operation != null) // Ensure CurrentStep has an operation
             .ToList();
 
-        // Group activities by operation
+        // Group activities by operation using Dictionary lookup (faster than GroupBy())
         var groupedActivities = productionActivityDtos
-            .GroupBy(p => new CollectionItemDto { Id = p.CurrentStep.Operation.Id, Name = p.CurrentStep.Operation.Name })
-            .ToList();
+            .GroupBy(p => p.CurrentStep.Operation.Id)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
-        // Construct response list
+        // Construct response list efficiently
         var result = allOperations
             .Select(op => new ProductionActivityGroupResultDto
             {
                 Operation = op,
-                Activities = groupedActivities.FirstOrDefault(g => g.Key.Id == op.Id)?.ToList() ?? []
+                Activities = groupedActivities.TryGetValue(op.Id, out var activities) ? activities : []
             })
             .ToList();
 
@@ -539,7 +547,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return ProductErrors.NotFound(productId);
 
         var productionSchedule =
-            await context.ProductionSchedules.Include(productionSchedule => productionSchedule.Products).FirstOrDefaultAsync(p => p.Id == productionScheduleId);
+            await context.ProductionSchedules.AsSplitQuery().Include(productionSchedule => productionSchedule.Products).FirstOrDefaultAsync(p => p.Id == productionScheduleId);
         if(productionSchedule is null)
             return ProductErrors.NotFound(productionScheduleId);
         
@@ -707,22 +715,24 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
         
         var materialDetails = product.Packages.Select(item =>
-         {
-             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
+        {
+            var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
+            var quantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
+                product.BasePackingQuantity);
 
-             return new ProductionScheduleProcurementPackageDto
-             {
-                 Material = mapper.Map<MaterialDto>(item.Material),
-                 DirectLinkMaterial = mapper.Map<MaterialDto>(item.DirectLinkMaterial),
-                 BaseUoM = mapper.Map<UnitOfMeasureDto>(product.BasePackingUoM),
-                 BaseQuantity = item.BaseQuantity,
-                 UnitCapacity = item.UnitCapacity,
-                 Status = GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
-                 QuantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired, product.BasePackingQuantity),
-                 QuantityOnHand = quantityOnHand,
-                 PackingExcessMargin = item.PackingExcessMargin
-             };
-         }).ToList();
+            return new ProductionScheduleProcurementPackageDto
+            {
+                Material = mapper.Map<MaterialDto>(item.Material),
+                DirectLinkMaterial = mapper.Map<MaterialDto>(item.DirectLinkMaterial),
+                BaseUoM = mapper.Map<UnitOfMeasureDto>(product.BasePackingUoM),
+                BaseQuantity = item.BaseQuantity,
+                UnitCapacity = item.UnitCapacity,
+                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                QuantityNeeded = quantityNeeded,
+                QuantityOnHand = quantityOnHand,
+                PackingExcessMargin = item.PackingExcessMargin
+            };
+        }).ToList();
         
         if (status.HasValue)
         {
@@ -977,6 +987,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<IEnumerable<StockTransferDto>>> GetStockTransfers(Guid? fromDepartmentId = null, Guid? toDepartmentId = null, Guid? materialId = null)
     {
         var query = context.StockTransfers
+            .AsSplitQuery()
             .Include(s=>s.UoM)
             .Include(st => st.Sources).ThenInclude(s => s.FromDepartment)
             .Include(st => st.Material)
@@ -1032,7 +1043,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             mapper.Map<StockTransferDto>
         );
     }
-    
+
+    public async Task<Result<DepartmentStockTransferDto>> GetStockTransferSource(Guid stockTransferId)
+    {
+        return mapper.Map<DepartmentStockTransferDto>(
+            await context.StockTransferSources
+                .Include(s => s.FromDepartment)
+                .Include(s => s.ToDepartment)
+                .Include(st => st.StockTransfer).ThenInclude(st => st.Material)
+                .Include(st => st.StockTransfer).ThenInclude(st => st.UoM)
+                .FirstOrDefaultAsync(s => s.Id == stockTransferId));
+    }
     
     public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetInBoundStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, 
         StockTransferStatus? status = null, Guid? toDepartmentId = null)
@@ -1083,6 +1104,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransferSources
+            .AsSplitQuery()
             .Include(s => s.FromDepartment)
             .Include(s => s.ToDepartment)
             .Include(st => st.StockTransfer).ThenInclude(st => st.Material)
@@ -1148,7 +1170,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
     
-    public async Task<Result<List<MaterialBatchDto>>> BatchesToSupplyForStockTransfer(Guid stockTransferId)
+    public async Task<Result<List<BatchToSupply>>> BatchesToSupplyForStockTransfer(Guid stockTransferId)
     {
         var stockTransferSource = await context.StockTransferSources
             .Include(st => st.StockTransfer).ThenInclude(s => s.Material)

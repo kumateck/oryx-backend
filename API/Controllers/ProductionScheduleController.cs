@@ -597,6 +597,22 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
     
     /// <summary>
+    /// Get a Stock Transfer by ID.
+    /// </summary>
+    [HttpGet("stock-transfer/{stockTransferId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DepartmentStockTransferDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetStockTransfer(Guid stockTransferId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetStockTransferSource(stockTransferId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Approves a Stock Transfer.
     /// </summary>
     [HttpPut("stock-transfer/approve/{stockTransferId}")]
@@ -633,12 +649,12 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("stock-transfer/batch/{stockTransferId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<BatchToSupply>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> BatchesForStockTransfer(Guid stockTransferId)
     {
         var result = await repository.BatchesToSupplyForStockTransfer(stockTransferId);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>

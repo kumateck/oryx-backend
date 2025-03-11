@@ -23,7 +23,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <returns>Returns the ID of the created Stock Requisition.</returns>
     [HttpPost]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateRequisition([FromBody] CreateRequisitionRequest request)
     {
@@ -31,7 +31,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.CreateRequisition(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    [HttpPost("issue-stock-requisition/{productId}")]
+    /*[HttpPost("issue-stock-requisition/{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -81,6 +81,19 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.IssueStockRequisitionVoucher(batchQuantities, productId,Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }*/
+    
+    [HttpPost("issue-stock-requisition/{stockRequisitionId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> IssueStockRequisition(Guid stockRequisitionId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.IssueStockRequisition(stockRequisitionId ,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

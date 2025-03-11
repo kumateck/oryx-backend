@@ -27,7 +27,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // ************* CRUD for Requisitions *************
 
     // Create Stock Requisition
-    public async Task<Result<Guid>> CreateRequisition(CreateRequisitionRequest request, Guid userId)
+    public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
 
         var existingRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
@@ -52,44 +52,61 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (!user.DepartmentId.HasValue)
             return UserErrors.DepartmentNotFound;
         
-        var requisition = mapper.Map<Requisition>(request);
-        requisition.RequestedById = userId;
-        requisition.DepartmentId = user.DepartmentId.Value; 
-        await context.Requisitions.AddAsync(requisition);
-
-        var approvals = await context.Approvals.Include(approval => approval.ApprovalStages)
-            .FirstOrDefaultAsync(a => a.RequisitionType == request.RequisitionType);
-
-        if (approvals is not null)
+        if (request.RequisitionType == RequisitionType.Stock)
         {
-            foreach (var approval in approvals.ApprovalStages.Select(approvalStage => new RequisitionApproval
-                     {
-                         RequisitionId = requisition.Id,
-                         UserId = approvalStage.UserId,
-                         RoleId = approvalStage.RoleId,
-                         Required = approvalStage.Required,
-                         Order = approvalStage.Order
-                     }))
+            // Fetch materials to determine their kind (Raw or Package)
+            var materialIds = request.Items.Select(i => i.MaterialId).ToList();
+            var materials = await context.Materials
+                .Where(m => materialIds.Contains(m.Id))
+                .Select(m => new { m.Id, m.Kind })
+                .ToListAsync();
+
+            // Separate items into Raw and Package
+            var rawItems = request.Items.Where(i => materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Raw)).ToList();
+            var packageItems = request.Items.Where(i => materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Package)).ToList();
+
+            // Create Raw Material Requisition
+            await CreateStockRequisition("raw", rawItems);
+
+            // Create Package Material Requisition
+             await CreateStockRequisition("package", packageItems);
+
+            async Task CreateStockRequisition(string suffix, List<CreateRequisitionItemRequest> items)
             {
-                await context.RequisitionApprovals.AddAsync(approval);
+                if (items.Count == 0) return; // Skip if no items
+
+                var requisition = mapper.Map<Requisition>(request);
+                requisition.Code = $"{request.Code}-{suffix}";
+                requisition.RequestedById = userId;
+                requisition.DepartmentId = user.DepartmentId.Value;
+                requisition.Items = mapper.Map<List<RequisitionItem>>(items);
+
+                await context.Requisitions.AddAsync(requisition);
             }
         }
-
-        if (request.ProductionActivityStepId.HasValue)
+        else
         {
-            var activityStep =
-                await context.ProductionActivitySteps.FirstOrDefaultAsync(p => p.Id == request.ProductionActivityStepId);
+            var requisition = mapper.Map<Requisition>(request);
+            requisition.RequestedById = userId;
+            requisition.DepartmentId = user.DepartmentId.Value; 
+            await context.Requisitions.AddAsync(requisition);
 
-            if (activityStep is not null)
+            if (request.ProductionActivityStepId.HasValue)
             {
-                activityStep.Status = ProductionStatus.InProgress;
-                activityStep.StartedAt = DateTime.UtcNow;
-                context.ProductionActivitySteps.Update(activityStep);
+                var activityStep =
+                    await context.ProductionActivitySteps.FirstOrDefaultAsync(p => p.Id == request.ProductionActivityStepId);
+
+                if (activityStep is not null)
+                {
+                    activityStep.Status = ProductionStatus.InProgress;
+                    activityStep.StartedAt = DateTime.UtcNow;
+                    context.ProductionActivitySteps.Update(activityStep);
+                }
             }
         }
         
         await context.SaveChangesAsync();
-        return Result.Success(requisition.Id);
+        return Result.Success();
     }
 
     // Get Stock Requisition by ID
@@ -137,6 +154,65 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         }
 
         return result;
+    }
+
+
+    public async Task<Result> ApproveStockRequisition(Guid stockRequisitionId)
+    {
+        var stockRequisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == stockRequisitionId);
+
+        if (stockRequisition is null)
+            return RequisitionErrors.NotFound(stockRequisitionId);
+
+        return Result.Success();
+    }
+    
+    public async Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId)
+    {
+        var stockRequisition = await context.Requisitions
+            .AsSplitQuery()
+            .Include(r => r.Items).ThenInclude(requisitionItem => requisitionItem.Material)
+            .FirstOrDefaultAsync(r => r.Id == stockRequisitionId);
+        
+        if (stockRequisition is null)
+            return RequisitionErrors.NotFound(stockRequisitionId);
+        
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+        
+        if (user.Department == null)
+            return Error.NotFound("User.Department", "User has no association to any department");
+        
+        if(user.Department.Warehouses.Count == 0)
+            return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
+        
+        var rawWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
+        if (rawWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
+        
+        var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
+        if (packingWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No packing material warehouse is associated with current user");
+
+        var batchesToConsume = new List<MaterialBatchDto>();
+
+        foreach (var item in stockRequisition.Items)
+        {
+            var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
+            var batchesResult =  materialRepository.BatchesNeededToBeConsumed(item.MaterialId, appropriateWarehouse.Id, item.Quantity);
+            if (batchesResult.IsSuccess)
+            {
+                batchesToConsume.AddRange(batchesResult.Value.Select(b => b.Batch));
+            }
+            
+            foreach (var batch in batchesToConsume)
+            {
+                await materialRepository.ConsumeMaterialAtLocation(batch.Id, appropriateWarehouse.Id,item.Quantity ,userId );
+            }
+        }
+
+        return Result.Success();
     }
 
    private async Task<List<ShelfMaterialBatchDto>> GetShelvesOfBatch(Guid batchId, Guid warehouseId)
@@ -265,6 +341,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status, RequisitionType? requisitionType)
     {
         var query = context.Requisitions
+            .AsSplitQuery()
             .Include(r => r.RequestedBy)
             .Include(r => r.Approvals).ThenInclude(r => r.User)
             .Include(r => r.Approvals).ThenInclude(r => r.Role)

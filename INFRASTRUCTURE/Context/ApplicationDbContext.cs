@@ -501,6 +501,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region ShipmentInvoice
 
         modelBuilder.Entity<ShipmentInvoiceItem>().Navigation(p => p.Manufacturer).AutoInclude();
+        modelBuilder.Entity<ShipmentInvoiceItem>().Navigation(p => p.Material).AutoInclude();
+        modelBuilder.Entity<ShipmentInvoiceItem>().Navigation(p => p.UoM).AutoInclude();
 
         #endregion
     }
