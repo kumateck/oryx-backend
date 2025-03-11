@@ -421,6 +421,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         // Fetch production activities with only necessary data
         var productionActivities = await context.ProductionActivities
+            .AsSplitQuery()
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps)
