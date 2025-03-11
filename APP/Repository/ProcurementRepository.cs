@@ -1211,12 +1211,14 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 context.RequisitionItems.Update(requisitionItem);
 
                 // Determine the correct warehouse for this department
-                Warehouse departmentWarehouse = await context.Warehouses
+                Warehouse departmentWarehouse = requisitionItem.Material.Kind == MaterialKind.Raw ? await context.Warehouses
                     .IgnoreQueryFilters()
                     .Include(warehouse => warehouse.ArrivalLocation)
-                    .FirstOrDefaultAsync(w => w.DepartmentId == item.Department.Id &&
-                        ((requisitionItem.Material.Kind == MaterialKind.Package && w.Type == WarehouseType.PackagedStorage) ||
-                         (requisitionItem.Material.Kind == MaterialKind.Raw && w.Type == WarehouseType.RawMaterialStorage)));
+                    .FirstOrDefaultAsync(w => w.DepartmentId == item.Department.Id && w.Type == WarehouseType.RawMaterialStorage) : 
+                    await context.Warehouses
+                        .IgnoreQueryFilters()
+                        .Include(warehouse => warehouse.ArrivalLocation)
+                        .FirstOrDefaultAsync(w => w.DepartmentId == item.Department.Id && w.Type == WarehouseType.PackagedStorage);
 
                 if (departmentWarehouse != null)
                 {
