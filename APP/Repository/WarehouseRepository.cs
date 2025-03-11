@@ -49,7 +49,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             : mapper.Map<WarehouseDto>(warehouse);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery, WarehouseType? type)
     {
         var query = context.Warehouses
             .Include(w => w.Locations)
@@ -66,6 +66,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(mb=>mb.Checklist)
             .Where(w => w.Type != WarehouseType.Production)
             .AsQueryable();
+
+        if (type.HasValue)
+        {
+            query = query.Where(q => q.Type == type);
+        }
 
         if (!string.IsNullOrEmpty(searchQuery))
         {

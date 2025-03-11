@@ -1088,7 +1088,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 result.Add(new BatchLocation
                 {
                     ConsumptionLocation = mapper.Map<WarehouseDto>(currentLocation.Location),
-                    Batch = mapper.Map<MaterialBatchDto>(batch)
+                    Batch = mapper.Map<MaterialBatchDto>(batch),
+                    QuantityToUse = quantityToConsider
                 });
 
                 remainingQuantityToFulfill -= quantityToConsider; // Reduce the required quantity

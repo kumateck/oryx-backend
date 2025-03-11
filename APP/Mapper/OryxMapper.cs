@@ -241,10 +241,10 @@ public class OryxMapper : Profile
         CreateMap<Requisition, RequisitionDto>();
         CreateMap<RequisitionItem, RequisitionItemDto>();
         CreateMap<RequisitionApproval, RequisitionApprovalDto>();
-        CreateMap<CreateRequisitionRequest, CompletedRequisition>();
-        CreateMap<CreateRequisitionItemRequest, CompletedRequisitionItem>();
-        CreateMap<CompletedRequisition, RequisitionDto>();
-        CreateMap<CompletedRequisitionItem, RequisitionItemDto>();
+        // CreateMap<CreateRequisitionRequest, CompletedRequisition>();
+        // CreateMap<CreateRequisitionItemRequest, CompletedRequisitionItem>();
+        // CreateMap<CompletedRequisition, RequisitionDto>();
+        // CreateMap<CompletedRequisitionItem, RequisitionItemDto>();
         CreateMap<CreateSourceRequisitionRequest, SourceRequisition>();
         CreateMap<CreateSourceRequisitionItemRequest, SourceRequisitionItem>();
         CreateMap<SourceRequisitionItem, SourceRequisitionItemDto>();

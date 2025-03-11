@@ -1254,8 +1254,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             };
             
             await context.MassMaterialBatchMovements.AddAsync(movement);
+            
+            var batchEvent = new MaterialBatchEvent
+            {
+                BatchId = batch.Id,
+                Type = EventType.Moved,
+                Quantity = batchRequest.Quantity,
+                UserId = userId
+            };
+            await context.MaterialBatchEvents.AddAsync(batchEvent);
+            
             context.MaterialBatches.Update(batch);
-
             remainingQuantity -= batchRequest.Quantity;
 
             if (remainingQuantity <= 0) break;

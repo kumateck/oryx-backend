@@ -194,8 +194,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
         if (packingWarehouse is null)
             return Error.NotFound("User.Warehouse", "No packing material warehouse is associated with current user");
+        
+        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
+        if (productionWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
 
-        var batchesToConsume = new List<MaterialBatchDto>();
+        var batchesToConsume = new List<BatchLocation>();
 
         foreach (var item in stockRequisition.Items)
         {
@@ -203,15 +207,40 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             var batchesResult =  materialRepository.BatchesNeededToBeConsumed(item.MaterialId, appropriateWarehouse.Id, item.Quantity);
             if (batchesResult.IsSuccess)
             {
-                batchesToConsume.AddRange(batchesResult.Value.Select(b => b.Batch));
+                batchesToConsume.AddRange(batchesResult.Value);
             }
             
             foreach (var batch in batchesToConsume)
             {
-                await materialRepository.ConsumeMaterialAtLocation(batch.Id, appropriateWarehouse.Id,item.Quantity ,userId );
+                batch.Batch.QuantityAssigned = 0;
+                var shelfMaterialBatches =
+                    await context.ShelfMaterialBatches.Where(sb => sb.MaterialBatchId == batch.Batch.Id).ToListAsync();
+                context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
+
+                var movement = new MassMaterialBatchMovement
+                {
+                    BatchId = batch.Batch.Id,
+                    FromWarehouseId = appropriateWarehouse.Id,
+                    ToWarehouseId = productionWarehouse.Id,
+                    Quantity = batch.QuantityToUse,
+                    MovedAt = DateTime.UtcNow,
+                    MovedById = userId
+                };
+            
+                await context.MassMaterialBatchMovements.AddAsync(movement);
+            
+                var batchEvent = new MaterialBatchEvent
+                {
+                    BatchId = batch.Batch.Id,
+                    Type = EventType.Moved,
+                    Quantity =batch.QuantityToUse,
+                    UserId = userId
+                };
+                await context.MaterialBatchEvents.AddAsync(batchEvent);
             }
         }
 
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
@@ -461,7 +490,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
     // Consume stock once the requisition is fully approved
 
-    public async Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId)
+    /*public async Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId)
     {
          var requisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == requisitionId);
          if (requisition is null)
@@ -553,7 +582,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
          // Save changes to the database
          await context.SaveChangesAsync();
          return Result.Success();
-    }
+    }*/
     
         // ************* CRUD for SourceRequisition *************
 

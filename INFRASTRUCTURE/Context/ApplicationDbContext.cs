@@ -154,8 +154,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Requisition> Requisitions { get; set; }
     public DbSet<RequisitionItem> RequisitionItems { get; set; }
     public DbSet<RequisitionApproval> RequisitionApprovals { get; set; }
-    public DbSet<CompletedRequisition> CompletedRequisitions { get; set; }
-    public DbSet<CompletedRequisitionItem> CompletedRequisitionItems { get; set; }
     
     public DbSet<SourceRequisition> SourceRequisitions { get; set; }
     public DbSet<SourceRequisitionItem> SourceRequisitionItems { get; set; }
@@ -581,12 +579,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Requisition Filters
         modelBuilder.Entity<Requisition>()
             .HasQueryFilter(r => !r.DeletedAt.HasValue);
-        modelBuilder.Entity<CompletedRequisition>()
-            .HasQueryFilter(r => !r.Requisition.DeletedAt.HasValue);
-        modelBuilder.Entity<RequisitionItem>()
-            .HasQueryFilter(r => !r.Requisition.DeletedAt.HasValue);
-        modelBuilder.Entity<CompletedRequisitionItem>()
-            .HasQueryFilter(r => !r.CompletedRequisition.DeletedAt.HasValue);
         modelBuilder.Entity<SourceRequisition>()
             .HasQueryFilter(r => !r.DeletedAt.HasValue);
         modelBuilder.Entity<SourceRequisitionItem>()

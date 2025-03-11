@@ -84,6 +84,7 @@ public class BatchLocation
 {
     public WarehouseDto ConsumptionLocation { get; set; }
     public MaterialBatchDto Batch { get; set; }
+    public decimal QuantityToUse { get; set; }
 }
 public class CurrentLocation
 {
