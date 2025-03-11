@@ -19,6 +19,7 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Warehouses;
+using Newtonsoft.Json;
 
 namespace APP.Repository;
 
@@ -1414,12 +1415,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
                 var availableQuantity = shipmentInvoiceItem.ReceivedQuantity;
                 var quantityToAllocate = Math.Min(remainingToAllocate, availableQuantity); 
+                
+                var shipmentInvoiceCopy = JsonConvert.DeserializeObject<ShipmentInvoiceItemDto>(
+                    JsonConvert.SerializeObject(shipmentInvoiceItem)
+                );
 
                 if (quantityToAllocate > 0)
                 {
                     itemDistribution.Distributions.Add(new MaterialItemDistributionDto
                     {
-                        ShipmentInvoiceItem = mapper.Map<ShipmentInvoiceItemDto>(shipmentInvoiceItem),
+                        ShipmentInvoiceItem = shipmentInvoiceCopy,
                         Quantity = quantityToAllocate
                     });
 
