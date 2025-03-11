@@ -1181,8 +1181,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var movement = new MassMaterialBatchMovement
             {
                 BatchId = batch.Id,
-                FromWarehouseId = toWarehouse.Id,
-                ToWarehouseId = fromWarehouse.Id,
+                FromWarehouseId = fromWarehouse.Id,
+                ToWarehouseId = toWarehouse.Id,
                 Quantity = batchRequest.Quantity,
                 MovedAt = DateTime.UtcNow,
                 MovedById = userId
