@@ -707,22 +707,24 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
         
         var materialDetails = product.Packages.Select(item =>
-         {
-             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
+        {
+            var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
+            var quantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
+                product.BasePackingQuantity);
 
-             return new ProductionScheduleProcurementPackageDto
-             {
-                 Material = mapper.Map<MaterialDto>(item.Material),
-                 DirectLinkMaterial = mapper.Map<MaterialDto>(item.DirectLinkMaterial),
-                 BaseUoM = mapper.Map<UnitOfMeasureDto>(product.BasePackingUoM),
-                 BaseQuantity = item.BaseQuantity,
-                 UnitCapacity = item.UnitCapacity,
-                 Status = GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
-                 QuantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired, product.BasePackingQuantity),
-                 QuantityOnHand = quantityOnHand,
-                 PackingExcessMargin = item.PackingExcessMargin
-             };
-         }).ToList();
+            return new ProductionScheduleProcurementPackageDto
+            {
+                Material = mapper.Map<MaterialDto>(item.Material),
+                DirectLinkMaterial = mapper.Map<MaterialDto>(item.DirectLinkMaterial),
+                BaseUoM = mapper.Map<UnitOfMeasureDto>(product.BasePackingUoM),
+                BaseQuantity = item.BaseQuantity,
+                UnitCapacity = item.UnitCapacity,
+                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                QuantityNeeded = quantityNeeded,
+                QuantityOnHand = quantityOnHand,
+                PackingExcessMargin = item.PackingExcessMargin
+            };
+        }).ToList();
         
         if (status.HasValue)
         {

@@ -770,7 +770,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             ArNumber = "N/A",
             QuantityReceived = totalQuantityToAssign,
             QuantityIssued = 0,
-            BalanceQuantity = (await GetMaterialStockInWarehouse(materialBatch.MaterialId, warehouse.Id)).Value + totalQuantityToAssign,
+            BalanceQuantity = (await GetMaterialStockInWarehouseByBatch(materialBatch.Id, warehouse.Id)).Value + totalQuantityToAssign,
             UoMId = materialBatch.UoMId,
             CreatedAt = DateTime.UtcNow
         };
