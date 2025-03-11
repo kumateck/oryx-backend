@@ -927,6 +927,39 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return totalQuantityInLocation;
     }
     
+    public async Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
+    {
+        // Sum of quantities moved to this location (incoming batches)
+        var batchesInLocation = await context.MassMaterialBatchMovements
+            .Include(m => m.Batch)
+            .Include(m => m.ToWarehouse)
+            .Where(m => m.BatchId == batchId
+                        && m.ToWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of quantities moved out of this location (outgoing batches)
+        var batchesMovedOut = await context.MassMaterialBatchMovements
+            .Include(m => m.Batch)
+            .Include(m => m.FromWarehouse)
+            .Where(m => m.BatchId == batchId
+                        && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of the consumed quantities at this location for the given material
+        var batchesConsumedAtLocation = await context.MaterialBatchEvents
+            .Include(m => m.Batch)
+            .Include(m => m.ConsumptionWarehouse)
+            .Where(e => e.BatchId == batchId
+                        && e.ConsumptionWarehouse != null 
+                        && e.ConsumptionWarehouseId == warehouseId
+                        && e.Type == EventType.Consumed)
+            .SumAsync(e => e.Quantity);
+
+        // Calculate the total available quantity for the material in this location
+        var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
+
+        return totalQuantityInLocation;
+    }
     public async Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {
         // Sum of quantities moved to this location (incoming batches)
@@ -1093,7 +1126,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 break; // Stop if we've met the required quantity
 
             // Get the available stock for the batch in the given warehouse
-            var availableQuantityResult = await GetMaterialStockInWarehouse(batch.MaterialId, warehouseId);
+            var availableQuantityResult = await GetMaterialStockInWarehouseByBatch(batch.Id, warehouseId);
             if(availableQuantityResult.IsFailure)
             {
                 continue;
