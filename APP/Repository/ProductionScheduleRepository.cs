@@ -410,7 +410,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return groupedData;
     }
     
-   public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
+    public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
     {
         // Fetch all unique operations in the correct order
         var allOperations = await context.Operations
@@ -435,8 +435,33 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                     s.Id,
                     s.Order,
                     s.CompletedAt,
-                    Operation = new CollectionItemDto { Id = s.Operation.Id, Name = s.Operation.Name }
-                })
+                    s.StartedAt,
+                    s.Status,
+                    Operation = new CollectionItemDto { Id = s.Operation.Id, Name = s.Operation.Name },
+                    WorkFlow = new CollectionItemDto { Id = s.WorkFlow.Id, Name = s.WorkFlow.Name },
+                    Resources = s.Resources.Select(r => new ProductionActivityStepResourceDto
+                    {
+                        Id = r.Id,
+                        Resource = new ResourceDto
+                        {
+                            Id = r.Resource.Id,
+                            Name = r.Resource.Name,
+                            Type = r.Resource.Type,
+                            IsAvailable = r.Resource.IsAvailable
+                        }
+                    }).ToList(),
+                    WorkCenters = s.WorkCenters.Select(w => new ProductionActivityStepWorkCenterDto
+                    {
+                        Id = w.Id,
+                        WorkCenter = new CollectionItemDto { Id = w.WorkCenter.Id, Name = w.WorkCenter.Name }
+                    }).ToList(),
+                    ResponsibleUsers = s.ResponsibleUsers.Select(u => new
+                    {
+                        u.Id,
+                        u.User,
+                        u.User.Department
+                    }).ToList()
+                }).ToList()
             })
             .AsNoTracking()
             .ToListAsync();
@@ -455,9 +480,40 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 CurrentStep = pa.Steps
                     .OrderBy(s => s.Order)
                     .Where(s => s.CompletedAt == null) // First unfinished step
-                    .Select(s => new ProductionActivityStepDto { Id = s.Id, Order = s.Order, Operation = s.Operation })
+                    .Select(s => new ProductionActivityStepDto
+                    {
+                        Id = s.Id,
+                        Order = s.Order,
+                        Status = s.Status,
+                        StartedAt = s.StartedAt,
+                        Operation = s.Operation,
+                        WorkFlow = s.WorkFlow,
+                        Resources = s.Resources,
+                        WorkCenters = s.WorkCenters,
+                        ResponsibleUsers = s.ResponsibleUsers.Select(ru => new ProductionActivityStepUserDto
+                        {
+                            Id = ru.Id,
+                            User = mapper.Map<UserDto>(ru.User) // ✅ AutoMapper for UserDto
+                        }).ToList()
+                    })
                     .FirstOrDefault() ??
-                    pa.Steps.OrderBy(s => s.Order).Select(s => new ProductionActivityStepDto { Id = s.Id, Order = s.Order, Operation = s.Operation }).LastOrDefault() // Fallback to last step
+                    pa.Steps.OrderBy(s => s.Order).Select(s => new ProductionActivityStepDto
+                    {
+                        Id = s.Id,
+                        Order = s.Order,
+                        Status = s.Status,
+                        StartedAt = s.StartedAt,
+                        CompletedAt = s.CompletedAt,
+                        Operation = s.Operation,
+                        WorkFlow = s.WorkFlow,
+                        Resources = s.Resources,
+                        WorkCenters = s.WorkCenters,
+                        ResponsibleUsers = s.ResponsibleUsers.Select(ru => new ProductionActivityStepUserDto
+                        {
+                            Id = ru.Id,
+                            User = mapper.Map<UserDto>(ru.User), // ✅ AutoMapper for UserDto
+                        }).ToList()
+                    }).LastOrDefault() // Fallback to last step if all steps are completed
             })
             .Where(p => p.CurrentStep?.Operation != null) // Ensure CurrentStep has an operation
             .ToList();
