@@ -1212,6 +1212,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
                 // Determine the correct warehouse for this department
                 Warehouse departmentWarehouse = await context.Warehouses
+                    .IgnoreQueryFilters()
                     .Include(warehouse => warehouse.ArrivalLocation)
                     .FirstOrDefaultAsync(w => w.DepartmentId == item.Department.Id &&
                         ((requisitionItem.Material.Kind == MaterialKind.Package && w.Type == WarehouseType.PackagedStorage) ||
