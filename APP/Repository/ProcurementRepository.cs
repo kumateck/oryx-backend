@@ -561,6 +561,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId)
     {
         var shipmentDocument = await context.ShipmentDocuments
+            .AsSplitQuery()
             .Include(s => s.ShipmentInvoice)
             .ThenInclude(s => s.Items)
             .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
