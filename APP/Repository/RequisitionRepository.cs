@@ -265,6 +265,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status, RequisitionType? requisitionType)
     {
         var query = context.Requisitions
+            .AsSplitQuery()
             .Include(r => r.RequestedBy)
             .Include(r => r.Approvals).ThenInclude(r => r.User)
             .Include(r => r.Approvals).ThenInclude(r => r.Role)

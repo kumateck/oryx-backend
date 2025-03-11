@@ -412,57 +412,67 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
    public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
     {
-        // Fetch all unique operation names in the correct order
+        // Fetch all unique operations in the correct order
         var allOperations = await context.Operations
-            .OrderBy(o => o.Order) 
+            .OrderBy(o => o.Order)
             .Select(o => new CollectionItemDto { Id = o.Id, Name = o.Name })
             .AsNoTracking()
             .ToListAsync();
 
-        // Fetch production activities with only necessary data
+        // Fetch production activities with only required data
         var productionActivities = await context.ProductionActivities
-            .AsSplitQuery()
-            .Include(pa => pa.ProductionSchedule)
-            .Include(pa => pa.Product)
-            .Include(pa => pa.Steps)
-                .ThenInclude(s => s.Operation) 
-            .Include(pa => pa.Steps)
-                .ThenInclude(s => s.ResponsibleUsers) 
+            .Select(pa => new
+            {
+                pa.Id,
+                pa.CreatedAt,
+                ProductionSchedule = new CollectionItemDto { Id = pa.ProductionSchedule.Id, Code = pa.ProductionSchedule.Code },
+                Product = new CollectionItemDto { Id = pa.Product.Id, Name = pa.Product.Name },
+                pa.Status,
+                pa.StartedAt,
+                pa.CompletedAt,
+                Steps = pa.Steps.Select(s => new
+                {
+                    s.Id,
+                    s.Order,
+                    s.CompletedAt,
+                    Operation = new CollectionItemDto { Id = s.Operation.Id, Name = s.Operation.Name }
+                })
+            })
             .AsNoTracking()
             .ToListAsync();
 
-        // Process CurrentStep in memory
+        // Process CurrentStep efficiently
         var productionActivityDtos = productionActivities
             .Select(pa => new ProductionActivityGroupDto
             {
                 Id = pa.Id,
                 CreatedAt = pa.CreatedAt,
-                ProductionSchedule = mapper.Map<CollectionItemDto>(pa.ProductionSchedule),
-                Product = mapper.Map<CollectionItemDto>(pa.Product),
+                ProductionSchedule = pa.ProductionSchedule,
+                Product = pa.Product,
                 Status = pa.Status,
                 StartedAt = pa.StartedAt,
                 CompletedAt = pa.CompletedAt,
-                CurrentStep = mapper.Map<ProductionActivityStepDto>(
-                    pa.Steps
-                        .OrderBy(s => s.Order)
-                        .FirstOrDefault(s => !s.CompletedAt.HasValue) ?? // First unfinished step
-                    pa.Steps.OrderBy(s => s.Order).LastOrDefault() // Fallback: last step
-                )
+                CurrentStep = pa.Steps
+                    .OrderBy(s => s.Order)
+                    .Where(s => s.CompletedAt == null) // First unfinished step
+                    .Select(s => new ProductionActivityStepDto { Id = s.Id, Order = s.Order, Operation = s.Operation })
+                    .FirstOrDefault() ??
+                    pa.Steps.OrderBy(s => s.Order).Select(s => new ProductionActivityStepDto { Id = s.Id, Order = s.Order, Operation = s.Operation }).LastOrDefault() // Fallback to last step
             })
             .Where(p => p.CurrentStep?.Operation != null) // Ensure CurrentStep has an operation
             .ToList();
 
-        // Group activities by operation
+        // Group activities by operation using Dictionary lookup (faster than GroupBy())
         var groupedActivities = productionActivityDtos
-            .GroupBy(p => new CollectionItemDto { Id = p.CurrentStep.Operation.Id, Name = p.CurrentStep.Operation.Name })
-            .ToList();
+            .GroupBy(p => p.CurrentStep.Operation.Id)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
-        // Construct response list
+        // Construct response list efficiently
         var result = allOperations
             .Select(op => new ProductionActivityGroupResultDto
             {
                 Operation = op,
-                Activities = groupedActivities.FirstOrDefault(g => g.Key.Id == op.Id)?.ToList() ?? []
+                Activities = groupedActivities.TryGetValue(op.Id, out var activities) ? activities : []
             })
             .ToList();
 
