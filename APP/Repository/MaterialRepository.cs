@@ -1093,7 +1093,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 break; // Stop if we've met the required quantity
 
             // Get the available stock for the batch in the given warehouse
-            var availableQuantityResult = await GetMaterialStockInWarehouse(batch.Id, warehouseId);
+            var availableQuantityResult = await GetMaterialStockInWarehouse(batch.MaterialId, warehouseId);
             if(availableQuantityResult.IsFailure)
             {
                 continue;

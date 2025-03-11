@@ -562,6 +562,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         var shipmentDocument = await context.ShipmentDocuments
             .Include(s => s.ShipmentInvoice)
+            .ThenInclude(s => s.Items)
             .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 
         return shipmentDocument is null

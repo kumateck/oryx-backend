@@ -60,6 +60,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, PackageType>();
         CreateMap<CreateItemRequest, Currency>();
         CreateMap<CreateItemRequest, ShipmentDiscrepancyType>();
+        CreateMap<CreateItemRequest, PackageStyle>();
         
         #endregion
         
@@ -107,6 +108,7 @@ public class OryxMapper : Profile
         CreateMap<ProductionSchedule, CollectionItemDto>();
         CreateMap<Department, CollectionItemDto>();
         CreateMap<Equipment, CollectionItemDto>();
+        CreateMap<PackageStyle, CollectionItemDto>();
         
         #endregion
 
