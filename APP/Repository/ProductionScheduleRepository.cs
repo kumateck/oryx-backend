@@ -1034,7 +1034,48 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
     
     
-    public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, StockTransferStatus? status = null, Guid? fromDepartmentId = null)
+    public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetInBoundStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, 
+        StockTransferStatus? status = null, Guid? toDepartmentId = null)
+    {
+
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+        
+        var query = context.StockTransferSources
+            .Include(s => s.FromDepartment)
+            .Include(s => s.ToDepartment)
+            .Include(st => st.StockTransfer).ThenInclude(st => st.Material)
+            .Include(st => st.StockTransfer).ThenInclude(st => st.UoM)
+            .Where(st => st.FromDepartmentId == user.DepartmentId)
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(q => q.Status == status);
+        }
+
+        if (toDepartmentId.HasValue)
+        {
+            query = query.Where(q => q.ToDepartmentId == toDepartmentId);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.StockTransfer.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<DepartmentStockTransferDto>
+        );
+    }
+    
+    
+    public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetOutBoundStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, 
+        StockTransferStatus? status = null, Guid? fromDepartmentId = null)
     {
 
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -1131,6 +1172,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             {
                 return Error.Failure("Batch.InsufficientStock", $"Not enough stock in batch {batchRequest.BatchId}");
             }
+
+            batch.QuantityAssigned = 0;
+            var shelfMaterialBatches =
+                await context.ShelfMaterialBatches.Where(sb => sb.MaterialBatchId == batch.Id).ToListAsync();
+            context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
 
             var movement = new MassMaterialBatchMovement
             {

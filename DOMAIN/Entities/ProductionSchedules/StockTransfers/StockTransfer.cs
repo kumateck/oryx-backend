@@ -83,6 +83,7 @@ public class DepartmentStockTransferDto
     public UnitOfMeasureDto UoM { get; set; }
     public StockTransferStatus Status { get; set; }
     public DepartmentDto FromDepartment { get; set; }
+    public DepartmentDto ToDepartment { get; set; }
     public decimal Quantity { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public DateTime? IssuedAt { get; set; }

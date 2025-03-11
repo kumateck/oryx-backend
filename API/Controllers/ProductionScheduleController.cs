@@ -565,7 +565,25 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [HttpGet("stock-transfer/in-bound")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentStockTransferDto>>))]
-    public async Task<IResult> GetStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
+    public async Task<IResult> GetInBoundStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null, 
+        [FromQuery] StockTransferStatus? status = null, 
+        [FromQuery] Guid? toDepartmentId = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetInBoundStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, toDepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of Stock Transfers with optional filters.
+    /// </summary>
+    [HttpGet("stock-transfer/out-bound")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentStockTransferDto>>))]
+    public async Task<IResult> GetOutBoundStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
         [FromQuery] string searchQuery = null, 
         [FromQuery] StockTransferStatus? status = null, 
         [FromQuery] Guid? fromDepartmentId = null)
@@ -573,7 +591,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, fromDepartmentId);
+        var result = await repository.GetOutBoundStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, fromDepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
