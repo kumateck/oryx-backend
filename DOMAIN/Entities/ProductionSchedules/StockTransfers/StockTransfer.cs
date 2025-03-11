@@ -77,18 +77,6 @@ public class StockTransferSourceDto : BaseDto
     public DateTime? IssuedAt { get; set; }
 }
 
-public class StockTransferSourceWithMaterialDto : BaseDto
-{
-    public MaterialDto Material { get; set; }
-    public UnitOfMeasureDto UoM { get; set; }
-    public DepartmentDto FromDepartment { get; set; }
-    public DepartmentDto ToDepartment { get; set; }
-    public decimal Quantity { get; set; }
-    public StockTransferStatus Status { get; set; }
-    public DateTime? ApprovedAt { get; set; }
-    public DateTime? IssuedAt { get; set; }
-}
-
 public class DepartmentStockTransferDto : BaseDto
 {
     public MaterialDto Material { get; set; }

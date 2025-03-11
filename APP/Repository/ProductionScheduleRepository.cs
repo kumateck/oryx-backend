@@ -987,6 +987,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<IEnumerable<StockTransferDto>>> GetStockTransfers(Guid? fromDepartmentId = null, Guid? toDepartmentId = null, Guid? materialId = null)
     {
         var query = context.StockTransfers
+            .AsSplitQuery()
             .Include(s=>s.UoM)
             .Include(st => st.Sources).ThenInclude(s => s.FromDepartment)
             .Include(st => st.Material)
@@ -1043,10 +1044,15 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         );
     }
 
-    public async Task<Result<StockTransferSourceWithMaterialDto>> GetStockTransferSource(Guid stockTransferId)
+    public async Task<Result<DepartmentStockTransferDto>> GetStockTransferSource(Guid stockTransferId)
     {
-        return mapper.Map<StockTransferSourceWithMaterialDto>(
-            await context.StockTransferSources.FirstOrDefaultAsync(s => s.Id == stockTransferId));
+        return mapper.Map<DepartmentStockTransferDto>(
+            await context.StockTransferSources
+                .Include(s => s.FromDepartment)
+                .Include(s => s.ToDepartment)
+                .Include(st => st.StockTransfer).ThenInclude(st => st.Material)
+                .Include(st => st.StockTransfer).ThenInclude(st => st.UoM)
+                .FirstOrDefaultAsync(s => s.Id == stockTransferId));
     }
     
     public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetInBoundStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, 
@@ -1098,6 +1104,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransferSources
+            .AsSplitQuery()
             .Include(s => s.FromDepartment)
             .Include(s => s.ToDepartment)
             .Include(st => st.StockTransfer).ThenInclude(st => st.Material)

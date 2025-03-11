@@ -601,7 +601,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("stock-transfer/{stockTransferId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StockTransferSourceWithMaterialDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DepartmentStockTransferDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetStockTransfer(Guid stockTransferId)
     {
