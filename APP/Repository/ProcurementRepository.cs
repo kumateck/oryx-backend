@@ -1014,9 +1014,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     join si in context.ShipmentInvoiceItems on r.MaterialId equals item.MaterialId
                     join po in context.PurchaseOrders on si.PurchaseOrderId equals po.Id
                     join sr in context.SourceRequisitionItems on po.SourceRequisitionId equals sr.SourceRequisitionId
+                    join sd in context.ShipmentDocuments on si.ShipmentInvoiceId equals sd.ShipmentInvoiceId
                     where sr.RequisitionId == r.RequisitionId
                           && r.MaterialId == item.MaterialId
                           && (r.Quantity - r.QuantityReceived) != 0
+                          && sd.Id == shipmentDocumentId // Ensuring linkage to the shipment document
                     select r
                 ).Distinct().ToListAsync();
 

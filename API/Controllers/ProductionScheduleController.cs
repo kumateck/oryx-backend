@@ -593,16 +593,16 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Issues a Stock Transfer with batch selection.
     /// </summary>
-    [HttpPut("stock-transfer/issue")]
+    [HttpPut("stock-transfer/issue/{stockTransferId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> IssueStockTransfer([FromBody] IssueStockTransferRequest request)
+    public async Task<IResult> IssueStockTransfer(Guid stockTransferId, [FromBody] List<BatchTransferRequest> batches)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.IssueStockTransfer(request, Guid.Parse(userId));
+        var result = await repository.IssueStockTransfer(stockTransferId, batches,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

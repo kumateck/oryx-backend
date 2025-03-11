@@ -1087,11 +1087,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
 
     // Issue Stock Transfer with Batch Selection
-    public async Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId)
+    public async Task<Result> IssueStockTransfer(Guid id, List<BatchTransferRequest> batches, Guid userId)
     {
         var stockTransferSource = await context.StockTransferSources
             .Include(st => st.StockTransfer).ThenInclude(st => st.Material)
-            .FirstOrDefaultAsync(st => st.Id == request.StockTransferId);
+            .FirstOrDefaultAsync(st => st.Id == id);
         
         if (stockTransferSource == null)
         {
@@ -1118,7 +1118,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         decimal remainingQuantity = stockTransferSource.Quantity;
 
-        foreach (var batchRequest in request.Batches)
+        foreach (var batchRequest in batches)
         {
             var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == batchRequest.BatchId);
             

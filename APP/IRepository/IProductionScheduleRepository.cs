@@ -66,7 +66,7 @@ public interface IProductionScheduleRepository
         GetStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null,
             StockTransferStatus? status = null);
     Task<Result> ApproveStockTransfer(Guid id, Guid userId);
-    Task<Result> IssueStockTransfer(IssueStockTransferRequest request, Guid userId);
+    Task<Result> IssueStockTransfer(Guid id, List<BatchTransferRequest> batches, Guid userId);
 
     Task<Result<List<ProductionScheduleProcurementDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleId,
         Guid productId, Guid userId);
