@@ -638,7 +638,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     public async Task<IResult> BatchesForStockTransfer(Guid stockTransferId)
     {
         var result = await repository.BatchesToSupplyForStockTransfer(stockTransferId);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
