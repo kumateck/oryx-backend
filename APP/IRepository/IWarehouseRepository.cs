@@ -76,5 +76,5 @@ public interface IWarehouseRepository
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByRackId(int page, int pageSize, string searchQuery, Guid rackId);
 
     Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize,
-        string searchQuery, Guid materialId);
+        string searchQuery, Guid productId);
 }

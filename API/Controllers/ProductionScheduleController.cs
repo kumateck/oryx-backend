@@ -405,7 +405,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
        
-    [HttpGet("bmr/{productionId}/{productionScheduleId}")]
+    [HttpGet("manufacturing/{productionId}/{productionScheduleId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchManufacturingRecordDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
