@@ -249,6 +249,16 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
             }
         }
+        
+        var productionActivityStep =
+            await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
+                p.Id == stockRequisition.ProductionActivityStepId);
+
+        if (productionActivityStep is not null)
+        {
+            productionActivityStep.Status = ProductionStatus.Completed;
+            context.ProductionActivitySteps.Update(productionActivityStep);
+        }
 
         await context.SaveChangesAsync();
         return Result.Success();
