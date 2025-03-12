@@ -259,7 +259,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                     {
                         var productionWarehouse = await context.Warehouses
                             .IgnoreQueryFilters()
-                            .FirstOrDefaultAsync(w => w.Id == product.DepartmentId && w.Type == WarehouseType.Production);
+                            .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.Production);
 
                         if (productionWarehouse is not null)
                         {
