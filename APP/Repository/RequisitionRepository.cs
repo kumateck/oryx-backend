@@ -205,10 +205,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
         if (packingWarehouse is null)
             return Error.NotFound("User.Warehouse", "No packing material warehouse is associated with current user");
-        
-        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
+
+        var productionWarehouse = await context.Warehouses.IgnoreQueryFilters().FirstOrDefaultAsync(w =>
+            w.DepartmentId == stockRequisition.DepartmentId && w.Type == WarehouseType.Production);
         if (productionWarehouse is null)
-            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
+            return Error.NotFound("User.Warehouse", "No production warehouse is associated with department who made stock requisition");
 
         var batchesToConsume = new List<BatchLocation>();
 
