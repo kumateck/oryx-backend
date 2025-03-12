@@ -34,7 +34,7 @@ public class RequisitionItemDto
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
-    public List<MaterialBatchLocationsDto> BatchLocations { get; set; } = [];
+    public List<BatchToSupply> Batches { get; set; } = [];
 }
 
 public class MaterialBatchLocationsDto

@@ -1068,7 +1068,63 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return mapper.Map<List<MaterialBatchDto>>(frozenBatches);
     }
+    
+    
+    public async Task<Result<List<BatchToSupply>>> GetFrozenBatchesForRequisitionItem(Guid materialId, Guid warehouseId, decimal requestedQuantity)
+    {
+        var result = new List<BatchToSupply>();
+        decimal remainingQuantityToFulfill = requestedQuantity;
 
+        // Fetch frozen batches in FIFO order
+        var frozenBatches = await context.MaterialBatches
+            .IgnoreQueryFilters()
+            .Include(b => b.Material)
+            .Include(b => b.UoM)
+            .Where(b => b.Status == BatchStatus.Frozen &&
+                        b.MaterialId == materialId &&
+                        context.MassMaterialBatchMovements.Any(m => m.BatchId == b.Id && m.ToWarehouseId == warehouseId) &&
+                        !context.MassMaterialBatchMovements.Any(m => m.BatchId == b.Id && m.FromWarehouseId == warehouseId))
+            .OrderBy(b => b.ExpiryDate) // FIFO (First-In, First-Out)
+            .ToListAsync();
+
+        foreach (var batch in frozenBatches)
+        {
+            if (remainingQuantityToFulfill <= 0)
+                break; // Stop once the required quantity is fulfilled
+
+            // Get the available quantity in the warehouse for this batch
+            var availableQuantityResult = await GetMaterialStockInWarehouseByBatch(batch.Id, warehouseId);
+            if (availableQuantityResult.IsFailure)
+            {
+                continue;
+            }
+
+            decimal availableQuantity = availableQuantityResult.Value;
+            if (availableQuantity <= 0)
+                continue; // Skip batches with no stock
+
+            // Determine how much can be taken from this batch
+            decimal quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
+
+            // Add batch to the result list
+            var batchDto = mapper.Map<MaterialBatchDto>(batch);
+            result.Add(new BatchToSupply
+            {
+                Batch = batchDto,
+                QuantityToTake = quantityToTake
+            });
+
+            remainingQuantityToFulfill -= quantityToTake; // Reduce the required quantity
+        }
+
+        if (remainingQuantityToFulfill > 0)
+        {
+            return Error.Failure("Batch.Failure", $"Not enough frozen stock available to supply {requestedQuantity}. Short by {remainingQuantityToFulfill}.");
+        }
+
+        return result;
+    }
+    
 
    public Result<List<BatchLocation>> BatchesNeededToBeConsumed(Guid materialId, Guid warehouseId, decimal quantity)
     {
