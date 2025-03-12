@@ -570,8 +570,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         var sourceRequisitionItems = new List<SourceRequisitionItem>();
 
-        var stockTransfer = await context.StockTransfers.FirstOrDefaultAsync(s =>
-            s.ProductId == productId && s.ProductionScheduleId == productionScheduleId);
+        var stockTransfers = await context.StockTransfers.Where(s =>
+            s.ProductId == productId && s.ProductionScheduleId == productionScheduleId)
+            .ToListAsync();
 
         var stockRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
             r.ProductId == productId && r.ProductionScheduleId == productionScheduleId && r.RequisitionType == RequisitionType.Stock);
@@ -608,7 +609,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 BaseQuantity = item.BaseQuantity,
                 QuantityNeeded = quantityNeeded,
                 QuantityOnHand = quantityOnHand,
-                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                 Batches = batchResult.IsSuccess ? batchResult.Value : []
             };
         }).ToList();
@@ -621,7 +622,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return materialDetails;
     }
     
-    private MaterialRequisitionStatus GetStatusOfProductionMaterial(StockTransfer stockTransfer,
+    private MaterialRequisitionStatus GetStatusOfProductionMaterial(List<StockTransfer> stockTransfers,
         List<RequisitionItem> stockRequisitionItems, List<RequisitionItem> purchaseRequisitionItems, List<SourceRequisitionItem> sourceRequisitionItems, Guid materialId)
     {
         if (stockRequisitionItems.Count != 0 && stockRequisitionItems.Any(r => r.MaterialId == materialId))
@@ -631,7 +632,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 : MaterialRequisitionStatus.StockRequisition;
         }
         
-        if (stockTransfer != null && stockTransfer.MaterialId == materialId)
+        if (stockTransfers.Count != 0 && stockTransfers.Any(r => r.MaterialId == materialId))
             return MaterialRequisitionStatus.StockTransfer;
         
         if (sourceRequisitionItems.Count != 0 && sourceRequisitionItems.Any(s => s.MaterialId == materialId))
@@ -682,8 +683,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         var sourceRequisitionItems = new List<SourceRequisitionItem>();
 
-        var stockTransfer = await context.StockTransfers.FirstOrDefaultAsync(s =>
-            s.ProductId == productId && s.ProductionScheduleId == productionScheduleId);
+        var stockTransfers = await context.StockTransfers.Where(s =>
+                s.ProductId == productId && s.ProductionScheduleId == productionScheduleId)
+            .ToListAsync();
 
         var stockRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
             r.ProductId == productId && r.ProductionScheduleId == productionScheduleId && r.RequisitionType == RequisitionType.Stock);
@@ -719,7 +721,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 BaseUoM = mapper.Map<UnitOfMeasureDto>(product.BasePackingUoM),
                 BaseQuantity = item.BaseQuantity,
                 UnitCapacity = item.UnitCapacity,
-                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                 QuantityNeeded = quantityNeeded,
                 QuantityOnHand = quantityOnHand,
                 PackingExcessMargin = item.PackingExcessMargin,
