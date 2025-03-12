@@ -59,7 +59,6 @@ public interface IProductionScheduleRepository
     Task<Result<BatchPackagingRecordDto>> GetBatchPackagingRecord(Guid id); 
     Task<Result> UpdateBatchPackagingRecord(UpdateBatchPackagingRecord request, Guid id);
     Task<Result> IssueBatchPackagingRecord(Guid id, Guid userId);
-
     Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid userId);
     Task<Result<IEnumerable<StockTransferDto>>> GetStockTransfers(Guid? fromDepartmentId = null,
         Guid? toDepartmentId = null, Guid? materialId = null);
@@ -82,6 +81,8 @@ public interface IProductionScheduleRepository
         Guid productId, Guid userId);
     Task<Result<List<ProductionScheduleProcurementPackageDto>>> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId,
         Guid productId, Guid userId);
+    Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionId, Guid productionScheduleId);
+    Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
     
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);

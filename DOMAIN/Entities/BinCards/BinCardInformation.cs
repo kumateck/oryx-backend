@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 
@@ -7,8 +8,8 @@ namespace DOMAIN.Entities.BinCards;
 
 public class BinCardInformation:BaseEntity
 {
-    public Guid? MaterialBatchId { get; set; }
-    public MaterialBatch MaterialBatch { get; set; }
+    public Guid? BatchId { get; set; }
+    public MaterialBatch Batch { get; set; }
     [StringLength(500)]public string Description { get; set; }
     [StringLength(500)]public string WayBill { get; set; }
     [StringLength(500)]public string ArNumber { get; set; }
@@ -19,6 +20,14 @@ public class BinCardInformation:BaseEntity
     public Guid? UoMId { get; set; }
     public Product Product { get; set; }
     public Guid? ProductId { get; set; }
+    
+    public BinCardType Type {get; set; }
+}
+
+public enum BinCardType
+{
+    Material,
+    Product
 }
 
 public class BinCardInformationDto

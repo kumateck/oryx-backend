@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250312173027_Added_FinishedProductBatchEvent")]
+    partial class Added_FinishedProductBatchEvent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -625,9 +628,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("BalanceQuantity")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid?>("BatchId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -647,6 +647,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("MaterialBatchId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("ProductId")
                         .HasColumnType("uuid");
 
@@ -655,9 +658,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<decimal>("QuantityReceived")
                         .HasColumnType("numeric");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
 
                     b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
@@ -671,13 +671,13 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
-
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialBatchId");
 
                     b.HasIndex("ProductId");
 
@@ -2336,167 +2336,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("MasterProductionSchedule");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.Packing.FinalPacking", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("AverageVolumeFilledPerBottle")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("BatchSize")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("ExpectedYield")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("LeftOver")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("NUmberOfFullShipperPacked")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("NumberOfBottlesPerShipper")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("PackSize")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ProductionActivityStepId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductionScheduleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("QualityControlAnalyticalSample")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("RetainedSamples")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("StabilitySamples")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("TotalGainOrLoss")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("TotalNumberOfBottles")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("TotalQuantityPacked")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductionActivityStepId");
-
-                    b.HasIndex("ProductionScheduleId");
-
-                    b.ToTable("FinalPackings");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.Packing.FinalPackingMaterial", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("FinalPackingId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MaterialId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("PackedQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("PercentageLoss")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("ReceivedQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("RejectedQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("ReturnedQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("SampledQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("SubsequentDeliveredQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("TotalAccountedForQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("TotalReceivedQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FinalPackingId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialId");
-
-                    b.ToTable("FinalPackingMaterials");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>
@@ -6288,10 +6127,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.BinCards.BinCardInformation", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -6304,6 +6139,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
+                        .WithMany()
+                        .HasForeignKey("MaterialBatchId");
+
                     b.HasOne("DOMAIN.Entities.Products.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId");
@@ -6312,13 +6151,13 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("UoMId");
 
-                    b.Navigation("Batch");
-
                     b.Navigation("CreatedBy");
 
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MaterialBatch");
 
                     b.Navigation("Product");
 
@@ -7301,86 +7140,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Product");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.Packing.FinalPacking", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
-                        .WithMany()
-                        .HasForeignKey("ProductionActivityStepId");
-
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
-                        .WithMany()
-                        .HasForeignKey("ProductionScheduleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Product");
-
-                    b.Navigation("ProductionActivityStep");
-
-                    b.Navigation("ProductionSchedule");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.Packing.FinalPackingMaterial", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.Packing.FinalPacking", "FinalPacking")
-                        .WithMany("Materials")
-                        .HasForeignKey("FinalPackingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("FinalPacking");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Material");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>
@@ -9652,11 +9411,6 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.MasterProductionSchedule", b =>
                 {
                     b.Navigation("WorkOrders");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.Packing.FinalPacking", b =>
-                {
-                    b.Navigation("Materials");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>

@@ -2,6 +2,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
@@ -32,6 +33,7 @@ public class MaterialBatchDto
     public DateTime? RetestDate { get; set; }
     public List<MaterialBatchEventDto> Events { get; set; } = [];
     public List<MaterialBatchMovementDto> Movements { get; set; } = [];
+    public List<SrDto> SampleWeights { get; set; }
     public List<MassMaterialBatchMovementDto> MassMovements { get; set; } = [];
     public List<CurrentLocationDto> Locations { get; set; } = [];
 }
@@ -114,4 +116,16 @@ public class BatchToSupply
 {
     public MaterialBatchDto Batch { get; set; }
     public decimal QuantityToTake { get; set; }
+}
+
+public class FinishedGoodsTransferNoteDto
+{
+    public WarehouseDto FromWarehouse { get; set; }
+    public WarehouseDto ToWarehouse { get; set; }
+    public decimal QuantityPerPack { get; set; }
+    public PackageStyleDto PackageStyle { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public string QarNumber { get; set; }
+    public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
 }
