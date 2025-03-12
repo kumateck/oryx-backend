@@ -384,7 +384,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             var toBinCardEvent = new BinCardInformation
             {
-                BatchId = shelfMaterialBatch.MaterialBatch.Id,
+                MaterialBatchId = shelfMaterialBatch.MaterialBatch.Id,
                 Description = shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Name,
                 WayBill = "N/A",
                 ArNumber = "N/A",
@@ -401,7 +401,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             var fromBinCardEvent = new BinCardInformation
             {
-                BatchId = shelfMaterialBatch.MaterialBatch.Id,
+                MaterialBatchId = shelfMaterialBatch.MaterialBatch.Id,
                 Description = productionWarehouse.Name,
                 WayBill = "N/A",
                 ArNumber = "N/A",
