@@ -353,6 +353,7 @@ public class OryxMapper : Profile
         #region BinCardInformation
 
         CreateMap<BinCardInformation, BinCardInformationDto>();
+        CreateMap<ProductBinCardInformation, ProductBinCardInformationDto>();
 
         #endregion
 

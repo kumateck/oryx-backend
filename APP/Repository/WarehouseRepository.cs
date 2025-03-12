@@ -844,11 +844,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
     {
         var query = context.BinCardInformation
-            .Include(bci => bci.Batch)
+            .Include(bci => bci.MaterialBatch)
             .ThenInclude(mb => mb.Material)
             .Include(bci => bci.Product)
             .Include(bci => bci.UoM)
-            .Where(bci => bci.Batch.MaterialId == materialId && bci.Type == BinCardType.Material)
+            .Where(bci => bci.MaterialBatch.MaterialId == materialId)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -864,14 +864,13 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         );
     }
     
-    public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
+    public async Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid productId)
     {
-        var query = context.BinCardInformation
+        var query = context.ProductBinCardInformation
             .Include(bci => bci.Batch)
-            .ThenInclude(mb => mb.Material)
             .Include(bci => bci.Product)
             .Include(bci => bci.UoM)
-            .Where(bci => bci.Batch.MaterialId == materialId && bci.Type == BinCardType.Product)
+            .Where(bci => bci.Batch.Id == productId)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -883,7 +882,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             query,
             page,
             pageSize,
-            mapper.Map<BinCardInformationDto>
+            mapper.Map<ProductBinCardInformationDto>
         );
     }
     

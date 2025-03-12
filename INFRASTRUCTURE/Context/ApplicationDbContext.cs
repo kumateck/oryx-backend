@@ -196,6 +196,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region BinCardInformation
 
     public DbSet<BinCardInformation> BinCardInformation { get; set; }
+    public DbSet<ProductBinCardInformation> ProductBinCardInformation { get; set; }
 
     #endregion
 

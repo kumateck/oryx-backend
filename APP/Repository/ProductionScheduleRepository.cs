@@ -914,21 +914,20 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         };
         await context.FinishedProductBatchEvents.AddAsync(batchEvent);
         
-        var binCardEvent = new BinCardInformation
+        var binCardEvent = new ProductBinCardInformation
         {
             BatchId = bmr.ProductId,
             Description = finishedGoodsWarehouse.Name,
             WayBill = "N/A",
             ArNumber = "N/A",
-            Type = BinCardType.Product,
             QuantityReceived = request.TotalQuantity,
             QuantityIssued = 0,
-            BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouseByBatch(bmr.ProductId, finishedGoodsWarehouse.Id)).Value + request.TotalQuantity,
+            BalanceQuantity = (await materialRepository.GetProductStockInWarehouseByBatch(bmr.ProductId, finishedGoodsWarehouse.Id)).Value + request.TotalQuantity,
             UoMId = bmr.Product.BaseUomId,
             CreatedAt = DateTime.UtcNow
         };
         
-        await context.BinCardInformation.AddAsync(binCardEvent);
+        await context.ProductBinCardInformation.AddAsync(binCardEvent);
 
         await context.SaveChangesAsync();
         return Result.Success();
