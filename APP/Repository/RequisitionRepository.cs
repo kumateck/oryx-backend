@@ -83,6 +83,17 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
                 await context.Requisitions.AddAsync(requisition);
             }
+
+            var productionActivityStep =
+                await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
+                    p.Id == request.ProductionActivityStepId);
+
+            if (productionActivityStep is not null)
+            {
+                productionActivityStep.StartedAt = DateTime.UtcNow;
+                productionActivityStep.Status = ProductionStatus.InProgress;
+                context.ProductionActivitySteps.Update(productionActivityStep);
+            }
         }
         else
         {
@@ -113,11 +124,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId)
     {
         var requisition = await context.Requisitions
+            .AsSplitQuery()
+            .Include(r => r.ProductionSchedule)
+            .Include(r => r.Product)
             .Include(r => r.RequestedBy)
             .Include(r => r.Approvals).ThenInclude(r => r.User)
             .Include(r => r.Approvals).ThenInclude(r => r.Role)
-            .Include(r => r.Items)
-            .ThenInclude(i => i.Material)
+            .Include(r => r.Items).ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
         if (requisition is null)
@@ -125,31 +138,40 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             return RequisitionErrors.NotFound(requisitionId);
         }
 
-        var user = await context.Users.Include(u => u.Department)
-            .ThenInclude(u => u.Warehouses)
+        var user = await context.Users
+            .Include(u => u.Department).ThenInclude(u => u.Warehouses)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
-        var warehouse = user?.GetUserProductionWarehouse();
-        
+        if (user?.Department is null)
+        {
+            return UserErrors.NotFound(userId);
+        }
+
+        // Find user's raw material & packing warehouses
+        var rawWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
+        if (rawWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
+
+        var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
+        if (packingWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No packing material warehouse is associated with current user");
+
         var result = mapper.Map<RequisitionDto>(requisition);
 
-        if (warehouse is null) return result;
-
+        // If the requisition type is a purchase, return early
         if (requisition.RequisitionType == RequisitionType.Purchase) return result;
-        
+
         foreach (var item in result.Items)
         {
-            var batchResult = await materialRepository.GetFrozenMaterialBatchesInWarehouse(item.Material.Id, warehouse.Id);
-            //item.Batches = batchResult.IsSuccess ? batchResult.Value : [];
+            // Determine appropriate warehouse based on material type
+            var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
-            foreach (var batch in batchResult.Value)
+            // Fetch frozen batches that will fulfill the request
+            var batchResult = await materialRepository.GetFrozenBatchesForRequisitionItem(item.Material.Id, appropriateWarehouse.Id, item.Quantity);
+            
+            if (batchResult.IsSuccess)
             {
-                var batchLocation = new MaterialBatchLocationsDto
-                {
-                    MaterialBatch = batch,
-                    ShelfMaterialBatches =  await GetShelvesOfBatch(batch.Id,warehouse.Id)
-                };
-                item.BatchLocations.Add(batchLocation);
+                item.Batches = batchResult.Value; // Assign batches with quantity to take
             }
         }
 
@@ -184,7 +206,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (user.Department == null)
             return Error.NotFound("User.Department", "User has no association to any department");
         
-        if(user.Department.Warehouses.Count == 0)
+        if (user.Department.Warehouses.Count == 0)
             return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
         
         var rawWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
@@ -194,17 +216,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
         if (packingWarehouse is null)
             return Error.NotFound("User.Warehouse", "No packing material warehouse is associated with current user");
-        
-        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
-        if (productionWarehouse is null)
-            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
 
-        var batchesToConsume = new List<BatchLocation>();
+        var productionWarehouse = await context.Warehouses.IgnoreQueryFilters().FirstOrDefaultAsync(w =>
+            w.DepartmentId == stockRequisition.DepartmentId && w.Type == WarehouseType.Production);
+        
+        if (productionWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No production warehouse is associated with department who made stock requisition");
+
+        var batchesToConsume = new List<BatchToSupply>();
 
         foreach (var item in stockRequisition.Items)
         {
             var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
-            var batchesResult =  materialRepository.BatchesNeededToBeConsumed(item.MaterialId, appropriateWarehouse.Id, item.Quantity);
+            var batchesResult = await materialRepository.GetFrozenBatchesForRequisitionItem(item.MaterialId, appropriateWarehouse.Id, item.Quantity);
+            
             if (batchesResult.IsSuccess)
             {
                 batchesToConsume.AddRange(batchesResult.Value);
@@ -213,8 +238,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             foreach (var batch in batchesToConsume)
             {
                 batch.Batch.QuantityAssigned = 0;
-                var shelfMaterialBatches =
-                    await context.ShelfMaterialBatches.Where(sb => sb.MaterialBatchId == batch.Batch.Id).ToListAsync();
+                var shelfMaterialBatches = await context.ShelfMaterialBatches
+                    .Where(sb => sb.MaterialBatchId == batch.Batch.Id)
+                    .ToListAsync();
                 context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
 
                 var movement = new MassMaterialBatchMovement
@@ -222,25 +248,54 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     BatchId = batch.Batch.Id,
                     FromWarehouseId = appropriateWarehouse.Id,
                     ToWarehouseId = productionWarehouse.Id,
-                    Quantity = batch.QuantityToUse,
+                    Quantity = batch.QuantityToTake,
                     MovedAt = DateTime.UtcNow,
                     MovedById = userId
                 };
-            
+
                 await context.MassMaterialBatchMovements.AddAsync(movement);
-            
+
                 var batchEvent = new MaterialBatchEvent
                 {
                     BatchId = batch.Batch.Id,
                     Type = EventType.Moved,
-                    Quantity =batch.QuantityToUse,
+                    Quantity = batch.QuantityToTake,
                     UserId = userId
                 };
+
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
             }
         }
 
+        // ✅ Mark the current stock requisition as completed
+        stockRequisition.Status = RequestStatus.Completed;
+
         await context.SaveChangesAsync();
+
+        // ✅ Check if all requisitions for the same `ProductionActivityStepId` are completed
+        if (stockRequisition.ProductionActivityStepId.HasValue)
+        {
+            var relatedRequisitions = await context.Requisitions
+                .Where(r => r.ProductionActivityStepId == stockRequisition.ProductionActivityStepId)
+                .ToListAsync();
+
+            bool allCompleted = relatedRequisitions.All(r => r.Status == RequestStatus.Completed);
+
+            if (allCompleted)
+            {
+                var productionActivityStep = await context.ProductionActivitySteps
+                    .FirstOrDefaultAsync(p => p.Id == stockRequisition.ProductionActivityStepId);
+
+                if (productionActivityStep is not null)
+                {
+                    productionActivityStep.Status = ProductionStatus.Completed;
+                    productionActivityStep.CompletedAt = DateTime.UtcNow;
+                    context.ProductionActivitySteps.Update(productionActivityStep);
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
         return Result.Success();
     }
 
@@ -367,7 +422,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     // Get paginated list of Stock Requisitions
-    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status, RequisitionType? requisitionType)
+    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status, RequisitionType? requisitionType, Guid? departmentId)
     {
         var query = context.Requisitions
             .AsSplitQuery()
@@ -377,6 +432,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(r => r.Items)
             .ThenInclude(i => i.Material)
             .AsQueryable();
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(q => q.DepartmentId == departmentId);
+        }
         
         if (status.HasValue)
         {

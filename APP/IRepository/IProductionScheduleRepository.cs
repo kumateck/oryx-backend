@@ -2,9 +2,11 @@ using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Requisitions;
 using SHARED;
 
 namespace APP.IRepository;
@@ -82,4 +84,12 @@ public interface IProductionScheduleRepository
         Guid productId, Guid userId);
     Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionId, Guid productionScheduleId);
     Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
+    
+    Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
+    Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);
+    Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId);
+    Task<Result<Paginateable<IEnumerable<FinalPackingDto>>>> GetFinalPackings(int page, int pageSize, string searchQuery);
+    Task<Result> UpdateFinalPacking(CreateFinalPacking request, Guid finalPackingId);
+    Task<Result> DeleteFinalPacking(Guid finalPackingId, Guid userId);
+    Task<Result<RequisitionDto>> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId);
 }

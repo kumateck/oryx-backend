@@ -58,4 +58,6 @@ public interface IMaterialRepository
         Guid warehouseId, decimal quantity);
 
     Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
+    Task<Result<List<BatchToSupply>>> GetFrozenBatchesForRequisitionItem(Guid materialId, Guid warehouseId,
+        decimal requestedQuantity);
 }

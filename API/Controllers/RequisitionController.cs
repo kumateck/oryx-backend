@@ -48,7 +48,30 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null)
     {
-        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type);
+        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, null);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Retrieves a paginated list of requisitions.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="status">Filter by status of the requisition.</param>
+    /// <param name="type">Filter between stock and purchase requisitions. (Stock = 0, Purchase =  1)</param>
+    /// <returns>Returns a paginated list of requisitions.</returns>
+    [HttpGet("department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
+    public async Task<IResult> GetRequisitionsForDepartment([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
+        [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null)
+    {
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (departmentId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250312181051_AddFinalPacking")]
+    partial class AddFinalPacking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -625,9 +628,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("BalanceQuantity")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid?>("BatchId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -647,6 +647,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("MaterialBatchId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("ProductId")
                         .HasColumnType("uuid");
 
@@ -655,9 +658,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<decimal>("QuantityReceived")
                         .HasColumnType("numeric");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
 
                     b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
@@ -671,13 +671,13 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
-
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialBatchId");
 
                     b.HasIndex("ProductId");
 
@@ -1384,198 +1384,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.ToTable("Grns");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BatchManufacturingRecordId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("FromWarehouseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("PackageStyleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("QarNumber")
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("QuantityPerPack")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid?>("ToWarehouseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("TotalQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid?>("UoMId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BatchManufacturingRecordId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FromWarehouseId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("PackageStyleId");
-
-                    b.HasIndex("ToWarehouseId");
-
-                    b.HasIndex("UoMId");
-
-                    b.ToTable("FinishedGoodsTransferNotes");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchEvent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ConsumedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ConsumptionWarehouseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BatchId");
-
-                    b.HasIndex("ConsumptionWarehouseId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("FinishedProductBatchEvents");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchMovement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("FromWarehouseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("MovedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("MovedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("MovementType")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid?>("ToWarehouseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BatchId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FromWarehouseId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MovedById");
-
-                    b.HasIndex("ToWarehouseId");
-
-                    b.ToTable("FinishedProductBatchMovements");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MassMaterialBatchMovement", b =>
@@ -6288,10 +6096,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.BinCards.BinCardInformation", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -6304,6 +6108,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
+                        .WithMany()
+                        .HasForeignKey("MaterialBatchId");
+
                     b.HasOne("DOMAIN.Entities.Products.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId");
@@ -6312,13 +6120,13 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("UoMId");
 
-                    b.Navigation("Batch");
-
                     b.Navigation("CreatedBy");
 
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MaterialBatch");
 
                     b.Navigation("Product");
 
@@ -6717,151 +6525,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
-                        .WithMany()
-                        .HasForeignKey("BatchManufacturingRecordId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "FromWarehouse")
-                        .WithMany()
-                        .HasForeignKey("FromWarehouseId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Base.PackageStyle", "PackageStyle")
-                        .WithMany()
-                        .HasForeignKey("PackageStyleId");
-
-                    b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "ToWarehouse")
-                        .WithMany()
-                        .HasForeignKey("ToWarehouseId");
-
-                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
-                        .WithMany()
-                        .HasForeignKey("UoMId");
-
-                    b.Navigation("BatchManufacturingRecord");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("FromWarehouse");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("PackageStyle");
-
-                    b.Navigation("ToWarehouse");
-
-                    b.Navigation("UoM");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchEvent", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "ConsumptionWarehouse")
-                        .WithMany()
-                        .HasForeignKey("ConsumptionWarehouseId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Batch");
-
-                    b.Navigation("ConsumptionWarehouse");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchMovement", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "FromWarehouse")
-                        .WithMany()
-                        .HasForeignKey("FromWarehouseId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "MovedBy")
-                        .WithMany()
-                        .HasForeignKey("MovedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "ToWarehouse")
-                        .WithMany()
-                        .HasForeignKey("ToWarehouseId");
-
-                    b.Navigation("Batch");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("FromWarehouse");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("MovedBy");
-
-                    b.Navigation("ToWarehouse");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MassMaterialBatchMovement", b =>

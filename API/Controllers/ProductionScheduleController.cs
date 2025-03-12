@@ -6,9 +6,11 @@ using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Requisitions;
 using SHARED.Requests;
 
 namespace API.Controllers;
@@ -390,7 +392,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
 
     #region Manufacturing Record
 
-       /// <summary>
+    /// <summary>
     /// Creates a new batch manufacturing record.
     /// </summary>
     [HttpPost("manufacturing")]
@@ -694,6 +696,123 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         
         var result = await repository.IssueStockTransfer(stockTransferId, batches,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    #endregion
+    
+     #region Final Packing
+
+    /// <summary>
+    /// Creates a new Final Packing entry.
+    /// </summary>
+    /// <param name="request">The CreateFinalPacking object.</param>
+    /// <returns>Returns the ID of the created Final Packing entry.</returns>
+    [HttpPost("final-packing")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateFinalPacking([FromBody] CreateFinalPacking request)
+    {
+        var result = await repository.CreateFinalPacking(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific Final Packing by its ID.
+    /// </summary>
+    /// <param name="finalPackingId">The ID of the Final Packing.</param>
+    /// <returns>Returns the Final Packing details.</returns>
+    [HttpGet("final-packing/{finalPackingId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinalPackingDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinalPacking(Guid finalPackingId)
+    {
+        var result = await repository.GetFinalPacking(finalPackingId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a Final Packing using Production Schedule ID and Product ID.
+    /// </summary>
+    /// <param name="productionScheduleId">The Production Schedule ID.</param>
+    /// <param name="productId">The Product ID.</param>
+    /// <returns>Returns the Final Packing details.</returns>
+    [HttpGet("final-packing/{productionScheduleId}/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinalPackingDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId)
+    {
+        var result = await repository.GetFinalPackingByScheduleAndProduct(productionScheduleId, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of Final Packing entries.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of Final Packing entries.</returns>
+    [HttpGet("final-packing")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinalPackingDto>>))]
+    public async Task<IResult> GetFinalPackings([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetFinalPackings(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates an existing Final Packing entry.
+    /// </summary>
+    /// <param name="request">The CreateFinalPacking object containing updated data.</param>
+    /// <param name="finalPackingId">The ID of the Final Packing to be updated.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("final-packing/{finalPackingId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateFinalPacking([FromBody] CreateFinalPacking request, Guid finalPackingId)
+    {
+        var result = await repository.UpdateFinalPacking(request, finalPackingId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a specific Final Packing entry.
+    /// </summary>
+    /// <param name="finalPackingId">The ID of the Final Packing to be deleted.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpDelete("final-packing/{finalPackingId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteFinalPacking(Guid finalPackingId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteFinalPacking(finalPackingId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a Stock Requisition for Packaging based on Production Schedule and Product ID.
+    /// </summary>
+    /// <param name="productionScheduleId">The Production Schedule ID.</param>
+    /// <param name="productId">The Product ID.</param>
+    /// <returns>Returns the Stock Requisition for Packaging.</returns>
+    [HttpGet("stock-requisition/package/{productionScheduleId}/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId)
+    {
+        var result = await repository.GetStockRequisitionForPackaging(productionScheduleId, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     #endregion
