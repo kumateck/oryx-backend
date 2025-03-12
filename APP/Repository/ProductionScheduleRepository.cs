@@ -249,6 +249,71 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             case ProductionStatus.Completed:
                 activityStep.CompletedAt = DateTime.UtcNow;
 
+                if (activityStep.Order == 4)
+                {
+                    var productionActivity = activityStep.ProductionActivity;
+                    var product = await context.Products.IgnoreQueryFilters()
+                        .Include(product => product.BillOfMaterials).Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == productionActivity.ProductId);
+                    if (product is not null)
+                    {
+                        var productionWarehouse = await context.Warehouses
+                            .IgnoreQueryFilters()
+                            .FirstOrDefaultAsync(w => w.Id == product.DepartmentId && w.Type == WarehouseType.Production);
+
+                        if (productionWarehouse is not null)
+                        {
+                            var activeBoM = product.BillOfMaterials
+                                .OrderByDescending(p => p.EffectiveDate)
+                                .FirstOrDefault(p => p.IsActive);
+
+                            var productPackages = product.Packages.ToList();
+
+                            if (activeBoM is null)
+                                return Error.NotFound("Product.BoM", "No active BoM found for this product");
+
+                            // Get quantity required from ProductionSchedule
+                            var quantityRequired = (await context.ProductionScheduleProducts.FirstOrDefaultAsync(p =>
+                                p.ProductionScheduleId == productionActivity.ProductionScheduleId &&
+                                p.ProductId == product.Id))?.Quantity ?? 0; 
+
+                            // Fetch batches for Raw Materials with validation
+                            var rawMaterialBatches = activeBoM.BillOfMaterial.Items
+                                .SelectMany(item =>
+                                {
+                                    var quantityToUse = CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BaseQuantity);
+                                    var result = materialRepository.BatchesNeededToBeConsumed(item.MaterialId, productionWarehouse.Id, quantityToUse);
+                                    return result.IsSuccess ? result.Value : []; // Ensure safe extraction
+                                })
+                                .ToList();
+
+                            // Fetch batches for Package Materials with validation
+                            var packageMaterialBatches = productPackages
+                                .SelectMany(item =>
+                                {
+                                    var quantityToUse = CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BasePackingQuantity);
+                                    var result = materialRepository.BatchesNeededToBeConsumed(item.MaterialId, productionWarehouse.Id, quantityToUse);
+                                    return result.IsSuccess ? result.Value : []; // Ensure safe extraction
+                                })
+                                .ToList();
+
+                            // Consume materials at location
+                            foreach (var batch in rawMaterialBatches.Concat(packageMaterialBatches))
+                            {
+                                await materialRepository.ConsumeMaterialAtLocation(batch.Batch.Id, productionWarehouse.Id, batch.QuantityToUse, userId);
+                            }
+                        }
+                        else
+                        {
+                            return Error.Validation("Production.Consumption",
+                                "Unable to consume materials on production floor because production floor for department cant be found");
+                        }
+                    }
+                    else
+                    {
+                        return ProductErrors.NotFound(productionActivity.ProductId);
+                    }
+                }
+
                 bool isLastStep = await context.ProductionActivitySteps
                     .Where(s => s.ProductionActivityId == activityStep.ProductionActivityId)
                     .OrderByDescending(s => s.Order)

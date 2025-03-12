@@ -148,10 +148,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         if (requisition.RequisitionType == RequisitionType.Purchase) return result;
         
+        var rawWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
+        if (rawWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
+
+        var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
+        if (packingWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No packing material warehouse is associated with current user");
+        
         foreach (var item in result.Items)
         {
-            var batchResult = await materialRepository.GetFrozenMaterialBatchesInWarehouse(item.Material.Id, warehouse.Id);
-            //item.Batches = batchResult.IsSuccess ? batchResult.Value : [];
+            // Determine appropriate warehouse based on material type
+            var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
+            
+            var batchResult = await materialRepository.GetFrozenMaterialBatchesInWarehouse(item.Material.Id, appropriateWarehouse.Id);
 
             foreach (var batch in batchResult.Value)
             {
@@ -390,7 +400,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     // Get paginated list of Stock Requisitions
-    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status, RequisitionType? requisitionType)
+    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status, RequisitionType? requisitionType, Guid? departmentId)
     {
         var query = context.Requisitions
             .AsSplitQuery()
@@ -400,6 +410,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(r => r.Items)
             .ThenInclude(i => i.Material)
             .AsQueryable();
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(q => q.DepartmentId == departmentId);
+        }
         
         if (status.HasValue)
         {
