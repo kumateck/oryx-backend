@@ -15,10 +15,14 @@ public static class OperationUtils
             ("Line Clearance For Liquid Filling & Capping Activity", "Clearing the line for liquid filling and capping operations.", 7),
             ("Liquid Filling & Capping", "Filling liquids and capping bottles or containers.", 8),
             ("In Process Checking: Fill Volume & Seal Integrity Checking", "Checking fill volume and seal integrity during processing.", 9),
-            ("Finished Goods Transfer To Storage Room", "Transferring finished goods to the storage area.", 10),
-            ("Inspection & Release", "Inspecting and releasing items for the next phase.", 11),
-            ("Quarantine Finished Goods & QC Testing", "Quarantining finished goods and conducting QC tests.", 12),
-            ("Dispatch", "Dispatching finished goods to customers or destinations.", 13)
+            ("Overprinting & Approval of Secondary Packing Materials", "Ensuring secondary packing materials are properly overprinted and approved.", 10),
+            ("Line Clearance by QA For Hand Packing Activity", "QA clearance before initiating manual packing operations.", 11),
+            ("Final Packing", "Completing the final packaging of the product.", 12),
+            ("Finished Goods Transfer To Storage Room", "Transferring finished goods to the storage area.", 13),
+            ("Inspection & Release", "Inspecting and releasing items for the next phase.", 14),
+            ("Quarantine Finished Goods & QC Testing", "Quarantining finished goods and conducting QC tests.", 15),
+            ("Dispatch", "Dispatching finished goods to customers or destinations.", 16)
+
         };
     }
 }

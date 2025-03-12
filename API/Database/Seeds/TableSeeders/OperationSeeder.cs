@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.Base;
 using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Database.Seeds.TableSeeders;
 
@@ -10,16 +11,27 @@ public class OperationSeeder : ISeeder
     {
         var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
 
-        if (dbContext.Operations.Any()) return;
-
         SeedOperations(dbContext);
     }
 
     private static void SeedOperations(ApplicationDbContext dbContext)
     {
-        var operations = OperationUtils.All().Select(operation => new Operation { Name = operation.Name, Description = operation.Description, Order = operation.Order}).ToList();
+        var existingOperations = dbContext.Operations.AsNoTracking().ToList();
 
-        dbContext.Operations.AddRange(operations);
-        dbContext.SaveChanges();
+        var newOperations = OperationUtils.All()
+            .Where(operation => !existingOperations.Any(e => e.Name == operation.Name))
+            .Select(operation => new Operation
+            {
+                Name = operation.Name,
+                Description = operation.Description,
+                Order = operation.Order
+            })
+            .ToList();
+
+        if (newOperations.Any())
+        {
+            dbContext.Operations.AddRange(newOperations);
+            dbContext.SaveChanges();
+        }
     }
 }
