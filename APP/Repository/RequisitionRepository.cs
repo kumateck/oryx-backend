@@ -90,6 +90,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             if (productionActivityStep is not null)
             {
+                productionActivityStep.StartedAt = DateTime.UtcNow;
                 productionActivityStep.Status = ProductionStatus.InProgress;
                 context.ProductionActivitySteps.Update(productionActivityStep);
             }
@@ -257,6 +258,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (productionActivityStep is not null)
         {
             productionActivityStep.Status = ProductionStatus.Completed;
+            productionActivityStep.CompletedAt = DateTime.UtcNow;
             context.ProductionActivitySteps.Update(productionActivityStep);
         }
 
