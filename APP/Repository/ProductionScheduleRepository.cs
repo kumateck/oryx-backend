@@ -221,8 +221,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result> UpdateStatusOfProductionActivityStep(Guid productionStepId, ProductionStatus status, Guid userId)
     {
         var activityStep = await context.ProductionActivitySteps
+            .AsSplitQuery()
             .Include(productionActivityStep => productionActivityStep.ResponsibleUsers)
-            .Include(productionActivityStep => productionActivityStep.ProductionActivity).FirstOrDefaultAsync(p => p.Id == productionStepId);
+            .Include(productionActivityStep => productionActivityStep.ProductionActivity)
+            .Include(productionActivityStep => productionActivityStep.Operation).FirstOrDefaultAsync(p => p.Id == productionStepId);
         if(activityStep is null)
             return Error.NotFound("ProductActivity.NotFound", "Activity step was not found");
 
@@ -246,21 +248,18 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 {
                     activityStep.ProductionActivity.Status = ProductionStatus.InProgress;
                 }
-                break;
-            
-            case ProductionStatus.Completed:
-                activityStep.CompletedAt = DateTime.UtcNow;
-
-                if (activityStep.Order == 4)
+                
+                if (activityStep.Operation.Name == "Production Preparation")
                 {
                     var productionActivity = activityStep.ProductionActivity;
                     var product = await context.Products.IgnoreQueryFilters()
+                        .AsSplitQuery()
                         .Include(product => product.BillOfMaterials).Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == productionActivity.ProductId);
                     if (product is not null)
                     {
                         var productionWarehouse = await context.Warehouses
                             .IgnoreQueryFilters()
-                            .FirstOrDefaultAsync(w => w.Id == product.DepartmentId && w.Type == WarehouseType.Production);
+                            .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.Production);
 
                         if (productionWarehouse is not null)
                         {
@@ -315,6 +314,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                         return ProductErrors.NotFound(productionActivity.ProductId);
                     }
                 }
+                break;
+            
+            case ProductionStatus.Completed:
+                activityStep.CompletedAt = DateTime.UtcNow;
+                
 
                 bool isLastStep = await context.ProductionActivitySteps
                     .Where(s => s.ProductionActivityId == activityStep.ProductionActivityId)
