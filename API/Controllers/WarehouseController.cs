@@ -682,12 +682,12 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    [HttpGet("bincardinformation/{materialId}/product")]
+    [HttpGet("bincardinformation/{productId}/product")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BinCardInformationDto>>))]
-    public async Task<IResult> GetProductBinCardInformation([FromRoute] Guid materialId,[FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    public async Task<IResult> GetProductBinCardInformation([FromRoute] Guid productId,[FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
-        var result = await repository.GetProductBinCardInformation(page, pageSize, searchQuery, materialId);
+        var result = await repository.GetProductBinCardInformation(page, pageSize, searchQuery, productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
