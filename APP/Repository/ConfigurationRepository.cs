@@ -40,19 +40,15 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
         var configuration = await context.Configurations
             .FirstOrDefaultAsync(c => c.Id == configurationId);
 
-        return configuration is null ? 
-            Error.NotFound("Configuration.NotFound", "Configuration is not found") : 
-            Result.Success(mapper.Map<ConfigurationDto>(configuration));
+        return  Result.Success(mapper.Map<ConfigurationDto>(configuration));
     }
     
     public async Task<Result<ConfigurationDto>> GetConfiguration(string modelType)
     {
         var configuration = await context.Configurations
-            .SingleOrDefaultAsync(c => c.ModelType == modelType);
+            .FirstOrDefaultAsync(c => c.ModelType == modelType);
 
-        return configuration is null ? 
-            Error.NotFound("Configuration.NotFound", "Configuration is not found") : 
-            Result.Success(mapper.Map<ConfigurationDto>(configuration));
+        return  Result.Success(mapper.Map<ConfigurationDto>(configuration));
     }
 
     public async Task<Result<Paginateable<IEnumerable<ConfigurationDto>>>> GetConfigurations(int page, int pageSize, string searchQuery)

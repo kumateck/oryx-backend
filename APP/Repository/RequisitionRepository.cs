@@ -83,6 +83,16 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
                 await context.Requisitions.AddAsync(requisition);
             }
+
+            var productionActivityStep =
+                await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
+                    p.Id == request.ProductionActivityStepId);
+
+            if (productionActivityStep is not null)
+            {
+                productionActivityStep.Status = ProductionStatus.InProgress;
+                context.ProductionActivitySteps.Update(productionActivityStep);
+            }
         }
         else
         {
