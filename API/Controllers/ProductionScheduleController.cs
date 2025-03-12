@@ -390,7 +390,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
 
     #region Manufacturing Record
 
-       /// <summary>
+    /// <summary>
     /// Creates a new batch manufacturing record.
     /// </summary>
     [HttpPost("manufacturing")]

@@ -709,6 +709,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
             var quantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
                 product.BasePackingQuantity);
+            var batchResult = materialRepository.BatchesNeededToBeConsumed(item.MaterialId, warehouse.Id,
+                quantityNeeded);
 
             return new ProductionScheduleProcurementPackageDto
             {
@@ -720,7 +722,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                 QuantityNeeded = quantityNeeded,
                 QuantityOnHand = quantityOnHand,
-                PackingExcessMargin = item.PackingExcessMargin
+                PackingExcessMargin = item.PackingExcessMargin,
+                Batches = batchResult.IsSuccess ? batchResult.Value : []
             };
         }).ToList();
         
@@ -939,15 +942,15 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             await materialRepository.FreezeMaterialBatchAsync(batch.Batch.Id);
         }
         
-        // var packageMaterialResult = await CheckPackageMaterialStockLevelsForProductionSchedule(productId, quantity, userId);
-        // if (packageMaterialResult.IsFailure) return;
-        //
-        // var packageMaterialDetails = packageMaterialResult.Value;
-        //
-        // foreach (var batch in packageMaterialDetails.SelectMany(material => material.Batches))
-        // {
-        //     await materialRepository.FreezeMaterialBatchAsync(batch.Batch.Id);
-        // }
+        var packageMaterialResult = await CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId,null, userId);
+        if (packageMaterialResult.IsFailure) return;
+        
+        var packageMaterialDetails = packageMaterialResult.Value;
+        
+        foreach (var batch in packageMaterialDetails.SelectMany(material => material.Batches))
+        {
+            await materialRepository.FreezeMaterialBatchAsync(batch.Batch.Id);
+        }
     }
     
      public async Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid userId)

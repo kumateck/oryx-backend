@@ -494,7 +494,9 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Material,
                 opt => opt.MapFrom(src => src.StockTransfer.Material))
             .ForMember(dest => dest.UoM,
-                opt => opt.MapFrom(src => src.StockTransfer.UoM));
+                opt => opt.MapFrom(src => src.StockTransfer.UoM))
+            .ForMember(dest => dest.Reason,
+                opt => opt.MapFrom(src => src.StockTransfer.Reason));
 
         #endregion
 
