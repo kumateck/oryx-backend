@@ -59,7 +59,6 @@ public interface IProductionScheduleRepository
     Task<Result<BatchPackagingRecordDto>> GetBatchPackagingRecord(Guid id); 
     Task<Result> UpdateBatchPackagingRecord(UpdateBatchPackagingRecord request, Guid id);
     Task<Result> IssueBatchPackagingRecord(Guid id, Guid userId);
-
     Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid userId);
     Task<Result<IEnumerable<StockTransferDto>>> GetStockTransfers(Guid? fromDepartmentId = null,
         Guid? toDepartmentId = null, Guid? materialId = null);
