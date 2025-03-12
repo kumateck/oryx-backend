@@ -17,6 +17,7 @@ using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
@@ -94,6 +95,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<ProductBillOfMaterial> ProductBillOfMaterials { get; set; }
     public DbSet<FinishedProduct> FinishedProducts { get; set; }
+    
     public DbSet<ProductPackage> ProductPackages { get; set; }
     public DbSet<PackageType> PackageTypes { get; set; }
 
@@ -120,6 +122,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionScheduleProduct> ProductionScheduleProducts { get; set; }
     public DbSet<StockTransfer> StockTransfers { get; set; }
     public DbSet<StockTransferSource> StockTransferSources { get; set; }
+    
+    public DbSet<FinalPacking> FinalPackings { get; set; }
+    public DbSet<FinalPackingMaterial> FinalPackingMaterials { get; set; }
+
+    #endregion
+
+    #region FinishedGoodsTransferNote
+
+    public DbSet<FinishedGoodsTransferNote> FinishedGoodsTransferNotes { get; set; }
+    public DbSet<FinishedProductBatchMovement> FinishedProductBatchMovements { get; set; }
+    public DbSet<FinishedProductBatchEvent> FinishedProductBatchEvents { get; set; }
 
     #endregion
 
@@ -154,8 +167,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Requisition> Requisitions { get; set; }
     public DbSet<RequisitionItem> RequisitionItems { get; set; }
     public DbSet<RequisitionApproval> RequisitionApprovals { get; set; }
-    public DbSet<CompletedRequisition> CompletedRequisitions { get; set; }
-    public DbSet<CompletedRequisitionItem> CompletedRequisitionItems { get; set; }
     
     public DbSet<SourceRequisition> SourceRequisitions { get; set; }
     public DbSet<SourceRequisitionItem> SourceRequisitionItems { get; set; }
@@ -185,6 +196,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region BinCardInformation
 
     public DbSet<BinCardInformation> BinCardInformation { get; set; }
+    public DbSet<ProductBinCardInformation> ProductBinCardInformation { get; set; }
 
     #endregion
 
@@ -576,19 +588,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasQueryFilter(mps => !mps.DeletedAt.HasValue && mps.Products.Count != 0);
         modelBuilder.Entity<ProductionScheduleItem>()
             .HasQueryFilter(mps => !mps.ProductionSchedule.DeletedAt.HasValue);
+        modelBuilder.Entity<FinalPacking>()
+            .HasQueryFilter(mps => mps.Product != null && !mps.ProductionSchedule.DeletedAt.HasValue);
+        modelBuilder.Entity<FinalPackingMaterial>()
+            .HasQueryFilter(mps => mps.FinalPacking != null && !mps.Material.DeletedAt.HasValue);
+        
         #endregion
 
         #region Requisition Filters
         modelBuilder.Entity<Requisition>()
             .HasQueryFilter(r => !r.DeletedAt.HasValue);
-        modelBuilder.Entity<CompletedRequisition>()
-            .HasQueryFilter(r => !r.Requisition.DeletedAt.HasValue);
-        modelBuilder.Entity<RequisitionItem>()
-            .HasQueryFilter(r => !r.Requisition.DeletedAt.HasValue);
-        modelBuilder.Entity<CompletedRequisitionItem>()
-            .HasQueryFilter(r => !r.CompletedRequisition.DeletedAt.HasValue);
         modelBuilder.Entity<SourceRequisition>()
             .HasQueryFilter(r => !r.DeletedAt.HasValue);
+        modelBuilder.Entity<RequisitionItem>()
+            .HasQueryFilter(r => !r.Material.DeletedAt.HasValue);
         modelBuilder.Entity<SourceRequisitionItem>()
             .HasQueryFilter(r => !r.SourceRequisition.DeletedAt.HasValue);
         #endregion

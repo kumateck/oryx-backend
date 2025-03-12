@@ -14,7 +14,7 @@ public interface IWarehouseRepository
 {
     Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request, Guid userId);
     Task<Result<WarehouseDto>> GetWarehouse(Guid warehouseId);
-    Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery, WarehouseType? type);
     Task<Result> UpdateWarehouse(CreateWarehouseRequest request, Guid warehouseId, Guid userId);
     Task<Result> DeleteWarehouse(Guid warehouseId, Guid userId);
     Task<Result<Guid>> CreateWarehouseLocation(CreateWarehouseLocationRequest request, Guid warehouseId,
@@ -74,4 +74,7 @@ public interface IWarehouseRepository
         Guid distributedMaterialId);
 
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByRackId(int page, int pageSize, string searchQuery, Guid rackId);
+
+    Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize,
+        string searchQuery, Guid productId);
 }

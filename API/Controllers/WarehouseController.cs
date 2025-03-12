@@ -54,9 +54,9 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseDto>>))]
-    public async Task<IResult> GetWarehouses([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetWarehouses([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, WarehouseType? type = null)
     {
-        var result = await repository.GetWarehouses(page, pageSize, searchQuery);
+        var result = await repository.GetWarehouses(page, pageSize, searchQuery, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -679,6 +679,15 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     public async Task<IResult> GetBinCardInformation([FromRoute] Guid materialId,[FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetBinCardInformation(page, pageSize, searchQuery,materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    [HttpGet("bincardinformation/{productId}/product")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BinCardInformationDto>>))]
+    public async Task<IResult> GetProductBinCardInformation([FromRoute] Guid productId,[FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    {
+        var result = await repository.GetProductBinCardInformation(page, pageSize, searchQuery, productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -87,4 +87,5 @@ public class DepartmentStockTransferDto : BaseDto
     public decimal Quantity { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public DateTime? IssuedAt { get; set; }
+    public string Reason { get; set; }
 }

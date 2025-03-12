@@ -20,6 +20,7 @@ using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
@@ -196,6 +197,12 @@ public class OryxMapper : Profile
         CreateMap<MasterProductionSchedule, MasterProductionScheduleDto>();
         CreateMap<CreateProductionScheduleProduct, ProductionScheduleProduct>();
         CreateMap<ProductionScheduleProduct, ProductionScheduleProductDto>();
+
+        CreateMap<CreateFinalPacking, FinalPacking>();
+        CreateMap<CreateFinalPackingMaterial, FinalPackingMaterial>();
+
+        CreateMap<FinalPacking, FinalPackingDto>();
+        CreateMap<FinalPackingMaterial, FinalPackingMaterialDto>();
         #endregion
 
         #region Route
@@ -241,10 +248,10 @@ public class OryxMapper : Profile
         CreateMap<Requisition, RequisitionDto>();
         CreateMap<RequisitionItem, RequisitionItemDto>();
         CreateMap<RequisitionApproval, RequisitionApprovalDto>();
-        CreateMap<CreateRequisitionRequest, CompletedRequisition>();
-        CreateMap<CreateRequisitionItemRequest, CompletedRequisitionItem>();
-        CreateMap<CompletedRequisition, RequisitionDto>();
-        CreateMap<CompletedRequisitionItem, RequisitionItemDto>();
+        // CreateMap<CreateRequisitionRequest, CompletedRequisition>();
+        // CreateMap<CreateRequisitionItemRequest, CompletedRequisitionItem>();
+        // CreateMap<CompletedRequisition, RequisitionDto>();
+        // CreateMap<CompletedRequisitionItem, RequisitionItemDto>();
         CreateMap<CreateSourceRequisitionRequest, SourceRequisition>();
         CreateMap<CreateSourceRequisitionItemRequest, SourceRequisitionItem>();
         CreateMap<SourceRequisitionItem, SourceRequisitionItemDto>();
@@ -346,6 +353,7 @@ public class OryxMapper : Profile
         #region BinCardInformation
 
         CreateMap<BinCardInformation, BinCardInformationDto>();
+        CreateMap<ProductBinCardInformation, ProductBinCardInformationDto>();
 
         #endregion
 
@@ -477,6 +485,9 @@ public class OryxMapper : Profile
         CreateMap<UpdateBatchPackagingRecord, BatchPackagingRecord>();
         CreateMap<BatchPackagingRecord, BatchPackagingRecordDto>();
 
+        CreateMap<CreateFinishedGoodsTransferNoteRequest, FinishedGoodsTransferNote>();
+        CreateMap<FinishedGoodsTransferNote, FinishedGoodsTransferNoteDto>();
+
         CreateMap<ProductionActivity, ProductionActivityDto>();
         CreateMap<ProductionActivity, ProductionActivityListDto>();
         CreateMap<ProductionActivityLog, ProductionActivityLogDto>();
@@ -494,7 +505,9 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Material,
                 opt => opt.MapFrom(src => src.StockTransfer.Material))
             .ForMember(dest => dest.UoM,
-                opt => opt.MapFrom(src => src.StockTransfer.UoM));
+                opt => opt.MapFrom(src => src.StockTransfer.UoM))
+            .ForMember(dest => dest.Reason,
+                opt => opt.MapFrom(src => src.StockTransfer.Reason));
 
         #endregion
 

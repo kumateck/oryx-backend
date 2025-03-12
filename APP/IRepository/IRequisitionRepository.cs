@@ -4,7 +4,6 @@ using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using SHARED;
-using SHARED.Requests;
 
 namespace APP.IRepository;
 
@@ -16,10 +15,10 @@ public interface IRequisitionRepository
     Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities,Guid productId,
         Guid userId);
     Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize,
-        string searchQuery,  RequestStatus? status, RequisitionType? requisitionType);
+        string searchQuery,  RequestStatus? status, RequisitionType? requisitionType, Guid? departmentId);
     Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId);
     Task<Result> ApproveRequisition(ApproveRequisitionRequest request, Guid requisitionId, Guid userId, List<Guid> roleIds);
-     Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId);
+     //Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId);
      Task<Result> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId);
     Task<Result<SourceRequisitionDto>> GetSourceRequisition(Guid sourceRequisitionId);
     Task<Result<Paginateable<IEnumerable<SourceRequisitionDto>>>> GetSourceRequisitions(int page,

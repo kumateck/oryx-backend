@@ -20,6 +20,8 @@ public interface IMaterialRepository
     Task<Result<decimal>> CheckStockLevel(Guid materialId);
     //Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId);
     Task<Result> CreateMaterialBatch(List<CreateMaterialBatchRequest> request, Guid userId);
+    Task<Result> CreateMaterialBatchWithoutBatchMovement(List<CreateMaterialBatchRequest> request,
+        Guid userId);
     Task<Result<MaterialBatchDto>> GetMaterialBatch(Guid batchId);
     Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(int page, int pageSize,
         string searchQuery);
@@ -54,4 +56,8 @@ public interface IMaterialRepository
     Task<List<MaterialStockByDepartmentDto>> GetStockByDepartment(Guid materialId);
     Task<Result<List<BatchToSupply>>> BatchesToSupplyForGivenQuantity(Guid materialId,
         Guid warehouseId, decimal quantity);
+
+    Task<Result<decimal>> GetProductStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
+    Task<Result<List<BatchToSupply>>> GetFrozenBatchesForRequisitionItem(Guid materialId, Guid warehouseId,
+        decimal requestedQuantity);
 }

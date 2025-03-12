@@ -161,6 +161,28 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return Result.Success();
     }
+    
+    
+    public async Task<Result> CreateMaterialBatchWithoutBatchMovement(List<CreateMaterialBatchRequest> request, Guid userId)
+    {
+        var batches = mapper.Map<List<MaterialBatch>>(request);
+    
+        foreach (var batch in batches)
+        {
+            batch.CreatedById = userId;
+        }
+
+        // Add batches to the database
+        await context.MaterialBatches.AddRangeAsync(batches);
+        await context.SaveChangesAsync();
+
+        // Now create initial movements for each batch
+
+        // Save changes to the database
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 
 
     // Get Material Batch by ID
@@ -250,7 +272,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(m => m.MaterialBatch)
             .ThenInclude(mb => mb.Material)
             .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-            .Where(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id && m.MaterialBatch.Status == BatchStatus.Available)
+            .Where(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id &&
+                        (m.MaterialBatch.Status == BatchStatus.Available || m.MaterialBatch.Status == BatchStatus.Frozen))
             .Select(m => m.MaterialBatch.Material)
             .Distinct()
             .AsQueryable();
@@ -960,6 +983,40 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return totalQuantityInLocation;
     }
+    
+    public async Task<Result<decimal>> GetProductStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
+    {
+        // Sum of quantities moved to this location (incoming batches)
+        var batchesInLocation = await context.FinishedProductBatchMovements
+            .Include(m => m.Batch)
+            .Include(m => m.ToWarehouse)
+            .Where(m => m.BatchId == batchId
+                        && m.ToWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of quantities moved out of this location (outgoing batches)
+        var batchesMovedOut = await context.FinishedProductBatchMovements
+            .Include(m => m.Batch)
+            .Include(m => m.FromWarehouse)
+            .Where(m => m.BatchId == batchId
+                        && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of the consumed quantities at this location for the given material
+        // var batchesConsumedAtLocation = await context.FinishedProductBatchEvents
+        //     .Include(m => m.Batch)
+        //     .Include(m => m.ConsumptionWarehouse)
+        //     .Where(e => e.BatchId == batchId
+        //                 && e.ConsumptionWarehouse != null 
+        //                 && e.ConsumptionWarehouseId == warehouseId
+        //                 && e.Type == EventType.Consumed)
+        //     .SumAsync(e => e.Quantity);
+
+        // Calculate the total available quantity for the material in this location
+        var totalQuantityInLocation = batchesInLocation - batchesMovedOut;// - batchesConsumedAtLocation;
+
+        return totalQuantityInLocation;
+    }
     public async Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {
         // Sum of quantities moved to this location (incoming batches)
@@ -1045,7 +1102,63 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return mapper.Map<List<MaterialBatchDto>>(frozenBatches);
     }
+    
+    
+    public async Task<Result<List<BatchToSupply>>> GetFrozenBatchesForRequisitionItem(Guid materialId, Guid warehouseId, decimal requestedQuantity)
+    {
+        var result = new List<BatchToSupply>();
+        decimal remainingQuantityToFulfill = requestedQuantity;
 
+        // Fetch frozen batches in FIFO order
+        var frozenBatches = await context.MaterialBatches
+            .IgnoreQueryFilters()
+            .Include(b => b.Material)
+            .Include(b => b.UoM)
+            .Where(b => b.Status == BatchStatus.Frozen &&
+                        b.MaterialId == materialId &&
+                        context.MassMaterialBatchMovements.Any(m => m.BatchId == b.Id && m.ToWarehouseId == warehouseId) &&
+                        !context.MassMaterialBatchMovements.Any(m => m.BatchId == b.Id && m.FromWarehouseId == warehouseId))
+            .OrderBy(b => b.ExpiryDate) // FIFO (First-In, First-Out)
+            .ToListAsync();
+
+        foreach (var batch in frozenBatches)
+        {
+            if (remainingQuantityToFulfill <= 0)
+                break; // Stop once the required quantity is fulfilled
+
+            // Get the available quantity in the warehouse for this batch
+            var availableQuantityResult = await GetMaterialStockInWarehouseByBatch(batch.Id, warehouseId);
+            if (availableQuantityResult.IsFailure)
+            {
+                continue;
+            }
+
+            decimal availableQuantity = availableQuantityResult.Value;
+            if (availableQuantity <= 0)
+                continue; // Skip batches with no stock
+
+            // Determine how much can be taken from this batch
+            decimal quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
+
+            // Add batch to the result list
+            var batchDto = mapper.Map<MaterialBatchDto>(batch);
+            result.Add(new BatchToSupply
+            {
+                Batch = batchDto,
+                QuantityToTake = quantityToTake
+            });
+
+            remainingQuantityToFulfill -= quantityToTake; // Reduce the required quantity
+        }
+
+        if (remainingQuantityToFulfill > 0)
+        {
+            return Error.Failure("Batch.Failure", $"Not enough frozen stock available to supply {requestedQuantity}. Short by {remainingQuantityToFulfill}.");
+        }
+
+        return result;
+    }
+    
 
    public Result<List<BatchLocation>> BatchesNeededToBeConsumed(Guid materialId, Guid warehouseId, decimal quantity)
     {
@@ -1088,7 +1201,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 result.Add(new BatchLocation
                 {
                     ConsumptionLocation = mapper.Map<WarehouseDto>(currentLocation.Location),
-                    Batch = mapper.Map<MaterialBatchDto>(batch)
+                    Batch = mapper.Map<MaterialBatchDto>(batch),
+                    QuantityToUse = quantityToConsider
                 });
 
                 remainingQuantityToFulfill -= quantityToConsider; // Reduce the required quantity

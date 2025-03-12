@@ -4,7 +4,9 @@ using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 
@@ -54,6 +56,13 @@ public class Sr:BaseEntity
     public UnitOfMeasure UoM { get; set; }
 }
 
+public class SrDto
+{
+    public string SrNumber { get; set; }
+    public decimal GrossWeight { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+}
+
 public enum BatchStatus
 {
     Received,
@@ -83,7 +92,7 @@ public class MaterialBatchEvent : BaseEntity
 public class FinishedProductBatchEvent : BaseEntity
 {
     public Guid BatchId { get; set; }            
-    public FinishedProduct Batch { get; set; }     
+    public Product Batch { get; set; }     
     public decimal Quantity { get; set; }     
     public Guid UserId { get; set; }       
     public User User { get; set; } 
@@ -115,6 +124,39 @@ public class MassMaterialBatchMovement : BaseEntity
     public User MovedBy { get; set; }
     public MovementType MovementType { get; set; }  
 }
+
+public class FinishedProductBatchMovement : BaseEntity
+{
+    public Guid BatchId { get; set; }
+    public Product Batch { get; set; }
+    public Warehouse FromWarehouse { get; set; }
+    public Guid? FromWarehouseId { get; set; }
+    public Warehouse ToWarehouse { get; set; }
+    public Guid? ToWarehouseId { get; set; }
+    public decimal Quantity { get; set; }
+    public DateTime MovedAt { get; set; }
+    public Guid MovedById { get; set; }
+    public User MovedBy { get; set; }
+    public MovementType MovementType { get; set; }  
+}
+
+public class FinishedGoodsTransferNote:BaseEntity
+{
+    public Guid? FromWarehouseId { get; set; }
+    public Warehouse FromWarehouse { get; set; }
+    public Guid? ToWarehouseId { get; set; }
+    public Warehouse ToWarehouse { get; set; }
+    public decimal QuantityPerPack { get; set; }
+    public Guid? PackageStyleId { get; set; }
+    public PackageStyle PackageStyle { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public string QarNumber { get; set; }
+    public Guid BatchManufacturingRecordId { get; set; }
+    public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
+}
+
 
 public enum MovementType
 {

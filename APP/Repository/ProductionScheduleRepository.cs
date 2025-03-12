@@ -3,9 +3,11 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
@@ -249,6 +251,71 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             case ProductionStatus.Completed:
                 activityStep.CompletedAt = DateTime.UtcNow;
 
+                if (activityStep.Order == 4)
+                {
+                    var productionActivity = activityStep.ProductionActivity;
+                    var product = await context.Products.IgnoreQueryFilters()
+                        .Include(product => product.BillOfMaterials).Include(product => product.Packages).FirstOrDefaultAsync(p => p.Id == productionActivity.ProductId);
+                    if (product is not null)
+                    {
+                        var productionWarehouse = await context.Warehouses
+                            .IgnoreQueryFilters()
+                            .FirstOrDefaultAsync(w => w.Id == product.DepartmentId && w.Type == WarehouseType.Production);
+
+                        if (productionWarehouse is not null)
+                        {
+                            var activeBoM = product.BillOfMaterials
+                                .OrderByDescending(p => p.EffectiveDate)
+                                .FirstOrDefault(p => p.IsActive);
+
+                            var productPackages = product.Packages.ToList();
+
+                            if (activeBoM is null)
+                                return Error.NotFound("Product.BoM", "No active BoM found for this product");
+
+                            // Get quantity required from ProductionSchedule
+                            var quantityRequired = (await context.ProductionScheduleProducts.FirstOrDefaultAsync(p =>
+                                p.ProductionScheduleId == productionActivity.ProductionScheduleId &&
+                                p.ProductId == product.Id))?.Quantity ?? 0; 
+
+                            // Fetch batches for Raw Materials with validation
+                            var rawMaterialBatches = activeBoM.BillOfMaterial.Items
+                                .SelectMany(item =>
+                                {
+                                    var quantityToUse = CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BaseQuantity);
+                                    var result = materialRepository.BatchesNeededToBeConsumed(item.MaterialId, productionWarehouse.Id, quantityToUse);
+                                    return result.IsSuccess ? result.Value : []; // Ensure safe extraction
+                                })
+                                .ToList();
+
+                            // Fetch batches for Package Materials with validation
+                            var packageMaterialBatches = productPackages
+                                .SelectMany(item =>
+                                {
+                                    var quantityToUse = CalculateRequiredItemQuantity(quantityRequired, item.BaseQuantity, product.BasePackingQuantity);
+                                    var result = materialRepository.BatchesNeededToBeConsumed(item.MaterialId, productionWarehouse.Id, quantityToUse);
+                                    return result.IsSuccess ? result.Value : []; // Ensure safe extraction
+                                })
+                                .ToList();
+
+                            // Consume materials at location
+                            foreach (var batch in rawMaterialBatches.Concat(packageMaterialBatches))
+                            {
+                                await materialRepository.ConsumeMaterialAtLocation(batch.Batch.Id, productionWarehouse.Id, batch.QuantityToUse, userId);
+                            }
+                        }
+                        else
+                        {
+                            return Error.Validation("Production.Consumption",
+                                "Unable to consume materials on production floor because production floor for department cant be found");
+                        }
+                    }
+                    else
+                    {
+                        return ProductErrors.NotFound(productionActivity.ProductId);
+                    }
+                }
+
                 bool isLastStep = await context.ProductionActivitySteps
                     .Where(s => s.ProductionActivityId == activityStep.ProductionActivityId)
                     .OrderByDescending(s => s.Order)
@@ -410,69 +477,59 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return groupedData;
     }
     
-   public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
+     public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
     {
-        // Fetch all unique operations in the correct order
+        // Fetch all unique operation names in the correct order
         var allOperations = await context.Operations
-            .OrderBy(o => o.Order)
+            .OrderBy(o => o.Order) 
             .Select(o => new CollectionItemDto { Id = o.Id, Name = o.Name })
             .AsNoTracking()
             .ToListAsync();
 
-        // Fetch production activities with only required data
+        // Fetch production activities with only necessary data
         var productionActivities = await context.ProductionActivities
-            .Select(pa => new
-            {
-                pa.Id,
-                pa.CreatedAt,
-                ProductionSchedule = new CollectionItemDto { Id = pa.ProductionSchedule.Id, Code = pa.ProductionSchedule.Code },
-                Product = new CollectionItemDto { Id = pa.Product.Id, Name = pa.Product.Name },
-                pa.Status,
-                pa.StartedAt,
-                pa.CompletedAt,
-                Steps = pa.Steps.Select(s => new
-                {
-                    s.Id,
-                    s.Order,
-                    s.CompletedAt,
-                    Operation = new CollectionItemDto { Id = s.Operation.Id, Name = s.Operation.Name }
-                })
-            })
+            .AsSplitQuery()
+            .Include(pa => pa.ProductionSchedule)
+            .Include(pa => pa.Product)
+            .Include(pa => pa.Steps)
+                .ThenInclude(s => s.Operation) 
+            .Include(pa => pa.Steps)
+                .ThenInclude(s => s.ResponsibleUsers) 
             .AsNoTracking()
             .ToListAsync();
 
-        // Process CurrentStep efficiently
+        // Process CurrentStep in memory
         var productionActivityDtos = productionActivities
             .Select(pa => new ProductionActivityGroupDto
             {
                 Id = pa.Id,
                 CreatedAt = pa.CreatedAt,
-                ProductionSchedule = pa.ProductionSchedule,
-                Product = pa.Product,
+                ProductionSchedule = mapper.Map<CollectionItemDto>(pa.ProductionSchedule),
+                Product = mapper.Map<CollectionItemDto>(pa.Product),
                 Status = pa.Status,
                 StartedAt = pa.StartedAt,
                 CompletedAt = pa.CompletedAt,
-                CurrentStep = pa.Steps
-                    .OrderBy(s => s.Order)
-                    .Where(s => s.CompletedAt == null) // First unfinished step
-                    .Select(s => new ProductionActivityStepDto { Id = s.Id, Order = s.Order, Operation = s.Operation })
-                    .FirstOrDefault() ??
-                    pa.Steps.OrderBy(s => s.Order).Select(s => new ProductionActivityStepDto { Id = s.Id, Order = s.Order, Operation = s.Operation }).LastOrDefault() // Fallback to last step
+                CurrentStep = mapper.Map<ProductionActivityStepDto>(
+                    pa.Steps
+                        .OrderBy(s => s.Order)
+                        .FirstOrDefault(s => !s.CompletedAt.HasValue) ?? // First unfinished step
+                    pa.Steps.OrderBy(s => s.Order).LastOrDefault() // Fallback: last step
+                )
             })
             .Where(p => p.CurrentStep?.Operation != null) // Ensure CurrentStep has an operation
             .ToList();
 
-        // Group activities by operation using Dictionary lookup (faster than GroupBy())
+        // Group activities by operation
         var groupedActivities = productionActivityDtos
-            .GroupBy(p => p.CurrentStep.Operation.Id)
-            .ToDictionary(g => g.Key, g => g.ToList());
+            .GroupBy(p => new CollectionItemDto { Id = p.CurrentStep.Operation.Id, Name = p.CurrentStep.Operation.Name })
+            .ToList();
 
-        // Construct response list efficiently
+        // Construct response list
         var result = allOperations
             .Select(op => new ProductionActivityGroupResultDto
             {
                 Operation = op,
-                Activities = groupedActivities.TryGetValue(op.Id, out var activities) ? activities : []
+                Activities = groupedActivities.FirstOrDefault(g => g.Key.Id == op.Id)?.ToList() ?? []
             })
             .ToList();
 
@@ -580,8 +637,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         var sourceRequisitionItems = new List<SourceRequisitionItem>();
 
-        var stockTransfer = await context.StockTransfers.FirstOrDefaultAsync(s =>
-            s.ProductId == productId && s.ProductionScheduleId == productionScheduleId);
+        var stockTransfers = await context.StockTransfers.Where(s =>
+            s.ProductId == productId && s.ProductionScheduleId == productionScheduleId)
+            .ToListAsync();
 
         var stockRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
             r.ProductId == productId && r.ProductionScheduleId == productionScheduleId && r.RequisitionType == RequisitionType.Stock);
@@ -618,7 +676,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 BaseQuantity = item.BaseQuantity,
                 QuantityNeeded = quantityNeeded,
                 QuantityOnHand = quantityOnHand,
-                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                 Batches = batchResult.IsSuccess ? batchResult.Value : []
             };
         }).ToList();
@@ -631,7 +689,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return materialDetails;
     }
     
-    private MaterialRequisitionStatus GetStatusOfProductionMaterial(StockTransfer stockTransfer,
+    private MaterialRequisitionStatus GetStatusOfProductionMaterial(List<StockTransfer> stockTransfers,
         List<RequisitionItem> stockRequisitionItems, List<RequisitionItem> purchaseRequisitionItems, List<SourceRequisitionItem> sourceRequisitionItems, Guid materialId)
     {
         if (stockRequisitionItems.Count != 0 && stockRequisitionItems.Any(r => r.MaterialId == materialId))
@@ -641,7 +699,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 : MaterialRequisitionStatus.StockRequisition;
         }
         
-        if (stockTransfer != null && stockTransfer.MaterialId == materialId)
+        if (stockTransfers.Count != 0 && stockTransfers.Any(r => r.MaterialId == materialId))
             return MaterialRequisitionStatus.StockTransfer;
         
         if (sourceRequisitionItems.Count != 0 && sourceRequisitionItems.Any(s => s.MaterialId == materialId))
@@ -692,8 +750,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         var sourceRequisitionItems = new List<SourceRequisitionItem>();
 
-        var stockTransfer = await context.StockTransfers.FirstOrDefaultAsync(s =>
-            s.ProductId == productId && s.ProductionScheduleId == productionScheduleId);
+        var stockTransfers = await context.StockTransfers.Where(s =>
+                s.ProductId == productId && s.ProductionScheduleId == productionScheduleId)
+            .ToListAsync();
 
         var stockRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
             r.ProductId == productId && r.ProductionScheduleId == productionScheduleId && r.RequisitionType == RequisitionType.Stock);
@@ -719,6 +778,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
             var quantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
                 product.BasePackingQuantity);
+            var batchResult = materialRepository.BatchesNeededToBeConsumed(item.MaterialId, warehouse.Id,
+                quantityNeeded);
 
             return new ProductionScheduleProcurementPackageDto
             {
@@ -727,10 +788,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 BaseUoM = mapper.Map<UnitOfMeasureDto>(product.BasePackingUoM),
                 BaseQuantity = item.BaseQuantity,
                 UnitCapacity = item.UnitCapacity,
-                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfer, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                 QuantityNeeded = quantityNeeded,
                 QuantityOnHand = quantityOnHand,
-                PackingExcessMargin = item.PackingExcessMargin
+                PackingExcessMargin = item.PackingExcessMargin,
+                Batches = batchResult.IsSuccess ? batchResult.Value : []
             };
         }).ToList();
         
@@ -784,6 +846,91 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await context.BatchManufacturingRecords.AddAsync(batchRecord);
         await context.SaveChangesAsync();
         return batchRecord.Id;
+    }
+     
+    public async Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionId, Guid productionScheduleId)
+    {
+        var batchManufacturingRecord = await context.BatchManufacturingRecords
+            .Include(b => b.Product)
+            .Include(b => b.ProductionSchedule)
+            .FirstOrDefaultAsync(b => b.ProductId == productionId && b.ProductionScheduleId == productionScheduleId);
+    
+        if (batchManufacturingRecord == null)
+        {
+            return Error.NotFound("BatchManufacturingRecord.NotFound", "Batch manufacturing record not found for the specified production and schedule.");
+        }
+    
+        return Result.Success(mapper.Map<BatchManufacturingRecordDto>(batchManufacturingRecord));
+    }
+    
+    public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId)
+    {
+        var bmr = await context.BatchManufacturingRecords
+            .AsSplitQuery().Include(batchManufacturingRecord => batchManufacturingRecord.Product)
+            .FirstOrDefaultAsync(r => r.Id == request.BatchManufacturingRecordId);
+        
+        if (bmr is null)
+            return RequisitionErrors.NotFound(request.BatchManufacturingRecordId);
+        
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+        
+        if (user.Department == null)
+            return Error.NotFound("User.Department", "User has no association to any department");
+        
+        if(user.Department.Warehouses.Count == 0)
+            return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
+        
+        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
+        if (productionWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
+        
+        var finishedGoodsWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.FinishedGoodsStorage);
+        if (finishedGoodsWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No finished goods warehouse is associated with current user");
+        
+        var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
+        context.FinishedGoodsTransferNotes.Add(transferNote);
+
+        var movement = new FinishedProductBatchMovement()
+        {
+            BatchId = bmr.ProductId,
+            FromWarehouseId = productionWarehouse.Id,
+            ToWarehouseId = finishedGoodsWarehouse.Id,
+            Quantity = request.TotalQuantity,
+            MovedAt = DateTime.UtcNow,
+            MovedById = userId
+        };
+            
+        await context.FinishedProductBatchMovements.AddAsync(movement);
+            
+        var batchEvent = new FinishedProductBatchEvent
+        {
+            BatchId = bmr.ProductId,
+            Type = EventType.Moved,
+            Quantity =request.TotalQuantity,
+            UserId = userId
+        };
+        await context.FinishedProductBatchEvents.AddAsync(batchEvent);
+        
+        var binCardEvent = new ProductBinCardInformation
+        {
+            BatchId = bmr.ProductId,
+            Description = finishedGoodsWarehouse.Name,
+            WayBill = "N/A",
+            ArNumber = "N/A",
+            QuantityReceived = request.TotalQuantity,
+            QuantityIssued = 0,
+            BalanceQuantity = (await materialRepository.GetProductStockInWarehouseByBatch(bmr.ProductId, finishedGoodsWarehouse.Id)).Value + request.TotalQuantity,
+            UoMId = bmr.Product.BaseUomId,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        await context.ProductBinCardInformation.AddAsync(binCardEvent);
+
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
     
     public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
@@ -949,15 +1096,15 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             await materialRepository.FreezeMaterialBatchAsync(batch.Batch.Id);
         }
         
-        // var packageMaterialResult = await CheckPackageMaterialStockLevelsForProductionSchedule(productId, quantity, userId);
-        // if (packageMaterialResult.IsFailure) return;
-        //
-        // var packageMaterialDetails = packageMaterialResult.Value;
-        //
-        // foreach (var batch in packageMaterialDetails.SelectMany(material => material.Batches))
-        // {
-        //     await materialRepository.FreezeMaterialBatchAsync(batch.Batch.Id);
-        // }
+        var packageMaterialResult = await CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId,null, userId);
+        if (packageMaterialResult.IsFailure) return;
+        
+        var packageMaterialDetails = packageMaterialResult.Value;
+        
+        foreach (var batch in packageMaterialDetails.SelectMany(material => material.Batches))
+        {
+            await materialRepository.FreezeMaterialBatchAsync(batch.Batch.Id);
+        }
     }
     
      public async Task<Result<Guid>> CreateStockTransfer(CreateStockTransferRequest request, Guid userId)
@@ -1254,8 +1401,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             };
             
             await context.MassMaterialBatchMovements.AddAsync(movement);
+            
+            var batchEvent = new MaterialBatchEvent
+            {
+                BatchId = batch.Id,
+                Type = EventType.Moved,
+                Quantity = batchRequest.Quantity,
+                UserId = userId
+            };
+            await context.MaterialBatchEvents.AddAsync(batchEvent);
+            
             context.MaterialBatches.Update(batch);
-
             remainingQuantity -= batchRequest.Quantity;
 
             if (remainingQuantity <= 0) break;
@@ -1333,4 +1489,122 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         return insufficientMaterials;
     }
+    
+    public async Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request) 
+    { 
+        var finalPacking = mapper.Map<FinalPacking>(request); 
+        
+        await context.FinalPackings.AddAsync(finalPacking); 
+        await context.SaveChangesAsync();
+        
+        return finalPacking.Id;
+    }
+
+    public async Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId) 
+    { 
+        var finalPacking = await context.FinalPackings
+            .AsSplitQuery()
+            .Include(fp => fp.ProductionSchedule)
+            .Include(fp => fp.Product)
+            .Include(fp => fp.Materials).ThenInclude(m => m.Material)
+            .FirstOrDefaultAsync(fp => fp.Id == finalPackingId);
+
+        return finalPacking is null 
+            ? Error.NotFound("FinalPacking.NotFound", "Final Packing record not found") 
+            : mapper.Map<FinalPackingDto>(finalPacking);
+    }
+
+    /// ✅ **Extra Method: Get Final Packing by ProductionScheduleId & ProductId**
+    public async Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId) 
+    { 
+        var finalPacking = await context.FinalPackings
+            .AsSplitQuery()
+            .Include(fp => fp.ProductionSchedule)
+            .Include(fp => fp.Product)
+            .Include(fp => fp.Materials).ThenInclude(m => m.Material)
+            .FirstOrDefaultAsync(fp => fp.ProductionScheduleId == productionScheduleId && fp.ProductId == productId);
+
+        return finalPacking is null 
+            ? Error.NotFound("FinalPacking.NotFound", "No Final Packing found for the given Production Schedule and Product") 
+            : mapper.Map<FinalPackingDto>(finalPacking);
+    }
+
+    /// ✅ **Paginated List of Final Packings**
+    public async Task<Result<Paginateable<IEnumerable<FinalPackingDto>>>> GetFinalPackings(int page, int pageSize, string searchQuery) 
+    { 
+        var query = context.FinalPackings
+            .Include(fp => fp.ProductionSchedule)
+            .Include(fp => fp.Product)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.Where(fp => fp.Product.Name.Contains(searchQuery) || 
+                                      fp.ProductionSchedule.Code.Contains(searchQuery));
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query, 
+            page, 
+            pageSize, 
+            mapper.Map<FinalPackingDto>);
+    }
+
+    public async Task<Result> UpdateFinalPacking(CreateFinalPacking request, Guid finalPackingId) 
+    { 
+        var existingFinalPacking = await context.FinalPackings
+            .Include(f => f.Materials)
+            .FirstOrDefaultAsync(fp => fp.Id == finalPackingId);
+
+        if (existingFinalPacking is null) 
+        { 
+            return Error.NotFound("FinalPacking.NotFound", "Final Packing record not found");
+        }
+
+        context.FinalPackingMaterials.RemoveRange(existingFinalPacking.Materials);
+        
+        mapper.Map(request, existingFinalPacking);
+        
+        context.FinalPackings.Update(existingFinalPacking); 
+        await context.SaveChangesAsync(); 
+        return Result.Success();
+    }
+
+    /// ✅ **Delete Final Packing**
+    public async Task<Result> DeleteFinalPacking(Guid finalPackingId, Guid userId) 
+    { 
+        var finalPacking = await context.FinalPackings.FirstOrDefaultAsync(fp => fp.Id == finalPackingId); 
+        
+        if (finalPacking is null) 
+        { 
+            return Error.NotFound("FinalPacking.NotFound", "Final Packing record not found");
+        }
+        
+        finalPacking.DeletedAt = DateTime.UtcNow; 
+        finalPacking.LastDeletedById = userId; 
+        context.FinalPackings.Update(finalPacking); 
+        await context.SaveChangesAsync(); 
+        return Result.Success();
+    }
+    
+    public async Task<Result<RequisitionDto>> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId)
+    {
+        var requisition = await context.Requisitions
+            .AsSplitQuery()
+            .Include(r => r.Items)
+            .ThenInclude(i => i.Material)
+            .Include(r => r.RequestedBy)
+            .Include(r => r.Approvals).ThenInclude(a => a.User)
+            .Include(r => r.Approvals).ThenInclude(a => a.Role)
+            .Where(r => r.ProductionScheduleId == productionScheduleId 
+                        && r.ProductId == productId 
+                        && r.Code.EndsWith("-package") // Ensure the code ends in "package"
+                        && r.RequisitionType == RequisitionType.Stock) // Ensure it's a stock requisition
+            .FirstOrDefaultAsync();
+
+        return requisition is null 
+            ? Error.NotFound("StockRequisition.NotFound", "No stock requisition for packaging found.") 
+            : mapper.Map<RequisitionDto>(requisition);
+    }
+
 }

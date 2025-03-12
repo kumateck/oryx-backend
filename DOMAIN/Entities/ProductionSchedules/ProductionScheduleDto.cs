@@ -45,6 +45,7 @@ public class ProductionScheduleProcurementPackageDto
     public decimal UnitCapacity { get; set; }
     public MaterialRequisitionStatus Status { get; set; }
     public decimal PackingExcessMargin { get; set; }
+    public List<BatchLocation> Batches { get; set; } = [];
 }
 
 public class ProductionScheduleProductDto
