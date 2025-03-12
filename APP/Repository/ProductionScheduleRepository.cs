@@ -6,6 +6,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
@@ -1402,4 +1403,122 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         return insufficientMaterials;
     }
+    
+    public async Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request) 
+    { 
+        var finalPacking = mapper.Map<FinalPacking>(request); 
+        
+        await context.FinalPackings.AddAsync(finalPacking); 
+        await context.SaveChangesAsync();
+        
+        return finalPacking.Id;
+    }
+
+    public async Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId) 
+    { 
+        var finalPacking = await context.FinalPackings
+            .AsSplitQuery()
+            .Include(fp => fp.ProductionSchedule)
+            .Include(fp => fp.Product)
+            .Include(fp => fp.Materials).ThenInclude(m => m.Material)
+            .FirstOrDefaultAsync(fp => fp.Id == finalPackingId);
+
+        return finalPacking is null 
+            ? Error.NotFound("FinalPacking.NotFound", "Final Packing record not found") 
+            : mapper.Map<FinalPackingDto>(finalPacking);
+    }
+
+    /// ✅ **Extra Method: Get Final Packing by ProductionScheduleId & ProductId**
+    public async Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId) 
+    { 
+        var finalPacking = await context.FinalPackings
+            .AsSplitQuery()
+            .Include(fp => fp.ProductionSchedule)
+            .Include(fp => fp.Product)
+            .Include(fp => fp.Materials).ThenInclude(m => m.Material)
+            .FirstOrDefaultAsync(fp => fp.ProductionScheduleId == productionScheduleId && fp.ProductId == productId);
+
+        return finalPacking is null 
+            ? Error.NotFound("FinalPacking.NotFound", "No Final Packing found for the given Production Schedule and Product") 
+            : mapper.Map<FinalPackingDto>(finalPacking);
+    }
+
+    /// ✅ **Paginated List of Final Packings**
+    public async Task<Result<Paginateable<IEnumerable<FinalPackingDto>>>> GetFinalPackings(int page, int pageSize, string searchQuery) 
+    { 
+        var query = context.FinalPackings
+            .Include(fp => fp.ProductionSchedule)
+            .Include(fp => fp.Product)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.Where(fp => fp.Product.Name.Contains(searchQuery) || 
+                                      fp.ProductionSchedule.Code.Contains(searchQuery));
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query, 
+            page, 
+            pageSize, 
+            mapper.Map<FinalPackingDto>);
+    }
+
+    public async Task<Result> UpdateFinalPacking(CreateFinalPacking request, Guid finalPackingId) 
+    { 
+        var existingFinalPacking = await context.FinalPackings
+            .Include(f => f.Materials)
+            .FirstOrDefaultAsync(fp => fp.Id == finalPackingId);
+
+        if (existingFinalPacking is null) 
+        { 
+            return Error.NotFound("FinalPacking.NotFound", "Final Packing record not found");
+        }
+
+        context.FinalPackingMaterials.RemoveRange(existingFinalPacking.Materials);
+        
+        mapper.Map(request, existingFinalPacking);
+        
+        context.FinalPackings.Update(existingFinalPacking); 
+        await context.SaveChangesAsync(); 
+        return Result.Success();
+    }
+
+    /// ✅ **Delete Final Packing**
+    public async Task<Result> DeleteFinalPacking(Guid finalPackingId, Guid userId) 
+    { 
+        var finalPacking = await context.FinalPackings.FirstOrDefaultAsync(fp => fp.Id == finalPackingId); 
+        
+        if (finalPacking is null) 
+        { 
+            return Error.NotFound("FinalPacking.NotFound", "Final Packing record not found");
+        }
+        
+        finalPacking.DeletedAt = DateTime.UtcNow; 
+        finalPacking.LastDeletedById = userId; 
+        context.FinalPackings.Update(finalPacking); 
+        await context.SaveChangesAsync(); 
+        return Result.Success();
+    }
+    
+    public async Task<Result<RequisitionDto>> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId)
+    {
+        var requisition = await context.Requisitions
+            .AsSplitQuery()
+            .Include(r => r.Items)
+            .ThenInclude(i => i.Material)
+            .Include(r => r.RequestedBy)
+            .Include(r => r.Approvals).ThenInclude(a => a.User)
+            .Include(r => r.Approvals).ThenInclude(a => a.Role)
+            .Where(r => r.ProductionScheduleId == productionScheduleId 
+                        && r.ProductId == productId 
+                        && r.Code.EndsWith("-package") // Ensure the code ends in "package"
+                        && r.RequisitionType == RequisitionType.Stock) // Ensure it's a stock requisition
+            .FirstOrDefaultAsync();
+
+        return requisition is null 
+            ? Error.NotFound("StockRequisition.NotFound", "No stock requisition for packaging found.") 
+            : mapper.Map<RequisitionDto>(requisition);
+    }
+
 }

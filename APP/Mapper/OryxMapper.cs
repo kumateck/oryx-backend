@@ -20,6 +20,7 @@ using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
@@ -196,6 +197,12 @@ public class OryxMapper : Profile
         CreateMap<MasterProductionSchedule, MasterProductionScheduleDto>();
         CreateMap<CreateProductionScheduleProduct, ProductionScheduleProduct>();
         CreateMap<ProductionScheduleProduct, ProductionScheduleProductDto>();
+
+        CreateMap<CreateFinalPacking, FinalPacking>();
+        CreateMap<CreateFinalPackingMaterial, FinalPackingMaterial>();
+
+        CreateMap<FinalPacking, FinalPackingDto>();
+        CreateMap<FinalPackingMaterial, FinalPackingMaterialDto>();
         #endregion
 
         #region Route
