@@ -206,7 +206,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (user.Department == null)
             return Error.NotFound("User.Department", "User has no association to any department");
         
-        if(user.Department.Warehouses.Count == 0)
+        if (user.Department.Warehouses.Count == 0)
             return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
         
         var rawWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
@@ -219,6 +219,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         var productionWarehouse = await context.Warehouses.IgnoreQueryFilters().FirstOrDefaultAsync(w =>
             w.DepartmentId == stockRequisition.DepartmentId && w.Type == WarehouseType.Production);
+        
         if (productionWarehouse is null)
             return Error.NotFound("User.Warehouse", "No production warehouse is associated with department who made stock requisition");
 
@@ -227,7 +228,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         foreach (var item in stockRequisition.Items)
         {
             var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
-            var batchesResult =  await materialRepository.GetFrozenBatchesForRequisitionItem(item.MaterialId, appropriateWarehouse.Id, item.Quantity);
+            var batchesResult = await materialRepository.GetFrozenBatchesForRequisitionItem(item.MaterialId, appropriateWarehouse.Id, item.Quantity);
+            
             if (batchesResult.IsSuccess)
             {
                 batchesToConsume.AddRange(batchesResult.Value);
@@ -236,8 +238,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             foreach (var batch in batchesToConsume)
             {
                 batch.Batch.QuantityAssigned = 0;
-                var shelfMaterialBatches =
-                    await context.ShelfMaterialBatches.Where(sb => sb.MaterialBatchId == batch.Batch.Id).ToListAsync();
+                var shelfMaterialBatches = await context.ShelfMaterialBatches
+                    .Where(sb => sb.MaterialBatchId == batch.Batch.Id)
+                    .ToListAsync();
                 context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
 
                 var movement = new MassMaterialBatchMovement
@@ -249,9 +252,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     MovedAt = DateTime.UtcNow,
                     MovedById = userId
                 };
-            
+
                 await context.MassMaterialBatchMovements.AddAsync(movement);
-            
+
                 var batchEvent = new MaterialBatchEvent
                 {
                     BatchId = batch.Batch.Id,
@@ -259,22 +262,40 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     Quantity = batch.QuantityToTake,
                     UserId = userId
                 };
+
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
             }
         }
-        
-        var productionActivityStep =
-            await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
-                p.Id == stockRequisition.ProductionActivityStepId);
 
-        if (productionActivityStep is not null)
-        {
-            productionActivityStep.Status = ProductionStatus.Completed;
-            productionActivityStep.CompletedAt = DateTime.UtcNow;
-            context.ProductionActivitySteps.Update(productionActivityStep);
-        }
+        // ✅ Mark the current stock requisition as completed
+        stockRequisition.Status = RequestStatus.Completed;
 
         await context.SaveChangesAsync();
+
+        // ✅ Check if all requisitions for the same `ProductionActivityStepId` are completed
+        if (stockRequisition.ProductionActivityStepId.HasValue)
+        {
+            var relatedRequisitions = await context.Requisitions
+                .Where(r => r.ProductionActivityStepId == stockRequisition.ProductionActivityStepId)
+                .ToListAsync();
+
+            bool allCompleted = relatedRequisitions.All(r => r.Status == RequestStatus.Completed);
+
+            if (allCompleted)
+            {
+                var productionActivityStep = await context.ProductionActivitySteps
+                    .FirstOrDefaultAsync(p => p.Id == stockRequisition.ProductionActivityStepId);
+
+                if (productionActivityStep is not null)
+                {
+                    productionActivityStep.Status = ProductionStatus.Completed;
+                    productionActivityStep.CompletedAt = DateTime.UtcNow;
+                    context.ProductionActivitySteps.Update(productionActivityStep);
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
         return Result.Success();
     }
 
