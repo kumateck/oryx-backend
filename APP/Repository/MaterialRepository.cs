@@ -787,10 +787,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         
         var binCardEvent = new BinCardInformation
         {
-            MaterialBatchId = materialBatch.Id,
+            BatchId = materialBatch.Id,
             Description = warehouse.Name,
             WayBill = "N/A",
             ArNumber = "N/A",
+            Type = BinCardType.Material,
             QuantityReceived = totalQuantityToAssign,
             QuantityIssued = 0,
             BalanceQuantity = (await GetMaterialStockInWarehouseByBatch(materialBatch.Id, warehouse.Id)).Value + totalQuantityToAssign,
@@ -980,6 +981,40 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Calculate the total available quantity for the material in this location
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
+
+        return totalQuantityInLocation;
+    }
+    
+    public async Task<Result<decimal>> GetProductStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
+    {
+        // Sum of quantities moved to this location (incoming batches)
+        var batchesInLocation = await context.FinishedProductBatchMovements
+            .Include(m => m.Batch)
+            .Include(m => m.ToWarehouse)
+            .Where(m => m.BatchId == batchId
+                        && m.ToWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of quantities moved out of this location (outgoing batches)
+        var batchesMovedOut = await context.FinishedProductBatchMovements
+            .Include(m => m.Batch)
+            .Include(m => m.FromWarehouse)
+            .Where(m => m.BatchId == batchId
+                        && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+    
+        // Sum of the consumed quantities at this location for the given material
+        // var batchesConsumedAtLocation = await context.FinishedProductBatchEvents
+        //     .Include(m => m.Batch)
+        //     .Include(m => m.ConsumptionWarehouse)
+        //     .Where(e => e.BatchId == batchId
+        //                 && e.ConsumptionWarehouse != null 
+        //                 && e.ConsumptionWarehouseId == warehouseId
+        //                 && e.Type == EventType.Consumed)
+        //     .SumAsync(e => e.Quantity);
+
+        // Calculate the total available quantity for the material in this location
+        var totalQuantityInLocation = batchesInLocation - batchesMovedOut;// - batchesConsumedAtLocation;
 
         return totalQuantityInLocation;
     }

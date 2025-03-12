@@ -94,6 +94,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<ProductBillOfMaterial> ProductBillOfMaterials { get; set; }
     public DbSet<FinishedProduct> FinishedProducts { get; set; }
+    
     public DbSet<ProductPackage> ProductPackages { get; set; }
     public DbSet<PackageType> PackageTypes { get; set; }
 
@@ -120,6 +121,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionScheduleProduct> ProductionScheduleProducts { get; set; }
     public DbSet<StockTransfer> StockTransfers { get; set; }
     public DbSet<StockTransferSource> StockTransferSources { get; set; }
+
+    #endregion
+
+    #region FinishedGoodsTransferNote
+
+    public DbSet<FinishedGoodsTransferNote> FinishedGoodsTransferNotes { get; set; }
+    public DbSet<FinishedProductBatchMovement> FinishedProductBatchMovements { get; set; }
+    public DbSet<FinishedProductBatchEvent> FinishedProductBatchEvents { get; set; }
 
     #endregion
 

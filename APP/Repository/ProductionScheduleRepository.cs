@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
@@ -840,6 +841,92 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await context.BatchManufacturingRecords.AddAsync(batchRecord);
         await context.SaveChangesAsync();
         return batchRecord.Id;
+    }
+     
+    public async Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionId, Guid productionScheduleId)
+    {
+        var batchManufacturingRecord = await context.BatchManufacturingRecords
+            .Include(b => b.Product)
+            .Include(b => b.ProductionSchedule)
+            .FirstOrDefaultAsync(b => b.ProductId == productionId && b.ProductionScheduleId == productionScheduleId);
+    
+        if (batchManufacturingRecord == null)
+        {
+            return Error.NotFound("BatchManufacturingRecord.NotFound", "Batch manufacturing record not found for the specified production and schedule.");
+        }
+    
+        return Result.Success(mapper.Map<BatchManufacturingRecordDto>(batchManufacturingRecord));
+    }
+    
+    public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId)
+    {
+        var bmr = await context.BatchManufacturingRecords
+            .AsSplitQuery().Include(batchManufacturingRecord => batchManufacturingRecord.Product)
+            .FirstOrDefaultAsync(r => r.Id == request.BatchManufacturingRecordId);
+        
+        if (bmr is null)
+            return RequisitionErrors.NotFound(request.BatchManufacturingRecordId);
+        
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+        
+        if (user.Department == null)
+            return Error.NotFound("User.Department", "User has no association to any department");
+        
+        if(user.Department.Warehouses.Count == 0)
+            return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
+        
+        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
+        if (productionWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
+        
+        var finishedGoodsWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.FinishedGoodsStorage);
+        if (finishedGoodsWarehouse is null)
+            return Error.NotFound("User.Warehouse", "No finished goods warehouse is associated with current user");
+        
+        var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
+        context.FinishedGoodsTransferNotes.Add(transferNote);
+
+        var movement = new FinishedProductBatchMovement()
+        {
+            BatchId = bmr.ProductId,
+            FromWarehouseId = productionWarehouse.Id,
+            ToWarehouseId = finishedGoodsWarehouse.Id,
+            Quantity = request.TotalQuantity,
+            MovedAt = DateTime.UtcNow,
+            MovedById = userId
+        };
+            
+        await context.FinishedProductBatchMovements.AddAsync(movement);
+            
+        var batchEvent = new FinishedProductBatchEvent
+        {
+            BatchId = bmr.ProductId,
+            Type = EventType.Moved,
+            Quantity =request.TotalQuantity,
+            UserId = userId
+        };
+        await context.FinishedProductBatchEvents.AddAsync(batchEvent);
+        
+        var binCardEvent = new BinCardInformation
+        {
+            BatchId = bmr.ProductId,
+            Description = finishedGoodsWarehouse.Name,
+            WayBill = "N/A",
+            ArNumber = "N/A",
+            Type = BinCardType.Product,
+            QuantityReceived = request.TotalQuantity,
+            QuantityIssued = 0,
+            BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouseByBatch(bmr.ProductId, finishedGoodsWarehouse.Id)).Value + request.TotalQuantity,
+            UoMId = bmr.Product.BaseUomId,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        await context.BinCardInformation.AddAsync(binCardEvent);
+
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
     
     public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)

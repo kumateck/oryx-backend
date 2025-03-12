@@ -402,6 +402,29 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.CreateBatchManufacturingRecord(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+       
+    [HttpGet("bmr/{productionId}/{productionScheduleId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchManufacturingRecordDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionId, Guid productionScheduleId)
+    {
+        var result = await repository.GetBatchManufacturingRecordByProductionAndScheduleId(productionId, productionScheduleId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    [HttpPost("finished-goods-transfer-note")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateFinishedGoodsTransferNote([FromBody] CreateFinishedGoodsTransferNoteRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.CreateFinishedGoodsTransferNote(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a paginated list of batch manufacturing records.

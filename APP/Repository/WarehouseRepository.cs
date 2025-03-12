@@ -741,6 +741,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     {
         var checklist = await context.Checklists
             .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.SampleWeights)
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (checklist == null)
@@ -843,11 +844,34 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
     {
         var query = context.BinCardInformation
-            .Include(bci => bci.MaterialBatch)
+            .Include(bci => bci.Batch)
             .ThenInclude(mb => mb.Material)
             .Include(bci => bci.Product)
             .Include(bci => bci.UoM)
-            .Where(bci => bci.MaterialBatch.MaterialId == materialId)
+            .Where(bci => bci.Batch.MaterialId == materialId && bci.Type == BinCardType.Material)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<BinCardInformationDto>
+        );
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
+    {
+        var query = context.BinCardInformation
+            .Include(bci => bci.Batch)
+            .ThenInclude(mb => mb.Material)
+            .Include(bci => bci.Product)
+            .Include(bci => bci.UoM)
+            .Where(bci => bci.Batch.MaterialId == materialId && bci.Type == BinCardType.Product)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

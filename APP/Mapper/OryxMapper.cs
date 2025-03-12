@@ -477,6 +477,9 @@ public class OryxMapper : Profile
         CreateMap<UpdateBatchPackagingRecord, BatchPackagingRecord>();
         CreateMap<BatchPackagingRecord, BatchPackagingRecordDto>();
 
+        CreateMap<CreateFinishedGoodsTransferNoteRequest, FinishedGoodsTransferNote>();
+        CreateMap<FinishedGoodsTransferNote, FinishedGoodsTransferNoteDto>();
+
         CreateMap<ProductionActivity, ProductionActivityDto>();
         CreateMap<ProductionActivity, ProductionActivityListDto>();
         CreateMap<ProductionActivityLog, ProductionActivityLogDto>();
