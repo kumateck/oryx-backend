@@ -410,125 +410,59 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return groupedData;
     }
     
-    public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
+     public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
     {
-        // Fetch all unique operations in the correct order
+        // Fetch all unique operation names in the correct order
         var allOperations = await context.Operations
-            .OrderBy(o => o.Order)
+            .OrderBy(o => o.Order) 
             .Select(o => new CollectionItemDto { Id = o.Id, Name = o.Name })
             .AsNoTracking()
             .ToListAsync();
 
-        // Fetch production activities with only required data
+        // Fetch production activities with only necessary data
         var productionActivities = await context.ProductionActivities
-            .Select(pa => new
-            {
-                pa.Id,
-                pa.CreatedAt,
-                ProductionSchedule = new CollectionItemDto { Id = pa.ProductionSchedule.Id, Code = pa.ProductionSchedule.Code },
-                Product = new CollectionItemDto { Id = pa.Product.Id, Name = pa.Product.Name },
-                pa.Status,
-                pa.StartedAt,
-                pa.CompletedAt,
-                Steps = pa.Steps.Select(s => new
-                {
-                    s.Id,
-                    s.Order,
-                    s.CompletedAt,
-                    s.StartedAt,
-                    s.Status,
-                    Operation = new CollectionItemDto { Id = s.Operation.Id, Name = s.Operation.Name },
-                    WorkFlow = new CollectionItemDto { Id = s.WorkFlow.Id, Name = s.WorkFlow.Name },
-                    Resources = s.Resources.Select(r => new ProductionActivityStepResourceDto
-                    {
-                        Id = r.Id,
-                        Resource = new ResourceDto
-                        {
-                            Id = r.Resource.Id,
-                            Name = r.Resource.Name,
-                            Type = r.Resource.Type,
-                            IsAvailable = r.Resource.IsAvailable
-                        }
-                    }).ToList(),
-                    WorkCenters = s.WorkCenters.Select(w => new ProductionActivityStepWorkCenterDto
-                    {
-                        Id = w.Id,
-                        WorkCenter = new CollectionItemDto { Id = w.WorkCenter.Id, Name = w.WorkCenter.Name }
-                    }).ToList(),
-                    ResponsibleUsers = s.ResponsibleUsers.Select(u => new
-                    {
-                        u.Id,
-                        u.User,
-                        u.User.Department
-                    }).ToList()
-                }).ToList()
-            })
+            .AsSplitQuery()
+            .Include(pa => pa.ProductionSchedule)
+            .Include(pa => pa.Product)
+            .Include(pa => pa.Steps)
+                .ThenInclude(s => s.Operation) 
+            .Include(pa => pa.Steps)
+                .ThenInclude(s => s.ResponsibleUsers) 
             .AsNoTracking()
             .ToListAsync();
 
-        // Process CurrentStep efficiently
+        // Process CurrentStep in memory
         var productionActivityDtos = productionActivities
             .Select(pa => new ProductionActivityGroupDto
             {
                 Id = pa.Id,
                 CreatedAt = pa.CreatedAt,
-                ProductionSchedule = pa.ProductionSchedule,
-                Product = pa.Product,
+                ProductionSchedule = mapper.Map<CollectionItemDto>(pa.ProductionSchedule),
+                Product = mapper.Map<CollectionItemDto>(pa.Product),
                 Status = pa.Status,
                 StartedAt = pa.StartedAt,
                 CompletedAt = pa.CompletedAt,
-                CurrentStep = pa.Steps
-                    .OrderBy(s => s.Order)
-                    .Where(s => s.CompletedAt == null) // First unfinished step
-                    .Select(s => new ProductionActivityStepDto
-                    {
-                        Id = s.Id,
-                        Order = s.Order,
-                        Status = s.Status,
-                        StartedAt = s.StartedAt,
-                        Operation = s.Operation,
-                        WorkFlow = s.WorkFlow,
-                        Resources = s.Resources,
-                        WorkCenters = s.WorkCenters,
-                        ResponsibleUsers = s.ResponsibleUsers.Select(ru => new ProductionActivityStepUserDto
-                        {
-                            Id = ru.Id,
-                            User = mapper.Map<UserDto>(ru.User) // ✅ AutoMapper for UserDto
-                        }).ToList()
-                    })
-                    .FirstOrDefault() ??
-                    pa.Steps.OrderBy(s => s.Order).Select(s => new ProductionActivityStepDto
-                    {
-                        Id = s.Id,
-                        Order = s.Order,
-                        Status = s.Status,
-                        StartedAt = s.StartedAt,
-                        CompletedAt = s.CompletedAt,
-                        Operation = s.Operation,
-                        WorkFlow = s.WorkFlow,
-                        Resources = s.Resources,
-                        WorkCenters = s.WorkCenters,
-                        ResponsibleUsers = s.ResponsibleUsers.Select(ru => new ProductionActivityStepUserDto
-                        {
-                            Id = ru.Id,
-                            User = mapper.Map<UserDto>(ru.User), // ✅ AutoMapper for UserDto
-                        }).ToList()
-                    }).LastOrDefault() // Fallback to last step if all steps are completed
+                CurrentStep = mapper.Map<ProductionActivityStepDto>(
+                    pa.Steps
+                        .OrderBy(s => s.Order)
+                        .FirstOrDefault(s => !s.CompletedAt.HasValue) ?? // First unfinished step
+                    pa.Steps.OrderBy(s => s.Order).LastOrDefault() // Fallback: last step
+                )
             })
             .Where(p => p.CurrentStep?.Operation != null) // Ensure CurrentStep has an operation
             .ToList();
 
-        // Group activities by operation using Dictionary lookup (faster than GroupBy())
+        // Group activities by operation
         var groupedActivities = productionActivityDtos
-            .GroupBy(p => p.CurrentStep.Operation.Id)
-            .ToDictionary(g => g.Key, g => g.ToList());
+            .GroupBy(p => new CollectionItemDto { Id = p.CurrentStep.Operation.Id, Name = p.CurrentStep.Operation.Name })
+            .ToList();
 
-        // Construct response list efficiently
+        // Construct response list
         var result = allOperations
             .Select(op => new ProductionActivityGroupResultDto
             {
                 Operation = op,
-                Activities = groupedActivities.TryGetValue(op.Id, out var activities) ? activities : []
+                Activities = groupedActivities.FirstOrDefault(g => g.Key.Id == op.Id)?.ToList() ?? []
             })
             .ToList();
 
