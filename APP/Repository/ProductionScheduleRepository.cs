@@ -709,7 +709,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
     public async Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status, Guid userId)
     {
-        var product = await context.Products.Include(product => product.BillOfMaterials)
+        var product = await context.Products
+            .AsSplitQuery()
+            .Include(product => product.Packages).ThenInclude(productPackage => productPackage.Material).ThenInclude(m => m.Batches)
             .Include(product => product.Packages).ThenInclude(productPackage => productPackage.BaseUoM)
             .Include(product => product.Packages).ThenInclude(productPackage => productPackage.DirectLinkMaterial)
             .AsSplitQuery()

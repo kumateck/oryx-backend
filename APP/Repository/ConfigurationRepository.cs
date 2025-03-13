@@ -109,11 +109,13 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            
            case nameof(Product):
                return await context.Products
+                   .IgnoreQueryFilters()
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
            case nameof(ProductionSchedule):
                return await context.ProductionSchedules
+                   .IgnoreQueryFilters()
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
@@ -134,16 +136,19 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            
            case "StockRequisition":
                return await context.Requisitions
+                   .IgnoreQueryFilters()
                    .Where(m => m.RequisitionType == RequisitionType.Stock && m.Code.StartsWith(prefix))
                    .CountAsync();
            
            case "PurchaseRequisition":
                return await context.Requisitions
+                   .IgnoreQueryFilters()
                    .Where(m => m.RequisitionType == RequisitionType.Purchase && m.Code.StartsWith(prefix))
                    .CountAsync();
            
            case nameof(SourceRequisition):
                return await context.SourceRequisitions
+                   .IgnoreQueryFilters()
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
@@ -154,16 +159,19 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            
            case nameof(PurchaseOrder):
                return await context.PurchaseOrders
+                   .IgnoreQueryFilters()
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
            case nameof(Grn):
                return await context.Grns
+                   .IgnoreQueryFilters()
                    .Where(m => m.GrnNumber.StartsWith(prefix))
                    .CountAsync();
            
            case nameof(StockTransfer):
                return await context.StockTransfers
+                   .IgnoreQueryFilters()
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
@@ -172,6 +180,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            
            case "ArNumber":
                return await context.BinCardInformation
+                   .IgnoreQueryFilters()
                    .Where(m => m.ArNumber.StartsWith(prefix))
                    .CountAsync();
                
