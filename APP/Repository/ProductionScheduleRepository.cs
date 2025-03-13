@@ -584,6 +584,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(product => product.BillOfMaterials)
             .ThenInclude(p => p.BillOfMaterial)
             .ThenInclude(p => p.Items).ThenInclude(billOfMaterialItem => billOfMaterialItem.Material)
+            .ThenInclude(m => m.Batches)
             .Include(product => product.BillOfMaterials)
             .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
             .ThenInclude(billOfMaterial => billOfMaterial.Items)
