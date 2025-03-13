@@ -1049,7 +1049,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Calculate the total available quantity for the material in this location
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
 
-        return totalQuantityInLocation;
+        return Math.Max(totalQuantityInLocation, 0);
     }
     
     public async Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
