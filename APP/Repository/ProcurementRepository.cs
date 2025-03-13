@@ -40,6 +40,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<ManufacturerDto>> GetManufacturer(Guid manufacturerId)
     {
         var manufacturer = await context.Manufacturers
+            .AsSplitQuery()
             .Include(m => m.Country)
             .Include(m => m.Materials)
             .FirstOrDefaultAsync(m => m.Id == manufacturerId);
@@ -52,6 +53,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<ManufacturerDto>>>> GetManufacturers(int page, int pageSize, string searchQuery)
     {
         var query = context.Manufacturers
+            .AsSplitQuery()
             .Include(m => m.Country)
             .Include(m => m.Materials)
             .AsQueryable();
@@ -72,6 +74,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<List<ManufacturerDto>>> GetManufacturersByMaterial(Guid materialId)
     {
        return mapper.Map<List<ManufacturerDto>>( await context.Manufacturers
+           .AsSplitQuery()
             .Include(m => m.Materials).ThenInclude(m => m.Material)
             .Where(m => m.Materials.Any(ma => ma.MaterialId == materialId))
             .ToListAsync());
@@ -79,7 +82,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     
     public async Task<Result> UpdateManufacturer(CreateManufacturerRequest request, Guid manufacturerId, Guid userId)
     {
-        var existingManufacturer = await context.Manufacturers.Include(manufacturer => manufacturer.Materials).FirstOrDefaultAsync(m => m.Id == manufacturerId);
+        var existingManufacturer = await context.Manufacturers
+            .AsSplitQuery()
+            .Include(manufacturer => manufacturer.Materials).FirstOrDefaultAsync(m => m.Id == manufacturerId);
         if (existingManufacturer is null)
         {
             return Error.NotFound("Manufacturer.NotFound", "Manufacturer not found");

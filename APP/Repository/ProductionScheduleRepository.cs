@@ -780,8 +780,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var materialDetails = product.Packages.Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
-            var quantityNeeded = GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
-                product.BasePackingQuantity);
+            var quantityNeeded = Math.Floor(GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
+                product.BasePackingQuantity));
             var batchResult = materialRepository.BatchesNeededToBeConsumed(item.MaterialId, warehouse.Id,
                 quantityNeeded);
 
