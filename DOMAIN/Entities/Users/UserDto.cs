@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.Departments;
-using DOMAIN.Entities.Roles;
 using Microsoft.AspNetCore.Identity;
+using SHARED;
 
 namespace DOMAIN.Entities.Users;
 
