@@ -12,5 +12,5 @@ public class UserDto
     [PersonalData] public string LastName { get; set; }
     [EmailAddress] public string Email { get; set; }
     public string Avatar { get; set; }
-    public DepartmentDto Department { get; set; }
+    public CollectionItemDto Department { get; set; }
 }
