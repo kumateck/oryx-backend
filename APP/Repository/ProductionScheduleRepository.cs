@@ -1500,6 +1500,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         await context.FinalPackings.AddAsync(finalPacking); 
         await context.SaveChangesAsync();
+
+        var activityStep =
+            await context.ProductionActivitySteps.FirstOrDefaultAsync(p => p.Id == request.ProductionActivityStepId);
+        if (activityStep is not null)
+        {
+            activityStep.Status = ProductionStatus.Completed;
+            activityStep.StartedAt = DateTime.UtcNow;
+            activityStep.CompletedAt = DateTime.UtcNow;
+            context.ProductionActivitySteps.Update(activityStep);
+            await context.SaveChangesAsync();
+        }
         
         return finalPacking.Id;
     }
