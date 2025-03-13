@@ -1548,9 +1548,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(fp => fp.Materials).ThenInclude(m => m.Material)
             .FirstOrDefaultAsync(fp => fp.Id == finalPackingId);
 
-        return finalPacking is null 
-            ? Error.NotFound("FinalPacking.NotFound", "Final Packing record not found") 
-            : mapper.Map<FinalPackingDto>(finalPacking);
+        return mapper.Map<FinalPackingDto>(finalPacking);
     }
 
     /// ✅ **Extra Method: Get Final Packing by ProductionScheduleId & ProductId**
@@ -1563,9 +1561,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(fp => fp.Materials).ThenInclude(m => m.Material)
             .FirstOrDefaultAsync(fp => fp.ProductionScheduleId == productionScheduleId && fp.ProductId == productId);
 
-        return finalPacking is null 
-            ? Error.NotFound("FinalPacking.NotFound", "No Final Packing found for the given Production Schedule and Product") 
-            : mapper.Map<FinalPackingDto>(finalPacking);
+        return mapper.Map<FinalPackingDto>(finalPacking);
     }
 
     /// ✅ **Paginated List of Final Packings**
@@ -1641,9 +1637,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                         && r.RequisitionType == RequisitionType.Stock) // Ensure it's a stock requisition
             .FirstOrDefaultAsync();
 
-        return requisition is null 
-            ? Error.NotFound("StockRequisition.NotFound", "No stock requisition for packaging found.") 
-            : mapper.Map<RequisitionDto>(requisition);
+        return mapper.Map<RequisitionDto>(requisition);
     }
-
 }
