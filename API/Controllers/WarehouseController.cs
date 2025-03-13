@@ -208,9 +208,9 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [HttpGet("rack")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationRackDto>>))]
-    public async Task<IResult> GetWarehouseLocationRacks([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetWarehouseLocationRacks([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] MaterialKind? kind = null)
     {
-        var result = await repository.GetWarehouseLocationRacks(page, pageSize, searchQuery);
+        var result = await repository.GetWarehouseLocationRacks(page, pageSize, searchQuery, kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -662,9 +662,9 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [HttpGet("grns")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnDto>>))]
-    public async Task<IResult> GetGrns([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetGrns([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, MaterialKind? kind = null)
     {
-        var result = await repository.GetGrns(page, pageSize, searchQuery);
+        var result = await repository.GetGrns(page, pageSize, searchQuery,kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

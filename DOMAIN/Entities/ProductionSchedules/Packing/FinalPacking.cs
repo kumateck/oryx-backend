@@ -30,10 +30,7 @@ public class CreateFinalPacking
 
 public class CreateFinalPackingMaterial
 {
-    public Guid FinalPackingId { get; set; }
-    public FinalPacking FinalPacking { get; set; }
     public Guid MaterialId { get; set; }
-    public Material Material { get; set; }
     public decimal ReceivedQuantity { get; set; }
     public decimal SubsequentDeliveredQuantity { get; set; }
     public decimal TotalReceivedQuantity { get; set; }

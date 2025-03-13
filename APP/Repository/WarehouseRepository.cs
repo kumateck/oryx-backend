@@ -282,7 +282,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             : mapper.Map<WarehouseLocationRackDto>(rack);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page, int pageSize, string searchQuery, MaterialKind? kind = null)
     {
         var query = context.WarehouseLocationRacks
             .Include(r => r.WarehouseLocation)
@@ -295,6 +295,15 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Checklist)
             .AsQueryable();
+
+        if (kind.HasValue)
+        {
+            var warehouseType = kind == MaterialKind.Raw
+                ? WarehouseType.RawMaterialStorage
+                : WarehouseType.PackagedStorage;
+
+            query = query.Where(q => q.WarehouseLocation.Warehouse.Type == warehouseType);
+        }
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -690,6 +699,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<ChecklistDto>> GetChecklistByDistributedMaterialId(Guid distributedMaterialId)
     {
         var checklist = await context.Checklists
+            .AsSplitQuery()
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.SampleWeights)
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb => mb.Material)
             .Include(c => c.Manufacturer)
@@ -740,6 +752,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<ChecklistDto>> GetChecklist(Guid id)
     {
         var checklist = await context.Checklists
+            .AsSplitQuery()
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.SampleWeights)
             .FirstOrDefaultAsync(c => c.Id == id);
@@ -808,9 +821,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             : mapper.Map<GrnDto>(grn);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery, MaterialKind? kind)
     {
         var query = context.Grns
+            .AsSplitQuery()
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.Checklist)
             .ThenInclude(cl=>cl.Manufacturer)
@@ -826,7 +840,14 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.Checklist)
             .ThenInclude(cl=>cl.DistributedRequisitionMaterial)
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(cl => cl.Material)
             .AsQueryable();
+
+        if (kind.HasValue)
+        {
+            query = query.Where(q => q.MaterialBatches.Any(b => b.Material.Kind == kind));
+        }
 
         if (!string.IsNullOrEmpty(searchQuery))
         {

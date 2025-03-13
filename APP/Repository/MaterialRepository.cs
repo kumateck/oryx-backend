@@ -945,9 +945,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(e => e.Quantity);
 
         // Calculate the total available quantity for the material in this location
+        // Calculate the total available quantity for the material in this location
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
 
-        return totalQuantityInLocation;
+        return Math.Max(totalQuantityInLocation, 0);
     }
     
     public async Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
@@ -1048,7 +1049,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Calculate the total available quantity for the material in this location
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
 
-        return totalQuantityInLocation;
+        return Math.Max(totalQuantityInLocation, 0);
     }
     
     public async Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
@@ -1111,7 +1112,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Fetch frozen batches in FIFO order
         var frozenBatches = await context.MaterialBatches
-            .IgnoreQueryFilters()
             .Include(b => b.Material)
             .Include(b => b.UoM)
             .Where(b => b.Status == BatchStatus.Frozen &&
@@ -1321,6 +1321,30 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity)
+    {
+        await context.MaterialBatchReservedQuantities.AddAsync(new MaterialBatchReservedQuantity
+        {
+            MaterialBatchId = batchId,
+            WarehouseId = warehouseId,
+            ProductionScheduleId = productionScheduleId,
+            ProductId = productId,
+            Quantity = quantity
+        });
+
+        await context.SaveChangesAsync();
+    }
+
+    public async Task<List<MaterialBatchReservedQuantity>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, Guid productionScheduleId, Guid productId)
+    {
+        return 
+            await context.MaterialBatchReservedQuantities
+                .Include(r => r.MaterialBatch)
+                .Where(r => r.MaterialBatch.MaterialId == materialId && 
+                            r.WarehouseId == warehouseId && r.ProductionScheduleId == productionScheduleId && r.ProductId == productId)
+                .ToListAsync();
     }
 
     

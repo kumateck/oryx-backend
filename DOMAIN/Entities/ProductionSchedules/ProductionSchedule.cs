@@ -35,5 +35,6 @@ public class ProductionScheduleProduct
     public Product Product { get; set; }   
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }
+    [StringLength(100)] public string BatchNumber { get; set; }
     public decimal Quantity { get; set; }
 }

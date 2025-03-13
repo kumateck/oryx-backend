@@ -30,7 +30,7 @@ public interface IWarehouseRepository
         Guid warehouseLocationId, Guid userId);
     Task<Result<WarehouseLocationRackDto>> GetWarehouseLocationRack(Guid rackId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page,
-        int pageSize, string searchQuery);
+        int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result<List<WarehouseLocationRackDto>>> GetWarehouseLocationRacks(MaterialKind kind, Guid userId);
     Task<Result> UpdateWarehouseLocationRack(CreateWarehouseLocationRackRequest request, Guid rackId,
         Guid userId); 
@@ -59,7 +59,7 @@ public interface IWarehouseRepository
     Task<Result<ChecklistDto>> GetChecklistByDistributedMaterialId(Guid distributedMaterialId);
     Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds, Guid userId);
     Task<Result<GrnDto>> GetGrn(Guid id);
-    Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery, MaterialKind? kind);
 
     Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize,
         string searchQuery, Guid materialId);
