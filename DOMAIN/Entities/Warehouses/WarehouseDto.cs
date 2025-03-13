@@ -77,7 +77,7 @@ public class WarehouseLocationShelfDto
     public string Code { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
-    public List<ShelfMaterialBatchDto> MaterialBatches { get; set; }
+    public List<ShelfMaterialBatchDto> MaterialBatches { get; set; } = [];
 }
 
 public class WarehouseStockDto
