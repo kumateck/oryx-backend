@@ -11,6 +11,7 @@ public class ShipmentDocumentDto : WithAttachment
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public List<ShipmentDiscrepancyDto> Discrepancies { get; set; } = [];
     public DateTime? ArrivedAt { get; set; }
+    public DocType Type { get; set; } 
 }
 
 public class ShipmentInvoiceDto : BaseDto

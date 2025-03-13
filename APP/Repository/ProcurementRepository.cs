@@ -551,6 +551,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
      public async Task<Result<Guid>> CreateShipmentDocument(CreateShipmentDocumentRequest request, Guid userId)
     {
         var shipmentDocument = mapper.Map<ShipmentDocument>(request);
+        shipmentDocument.Type = DocType.Shipment;
         shipmentDocument.CreatedById = userId;
         await context.ShipmentDocuments.AddAsync(shipmentDocument);
         await context.SaveChangesAsync();
@@ -558,7 +559,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return shipmentDocument.Id;
     }
 
-    public async Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId)
+    public async Task<Result<ShipmentDocumentDto>> GetShipmentDocumentV0(Guid shipmentDocumentId)
     {
         var shipmentDocument = await context.ShipmentDocuments
             .AsSplitQuery()
@@ -571,7 +572,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             : mapper.Map<ShipmentDocumentDto>(shipmentDocument, opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentDocument));
     }
     
-    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocumentsV0(int page, int pageSize, string searchQuery)
     {
         var query = context.ShipmentDocuments
             .Include(s => s.ShipmentInvoice)
@@ -597,7 +598,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         };
     }
 
-    public async Task<Result> UpdateShipmentDocument(CreateShipmentDocumentRequest request, Guid shipmentDocumentId, Guid userId)
+    public async Task<Result> UpdateShipmentDocumentV0(CreateShipmentDocumentRequest request, Guid shipmentDocumentId, Guid userId)
     {
         var existingShipmentDocument = await context.ShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
         if (existingShipmentDocument is null)
@@ -613,7 +614,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    public async Task<Result> DeleteShipmentDocument(Guid shipmentDocumentId, Guid userId)
+    public async Task<Result> DeleteShipmentDocumentV0(Guid shipmentDocumentId, Guid userId)
     {
         var shipmentDocument = await context.ShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
         if (shipmentDocument is null)
@@ -624,6 +625,161 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         shipmentDocument.DeletedAt = DateTime.UtcNow;
         shipmentDocument.LastDeletedById = userId;
 
+        context.ShipmentDocuments.Update(shipmentDocument);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId)
+    {
+        var shipmentDocument = await context.ShipmentDocuments
+            .AsSplitQuery()
+            .Include(s => s.ShipmentInvoice)
+            .ThenInclude(s => s.Items)
+            .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Shipment);
+    
+        return shipmentDocument is null
+            ? Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found")
+            : mapper.Map<ShipmentDocumentDto>(shipmentDocument, opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentDocument));
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page, int pageSize, string searchQuery)
+    {
+        var query = context.ShipmentDocuments
+            .Include(s => s.ShipmentInvoice)
+            .Where(s => s.Type == DocType.Shipment)
+            .AsQueryable();
+    
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, bs => bs.Code);
+        }
+        
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var shipmentDocuments = await paginatedResult.Data.ToListAsync();
+        
+        return new Paginateable<IEnumerable<ShipmentDocumentDto>>
+        {
+            Data = mapper.Map<IEnumerable<ShipmentDocumentDto>>(shipmentDocuments, 
+                opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentDocument)),
+            PageIndex = page,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+    }
+    
+    public async Task<Result> UpdateShipmentDocument(CreateShipmentDocumentRequest request, Guid shipmentDocumentId, Guid userId)
+    {
+        var existingShipmentDocument = await context.ShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Shipment);
+        if (existingShipmentDocument is null)
+        {
+            return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
+        }
+    
+        mapper.Map(request, existingShipmentDocument);
+        existingShipmentDocument.LastUpdatedById = userId;
+    
+        context.ShipmentDocuments.Update(existingShipmentDocument);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> DeleteShipmentDocument(Guid shipmentDocumentId, Guid userId)
+    {
+        var shipmentDocument = await context.ShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Shipment);
+        if (shipmentDocument is null)
+        {
+            return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
+        }
+    
+        shipmentDocument.DeletedAt = DateTime.UtcNow;
+        shipmentDocument.LastDeletedById = userId;
+    
+        context.ShipmentDocuments.Update(shipmentDocument);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result<Guid>> CreateWayBill(CreateShipmentDocumentRequest request, Guid userId)
+    {
+        var wayBill = mapper.Map<ShipmentDocument>(request);
+        wayBill.Type = DocType.Waybill;
+        wayBill.CreatedById = userId;
+        await context.ShipmentDocuments.AddAsync(wayBill);
+        await context.SaveChangesAsync();
+
+        return wayBill.Id;
+    }
+    
+    public async Task<Result<ShipmentDocumentDto>> GetWaybillDocument(Guid shipmentDocumentId)
+    {
+        var shipmentDocument = await context.ShipmentDocuments
+            .AsSplitQuery()
+            .Include(s => s.ShipmentInvoice)
+            .ThenInclude(s => s.Items)
+            .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Waybill);
+    
+        return shipmentDocument is null
+            ? Error.NotFound("ShipmentDocument.NotFound", "Waybill document not found")
+            : mapper.Map<ShipmentDocumentDto>(shipmentDocument, opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentDocument));
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetWaybillDocuments(int page, int pageSize, string searchQuery)
+    {
+        var query = context.ShipmentDocuments
+            .Include(s => s.ShipmentInvoice)
+            .Where(s => s.Type == DocType.Waybill)
+            .AsQueryable();
+    
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, bs => bs.Code);
+        }
+        
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var shipmentDocuments = await paginatedResult.Data.ToListAsync();
+        
+        return new Paginateable<IEnumerable<ShipmentDocumentDto>>
+        {
+            Data = mapper.Map<IEnumerable<ShipmentDocumentDto>>(shipmentDocuments, 
+                opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentDocument)),
+            PageIndex = page,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+    }
+    
+    public async Task<Result> UpdateWaybillDocument(CreateShipmentDocumentRequest request, Guid shipmentDocumentId, Guid userId)
+    {
+        var existingShipmentDocument = await context.ShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Waybill);
+        if (existingShipmentDocument is null)
+        {
+            return Error.NotFound("ShipmentDocument.NotFound", "Waybill document not found");
+        }
+    
+        mapper.Map(request, existingShipmentDocument);
+        existingShipmentDocument.LastUpdatedById = userId;
+    
+        context.ShipmentDocuments.Update(existingShipmentDocument);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> DeleteWaybillDocument(Guid shipmentDocumentId, Guid userId)
+    {
+        var shipmentDocument = await context.ShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Waybill);
+        if (shipmentDocument is null)
+        {
+            return Error.NotFound("ShipmentDocument.NotFound", "Waybill document not found");
+        }
+    
+        shipmentDocument.DeletedAt = DateTime.UtcNow;
+        shipmentDocument.LastDeletedById = userId;
+    
         context.ShipmentDocuments.Update(shipmentDocument);
         await context.SaveChangesAsync();
         return Result.Success();
