@@ -33,7 +33,7 @@ public class MaterialBatchDto
     public DateTime? RetestDate { get; set; }
     public List<MaterialBatchEventDto> Events { get; set; } = [];
     public List<MaterialBatchMovementDto> Movements { get; set; } = [];
-    public List<SrDto> SampleWeights { get; set; }
+    public List<SrDto> SampleWeights { get; set; } = [];
     public List<MassMaterialBatchMovementDto> MassMovements { get; set; } = [];
     public List<CurrentLocationDto> Locations { get; set; } = [];
 }
