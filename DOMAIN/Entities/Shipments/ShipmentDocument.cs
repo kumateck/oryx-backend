@@ -15,7 +15,14 @@ public class ShipmentDocument : BaseEntity
     public Guid? ShipmentInvoiceId { get; set; }
     public ShipmentInvoice ShipmentInvoice { get; set; }
     public DateTime? ArrivedAt { get; set; }
+    public DocType Type { get; set; } 
     public DateTime? CompletedDistributionAt { get; set; }
+}
+
+public enum DocType
+{
+    Shipment,
+    Waybill
 }
 
 public class ShipmentInvoice : BaseEntity

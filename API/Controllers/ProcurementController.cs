@@ -651,6 +651,95 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
+    // ************* Waybill Endpoints *************
+    
+    /// <summary>
+    /// Creates a new waybill.
+    /// </summary>
+    /// <param name="request">The CreateShipmentDocumentRequest object.</param>
+    /// <returns>Returns the ID of the created waybill.</returns>
+    [HttpPost("waybill")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateWayBill([FromBody] CreateShipmentDocumentRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+    
+        var result = await repository.CreateWayBill(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a waybill by its ID.
+    /// </summary>
+    /// <param name="waybillId">The ID of the waybill.</param>
+    /// <returns>Returns the waybill details.</returns>
+    [HttpGet("waybill/{waybillId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentDocumentDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetWaybillDocument(Guid waybillId)
+    {
+        var result = await repository.GetWaybillDocument(waybillId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of waybills.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of waybills.</returns>
+    [HttpGet("waybill")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShipmentDocumentDto>>))]
+    public async Task<IResult> GetWaybillDocuments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetWaybillDocuments(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Updates a specific waybill by its ID.
+    /// </summary>
+    /// <param name="request">The CreateShipmentDocumentRequest object.</param>
+    /// <param name="waybillId">The ID of the waybill to update.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("waybill/{waybillId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateWaybillDocument([FromBody] CreateShipmentDocumentRequest request, Guid waybillId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+    
+        var result = await repository.UpdateWaybillDocument(request, waybillId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Deletes a specific waybill by its ID.
+    /// </summary>
+    /// <param name="waybillId">The ID of the waybill to delete.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpDelete("waybill/{waybillId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteWaybillDocument(Guid waybillId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+    
+        var result = await repository.DeleteWaybillDocument(waybillId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
     /// <summary>
     /// Marks a shipment as arrived by updating the ArrivedAt property.
     /// </summary>
