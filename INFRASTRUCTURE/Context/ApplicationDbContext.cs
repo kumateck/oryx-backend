@@ -74,6 +74,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MassMaterialBatchMovement> MassMaterialBatchMovements { get; set; }
     public DbSet<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
     public DbSet<MaterialItemDistribution> MaterialItemDistributions { get; set; }
+    public DbSet<MaterialBatchReservedQuantity> MaterialBatchReservedQuantities { get; set; }
     
     #endregion
 
@@ -406,6 +407,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Material Entities
         modelBuilder.Entity<Material>().Navigation(p => p.Batches).AutoInclude();
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.Events).AutoInclude();
+        modelBuilder.Entity<MaterialBatch>().Navigation(p => p.ReservedQuantities).AutoInclude();
         modelBuilder.Entity<ManufacturerMaterial>().Navigation(p => p.Material).AutoInclude();
         #endregion
 
@@ -543,6 +545,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<MassMaterialBatchMovement>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Batch.DeletedAt.HasValue);//  && !entity.Batch.IsFrozen);
         modelBuilder.Entity<MaterialCategory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialType>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialBatchReservedQuantity>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.MaterialBatch.DeletedAt.HasValue);
+        modelBuilder.Entity<FinishedProductBatchMovement>().HasQueryFilter(entity =>  !entity.Batch.DeletedAt.HasValue);
+        modelBuilder.Entity<FinishedProductBatchEvent>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);
+        
         #endregion
 
         #region Requisition Filters
@@ -732,6 +738,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Equipment
 
         modelBuilder.Entity<Equipment>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Department.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Finished Goods
+
+        modelBuilder.Entity<FinishedGoodsTransferNote>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && entity.BatchManufacturingRecord != null);
+
 
         #endregion
     }

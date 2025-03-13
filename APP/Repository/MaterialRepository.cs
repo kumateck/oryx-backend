@@ -1112,7 +1112,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Fetch frozen batches in FIFO order
         var frozenBatches = await context.MaterialBatches
-            .IgnoreQueryFilters()
             .Include(b => b.Material)
             .Include(b => b.UoM)
             .Where(b => b.Status == BatchStatus.Frozen &&
@@ -1322,6 +1321,30 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity)
+    {
+        await context.MaterialBatchReservedQuantities.AddAsync(new MaterialBatchReservedQuantity
+        {
+            MaterialBatchId = batchId,
+            WarehouseId = warehouseId,
+            ProductionScheduleId = productionScheduleId,
+            ProductId = productId,
+            Quantity = quantity
+        });
+
+        await context.SaveChangesAsync();
+    }
+
+    public async Task<List<MaterialBatchReservedQuantity>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, Guid productionScheduleId, Guid productId)
+    {
+        return 
+            await context.MaterialBatchReservedQuantities
+                .Include(r => r.MaterialBatch)
+                .Where(r => r.MaterialBatch.MaterialId == materialId && 
+                            r.WarehouseId == warehouseId && r.ProductionScheduleId == productionScheduleId && r.ProductId == productId)
+                .ToListAsync();
     }
 
     

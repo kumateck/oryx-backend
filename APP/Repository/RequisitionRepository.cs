@@ -223,32 +223,34 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (productionWarehouse is null)
             return Error.NotFound("User.Warehouse", "No production warehouse is associated with department who made stock requisition");
 
-        var batchesToConsume = new List<BatchToSupply>();
 
         foreach (var item in stockRequisition.Items)
         {
             var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
-            var batchesResult = await materialRepository.GetFrozenBatchesForRequisitionItem(item.MaterialId, appropriateWarehouse.Id, item.Quantity);
-            
-            if (batchesResult.IsSuccess)
-            {
-                batchesToConsume.AddRange(batchesResult.Value);
-            }
+
+            var batchesToConsume =
+                await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
+                    productionWarehouse.Id, stockRequisition.ProductionScheduleId, stockRequisition.ProductId);
             
             foreach (var batch in batchesToConsume)
             {
-                batch.Batch.QuantityAssigned = 0;
+                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m => m.Id == batch.MaterialBatchId);
+                if (materialBatch is null) continue;
+                
+                materialBatch.QuantityAssigned = 0;
+                context.MaterialBatches.Update(materialBatch);
+
                 var shelfMaterialBatches = await context.ShelfMaterialBatches
-                    .Where(sb => sb.MaterialBatchId == batch.Batch.Id)
+                    .Where(sb => sb.MaterialBatchId == batch.MaterialBatchId)
                     .ToListAsync();
                 context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
 
                 var movement = new MassMaterialBatchMovement
                 {
-                    BatchId = batch.Batch.Id,
+                    BatchId = batch.MaterialBatchId,
                     FromWarehouseId = appropriateWarehouse.Id,
                     ToWarehouseId = productionWarehouse.Id,
-                    Quantity = batch.QuantityToTake,
+                    Quantity = batch.Quantity,
                     MovedAt = DateTime.UtcNow,
                     MovedById = userId
                 };
@@ -257,20 +259,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
                 var batchEvent = new MaterialBatchEvent
                 {
-                    BatchId = batch.Batch.Id,
+                    BatchId =  batch.MaterialBatchId,
                     Type = EventType.Moved,
-                    Quantity = batch.QuantityToTake,
+                    Quantity =batch.Quantity,
                     UserId = userId
                 };
 
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
-
-                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == batch.Batch.Id);
-                if (materialBatch is not null)
-                {
-                    materialBatch.Status = BatchStatus.Available;
-                    context.MaterialBatches.Update(materialBatch);
-                }
             }
         }
 

@@ -36,6 +36,8 @@ public class MaterialBatchDto
     public List<SrDto> SampleWeights { get; set; } = [];
     public List<MassMaterialBatchMovementDto> MassMovements { get; set; } = [];
     public List<CurrentLocationDto> Locations { get; set; } = [];
+    public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
+    public decimal ReservedQuantity { get; set; }
 }
 
 public class BatchChecklistDto
@@ -118,7 +120,7 @@ public class BatchToSupply
     public decimal QuantityToTake { get; set; }
 }
 
-public class FinishedGoodsTransferNoteDto
+public class FinishedGoodsTransferNoteDto : BaseDto
 {
     public WarehouseDto FromWarehouse { get; set; }
     public WarehouseDto ToWarehouse { get; set; }
@@ -129,3 +131,14 @@ public class FinishedGoodsTransferNoteDto
     public string QarNumber { get; set; }
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
 }
+
+public class MaterialBatchReservedQuantityDto : BaseDto
+{
+    public Guid MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
+    public Guid WarehouseId { get; set; }
+    public Warehouse Warehouse { get; set; }
+    public decimal Quantity { get; set; }
+}
+
+
