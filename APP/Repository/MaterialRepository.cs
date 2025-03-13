@@ -137,7 +137,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Now create initial movements for each batch
         foreach (var batch in batches)
         {
-            var initialLocationId = request.FirstOrDefault(r => r.MaterialId == batch.MaterialId)?.InitialLocationId;
+            var initialLocationId = request.FirstOrDefault(r => r.MaterialId == batch.MaterialId)?.MaterialId;
         
             if (initialLocationId.HasValue)
             {
