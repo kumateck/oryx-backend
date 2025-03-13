@@ -493,7 +493,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         var billingSheet = await context.BillingSheets
             .Include(bs => bs.Supplier)
-            .Include(bs => bs.Invoice).ThenInclude(poi => poi.PurchaseOrder)
+            .Include(bs => bs.Invoice)
             .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
 
         return billingSheet is null
@@ -505,7 +505,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         var query = context.BillingSheets
             .Include(bs => bs.Supplier)
-            .Include(bs => bs.Invoice).ThenInclude(poi => poi.PurchaseOrder)
+            .Include(bs => bs.Invoice)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

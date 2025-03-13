@@ -110,6 +110,7 @@ public class OryxMapper : Profile
         CreateMap<Department, CollectionItemDto>();
         CreateMap<Equipment, CollectionItemDto>();
         CreateMap<PackageStyle, CollectionItemDto>();
+        CreateMap<ShipmentInvoice, CollectionItemDto>();
         
         #endregion
 
