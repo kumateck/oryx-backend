@@ -30,7 +30,7 @@ public interface IWarehouseRepository
         Guid warehouseLocationId, Guid userId);
     Task<Result<WarehouseLocationRackDto>> GetWarehouseLocationRack(Guid rackId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page,
-        int pageSize, string searchQuery);
+        int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result<List<WarehouseLocationRackDto>>> GetWarehouseLocationRacks(MaterialKind kind, Guid userId);
     Task<Result> UpdateWarehouseLocationRack(CreateWarehouseLocationRackRequest request, Guid rackId,
         Guid userId); 

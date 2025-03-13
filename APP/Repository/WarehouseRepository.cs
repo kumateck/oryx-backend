@@ -282,7 +282,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             : mapper.Map<WarehouseLocationRackDto>(rack);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page, int pageSize, string searchQuery, MaterialKind? kind = null)
     {
         var query = context.WarehouseLocationRacks
             .Include(r => r.WarehouseLocation)
@@ -295,6 +295,15 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(smb=>smb.MaterialBatch)
             .ThenInclude(mb=>mb.Checklist)
             .AsQueryable();
+
+        if (kind.HasValue)
+        {
+            var warehouseType = kind == MaterialKind.Raw
+                ? WarehouseType.RawMaterialStorage
+                : WarehouseType.PackagedStorage;
+
+            query = query.Where(q => q.WarehouseLocation.Warehouse.Type == warehouseType);
+        }
 
         if (!string.IsNullOrEmpty(searchQuery))
         {

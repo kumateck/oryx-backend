@@ -264,6 +264,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 };
 
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
+
+                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == batch.Batch.Id);
+                if (materialBatch is not null)
+                {
+                    materialBatch.Status = BatchStatus.Available;
+                    context.MaterialBatches.Update(materialBatch);
+                }
             }
         }
 
