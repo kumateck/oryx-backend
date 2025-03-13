@@ -699,6 +699,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<ChecklistDto>> GetChecklistByDistributedMaterialId(Guid distributedMaterialId)
     {
         var checklist = await context.Checklists
+            .AsSplitQuery()
+            .Include(c => c.MaterialBatches)
+            .ThenInclude(mb=>mb.SampleWeights)
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb => mb.Material)
             .Include(c => c.Manufacturer)
