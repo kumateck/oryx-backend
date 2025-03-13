@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250313142405_AddReservationToMaterialBatch")]
+    partial class AddReservationToMaterialBatch
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2736,10 +2739,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("BatchNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
@@ -3903,9 +3902,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime>("ExpectedArrivalDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("FreeTimeDuration")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<TimeSpan>("FreeTimeDuration")
+                        .HasColumnType("interval");
 
                     b.Property<DateTime>("FreeTimeExpiryDate")
                         .HasColumnType("timestamp with time zone");
@@ -5167,9 +5165,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("ShipmentInvoiceId")
                         .HasColumnType("uuid");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");

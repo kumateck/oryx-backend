@@ -8,7 +8,7 @@ public class CreateBillingSheetRequest
     public Guid InvoiceId { get; set; }
     public DateTime ExpectedArrivalDate { get; set; }
     public DateTime FreeTimeExpiryDate { get; set; }
-    public TimeSpan FreeTimeDuration { get; set; }
+    public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
     
     //container information

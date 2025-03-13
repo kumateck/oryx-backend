@@ -101,6 +101,7 @@ public class ProductionActivityGroupDto : BaseDto
     public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public ProductionActivityStepDto CurrentStep { get; set; }
+    public string BatchNumber { get; set; }
 }
 
 public class ProductionActivityGroupResultDto

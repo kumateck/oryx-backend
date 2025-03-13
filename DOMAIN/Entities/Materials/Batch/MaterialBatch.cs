@@ -2,8 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
-using DOMAIN.Entities.Procurement.Manufacturers;
-using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
@@ -29,7 +27,7 @@ public class MaterialBatch : BaseEntity
     public decimal QuantityAssigned { get; set; }
     public decimal TotalQuantity { get; set; }  
     public decimal ConsumedQuantity { get; set; }  
-    public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity;
+    public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity - ReservedQuantity;
     public decimal QuantityUnassigned => TotalQuantity - QuantityAssigned;
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
@@ -40,10 +38,11 @@ public class MaterialBatch : BaseEntity
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
-    //public bool IsFrozen { get; set; }  
     public List<Sr> SampleWeights { get; set; } = [];
     public List<MaterialBatchEvent> Events { get; set; } = [];
     public List<MassMaterialBatchMovement> MassMovements { get; set; } = [];
+    public List<MaterialBatchReservedQuantity> ReservedQuantities { get; set; } = [];
+    public decimal ReservedQuantity => ReservedQuantities.Sum(r => r.Quantity);
 }
 
 public class Sr:BaseEntity
@@ -155,6 +154,19 @@ public class FinishedGoodsTransferNote:BaseEntity
     public string QarNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
+}
+
+public class MaterialBatchReservedQuantity : BaseEntity
+{
+    public Guid MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
+    public Guid WarehouseId { get; set; }
+    public Warehouse Warehouse { get; set; }
+    public Guid ProductionScheduleId { get; set; }
+    public ProductionSchedule ProductionSchedule { get; set; }
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 

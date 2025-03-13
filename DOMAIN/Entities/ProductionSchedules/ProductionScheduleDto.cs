@@ -1,6 +1,5 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
-using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using SHARED;
 
@@ -31,7 +30,8 @@ public class ProductionScheduleProcurementDto
     public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
     public MaterialRequisitionStatus Status { get; set; }
-    public List<BatchLocation> Batches { get; set; } = [];
+    public Guid StorageWarehouseId { get; set; }
+    public Guid ProductionWarehouseId { get; set; }
 }
 
 public class ProductionScheduleProcurementPackageDto 
@@ -45,13 +45,15 @@ public class ProductionScheduleProcurementPackageDto
     public decimal UnitCapacity { get; set; }
     public MaterialRequisitionStatus Status { get; set; }
     public decimal PackingExcessMargin { get; set; }
-    public List<BatchLocation> Batches { get; set; } = [];
+    public Guid StorageWarehouseId { get; set; }
+    public Guid ProductionWarehouseId { get; set; }
 }
 
 public class ProductionScheduleProductDto
 {
     public ProductListDto Product { get; set; }
     public decimal Quantity { get; set; }
+    public string BatchNumber { get; set; }
 }
 
 public enum MaterialRequisitionStatus
