@@ -167,7 +167,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
             // Fetch frozen batches that will fulfill the request
-            var batchResult = await materialRepository.GetFrozenBatchesForRequisitionItem(item.Material.Id, appropriateWarehouse.Id, item.Quantity);
+            var batchResult = await materialRepository.BatchesToSupplyForGivenQuantity(item.Material.Id, appropriateWarehouse.Id, item.Quantity);
             
             if (batchResult.IsSuccess)
             {

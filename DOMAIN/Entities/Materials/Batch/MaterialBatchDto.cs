@@ -134,10 +134,8 @@ public class FinishedGoodsTransferNoteDto : BaseDto
 
 public class MaterialBatchReservedQuantityDto : BaseDto
 {
-    public Guid MaterialBatchId { get; set; }
-    public MaterialBatch MaterialBatch { get; set; }
-    public Guid WarehouseId { get; set; }
-    public Warehouse Warehouse { get; set; }
+    public CollectionItemDto MaterialBatch { get; set; }
+    public CollectionItemDto Warehouse { get; set; }
     public decimal Quantity { get; set; }
 }
 
