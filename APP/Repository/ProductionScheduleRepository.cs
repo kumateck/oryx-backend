@@ -867,13 +867,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(b => b.Product)
             .Include(b => b.ProductionSchedule)
             .FirstOrDefaultAsync(b => b.ProductId == productionId && b.ProductionScheduleId == productionScheduleId);
-    
-        if (batchManufacturingRecord == null)
-        {
-            return Error.NotFound("BatchManufacturingRecord.NotFound", "Batch manufacturing record not found for the specified production and schedule.");
-        }
-    
-        return Result.Success(mapper.Map<BatchManufacturingRecordDto>(batchManufacturingRecord));
+
+        return mapper.Map<BatchManufacturingRecordDto>(batchManufacturingRecord);
     }
     
     public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId)
@@ -945,6 +940,18 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await context.ProductBinCardInformation.AddAsync(binCardEvent);
 
         await context.SaveChangesAsync();
+
+        var productionActivityStep =
+            await context.ProductionActivitySteps.FirstOrDefaultAsync(p => p.Id == request.ProductionActivityStepId);
+
+        if (productionActivityStep is not null)
+        {
+            productionActivityStep.StartedAt = DateTime.UtcNow;
+            productionActivityStep.CompletedAt = DateTime.UtcNow;
+            productionActivityStep.Status = ProductionStatus.Completed;
+            context.ProductionActivitySteps.Update(productionActivityStep);
+            await context.SaveChangesAsync();
+        }
         return Result.Success();
     }
     

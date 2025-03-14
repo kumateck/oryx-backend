@@ -154,6 +154,8 @@ public class FinishedGoodsTransferNote:BaseEntity
     public string QarNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+    public ProductionActivityStep ProductionActivityStep { get; set; }
 }
 
 public class MaterialBatchReservedQuantity : BaseEntity
