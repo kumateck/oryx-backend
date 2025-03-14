@@ -26,6 +26,12 @@ public class ProductionScheduleItem : BaseEntity
     public decimal Quantity { get; set; }
 }
 
+public enum BatchSize
+{
+    Full,
+    Half
+}
+
 public class ProductionScheduleProduct
 {
     public Guid Id { get; set; }
@@ -33,8 +39,7 @@ public class ProductionScheduleProduct
     public ProductionSchedule ProductionSchedule { get; set; }
     public Guid ProductId { get; set; }
     public Product Product { get; set; }   
-    public DateTime ScheduledStartTime { get; set; }
-    public DateTime ScheduledEndTime { get; set; }
     [StringLength(100)] public string BatchNumber { get; set; }
+    public BatchSize BatchSize { get; set; }
     public decimal Quantity { get; set; }
 }

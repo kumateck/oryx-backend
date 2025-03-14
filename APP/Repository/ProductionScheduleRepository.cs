@@ -732,6 +732,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.Validation("Product.Validation", "This product is not associated with this production scheduled");
 
         var quantityRequired = productionSchedule.Products.First(p => p.ProductId == productId).Quantity;
+
+        var batchSize = productionSchedule.Products.First(p => p.ProductId == productId).BatchSize;
         
         var stockLevels = new Dictionary<Guid, decimal>();
         if (user.Department == null)
@@ -787,7 +789,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 BaseQuantity = item.BaseQuantity,
                 UnitCapacity = item.UnitCapacity,
                 Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
-                QuantityNeeded = quantityNeeded,
+                QuantityNeeded = batchSize == BatchSize.Full 
+                    ? quantityNeeded + Math.Ceiling(item.PackingExcessMargin) 
+                    : quantityNeeded + Math.Ceiling(item.PackingExcessMargin / 2),
                 QuantityOnHand = quantityOnHand,
                 PackingExcessMargin = item.PackingExcessMargin,
                 StorageWarehouseId = warehouse.Id,
@@ -1641,5 +1645,16 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .FirstOrDefaultAsync();
 
         return mapper.Map<RequisitionDto>(requisition);
+    }
+
+    public async Task<Result<ProductionScheduleProductDto>> GetProductDetailsInProductionSchedule(
+        Guid productionScheduleId, Guid productId)
+    {
+        var product = await context.ProductionScheduleProducts
+            .Where(p => p.ProductionScheduleId == productionScheduleId && p.ProductId == productId)
+            .Select(p => mapper.Map<ProductionScheduleProductDto>(p))
+            .FirstOrDefaultAsync();
+
+        return product;
     }
 }

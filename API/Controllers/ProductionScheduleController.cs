@@ -69,6 +69,22 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetProductionSchedules(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves the details of a specific product in a Production Schedule.
+    /// </summary>
+    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
+    /// <param name="productId">The ID of the Product.</param>
+    /// <returns>Returns the details of the product in the Production Schedule.</returns>
+    [HttpGet("{productionScheduleId}/product/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionScheduleProductDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductDetailsInProductionSchedule(Guid productionScheduleId, Guid productId)
+    {
+        var result = await repository.GetProductDetailsInProductionSchedule(productionScheduleId, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates a specific Production Schedule.
