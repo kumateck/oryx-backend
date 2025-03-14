@@ -1274,17 +1274,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             
             if (departmentWarehouse != null)
             {
-                var warehouse = departmentWarehouse;
-                if (warehouse.ArrivalLocation == null)
+                if (departmentWarehouse.ArrivalLocation == null)
                 {
-                    warehouse.ArrivalLocation = new WarehouseArrivalLocation
+                    departmentWarehouse.ArrivalLocation = new WarehouseArrivalLocation
                     {
-                        WarehouseId = warehouse.Id,
+                        WarehouseId = departmentWarehouse.Id,
                         Name = "Default Arrival Location",
                         FloorName = "Ground Floor",
                         Description = "Automatically created arrival location"
                     };
-                    await context.WarehouseArrivalLocations.AddAsync(warehouse.ArrivalLocation);
+                    await context.WarehouseArrivalLocations.AddAsync(departmentWarehouse.ArrivalLocation);
                 }
                 
                 var distributedRequisitionMaterial = new DistributedRequisitionMaterial
@@ -1301,7 +1300,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                             ShipmentInvoiceItemId = d.ShipmentInvoiceItem.Id,
                             Quantity = d.Quantity,
                         }).ToList(),
-                        WarehouseArrivalLocationId = warehouse.ArrivalLocation.Id
+                        WarehouseArrivalLocationId = departmentWarehouse.ArrivalLocation.Id
                         
                     };
                 await context.DistributedRequisitionMaterials.AddAsync(distributedRequisitionMaterial);
