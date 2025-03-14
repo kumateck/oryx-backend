@@ -124,6 +124,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId)
     {
         var requisition = await context.Requisitions
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(r => r.ProductionSchedule)
             .Include(r => r.Product)
