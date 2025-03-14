@@ -24,6 +24,7 @@ public class CreateFinalPacking
     public decimal RetainedSamples { get; set; }
     public decimal StabilitySamples { get; set; }
     public decimal TotalNumberOfBottles { get; set; }
+    public decimal YieldTotalQuantityPacked { get; set; }
     public decimal TotalGainOrLoss { get; set; }
 }
 
@@ -63,6 +64,7 @@ public class FinalPacking : BaseEntity
     public decimal RetainedSamples { get; set; }
     public decimal StabilitySamples { get; set; }
     public decimal TotalNumberOfBottles { get; set; }
+    public decimal YieldTotalQuantityPacked { get; set; }
     public decimal TotalGainOrLoss { get; set; }
 }
 
@@ -102,6 +104,7 @@ public class FinalPackingDto : BaseDto
     public decimal RetainedSamples { get; set; }
     public decimal StabilitySamples { get; set; }
     public decimal TotalNumberOfBottles { get; set; }
+    public decimal YieldTotalQuantityPacked { get; set; }
     public decimal TotalGainOrLoss { get; set; }
 }
 
