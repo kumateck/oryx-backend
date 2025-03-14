@@ -904,9 +904,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("User.Warehouse", "No finished goods warehouse is associated with current user");
         
         var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
+        transferNote.FromWarehouseId = productionWarehouse.Id;
+        transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
         context.FinishedGoodsTransferNotes.Add(transferNote);
 
-        var movement = new FinishedProductBatchMovement()
+        var movement = new FinishedProductBatchMovement
         {
             BatchId = bmr.ProductId,
             FromWarehouseId = productionWarehouse.Id,

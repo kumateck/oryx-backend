@@ -29,8 +29,6 @@ public class CreateSrRequest
 public class CreateFinishedGoodsTransferNoteRequest
 {
     public Guid BatchManufacturingRecordId { get; set; }
-    public Guid? FromWarehouseId { get; set; }
-    public Guid? ToWarehouseId { get; set; }
     public decimal QuantityPerPack { get; set; }
     public Guid? PackageStyleId { get; set; }
     public decimal TotalQuantity { get; set; }
