@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Requisitions;
 using APP.Utils;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions.Request;
 
@@ -48,11 +49,11 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null)
     {
-        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, null);
+        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, null, null);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Retrieves a paginated list of requisitions.
     /// </summary>
@@ -61,17 +62,18 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="status">Filter by status of the requisition.</param>
     /// <param name="type">Filter between stock and purchase requisitions. (Stock = 0, Purchase =  1)</param>
+    /// <param name="kind"></param>
     /// <returns>Returns a paginated list of requisitions.</returns>
     [HttpGet("department")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
     public async Task<IResult> GetRequisitionsForDepartment([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
-        [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null)
+        [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null, [FromQuery] MaterialKind? kind = null)
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (departmentId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, Guid.Parse(departmentId));
+        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, Guid.Parse(departmentId), kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
