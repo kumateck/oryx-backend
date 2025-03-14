@@ -498,7 +498,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 Status = pa.Status,
                 StartedAt = pa.StartedAt,
                 CompletedAt = pa.CompletedAt,
-                BatchNumber = pa.ProductionSchedule.Products.First(p => p.Id == pa.ProductId).BatchNumber,
+                BatchNumber = pa.ProductionSchedule.Products.FirstOrDefault(p => p.ProductId == pa.ProductId)?.BatchNumber,
                 CurrentStep = mapper.Map<ProductionActivityStepDto>(
                     pa.Steps
                         .OrderBy(s => s.Order)
