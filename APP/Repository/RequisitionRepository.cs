@@ -463,10 +463,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 switch (materialKind.Value)
                 {
                     case MaterialKind.Raw:
-                        query = query.Where(r => !r.Code.EndsWith("-raw"));
+                        query = query.Where(r => r.Code.EndsWith("-raw"));
                         break;
                     case MaterialKind.Package:
-                        query = query.Where(r => !r.Code.EndsWith("-package"));
+                        query = query.Where(r => r.Code.EndsWith("-package"));
                         break;
                 }
             }
