@@ -425,7 +425,14 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     // Get paginated list of Stock Requisitions
-    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize, string searchQuery, RequestStatus? status, RequisitionType? requisitionType, Guid? departmentId)
+    public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(
+        int page, 
+        int pageSize, 
+        string searchQuery, 
+        RequestStatus? status, 
+        RequisitionType? requisitionType, 
+        Guid? departmentId,
+        MaterialKind? materialKind) 
     {
         var query = context.Requisitions
             .AsSplitQuery()
@@ -440,7 +447,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             query = query.Where(q => q.DepartmentId == departmentId);
         }
-        
+    
         if (status.HasValue)
         {
             query = query.Where(r => r.Status == status);
@@ -449,6 +456,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (requisitionType.HasValue)
         {
             query = query.Where(r => r.RequisitionType == requisitionType);
+
+            // Apply filtering based on materialKind when requisitionType is Stock
+            if (requisitionType == RequisitionType.Stock && materialKind.HasValue)
+            {
+                switch (materialKind.Value)
+                {
+                    case MaterialKind.Raw:
+                        query = query.Where(r => !r.Code.EndsWith("-raw"));
+                        break;
+                    case MaterialKind.Package:
+                        query = query.Where(r => !r.Code.EndsWith("-package"));
+                        break;
+                }
+            }
         }
 
         if (!string.IsNullOrEmpty(searchQuery))
