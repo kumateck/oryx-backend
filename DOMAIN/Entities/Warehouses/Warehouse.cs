@@ -3,6 +3,8 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 
@@ -27,6 +29,7 @@ public class WarehouseArrivalLocation:BaseEntity
     [StringLength(255)] public string FloorName { get; set; }
     [StringLength(1000)] public string Description { get; set; }
     public List<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
+    public List<DistributedFinishedProduct> DistributedFinishedProducts { get; set; }
 }
 
 public class DistributedRequisitionMaterial : BaseEntity
@@ -50,6 +53,24 @@ public class DistributedRequisitionMaterial : BaseEntity
     public DistributedRequisitionMaterialStatus Status { get; set; }
 }
 
+public class DistributedFinishedProduct : BaseEntity
+{
+    public Guid? WarehouseArrivalLocationId { get; set; }
+    public WarehouseArrivalLocation WarehouseArrivalLocation { get; set; }
+    public Guid? ProductId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
+    public Guid? TransferNoteId { get; set; }
+    public FinishedGoodsTransferNote TransferNote { get; set; }
+    public Product Product { get; set; }
+    public Guid? UomId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
+    public decimal Quantity { get; set; }
+    public DateTime? DistributedAt { get; set; }
+    public DateTime? ArrivedAt { get; set; }
+    public DistributedFinishedProductStatus Status { get; set; }
+}
+
 public class MaterialItemDistribution
 {
     public Guid Id { get; set; }
@@ -66,6 +87,12 @@ public enum DistributedRequisitionMaterialStatus
     Arrived,
     Checked,
     GrnGenerated
+}
+
+public enum DistributedFinishedProductStatus
+{
+    Distributed,
+    Arrived
 }
 
 public class WarehouseLocation : BaseEntity

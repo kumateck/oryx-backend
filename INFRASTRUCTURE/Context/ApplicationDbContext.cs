@@ -73,6 +73,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialBatchEvent> MaterialBatchEvents { get; set; }
     public DbSet<MassMaterialBatchMovement> MassMaterialBatchMovements { get; set; }
     public DbSet<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
+    public DbSet<DistributedFinishedProduct> DistributedFinishedProducts { get; set; }
     public DbSet<MaterialItemDistribution> MaterialItemDistributions { get; set; }
     public DbSet<MaterialBatchReservedQuantity> MaterialBatchReservedQuantities { get; set; }
     

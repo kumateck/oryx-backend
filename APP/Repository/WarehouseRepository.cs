@@ -543,6 +543,26 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         return Result.Success(arrivalLocationDto);
     }
     
+    public async Task<Result<WarehouseArrivalLocationDto>> GetFinishedArrivalLocationDetails(Guid warehouseId)
+    {
+        var warehouse = await context.Warehouses
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedFinishedProducts)
+            .ThenInclude(drm => drm.Product)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedFinishedProducts)
+            .ThenInclude(drm => drm.BatchManufacturingRecord)
+            .FirstOrDefaultAsync(w => w.Id == warehouseId);
+
+        if (warehouse == null || warehouse.ArrivalLocation == null)
+        {
+            return Error.NotFound("Warehouse.ArrivalLocationNotFound", "Arrival location not found for the specified warehouse.");
+        }
+
+        var arrivalLocationDto = mapper.Map<WarehouseArrivalLocationDto>(warehouse.ArrivalLocation);
+        return Result.Success(arrivalLocationDto);
+    }
+    
     public async Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(Guid warehouseId,int page, int pageSize, string searchQuery)
     {
         try

@@ -347,6 +347,7 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationShelf,MaterialWarehouseLocationShelfDto>();
         CreateMap<WarehouseArrivalLocation,WarehouseArrivalLocationDto>();
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>();
+        CreateMap<DistributedFinishedProduct, DistributedFinishedProductDto>();
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<MaterialItemDistribution, MaterialItemDistributionDto>();

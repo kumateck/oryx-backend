@@ -2,6 +2,8 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Distribution;
+using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using SHARED;
@@ -52,6 +54,7 @@ public class WarehouseArrivalLocationDto
     public string FloorName { get; set; }
     public string Description { get; set; }
     public List<DistributedRequisitionMaterialDto> DistributedRequisitionMaterials { get; set; } = [];
+    public List<DistributedFinishedProductDto> DistributedFinishedProducts { get; set; }
 }
 
 public class DistributedRequisitionMaterialDto
@@ -68,6 +71,19 @@ public class DistributedRequisitionMaterialDto
     public DateTime? GrnGeneratedAt { get; set; }
     public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; } = [];
     public DistributedRequisitionMaterialStatus Status { get; set; }
+}
+
+public class DistributedFinishedProductDto
+{
+    public Guid Id { get; set; }
+    public ProductDto Product { get; set; }
+    public UnitOfMeasureDto Uom { get; set; }
+    public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
+    public FinishedGoodsTransferNoteDto TransferNote { get; set; }
+    public decimal Quantity { get; set; }
+    public DateTime? ArrivedAt { get; set; }
+    public DateTime? DistributedAt { get; set; }
+    public DistributedFinishedProductStatus Status { get; set; }
 }
 
 public class WarehouseLocationShelfDto

@@ -422,6 +422,19 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Retrieves the arrival location details of a specific warehouse by its ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/finished-arrival-location")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseArrivalLocationDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedArrivalLocationDetails(Guid warehouseId)
+    {
+        var result = await repository.GetFinishedArrivalLocationDetails(warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     /*/// <summary>
     /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
     /// </summary>
