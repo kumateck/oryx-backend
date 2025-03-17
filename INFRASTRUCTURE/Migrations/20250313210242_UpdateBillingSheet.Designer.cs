@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250313210242_UpdateBillingSheet")]
+    partial class UpdateBillingSheet
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1484,9 +1487,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("PackageStyleId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductionActivityStepId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("QarNumber")
                         .HasColumnType("text");
 
@@ -1518,8 +1518,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("PackageStyleId");
-
-                    b.HasIndex("ProductionActivityStepId");
 
                     b.HasIndex("ToWarehouseId");
 
@@ -2541,9 +2539,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("YieldTotalQuantityPacked")
-                        .HasColumnType("numeric");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
@@ -2748,9 +2743,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("BatchSize")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
@@ -2759,6 +2751,12 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
+
+                    b.Property<DateTime>("ScheduledEndTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ScheduledStartTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -6925,10 +6923,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("PackageStyleId");
 
-                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
-                        .WithMany()
-                        .HasForeignKey("ProductionActivityStepId");
-
                     b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "ToWarehouse")
                         .WithMany()
                         .HasForeignKey("ToWarehouseId");
@@ -6948,8 +6942,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("PackageStyle");
-
-                    b.Navigation("ProductionActivityStep");
 
                     b.Navigation("ToWarehouse");
 
@@ -8439,7 +8431,7 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Shipments.ShipmentInvoice", "Invoice")
+                    b.HasOne("DOMAIN.Entities.PurchaseOrders.PurchaseOrderInvoice", "Invoice")
                         .WithMany()
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)

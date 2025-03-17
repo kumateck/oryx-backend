@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.Shipments;
 using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
@@ -13,10 +14,10 @@ public class BillingSheet : BaseEntity
     public Guid SupplierId { get; set; }
     public Supplier Supplier { get; set; }
     public Guid InvoiceId { get; set; }
-    public PurchaseOrderInvoice Invoice { get; set; }
+    public ShipmentInvoice Invoice { get; set; }
     public DateTime ExpectedArrivalDate { get; set; }
     public DateTime FreeTimeExpiryDate { get; set; }
-    public TimeSpan FreeTimeDuration { get; set; }
+    [StringLength(100)] public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
     
     //container information
@@ -33,7 +34,7 @@ public class BillingSheetDto : WithAttachment
     public CollectionItemDto Invoice { get; set; }
     public DateTime ExpectedArrivalDate { get; set; }
     public DateTime FreeTimeExpiryDate { get; set; }
-    public TimeSpan FreeTimeDuration { get; set; }
+    public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
     
     //container information

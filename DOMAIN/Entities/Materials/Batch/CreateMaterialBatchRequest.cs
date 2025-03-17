@@ -14,7 +14,6 @@ public class CreateMaterialBatchRequest
     public decimal QuantityPerContainer { get; set; }
     public Guid? ChecklistId { get; set; }
     public Guid? UoMId { get; set; }               // ID of the unit of measure for the quantity
-    public Guid InitialLocationId { get; set; }  // ID of the location where the batch is first stored (e.g., warehouse)
     public DateTime DateReceived { get; set; }   // Date when the material batch was received
     public DateTime ExpiryDate { get; set; }
     public List<CreateSrRequest> SampleWeights { get; set; }
@@ -30,8 +29,7 @@ public class CreateSrRequest
 public class CreateFinishedGoodsTransferNoteRequest
 {
     public Guid BatchManufacturingRecordId { get; set; }
-    public Guid? FromWarehouseId { get; set; }
-    public Guid? ToWarehouseId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
     public decimal QuantityPerPack { get; set; }
     public Guid? PackageStyleId { get; set; }
     public decimal TotalQuantity { get; set; }

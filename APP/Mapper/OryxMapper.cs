@@ -110,6 +110,7 @@ public class OryxMapper : Profile
         CreateMap<Department, CollectionItemDto>();
         CreateMap<Equipment, CollectionItemDto>();
         CreateMap<PackageStyle, CollectionItemDto>();
+        CreateMap<ShipmentInvoice, CollectionItemDto>();
         
         #endregion
 
@@ -234,6 +235,8 @@ public class OryxMapper : Profile
         CreateMap<MaterialBatch, MaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
         CreateMap<MassMaterialBatchMovement, MassMaterialBatchMovementDto>();
+        CreateMap<MaterialBatchReservedQuantity, MaterialBatchReservedQuantityDto>();
+
         CreateMap<CreateSrRequest, Sr>();
         CreateMap<Sr, SrDto>();
 

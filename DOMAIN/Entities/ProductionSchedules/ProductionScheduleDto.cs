@@ -54,6 +54,7 @@ public class ProductionScheduleProductDto
     public ProductListDto Product { get; set; }
     public decimal Quantity { get; set; }
     public string BatchNumber { get; set; }
+    public BatchSize BatchSize { get; set; }
 }
 
 public enum MaterialRequisitionStatus

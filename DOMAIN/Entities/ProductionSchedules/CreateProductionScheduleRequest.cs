@@ -22,4 +22,5 @@ public class CreateProductionScheduleProduct
 {
     public Guid ProductId { get; set; }
     public decimal Quantity { get; set; }
+    public BatchSize BatchSize { get; set; }
 }

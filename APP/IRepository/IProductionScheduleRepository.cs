@@ -91,4 +91,6 @@ public interface IProductionScheduleRepository
     Task<Result> UpdateFinalPacking(CreateFinalPacking request, Guid finalPackingId);
     Task<Result> DeleteFinalPacking(Guid finalPackingId, Guid userId);
     Task<Result<RequisitionDto>> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId);
+    Task<Result<ProductionScheduleProductDto>> GetProductDetailsInProductionSchedule(
+        Guid productionScheduleId, Guid productId);
 }

@@ -137,7 +137,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Now create initial movements for each batch
         foreach (var batch in batches)
         {
-            var initialLocationId = request.FirstOrDefault(r => r.MaterialId == batch.MaterialId)?.InitialLocationId;
+            var initialLocationId = request.FirstOrDefault(r => r.MaterialId == batch.MaterialId)?.MaterialId;
         
             if (initialLocationId.HasValue)
             {
@@ -1293,9 +1293,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         
         if (materialBatch == null)
             return Error.Failure("Material.Batch", "Material batch not found.");
-        
-        if (materialBatch.Status!=BatchStatus.Frozen)
-            return Error.Failure("Material.Batch", "Cannot consume from an unfrozen batch. Please freeze the batch first.");
 
         materialBatch.ConsumedQuantity += quantity;
         context.MaterialBatches.Update(materialBatch);
