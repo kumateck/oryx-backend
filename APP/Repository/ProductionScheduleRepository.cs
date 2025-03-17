@@ -956,6 +956,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var distributedFinishedProduct = new DistributedFinishedProduct
         {
             ProductId = bmr.ProductId,
+            TransferNoteId = transferNote.Id,
             UomId = bmr.Product.BaseUomId,
             Quantity = request.TotalQuantity,
             BatchManufacturingRecordId = bmr.Id,

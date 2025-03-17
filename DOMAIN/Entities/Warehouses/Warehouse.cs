@@ -60,6 +60,8 @@ public class DistributedFinishedProduct : BaseEntity
     public Guid? ProductId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
+    public Guid? TransferNoteId { get; set; }
+    public FinishedGoodsTransferNote TransferNote { get; set; }
     public Product Product { get; set; }
     public Guid? UomId { get; set; }
     public UnitOfMeasure UoM { get; set; }
