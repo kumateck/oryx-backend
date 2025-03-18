@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Procurement.Suppliers;
 using SHARED;
 
@@ -20,6 +21,8 @@ public class ShipmentInvoiceDto : BaseDto
     public SupplierDto Supplier { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
     public bool IsAttached { get; set; }
+    public decimal TotalCost { get; set; }
+    public CurrencyDto Currency { get; set; }
 }
 
 public class ShipmentInvoiceItemDto : BaseDto
@@ -31,6 +34,8 @@ public class ShipmentInvoiceItemDto : BaseDto
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     public decimal Price { get; set; }
+    public decimal TotalCost { get; set; }
+    public CurrencyDto Currency { get; set; }
     public string Reason { get; set; }
 }
 
