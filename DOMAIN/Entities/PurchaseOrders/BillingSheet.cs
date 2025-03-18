@@ -19,6 +19,7 @@ public class BillingSheet : BaseEntity
     public DateTime FreeTimeExpiryDate { get; set; }
     [StringLength(100)] public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
+    public BillingSheetStatus Status { get; set; }
     
     //container information
     [StringLength(100)] public string ContainerNumber { get; set; }
@@ -26,13 +27,20 @@ public class BillingSheet : BaseEntity
     [StringLength(1000)] public string PackageDescription { get; set; }
 }
 
+public enum BillingSheetStatus
+{
+    Pending,
+    Paid
+}
+
 public class BillingSheetDto : WithAttachment
 {
     public string Code { get; set; }
     public string BillOfLading { get; set; }
-    public CollectionItemDto Supplier { get; set; }
-    public CollectionItemDto Invoice { get; set; }
+    public SupplierDto Supplier { get; set; }
+    public ShipmentInvoiceDto Invoice { get; set; }
     public DateTime ExpectedArrivalDate { get; set; }
+    public BillingSheetStatus Status { get; set; }
     public DateTime FreeTimeExpiryDate { get; set; }
     public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
