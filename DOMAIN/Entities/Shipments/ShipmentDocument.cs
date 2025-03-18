@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -31,6 +32,9 @@ public class ShipmentInvoice : BaseEntity
     public Guid? SupplierId { get; set; }
     public Supplier Supplier { get; set; }
     public List<ShipmentInvoiceItem> Items { get; set; } = [];
+    public decimal TotalCost { get; set; }
+    public Guid? CurrencyId { get; set; }
+    public Currency Currency { get; set; }
 }
 
 public class ShipmentInvoiceItem : BaseEntity
@@ -50,6 +54,9 @@ public class ShipmentInvoiceItem : BaseEntity
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
     public bool Distributed { get; set; } = false;
+    public decimal TotalCost { get; set; }
+    public Guid? CurrencyId { get; set; }
+    public Currency Currency { get; set; }
 }
 
 public class DistributionShipmentInvoiceItemDto 

@@ -14,6 +14,7 @@ public class CreateShipmentInvoice
     public DateTime? ShipmentArrivedAt { get; set; }
     public Guid? SupplierId { get; set; }
     public List<CreateShipmentInvoiceItem> Items { get; set; } = [];
+    public decimal TotalCost { get; set; }
 }
 
 public class CreateShipmentInvoiceItem 
@@ -25,6 +26,7 @@ public class CreateShipmentInvoiceItem
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
+    public decimal TotalCost { get; set; }
 }
 
 

@@ -494,6 +494,14 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var billingSheet = await context.BillingSheets
             .Include(bs => bs.Supplier)
             .Include(bs => bs.Invoice)
+            .ThenInclude(i=>i.Items)
+            .ThenInclude(ii=>ii.Material)
+            .Include(bs => bs.Invoice)
+            .ThenInclude(i=>i.Items)
+            .ThenInclude(ii=>ii.Manufacturer)
+            .Include(bs => bs.Invoice)
+            .ThenInclude(i=>i.Items)
+            .ThenInclude(ii=>ii.PurchaseOrder)
             .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
 
         return billingSheet is null
