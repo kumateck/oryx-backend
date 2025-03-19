@@ -12,7 +12,7 @@ public class BillingSheet : BaseEntity
 {
     [StringLength(1000)] public string Code { get; set; }
     [StringLength(1000)] public string BillOfLading { get; set; }
-    public Guid SupplierId { get; set; }
+    public Guid? SupplierId { get; set; }
     public Supplier Supplier { get; set; }
     public Guid InvoiceId { get; set; }
     public ShipmentInvoice Invoice { get; set; }
@@ -25,6 +25,8 @@ public class BillingSheet : BaseEntity
     //container information
     [StringLength(100)] public string ContainerNumber { get; set; }
     [StringLength(1000)] public string NumberOfPackages { get; set; }
+    public Guid? ContainerPackageStyleId { get; set; }
+    public PackageStyle ContainerPackageStyle { get; set; }
     [StringLength(1000)] public string PackageDescription { get; set; }
     public List<Charge> Charges { get; set; } = [];
 }
@@ -52,4 +54,5 @@ public class BillingSheetDto : WithAttachment
     public string ContainerNumber { get; set; }
     public string NumberOfPackages { get; set; }
     public string PackageDescription { get; set; }
+    public PackageStyleDto ContainerPackageStyle { get; set; }
 }
