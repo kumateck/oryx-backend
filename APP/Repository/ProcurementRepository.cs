@@ -565,12 +565,40 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         var shipmentDocument = mapper.Map<ShipmentDocument>(request);
         shipmentDocument.Type = DocType.Shipment;
+        shipmentDocument.Status = ShipmentStatus.New;
         shipmentDocument.CreatedById = userId;
         await context.ShipmentDocuments.AddAsync(shipmentDocument);
         await context.SaveChangesAsync();
 
         return shipmentDocument.Id;
     }
+     
+     public async Task<Result> UpdateShipmentStatus(Guid shipmentId, ShipmentStatus status, Guid userId)
+     {
+         var shipmentDocument = await context.ShipmentDocuments.FirstOrDefaultAsync(sd => sd.Id == shipmentId);
+         if (shipmentDocument is null)
+         {
+             return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
+         }
+     
+         shipmentDocument.Status = status;
+         shipmentDocument.LastUpdatedById = userId;
+         shipmentDocument.UpdatedAt = DateTime.UtcNow;
+     
+         switch (status)
+         {
+             case ShipmentStatus.Cleared:
+                 shipmentDocument.ClearedAt = DateTime.UtcNow;
+                 break;
+             case ShipmentStatus.InTransit:
+                 shipmentDocument.TransitStartedAt = DateTime.UtcNow;
+                 break;
+         }
+     
+         context.ShipmentDocuments.Update(shipmentDocument);
+         await context.SaveChangesAsync();
+         return Result.Success();
+     }
 
     public async Task<Result<ShipmentDocumentDto>> GetShipmentDocumentV0(Guid shipmentDocumentId)
     {
@@ -1108,6 +1136,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         }
 
         shipmentDocument.ArrivedAt = DateTime.UtcNow;
+        shipmentDocument.Status = ShipmentStatus.Arrived;
         shipmentDocument.LastUpdatedById = userId;
 
         context.ShipmentDocuments.Update(shipmentDocument);

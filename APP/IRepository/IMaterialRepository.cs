@@ -63,4 +63,6 @@ public interface IMaterialRepository
     Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity);
     Task<List<MaterialBatchReservedQuantity>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, 
         Guid warehouseId, Guid productionScheduleId, Guid productId);
+
+    Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
 }

@@ -6,7 +6,7 @@ public class CreateBillingSheetRequest
 {
     public string Code { get; set; }
     public string BillOfLading { get; set; }
-    public Guid SupplierId { get; set; }
+    public Guid? SupplierId { get; set; }
     public Guid InvoiceId { get; set; }
     public DateTime ExpectedArrivalDate { get; set; }
     public DateTime FreeTimeExpiryDate { get; set; }
@@ -18,5 +18,5 @@ public class CreateBillingSheetRequest
     public string ContainerNumber { get; set; }
     public string NumberOfPackages { get; set; } 
     public string PackageDescription { get; set; }
-    public Guid ContainerPackageStyleId { get; set; }
+    public Guid? ContainerPackageStyleId { get; set; }
 }
