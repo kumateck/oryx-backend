@@ -18,4 +18,5 @@ public class CreateBillingSheetRequest
     public string ContainerNumber { get; set; }
     public string NumberOfPackages { get; set; } 
     public string PackageDescription { get; set; }
+    public Guid ContainerPackageStyleId { get; set; }
 }
