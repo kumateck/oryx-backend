@@ -403,6 +403,9 @@ public class OryxMapper : Profile
         CreateMap<BatchItem, BatchItemDto>();
         CreateMap<PurchaseOrderCharge, PurchaseOrderChargeDto>();
 
+        CreateMap<Charge,ChargeDto>();
+        CreateMap<CreateChargeRequest, Charge>();
+
         CreateMap<CreateBillingSheetRequest, BillingSheet>();
         CreateMap<BillingSheet, BillingSheetDto>();
 

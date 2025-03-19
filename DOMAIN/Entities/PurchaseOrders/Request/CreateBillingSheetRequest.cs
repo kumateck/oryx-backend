@@ -1,3 +1,5 @@
+using DOMAIN.Entities.Charges;
+
 namespace DOMAIN.Entities.PurchaseOrders.Request;
 
 public class CreateBillingSheetRequest
@@ -10,6 +12,7 @@ public class CreateBillingSheetRequest
     public DateTime FreeTimeExpiryDate { get; set; }
     public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
+    public List<CreateChargeRequest> Charges { get; set; } = [];
     
     //container information
     public string ContainerNumber { get; set; }
