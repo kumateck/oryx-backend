@@ -267,6 +267,21 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 };
 
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
+                
+                var binCardEvent = new BinCardInformation
+                {
+                    MaterialBatchId = materialBatch.Id,
+                    Description = appropriateWarehouse.Name,
+                    WayBill = "N/A",
+                    ArNumber = "N/A",
+                    QuantityReceived = 0,
+                    QuantityIssued = batch.Quantity,
+                    BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouseByBatch(materialBatch.Id, appropriateWarehouse.Id)).Value - batch.Quantity,
+                    UoMId = materialBatch.UoMId,
+                    CreatedAt = DateTime.UtcNow
+                };
+        
+                await context.BinCardInformation.AddAsync(binCardEvent);
             }
         }
 

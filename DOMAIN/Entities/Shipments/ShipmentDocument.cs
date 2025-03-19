@@ -16,8 +16,19 @@ public class ShipmentDocument : BaseEntity
     public Guid? ShipmentInvoiceId { get; set; }
     public ShipmentInvoice ShipmentInvoice { get; set; }
     public DateTime? ArrivedAt { get; set; }
+    public DateTime? ClearedAt { get; set; }
+    public DateTime? TransitStartedAt { get; set; }
     public DocType Type { get; set; } 
     public DateTime? CompletedDistributionAt { get; set; }
+    public ShipmentStatus Status { get; set; }
+}
+
+public enum ShipmentStatus
+{
+    New,
+    InTransit,
+    Cleared,
+    Arrived
 }
 
 public enum DocType

@@ -758,6 +758,20 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
+    [HttpPut("shipments/{shipmentId}/status")]
+    [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateShipmentStatus(Guid shipmentId, [FromBody] ShipmentStatus status)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+    
+        var result = await repository.UpdateShipmentStatus(shipmentId, status, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
     /// <summary>
     /// Retrieves all shipments that have arrived.
     /// </summary>
