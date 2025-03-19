@@ -405,8 +405,9 @@ public class OryxMapper : Profile
 
         CreateMap<Charge,ChargeDto>();
         CreateMap<CreateChargeRequest, Charge>();
-
-        CreateMap<CreateBillingSheetRequest, BillingSheet>();
+        CreateMap<CreateBillingSheetRequest, BillingSheet>()
+            .ForMember(dest => dest.Charges, opt => opt.MapFrom<AssignChargesResolver>());
+        
         CreateMap<BillingSheet, BillingSheetDto>();
 
         CreateMap<CreatePurchaseOrderRequest, RevisedPurchaseOrder>();

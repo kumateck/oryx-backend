@@ -29,3 +29,11 @@ public class CreateChargeRequest
     public Guid? CurrencyId { get; set; }
     public decimal Amount { get; set; }
 }
+
+public class AssignChargeRequest
+{
+    public Guid? Id { get; set; }
+    public string Description { get; set; }
+    public Guid? CurrencyId { get; set; }
+    public decimal Amount { get; set; }
+}
