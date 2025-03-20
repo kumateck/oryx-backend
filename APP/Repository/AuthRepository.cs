@@ -71,7 +71,7 @@ public class AuthRepository(IEmailService emailService, IConfiguration configura
             return UserErrors.NotFoundByEmail(request.Email);
         }
 
-        var partialUrl = configuration.GetValue<string>("ClientBaseUrl");
+        var partialUrl = Environment.GetEnvironmentVariable("CLIENT_BASE_URL");
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
 
         var key = Guid.NewGuid().ToString();
@@ -86,7 +86,7 @@ public class AuthRepository(IEmailService emailService, IConfiguration configura
 
         await context.SaveChangesAsync();
 
-        var url = $"https://{partialUrl}/reset-password?key={key}";
+        var url = $"{partialUrl}/reset-password?key={key}";
 
         emailService.SendMail(user.Email, "Password Reset", url,[]);
         return Result.Success();
@@ -127,7 +127,7 @@ public class AuthRepository(IEmailService emailService, IConfiguration configura
 
     public async Task<Result<PasswordChangeResponse>> ResetPassword(ChangePasswordRequest model, Guid userId)
     {
-        var user = await context.Users.SingleOrDefaultAsync(item => item.Id == userId);
+        var user = await context.Users.FirstOrDefaultAsync(item => item.Id == userId);
 
         if (user == null) return UserErrors.NotFound(userId);
 
