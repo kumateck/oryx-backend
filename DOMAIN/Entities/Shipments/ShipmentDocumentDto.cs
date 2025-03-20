@@ -12,7 +12,10 @@ public class ShipmentDocumentDto : WithAttachment
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public List<ShipmentDiscrepancyDto> Discrepancies { get; set; } = [];
     public DateTime? ArrivedAt { get; set; }
+    public DateTime? ClearedAt { get; set; }
+    public DateTime? TransitStartedAt { get; set; }
     public DocType Type { get; set; } 
+    public ShipmentStatus Status { get; set; }
 }
 
 public class ShipmentInvoiceDto : BaseDto
