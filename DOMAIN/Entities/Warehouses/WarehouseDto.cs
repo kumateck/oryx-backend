@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Distribution;
@@ -71,6 +72,7 @@ public class DistributedRequisitionMaterialDto
     public DateTime? GrnGeneratedAt { get; set; }
     public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; } = [];
     public DistributedRequisitionMaterialStatus Status { get; set; }
+    public List<ChecklistDto> Checklists { get; set; }
 }
 
 public class DistributedFinishedProductDto

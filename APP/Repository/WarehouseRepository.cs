@@ -521,10 +521,6 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(drm => drm.ShipmentInvoice)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
-            .Include(w => w.ArrivalLocation)
-            .ThenInclude(al => al.DistributedRequisitionMaterials)
-            .Include(w => w.ArrivalLocation)
-            .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(drm => drm.Material)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
@@ -532,6 +528,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(sr=>sr.RequisitionItem)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(sr=>sr.CheckLists)
+            .ThenInclude(cl=>cl.MaterialBatches)
             .FirstOrDefaultAsync(w => w.Id == warehouseId);
 
         if (warehouse == null || warehouse.ArrivalLocation == null)

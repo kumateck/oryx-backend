@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -51,6 +52,7 @@ public class DistributedRequisitionMaterial : BaseEntity
     public DateTime? CheckedAt { get; set; }
     public DateTime? GrnGeneratedAt { get; set; }
     public DistributedRequisitionMaterialStatus Status { get; set; }
+    public List<Checklist> CheckLists { get; set; }
 }
 
 public class DistributedFinishedProduct : BaseEntity
