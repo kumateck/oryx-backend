@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250319024253_Updated_BillingSheet_Charges")]
+    partial class Updated_BillingSheet_Charges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3952,9 +3955,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<Guid?>("ContainerPackageStyleId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3997,15 +3997,13 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("SupplierId")
+                    b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ContainerPackageStyleId");
 
                     b.HasIndex("CreatedById");
 
@@ -5215,9 +5213,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("ArrivedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("ClearedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Code")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
@@ -5242,12 +5237,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("ShipmentInvoiceId")
                         .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("TransitStartedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -8630,10 +8619,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheet", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Base.PackageStyle", "ContainerPackageStyle")
-                        .WithMany()
-                        .HasForeignKey("ContainerPackageStyleId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -8654,9 +8639,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
                         .WithMany()
-                        .HasForeignKey("SupplierId");
-
-                    b.Navigation("ContainerPackageStyle");
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("CreatedBy");
 

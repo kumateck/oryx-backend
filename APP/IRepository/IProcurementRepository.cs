@@ -90,6 +90,7 @@ public interface IProcurementRepository
         Guid supplierId);
     Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds);
     Task<Result> MarkShipmentAsArrived(Guid shipmentDocumentId, Guid userId);
+    Task<Result> UpdateShipmentStatus(Guid shipmentId, ShipmentStatus status, Guid userId);
 
     Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize,
         string searchQuery);

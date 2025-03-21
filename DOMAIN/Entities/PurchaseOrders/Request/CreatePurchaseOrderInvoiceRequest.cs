@@ -5,7 +5,7 @@ public class CreatePurchaseOrderInvoiceRequest
     public string Code { get; set; }
     public Guid PurchaseOrderId { get; set; }
     public List<CreateBatchItemRequest> BatchItems { get; set; } = [];
-    public List<CreateChargeRequest> Charges { get; set; } = [];
+    public List<CreatePurchaseOrderChargeRequest> Charges { get; set; } = [];
 }
 
 public class CreateBatchItemRequest 
@@ -15,7 +15,7 @@ public class CreateBatchItemRequest
     public int Quantity { get; set; }
 }
 
-public class CreateChargeRequest 
+public class CreatePurchaseOrderChargeRequest 
 {
     public string Description { get; set; }
     public decimal Amount { get; set; }

@@ -12,7 +12,7 @@ public class PurchaseOrderInvoice : BaseEntity
     public Guid PurchaseOrderId { get; set; }
     public PurchaseOrder PurchaseOrder { get; set; }
     public List<BatchItem> BatchItems { get; set; } = [];
-    public List<Charge> Charges { get; set; } = [];
+    public List<PurchaseOrderCharge> Charges { get; set; } = [];
 }
 
 public class BatchItem : BaseEntity
@@ -25,7 +25,7 @@ public class BatchItem : BaseEntity
     public int Quantity { get; set; }
 }
 
-public class Charge : BaseEntity
+public class PurchaseOrderCharge : BaseEntity
 {
     public Guid PurchaseOrderInvoiceId { get; set; }
     public PurchaseOrderInvoice PurchaseOrderInvoice { get; set; }
@@ -40,7 +40,7 @@ public class PurchaseOrderInvoiceDto : BaseDto
     public string Code { get; set; }
     public CollectionItemDto PurchaseOrder { get; set; }
     public List<BatchItemDto> BatchItems { get; set; } = [];
-    public List<ChargeDto> Charges { get; set; } = [];
+    public List<PurchaseOrderChargeDto> Charges { get; set; } = [];
 }
 
 public class BatchItemDto
@@ -51,7 +51,7 @@ public class BatchItemDto
     public int Quantity { get; set; }
 }
 
-public class ChargeDto
+public class PurchaseOrderChargeDto
 {
     public PurchaseOrderInvoiceDto PurchaseOrderInvoice { get; set; }
     public string Description { get; set; }

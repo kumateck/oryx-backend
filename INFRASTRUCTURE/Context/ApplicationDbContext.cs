@@ -5,6 +5,7 @@ using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.BinCards;
+using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
@@ -73,6 +74,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialBatchEvent> MaterialBatchEvents { get; set; }
     public DbSet<MassMaterialBatchMovement> MassMaterialBatchMovements { get; set; }
     public DbSet<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
+    public DbSet<DistributedFinishedProduct> DistributedFinishedProducts { get; set; }
     public DbSet<MaterialItemDistribution> MaterialItemDistributions { get; set; }
     public DbSet<MaterialBatchReservedQuantity> MaterialBatchReservedQuantities { get; set; }
     
@@ -297,6 +299,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Equipment> Equipments { get; set; }
 
     #endregion
+
+    #region Charge
+
+    public DbSet<Charge> Charges { get; set; }
+
+    #endregion
     
 
     // #region TenantFilter
@@ -466,7 +474,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<PurchaseOrderInvoice>().Navigation(p => p.BatchItems).AutoInclude();
         modelBuilder.Entity<PurchaseOrderInvoice>().Navigation(p => p.Charges).AutoInclude();
         modelBuilder.Entity<BatchItem>().Navigation(b => b.Manufacturer).AutoInclude();
-        modelBuilder.Entity<Charge>().Navigation(b => b.Currency).AutoInclude();
+        modelBuilder.Entity<PurchaseOrderCharge>().Navigation(b => b.Currency).AutoInclude();
 
         modelBuilder.Entity<BillingSheet>().Navigation(b => b.Supplier).AutoInclude();
         modelBuilder.Entity<ShipmentInvoice>().Navigation(b => b.Supplier).AutoInclude();
@@ -675,7 +683,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<PurchaseOrderInvoice>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderInvoice>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
         modelBuilder.Entity<BatchItem>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
-        modelBuilder.Entity<Charge>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
+        modelBuilder.Entity<PurchaseOrderCharge>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
         modelBuilder.Entity<BillingSheet>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<RevisedPurchaseOrder>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
         modelBuilder.Entity<RevisedPurchaseOrderItem>().HasQueryFilter(a => !a.RevisedPurchaseOrder.DeletedAt.HasValue);

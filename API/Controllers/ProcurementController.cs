@@ -757,6 +757,26 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.MarkShipmentAsArrived(shipmentDocumentId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Updates the status of a specific shipment document by its ID.
+    /// </summary>
+    /// <param name="shipmentId">The ID of the shipment document.</param>
+    /// <param name="status"></param>The status of the shipment.
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("shipments/{shipmentId}/status")]
+    [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateShipmentStatus(Guid shipmentId, [FromBody] ShipmentStatus status)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+    
+        var result = await repository.UpdateShipmentStatus(shipmentId, status, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
     
     /// <summary>
     /// Retrieves all shipments that have arrived.

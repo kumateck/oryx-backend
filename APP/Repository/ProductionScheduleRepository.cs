@@ -880,7 +880,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (bmr is null)
             return RequisitionErrors.NotFound(request.BatchManufacturingRecordId);
         
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await context.Users.Include(user => user.Department).ThenInclude(department => department.Warehouses)
+            .ThenInclude(warehouse => warehouse.ArrivalLocation).FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
             return UserErrors.NotFound(userId);
         
@@ -938,6 +939,33 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         };
         
         await context.ProductBinCardInformation.AddAsync(binCardEvent);
+        
+        if (finishedGoodsWarehouse.ArrivalLocation == null)
+        {
+            finishedGoodsWarehouse.ArrivalLocation = new WarehouseArrivalLocation
+            {
+                WarehouseId = finishedGoodsWarehouse.Id,
+                Name = "Default Arrival Location",
+                FloorName = "Ground Floor",
+                Description = "Automatically created arrival location"
+            };
+            await context.WarehouseArrivalLocations.AddAsync(finishedGoodsWarehouse.ArrivalLocation);
+        }
+        
+        // Create distributed product record
+        var distributedFinishedProduct = new DistributedFinishedProduct
+        {
+            ProductId = bmr.ProductId,
+            TransferNoteId = transferNote.Id,
+            UomId = bmr.Product.BaseUomId,
+            Quantity = request.TotalQuantity,
+            BatchManufacturingRecordId = bmr.Id,
+            Status = DistributedFinishedProductStatus.Distributed,
+            DistributedAt = DateTime.UtcNow,
+            WarehouseArrivalLocationId = finishedGoodsWarehouse.ArrivalLocation.Id
+        };
+        
+        await context.DistributedFinishedProducts.AddAsync(distributedFinishedProduct);
 
         await context.SaveChangesAsync();
 

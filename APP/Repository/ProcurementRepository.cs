@@ -494,6 +494,15 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var billingSheet = await context.BillingSheets
             .Include(bs => bs.Supplier)
             .Include(bs => bs.Invoice)
+            .ThenInclude(i=>i.Items)
+            .ThenInclude(ii=>ii.Material)
+            .Include(bs => bs.Invoice)
+            .ThenInclude(i=>i.Items)
+            .ThenInclude(ii=>ii.Manufacturer)
+            .Include(bs => bs.Invoice)
+            .ThenInclude(i=>i.Items)
+            .ThenInclude(ii=>ii.PurchaseOrder)
+            .Include(bs=>bs.Charges)
             .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
 
         return billingSheet is null
@@ -557,12 +566,40 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         var shipmentDocument = mapper.Map<ShipmentDocument>(request);
         shipmentDocument.Type = DocType.Shipment;
+        shipmentDocument.Status = ShipmentStatus.New;
         shipmentDocument.CreatedById = userId;
         await context.ShipmentDocuments.AddAsync(shipmentDocument);
         await context.SaveChangesAsync();
 
         return shipmentDocument.Id;
     }
+     
+     public async Task<Result> UpdateShipmentStatus(Guid shipmentId, ShipmentStatus status, Guid userId)
+     {
+         var shipmentDocument = await context.ShipmentDocuments.FirstOrDefaultAsync(sd => sd.Id == shipmentId);
+         if (shipmentDocument is null)
+         {
+             return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
+         }
+     
+         shipmentDocument.Status = status;
+         shipmentDocument.LastUpdatedById = userId;
+         shipmentDocument.UpdatedAt = DateTime.UtcNow;
+     
+         switch (status)
+         {
+             case ShipmentStatus.Cleared:
+                 shipmentDocument.ClearedAt = DateTime.UtcNow;
+                 break;
+             case ShipmentStatus.InTransit:
+                 shipmentDocument.TransitStartedAt = DateTime.UtcNow;
+                 break;
+         }
+     
+         context.ShipmentDocuments.Update(shipmentDocument);
+         await context.SaveChangesAsync();
+         return Result.Success();
+     }
 
     public async Task<Result<ShipmentDocumentDto>> GetShipmentDocumentV0(Guid shipmentDocumentId)
     {
@@ -1100,6 +1137,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         }
 
         shipmentDocument.ArrivedAt = DateTime.UtcNow;
+        shipmentDocument.Status = ShipmentStatus.Arrived;
         shipmentDocument.LastUpdatedById = userId;
 
         context.ShipmentDocuments.Update(shipmentDocument);
@@ -1274,17 +1312,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             
             if (departmentWarehouse != null)
             {
-                var warehouse = departmentWarehouse;
-                if (warehouse.ArrivalLocation == null)
+                if (departmentWarehouse.ArrivalLocation == null)
                 {
-                    warehouse.ArrivalLocation = new WarehouseArrivalLocation
+                    departmentWarehouse.ArrivalLocation = new WarehouseArrivalLocation
                     {
-                        WarehouseId = warehouse.Id,
+                        WarehouseId = departmentWarehouse.Id,
                         Name = "Default Arrival Location",
                         FloorName = "Ground Floor",
                         Description = "Automatically created arrival location"
                     };
-                    await context.WarehouseArrivalLocations.AddAsync(warehouse.ArrivalLocation);
+                    await context.WarehouseArrivalLocations.AddAsync(departmentWarehouse.ArrivalLocation);
                 }
                 
                 var distributedRequisitionMaterial = new DistributedRequisitionMaterial
@@ -1301,7 +1338,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                             ShipmentInvoiceItemId = d.ShipmentInvoiceItem.Id,
                             Quantity = d.Quantity,
                         }).ToList(),
-                        WarehouseArrivalLocationId = warehouse.ArrivalLocation.Id
+                        WarehouseArrivalLocationId = departmentWarehouse.ArrivalLocation.Id
                         
                     };
                 await context.DistributedRequisitionMaterials.AddAsync(distributedRequisitionMaterial);

@@ -45,4 +45,5 @@ public class SupplierManufacturer : BaseEntity
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
     public decimal QuantityPerPack { get; set; }
+    public bool Default { get; set; }
 }

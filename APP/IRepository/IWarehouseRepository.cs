@@ -77,4 +77,6 @@ public interface IWarehouseRepository
 
     Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize,
         string searchQuery, Guid productId);
+
+    Task<Result<WarehouseArrivalLocationDto>> GetFinishedArrivalLocationDetails(Guid warehouseId);
 }

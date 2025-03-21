@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-env
 
 WORKDIR /app
 COPY . .
@@ -32,5 +32,6 @@ ENV REDIS_PORT=6379
 ENV DEFAULT_USER_PASSWORD="${DEFAULT_PASSWORD}"
 ENV SMTP_USERNAME="${SMTP_USERNAME}"
 ENV SMTP_PASSWORD="${SMTP_PASSWORD}"
+ENV CLIENT_BASE_URL="http://164.90.142.68:3005"
 
 ENTRYPOINT ["dotnet", "watch", "run", "--urls=http://+:5001", "--project", "API/API.csproj"]

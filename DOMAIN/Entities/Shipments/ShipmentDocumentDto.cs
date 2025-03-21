@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Procurement.Suppliers;
 using SHARED;
 
@@ -11,7 +12,10 @@ public class ShipmentDocumentDto : WithAttachment
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public List<ShipmentDiscrepancyDto> Discrepancies { get; set; } = [];
     public DateTime? ArrivedAt { get; set; }
+    public DateTime? ClearedAt { get; set; }
+    public DateTime? TransitStartedAt { get; set; }
     public DocType Type { get; set; } 
+    public ShipmentStatus Status { get; set; }
 }
 
 public class ShipmentInvoiceDto : BaseDto
@@ -20,6 +24,8 @@ public class ShipmentInvoiceDto : BaseDto
     public SupplierDto Supplier { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
     public bool IsAttached { get; set; }
+    public decimal TotalCost { get; set; }
+    public CurrencyDto Currency { get; set; }
 }
 
 public class ShipmentInvoiceItemDto : BaseDto
@@ -31,6 +37,8 @@ public class ShipmentInvoiceItemDto : BaseDto
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     public decimal Price { get; set; }
+    public decimal TotalCost { get; set; }
+    public CurrencyDto Currency { get; set; }
     public string Reason { get; set; }
 }
 

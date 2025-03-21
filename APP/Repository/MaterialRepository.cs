@@ -1293,9 +1293,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         
         if (materialBatch == null)
             return Error.Failure("Material.Batch", "Material batch not found.");
-        
-        if (materialBatch.Status!=BatchStatus.Frozen)
-            return Error.Failure("Material.Batch", "Cannot consume from an unfrozen batch. Please freeze the batch first.");
 
         materialBatch.ConsumedQuantity += quantity;
         context.MaterialBatches.Update(materialBatch);

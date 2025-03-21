@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250317181715_Added_DistributedFinishedProducts")]
+    partial class Added_DistributedFinishedProducts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -752,62 +755,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("UoMId");
 
                     b.ToTable("ProductBinCardInformation");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Charges.Charge", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid?>("BillingSheetId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CurrencyId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BillingSheetId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("CurrencyId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.ToTable("Charges");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Checklists.Checklist", b =>
@@ -2432,9 +2379,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("Default")
-                        .HasColumnType("boolean");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3952,9 +3896,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<Guid?>("ContainerPackageStyleId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3994,18 +3935,13 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("SupplierId")
+                    b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ContainerPackageStyleId");
 
                     b.HasIndex("CreatedById");
 
@@ -4018,6 +3954,58 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("SupplierId");
 
                     b.ToTable("BillingSheets");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.Charge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CurrencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PurchaseOrderInvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("PurchaseOrderInvoiceId");
+
+                    b.ToTable("Charge");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", b =>
@@ -4082,58 +4070,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("SupplierId");
 
                     b.ToTable("PurchaseOrders");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderCharge", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CurrencyId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(10000)
-                        .HasColumnType("character varying(10000)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("PurchaseOrderInvoiceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("CurrencyId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("PurchaseOrderInvoiceId");
-
-                    b.ToTable("PurchaseOrderCharge");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderInvoice", b =>
@@ -5215,9 +5151,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("ArrivedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("ClearedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Code")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
@@ -5242,12 +5175,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("ShipmentInvoiceId")
                         .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("TransitStartedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -5284,9 +5211,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CurrencyId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5299,17 +5223,12 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("SupplierId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("TotalCost")
-                        .HasColumnType("numeric");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("CurrencyId");
 
                     b.HasIndex("LastDeletedById");
 
@@ -5330,9 +5249,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CurrencyId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -5369,9 +5285,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("ShipmentInvoiceId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("TotalCost")
-                        .HasColumnType("numeric");
-
                     b.Property<Guid>("UoMId")
                         .HasColumnType("uuid");
 
@@ -5381,8 +5294,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("CurrencyId");
 
                     b.HasIndex("LastDeletedById");
 
@@ -5593,9 +5504,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("TransferNoteId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("UomId")
                         .HasColumnType("uuid");
 
@@ -5616,8 +5524,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("TransferNoteId");
 
                     b.HasIndex("UomId");
 
@@ -6665,37 +6571,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("UoM");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Charges.Charge", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.PurchaseOrders.BillingSheet", null)
-                        .WithMany("Charges")
-                        .HasForeignKey("BillingSheetId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Currencies.Currency", "Currency")
-                        .WithMany()
-                        .HasForeignKey("CurrencyId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Currency");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Checklists.Checklist", b =>
@@ -8630,10 +8505,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheet", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Base.PackageStyle", "ContainerPackageStyle")
-                        .WithMany()
-                        .HasForeignKey("ContainerPackageStyleId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -8654,9 +8525,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
                         .WithMany()
-                        .HasForeignKey("SupplierId");
-
-                    b.Navigation("ContainerPackageStyle");
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("CreatedBy");
 
@@ -8667,6 +8538,41 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.Charge", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Currencies.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.PurchaseOrders.PurchaseOrderInvoice", "PurchaseOrderInvoice")
+                        .WithMany("Charges")
+                        .HasForeignKey("PurchaseOrderInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Currency");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("PurchaseOrderInvoice");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", b =>
@@ -8704,41 +8610,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("SourceRequisition");
 
                     b.Navigation("Supplier");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderCharge", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Currencies.Currency", "Currency")
-                        .WithMany()
-                        .HasForeignKey("CurrencyId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.PurchaseOrders.PurchaseOrderInvoice", "PurchaseOrderInvoice")
-                        .WithMany("Charges")
-                        .HasForeignKey("PurchaseOrderInvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Currency");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("PurchaseOrderInvoice");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderInvoice", b =>
@@ -9525,10 +9396,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Currencies.Currency", "Currency")
-                        .WithMany()
-                        .HasForeignKey("CurrencyId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -9543,8 +9410,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("CreatedBy");
 
-                    b.Navigation("Currency");
-
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
@@ -9557,10 +9422,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Currencies.Currency", "Currency")
-                        .WithMany()
-                        .HasForeignKey("CurrencyId");
 
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
@@ -9601,8 +9462,6 @@ namespace INFRASTRUCTURE.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("Currency");
 
                     b.Navigation("LastDeletedBy");
 
@@ -9671,10 +9530,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("ProductId");
 
-                    b.HasOne("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", "TransferNote")
-                        .WithMany()
-                        .HasForeignKey("TransferNoteId");
-
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
                         .HasForeignKey("UomId");
@@ -9692,8 +9547,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Product");
-
-                    b.Navigation("TransferNote");
 
                     b.Navigation("UoM");
 
@@ -10195,11 +10048,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ResponsibleUsers");
 
                     b.Navigation("WorkCenters");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheet", b =>
-                {
-                    b.Navigation("Charges");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", b =>

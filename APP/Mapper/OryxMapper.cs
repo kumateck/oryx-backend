@@ -5,6 +5,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.BillOfMaterials.Request;
 using DOMAIN.Entities.BinCards;
+using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
@@ -62,6 +63,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, Currency>();
         CreateMap<CreateItemRequest, ShipmentDiscrepancyType>();
         CreateMap<CreateItemRequest, PackageStyle>();
+        CreateMap<CreateItemRequest, Charge>();
         
         #endregion
         
@@ -111,6 +113,7 @@ public class OryxMapper : Profile
         CreateMap<Equipment, CollectionItemDto>();
         CreateMap<PackageStyle, CollectionItemDto>();
         CreateMap<ShipmentInvoice, CollectionItemDto>();
+        CreateMap<Charge, CollectionItemDto>();
         
         #endregion
 
@@ -347,6 +350,7 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationShelf,MaterialWarehouseLocationShelfDto>();
         CreateMap<WarehouseArrivalLocation,WarehouseArrivalLocationDto>();
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>();
+        CreateMap<DistributedFinishedProduct, DistributedFinishedProductDto>();
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<MaterialItemDistribution, MaterialItemDistributionDto>();
@@ -394,12 +398,16 @@ public class OryxMapper : Profile
 
         CreateMap<CreatePurchaseOrderInvoiceRequest, PurchaseOrderInvoice>();
         CreateMap<CreateBatchItemRequest, BatchItem>();
-        CreateMap<CreateChargeRequest, Charge>();
+        CreateMap<CreatePurchaseOrderChargeRequest, PurchaseOrderCharge>();
         CreateMap<PurchaseOrderInvoice, PurchaseOrderInvoiceDto>();
         CreateMap<BatchItem, BatchItemDto>();
-        CreateMap<Charge, ChargeDto>();
+        CreateMap<PurchaseOrderCharge, PurchaseOrderChargeDto>();
 
-        CreateMap<CreateBillingSheetRequest, BillingSheet>();
+        CreateMap<Charge,ChargeDto>();
+        CreateMap<CreateChargeRequest, Charge>();
+        CreateMap<CreateBillingSheetRequest, BillingSheet>()
+            .ForMember(dest => dest.Charges, opt => opt.MapFrom<AssignChargesResolver>());
+        
         CreateMap<BillingSheet, BillingSheetDto>();
 
         CreateMap<CreatePurchaseOrderRequest, RevisedPurchaseOrder>();
