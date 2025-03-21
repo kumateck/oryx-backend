@@ -236,6 +236,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
         CreateMap<MaterialBatch, MaterialBatchDto>();
+        CreateMap<MaterialBatch, DistributedMaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
         CreateMap<MassMaterialBatchMovement, MassMaterialBatchMovementDto>();
         CreateMap<MaterialBatchReservedQuantity, MaterialBatchReservedQuantityDto>();
@@ -441,6 +442,7 @@ public class OryxMapper : Profile
         #region Checklist
 
         CreateMap<Checklist, ChecklistDto>();
+        CreateMap<Checklist, DistributedChecklistDto>();
         CreateMap<Checklist, BatchChecklistDto>();
         CreateMap<CreateChecklistRequest, Checklist>()
             .ForMember(dest => dest.MaterialBatches,

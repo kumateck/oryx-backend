@@ -43,6 +43,11 @@ public class ChecklistDto
     public List<MaterialBatchDto> MaterialBatches { get; set; } = [];
 }
 
+public class DistributedChecklistDto
+{
+    public List<DistributedMaterialBatchDto> MaterialBatches { get; set; } = [];
+}
+
 public class CreateChecklistRequest
 {
     public Guid DistributedRequisitionMaterialId { get; set; }
