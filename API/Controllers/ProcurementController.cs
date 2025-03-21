@@ -765,7 +765,6 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="status"></param>The status of the shipment.
     /// <returns>Returns success or failure.</returns>
     [HttpPut("shipments/{shipmentId}/status")]
-    [Authorize(Roles = "Admin,Manager")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
