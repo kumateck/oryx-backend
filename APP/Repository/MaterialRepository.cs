@@ -778,6 +778,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             };
             
             await context.MaterialBatchEvents.AddAsync(batchEvent);
+            await context.SaveChangesAsync();
         }
 
         var warehouse = await context.Warehouses
@@ -785,7 +786,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .FirstOrDefault(s => s.Id == request.ShelfMaterialBatches.First().WarehouseLocationShelfId)
                 .WarehouseLocationRack.WarehouseLocation.Warehouse.Id);
         
-        var binCardEvent = new BinCardInformation
+        var binCardEvent =new BinCardInformation
         {
             MaterialBatchId = materialBatch.Id,
             Description = warehouse.Name,
@@ -793,7 +794,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             ArNumber = "N/A",
             QuantityReceived = totalQuantityToAssign,
             QuantityIssued = 0,
-            BalanceQuantity = (await GetMaterialStockInWarehouseByBatch(materialBatch.Id, warehouse.Id)).Value + totalQuantityToAssign,
+            BalanceQuantity = (await GetMaterialStockInWarehouseByBatch(materialBatch.Id, warehouse.Id)).Value,
             UoMId = materialBatch.UoMId,
             CreatedAt = DateTime.UtcNow
         };

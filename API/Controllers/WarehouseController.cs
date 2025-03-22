@@ -423,6 +423,45 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
     
     /// <summary>
+    /// Retrieves the stock transfer details of a specific warehouse by its ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/stock-transfer-details")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize]
+    public async Task<IResult> GetStockTransferDetails(Guid warehouseId)
+    {
+        var result = await repository.GetStockTransferDetails(warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the distribution details of a specific warehouse by its ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/distribution-details")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DistributedRequisitionMaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributionDetails(Guid warehouseId)
+    {
+        var result = await repository.GetDistributionDetails(warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the finished goods details of a specific warehouse by its ID.
+    /// </summary>
+    [HttpGet("{warehouseId}/finished-goods-details")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DistributedFinishedProductDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsDetails(Guid warehouseId)
+    {
+        var result = await repository.GetFinishedGoodsDetails(warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Retrieves the arrival location details of a specific warehouse by its ID.
     /// </summary>
     [HttpGet("{warehouseId}/finished-arrival-location")]

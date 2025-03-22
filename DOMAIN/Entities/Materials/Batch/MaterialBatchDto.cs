@@ -2,6 +2,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Warehouses;
@@ -16,6 +17,7 @@ public class MaterialBatchDto
     public string Code { get; set; }
     public string BatchNumber { get; set; }
     public BatchChecklistDto Checklist { get; set; }
+    public MaterialBatchStockTransferSourceDto StockTransferSource { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public int NumberOfContainers { get; set; }
     public PackageStyleDto ContainerPackageStyle { get; set; }

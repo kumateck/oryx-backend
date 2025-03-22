@@ -79,4 +79,7 @@ public interface IWarehouseRepository
         string searchQuery, Guid productId);
 
     Task<Result<WarehouseArrivalLocationDto>> GetFinishedArrivalLocationDetails(Guid warehouseId);
+    Task<Result<List<MaterialBatchDto>>> GetStockTransferDetails(Guid warehouseId);
+    Task<Result<List<DistributedFinishedProductDto>>> GetFinishedGoodsDetails(Guid warehouseId);
+    Task<Result<List<DistributedRequisitionMaterialDto>>> GetDistributionDetails(Guid warehouseId);
 }

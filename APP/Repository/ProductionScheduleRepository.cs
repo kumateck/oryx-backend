@@ -1447,6 +1447,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                     w.DepartmentId == stockTransferSource.ToDepartmentId && w.Type == WarehouseType.PackagedStorage);
 
         decimal remainingQuantity = stockTransferSource.Quantity;
+        
+        var distributedBatches = new List<MaterialBatch>();
 
         foreach (var batchRequest in batches)
         {
@@ -1483,11 +1485,67 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             };
             await context.MaterialBatchEvents.AddAsync(batchEvent);
             
+            await context.SaveChangesAsync();
+            
+            var toBinCardEvent =new BinCardInformation
+            {
+                MaterialBatchId = batch.Id,
+                Description = fromWarehouse.Name,
+                WayBill = "N/A",
+                ArNumber = "N/A",
+                QuantityReceived = 0,
+                QuantityIssued = batchRequest.Quantity,
+                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(batch.MaterialId, fromWarehouse.Id)).Value,
+                UoMId = batch.UoMId,
+                ProductId = stockTransferSource.StockTransfer.ProductId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedById = userId
+            };
+
+            await context.BinCardInformation.AddAsync(toBinCardEvent);
+
+            var fromBinCardEvent =new BinCardInformation
+            {
+                MaterialBatchId = batch.Id,
+                Description = toWarehouse.Name,
+                WayBill = "N/A",
+                ArNumber = "N/A",
+                QuantityReceived = batchRequest.Quantity,
+                QuantityIssued = 0,
+                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(batch.MaterialId, toWarehouse.Id)).Value,
+                UoMId = batch.UoMId,
+                ProductId =  stockTransferSource.StockTransfer.ProductId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedById = userId
+            };
+
+            await context.BinCardInformation.AddAsync(fromBinCardEvent);
+            batch.StockTransferSourceId = id;
+            
             context.MaterialBatches.Update(batch);
+            
+            await context.SaveChangesAsync();
+            
+            distributedBatches.Add(batch);
+            
             remainingQuantity -= batchRequest.Quantity;
 
             if (remainingQuantity <= 0) break;
         }
+        
+        if (toWarehouse.ArrivalLocation == null)
+        {
+            toWarehouse.ArrivalLocation = new WarehouseArrivalLocation
+            {
+                WarehouseId = toWarehouse.Id,
+                Name = "Default Arrival Location",
+                FloorName = "Ground Floor",
+                Description = "Automatically created arrival location"
+            };
+            await context.WarehouseArrivalLocations.AddAsync(toWarehouse.ArrivalLocation);
+        }
+            
+        toWarehouse.ArrivalLocation.DistributedStockTransferBatches.AddRange(distributedBatches);
 
         if (remainingQuantity > 0)
         {

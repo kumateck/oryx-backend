@@ -513,7 +513,9 @@ public class OryxMapper : Profile
         CreateMap<CreateStockTransferRequest, StockTransfer>();
         CreateMap<StockTransferSourceRequest, StockTransferSource>();
         CreateMap<StockTransfer, StockTransferDto>();
+        CreateMap<StockTransfer, MaterialBatchStockTransferDto>();
         CreateMap<StockTransferSource, StockTransferSourceDto>();
+        CreateMap<StockTransferSource, MaterialBatchStockTransferSourceDto>();
         CreateMap<StockTransferSource, DepartmentStockTransferDto>()
             .ForMember(dest => dest.Material,
                 opt => opt.MapFrom(src => src.StockTransfer.Material))
