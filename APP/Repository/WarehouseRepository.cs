@@ -546,6 +546,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<List<DistributedRequisitionMaterialDto>>> GetDistributionDetails(Guid warehouseId)
     {
         var warehouse = await context.Warehouses
+            .AsSplitQuery()
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(drm => drm.ShipmentInvoice)
@@ -576,6 +577,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<List<DistributedFinishedProductDto>>> GetFinishedGoodsDetails(Guid warehouseId)
     {
         var warehouse = await context.Warehouses
+            .AsSplitQuery()
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedFinishedProducts)
             .ThenInclude(drm => drm.Product)
@@ -593,6 +595,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<List<MaterialBatchDto>>> GetStockTransferDetails(Guid warehouseId)
     {
         var warehouse = await context.Warehouses
+            .AsSplitQuery()
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedStockTransferBatches)
             .ThenInclude(sb=>sb.StockTransferSource)
