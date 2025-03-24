@@ -422,58 +422,6 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    /// <summary>
-    /// Retrieves the stock transfer details of a specific warehouse by its ID.
-    /// </summary>
-    [HttpGet("{warehouseId}/stock-transfer-details")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [Authorize]
-    public async Task<IResult> GetStockTransferDetails(Guid warehouseId)
-    {
-        var result = await repository.GetStockTransferDetails(warehouseId);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-    
-    /// <summary>
-    /// Retrieves the distribution details of a specific warehouse by its ID.
-    /// </summary>
-    [HttpGet("{warehouseId}/distribution-details")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DistributedRequisitionMaterialDto>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetDistributionDetails(Guid warehouseId)
-    {
-        var result = await repository.GetDistributionDetails(warehouseId);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-
-    /// <summary>
-    /// Retrieves the finished goods details of a specific warehouse by its ID.
-    /// </summary>
-    [HttpGet("{warehouseId}/finished-goods-details")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DistributedFinishedProductDto>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFinishedGoodsDetails(Guid warehouseId)
-    {
-        var result = await repository.GetFinishedGoodsDetails(warehouseId);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-    
-    /// <summary>
-    /// Retrieves the arrival location details of a specific warehouse by its ID.
-    /// </summary>
-    [HttpGet("{warehouseId}/finished-arrival-location")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseArrivalLocationDto))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFinishedArrivalLocationDetails(Guid warehouseId)
-    {
-        var result = await repository.GetFinishedArrivalLocationDetails(warehouseId);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-    
     /*/// <summary>
     /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
     /// </summary>
@@ -502,6 +450,40 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetDistributedRequisitionMaterials(page, pageSize, searchQuery, kind, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the finished goods details of a specific warehouse by its ID.
+    /// </summary>
+    [HttpGet("finished-goods-details")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributedFinishedProductDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsDetails(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetFinishedGoodsDetails(page, pageSize, searchQuery, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the stock transfer details of a specific warehouse by its ID.
+    /// </summary>
+    [HttpGet("stock-transfer-details")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize]
+    public async Task<IResult> GetStockTransferDetails([FromQuery] MaterialKind kind,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetStockTransferDetails(page, pageSize, searchQuery,  kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
