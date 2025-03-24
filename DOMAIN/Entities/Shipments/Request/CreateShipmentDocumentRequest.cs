@@ -8,6 +8,11 @@ public class CreateShipmentDocumentRequest
     public Guid? ShipmentInvoiceId { get; set; }
 }
 
+public class UpdateShipmentStatusRequest
+{
+    public ShipmentStatus Status { get; set; }
+}
+
 public class CreateShipmentInvoice 
 {
     public string Code { get; set; }
