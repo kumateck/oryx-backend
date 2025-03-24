@@ -1049,6 +1049,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(drm => drm.RequisitionItem)
             .Include(drm => drm.WarehouseArrivalLocation)
             .Include(drm=>drm.MaterialItemDistributions)
+            .Include(sr=>sr.CheckLists)
+            .ThenInclude(cl=>cl.MaterialBatches)
             .Where(drm => !drm.Status.Equals(DistributedRequisitionMaterialStatus.GrnGenerated))
             .AsQueryable();
 
@@ -1078,6 +1080,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(drm => drm.RequisitionItem)
             .Include(drm => drm.WarehouseArrivalLocation)
             .Include(drm => drm.MaterialItemDistributions)
+            .Include(sr=>sr.CheckLists)
+            .ThenInclude(cl=>cl.MaterialBatches)
             .FirstOrDefaultAsync(drm => drm.Id == distributedMaterialId));
     }
 }
