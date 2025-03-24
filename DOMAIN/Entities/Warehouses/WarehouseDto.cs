@@ -56,6 +56,7 @@ public class WarehouseArrivalLocationDto
     public string Description { get; set; }
     public List<DistributedRequisitionMaterialDto> DistributedRequisitionMaterials { get; set; } = [];
     public List<DistributedFinishedProductDto> DistributedFinishedProducts { get; set; }
+    public List<MaterialBatchDto> DistributedStockTransferBatches { get; set; }
 }
 
 public class DistributedRequisitionMaterialDto

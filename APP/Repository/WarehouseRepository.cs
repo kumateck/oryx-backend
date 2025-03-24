@@ -543,6 +543,77 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         return Result.Success(arrivalLocationDto);
     }
     
+    public async Task<Result<List<DistributedRequisitionMaterialDto>>> GetDistributionDetails(Guid warehouseId)
+    {
+        var warehouse = await context.Warehouses
+            .AsSplitQuery()
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(drm => drm.ShipmentInvoice)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(drm => drm.Material)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(ss=>ss.MaterialItemDistributions)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(sr=>sr.RequisitionItem)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(sr=>sr.CheckLists)
+            .ThenInclude(cl=>cl.MaterialBatches)
+            .FirstOrDefaultAsync(w => w.Id == warehouseId);
+
+        if (warehouse == null || warehouse.ArrivalLocation == null)
+        {
+            return Error.NotFound("Warehouse.ArrivalLocationNotFound", "Arrival location not found for the specified warehouse.");
+        }
+
+        var arrivalLocationDto = mapper.Map<List<DistributedRequisitionMaterialDto>>(warehouse.ArrivalLocation.DistributedRequisitionMaterials);
+        return Result.Success(arrivalLocationDto);
+    }
+    
+    public async Task<Result<List<DistributedFinishedProductDto>>> GetFinishedGoodsDetails(Guid warehouseId)
+    {
+        var warehouse = await context.Warehouses
+            .AsSplitQuery()
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedFinishedProducts)
+            .ThenInclude(drm => drm.Product)
+            .FirstOrDefaultAsync(w => w.Id == warehouseId);
+
+        if (warehouse == null || warehouse.ArrivalLocation == null)
+        {
+            return Error.NotFound("Warehouse.ArrivalLocationNotFound", "Arrival location not found for the specified warehouse.");
+        }
+
+        var arrivalLocationDto = mapper.Map<List<DistributedFinishedProductDto>>(warehouse.ArrivalLocation.DistributedFinishedProducts);
+        return Result.Success(arrivalLocationDto);
+    }
+    
+    public async Task<Result<List<MaterialBatchDto>>> GetStockTransferDetails(Guid warehouseId)
+    {
+        var warehouse = await context.Warehouses
+            .AsSplitQuery()
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedStockTransferBatches)
+            .ThenInclude(sb=>sb.StockTransferSource)
+            .ThenInclude(sts=>sts.StockTransfer)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedStockTransferBatches)
+            .ThenInclude(sb=>sb.Material)
+            .FirstOrDefaultAsync(w => w.Id == warehouseId);
+
+        if (warehouse == null || warehouse.ArrivalLocation == null)
+        {
+            return Error.NotFound("Warehouse.ArrivalLocationNotFound", "Arrival location not found for the specified warehouse.");
+        }
+
+        var stockTransfers = mapper.Map<List<MaterialBatchDto>>(warehouse.ArrivalLocation.DistributedStockTransferBatches);
+        return Result.Success(stockTransfers);
+    }
+    
     public async Task<Result<WarehouseArrivalLocationDto>> GetFinishedArrivalLocationDetails(Guid warehouseId)
     {
         var warehouse = await context.Warehouses
