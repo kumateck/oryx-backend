@@ -37,16 +37,16 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<FormDto>(form);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<FormDto>>>> GetForms(FormFilter filter, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<FormDto>>>> GetForms(FormFilter filter)
     {
         var query = context.Forms
             .AsSplitQuery()
             .OrderByDescending(f => f.CreatedAt)
             .AsQueryable();
 
-        if (!string.IsNullOrEmpty(searchQuery))
+        if (!string.IsNullOrEmpty(filter.SearchQuery))
         {
-            query = query.WhereSearch(searchQuery, f => f.Name, f => f.CreatedBy.FirstName, f => f.CreatedBy.LastName);
+            query = query.WhereSearch(filter.SearchQuery, f => f.Name, f => f.CreatedBy.FirstName, f => f.CreatedBy.LastName);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -181,16 +181,16 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<QuestionDto>(await context.Questions.FirstOrDefaultAsync(q => q.Id == questionId));
     }
 
-    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(PagedQuery filter, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(FormFilter filter)
     {
         var query = context.Questions
             .AsSplitQuery()
             .OrderByDescending(f => f.CreatedAt)
             .AsQueryable();
 
-        if (!string.IsNullOrEmpty(searchQuery))
+        if (!string.IsNullOrEmpty(filter.SearchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Label, q => q.CreatedBy.FirstName, q => q.CreatedBy.LastName);
+            query = query.WhereSearch(filter.SearchQuery, q => q.Label, q => q.CreatedBy.FirstName, q => q.CreatedBy.LastName);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(
