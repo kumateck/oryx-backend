@@ -181,7 +181,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<QuestionDto>(await context.Questions.FirstOrDefaultAsync(q => q.Id == questionId));
     }
 
-    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(PagedQuery filter, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(FormFilter filter, string searchQuery)
     {
         var query = context.Questions
             .AsSplitQuery()

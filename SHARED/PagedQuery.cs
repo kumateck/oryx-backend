@@ -3,7 +3,7 @@ namespace SHARED;
 /// <summary>
 /// A base object for all paged requests
 /// </summary>
-public class PagedQuery
+public abstract class PagedQuery
 {
     /// <summary>
     /// The size of the items on each page
