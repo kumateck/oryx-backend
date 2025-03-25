@@ -50,14 +50,13 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Retrieves a paginated list of forms.
     /// </summary>
     /// <param name="filter">The FormFilter object for filtering forms.</param>
-    /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of forms.</returns>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FormDto>>))]
-    public async Task<IResult> GetForms([FromQuery] FormFilter filter, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetForms([FromQuery] FormFilter filter)
     {
-        var result = await repository.GetForms(filter, searchQuery);
+        var result = await repository.GetForms(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -169,14 +168,13 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Retrieves a paginated list of questions.
     /// </summary>
     /// <param name="filter">The PagedQuery object for pagination and filtering.</param>
-    /// <param name="searchQuery">Search query for filtering questions.</param>
     /// <returns>Returns a paginated list of questions.</returns>
     [HttpGet("question")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<QuestionDto>>))]
-    public async Task<IResult> GetQuestions([FromQuery] FormFilter filter, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetQuestions([FromQuery] FormFilter filter)
     {
-        var result = await repository.GetQuestions(filter, searchQuery);
+        var result = await repository.GetQuestions(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -31,7 +31,7 @@ public class QuestionDto : BaseDto
     public List<QuestionOptionDto> Options { get; set; } = [];
 }
 
-public class QuestionOptionDto : BaseEntity
+public class QuestionOptionDto : BaseDto
 {
     public CollectionItemDto Question { get; set; }
     public string Name { get; set; }
