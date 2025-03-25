@@ -16,6 +16,7 @@ public interface IMaterialRepository
     Task<Result<List<MaterialCategoryDto>>> GetMaterialCategories(MaterialKind? materialKind);
     Task<Result<List<MaterialDto>>> GetMaterials();
     Task<Result> UpdateMaterial(CreateMaterialRequest request, Guid materialId, Guid userId);
+    Task<Result> UpdateReOrderLevel(Guid materialId, int reOrderLevel, Guid userId);
     Task<Result> DeleteMaterial(Guid materialId, Guid userId);
     Task<Result<decimal>> CheckStockLevel(Guid materialId);
     //Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId);

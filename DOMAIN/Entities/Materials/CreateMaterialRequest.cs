@@ -9,4 +9,10 @@ public class CreateMaterialRequest
     public string Alphabet { get; set; }
     public Guid? MaterialCategoryId { get; set; }
     public MaterialKind Kind { get; set; }
+    public int ReOrderLevel { get; set; }
+}
+
+public class UpdateReOrderLevelRequest
+{
+    public int ReOrderLevel { get; set; }
 }

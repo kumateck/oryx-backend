@@ -100,6 +100,22 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> UpdateReOrderLevel(Guid materialId, int reOrderLevel, Guid userId)
+    {
+        var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
+        if (material is null)
+        {
+            return MaterialErrors.NotFound(materialId);
+        }
+
+        material.ReOrderLevel = reOrderLevel;
+        material.LastUpdatedById = userId;
+
+        context.Materials.Update(material);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
     // Delete Material (soft delete)
     public async Task<Result> DeleteMaterial(Guid materialId, Guid userId)
