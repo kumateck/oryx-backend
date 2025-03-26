@@ -16,8 +16,7 @@
       "launchUrl": "",
       "applicationUrl": "http://localhost:5270",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionString" : "Host=164.90.142.68;Port=5433;Username=root;Password=SNsiilzMRr9UCzz;Database=oryxdb"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "https": {
