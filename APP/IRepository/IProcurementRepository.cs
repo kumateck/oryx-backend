@@ -60,7 +60,7 @@ public interface IProcurementRepository
     Task<Result<Guid>> CreateShipmentDocument(CreateShipmentDocumentRequest request, Guid userId);
     Task<Result<Guid>> CreateWayBill(CreateShipmentDocumentRequest request, Guid userId);
     Task<Result<ShipmentDocumentDto>> GetWaybillDocument(Guid shipmentDocumentId);
-    Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetWaybillDocuments(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetWaybillDocuments(int page, int pageSize, string searchQuery, ShipmentStatus? status);
     Task<Result> UpdateWaybillDocument(CreateShipmentDocumentRequest request, Guid shipmentDocumentId, Guid userId);
     Task<Result> DeleteWaybillDocument(Guid shipmentDocumentId, Guid userId);
     Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId);
