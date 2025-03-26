@@ -52,7 +52,7 @@ public interface IProcurementRepository
     Task<Result<Guid>> CreateBillingSheet(CreateBillingSheetRequest request, Guid userId);
     Task<Result<BillingSheetDto>> GetBillingSheet(Guid billingSheetId);
     Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize,
-        string searchQuery);
+        string searchQuery, BillingSheetStatus? status);
     Task<Result> UpdateBillingSheet(CreateBillingSheetRequest request, Guid billingSheetId, Guid userId);
     Task<Result> DeleteBillingSheet(Guid billingSheetId, Guid userId);
         

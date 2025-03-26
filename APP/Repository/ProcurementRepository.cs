@@ -510,12 +510,17 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             : mapper.Map<BillingSheetDto>(billingSheet);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize, string searchQuery, BillingSheetStatus? status = null)
     {
         var query = context.BillingSheets
             .Include(bs => bs.Supplier)
             .Include(bs => bs.Invoice)
             .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(q => q.Status == status.Value);
+        }
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
