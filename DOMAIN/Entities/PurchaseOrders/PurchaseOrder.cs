@@ -23,6 +23,7 @@ public class PurchaseOrder : BaseEntity
     public DateTime? DeliveryDate { get; set; }
     public DateTime? SentAt { get; set; }
     public PurchaseOrderStatus Status { get; set; }
+    public bool IsRevised => RevisedPurchaseOrders.Count != 0;
     public List<RevisedPurchaseOrder> RevisedPurchaseOrders { get; set; } = [];
 }
 
@@ -63,7 +64,7 @@ public class PurchaseOrderDto : WithAttachment
     public DateTime? ExpectedDeliveryDate { get; set; }
     public List<PurchaseOrderItemDto> Items { get; set; } = [];
     public PurchaseOrderStatus Status { get; set; }
-    public List<RevisedPurchaseOrderDto> RevisedPurchaseOrders { get; set; } = [];
+    public bool IsRevised { get; set; }
     public PurchaseOrderAttachmentStatus AttachmentStatus { get; set; }
 }
 
@@ -77,4 +78,5 @@ public class PurchaseOrderItemDto
     public CollectionItemDto Currency { get; set; }
     public List<ManufacturerDto> Manufacturers { get; set; } = [];
     public decimal Cost => Price * Quantity;
+    public bool CanReassignSupplier { get; set; }
 }
