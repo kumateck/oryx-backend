@@ -13,6 +13,7 @@ public class Material : BaseEntity
     [StringLength(10)] public string Alphabet { get; set; }
     public Guid? MaterialCategoryId { get; set; }
     public MaterialCategory MaterialCategory { get; set; }
+    public int ReOrderLevel { get; set; }
     public int MinimumStockLevel { get; set; }
     public int MaximumStockLevel { get; set; }
     public List<MaterialBatch> Batches { get; set; } = [];

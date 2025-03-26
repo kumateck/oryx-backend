@@ -110,6 +110,25 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.UpdateMaterial(request, materialId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates the ReOrderLevel of a specific material by its ID.
+    /// </summary>
+    /// <param name="materialId">The ID of the material to be updated.</param>
+    /// <param name="reOrderLevel">The new ReOrderLevel value.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("{materialId}/reorder-level")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateReOrderLevel([FromRoute]Guid materialId, [FromBody] UpdateReOrderLevelRequest reOrderLevel)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateReOrderLevel(materialId, reOrderLevel.ReOrderLevel, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Deletes a specific material by its ID.
