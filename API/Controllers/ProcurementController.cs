@@ -686,20 +686,21 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetWaybillDocument(waybillId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of waybills.
     /// </summary>
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="status">The status of the shipment. (0 -> New, 1 -> In Transit, 2 -> Cleared, 3 -> Arrived.</param>
     /// <returns>Returns a paginated list of waybills.</returns>
     [HttpGet("waybill")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShipmentDocumentDto>>))]
-    public async Task<IResult> GetWaybillDocuments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetWaybillDocuments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] ShipmentStatus? status = null)
     {
-        var result = await repository.GetWaybillDocuments(page, pageSize, searchQuery);
+        var result = await repository.GetWaybillDocuments(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
