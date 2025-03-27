@@ -13,6 +13,7 @@ namespace DOMAIN.Entities.PurchaseOrders;
 public class PurchaseOrder : BaseEntity
 {
     [StringLength(100)] public string Code { get; set; }
+    [StringLength(100)] public string ProFormaInvoiceNumber { get; set; }
     public Guid SourceRequisitionId { get; set; }
     public SourceRequisition SourceRequisition { get; set; }
     public Guid SupplierId { get; set; }
@@ -25,6 +26,16 @@ public class PurchaseOrder : BaseEntity
     public PurchaseOrderStatus Status { get; set; }
     public bool IsRevised => RevisedPurchaseOrders.Count != 0;
     public List<RevisedPurchaseOrder> RevisedPurchaseOrders { get; set; } = [];
+    public DeliveryMode DeliveryMode { get; set; }
+    public TermsOfPayment TermsOfPayment { get; set; }
+    public Guid? DeliveryModeId { get; set; }
+    public Guid? TermsOfPaymentId { get; set; }
+    public decimal TotalFobValue { get; set; }
+    public decimal TotalCifValue { get; set; }
+    public decimal SeaFreight { get; set; }
+    [StringLength(100)] public string AmountInFigures { get; set; }
+    public DateTime? EstimatedDeliveryDate { get; set; }
+    
 }
 
 public class PurchaseOrderItem : BaseEntity
@@ -59,6 +70,7 @@ public enum PurchaseOrderAttachmentStatus
 public class PurchaseOrderDto : WithAttachment
 {
     public string Code { get; set; }
+    public string ProFormaInvoiceNumber { get; set; }
     public SupplierDto Supplier { get; set; }
     public DateTime RequestDate { get; set; }
     public DateTime? ExpectedDeliveryDate { get; set; }
@@ -66,6 +78,13 @@ public class PurchaseOrderDto : WithAttachment
     public PurchaseOrderStatus Status { get; set; }
     public bool IsRevised { get; set; }
     public PurchaseOrderAttachmentStatus AttachmentStatus { get; set; }
+    public DeliveryModeDto DeliveryMode { get; set; }
+    public TermsOfPaymentDto TermsOfPayment { get; set; }
+    public decimal TotalFobValue { get; set; }
+    public decimal TotalCifValue { get; set; }
+    public decimal SeaFreight { get; set; }
+    public string AmountInFigures { get; set; }
+    public DateTime? EstimatedDeliveryDate { get; set; }
 }
 
 public class PurchaseOrderItemDto

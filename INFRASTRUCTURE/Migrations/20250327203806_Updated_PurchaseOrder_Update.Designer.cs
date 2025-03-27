@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250327203806_Updated_PurchaseOrder_Update")]
+    partial class Updated_PurchaseOrder_Update
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4367,7 +4370,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("PurchaseOrderItems");
+                    b.ToTable("PurchaseOrderItem");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.RevisedPurchaseOrder", b =>
@@ -4376,43 +4379,53 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CurrencyId")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("MaterialId")
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeliveryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpectedDeliveryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal?>("Price")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid?>("PurchaseOrderId")
+                    b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("PurchaseOrderItemId")
+                    b.Property<Guid>("PurchaseOrderId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal?>("Quantity")
-                        .HasColumnType("numeric");
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Type")
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("UoMId")
-                        .HasColumnType("uuid");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CurrencyId");
+                    b.HasIndex("CreatedById");
 
-                    b.HasIndex("MaterialId");
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("PurchaseOrderId");
 
-                    b.HasIndex("PurchaseOrderItemId");
-
-                    b.HasIndex("UoMId");
-
-                    b.ToTable("RevisedPurchaseOrder");
+                    b.ToTable("RevisedPurchaseOrders");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.RevisedPurchaseOrderItem", b =>
@@ -4805,6 +4818,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("Processed")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("ReceivedQuotation")
                         .HasColumnType("boolean");
 
@@ -4861,9 +4877,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<decimal?>("QuotedPrice")
                         .HasColumnType("numeric");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
 
                     b.Property<Guid>("SupplierQuotationId")
                         .HasColumnType("uuid");
@@ -9006,33 +9019,31 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.RevisedPurchaseOrder", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Currencies.Currency", "Currency")
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
-                        .HasForeignKey("CurrencyId");
+                        .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
-                        .HasForeignKey("MaterialId");
+                        .HasForeignKey("LastDeletedById");
 
-                    b.HasOne("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", null)
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", "PurchaseOrder")
                         .WithMany("RevisedPurchaseOrders")
-                        .HasForeignKey("PurchaseOrderId");
+                        .HasForeignKey("PurchaseOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.PurchaseOrders.PurchaseOrderItem", "PurchaseOrderItem")
-                        .WithMany()
-                        .HasForeignKey("PurchaseOrderItemId");
+                    b.Navigation("CreatedBy");
 
-                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
-                        .WithMany()
-                        .HasForeignKey("UoMId");
+                    b.Navigation("LastDeletedBy");
 
-                    b.Navigation("Currency");
+                    b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("Material");
-
-                    b.Navigation("PurchaseOrderItem");
-
-                    b.Navigation("UoM");
+                    b.Navigation("PurchaseOrder");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.RevisedPurchaseOrderItem", b =>
@@ -9060,7 +9071,7 @@ namespace INFRASTRUCTURE.Migrations
                         .IsRequired();
 
                     b.HasOne("DOMAIN.Entities.PurchaseOrders.RevisedPurchaseOrder", "RevisedPurchaseOrder")
-                        .WithMany()
+                        .WithMany("Items")
                         .HasForeignKey("RevisedPurchaseOrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -10399,6 +10410,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("BatchItems");
 
                     b.Navigation("Charges");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.RevisedPurchaseOrder", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
