@@ -239,9 +239,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Purchase Order
 
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
+    public DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; }
     public DbSet<PurchaseOrderInvoice> PurchaseOrderInvoices { get; set; }
     public DbSet<BillingSheet> BillingSheets { get; set; }
-    public DbSet<RevisedPurchaseOrder> RevisedPurchaseOrders { get; set; }
 
     #endregion
     
@@ -463,6 +463,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Supplier).AutoInclude();
         modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Items).AutoInclude();
+        modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.RevisedPurchaseOrders).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Material).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.UoM).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Currency).AutoInclude();
@@ -685,8 +686,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BatchItem>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderCharge>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
         modelBuilder.Entity<BillingSheet>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<RevisedPurchaseOrder>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
-        modelBuilder.Entity<RevisedPurchaseOrderItem>().HasQueryFilter(a => !a.RevisedPurchaseOrder.DeletedAt.HasValue);
+        modelBuilder.Entity<RevisedPurchaseOrderItem>().HasQueryFilter(a => !a.Material.DeletedAt.HasValue);
 
         #endregion
 

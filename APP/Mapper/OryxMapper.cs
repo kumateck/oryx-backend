@@ -395,7 +395,9 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom<AttachmentsResolver>())
             .ForMember(dest => dest.AttachmentStatus,
                 opt => opt.MapFrom<PurchaseOrderStatusResolver>());
-        CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>();
+        CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>()
+            .ForMember(dest => dest.CanReassignSupplier,
+                opt => opt.MapFrom<CanReassignPurchaseOrderItemResolver>());
 
         CreateMap<CreatePurchaseOrderInvoiceRequest, PurchaseOrderInvoice>();
         CreateMap<CreateBatchItemRequest, BatchItem>();
@@ -414,6 +416,7 @@ public class OryxMapper : Profile
         CreateMap<CreatePurchaseOrderRequest, RevisedPurchaseOrder>();
         CreateMap<CreatePurchaseOrderItemRequest, RevisedPurchaseOrderItem>();
         CreateMap<RevisedPurchaseOrder, RevisedPurchaseOrderDto>();
+        CreateMap<CreatePurchaseOrderRevision, RevisedPurchaseOrder>();
         CreateMap<RevisedPurchaseOrderItem, RevisedPurchaseOrderItemDto>();
 
         #endregion

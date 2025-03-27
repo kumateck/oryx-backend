@@ -52,7 +52,6 @@ public class SupplierQuotation : BaseEntity
     public SourceRequisition SourceRequisition { get; set; }
     public List<SupplierQuotationItem> Items { get; set; } = [];
     public bool ReceivedQuotation { get; set; }
-    public bool Processed { get; set; }
 }
 
 public class SupplierQuotationDto 
@@ -73,6 +72,14 @@ public class SupplierQuotationItem : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
     public decimal? QuotedPrice { get; set; }
+    public SupplierQuotationItemStatus Status { get; set; }
+}
+
+public enum SupplierQuotationItemStatus
+{
+    NotProcessed,
+    Processed,
+    NotUsed
 }
 
 public class SupplierQuotationItemDto
@@ -128,6 +135,6 @@ public class SupplierPrice
 public class ProcessQuotation
 {
     public Guid SupplierId { get; set; }
-    public Guid? SourceRequisitionId { get; set; }
+    public Guid SourceRequisitionId { get; set; }
     public List<CreatePurchaseOrderItemRequest> Items { get; set; } = [];
 }

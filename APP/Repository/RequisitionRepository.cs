@@ -994,7 +994,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(s => s.UoM)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.SourceRequisition)
-            .Where(s => s.QuotedPrice != null && !s.SupplierQuotation.Processed && s.SupplierQuotation.Supplier.Type == supplierType)
+            .Where(s => s.QuotedPrice != null && s.Status == SupplierQuotationItemStatus.NotProcessed && s.SupplierQuotation.Supplier.Type == supplierType)
             .ToListAsync();
 
         return sourceRequisitionItemSuppliers
@@ -1018,25 +1018,42 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, Guid userId)
     {
-        var supplierQuotations =  await context.SupplierQuotations
-            .Where(s => s.ReceivedQuotation && !s.Processed).ToListAsync();
-
-      
         foreach (var quotation in processQuotations)
         {
             await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
                 Code = await GeneratePurchaseOrderCode(),
                 SupplierId = quotation.SupplierId,
-                SourceRequisitionId = quotation.SourceRequisitionId ?? supplierQuotations.First(s => s.SupplierId == quotation.SupplierId).SourceRequisitionId,
+                SourceRequisitionId = quotation.SourceRequisitionId,
                 RequestDate = DateTime.UtcNow,
                 Items = quotation.Items
             }, userId);
+
+            foreach (var processSupplierQuote in quotation.Items)
+            {
+                var supplierQuotationItem = await context.SupplierQuotationItems
+                    .FirstOrDefaultAsync(s => s.SupplierQuotation.SupplierId == quotation.SupplierId && 
+                                              s.MaterialId == processSupplierQuote.MaterialId && s.Status == SupplierQuotationItemStatus.NotProcessed);
+
+                if (supplierQuotationItem != null)
+                {
+                    supplierQuotationItem.Status = SupplierQuotationItemStatus.Processed;
+                    context.SupplierQuotationItems.Update(supplierQuotationItem);
+                }
+            }
+            await context.SaveChangesAsync();
         }
+        
+        var supplierQuotations =  await context.SupplierQuotations
+            .Include(s => s.Items)
+            .Where(s => s.ReceivedQuotation && s.Items.Any(i => i.Status == SupplierQuotationItemStatus.NotProcessed)).ToListAsync();
 
         foreach (var supplierQuotation in supplierQuotations)
         {
-            supplierQuotation.Processed = true;
+            foreach (var item in supplierQuotation.Items.Where(item => item.Status == SupplierQuotationItemStatus.NotProcessed))
+            {
+                item.Status = SupplierQuotationItemStatus.NotUsed;
+            }
         }
         
         context.SupplierQuotations.UpdateRange(supplierQuotations);
