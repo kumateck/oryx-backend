@@ -6,16 +6,20 @@ using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
 
-public class RevisedPurchaseOrder : BaseEntity
+public class RevisedPurchaseOrder
 {
-    public Guid PurchaseOrderId { get; set; }
-    public PurchaseOrder PurchaseOrder { get; set; }
-    public DateTime RequestDate { get; set; }
-    public DateTime? ExpectedDeliveryDate { get; set; }
-    public List<RevisedPurchaseOrderItem> Items { get; set; } = [];
-    public DateTime? DeliveryDate { get; set; }
-    public DateTime? SentAt { get; set; }
-    public PurchaseOrderStatus Status { get; set; }
+    public Guid Id { get; set; }
+    public RevisedPurchaseOrderType Type { get; set; }
+    public Guid? PurchaseOrderItemId { get; set; }
+    public PurchaseOrderItem PurchaseOrderItem { get; set; }
+    public Guid? MaterialId { get; set; }
+    public Material Material { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
+    public decimal? Quantity { get; set; }
+    public decimal? Price { get; set; }
+    public Guid? CurrencyId { get; set; }
+    public Currency Currency { get; set; }
 }
 
 public class RevisedPurchaseOrderItem : BaseEntity
@@ -52,4 +56,13 @@ public class RevisedPurchaseOrderItemDto
     public decimal Price { get; set; }
     public List<ManufacturerDto> Manufacturers { get; set; } = [];
     public decimal Cost => Price * Quantity;
+}
+
+public enum RevisedPurchaseOrderType
+{
+    ReassignSuppler,
+    ChangeSource,
+    AddItem,
+    UpdateItem,
+    RemoveItem
 }

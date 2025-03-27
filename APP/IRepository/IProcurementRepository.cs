@@ -35,6 +35,7 @@ public interface IProcurementRepository
     Task<Result<Guid>> CreatePurchaseOrder(CreatePurchaseOrderRequest request, Guid userId);
     Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId);
     Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status, SupplierType? type);
+    Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions);
     Task<Result> UpdatePurchaseOrder(CreatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId);
     Task<Result> DeletePurchaseOrder(Guid purchaseOrderId, Guid userId);
 
@@ -52,7 +53,7 @@ public interface IProcurementRepository
     Task<Result<Guid>> CreateBillingSheet(CreateBillingSheetRequest request, Guid userId);
     Task<Result<BillingSheetDto>> GetBillingSheet(Guid billingSheetId);
     Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize,
-        string searchQuery);
+        string searchQuery, BillingSheetStatus? status);
     Task<Result> UpdateBillingSheet(CreateBillingSheetRequest request, Guid billingSheetId, Guid userId);
     Task<Result> DeleteBillingSheet(Guid billingSheetId, Guid userId);
         
@@ -60,7 +61,7 @@ public interface IProcurementRepository
     Task<Result<Guid>> CreateShipmentDocument(CreateShipmentDocumentRequest request, Guid userId);
     Task<Result<Guid>> CreateWayBill(CreateShipmentDocumentRequest request, Guid userId);
     Task<Result<ShipmentDocumentDto>> GetWaybillDocument(Guid shipmentDocumentId);
-    Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetWaybillDocuments(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetWaybillDocuments(int page, int pageSize, string searchQuery, ShipmentStatus? status);
     Task<Result> UpdateWaybillDocument(CreateShipmentDocumentRequest request, Guid shipmentDocumentId, Guid userId);
     Task<Result> DeleteWaybillDocument(Guid shipmentDocumentId, Guid userId);
     Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId);

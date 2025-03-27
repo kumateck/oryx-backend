@@ -22,6 +22,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             return Result.Failure<Guid>(validate.Errors);
 
         await context.Forms.AddAsync(form);
+        await context.SaveChangesAsync();
 
         return form.Id;
     }
@@ -68,7 +69,6 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         context.FormSections.RemoveRange(form.Sections);
         context.FormReviewers.RemoveRange(form.Reviewers);
         context.FormAssignees.RemoveRange(form.Assignees);
-
         mapper.Map(request, form);
 
         var validate = FormValidator.Validate(form);

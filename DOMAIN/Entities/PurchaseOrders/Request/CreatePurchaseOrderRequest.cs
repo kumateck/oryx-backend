@@ -26,3 +26,15 @@ public class CreatePurchaseOrderItemRequest
     public decimal Quantity { get; set; }
     public decimal Price { get; set; }
 }
+
+
+public class CreatePurchaseOrderRevision
+{
+    public RevisedPurchaseOrderType Type { get; set; }
+    public Guid? PurchaseOrderItemId { get; set; }
+    public Guid? MaterialId { get; set; }
+    public Guid? UoMId { get; set; }
+    public decimal? Quantity { get; set; }
+    public decimal? Price { get; set; }
+    public Guid? CurrencyId { get; set; }
+}
