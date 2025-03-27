@@ -28,6 +28,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Resource) => mapper.Map<List<CollectionItemDto>>(await context.Resources.ToListAsync()),
             nameof(UnitOfMeasure) => mapper.Map<List<CollectionItemDto>>(await context.UnitOfMeasures.ToListAsync()),
             nameof(PackageStyle) => mapper.Map<List<CollectionItemDto>>(await context.PackageStyles.ToListAsync()),
+            nameof(DeliveryMode) => mapper.Map<List<CollectionItemDto>>(await context.DeliveryModes.ToListAsync()),
+            nameof(TermsOfPayment) => mapper.Map<List<CollectionItemDto>>(await context.TermsOfPayments.ToListAsync()),
             nameof(WorkCenter) => mapper.Map<List<CollectionItemDto>>(await context.WorkCenters.ToListAsync()),
             nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
@@ -85,6 +87,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 case nameof(PackageStyle):
                     var packageStyles = await context.PackageStyles.ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(packageStyles);
+                    break;
+                
+                case nameof(TermsOfPayment):
+                    var termsOfPayments = await context.TermsOfPayments.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(termsOfPayments);
+                    break;
+                
+                case nameof(DeliveryMode):
+                    var deliveryModes = await context.DeliveryModes.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(deliveryModes);
                     break;
 
                 case nameof(WorkCenter):
@@ -188,6 +200,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
     {
         return mapper.Map<List<PackageStyleDto>>(await context.PackageStyles.ToListAsync());
     }
+    
+    public async Task<Result<IEnumerable<DeliveryModeDto>>> GetDeliveryModes()
+    {
+        return mapper.Map<List<DeliveryModeDto>>(await context.DeliveryModes.ToListAsync());
+    }
+    
+    public async Task<Result<IEnumerable<TermsOfPaymentDto>>> GetTermsOfPayments()
+    {
+        return mapper.Map<List<TermsOfPaymentDto>>(await context.TermsOfPayments.ToListAsync());
+    }
 
     public Result<IEnumerable<string>> GetItemTypes()
     {
@@ -197,6 +219,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Resource),
             nameof(UnitOfMeasure),
             nameof(PackageStyle),
+            nameof(TermsOfPayment),
+            nameof(DeliveryMode),
             nameof(WorkCenter),
             nameof(Operation),
             nameof(MaterialType),
@@ -244,6 +268,18 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.PackageStyles.AddAsync(packageStyle);
                 await context.SaveChangesAsync();
                 return packageStyle.Id;
+            
+            case nameof(TermsOfPayment):
+                var termsOfPayment = mapper.Map<TermsOfPayment>(request);
+                await context.TermsOfPayments.AddAsync(termsOfPayment);
+                await context.SaveChangesAsync();
+                return termsOfPayment.Id;
+            
+            case nameof(DeliveryMode):
+                var deliveryMode = mapper.Map<DeliveryMode>(request);
+                await context.DeliveryModes.AddAsync(deliveryMode);
+                await context.SaveChangesAsync();
+                return deliveryMode.Id;
             
             case nameof(WorkCenter):
                 var workCenter = mapper.Map<WorkCenter>(request);
@@ -339,6 +375,22 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.PackageStyles.Update(packageStyle);
                 await context.SaveChangesAsync();
                 return packageStyle.Id;
+            
+            case nameof(DeliveryMode):
+                var deliveryMode = await context.DeliveryModes.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, deliveryMode);
+                deliveryMode.LastUpdatedById = userId;
+                context.DeliveryModes.Update(deliveryMode);
+                await context.SaveChangesAsync();
+                return deliveryMode.Id;
+            
+            case nameof(TermsOfPayment):
+                var termsOfPayment = await context.TermsOfPayments.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, termsOfPayment);
+                termsOfPayment.LastUpdatedById = userId;
+                context.TermsOfPayments.Update(termsOfPayment);
+                await context.SaveChangesAsync();
+                return termsOfPayment.Id;
         
             case nameof(WorkCenter):
                 var workCenter = await context.WorkCenters.FirstOrDefaultAsync(p => p.Id == itemId);
@@ -417,6 +469,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Resource) => await context.Resources.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(UnitOfMeasure) => await context.UnitOfMeasures.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(PackageStyle) => await context.PackageStyles.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(DeliveryMode) => await context.DeliveryModes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(TermsOfPayment) => await context.TermsOfPayments.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(WorkCenter) => await context.WorkCenters.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Operation) => await context.Operations.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(MaterialType) => await context.MaterialTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
@@ -472,6 +526,26 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 packageStyle.DeletedAt = currentTime;
                 packageStyle.LastDeletedById = userId;
                 context.PackageStyles.Update(packageStyle);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(DeliveryMode):
+                var deliveryMode = await context.DeliveryModes.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (deliveryMode == null)
+                    return Error.Validation("DeliveryMode", "Not found");
+                deliveryMode.DeletedAt = currentTime;
+                deliveryMode.LastDeletedById = userId;
+                context.DeliveryModes.Update(deliveryMode);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(TermsOfPayment):
+                var termsOfPayment = await context.TermsOfPayments.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (termsOfPayment == null)
+                    return Error.Validation("TermsOfPayment", "Not found");
+                termsOfPayment.DeletedAt = currentTime;
+                termsOfPayment.LastDeletedById = userId;
+                context.TermsOfPayments.Update(termsOfPayment);
                 await context.SaveChangesAsync();
                 return Result.Success();
             

@@ -91,6 +91,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PackageStyle> PackageStyles { get; set; }
 
     #endregion
+    
+    #region TermsOfPayment
+
+    public DbSet<TermsOfPayment> TermsOfPayments { get; set; }
+
+    #endregion
+    
+    #region DeliveryMode
+
+    public DbSet<DeliveryMode> DeliveryModes { get; set; }
+
+    #endregion
 
     #region Products
 
