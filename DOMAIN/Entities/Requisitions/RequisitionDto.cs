@@ -15,6 +15,7 @@ public class RequisitionDto
     public Guid Id { get; set; }
     public string Code { get; set; }
     public RequisitionType RequisitionType { get; set; }
+    public RequestStatus Status { get; set; }  
     public UserDto RequestedBy { get; set; }
     public DepartmentDto Department { get; set; }
     public List<RequisitionItemDto> Items { get; set; } = [];
