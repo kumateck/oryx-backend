@@ -29,7 +29,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // Create Stock Requisition
     public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
-
         var existingRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
             r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
             r.RequisitionType == request.RequisitionType);
