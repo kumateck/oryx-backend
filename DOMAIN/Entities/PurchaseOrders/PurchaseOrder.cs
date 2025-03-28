@@ -33,6 +33,7 @@ public class PurchaseOrder : BaseEntity
     public decimal TotalFobValue { get; set; }
     public decimal TotalCifValue { get; set; }
     public decimal SeaFreight { get; set; }
+    public decimal Insurance { get; set; }
     [StringLength(100)] public string AmountInFigures { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
     
@@ -78,12 +79,13 @@ public class PurchaseOrderDto : WithAttachment
     public PurchaseOrderStatus Status { get; set; }
     public bool IsRevised { get; set; }
     public PurchaseOrderAttachmentStatus AttachmentStatus { get; set; }
-    public DeliveryModeDto DeliveryMode { get; set; }
-    public TermsOfPaymentDto TermsOfPayment { get; set; }
+    public CollectionItemDto DeliveryMode { get; set; }
+    public CollectionItemDto TermsOfPayment { get; set; }
     public decimal TotalFobValue { get; set; }
     public decimal TotalCifValue { get; set; }
     public decimal SeaFreight { get; set; }
     public string AmountInFigures { get; set; }
+    public decimal Insurance { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
 }
 

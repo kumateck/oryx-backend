@@ -194,7 +194,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
     public async Task<Result<IEnumerable<UnitOfMeasureDto>>> GetUoM(bool isRawMaterial)
     {
        return mapper.Map<List<UnitOfMeasureDto>>(await context.UnitOfMeasures.Where(u => u.IsRawMaterial == isRawMaterial).ToListAsync());
-    }
+    } 
     
     public async Task<Result<IEnumerable<PackageStyleDto>>> GetPackageStyles()
     {

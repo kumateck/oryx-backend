@@ -14,6 +14,20 @@ public class CreatePurchaseOrderRequest
     public decimal TotalFobValue { get; set; }
     public decimal TotalCifValue { get; set; }
     public decimal SeaFreight { get; set; }
+    public decimal Insurance { get; set; }
+    public string AmountInFigures { get; set; }
+    public DateTime? EstimatedDeliveryDate { get; set; }
+}
+
+public class UpdatePurchaseOrderRequest
+{
+    public string ProFormaInvoiceNumber { get; set; }
+    public Guid? DeliveryModeId { get; set; }
+    public Guid? TermsOfPaymentId { get; set; }
+    public decimal TotalFobValue { get; set; }
+    public decimal TotalCifValue { get; set; }
+    public decimal SeaFreight { get; set; }
+    public decimal Insurance { get; set; }
     public string AmountInFigures { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
 }

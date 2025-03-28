@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250328170913_Updated_PurchaseOrder_Insurance")]
+    partial class Updated_PurchaseOrder_Insurance
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4658,10 +4661,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("RequisitionId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("UoMId")
+                    b.Property<Guid?>("UomId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -4679,7 +4679,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("RequisitionId");
 
-                    b.HasIndex("UoMId");
+                    b.HasIndex("UomId");
 
                     b.ToTable("RequisitionItems");
                 });
@@ -9220,7 +9220,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
-                        .HasForeignKey("UoMId");
+                        .HasForeignKey("UomId");
 
                     b.Navigation("CreatedBy");
 
