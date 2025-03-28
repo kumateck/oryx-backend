@@ -765,7 +765,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<FinishedGoodsTransferNote>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && entity.BatchManufacturingRecord != null);
 
-
         #endregion
     }
 }
