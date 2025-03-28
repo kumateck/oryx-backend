@@ -22,7 +22,6 @@ public class RequisitionDto
     public List<RequisitionApprovalDto> Approvals { get; set; } = [];
     public DateTime? ExpectedDelivery { get; set; }
     public DateTime CreatedAt { get; set; }
-    public RequestStatus Status { get; set; }  
     public CollectionItemDto ProductionSchedule { get; set; }
     public ProductDto Product { get; set; }
     public string Comments { get; set; }
@@ -34,6 +33,7 @@ public class RequisitionItemDto
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
+    public RequestStatus Status { get; set; }  
     public List<BatchToSupply> Batches { get; set; } = [];
 }
 

@@ -301,7 +301,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions)
     {
-        var existingOrder = await context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+        var existingOrder = await context.PurchaseOrders.Include(purchaseOrder => purchaseOrder.SourceRequisition)
+            .ThenInclude(sourceRequisition => sourceRequisition.Items).FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         if (existingOrder is null)
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
@@ -319,9 +320,31 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                                     && i.UoMId == revision.UoMId)
                         .ExecuteUpdateAsync(setters =>
                             setters.SetProperty(p => p.Status, SupplierQuotationItemStatus.NotProcessed));
+                    
+                    var removePoItem = await context.PurchaseOrderItems.FirstOrDefaultAsync(p => p.Id == revision.PurchaseOrderItemId);
+                    if (removePoItem is not null)
+                    {
+                        context.PurchaseOrderItems.Remove(removePoItem);
+                        await context.SaveChangesAsync();
+                    }
                     break;
                 
                 case RevisedPurchaseOrderType.ChangeSource:
+                    var sourceRequisition = existingOrder.SourceRequisition;
+                    var requisitionId = sourceRequisition.Items.FirstOrDefault(i => i.MaterialId == revision.MaterialId && i.Quantity == revision.Quantity)?.RequisitionId;
+                    var requisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r => r.Id == requisitionId);
+                    if(requisition is null) return Error.NotFound("Requisition.NotFound", "Requisition not found");
+                    var requisitionItem = requisition.Items.FirstOrDefault(r => r.MaterialId == revision.MaterialId && r.Quantity == revision.Quantity && r.Status == RequestStatus.Sourced);
+                    if(requisitionItem is null) return Error.NotFound("Requisition.NotFound", "Requisition Item not found");
+                    requisitionItem.Status = RequestStatus.Pending;
+                    context.RequisitionItems.Update(requisitionItem);
+                    await context.SaveChangesAsync();
+                    var removedPoItem = await context.PurchaseOrderItems.FirstOrDefaultAsync(p => p.Id == revision.PurchaseOrderItemId);
+                    if (removedPoItem is not null)
+                    {
+                        context.PurchaseOrderItems.Remove(removedPoItem);
+                        await context.SaveChangesAsync();
+                    }
                     break;
                 
                 case RevisedPurchaseOrderType.AddItem:
@@ -1420,7 +1443,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         RequisitionItemId = requisitionItem.Id,
                         MaterialId = requisitionItem.MaterialId,
                         ShipmentInvoiceId = shipmentDocument.ShipmentInvoiceId,
-                        UomId = requisitionItem.UomId,
+                        UomId = requisitionItem.UoMId,
                         Quantity = item.QuantityAllocated,
                         Status = DistributedRequisitionMaterialStatus.Distributed,
                         DistributedAt = DateTime.UtcNow,
@@ -1531,7 +1554,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         RequisitionItemId = requisitionItem.Id,
                         MaterialId = requisitionItem.MaterialId,
                         ShipmentInvoiceId = shipmentDocument.ShipmentInvoiceId,
-                        UomId = requisitionItem.UomId,
+                        UomId = requisitionItem.UoMId,
                         Quantity = item.QuantityAllocated,
                         Status = DistributedRequisitionMaterialStatus.Distributed,
                         DistributedAt = DateTime.UtcNow,
