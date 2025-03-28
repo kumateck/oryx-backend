@@ -247,6 +247,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(po => po.Supplier)
             .Include(po => po.Items).ThenInclude(i => i.Material)
             .Include(po => po.Items).ThenInclude(i => i.UoM)
+            .Include(po=>po.TermsOfPayment)
+            .Include(po=>po.DeliveryMode)
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         
         if (purchaseOrder is null)
@@ -376,24 +378,25 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    public async Task<Result> UpdatePurchaseOrder(CreatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId)
+    public async Task<Result> UpdatePurchaseOrder(UpdatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId)
     {
-        var existingOrder = await context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+        var existingOrder = await context.PurchaseOrders
+            .Include(po => po.RevisedPurchaseOrders)
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         if (existingOrder is null)
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
-        
-        // var purchaseOrder = mapper.Map<RevisedPurchaseOrder>(request);
-        // purchaseOrder.CreatedById = userId;
-        // await context.RevisedPurchaseOrders.AddAsync(purchaseOrder);
-        // await context.SaveChangesAsync();
-
-        // mapper.Map(request, existingOrder);
-        // existingOrder.LastUpdatedById = userId;
-        //
-        // context.PurchaseOrders.Update(existingOrder);
-        // await context.SaveChangesAsync();
+    
+        // var revisedPurchaseOrder = mapper.Map<RevisedPurchaseOrder>(request);
+        // revisedPurchaseOrder.CreatedById = userId;
+        // existingOrder.RevisedPurchaseOrders.Add(revisedPurchaseOrder);
+    
+        mapper.Map(request, existingOrder);
+        existingOrder.LastUpdatedById = userId;
+    
+        context.PurchaseOrders.Update(existingOrder);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 

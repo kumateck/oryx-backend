@@ -393,6 +393,7 @@ public class OryxMapper : Profile
         #region Purchase Order
         
         CreateMap<CreatePurchaseOrderRequest, PurchaseOrder>();
+        CreateMap<UpdatePurchaseOrderRequest, PurchaseOrder>();
         CreateMap<CreatePurchaseOrderItemRequest, PurchaseOrderItem>();
         CreateMap<PurchaseOrder, PurchaseOrderDto>()
             .ForMember(dest => dest.Attachments,

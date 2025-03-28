@@ -358,7 +358,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdatePurchaseOrder([FromBody] CreatePurchaseOrderRequest request, Guid purchaseOrderId)
+    public async Task<IResult> UpdatePurchaseOrder([FromBody] UpdatePurchaseOrderRequest request, Guid purchaseOrderId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
