@@ -368,6 +368,26 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
 
     /// <summary>
+    /// Revises a specific purchase order by its ID.
+    /// </summary>
+    /// <param name="revisions">The list of revisions to be made for the purchase order</param>
+    /// <param name="purchaseOrderId">The ID of the purchase order to revise.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("purchase-order/{purchaseOrderId}/revise")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> RevisePurchaseOrder([FromBody] List<CreatePurchaseOrderRevision> revisions, Guid purchaseOrderId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.RevisePurchaseOrder(purchaseOrderId, revisions);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Deletes a specific purchase order by its ID.
     /// </summary>
     /// <param name="purchaseOrderId">The ID of the purchase order to delete.</param>

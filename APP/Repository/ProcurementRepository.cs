@@ -302,11 +302,18 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions)
     {
         var existingOrder = await context.PurchaseOrders.Include(purchaseOrder => purchaseOrder.SourceRequisition)
-            .ThenInclude(sourceRequisition => sourceRequisition.Items).FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+            .ThenInclude(sourceRequisition => sourceRequisition.Items)       
+            .Include(po => po.RevisedPurchaseOrders)
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         if (existingOrder is null)
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
+        
+        // Get the latest revision number and increment
+        int latestRevisionNumber = existingOrder.RevisedPurchaseOrders.Count != 0
+            ? existingOrder.RevisedPurchaseOrders.Max(r => r.RevisionNumber) + 1
+            : 1;
 
         foreach (var revision in revisions)
         {
@@ -396,7 +403,13 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             }
         }
         
-        existingOrder.RevisedPurchaseOrders.AddRange(mapper.Map<List<RevisedPurchaseOrder>>(revisions));
+        var mappedRevisions = mapper.Map<List<RevisedPurchaseOrder>>(revisions);
+        foreach (var rev in mappedRevisions)
+        {
+            rev.RevisionNumber = latestRevisionNumber;
+        }
+        
+        existingOrder.RevisedPurchaseOrders.AddRange(mappedRevisions);
         await context.SaveChangesAsync();
         return Result.Success();
     }
