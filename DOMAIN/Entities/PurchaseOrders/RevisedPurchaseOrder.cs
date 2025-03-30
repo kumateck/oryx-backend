@@ -20,6 +20,7 @@ public class RevisedPurchaseOrder
     public decimal? Price { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
+    public int RevisionNumber { get; set; }
 }
 
 public class RevisedPurchaseOrderItem : BaseEntity

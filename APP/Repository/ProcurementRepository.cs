@@ -302,22 +302,33 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions)
     {
         var existingOrder = await context.PurchaseOrders.Include(purchaseOrder => purchaseOrder.SourceRequisition)
-            .ThenInclude(sourceRequisition => sourceRequisition.Items).FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+            .ThenInclude(sourceRequisition => sourceRequisition.Items)       
+            .Include(po => po.RevisedPurchaseOrders)
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         if (existingOrder is null)
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
+        
+        // Get the latest revision number and increment
+        int latestRevisionNumber = existingOrder.RevisedPurchaseOrders.Count != 0
+            ? existingOrder.RevisedPurchaseOrders.Max(r => r.RevisionNumber) + 1
+            : 1;
 
         foreach (var revision in revisions)
         {
+            var poItem = existingOrder.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+            if (poItem is null) return 
+                Error.NotFound("PurchaseOrderItem.NotFound", $"Purchase order with Id: {revision.PurchaseOrderItemId} item not found");
+            
             switch (revision.Type)
             {
                 case RevisedPurchaseOrderType.ReassignSuppler:
                     await context.SupplierQuotationItems
                         .Where(i => i.Status == SupplierQuotationItemStatus.NotUsed 
-                                    && i.MaterialId == revision.MaterialId
-                                    && i.Quantity == revision.Quantity
-                                    && i.UoMId == revision.UoMId)
+                                    && i.MaterialId == poItem.MaterialId
+                                    && i.Quantity == poItem.Quantity
+                                    && i.UoMId == poItem.UoMId)
                         .ExecuteUpdateAsync(setters =>
                             setters.SetProperty(p => p.Status, SupplierQuotationItemStatus.NotProcessed));
                     
@@ -331,10 +342,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 
                 case RevisedPurchaseOrderType.ChangeSource:
                     var sourceRequisition = existingOrder.SourceRequisition;
-                    var requisitionId = sourceRequisition.Items.FirstOrDefault(i => i.MaterialId == revision.MaterialId && i.Quantity == revision.Quantity)?.RequisitionId;
+                    var requisitionId = sourceRequisition.Items.FirstOrDefault(i => i.MaterialId == poItem.MaterialId && i.Quantity == poItem.Quantity)?.RequisitionId;
                     var requisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r => r.Id == requisitionId);
                     if(requisition is null) return Error.NotFound("Requisition.NotFound", "Requisition not found");
-                    var requisitionItem = requisition.Items.FirstOrDefault(r => r.MaterialId == revision.MaterialId && r.Quantity == revision.Quantity && r.Status == RequestStatus.Sourced);
+                    var requisitionItem = requisition.Items.FirstOrDefault(r => r.MaterialId == poItem.MaterialId && r.Quantity == poItem.Quantity && r.Status == RequestStatus.Sourced);
                     if(requisitionItem is null) return Error.NotFound("Requisition.NotFound", "Requisition Item not found");
                     requisitionItem.Status = RequestStatus.Pending;
                     context.RequisitionItems.Update(requisitionItem);
@@ -376,7 +387,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         return Error.Validation("PurchaseOrder.MissingFields", "One or more required fields are missing for UpdateItem.");
                     }
                     
-                    var purchaseOrderItem = await context.PurchaseOrderItems.FirstOrDefaultAsync(po => po.Id == revision.PurchaseOrderItemId);
+                    var purchaseOrderItem = existingOrder.Items.FirstOrDefault(po => po.Id == revision.PurchaseOrderItemId);
                     if (purchaseOrderItem is not null)
                     {
                         purchaseOrderItem.UoMId = revision.UoMId.Value;
@@ -387,7 +398,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     break;
                 
                 case RevisedPurchaseOrderType.RemoveItem:
-                    var removePurchaseOrderItem = await context.PurchaseOrderItems.FirstOrDefaultAsync(po => po.Id == revision.PurchaseOrderItemId);
+                    var removePurchaseOrderItem = existingOrder.Items.FirstOrDefault(po => po.Id == revision.PurchaseOrderItemId);
                     if (removePurchaseOrderItem is not null)
                     {
                         context.PurchaseOrderItems.Remove(removePurchaseOrderItem);
@@ -396,7 +407,13 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             }
         }
         
-        existingOrder.RevisedPurchaseOrders.AddRange(mapper.Map<List<RevisedPurchaseOrder>>(revisions));
+        var mappedRevisions = mapper.Map<List<RevisedPurchaseOrder>>(revisions);
+        foreach (var rev in mappedRevisions)
+        {
+            rev.RevisionNumber = latestRevisionNumber;
+        }
+        
+        existingOrder.RevisedPurchaseOrders.AddRange(mappedRevisions);
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -1303,6 +1320,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 
             var invoices = await context.ShipmentInvoices
+                .AsSplitQuery()
                 .Include(s=>s.Items.Where(i=>!i.Distributed))
                 .ThenInclude(item=>item.Material)
                 .Include(s=>s.Items.Where(i=>!i.Distributed))

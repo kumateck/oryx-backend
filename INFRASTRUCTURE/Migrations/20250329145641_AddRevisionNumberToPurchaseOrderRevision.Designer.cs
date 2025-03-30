@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250329145641_AddRevisionNumberToPurchaseOrderRevision")]
+    partial class AddRevisionNumberToPurchaseOrderRevision
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1159,101 +1162,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Departments");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Employees.Employee", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("text");
-
-                    b.Property<string>("StaffNumber")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Employees");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Employees.Sibling", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("EmployeeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.ToTable("Sibling");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Form", b =>
@@ -7079,60 +6987,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Employees.Employee", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Employees.Sibling", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Employees.Employee", null)
-                        .WithMany("Siblings")
-                        .HasForeignKey("EmployeeId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Forms.Form", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -10434,11 +10288,6 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.Departments.Department", b =>
                 {
                     b.Navigation("Warehouses");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Employees.Employee", b =>
-                {
-                    b.Navigation("Siblings");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Form", b =>
