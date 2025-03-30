@@ -10,6 +10,7 @@ using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
@@ -315,6 +316,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Charge
 
     public DbSet<Charge> Charges { get; set; }
+
+    #endregion
+
+    #region Employee
+
+    public DbSet<Employee> Employees { get; set; }
 
     #endregion
     
