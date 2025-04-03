@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IFormRepository, FormRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+        services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();

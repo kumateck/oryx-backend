@@ -1,5 +1,6 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
+using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
@@ -546,6 +547,13 @@ public class OryxMapper : Profile
 
         CreateMap<CreateEmployeeRequest, Employee>();
         CreateMap<Employee, EmployeeDto>();
+
+        #endregion
+
+        #region ActivityLog
+
+        CreateMap<CreateActivityLog, ActivityLog>();
+        CreateMap<ActivityLog, ActivityLogDto>();
 
         #endregion
     }
