@@ -1,5 +1,7 @@
 using System.Data.Entity;
+using APP.Extensions;
 using APP.IRepository;
+using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Employees;
 using INFRASTRUCTURE.Context;
@@ -32,6 +34,23 @@ public class EmployeeRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var employeeDto = mapper.Map<EmployeeDto>(employee);
         return Result.Success(employeeDto);
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize, string searchQuery)
+    {
+        var query = context.Employees.AsQueryable();
+        
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.Email);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query, 
+            page, 
+            pageSize, 
+            mapper.Map<EmployeeDto>
+        );
     }
 
     public async Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request, Guid userId)

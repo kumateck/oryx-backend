@@ -10,6 +10,7 @@ public class CreateActivityLog
     public string SubModule { get; set; }
     public ActionType ActionType { get; set; }
     public string IpAddress { get; set; }
+    public string Payload { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
@@ -23,6 +24,7 @@ public class ActivityLog
     public string SubModule { get; set; }
     public ActionType ActionType { get; set; }
     public string IpAddress { get; set; }
+    public string Payload { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

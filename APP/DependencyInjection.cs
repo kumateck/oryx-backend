@@ -6,6 +6,7 @@ using APP.Services.Storage;
 using APP.Services.Token;
 using DinkToPdf;
 using DinkToPdf.Contracts;
+using INFRASTRUCTURE.Context;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
 using SHARED.Services.Identity;
@@ -58,5 +59,6 @@ public static class DependencyInjection
         services.AddSingleton(sp => 
             sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
         services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+        services.AddSingleton<MongoDbContext>();
     }
 }

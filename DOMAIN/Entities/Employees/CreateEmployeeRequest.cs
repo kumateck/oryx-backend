@@ -5,9 +5,6 @@ namespace DOMAIN.Entities.Employees;
 public class CreateEmployeeRequest
 {
     [Required]
-    public Guid UserId { get; set; }
-
-    [Required]
     public string StaffNumber { get; set; }
 
     [Required]
