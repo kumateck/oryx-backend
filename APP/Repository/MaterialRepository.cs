@@ -1469,7 +1469,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await file.CopyToAsync(stream);
         stream.Position = 0;
 
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial; 
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage(stream);
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
         if (worksheet == null)
@@ -1532,7 +1532,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var materials = new List<Material>();
 
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial; 
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage(new FileInfo(filePath));
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
 
