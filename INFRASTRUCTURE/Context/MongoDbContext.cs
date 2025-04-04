@@ -1,5 +1,4 @@
 using DOMAIN.Entities.ActivityLogs;
-using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 
 namespace INFRASTRUCTURE.Context;
@@ -8,14 +7,16 @@ public class MongoDbContext
 {
     private readonly IMongoDatabase _database;
 
-    public MongoDbContext(IConfiguration configuration)
+    public MongoDbContext()
     {
-        var connectionString = Environment.GetEnvironmentVariable("MongoDbConnection");
-        
+        var connectionString = Environment.GetEnvironmentVariable("MONGO_DB_CONNECTION_STRING")
+                               ?? throw new InvalidOperationException("MongoDB connection string is not set.");
+
         var client = new MongoClient(connectionString);
-        _database = client.GetDatabase("OryxLogs");
+        var environment = Environment.GetEnvironmentVariable("Environemt");
+        var dbName = environment == "dev" ? "logs" : "demo_logs";
+        _database = client.GetDatabase(dbName);
     }
 
-    // Example MongoDB collections as properties
     public IMongoCollection<ActivityLog> ActivityLogs => _database.GetCollection<ActivityLog>("activity_logs");
 }

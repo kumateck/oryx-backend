@@ -237,6 +237,8 @@ app.UseMiddleware<SentryPerformanceMiddleware>();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+app.UseMiddleware<ActivityLogMiddleware>();
+
 app.SeedData();
 
 app.UseRouting();

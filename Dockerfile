@@ -23,6 +23,7 @@ ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 ENV PATH=$PATH:/root/.dotnet/tools
 ENV connectionString="Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=oryxdb"
 ENV redisConnectionString="redis:6379,abortConnect=false"
+ENV Environemt="dev"
 ENV MINIO_ENDPOINT="minio"
 ENV MINIO_ACCESS_KEY="${ACCESS_KEY}"
 ENV MINIO_SECRET_KEY="${SECRET_KEY}"
@@ -33,5 +34,8 @@ ENV DEFAULT_USER_PASSWORD="${DEFAULT_PASSWORD}"
 ENV SMTP_USERNAME="${SMTP_USERNAME}"
 ENV SMTP_PASSWORD="${SMTP_PASSWORD}"
 ENV CLIENT_BASE_URL="http://164.90.142.68:3005"
+ENV MONGO_DB_CONNECTION_STRING="mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27018"
+
+RUN dotnet restore Oryx.sln
 
 ENTRYPOINT ["dotnet", "watch", "run", "--urls=http://+:5001", "--project", "API/API.csproj"]

@@ -1,11 +1,14 @@
+using System.Collections.Concurrent;
 using APP.IRepository;
 using APP.Repository;
+using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Services.Storage;
 using APP.Services.Token;
 using DinkToPdf;
 using DinkToPdf.Contracts;
+using DOMAIN.Entities.ActivityLogs;
 using INFRASTRUCTURE.Context;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
@@ -40,7 +43,6 @@ public static class DependencyInjection
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IFormRepository, FormRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
-        services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();
@@ -49,6 +51,8 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IPdfService, PdfService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IBackgroundWorkerService, BackgroundWorkerService>();
+        services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)
@@ -60,5 +64,8 @@ public static class DependencyInjection
             sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
         services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
         services.AddSingleton<MongoDbContext>();
+        services.AddHostedService<ConsumeBackgroundWorkerService>();
+        services.AddSingleton<ConcurrentQueue<CreateActivityLog>>();
+        services.AddSingleton<ConcurrentQueue<PrevStateCaptureRequest>>();
     }
 }

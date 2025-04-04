@@ -5,6 +5,8 @@ namespace APP.IRepository;
 
 public interface IActivityLogRepository
 {
-    Task RecordActivity(CreateActivityLog model);
+    Task RecordActivityAsync(CreateActivityLog model);
+    void RecordActivity(CreateActivityLog model);
+
     Task<Paginateable<IEnumerable<ActivityLogDto>>> GetActivityLogs(ActivityLogFilter filter);
 }

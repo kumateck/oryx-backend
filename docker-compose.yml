@@ -6,10 +6,8 @@ services:
     restart: always
     image: oryxapi
     ports:
-      - "8082:5001"
+      - "8080:5001"
     environment:
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=password
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
       - connectionString=Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=${DB_DATABASE}
       - redisConnectionString=redis:6379,abortConnect=false
       - RUN_TEST_SEEDS=ON
@@ -18,8 +16,8 @@ services:
       - MINIO_SECRET_KEY=${SECRET_KEY}
       - MINIO_PORT=9000
       - REDIS_HOST=redis
+      - MONGO_DB_CONNECTION_STRING=mongodb://mongo:27017
       - REDIS_PORT=6379
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - DEFAULT_USER_PASSWORD=${DEFAULT_USER_PASSWORD}
     volumes:
       - ~/.aspnet/https:/https:ro
