@@ -557,7 +557,7 @@ public class OryxMapper : Profile
 
         #endregion
         
-        #region Designation
+        #region Designations
         
         // CreateMap<>()
         // CreateMap<>()
