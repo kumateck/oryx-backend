@@ -9,15 +9,6 @@ RUN dotnet tool install -g dotnet-ef
 
 RUN apt-get update && apt-get install -y --allow-unauthenticated libgdiplus
 
-# Define build arguments
-ARG DB_USERNAME
-ARG DB_PASSWORD
-ARG ACCESS_KEY
-ARG SECRET_KEY
-ARG DEFAULT_PASSWORD
-ARG SMTP_USERNAME
-ARG SMTP_PASSWORD
-
 # Set environment variables
 ENV DOTNET_USE_POLLING_FILE_WATCHER=1
 ENV PATH=$PATH:/root/.dotnet/tools
