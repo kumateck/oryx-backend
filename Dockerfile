@@ -35,6 +35,4 @@ ENV SMTP_PASSWORD="${SMTP_PASSWORD}"
 ENV CLIENT_BASE_URL="http://164.90.142.68:3005"
 ENV MONGO_DB_CONNECTION_STRING="mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27018"
 
-RUN dotnet restore Oryx.sln
-
 ENTRYPOINT ["dotnet", "watch", "run", "--urls=http://+:5001", "--project", "API/API.csproj"]
