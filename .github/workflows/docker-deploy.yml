@@ -82,7 +82,7 @@ jobs:
             --env DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD }} \
             --env SMTP_USERNAME=${{ secrets.SMTP_USERNAME }} \
             --env SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }} \
-            --env connectionString="Host=postgres_db;Port=5432;Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};Database=oryxdb" \
-            --env MONGO_DB_CONNECTION_STRING="mongodb://${{ secrets.MONGO_INITDB_ROOT_USERNAME }}:${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}@mongo:27018" \ 
+            --env connectionString=Host=postgres_db;Port=5432;Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};Database=oryxdb \
+            --env MONGO_DB_CONNECTION_STRING=mongodb://${{ secrets.MONGO_INITDB_ROOT_USERNAME }}:${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}@mongo:27018 \ 
             "${DOCKER_IMAGE_NAME}:latest"
           EOF
