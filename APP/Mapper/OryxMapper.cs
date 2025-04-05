@@ -556,5 +556,13 @@ public class OryxMapper : Profile
         CreateMap<ActivityLog, ActivityLogDto>();
 
         #endregion
+        
+        #region Designation
+        
+        // CreateMap<>()
+        // CreateMap<>()
+        // CreateMap<>()
+        // CreateMap<>()
+        #endregion
     }
 }

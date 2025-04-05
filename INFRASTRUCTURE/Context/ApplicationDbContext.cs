@@ -10,6 +10,7 @@ using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Designation;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
@@ -324,8 +325,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Employee> Employees { get; set; }
 
     #endregion
-    
 
+    #region Designation
+
+    public DbSet<Designation> Designations { get; set; }
+
+    #endregion
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     // {
@@ -545,6 +550,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ShipmentInvoiceItem>().Navigation(p => p.Manufacturer).AutoInclude();
         modelBuilder.Entity<ShipmentInvoiceItem>().Navigation(p => p.Material).AutoInclude();
         modelBuilder.Entity<ShipmentInvoiceItem>().Navigation(p => p.UoM).AutoInclude();
+
+        #endregion
+
+        #region Designation
+
+        modelBuilder.Entity<Designation>().Navigation(p => p.Department).AutoInclude();
 
         #endregion
     }
