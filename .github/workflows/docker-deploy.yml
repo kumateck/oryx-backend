@@ -48,23 +48,23 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Deploy to Server
-        env:
-          DOCKER_IMAGE_NAME: ${{ env.DOCKER_IMAGE_NAME }}
-          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
-          HOST_PORT: ${{ env.HOST_PORT }}
-          CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
         run: |
-          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << 'EOF'
+            DOCKER_IMAGE_NAME="kumateck/oryx-erp-api"
+            CONTAINER_NAME="oryx-erp-api"
+            HOST_PORT="8080"
+            CONTAINER_PORT="5001"
+
             echo "Logging in to Docker Hub"
             echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
 
-            echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
-            docker pull "${DOCKER_IMAGE_NAME}:latest"
+            echo "Pulling the latest Docker image: \$DOCKER_IMAGE_NAME:latest"
+            docker pull "\$DOCKER_IMAGE_NAME:latest"
 
             echo "Stopping and removing the existing container if it exists"
-            if [ \$(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
-              docker stop "${CONTAINER_NAME}"
-              docker rm "${CONTAINER_NAME}"
+            if [ \$(docker ps -a | grep "\$CONTAINER_NAME" | wc -l) -gt 0 ]; then
+              docker stop "\$CONTAINER_NAME"
+              docker rm "\$CONTAINER_NAME"
             fi
 
             echo "Ensuring 'sail' network exists"
@@ -74,15 +74,15 @@ jobs:
             docker image prune -a -f
 
             echo "Running the new Docker container"
-            docker run -d --restart always --net sail -p "${HOST_PORT}:${CONTAINER_PORT}" --name "${CONTAINER_NAME}" \
-            --env DB_USERNAME=${{ secrets.DB_USERNAME }} \
-            --env DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-            --env ACCESS_KEY=${{ secrets.ACCESS_KEY }} \
-            --env SECRET_KEY=${{ secrets.SECRET_KEY }} \
-            --env DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD }} \
-            --env SMTP_USERNAME=${{ secrets.SMTP_USERNAME }} \
-            --env SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }} \
-            --env connectionString=Host=postgres_db;Port=5432;Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};Database=oryxdb \
-            --env MONGO_DB_CONNECTION_STRING=mongodb://${{ secrets.MONGO_INITDB_ROOT_USERNAME }}:${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}@mongo:27018 \ 
-            "${DOCKER_IMAGE_NAME}:latest"
+            docker run -d --restart always --net sail -p "\$HOST_PORT:\$CONTAINER_PORT" --name "\$CONTAINER_NAME" \
+              --env DB_USERNAME="${{ secrets.DB_USERNAME }}" \
+              --env DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+              --env ACCESS_KEY="${{ secrets.ACCESS_KEY }}" \
+              --env SECRET_KEY="${{ secrets.SECRET_KEY }}" \
+              --env DEFAULT_PASSWORD="${{ secrets.DEFAULT_PASSWORD }}" \
+              --env SMTP_USERNAME="${{ secrets.SMTP_USERNAME }}" \
+              --env SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}" \
+              --env connectionString="Host=postgres_db;Port=5432;Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};Database=oryxdb" \
+              --env MONGO_DB_CONNECTION_STRING="mongodb://${{ secrets.MONGO_INITDB_ROOT_USERNAME }}:${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}@mongo:27018" \
+              "\$DOCKER_IMAGE_NAME:latest"
           EOF
