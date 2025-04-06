@@ -132,8 +132,9 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         {
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
-            user.PhoneNumber = request.PhoneNumber;
             user.DateOfBirth = request.DateOfBirth;
+            user.PhoneNumber = request.PhoneNumber;
+            user.DepartmentId = request.DepartmentId;
             user.LastUpdatedById = userId;
             user.UpdatedAt = DateTime.UtcNow;
 
@@ -151,19 +152,19 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
                 await context.SaveChangesAsync();
             }
 
-            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            //var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
 
-            var result = await userManager.ConfirmEmailAsync(user, token);
+            //var result = await userManager.ConfirmEmailAsync(user, token);
 
-            if (result.Succeeded)
-            {
-                user.UserName = request.Email;
-                user.Email = request.Email;
-                context.Users.Update(user);
-                await context.SaveChangesAsync();
-                await userManager.UpdateNormalizedEmailAsync(user);
-                await userManager.UpdateNormalizedUserNameAsync(user);
-            }
+            // if (result.Succeeded)
+            // {
+            //     user.UserName = request.Email;
+            //     user.Email = request.Email;
+            //     context.Users.Update(user);
+            //     await context.SaveChangesAsync();
+            //     await userManager.UpdateNormalizedEmailAsync(user);
+            //     await userManager.UpdateNormalizedUserNameAsync(user);
+            // }
         }
 
         return Result.Success();
