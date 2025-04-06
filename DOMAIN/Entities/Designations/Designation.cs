@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 
-namespace DOMAIN.Entities.Designation;
+namespace DOMAIN.Entities.Designations;
 
 public class Designation : BaseEntity
 {

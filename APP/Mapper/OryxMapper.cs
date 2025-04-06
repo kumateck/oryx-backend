@@ -13,6 +13,7 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
+using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
@@ -558,11 +559,9 @@ public class OryxMapper : Profile
         #endregion
         
         #region Designations
-        
-        // CreateMap<>()
-        // CreateMap<>()
-        // CreateMap<>()
-        // CreateMap<>()
+
+        CreateMap<CreateDesignationRequest, Designation>();
+        CreateMap<Designation, DesignationDto>();
         #endregion
     }
 }
