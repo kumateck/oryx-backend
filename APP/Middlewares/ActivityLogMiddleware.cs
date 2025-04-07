@@ -5,6 +5,7 @@ using APP.IRepository;
 using DOMAIN.Entities.ActivityLogs;
 using Microsoft.AspNetCore.Http;
 using APP.Services.Background;
+using SHARED.Services.Identity;
 
 namespace APP.Middlewares;
 
