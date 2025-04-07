@@ -25,6 +25,7 @@ public class ActivityLogMiddleware(RequestDelegate next)
         var headers = JsonSerializer.Serialize(request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString()));
 
         var pathValue = request.Path.Value?.ToLower();
+        string requestBody = await ReadRequestBodyAsync(request);
 
         // Skip excluded paths (unless it's an allowed GET request)
         if (request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
@@ -32,7 +33,14 @@ public class ActivityLogMiddleware(RequestDelegate next)
             if (_allowedGetPaths.Any(p => pathValue != null && pathValue.Contains(p)))
             {
                 var model = GetModelFromPath(context.Request.Path);
-                backgroundService.EnqueuePrevStateCapture(request.Method, model, ipAddress, userId);
+                backgroundService.EnqueuePrevStateCapture(new PrevStateCaptureRequest
+                { 
+                    Method = request.Method,
+                    Model = model?.ToLower(),
+                    IpAddress = ipAddress,
+                    UserId = userId,
+                    RequestBody = requestBody
+                });
             }
             else if (_excludedPaths.Any(path => pathValue != null && pathValue.Contains(path)))
             {
@@ -45,9 +53,7 @@ public class ActivityLogMiddleware(RequestDelegate next)
             await next(context);
             return;
         }
-
-        string requestBody = await ReadRequestBodyAsync(request);
-
+        
         // Replace response body to capture it
         var originalBodyStream = context.Response.Body;
         using var responseBodyStream = new MemoryStream();
@@ -98,7 +104,14 @@ public class ActivityLogMiddleware(RequestDelegate next)
             // Optionally also enqueue prevState tracking if not a basic GET
             if (!request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
             {
-                backgroundService.EnqueuePrevStateCapture(request.Method, modelPath, ipAddress, userId, requestBody);
+                backgroundService.EnqueuePrevStateCapture(new PrevStateCaptureRequest
+                { 
+                    Method = request.Method,
+                    Model = modelPath,
+                    IpAddress = ipAddress,
+                    UserId = userId,
+                    RequestBody = requestBody
+                });
             }
         }
     }

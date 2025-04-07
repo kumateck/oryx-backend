@@ -6,28 +6,19 @@ using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 
 namespace APP.Services.Background;
-public class BackgroundWorkerService(ILogger<BackgroundWorkerService> logger, IActivityLogRepository repo, ICollectionRepository collectionRepo)
+public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue,
+    ConcurrentQueue<PrevStateCaptureRequest> prevStateQueue, ILogger<BackgroundWorkerService> logger, IActivityLogRepository repo, ICollectionRepository collectionRepo)
     : IBackgroundWorkerService
 {
-    private readonly ConcurrentQueue<CreateActivityLog> _logQueue = new();    
-    private readonly ConcurrentQueue<PrevStateCaptureRequest> _prevStateQueue = new();
-
     // Method to enqueue logs for background processing
     public void EnqueueLog(CreateActivityLog log) 
     { 
-        _logQueue.Enqueue(log);
+        logQueue.Enqueue(log);
     }
     
-    public void EnqueuePrevStateCapture(string method, string model, string ipAddress, string userId, string requestBody = null)
+    public void EnqueuePrevStateCapture(PrevStateCaptureRequest prevStateCapture)
     {
-        _prevStateQueue.Enqueue(new PrevStateCaptureRequest
-        {
-            Method = method,
-            Model = model?.ToLower(),
-            IpAddress = ipAddress,
-            UserId = userId,
-            RequestBody = requestBody
-        });
+        prevStateQueue.Enqueue(prevStateCapture);
     }
 
     // This method processes logs in the background
@@ -35,7 +26,7 @@ public class BackgroundWorkerService(ILogger<BackgroundWorkerService> logger, IA
     { 
         while (!stoppingToken.IsCancellationRequested) 
         { 
-            if (_logQueue.TryDequeue(out var log)) 
+            if (logQueue.TryDequeue(out var log)) 
             { 
                 try
                 {
@@ -48,11 +39,11 @@ public class BackgroundWorkerService(ILogger<BackgroundWorkerService> logger, IA
                 }
             }
             
-            if (_prevStateQueue.TryDequeue(out var request))
+            if (prevStateQueue.TryDequeue(out var request))
             {
                 try
                 {
-                    //await HandlePrevStateCaptureAsync(request);
+                    await HandlePrevStateCaptureAsync(request);
                 }
                 catch (Exception ex)
                 {

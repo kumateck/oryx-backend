@@ -237,6 +237,8 @@ app.UseMiddleware<SentryPerformanceMiddleware>();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+app.UseMiddleware<JwtMiddleware>();
+
 app.UseMiddleware<ActivityLogMiddleware>();
 
 app.SeedData();
@@ -252,8 +254,6 @@ app.UseStaticFiles();
 app.UseCors("default");
 
 app.UseAuthentication();
-
-app.UseMiddleware<JwtMiddleware>();
 
 app.UseAuthorization();
 

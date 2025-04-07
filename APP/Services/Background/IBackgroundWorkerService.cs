@@ -5,6 +5,6 @@ namespace APP.Services.Background;
 public interface IBackgroundWorkerService
 {
     void EnqueueLog(CreateActivityLog log);
-    void EnqueuePrevStateCapture(string method, string model, string ipAddress, string userId, string requestBody = null);
+    void EnqueuePrevStateCapture(PrevStateCaptureRequest prevStateCaptureRequest);
     Task DoWork(CancellationToken stoppingToken);
 }
