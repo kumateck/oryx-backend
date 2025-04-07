@@ -86,7 +86,8 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256)
         };
 
-        var tokenJson = tokenHandler.CreateEncodedJwt(tokenDescriptor); 
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var tokenJson = tokenHandler.WriteToken(token);
         return tokenJson;
     }
 

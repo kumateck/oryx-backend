@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using Asp.Versioning;
@@ -168,7 +169,9 @@ TokenValidationParameters tokenValidation = new()
     ValidateLifetime = true,
     ValidateAudience = false,
     ValidateIssuer = false,
-    ClockSkew = TimeSpan.Zero
+    ClockSkew = TimeSpan.Zero,
+    NameClaimType = ClaimTypes.NameIdentifier,
+    RoleClaimType = ClaimTypes.Role
 };
 
 builder.Services.AddSingleton(tokenValidation);
@@ -237,8 +240,6 @@ app.UseMiddleware<SentryPerformanceMiddleware>();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.UseMiddleware<JwtMiddleware>();
-
 app.UseMiddleware<ActivityLogMiddleware>();
 
 app.SeedData();
@@ -256,6 +257,8 @@ app.UseCors("default");
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+app.UseMiddleware<JwtMiddleware>();
 
 app.MapControllers();
 
