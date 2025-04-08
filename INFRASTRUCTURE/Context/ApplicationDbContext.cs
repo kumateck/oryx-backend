@@ -11,7 +11,6 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
-using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
@@ -556,7 +555,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Designation
 
-        modelBuilder.Entity<Designation>().Navigation(p => p.Department).AutoInclude();
+        modelBuilder.Entity<Designation>().Navigation(p => p.Departments).AutoInclude();
 
         #endregion
     }

@@ -27,6 +27,9 @@
         <None Update="libwkhtmltox.so">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Update="Services\Email\Templates\RegistrationEmail.html">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>

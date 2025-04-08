@@ -9,20 +9,20 @@ namespace API.Controllers;
 [ApiController]
 public class EmployeeController(IEmployeeRepository repository) : ControllerBase
 {
-    [HttpPost]
+    [HttpPost("register")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
+    public async Task<IResult> OnboardEmployee([FromBody] OnboardEmployeeDto request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.CreateEmployee(request,Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        var result = await repository.OnboardEmployee(request);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:Guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -35,7 +35,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:Guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

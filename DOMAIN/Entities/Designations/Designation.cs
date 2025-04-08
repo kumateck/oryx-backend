@@ -11,8 +11,6 @@ public class Designation : BaseEntity
     
     [StringLength(1000)] public string Description { get; set; }
     
-    [Required] public Guid DepartmentId { get; set; }
-    
-    public Department Department { get; set; }
+    public ICollection<Department> Departments { get; set; } = new List<Department>();
     
 }
