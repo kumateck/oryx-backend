@@ -244,6 +244,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId)
     {
         var purchaseOrder = await context.PurchaseOrders
+            .AsSplitQuery()
             .Include(po => po.Supplier)
             .Include(po => po.Items).ThenInclude(i => i.Material)
             .Include(po => po.Items).ThenInclude(i => i.UoM)
@@ -267,6 +268,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         var query = context.PurchaseOrders
             .Include(po => po.Supplier)
+            .Include(po=>po.TermsOfPayment)
+            .Include(po=>po.DeliveryMode)
             .AsQueryable();
 
         if (type.HasValue)
