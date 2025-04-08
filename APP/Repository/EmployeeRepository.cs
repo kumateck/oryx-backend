@@ -41,7 +41,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         
             var body = emailTemplate.Replace("{Email}", employeeDto.Email);
         
-            emailService.SendMail(employeeDto.Email, "Welcome to the team", body);
+            emailService.SendMail(employeeDto.Email, "Welcome to the team", body, []);
             logger.LogInformation($"Email sent to {employeeDto.Email}");
             return Result.Success();
         }

@@ -6,7 +6,7 @@ namespace APP.Services.Email;
 
 public class EmailService(ILogger<EmailService> logger) : IEmailService
 {
-    public void SendMail(string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)>? attachments)
+    public void SendMail(string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
         var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "admin@kumateck.com";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
