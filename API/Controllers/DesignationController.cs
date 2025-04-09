@@ -27,9 +27,13 @@ public class DesignationController(IDesignationRepository repository): Controlle
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DesignationDto>))]
-    public async Task<IResult> GetDesignations()
+    public async Task<IResult> GetDesignations(int page, int pageSize, string searchQuery)
     {
-        throw new NotImplementedException();
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetDesignations(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     [HttpGet("{id:Guid}")]
