@@ -11,14 +11,14 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
 {
     [HttpPost("register")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> OnboardEmployee([FromBody] OnboardEmployeeDto request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.OnboardEmployee(request);
+        var result = await repository.OnboardEmployees(request);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 

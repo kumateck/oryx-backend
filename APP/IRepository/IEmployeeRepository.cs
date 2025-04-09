@@ -6,7 +6,7 @@ namespace APP.IRepository;
 
 public interface IEmployeeRepository
 {
-   Task<Result> OnboardEmployee(OnboardEmployeeDto employeeDto);
+   Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDto);
    Task<Result<Guid?>> CreateEmployee(CreateEmployeeRequest request, Guid userId);
    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
       string searchQuery);
