@@ -4,8 +4,12 @@ namespace DOMAIN.Entities.Employees;
 
 public class OnboardEmployeeDto
 {
-    [Required] public string Email { get; set; }
+    [Required] 
+    public List<EmployeeInviteDto> EmailList { get; set; }
+}
 
-    public EmployeeType EmployeeType { get; set; } = 0;
-    
+public class EmployeeInviteDto
+{
+    public string Email { get; set; }
+    public EmployeeType EmployeeType { get; set; }
 }

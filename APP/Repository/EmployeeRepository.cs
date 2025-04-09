@@ -16,44 +16,65 @@ public class EmployeeRepository(ApplicationDbContext context,
     ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper) : IEmployeeRepository
 {
 
-    public async Task<Result> OnboardEmployee(OnboardEmployeeDto employeeDto)
+public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
+{
+    const int maxRetries = 3;
+    
+    var templatePath = Path.GetFullPath(Path.Combine("..", "APP", "Services", "Email", "Templates", "RegistrationEmail.html"));
+    if (!File.Exists(templatePath))
+        throw new FileNotFoundException("Email template not found", templatePath);
+
+    var emailTemplate = await File.ReadAllTextAsync(templatePath);
+
+    foreach (var employee in employeeDtos.EmailList)
     {
         try
         {
-            var existingEmployee = context.Employees.FirstOrDefault(e => e.Email == employeeDto.Email);
-            if (existingEmployee != null)
+            var existing = await context.Employees.AnyAsync(e => e.Email == employee.Email);
+            if (existing)
             {
-                return Error.Validation("Employee.Email", "Employee already exists");
+                logger.LogWarning($"Employee with email {employee.Email} already exists. Skipping.");
+                continue;
             }
-        
-            var pathToFile = Path.GetFullPath(
-                Path.Combine("..", "APP", "Services", "Email", "Templates", "RegistrationEmail.html")
-            );
-            Console.WriteLine(pathToFile);
-            if (!File.Exists(pathToFile))
-            {
-                throw new FileNotFoundException("File not found", pathToFile);
-            }
-
-            Console.WriteLine(employeeDto.EmployeeType);
-
-            var emailTemplate = await File.ReadAllTextAsync(pathToFile);
-        
-            var body = emailTemplate.Replace("{Email}", employeeDto.Email);
-        
-            emailService.SendMail(employeeDto.Email, "Welcome to the team", body, []);
-            logger.LogInformation($"Email sent to {employeeDto.Email}");
-            return Result.Success();
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Error during onboarding");
             
+            var verificationLink = employee.EmployeeType == EmployeeType.Casual
+                ? "https://oryx.com/onboarding?etype=casual"
+                : "https://yourdomain.com/onboarding?etype=permanent";
+            
+            var emailBody = emailTemplate
+                .Replace("{Email}", employee.Email)
+                .Replace("{VerificationLink}", verificationLink);
+
+            // Send email with retry
+            var attempts = 0;
+            var sent = false;
+
+            while (attempts < maxRetries && !sent)
+            {
+                try
+                {
+                    emailService.SendMail(employee.Email, "Welcome to the team", emailBody, []);
+                    logger.LogInformation($"Email sent to {employee.Email}");
+                    sent = true;
+                }
+                catch (Exception ex)
+                {
+                    attempts++;
+                    logger.LogWarning($"Failed attempt {attempts} for {employee.Email}: {ex.Message}");
+
+                    if (attempts == maxRetries)
+                        logger.LogError($"Giving up on {employee.Email} after {maxRetries} attempts.");
+                }
+            }
         }
-
-        return Result.Failure(Error.Validation("Employee.Email", "Error during onboarding"));
-
+        catch (Exception ex)
+        {
+            logger.LogError(ex, $"Error onboarding {employee.Email}");
+        }
     }
+
+    return Result.Success("Bulk onboarding completed.");
+}
     
     public async Task<Result<Guid?>> CreateEmployee(CreateEmployeeRequest request, Guid userId)
     {
