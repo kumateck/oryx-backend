@@ -57,7 +57,7 @@ public class ActivityLogMiddleware(RequestDelegate next)
         
         // Replace response body to capture it
         var originalBodyStream = context.Response.Body;
-        using var responseBodyStream = new MemoryStream();
+        var responseBodyStream = new MemoryStream();
         context.Response.Body = responseBodyStream;
 
         try
@@ -68,11 +68,15 @@ public class ActivityLogMiddleware(RequestDelegate next)
         {
             stopwatch.Stop();
 
-            // Read response
+            // Rewind and read the response
             responseBodyStream.Seek(0, SeekOrigin.Begin);
             var responseBody = await new StreamReader(responseBodyStream).ReadToEndAsync();
             responseBodyStream.Seek(0, SeekOrigin.Begin);
+
+            // Copy response to original stream
             await responseBodyStream.CopyToAsync(originalBodyStream);
+            context.Response.Body = originalBodyStream; // Restore original stream
+            await responseBodyStream.DisposeAsync(); //dispose 
 
             var statusCode = context.Response.StatusCode;
             var executionTime = stopwatch.ElapsedMilliseconds;

@@ -13,7 +13,7 @@ public class MongoDbContext
                                ?? throw new InvalidOperationException("MongoDB connection string is not set.");
 
         var client = new MongoClient(connectionString);
-        var environment = Environment.GetEnvironmentVariable("Environemt");
+        var environment = Environment.GetEnvironmentVariable("Environment");
         var dbName = environment == "dev" ? "logs" : "demo_logs";
         _database = client.GetDatabase(dbName);
     }
