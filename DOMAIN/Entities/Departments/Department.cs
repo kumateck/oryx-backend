@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.Departments;
@@ -18,6 +19,8 @@ public class Department
     public DateTime? DeletedAt { get; set; }
     public Guid? LastDeletedById { get; set; }
     public List<Warehouse> Warehouses { get; set; } = [];
+    
+    public ICollection<Designation> Designations { get; set; } = new List<Designation>();
 }
 
 public enum DepartmentType
