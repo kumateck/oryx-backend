@@ -30,7 +30,9 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     {
         try
         {
-            var existing = await context.Employees.AnyAsync(e => e.Email == employee.Email);
+            var existing = await context.Employees.
+                AsQueryable().
+                AnyAsync(e => e.Email == employee.Email);
             if (existing)
             {
                 logger.LogWarning($"Employee with email {employee.Email} already exists. Skipping.");
