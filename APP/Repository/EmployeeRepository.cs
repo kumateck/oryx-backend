@@ -30,7 +30,9 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     {
         try
         {
-            var existing = await context.Employees.AnyAsync(e => e.Email == employee.Email);
+            var existing = await context.Employees.
+                AsQueryable().
+                AnyAsync(e => e.Email == employee.Email);
             if (existing)
             {
                 logger.LogWarning($"Employee with email {employee.Email} already exists. Skipping.");
@@ -38,8 +40,8 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
             }
             
             var verificationLink = employee.EmployeeType == EmployeeType.Casual
-                ? "https://oryx.com/onboarding?etype=casual"
-                : "https://yourdomain.com/onboarding?etype=permanent";
+                ? "http://164.90.142.68:3005/onboarding?etype=casual"
+                : "http://164.90.142.68:3005/onboarding?etype=permanent";
             
             var emailBody = emailTemplate
                 .Replace("{Email}", employee.Email)

@@ -5,9 +5,9 @@ namespace DOMAIN.Entities.Children;
 
 public class ChildDto
 {
-    [StringLength(100)] public string FullName { get; set; }
+    [StringLength(100)] [Required] public string FullName { get; set; }
     
-    public DateTime DateOfBirth { get; set; }
+    [Required] public DateTime DateOfBirth { get; set; }
     
-    public Gender Gender { get; set; }
+    [Required] public Gender Gender { get; set; }
 }

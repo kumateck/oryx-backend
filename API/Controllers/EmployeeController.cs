@@ -35,6 +35,18 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Created(result.Value.ToString()) : result.ToProblemDetails();
     }
 
+    [HttpGet]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IResult> GetEmployees(int page, int pageSize, string searchQuery)
+    {
+        var userId = (string) HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetEmployees(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     [HttpGet("{id:Guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EmployeeDto))]

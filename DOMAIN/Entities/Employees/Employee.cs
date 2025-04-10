@@ -1,3 +1,4 @@
+#nullable enable
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Children;
@@ -26,7 +27,7 @@ public class Employee : BaseEntity
     
     public Religion Religion { get; set; }
 
-    [StringLength(100)] public string StaffNumber { get; set; }
+    [StringLength(100)] public string? StaffNumber { get; set; }
     [StringLength(100)] public string Email { get; set; }
     
     [StringLength(10)] public string PhoneNumber { get; set; }
