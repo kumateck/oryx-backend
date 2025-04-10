@@ -5,24 +5,23 @@ using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 
-
 namespace DOMAIN.Entities.Employees;
 
 public class CreateEmployeeRequest
 {
-    [Required] public string FullName { get; set; }
+    [Required] [StringLength(100)] public string FullName { get; set; }
 
     [Required] public DateTime DateOfBirth { get; set; }
 
     [Required] public Gender Gender { get; set; }
 
-    [Required] public string Contact { get; set; }
+    [Required] [Phone] public string Contact { get; set; }
 
-    public string Region { get; set; }
+    [Required] public string Region { get; set; }
     
-    public string Nationality { get; set; }
+    [Required] public string Nationality { get; set; }
     
-    public string ResidentialAddress { get; set; }
+    [Required] [StringLength(150)] public string ResidentialAddress { get; set; }
 
     [Required] public MaritalStatus MaritalStatus { get; set; }
 
@@ -30,30 +29,30 @@ public class CreateEmployeeRequest
 
     [Required] public DateTime DateEmployed { get; set; }
     
-    [StringLength(100)] public string BankAccountNumber { get; set; }
+    [StringLength(20)] public string BankAccountNumber { get; set; }
     
     [StringLength(20)] public string SsnitNumber { get; set; }
     
-    [StringLength(100)] public string GhanaCardNumber { get; set; }
+    [StringLength(11)] public string GhanaCardNumber { get; set; }
 
-    public string StaffNumber { get; set; }
+    public string? StaffNumber { get; set; }
     
-    public string Email { get; set; }
+    [Required] [EmailAddress] public string Email { get; set; }
     
-    public Person Mother { get; set; }
+    [Required] public PersonDto Mother { get; set; }
     
-    public Person Father { get; set; }
+    [Required] public PersonDto Father { get; set; }
     
-    public Person Spouse { get; set; }
+    public PersonDto? Spouse { get; set; }
     
-    public EmergencyContact EmergencyContact { get; set; }
+    [Required] public EmergencyContactDto EmergencyContact { get; set; }
     
-    public EmergencyContact NextOfKin { get; set; }
+    [Required] public EmergencyContactDto NextOfKin { get; set; }
     
     public List<ChildDto>? Children { get; set; }
     
-    public List<EducationDto> EducationBackground { get; set; }
+    [Required] public List<EducationDto> EducationBackground { get; set; }
     
-    public List<EmploymentHistoryDto> EmploymentHistory { get; set; }
+    [Required] public List<EmploymentHistoryDto> EmploymentHistory { get; set; }
     
 }

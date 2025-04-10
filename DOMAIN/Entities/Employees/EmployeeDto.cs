@@ -12,33 +12,26 @@ public class EmployeeDto
 {
     public Guid Id { get; set; } 
 
-    [StringLength(200)] 
     public string FullName { get; set; }
         
     public DateTime DateOfBirth { get; set; }
 
     public Gender Gender { get; set; }
-
-    [StringLength(200)] 
+    
     public string ResidentialAddress { get; set; }
-
-    [StringLength(100)] 
+    
     public string Nationality { get; set; }
-
-    [StringLength(100)] 
+    
     public string Region { get; set; }
 
     public MaritalStatus MaritalStatus { get; set; }
 
     public Religion Religion { get; set; }
-
-    [StringLength(100)] 
+    
     public string StaffNumber { get; set; }
-
-    [StringLength(100)] 
+    
     public string Email { get; set; }
-
-    [StringLength(10)] 
+    
     public string PhoneNumber { get; set; }
 
     public EmployeeType Type { get; set; }
