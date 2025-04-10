@@ -22,6 +22,19 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
+    [HttpPost]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateEmployee(CreateEmployeeRequest request)
+    {
+        var userId = (string) HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.CreateEmployee(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Created(result.Value.ToString()) : result.ToProblemDetails();
+    }
+
     [HttpGet("{id:Guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EmployeeDto))]

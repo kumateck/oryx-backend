@@ -7,10 +7,13 @@ using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Children;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
+using DOMAIN.Entities.EmergencyContacts;
+using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
@@ -325,7 +328,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Employee> Employees { get; set; }
 
     #endregion
+    
+    #region Children
 
+    public DbSet<Child> Children { get; set; }
+
+    #endregion
+    
+
+    #region Employement History
+
+    public DbSet<EmploymentHistory> EmploymentHistories { get; set; }
+
+    #endregion
+    
     #region Designation
 
     public DbSet<Designation> Designations { get; set; }
@@ -404,6 +420,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         ConfigureTableMappings(modelBuilder);
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
+        ConfigureRelationships(modelBuilder);
+        
     }
 
     private void ConfigureTableMappings(ModelBuilder modelBuilder)
@@ -784,5 +802,41 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FinishedGoodsTransferNote>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && entity.BatchManufacturingRecord != null);
 
         #endregion
+    }
+
+    private void ConfigureRelationships(ModelBuilder modelBuilder)
+    {
+        #region Employee
+
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.Mother);
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.Father);
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.Spouse);
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.EmergencyContact);
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.NextOfKin);
+
+        modelBuilder.Entity<Employee>().OwnsMany(e => e.Children, b =>
+        {
+            b.WithOwner().HasForeignKey("EmployeeId");
+            b.Property<Guid>("Id");
+            b.HasKey("Id");
+        });
+
+        modelBuilder.Entity<Employee>().OwnsMany(e => e.EducationBackground, b =>
+        {
+            b.WithOwner().HasForeignKey("EmployeeId");
+            b.Property<Guid>("Id");
+            b.HasKey("Id");
+        });
+        
+        modelBuilder.Entity<Employee>().OwnsMany(e => e.EmploymentHistory, b =>
+        {
+            b.WithOwner().HasForeignKey("EmployeeId");
+            b.Property<Guid>("Id");
+            b.HasKey("Id");
+            
+        });
+        
+        #endregion
+
     }
 }

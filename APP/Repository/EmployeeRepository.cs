@@ -121,7 +121,6 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     public async Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request, Guid userId)
     {
         var employee = await context.Employees
-            .Include(e => e.Siblings)
             .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
