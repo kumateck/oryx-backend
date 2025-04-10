@@ -6,6 +6,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Employees;
 using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SHARED;
 using SHARED.Requests;
@@ -25,20 +26,11 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         throw new FileNotFoundException("Email template not found", templatePath);
 
     var emailTemplate = await File.ReadAllTextAsync(templatePath);
-
+  
     foreach (var employee in employeeDtos.EmailList)
     {
         try
         {
-            var existing = await context.Employees.
-                AsQueryable().
-                AnyAsync(e => e.Email == employee.Email);
-            if (existing)
-            {
-                logger.LogWarning($"Employee with email {employee.Email} already exists. Skipping.");
-                continue;
-            }
-            
             var verificationLink = employee.EmployeeType == EmployeeType.Casual
                 ? "http://164.90.142.68:3005/onboarding?etype=casual"
                 : "http://164.90.142.68:3005/onboarding?etype=permanent";
@@ -53,7 +45,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 
             while (attempts < maxRetries && !sent)
             {
-                try
+                try 
                 {
                     emailService.SendMail(employee.Email, "Welcome to the team", emailBody, []);
                     logger.LogInformation($"Email sent to {employee.Email}");
@@ -77,7 +69,6 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 
     return Result.Success("Bulk onboarding completed.");
 }
-    
     public async Task<Result<Guid?>> CreateEmployee(CreateEmployeeRequest request, Guid userId)
     {
         var employee = mapper.Map<Employee>(request);
