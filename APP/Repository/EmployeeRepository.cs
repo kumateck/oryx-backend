@@ -6,10 +6,9 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Employees;
 using INFRASTRUCTURE.Context;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SHARED;
-using SHARED.Requests;
+
 
 namespace APP.Repository;
 

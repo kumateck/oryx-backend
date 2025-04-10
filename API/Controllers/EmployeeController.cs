@@ -33,7 +33,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateEmployee(CreateEmployeeRequest request)
+    public async Task<IResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
     {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -65,7 +65,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetEmployee(Guid id)
+    public async Task<IResult> GetEmployee([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -82,7 +82,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateEmployee(Guid id, [FromBody] CreateEmployeeRequest request)
+    public async Task<IResult> UpdateEmployee([FromRoute] Guid id, [FromBody] CreateEmployeeRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -95,7 +95,10 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// Deletes a specific employee by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    public async Task<IResult> DeleteEmployee(Guid id)
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteEmployee([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();

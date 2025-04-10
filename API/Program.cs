@@ -192,7 +192,6 @@ builder.Services.AddAuthorization();
 builder.Services.AddTransientServices();
 builder.Services.AddScopedServices();
 builder.Services.AddSingletonServices();
-builder.Services.AddScoped<IEmailService, EmailService>();
 
 //add api versioning
 builder.Services.AddApiVersioning(options =>
