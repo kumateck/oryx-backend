@@ -1,6 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Children;
+using DOMAIN.Entities.EducationHistories;
+using DOMAIN.Entities.EmergencyContacts;
+using DOMAIN.Entities.EmployeeHistories;
+using DOMAIN.Entities.Persons;
 
 namespace DOMAIN.Entities.Employees;
 
@@ -18,7 +22,7 @@ public class Employee : BaseEntity
     
     [StringLength(100)] public string Region { get; set; }
     
-    public MaritalStatus MaritalStatus { get; set; }
+    public MaritalStatus MaritalStatus { get; init; }
     
     public Religion Religion { get; set; }
 
@@ -35,15 +39,20 @@ public class Employee : BaseEntity
     
     public EmployeeType Type { get; set; } 
     
-    public ICollection<Family> FamilyInformation { get; set; }
+    public Person Mother { get; set; }
+    
+    public Person Father { get; set; }
+    
+    public Person Spouse { get; set; }
+    
+    public EmergencyContact EmergencyContact { get; set; }
+    
+    public EmergencyContact NextOfKin { get; set; }
+    
+    public ICollection<Child>? Children { get; set; }
     public ICollection<Education> EducationBackground { get; set; }
     public ICollection<EmploymentHistory> EmploymentHistory { get; set; }
 
-}
-
-public class Sibling : BaseEntity
-{
-    [StringLength(100)] public string Name { get; set; }
 }
 
 public enum EmployeeType

@@ -1,11 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DOMAIN.Entities.Employees;
+namespace DOMAIN.Entities.EmployeeHistories;
 
-public class EmploymentHistory
+public class EmploymentHistoryDto
 {
-    public Guid Id { get; set; }
-    
     [StringLength(150)] public string CompanyName { get; set; }
     
     public DateTime StartDate { get; set; }
@@ -13,6 +11,5 @@ public class EmploymentHistory
     public DateTime EndDate { get; set; }
     
     [StringLength(100)] public string Position { get; set; }
-    
-    public Guid EmployeeId { get; set; }
+
 }

@@ -8,18 +8,23 @@ using DOMAIN.Entities.BillOfMaterials.Request;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Children;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
 using DOMAIN.Entities.Designations;
+using DOMAIN.Entities.EducationHistories;
+using DOMAIN.Entities.EmergencyContacts;
+using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -546,11 +551,53 @@ public class OryxMapper : Profile
         
         #region Employee
 
-        CreateMap<CreateEmployeeRequest, Employee>();
-        CreateMap<Employee, EmployeeDto>();
+        CreateMap<CreateEmployeeRequest, Employee>()
+            .ForMember(dest => dest.Mother, opt => opt.MapFrom(src => src.Mother))
+            .ForMember(dest => dest.Father, opt => opt.MapFrom(src => src.Father))
+            .ForMember(dest => dest.Spouse, opt => opt.MapFrom(src => src.Spouse))
+            .ForMember(dest => dest.EmergencyContact, opt => opt.MapFrom(src => src.EmergencyContact))
+            .ForMember(dest => dest.NextOfKin, opt => opt.MapFrom(src => src.NextOfKin))
+            .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.Children))
+            .ForMember(dest => dest.EducationBackground, opt => opt.MapFrom(src => src.EducationBackground))
+            .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
+        
+        #endregion
+
+        #region Children
+        CreateMap<Child, ChildDto>().ReverseMap();
 
         #endregion
 
+        #region Persons
+
+        CreateMap<Person, PersonDto>().ReverseMap();
+
+        #endregion
+
+        #region Emergency Contact
+
+        CreateMap<EmergencyContact, EmergencyContactDto>().ReverseMap();
+
+        #endregion
+        
+        #region Education
+
+        CreateMap<Education, EducationDto>().ReverseMap();
+
+        #endregion
+
+        #region Employment
+
+        CreateMap<EmploymentHistory, EmploymentHistoryDto>().ReverseMap();
+
+        #endregion
+
+        #region Designation
+
+        CreateMap<Designation, DesignationDto>();
+
+        #endregion
+        
         #region ActivityLog
 
         CreateMap<CreateActivityLog, ActivityLog>();
