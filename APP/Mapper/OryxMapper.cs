@@ -43,6 +43,7 @@ using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
+using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
 using DOMAIN.Entities.Warehouses;
@@ -558,6 +559,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.EmergencyContact, opt => opt.MapFrom(src => src.EmergencyContact))
             .ForMember(dest => dest.NextOfKin, opt => opt.MapFrom(src => src.NextOfKin))
             .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.Children))
+            .ForMember(dest => dest.Siblings, opt => opt.MapFrom(src => src.Siblings))
             .ForMember(dest => dest.EducationBackground, opt => opt.MapFrom(src => src.EducationBackground))
             .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
         
@@ -565,6 +567,12 @@ public class OryxMapper : Profile
 
         #region Children
         CreateMap<Child, ChildDto>().ReverseMap();
+
+        #endregion
+
+        #region Siblings
+
+        CreateMap<Sibling, SiblingDto>().ReverseMap();
 
         #endregion
 

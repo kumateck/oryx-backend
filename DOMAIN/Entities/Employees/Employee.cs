@@ -6,6 +6,7 @@ using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
+using DOMAIN.Entities.Siblings;
 
 namespace DOMAIN.Entities.Employees;
 
@@ -51,6 +52,8 @@ public class Employee : BaseEntity
     public EmergencyContact NextOfKin { get; set; }
     
     public ICollection<Child>? Children { get; set; }
+    
+    public ICollection<Sibling>? Siblings { get; set; }
     public ICollection<Education> EducationBackground { get; set; }
     public ICollection<EmploymentHistory> EmploymentHistory { get; set; }
 
