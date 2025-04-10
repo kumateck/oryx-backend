@@ -73,6 +73,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     {
         var employee = mapper.Map<Employee>(request);
         employee.CreatedById = userId;
+        employee.CreatedAt = DateTime.UtcNow;
 
         context.Employees.Add(employee);
         await context.SaveChangesAsync();
@@ -122,11 +123,27 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         }
 
         mapper.Map(request, employee);
-        employee.UpdatedAt = DateTime.Now;
+        employee.UpdatedAt = DateTime.UtcNow;
         employee.LastUpdatedById = userId;
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
 
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteEmployee(Guid id, Guid userId)
+    {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
+
+        if (employee == null)
+        {
+            return Error.NotFound("Employee.NotFound", "Employee not found");
+        }
+        employee.DeletedAt = DateTime.UtcNow;
+        employee.LastDeletedById = userId;
+        
+        context.Employees.Update(employee);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 }

@@ -4,6 +4,7 @@ using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
+using DOMAIN.Entities.Siblings;
 
 namespace DOMAIN.Entities.Employees;
 
@@ -50,6 +51,8 @@ public class CreateEmployeeRequest
     [Required] public EmergencyContactDto NextOfKin { get; set; }
     
     public List<ChildDto>? Children { get; set; }
+    
+    public List<SiblingDto>? Siblings { get; set; }
     
     [Required] public List<EducationDto> EducationBackground { get; set; }
     

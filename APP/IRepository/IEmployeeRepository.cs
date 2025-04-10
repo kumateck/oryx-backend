@@ -12,4 +12,6 @@ public interface IEmployeeRepository
       string searchQuery);
    Task<Result<EmployeeDto>> GetEmployee(Guid id);
    Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request, Guid userId);
+   
+   Task<Result> DeleteEmployee(Guid id, Guid userId);
 }

@@ -4,6 +4,7 @@ using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
+using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Employees;
@@ -42,7 +43,8 @@ public class EmployeeDto
     public EmergencyContactDto EmergencyContact { get; set; }
     public EmergencyContactDto NextOfKin { get; set; }
 
-    public ICollection<ChildDto> Children { get; set; } 
+    public ICollection<ChildDto> Children { get; set; }
+    public ICollection<SiblingDto> Siblings { get; set; }
     public ICollection<EducationDto> EducationBackground { get; set; }
     public ICollection<EmploymentHistoryDto> EmploymentHistory { get; set; }
 }
