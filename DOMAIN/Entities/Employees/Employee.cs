@@ -14,6 +14,8 @@ public class Employee : BaseEntity
 {
     [StringLength(200)] public string FullName { get; set; }
     
+    public string Avatar {get; set;}
+    
     public DateTime DateOfBirth { get; set; }
     
     public Gender Gender { get; set; }
@@ -37,7 +39,7 @@ public class Employee : BaseEntity
     
     [StringLength(20)] public string SsnitNumber { get; set; }
     
-    [StringLength(100)] public string GhanaCardNumber { get; set; }
+    [StringLength(15)] public string GhanaCardNumber { get; set; }
     
     public EmployeeType Type { get; set; } 
     

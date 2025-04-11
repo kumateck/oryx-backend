@@ -11,6 +11,8 @@ namespace DOMAIN.Entities.Employees;
 public class CreateEmployeeRequest
 {
     [Required] [StringLength(100)] public string FullName { get; set; }
+    
+    public string Avatar { get; set; }
 
     [Required] public DateTime DateOfBirth { get; set; }
 
@@ -34,9 +36,14 @@ public class CreateEmployeeRequest
     
     [StringLength(20)] public string SsnitNumber { get; set; }
     
-    [StringLength(11)] public string GhanaCardNumber { get; set; }
+    [MinLength(11)]
+    [StringLength(15)] 
+    [RegularExpression(@"^GHA-\d{3,7}-\d{3,7}$", 
+        ErrorMessage = "Ghana Card number must start with 'GHA-'. " +
+                       "Total length must be between 11 and 15 characters.")]
+    public string GhanaCardNumber { get; set; }
 
-    public string? StaffNumber { get; set; }
+    [StringLength(15)] public string? StaffNumber { get; set; }
     
     [Required] [EmailAddress] public string Email { get; set; }
     
