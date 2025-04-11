@@ -117,4 +117,31 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
             return TypedResults.NoContent();
         }
     }
+    
+    /// <summary>
+    /// Retrieves an image (or any file) from blob storage by its model type and reference.
+    /// </summary>
+    /// <param name="modelType">The type of the model (e.g., "Product", "User", etc.) where the file is associated.</param>
+    /// <param name="reference">A reference name for the specific file (e.g., file name, document ID, etc.).</param>
+    /// <returns>Returns the image/file if found, or No Content if not.</returns>
+    [HttpGet("{modelType}/{reference}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IFormFile))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [AllowAnonymous]
+    public async Task<IResult> GetImage(string modelType, string reference)
+    {
+        try
+        {
+            var result = await blobStorageService.GetBlobAsync(modelType.ToLower(), reference);
+            if (result.IsFailure) return TypedResults.NoContent();
+
+            var (stream, contentType, name) = result.Value;
+            stream.Seek(0, SeekOrigin.Begin);
+            return TypedResults.File(stream, contentType, name);
+        }
+        catch (Exception)
+        {
+            return TypedResults.NoContent();
+        }
+    }
 }
