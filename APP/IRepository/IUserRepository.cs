@@ -19,4 +19,5 @@ public interface IUserRepository
     Task<Result> DeleteUser(Guid id, Guid userId);
     Task<Result> ToggleDisableUser(Guid id, Guid userId);
     Task<Result> UploadAvatar(UploadFileRequest request, Guid userId);
+    Task<Result> UploadSignature(UploadFileRequest request, Guid userId);
 }

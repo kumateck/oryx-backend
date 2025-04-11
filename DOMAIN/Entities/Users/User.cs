@@ -21,6 +21,7 @@ public class User : IdentityUser<Guid>, IBaseEntity
     public bool IsDisabled { get; set; }
     public Guid? DepartmentId { get; set; }
     public Department Department { get; set; }
+    [StringLength(100)] public string Signature { get; set; }
 }
 
 public class UserDepartment

@@ -126,6 +126,26 @@ public class UserController(IUserRepository repo) : ControllerBase
         }
     }
     
+    [AllowAnonymous]
+    [HttpPost("signature/{id?}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UploadSignature([Required][FromBody] UploadFileRequest request, Guid? id = null)
+    {
+        try
+        {
+            var userId = (string)HttpContext.Items["Sub"];
+            if (userId == null) return TypedResults.Unauthorized();
+        
+            await repo.UploadSignature(request, id ?? Guid.Parse(userId));
+            return  TypedResults.NoContent();
+        }
+        catch (Exception)
+        {
+            return TypedResults.NoContent();
+        }
+    }
+    
     //[Authorize("permission.user." + PermissionUtils.PermSuffixDelete)]
     [HttpGet("toggle-disable/{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
