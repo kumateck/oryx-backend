@@ -46,19 +46,11 @@ public class RequisitionItem : BaseEntity
     public RequestStatus Status { get; set; }  
 }
 
-public class RequisitionApproval : BaseEntity
+public class RequisitionApproval : ResponsibleApprovalStage
 {
+    public Guid Id { get; set; }
     public Guid RequisitionId { get; set; }
     public Requisition Requisition { get; set; }
-    public Guid? UserId { get; set; }        
-    public User User { get; set; }
-    public Guid? RoleId { get; set; }      
-    public Role Role { get; set; }
-    public bool Required { get; set; }     
-    public bool Approved { get; set; }             
-    public DateTime? ApprovalTime { get; set; }       
-    [StringLength(1000)] public string Comments { get; set; }             
-    public int Order { get; set; }
 }
 
 public enum RequestStatus

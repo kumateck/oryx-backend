@@ -608,9 +608,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         #endregion
 
-        #region Requisition Filters
-        modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
-        #endregion
+         #region Requisition Filters
+         modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity => entity.Requisition != null);
+         #endregion
 
         #region WorkOrder Filters
         modelBuilder.Entity<WorkOrder>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);

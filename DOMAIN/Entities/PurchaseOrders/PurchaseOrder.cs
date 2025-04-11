@@ -91,6 +91,7 @@ public class PurchaseOrderDto : WithAttachment
 
 public class PurchaseOrderItemDto
 {
+    public Guid Id { get; set; }
     public CollectionItemDto PurchaseOrder { get; set; }
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto Uom { get; set; }
