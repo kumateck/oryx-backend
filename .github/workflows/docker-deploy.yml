@@ -41,6 +41,8 @@ jobs:
             DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD }}
             SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
             SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            MONGO_INITDB_ROOT_USERNAME={{ secrets.MONGO_INITDB_ROOT_USERNAME }}
+            MONGO_INITDB_ROOT_PASSWORD={{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -90,5 +92,7 @@ jobs:
             --env DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD }} \
             --env SMTP_USERNAME=${{ secrets.SMTP_USERNAME }} \
             --env SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }} \
+            --env MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_INITDB_ROOT_USERNAME }} \
+            --env MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_INITDB_ROOT_PASSWORD }} \
             "${DOCKER_IMAGE_NAME}:latest"
           EOF
