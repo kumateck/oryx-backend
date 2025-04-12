@@ -731,12 +731,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Purchase Order
 
         modelBuilder.Entity<PurchaseOrder>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<PurchaseOrderApproval>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderItem>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderInvoice>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderInvoice>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
         modelBuilder.Entity<BatchItem>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderCharge>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
         modelBuilder.Entity<BillingSheet>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<BillingSheetApproval>().HasQueryFilter(a => !a.BillingSheet.DeletedAt.HasValue);
         modelBuilder.Entity<RevisedPurchaseOrderItem>().HasQueryFilter(a => !a.Material.DeletedAt.HasValue);
 
         #endregion
