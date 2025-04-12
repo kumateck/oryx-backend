@@ -9,7 +9,7 @@ public interface IEmployeeRepository
    Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDto);
    Task<Result<Guid?>> CreateEmployee(CreateEmployeeRequest request, Guid userId);
    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
-      string searchQuery);
+      string searchQuery = null, string designation = null, string department = null);
    Task<Result<EmployeeDto>> GetEmployee(Guid id);
    Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request, Guid userId);
    
