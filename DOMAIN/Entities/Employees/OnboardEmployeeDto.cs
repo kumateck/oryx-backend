@@ -12,4 +12,6 @@ public class EmployeeInviteDto
 {
     public string Email { get; set; }
     public EmployeeType EmployeeType { get; set; }
+    
+    public string StaffNumber { get; set; }
 }
