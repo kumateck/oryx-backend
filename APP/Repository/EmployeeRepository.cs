@@ -4,7 +4,6 @@ using APP.IRepository;
 using APP.Services.Email;
 using APP.Utils;
 using AutoMapper;
-using DnsClient;
 using DOMAIN.Entities.Employees;
 using INFRASTRUCTURE.Context;
 using Microsoft.Extensions.Logging;
@@ -113,7 +112,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
         string searchQuery, string designation, string department)
     {
-        var query = context.Employees.AsQueryable();
+        var query = context.Employees.Where(e => e.LastDeletedById == null).AsQueryable();
         
         if (!string.IsNullOrEmpty(searchQuery))
         {
