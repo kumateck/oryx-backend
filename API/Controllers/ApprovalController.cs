@@ -84,4 +84,40 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
         var result = await repository.DeleteApproval(approvalId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Approves an item (Requisition, PurchaseOrder, BillingSheet) by model type and ID.
+    /// </summary>
+    [HttpPost("approve/{modelType}/{modelId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> ApproveItem(string modelType, Guid modelId, [FromBody] ApprovalRequestBody body)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        var roleIds =(List<Guid>)HttpContext.Items["Roles"];
+
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ApproveItem(modelType, modelId, Guid.Parse(userId), roleIds, body.Comments);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets all items requiring approval by the current user.
+    /// </summary>
+    [HttpGet("my-pending")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ApprovalEntity>))]
+    public async Task<IResult> GetPendingApprovals()
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        var roleIds =(List<Guid>)HttpContext.Items["Roles"];
+
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetEntitiesRequiringApproval(Guid.Parse(userId), roleIds);
+        return TypedResults.Ok(result);
+    }
 }

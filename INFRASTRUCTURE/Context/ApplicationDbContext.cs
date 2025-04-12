@@ -256,9 +256,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Purchase Order
 
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
+    public DbSet<PurchaseOrderApproval> PurchaseOrderApprovals { get; set; }
     public DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; }
     public DbSet<PurchaseOrderInvoice> PurchaseOrderInvoices { get; set; }
     public DbSet<BillingSheet> BillingSheets { get; set; }
+    public DbSet<BillingSheetApproval> BillingSheetApprovals { get; set; }
+
 
     #endregion
     
@@ -608,9 +611,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         #endregion
 
-        #region Requisition Filters
-        modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
-        #endregion
+         #region Requisition Filters
+         modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity => entity.Requisition != null);
+         #endregion
 
         #region WorkOrder Filters
         modelBuilder.Entity<WorkOrder>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);

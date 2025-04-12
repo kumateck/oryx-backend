@@ -22,7 +22,7 @@ using DOMAIN.Entities.Warehouses;
 namespace APP.Repository;
 
 public class RequisitionRepository(ApplicationDbContext context, IMapper mapper, IProcurementRepository procurementRepository, 
-    IEmailService emailService, IPdfService pdfService, IConfigurationRepository configurationRepository, IMaterialRepository materialRepository) : IRequisitionRepository
+    IEmailService emailService, IPdfService pdfService, IConfigurationRepository configurationRepository, IMaterialRepository materialRepository, IApprovalRepository approvalRepository) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
 
@@ -65,14 +65,22 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             var packageItems = request.Items.Where(i => materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Package)).ToList();
 
             // Create Raw Material Requisition
-            await CreateStockRequisition("raw", rawItems);
+            var rawStockRequisitionId = await CreateStockRequisition("raw", rawItems);
+            if (rawStockRequisitionId.HasValue)
+            {
+                await approvalRepository.CreateInitialApprovalsAsync("RawStockRequisition", rawStockRequisitionId.Value);
+            }
 
             // Create Package Material Requisition
-             await CreateStockRequisition("package", packageItems);
+             var packageStockRequisitionId = await CreateStockRequisition("package", packageItems);
+             if (packageStockRequisitionId.HasValue)
+             {
+                 await approvalRepository.CreateInitialApprovalsAsync("PackageStockRequisition", packageStockRequisitionId.Value);
+             }
 
-            async Task CreateStockRequisition(string suffix, List<CreateRequisitionItemRequest> items)
+            async Task<Guid?> CreateStockRequisition(string suffix, List<CreateRequisitionItemRequest> items)
             {
-                if (items.Count == 0) return; // Skip if no items
+                if (items.Count == 0) return null; // Skip if no items
 
                 var requisition = mapper.Map<Requisition>(request);
                 requisition.Code = $"{request.Code}-{suffix}";
@@ -81,6 +89,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 requisition.Items = mapper.Map<List<RequisitionItem>>(items);
 
                 await context.Requisitions.AddAsync(requisition);
+                return requisition.Id;
             }
 
             var productionActivityStep =
@@ -113,6 +122,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     context.ProductionActivitySteps.Update(activityStep);
                 }
             }
+            
+            await approvalRepository.CreateInitialApprovalsAsync("PurchaseRequisition", requisition.Id);
         }
         
         await context.SaveChangesAsync();

@@ -153,7 +153,9 @@ public class OryxMapper : Profile
             // .ForMember(user => user.Roles,
             //     opt => opt.MapFrom<UserRoleResolver>())
             .ForMember(user => user.Avatar,
-                opt => opt.MapFrom<AvatarResolver>());
+                opt => opt.MapFrom<AvatarResolver>())
+            .ForMember(user => user.Signature,
+                opt => opt.MapFrom<SignatureResolver>());
         
         #endregion
 

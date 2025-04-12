@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250411222952_AddSignatureToUser")]
+    partial class AddSignatureToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1187,10 +1190,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Avatar")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("BankAccountNumber")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1208,12 +1207,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("DesignationId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1229,9 +1222,8 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<string>("GhanaCardNumber")
                         .IsRequired()
-                        .HasMaxLength(15)
-                        .HasColumnType("character varying(15)");
-
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -1260,9 +1252,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Religion")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("ReportingManagerId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("ResidentialAddress")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1277,9 +1266,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
@@ -1290,15 +1276,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("CreatedById");
 
-                    b.HasIndex("DepartmentId");
-
-                    b.HasIndex("DesignationId");
-
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("ReportingManagerId");
 
                     b.ToTable("Employees");
                 });
@@ -4181,9 +4161,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("BillOfLading")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -4264,48 +4241,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("BillingSheets");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheetApproval", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ApprovalTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("BillingSheetId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Required")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BillingSheetId");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("BillingSheetApprovals");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4315,9 +4250,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("AmountInFigures")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Code")
                         .HasMaxLength(100)
@@ -4404,48 +4336,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("TermsOfPaymentId");
 
                     b.ToTable("PurchaseOrders");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderApproval", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ApprovalTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("PurchaseOrderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("Required")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PurchaseOrderId");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("PurchaseOrderApprovals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderCharge", b =>
@@ -7220,18 +7110,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Departments.Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Designations.Designation", "Designation")
-                        .WithMany()
-                        .HasForeignKey("DesignationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -7239,12 +7117,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReportingManager")
-                        .WithMany()
-                        .HasForeignKey("ReportingManagerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.OwnsMany("DOMAIN.Entities.Children.Child", "Children", b1 =>
                         {
@@ -7520,10 +7392,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("CreatedBy");
 
-                    b.Navigation("Department");
-
-                    b.Navigation("Designation");
-
                     b.Navigation("EducationBackground");
 
                     b.Navigation("EmergencyContact")
@@ -7543,8 +7411,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("NextOfKin")
                         .IsRequired();
-
-                    b.Navigation("ReportingManager");
 
                     b.Navigation("Siblings");
 
@@ -9417,29 +9283,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Supplier");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheetApproval", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.PurchaseOrders.BillingSheet", "BillingSheet")
-                        .WithMany("Approvals")
-                        .HasForeignKey("BillingSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("BillingSheet");
-
-                    b.Navigation("Role");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -9487,29 +9330,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Supplier");
 
                     b.Navigation("TermsOfPayment");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderApproval", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", "PurchaseOrder")
-                        .WithMany("Approvals")
-                        .HasForeignKey("PurchaseOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("PurchaseOrder");
-
-                    b.Navigation("Role");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderCharge", b =>
@@ -11004,15 +10824,11 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheet", b =>
                 {
-                    b.Navigation("Approvals");
-
                     b.Navigation("Charges");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", b =>
                 {
-                    b.Navigation("Approvals");
-
                     b.Navigation("Items");
 
                     b.Navigation("RevisedPurchaseOrders");

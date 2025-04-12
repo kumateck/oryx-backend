@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
@@ -10,7 +11,7 @@ using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
 
-public class PurchaseOrder : BaseEntity
+public class PurchaseOrder : BaseEntity, IRequireApproval
 {
     [StringLength(100)] public string Code { get; set; }
     [StringLength(100)] public string ProFormaInvoiceNumber { get; set; }
@@ -36,8 +37,17 @@ public class PurchaseOrder : BaseEntity
     public decimal Insurance { get; set; }
     [StringLength(100)] public string AmountInFigures { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
-    
+    public List<PurchaseOrderApproval>  Approvals { get; set; } = [];
+    public bool Approved { get; set; }
 }
+
+public class PurchaseOrderApproval : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid PurchaseOrderId { get; set; }
+    public PurchaseOrder PurchaseOrder { get; set; }
+}
+
 
 public class PurchaseOrderItem : BaseEntity
 {
@@ -91,6 +101,7 @@ public class PurchaseOrderDto : WithAttachment
 
 public class PurchaseOrderItemDto
 {
+    public Guid Id { get; set; }
     public CollectionItemDto PurchaseOrder { get; set; }
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto Uom { get; set; }

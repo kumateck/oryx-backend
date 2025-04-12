@@ -1,10 +1,9 @@
-using DOMAIN.Entities.Requisitions;
 
 namespace DOMAIN.Entities.Approvals;
 
 public class CreateApprovalRequest
 {
-    public RequisitionType RequisitionType { get; set; }
+    public string ItemType { get; set; }
     public List<CreateApprovalStageRequest> ApprovalStages { get; set; }
 }
 

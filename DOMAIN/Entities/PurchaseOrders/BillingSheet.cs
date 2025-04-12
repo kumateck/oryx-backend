@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Charges;
@@ -8,7 +9,7 @@ using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
 
-public class BillingSheet : BaseEntity
+public class BillingSheet : BaseEntity, IRequireApproval
 {
     [StringLength(1000)] public string Code { get; set; }
     [StringLength(1000)] public string BillOfLading { get; set; }
@@ -29,7 +30,17 @@ public class BillingSheet : BaseEntity
     public PackageStyle ContainerPackageStyle { get; set; }
     [StringLength(1000)] public string PackageDescription { get; set; }
     public List<Charge> Charges { get; set; } = [];
+    public List<BillingSheetApproval>  Approvals { get; set; } = [];
+    public bool Approved { get; set; }
 }
+
+public class BillingSheetApproval : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid BillingSheetId { get; set; }
+    public BillingSheet BillingSheet { get; set; }
+}
+
 
 public enum BillingSheetStatus
 {

@@ -233,6 +233,24 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         return result;
     }
     
+    public async Task<Result> UploadSignature(UploadFileRequest request, Guid userId)
+    {
+        var signature = request.File.ConvertFromBase64();
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+        var reference = $"{userId}.{signature.FileName.Split(".").Last()}";
+
+        var result = await blobStorage.UploadBlobAsync("signature", signature, reference, user.Signature);
+        if (result.IsSuccess)
+        {
+            user.Signature = reference;
+            context.Users.Update(user);
+            await context.SaveChangesAsync();
+        }
+
+        return result;
+    }
+    
     private async Task<bool> EmailIsUnique(string email)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
