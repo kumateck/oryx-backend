@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 
@@ -8,7 +7,7 @@ namespace DOMAIN.Entities.Approvals;
 
 public class Approval : BaseEntity
 {
-    [StringLength(1000)] public string ItemType { get; set; }
+    [StringLength(100)] public string ItemType { get; set; }
     public List<ApprovalStage> ApprovalStages { get; set; }
 }
 
