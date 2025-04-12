@@ -2,11 +2,14 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Children;
+using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Siblings;
+using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Employees;
 
@@ -31,6 +34,8 @@ public class Employee : BaseEntity
     public Religion Religion { get; set; }
 
     [StringLength(100)] public string? StaffNumber { get; set; }
+    
+    
     [StringLength(100)] public string Email { get; set; }
     
     [StringLength(10)] public string PhoneNumber { get; set; }
@@ -58,6 +63,20 @@ public class Employee : BaseEntity
     public ICollection<Sibling>? Siblings { get; set; }
     public ICollection<Education> EducationBackground { get; set; }
     public ICollection<EmploymentHistory> EmploymentHistory { get; set; }
+    
+    public Guid ReportingManagerId { get; set; }
+    
+    public User? ReportingManager { get; set; }
+    
+    public Guid DepartmentId { get; set; }
+    
+    public Department? Department { get; set; }
+    
+    public Guid DesignationId { get; set; }
+    
+    public Designation? Designation { get; set; }
+    
+    public DateTime StartDate { get; set; }
 
 }
 

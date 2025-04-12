@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250412205622_DesignationAdditionEmployee")]
+    partial class DesignationAdditionEmployee
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1282,9 +1285,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Religion")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("ReportingManagerId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("ResidentialAddress")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1319,8 +1319,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("ReportingManagerId");
 
                     b.ToTable("Employees");
                 });
@@ -7210,12 +7208,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReportingManager")
-                        .WithMany()
-                        .HasForeignKey("ReportingManagerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.OwnsMany("DOMAIN.Entities.Children.Child", "Children", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -7513,8 +7505,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("NextOfKin")
                         .IsRequired();
-
-                    b.Navigation("ReportingManager");
 
                     b.Navigation("Siblings");
 

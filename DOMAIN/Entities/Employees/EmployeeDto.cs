@@ -38,6 +38,8 @@ public class EmployeeDto
     public string PhoneNumber { get; set; }
 
     public EmployeeType Type { get; set; }
+    
+    public string DesignationName { get; set; }
 
     public PersonDto Mother { get; set; }
     public PersonDto Father { get; set; }

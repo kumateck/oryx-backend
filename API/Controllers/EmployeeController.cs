@@ -92,6 +92,23 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Updates the department and designation of an existing employee.
+    /// </summary>
+    [HttpPut("{id:guid}/assign")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AssignEmployee(Guid id, AssignEmployeeDto employeeDto)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.AssignEmployee(id, employeeDto, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Deletes a specific employee by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
