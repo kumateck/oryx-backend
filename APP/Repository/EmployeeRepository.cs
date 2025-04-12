@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Services.Email;
 using APP.Utils;
 using AutoMapper;
+using DnsClient;
 using DOMAIN.Entities.Employees;
 using INFRASTRUCTURE.Context;
 using Microsoft.Extensions.Logging;
@@ -109,13 +110,24 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         return Result.Success(employeeDto);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
+        string searchQuery, string designation, string department)
     {
         var query = context.Employees.AsQueryable();
         
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.Email);
+        }
+
+        if (!string.IsNullOrEmpty(designation))
+        {
+            query = query.WhereSearch(designation, q => q.Designation.Name);
+        }
+
+        if (!string.IsNullOrEmpty(department))
+        {
+            query = query.WhereSearch(department, q => q.Department.Name);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

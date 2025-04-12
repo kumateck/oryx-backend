@@ -49,12 +49,12 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EmployeeDto>>))]
     public async Task<IResult> GetEmployees([FromQuery] int page, [FromQuery] int pageSize,
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery, [FromQuery] string designation, [FromQuery] string department)
     {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetEmployees(page, pageSize, searchQuery);
+        var result = await repository.GetEmployees(page, pageSize, searchQuery, designation, department);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
