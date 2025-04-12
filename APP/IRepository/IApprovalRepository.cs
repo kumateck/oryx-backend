@@ -19,4 +19,5 @@ public interface IApprovalRepository
         string comments = null);
     Task<List<ApprovalEntity>> GetEntitiesRequiringApproval(Guid userId, List<Guid> roleIds);
      List<CurrentApprovalStage> GetCurrentApprovalStage(List<ResponsibleApprovalStage> stages);
+     Task CreateInitialApprovalsAsync(string modelType, Guid modelId);
 }

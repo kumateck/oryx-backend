@@ -23,7 +23,7 @@ using Newtonsoft.Json;
 
 namespace APP.Repository;
 
-public class ProcurementRepository(ApplicationDbContext context, IMapper mapper, IEmailService emailService, IPdfService pdfService) : IProcurementRepository
+public class ProcurementRepository(ApplicationDbContext context, IMapper mapper, IEmailService emailService, IPdfService pdfService, IApprovalRepository approvalRepository) : IProcurementRepository
 {
     // ************* CRUD for Manufacturer *************
 
@@ -237,6 +237,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         purchaseOrder.CreatedById = userId;
         await context.PurchaseOrders.AddAsync(purchaseOrder);
         await context.SaveChangesAsync();
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(PurchaseOrder), purchaseOrder.Id);
 
         return purchaseOrder.Id;
     }
@@ -609,6 +611,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         billingSheet.CreatedById = userId;
         await context.BillingSheets.AddAsync(billingSheet);
         await context.SaveChangesAsync();
+
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(BillingSheet), billingSheet.Id);
 
         return billingSheet.Id;
     }

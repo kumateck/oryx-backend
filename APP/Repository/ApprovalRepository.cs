@@ -154,7 +154,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         // Handle other models
         switch (modelType)
         {
-            /*case nameof(PurchaseOrder):
+            case nameof(PurchaseOrder):
                 var purchaseOrder = await context.PurchaseOrders
                     .Include(po => po.Approvals)
                     .FirstOrDefaultAsync(po => po.Id == modelId);
@@ -185,23 +185,23 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 }
 
                 // Approve the purchase order stage in the actual tracked list
-                var stageToApprovePO = purchaseOrder.Approvals.First(stage =>
+                var stageToApprovePo = purchaseOrder.Approvals.First(stage =>
                     (stage.UserId == purchaseOrderApprovingStage.UserId && stage.UserId == userId) ||
                     (stage.RoleId == purchaseOrderApprovingStage.RoleId && purchaseOrderApprovingStage.RoleId.HasValue && roleIds.Contains(purchaseOrderApprovingStage.RoleId.Value)));
 
-                stageToApprovePO.Approved = true;
-                stageToApprovePO.ApprovalTime = DateTime.UtcNow;
-                stageToApprovePO.Comments = comments;
+                stageToApprovePo.Approved = true;
+                stageToApprovePo.ApprovalTime = DateTime.UtcNow;
+                stageToApprovePo.Comments = comments;
 
                 // Optionally mark purchase order as fully approved
-                var allRequiredPOApproved = purchaseOrder.Approvals
+                var allRequiredPoApproved = purchaseOrder.Approvals
                     .Where(s => s.Required)
                     .All(s => s.Approved);
 
-                if (allRequiredPOApproved)
+                if (allRequiredPoApproved)
                 {
                     purchaseOrder.Approved = true;
-                    purchaseOrder.Status = RequestStatus.Approved;
+                    //purchaseOrder.Status = RequestStatus.Approved;
                 }
 
                 await context.SaveChangesAsync();
@@ -238,33 +238,34 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             }
 
             // Approve the billing sheet stage in the actual tracked list
-            var stageToApproveBS = billingSheet.Approvals.First(stage =>
+            var stageToApproveBs = billingSheet.Approvals.First(stage =>
                 (stage.UserId == billingSheetApprovingStage.UserId && stage.UserId == userId) ||
                 (stage.RoleId == billingSheetApprovingStage.RoleId && billingSheetApprovingStage.RoleId.HasValue && roleIds.Contains(billingSheetApprovingStage.RoleId.Value)));
 
-            stageToApproveBS.Approved = true;
-            stageToApproveBS.ApprovalTime = DateTime.UtcNow;
-            stageToApproveBS.Comments = comments;
+            stageToApproveBs.Approved = true;
+            stageToApproveBs.ApprovalTime = DateTime.UtcNow;
+            stageToApproveBs.Comments = comments;
 
             // Optionally mark billing sheet as fully approved
-            var allRequiredBSApproved = billingSheet.Approvals
+            var allRequiredBsApproved = billingSheet.Approvals
                 .Where(s => s.Required)
                 .All(s => s.Approved);
 
-            if (allRequiredBSApproved)
+            if (allRequiredBsApproved)
             {
                 billingSheet.Approved = true;
-                billingSheet.Status = RequestStatus.Approved;
+                //billingSheet.Status = RequestStatus.Approved;
             }
 
             await context.SaveChangesAsync();
             break;
-            */
 
             default:
                 return Error.Validation("Approval.InvalidType",
                     $"Unsupported model type: {modelType}");
         }
+
+        return Result.Success();
     }
     
     public async Task<List<ApprovalEntity>> GetEntitiesRequiringApproval(Guid userId, List<Guid> roleIds)
@@ -272,7 +273,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         var entitiesRequiringApproval = new List<ApprovalEntity>();
 
         // 1. Get Purchase Orders requiring approval
-        /*var purchaseOrders = await context.PurchaseOrders
+        var purchaseOrders = await context.PurchaseOrders
             .Include(po => po.Approvals)
             .Where(po => po.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && !a.Approved))
@@ -287,7 +288,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 CreatedAt = po.CreatedAt,
                 Code = po.Code
             });
-        }*/
+        }
 
         // 2. Get Requisitions requiring approval
         var requisitions = await context.Requisitions
@@ -321,7 +322,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // 3. Get Billing Sheets requiring approval
-        /*var billingSheets = await context.BillingSheets
+        var billingSheets = await context.BillingSheets
             .Include(bs => bs.Approvals)
             .Where(bs => bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && !a.Approved))
@@ -336,7 +337,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 Code = bs.Code,
                 CreatedAt = bs.CreatedAt
             });
-        }*/
+        }
 
         return entitiesRequiringApproval;
     }
@@ -372,6 +373,76 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         result.Add(nextRequired);
 
         return result;
+    }
+    
+    
+    public async Task CreateInitialApprovalsAsync(string modelType, Guid modelId)
+    {
+        var approvalStages = await context.Approvals
+            .Where(s => s.ItemType == modelType)
+            .SelectMany(s => s.ApprovalStages)
+            .OrderBy(s => s.Order)
+            .ToListAsync();
+
+        if (!approvalStages.Any())
+            throw new InvalidOperationException($"No approval stages found for model type '{modelType}'");
+
+        switch (modelType)
+        {
+            case "Requisition":
+                await CreateRequisitionApprovals(modelId, approvalStages);
+                break;
+
+            case "BillingSheet":
+                await CreateBillingSheetApprovals(modelId, approvalStages);
+                break;
+
+            case "PurchaseOrder":
+                await CreatePurchaseOrderApprovals(modelId, approvalStages);
+                break;
+
+            default:
+                throw new NotSupportedException($"Approval creation not supported for model type '{modelType}'");
+        }
+    }
+
+    private async Task CreateRequisitionApprovals(Guid requisitionId,  List<ApprovalStage> stages)
+    {
+        var approvals = stages.Select(stage => new RequisitionApproval
+        {
+            Required = stage.Required,
+            Order = stage.Order,
+            RequisitionId = requisitionId
+        }).ToList();
+
+        await context.RequisitionApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task CreateBillingSheetApprovals(Guid sheetId, List<ApprovalStage> stages)
+    {
+        var approvals = stages.Select(stage => new BillingSheetApproval
+        {
+            Required = stage.Required,
+            Order = stage.Order,
+            BillingSheetId = sheetId
+        }).ToList();
+
+        await context.BillingSheetApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task CreatePurchaseOrderApprovals(Guid orderId, List<ApprovalStage> stages)
+    {
+        var approvals = stages.Select(stage => new PurchaseOrderApproval
+        {
+            Required = stage.Required,
+            Order = stage.Order,
+            PurchaseOrderId = orderId
+        }).ToList();
+
+        await context.PurchaseOrderApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();
     }
     
     private Result CheckAuthorization(
