@@ -5,15 +5,16 @@ using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Siblings;
+using Microsoft.AspNetCore.Http;
 
 namespace DOMAIN.Entities.Employees;
 
 public class CreateEmployeeRequest
 {
+    [Required] public IFormFile Picture { get; set; }
+
     [Required] [StringLength(100)] public string FullName { get; set; }
     
-    public string Avatar { get; set; }
-
     [Required] public DateTime DateOfBirth { get; set; }
 
     [Required] public Gender Gender { get; set; }

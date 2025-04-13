@@ -2,18 +2,21 @@ using System.Data.Entity;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Email;
+using APP.Services.Storage;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Employees;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using SHARED;
+using EntityFrameworkQueryableExtensions = Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions;
 
 
 namespace APP.Repository;
 
 public class EmployeeRepository(ApplicationDbContext context,
-    ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper) : IEmployeeRepository
+    ILogger<EmployeeRepository> logger, IEmailService emailService, IBlobStorageService blobStorageService, IMapper mapper) : IEmployeeRepository
 {
 
 public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
@@ -88,17 +91,23 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         employee.CreatedById = userId;
         employee.CreatedAt = DateTime.UtcNow;
 
+        if (request.Picture != null)
+        {
+            var avatarFileName = employee.Id.ToString(); 
+            await blobStorageService.UploadBlobAsync("avatar", request.Picture, avatarFileName);
+            employee.Avatar = avatarFileName;
+        }
+
         context.Employees.Add(employee);
         await context.SaveChangesAsync();
 
         return employee.Id;
     }
-
     public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
     {
         var employee = await context.Employees
             .Include(e=> e.Department)
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
 
         if (employee == null)
         {
@@ -140,7 +149,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     public async Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request, Guid userId)
     {
         var employee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
 
         if (employee == null)
         {
@@ -158,7 +167,18 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 
     public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto, Guid userId)
     {
-        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
+        var templatePath = Path.GetFullPath(Path.Combine("..", "APP", "Services", "Email", "Templates", "EmployeeAcceptance.html"));
+        if (!File.Exists(templatePath))
+            throw new FileNotFoundException("Email template not found", templatePath);
+
+        var emailTemplate = await File.ReadAllTextAsync(templatePath);
+        
+        var employee = await EntityFrameworkQueryableExtensions.Include(EntityFrameworkQueryableExtensions.Include(
+                context.Employees
+                    .Include(e => e.Department)
+                    .Include(e => e.Designation), employee => employee.Department),
+                employee => employee.Designation)
+            .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
         if (employee == null)
         {
             return Error.NotFound("Employee.NotFound", "Employee not found");
@@ -169,12 +189,26 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
+
+        if (!string.IsNullOrWhiteSpace(employee.Department?.Name) &&
+              !string.IsNullOrWhiteSpace(employee.Designation?.Name))
+        {
+            var body = emailTemplate
+                .Replace("{Email}", employee.Email)
+                .Replace("{DesignationName}", employee.Designation.Name)
+                .Replace("{DepartmentName}", employee.Department.Name);
+        
+        
+        
+            emailService.SendMail(employee.Email, "Welcome to the Company", body, []);
+        }
+
         return Result.Success();
     }
 
     public async Task<Result> DeleteEmployee(Guid id, Guid userId)
     {
-        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
 
         if (employee == null)
         {
