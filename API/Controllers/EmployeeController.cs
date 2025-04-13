@@ -33,7 +33,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
+    public async Task<IResult> CreateEmployee([FromForm] CreateEmployeeRequest request)
     {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
