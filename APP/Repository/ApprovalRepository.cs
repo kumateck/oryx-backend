@@ -389,7 +389,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
 
         switch (modelType)
         {
-            case "Requisition":
+            case "RawStockRequisition" or "PackageStockRequisition" or "PurchaseRequisition" or "Requisition": 
                 await CreateRequisitionApprovals(modelId, approvalStages);
                 break;
 
