@@ -173,12 +173,14 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 
         var emailTemplate = await File.ReadAllTextAsync(templatePath);
         
-        var employee = await EntityFrameworkQueryableExtensions.Include(EntityFrameworkQueryableExtensions.Include(
+        var employee = await EntityFrameworkQueryableExtensions.Include(
+                EntityFrameworkQueryableExtensions.Include(
                 context.Employees
                     .Include(e => e.Department)
                     .Include(e => e.Designation), employee => employee.Department),
                 employee => employee.Designation)
             .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
+        
         if (employee == null)
         {
             return Error.NotFound("Employee.NotFound", "Employee not found");
@@ -194,13 +196,17 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
               !string.IsNullOrWhiteSpace(employee.Designation?.Name))
         {
             var body = emailTemplate
+                .Replace("{Name}",  employee.FullName)
                 .Replace("{Email}", employee.Email)
                 .Replace("{DesignationName}", employee.Designation.Name)
                 .Replace("{DepartmentName}", employee.Department.Name);
         
-        
-        
             emailService.SendMail(employee.Email, "Welcome to the Company", body, []);
+        }
+        else
+        {
+            Result.Failure(Error.NotFound("Designation or Department.NotFound",
+                "Designation or Department not found"));
         }
 
         return Result.Success();
