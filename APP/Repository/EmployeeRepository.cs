@@ -1,4 +1,7 @@
 using System.Data.Entity;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Email;
@@ -8,7 +11,9 @@ using AutoMapper;
 using DOMAIN.Entities.Employees;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using SHARED;
 using EntityFrameworkQueryableExtensions = Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions;
 
@@ -16,7 +21,9 @@ using EntityFrameworkQueryableExtensions = Microsoft.EntityFrameworkCore.EntityF
 namespace APP.Repository;
 
 public class EmployeeRepository(ApplicationDbContext context,
-    ILogger<EmployeeRepository> logger, IEmailService emailService, IBlobStorageService blobStorageService, IMapper mapper) : IEmployeeRepository
+    ILogger<EmployeeRepository> logger, IEmailService emailService,
+    IBlobStorageService blobStorageService, IMapper mapper,
+    IConfiguration configuration) : IEmployeeRepository
 {
 
 public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
@@ -28,6 +35,10 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         throw new FileNotFoundException("Email template not found", templatePath);
 
     var emailTemplate = await File.ReadAllTextAsync(templatePath);
+    
+    var tokenHandler = new JwtSecurityTokenHandler();
+    var jwtKey = configuration["JwtSettings:Key"];
+    var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
   
     foreach (var employee in employeeDtos.EmailList)
     {
@@ -37,9 +48,23 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
             var generateStaffNumber = employee.EmployeeType == EmployeeType.Casual ? GenerateStaffNumber(): "";
             employee.StaffNumber = generateStaffNumber;
             
+          
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity([
+                    new Claim("type", employee.EmployeeType.ToString())
+                ]),
+                Expires = DateTime.UtcNow.AddDays(7),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var jwt = tokenHandler.WriteToken(token);
+            
             var verificationLink = employee.EmployeeType == EmployeeType.Casual
-                ? "http://164.90.142.68:3005/onboarding/0"
-                : "http://164.90.142.68:3005/onboarding/1";
+                ? $"http://164.90.142.68:3005/onboarding/0?token={jwt}"
+                : $"http://164.90.142.68:3005/onboarding/1?token={jwt}";
             
             var emailBody = emailTemplate
                 .Replace("{Email}", employee.Email)
