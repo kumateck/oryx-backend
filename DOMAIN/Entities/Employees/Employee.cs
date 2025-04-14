@@ -57,24 +57,22 @@ public class Employee : BaseEntity
     public EmergencyContact EmergencyContact { get; set; }
     
     public EmergencyContact NextOfKin { get; set; }
+
+    public List<Child> Children { get; set; } = [];
+
+    public List<Sibling> Siblings { get; set; } = [];
+    public List<Education> EducationBackground { get; set; } = [];
+    public List<EmploymentHistory> EmploymentHistory { get; set; } = [];
     
-    public ICollection<Child>? Children { get; set; }
+    public Guid? ReportingManagerId { get; set; }
     
-    public ICollection<Sibling>? Siblings { get; set; }
-    public ICollection<Education> EducationBackground { get; set; }
-    public ICollection<EmploymentHistory> EmploymentHistory { get; set; }
+    public User ReportingManager { get; set; }
     
-    public Guid ReportingManagerId { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public Department Department { get; set; }
     
-    public User? ReportingManager { get; set; }
-    
-    public Guid DepartmentId { get; set; }
-    
-    public Department? Department { get; set; }
-    
-    public Guid DesignationId { get; set; }
-    
-    public Designation? Designation { get; set; }
+    public Guid? DesignationId { get; set; }
+    public Designation Designation { get; set; }
     
     public DateTime StartDate { get; set; }
 

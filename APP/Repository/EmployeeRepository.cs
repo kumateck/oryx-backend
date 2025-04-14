@@ -115,14 +115,6 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         var employee = mapper.Map<Employee>(request);
         employee.CreatedById = userId;
         employee.CreatedAt = DateTime.UtcNow;
-
-        if (request.Picture != null)
-        {
-            var avatarFileName = employee.Id.ToString(); 
-            await blobStorageService.UploadBlobAsync("avatar", request.Picture, avatarFileName);
-            employee.Avatar = avatarFileName;
-        }
-
         context.Employees.Add(employee);
         await context.SaveChangesAsync();
 
