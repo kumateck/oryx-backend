@@ -61,7 +61,7 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
                     break;
 
                 case RevisedPurchaseOrderType.UpdateItem:
-                    var updateTarget = resolvedItems.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                    var updateTarget = initialItems.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
                     if (updateTarget != null)
                     {
                         updateTarget.UoMId = revision.UoMId ?? updateTarget.UoMId;
@@ -73,7 +73,7 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
 
                 case RevisedPurchaseOrderType.RemoveItem:
                     // Reverse the RemoveItem action, so add the item back
-                    var itemToAddBack = order.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                    var itemToAddBack = initialItems.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
                     if (itemToAddBack != null)
                     {
                         resolvedItems.Add(new PurchaseOrderItemSnapshot
@@ -89,9 +89,34 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
                     break;
 
                 case RevisedPurchaseOrderType.ReassignSuppler:
+                    var reassignedItemsToAddBack = order.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                    if (reassignedItemsToAddBack != null)
+                    {
+                        resolvedItems.Add(new PurchaseOrderItemSnapshot
+                        {
+                            Id = reassignedItemsToAddBack.Id,
+                            MaterialId = reassignedItemsToAddBack.MaterialId,
+                            UoMId = reassignedItemsToAddBack.UoMId,
+                            Quantity = reassignedItemsToAddBack.Quantity,
+                            Price = reassignedItemsToAddBack.Price,
+                            CurrencyId = reassignedItemsToAddBack.CurrencyId
+                        });
+                    }
+                    break;
                 case RevisedPurchaseOrderType.ChangeSource:
-                    // These are treated as effectively removing the purchase order item
-                    initialItems.RemoveAll(i => i.Id == revision.PurchaseOrderItemId);
+                    var changeSourceItemsToAddBack = order.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                    if (changeSourceItemsToAddBack != null)
+                    {
+                        resolvedItems.Add(new PurchaseOrderItemSnapshot
+                        {
+                            Id = changeSourceItemsToAddBack.Id,
+                            MaterialId = changeSourceItemsToAddBack.MaterialId,
+                            UoMId = changeSourceItemsToAddBack.UoMId,
+                            Quantity = changeSourceItemsToAddBack.Quantity,
+                            Price = changeSourceItemsToAddBack.Price,
+                            CurrencyId = changeSourceItemsToAddBack.CurrencyId
+                        });
+                    }
                     break;
             }
         }
