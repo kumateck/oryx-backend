@@ -42,7 +42,7 @@ public class CreatePurchaseOrderItemRequest
 }
 
 
-public class CreatePurchaseOrderRevision
+public record CreatePurchaseOrderRevision
 {
     public RevisedPurchaseOrderType Type { get; set; }
     public Guid? PurchaseOrderItemId { get; set; }
@@ -51,4 +51,10 @@ public class CreatePurchaseOrderRevision
     public decimal? Quantity { get; set; }
     public decimal? Price { get; set; }
     public Guid? CurrencyId { get; set; }
+    public Guid? UoMBeforeId { get; set; }
+    public decimal? QuantityBefore { get; set; }
+    public decimal? PriceBefore { get; set; }
+    public Guid? CurrencyBeforeId { get; set; }
+    public Guid? MaterialBeforeId { get; set; }
+    public int RevisionNumber { get; set; }
 }

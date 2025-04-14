@@ -356,13 +356,14 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// Retrieves a price comparison of materials for a procurement source.
     /// </summary>
     /// <param name="supplierType">The type of the supplier (example Local, Foreign).</param>
+    /// <param name="materialId">The material Id you want to filter by</param>
     /// <returns>Returns a list of price comparisons.</returns>
     [HttpGet("source/material/price-comparison")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierPriceComparison>))]
-    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType)
+    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType, [FromQuery] Guid? materialId)
     {
-        var result = await repository.GetPriceComparisonOfMaterial(supplierType);
+        var result = await repository.GetPriceComparisonOfMaterial(supplierType, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

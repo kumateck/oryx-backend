@@ -1045,7 +1045,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType)
+    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType, Guid? materialId)
     {
         var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
             .Include(s => s.Material)
@@ -1055,7 +1055,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Where(s => s.QuotedPrice != null && s.Status == SupplierQuotationItemStatus.NotProcessed && s.SupplierQuotation.Supplier.Type == supplierType)
             .ToListAsync();
 
-        return sourceRequisitionItemSuppliers
+        var result = sourceRequisitionItemSuppliers
             .GroupBy(s => new { s.Material, s.UoM })
             .Select(item => new SupplierPriceComparison
             {
@@ -1072,6 +1072,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                         Price = s.QuotedPrice
                     }).ToList()
             }).ToList();
+
+        return materialId.HasValue ? result.Where(s => s.Material.Id == materialId.Value).ToList() : result;
     }
 
     public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, Guid userId)

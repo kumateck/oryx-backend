@@ -5,7 +5,6 @@ using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Siblings;
-using Microsoft.AspNetCore.Http;
 
 namespace DOMAIN.Entities.Employees;
 
@@ -51,18 +50,16 @@ public class CreateEmployeeRequest
     
     [Required] public PersonDto Father { get; set; }
     
-    public PersonDto? Spouse { get; set; }
-    
+    public PersonDto Spouse { get; set; }
     [Required] public EmergencyContactDto EmergencyContact { get; set; }
     
     [Required] public EmergencyContactDto NextOfKin { get; set; }
-    
-    public List<ChildDto>? Children { get; set; }
-    
-    public List<SiblingDto>? Siblings { get; set; }
-    
-    [Required] public List<EducationDto> EducationBackground { get; set; }
-    
-    [Required] public List<EmploymentHistoryDto> EmploymentHistory { get; set; }
-    
+
+    public List<ChildDto> Children { get; set; } = [];
+
+    public List<SiblingDto> Siblings { get; set; } = [];
+
+    [Required] public List<EducationDto> EducationBackground { get; set; } = [];
+
+    [Required] public List<EmploymentHistoryDto> EmploymentHistory { get; set; } = [];
 }

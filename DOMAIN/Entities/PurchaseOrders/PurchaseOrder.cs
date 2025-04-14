@@ -96,7 +96,14 @@ public class PurchaseOrderDto : WithAttachment
     public decimal SeaFreight { get; set; }
     public string AmountInFigures { get; set; }
     public decimal Insurance { get; set; }
+    public List<PurchaseOrderRevisionDto> Revisions { get; set; } = [];
     public DateTime? EstimatedDeliveryDate { get; set; }
+}
+
+public class PurchaseOrderRevisionDto
+{
+    public int RevisionNumber { get; set; }
+    public List<PurchaseOrderItemDto> Items { get; set; } = [];
 }
 
 public class PurchaseOrderItemDto
