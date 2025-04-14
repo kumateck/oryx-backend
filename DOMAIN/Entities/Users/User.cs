@@ -9,11 +9,13 @@ public class User : IdentityUser<Guid>, IBaseEntity
 {
     [PersonalData][StringLength(100)] public string FirstName { get; set; }
     [PersonalData][StringLength(100)] public string LastName { get; set; }
+    
     [StringLength(100)] public string Title { get; set; }
     public DateTime? DateOfBirth { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public Guid? LastUpdatedById { get; set; }
+    
     public Guid? CreatedById { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid? LastDeletedById { get; set; }
