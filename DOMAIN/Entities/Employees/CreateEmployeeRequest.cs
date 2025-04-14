@@ -11,7 +11,7 @@ namespace DOMAIN.Entities.Employees;
 
 public class CreateEmployeeRequest
 {
-    [Required] public IFormFile Picture { get; set; }
+    public IFormFile? Picture { get; set; }
 
     [Required] [StringLength(100)] public string FullName { get; set; }
     
