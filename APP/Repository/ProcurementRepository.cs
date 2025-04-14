@@ -322,9 +322,13 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         foreach (var revision in revisions)
         {
-            var poItem = existingOrder.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
-            if (poItem is null) return 
-                Error.NotFound("PurchaseOrderItem.NotFound", $"Purchase order with Id: {revision.PurchaseOrderItemId} item not found");
+            PurchaseOrderItem poItem = null;
+            if (revision.PurchaseOrderItemId.HasValue)
+            {
+                poItem = existingOrder.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                if (poItem is null) return 
+                    Error.NotFound("PurchaseOrderItem.NotFound", $"Purchase order with Id: {revision.PurchaseOrderItemId} item not found");
+            }
             
             switch (revision.Type)
             {
