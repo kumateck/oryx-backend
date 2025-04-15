@@ -15,6 +15,7 @@ public class MongoDbContext
         var client = new MongoClient(connectionString);
         var environment = Environment.GetEnvironmentVariable("Environment");
         var dbName = environment == "dev" ? "logs" : "demo_logs";
+        Console.WriteLine("MongoDB environment---------------------------------------------------------------> " + dbName);
         _database = client.GetDatabase(dbName);
     }
 
