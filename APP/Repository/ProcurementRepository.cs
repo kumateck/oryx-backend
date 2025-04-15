@@ -357,8 +357,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                                         && i.UoMId == poItem.UoMId)
                             .ExecuteUpdateAsync(setters =>
                                 setters.SetProperty(p => p.Status, SupplierQuotationItemStatus.NotProcessed));
-
-                        context.PurchaseOrderItems.Remove(poItem);
+                        poItem.DeletedAt = DateTime.UtcNow;
+                        context.PurchaseOrderItems.Update(poItem);
                     }
                     break;
 
@@ -392,8 +392,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
                         requisitionItem.Status = RequestStatus.Pending;
                         context.RequisitionItems.Update(requisitionItem);
-
-                        context.PurchaseOrderItems.Remove(poItem);
+                        poItem.DeletedAt = DateTime.UtcNow;
+                        context.PurchaseOrderItems.Update(poItem);
                     }
                     break;
 
@@ -444,7 +444,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         enrichedRevision.PriceBefore = poItem.Price;
                         enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
 
-                        context.PurchaseOrderItems.Remove(poItem);
+                        poItem.DeletedAt = DateTime.UtcNow;
+                        context.PurchaseOrderItems.Update(poItem);
                     }
                     break;
             }
@@ -462,7 +463,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         context.PurchaseOrders.Update(existingOrder);
         existingOrder.RevisedPurchaseOrders.AddRange(mappedRevisions);
         await context.SaveChangesAsync();
-
         return Result.Success();
     }
 
