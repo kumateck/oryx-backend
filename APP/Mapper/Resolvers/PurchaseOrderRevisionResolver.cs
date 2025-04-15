@@ -46,9 +46,9 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
         }));
 
         var revisions = order.RevisedPurchaseOrders
-            .Where(r => r.RevisionNumber <= revisionNumber)
-            .OrderBy(r => r.RevisionNumber)
-            .ThenBy(r => r.Type)
+            .Where(r => revisionNumber + 1 <= r.RevisionNumber)
+            .OrderByDescending(r => r.RevisionNumber)
+            //.ThenBy(r => r.Type)
             .ToList();
 
         foreach (var revision in revisions)

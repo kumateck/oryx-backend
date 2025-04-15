@@ -458,7 +458,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             rev.RevisionNumber = latestRevisionNumber;
         }
-
+        existingOrder.RevisionNumber = latestRevisionNumber;
+        context.PurchaseOrders.Update(existingOrder);
         existingOrder.RevisedPurchaseOrders.AddRange(mappedRevisions);
         await context.SaveChangesAsync();
 
