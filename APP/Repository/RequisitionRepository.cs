@@ -1045,7 +1045,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType, Guid? materialId)
+    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType)
     {
         var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
             .Include(s => s.Material)
@@ -1055,7 +1055,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Where(s => s.QuotedPrice != null && s.Status == SupplierQuotationItemStatus.NotProcessed && s.SupplierQuotation.Supplier.Type == supplierType)
             .ToListAsync();
 
-        var result = sourceRequisitionItemSuppliers
+        return sourceRequisitionItemSuppliers
             .GroupBy(s => new { s.Material, s.UoM })
             .Select(item => new SupplierPriceComparison
             {
@@ -1072,22 +1072,51 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                         Price = s.QuotedPrice
                     }).ToList()
             }).ToList();
+    }
 
-        return materialId.HasValue ? result.Where(s => s.Material.Id == materialId.Value).ToList() : result;
+    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(
+        SupplierType supplierType, Guid materialId, Guid purchaseOrderId)
+    {
+        var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
+            .Include(s => s.Material)
+            .Include(s => s.UoM)
+            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
+            .Include(s => s.SupplierQuotation).ThenInclude(s => s.SourceRequisition)
+            .Where(s => s.QuotedPrice != null && s.Status == SupplierQuotationItemStatus.NotProcessed
+                                              && s.SupplierQuotation.Supplier.Type == supplierType && s.MaterialId == materialId && s.PurchaseOrderId == purchaseOrderId)
+            .ToListAsync();
+        
+        return sourceRequisitionItemSuppliers
+            .GroupBy(s => new { s.Material, s.UoM })
+            .Select(item => new SupplierPriceComparison
+            {
+                Material = mapper.Map<CollectionItemDto>(item.Key.Material),
+                UoM = mapper.Map<UnitOfMeasureDto>(item.Key.UoM),
+                Quantity = item.Select(s => s.Quantity).First(),
+                SupplierQuotation = item
+                    .GroupBy(s => s.SupplierQuotation.SupplierId)
+                    .Select(sg => sg.OrderByDescending(s => s.SupplierQuotation.CreatedAt).First())
+                    .Select(s => new SupplierPrice
+                    {
+                        Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                        SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
+                        Price = s.QuotedPrice
+                    }).ToList()
+            }).ToList();
     }
 
     public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, Guid userId)
     {
         foreach (var quotation in processQuotations)
         {
-            await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
+            var poId = (await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
                 Code = await GeneratePurchaseOrderCode(),
                 SupplierId = quotation.SupplierId,
                 SourceRequisitionId = quotation.SourceRequisitionId,
                 RequestDate = DateTime.UtcNow,
                 Items = quotation.Items
-            }, userId);
+            }, userId)).Value;
 
             foreach (var processSupplierQuote in quotation.Items)
             {
@@ -1101,6 +1130,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     context.SupplierQuotationItems.Update(supplierQuotationItem);
                 }
             }
+            
+            await context.SupplierQuotationItems
+                .Where(s => quotation.Items.Select(i => i.MaterialId).Contains(s.MaterialId))
+                .ExecuteUpdateAsync(setters =>
+                    setters.SetProperty(p => p.PurchaseOrderId, poId));
             await context.SaveChangesAsync();
         }
         

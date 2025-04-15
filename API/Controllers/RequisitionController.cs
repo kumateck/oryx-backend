@@ -356,14 +356,29 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// Retrieves a price comparison of materials for a procurement source.
     /// </summary>
     /// <param name="supplierType">The type of the supplier (example Local, Foreign).</param>
-    /// <param name="materialId">The material Id you want to filter by</param>
     /// <returns>Returns a list of price comparisons.</returns>
     [HttpGet("source/material/price-comparison")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierPriceComparison>))]
-    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType, [FromQuery] Guid? materialId)
+    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType)
     {
-        var result = await repository.GetPriceComparisonOfMaterial(supplierType, materialId);
+        var result = await repository.GetPriceComparisonOfMaterial(supplierType);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a price comparison of materials for a procurement source by material and purchase order.
+    /// </summary>
+    /// <param name="supplierType">The type of the supplier (example Local, Foreign).</param>
+    /// <param name="materialId">The materialId of the item</param>
+    /// <param name="purchaseOrderId">The purchase order associated</param>
+    /// <returns>Returns a list of price comparisons.</returns>
+    [HttpGet("source/material/price-comparison/by-material")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierPriceComparison>))]
+    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType, [FromQuery] Guid materialId, [FromQuery] Guid purchaseOrderId)
+    {
+        var result = await repository.GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(supplierType, materialId, purchaseOrderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

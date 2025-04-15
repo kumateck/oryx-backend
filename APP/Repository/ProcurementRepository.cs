@@ -488,6 +488,21 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
+    public async Task<Result<Guid>> GetRequisitionIdForPurchaseOrderAndMaterial(Guid purchaseOrderId, Guid materialId)
+    {
+        var purchaseOrder = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(p => p.SourceRequisition)
+            .ThenInclude(s => s.Items)
+            .FirstOrDefaultAsync(p => p.Id == purchaseOrderId);
+        
+        var sourceRequisition = purchaseOrder.SourceRequisition;
+        
+        return sourceRequisition.Items.Any(i => i.MaterialId == materialId) ? sourceRequisition.Items
+            .First(i => i.MaterialId == materialId)
+            .RequisitionId : Error.NotFound("Requisition.NotFound", "Could not find a requisition with this material and purchase order");
+    }
+
     public async Task<Result> DeletePurchaseOrder(Guid purchaseOrderId, Guid userId)
     {
         var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
