@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Http;
 using SHARED;
 
@@ -9,6 +10,8 @@ public interface IEmployeeRepository
 {
    Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDto);
    Task<Result<Guid?>> CreateEmployee(CreateEmployeeRequest request, Guid userId);
+   
+   Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, UserDto userDto, Guid userId);
    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
       string searchQuery = null, string designation = null, string department = null);
    Task<Result<EmployeeDto>> GetEmployee(Guid id);

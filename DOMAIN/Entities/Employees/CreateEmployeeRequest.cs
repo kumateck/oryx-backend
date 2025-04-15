@@ -18,7 +18,7 @@ public class CreateEmployeeRequest
 
     [Required] public Gender Gender { get; set; }
 
-    [Required] [Phone] public string Contact { get; set; }
+    [Required] [Phone] public string PhoneNumber { get; set; }
 
     [Required] public string Region { get; set; }
     

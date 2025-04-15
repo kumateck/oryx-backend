@@ -5,12 +5,11 @@ using System.Text;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Email;
-using APP.Services.Storage;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -21,8 +20,7 @@ using EntityFrameworkQueryableExtensions = Microsoft.EntityFrameworkCore.EntityF
 namespace APP.Repository;
 
 public class EmployeeRepository(ApplicationDbContext context,
-    ILogger<EmployeeRepository> logger, IEmailService emailService,
-    IBlobStorageService blobStorageService, IMapper mapper,
+    ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper,
     IConfiguration configuration) : IEmployeeRepository
 {
 
@@ -120,6 +118,25 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 
         return employee.Id;
     }
+
+    public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, UserDto userDto, Guid userId)
+    {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Email == employeeUserDto.Email);
+
+        if (employee == null)
+        {
+            return Error.NotFound("Employee.NotFound",$"Employee with email {employeeUserDto.Email} not found");
+        }
+        
+        var newUser = mapper.Map<User>(employeeUserDto);
+        newUser.CreatedById = userId;
+        newUser.CreatedAt = DateTime.UtcNow;
+        
+        context.Users.Add(newUser);
+        await context.SaveChangesAsync();
+        return Result.Success(newUser.Id);
+    }
+
     public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
     {
         var employee = await context.Employees
