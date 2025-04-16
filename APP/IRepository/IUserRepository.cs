@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Auth;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
@@ -11,7 +12,7 @@ public interface IUserRepository
 {
     Task<Result<UserDto>> CreateUser(CreateUserRequest request);
     Task<Result<LoginResponse>> CreateNewUser(CreateClientRequest request);
-    Task<Result<Paginateable<IEnumerable<UserDto>>>> GetUsers(int page, int pageSize,
+    Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize,
         string searchQuery);
     Task<Result<UserDto>> GetUser(Guid userId);
     Task<Result> UpdateUser(UpdateUserRequest request, Guid id, Guid userId);

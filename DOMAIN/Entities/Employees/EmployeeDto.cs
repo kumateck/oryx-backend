@@ -1,11 +1,9 @@
-using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Children;
 using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Siblings;
-using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Employees;
 
@@ -40,6 +38,8 @@ public class EmployeeDto
     public EmployeeType Type { get; set; }
     
     public string DesignationName { get; set; }
+    
+    public string DepartmentName { get; set; }
 
     public PersonDto Mother { get; set; }
     public PersonDto Father { get; set; }

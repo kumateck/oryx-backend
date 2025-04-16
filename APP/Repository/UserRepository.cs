@@ -6,7 +6,6 @@ using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
-using APP.Mapper.Resolvers;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
@@ -88,7 +87,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         return await jwtService.AuthenticateNewUser(user);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<UserDto>>>> GetUsers(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize, string searchQuery)
     {
         var query = context.Users.AsQueryable();
         
@@ -101,7 +100,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             query, 
             page, 
             pageSize, 
-            mapper.Map<UserDto>
+            mapper.Map<UserWithRoleDto>
         );
     }
     

@@ -151,8 +151,14 @@ public class OryxMapper : Profile
         #region UserMapper
         CreateMap<CreateUserRequest, User>();
         CreateMap<User, UserDto>()
-            // .ForMember(user => user.Roles,
-            //     opt => opt.MapFrom<UserRoleResolver>())
+            .ForMember(user => user.Avatar,
+                opt => opt.MapFrom<AvatarResolver>())
+            .ForMember(user => user.Signature,
+                opt => opt.MapFrom<SignatureResolver>());
+        
+        CreateMap<User, UserWithRoleDto>()
+             .ForMember(user => user.Roles,
+                 opt => opt.MapFrom<UserRoleResolver>())
             .ForMember(user => user.Avatar,
                 opt => opt.MapFrom<AvatarResolver>())
             .ForMember(user => user.Signature,
@@ -575,7 +581,8 @@ public class OryxMapper : Profile
 
         CreateMap<AssignEmployeeDto, Employee>();
         CreateMap<Employee, EmployeeDto>()
-            .ForMember(dest => dest.DesignationName, opt => opt.MapFrom(src => src.Designation.Name));
+            .ForMember(dest => dest.DesignationName, opt => opt.MapFrom(src => src.Designation.Name))
+            .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.Name));
         
         #endregion
 
