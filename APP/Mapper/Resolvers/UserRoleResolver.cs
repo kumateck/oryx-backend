@@ -2,13 +2,14 @@ using AutoMapper;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Http;
 
 namespace APP.Mapper.Resolvers;
 
 public class UserRoleResolver(ApplicationDbContext context, IMapper mapper)
-    : IValueResolver<User, UserDto, List<RoleDto>>
+    : IValueResolver<User, UserWithRoleDto, List<RoleDto>>
 {
-    public List<RoleDto> Resolve(User source, UserDto destination, List<RoleDto> destMember,
+    public List<RoleDto> Resolve(User source, UserWithRoleDto destination, List<RoleDto> destMember,
         ResolutionContext context1)
     {
         var roleIds = context
