@@ -261,61 +261,68 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         return Result.Success();
     }
 
-    public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto, Guid userId)
+public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto, Guid userId)
+{
+    // Step 1: Retrieve employee with department and designation loaded
+    var employee = await context.Employees
+        .Include(e => e.Department)
+        .Include(e => e.Designation)
+        .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
+
+    if (employee == null)
     {
-        var employee = await context.Employees
-            .Include(e => e.Department)
-            .Include(e => e.Designation)
-            .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
-
-        if (employee == null)
-        {
-            return Error.NotFound("Employee.NotFound", "Employee not found");
-        }
-        
-        mapper.Map(employeeDto, employee);
-        employee.UpdatedAt = DateTime.UtcNow;
-        employee.LastUpdatedById = userId;
-
-        context.Employees.Update(employee);
-        await context.SaveChangesAsync();
-        
-        var templatePath = Path.GetFullPath(Path.Combine("..", "APP", "Services", "Email", "Templates", "EmployeeAcceptance.html"));
-
-        if (!File.Exists(templatePath))
-            throw new FileNotFoundException("Email template not found", templatePath);
-
-        var emailTemplate = await File.ReadAllTextAsync(templatePath);
-        
-        var body = emailTemplate
-                .Replace("{Name}", employee.FullName)
-                .Replace("{Email}", employee.Email)
-                .Replace("{DesignationName}", employee.Designation.Name)
-                .Replace("{DepartmentName}", employee.Department.Name);
-            
-        var attempts = 0;
-        var sent = false;
-        const int maxRetries = 3;
-
-        while (attempts < maxRetries && !sent)
-        {
-            try 
-            {
-                emailService.SendMail(employee.Email, "Welcome to the Company", body, []);
-                logger.LogInformation($"Email sent to {employee.Email}");
-                sent = true;
-            }
-            catch (Exception ex)
-            {
-                attempts++;
-                logger.LogWarning($"Failed attempt {attempts} for {employee.Email}: {ex.Message}");
-
-                if (attempts == maxRetries)
-                    logger.LogError($"Giving up on {employee.Email} after {maxRetries} attempts.");
-            }
-        }
-        return Result.Success();
+        return Error.NotFound("Employee.NotFound", "Employee not found");
     }
+    
+    mapper.Map(employeeDto, employee);
+    employee.DepartmentId = employeeDto.DepartmentId;
+    employee.DesignationId = employeeDto.DesignationId;
+    employee.UpdatedAt = DateTime.UtcNow;
+    employee.LastUpdatedById = userId;
+
+    context.Employees.Update(employee);
+    await context.SaveChangesAsync();
+    
+    await context.Entry(employee).Reference(e => e.Department).LoadAsync();
+    await context.Entry(employee).Reference(e => e.Designation).LoadAsync();
+
+    // Step 4: Prepare and send the email
+    var templatePath = Path.Combine("..","APP", "Services", "Email", "Templates", "EmployeeAcceptance.html");
+    if (!File.Exists(templatePath))
+        throw new FileNotFoundException("Email template not found", templatePath);
+
+    var emailTemplate = await File.ReadAllTextAsync(templatePath);
+
+    var body = emailTemplate
+        .Replace("{Name}", employee.FullName)
+        .Replace("{Email}", employee.Email)
+        .Replace("{DesignationName}", employee.Designation?.Name)
+        .Replace("{DepartmentName}", employee.Department?.Name);
+
+    const int maxRetries = 3;
+    var attempts = 0;
+    var sent = false;
+
+    while (attempts < maxRetries && !sent)
+    {
+        try
+        {
+            emailService.SendMail(employee.Email, "Welcome to the Company", body, []);
+            logger.LogInformation($"Email sent to {employee.Email}");
+            sent = true;
+        }
+        catch (Exception ex)
+        {
+            attempts++;
+            logger.LogWarning($"Failed attempt {attempts} for {employee.Email}: {ex.Message}");
+
+            if (attempts == maxRetries)
+                logger.LogError($"Giving up on {employee.Email} after {maxRetries} attempts.");
+        }
+    }
+
+    return Result.Success();
+}
 
     public async Task<Result> DeleteEmployee(Guid id, Guid userId)
     {

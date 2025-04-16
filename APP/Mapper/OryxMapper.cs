@@ -572,7 +572,10 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.EducationBackground, opt => opt.MapFrom(src => src.EducationBackground))
             .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
 
-        CreateMap<AssignEmployeeDto, Employee>();
+        CreateMap<AssignEmployeeDto, Employee>()
+            .ForMember(dest => dest.Department, opt => opt.Ignore())
+            .ForMember(dest => dest.Designation, opt => opt.Ignore());
+        
         CreateMap<Employee, EmployeeDto>()
             .ForMember(dest => dest.DesignationName, opt => opt.MapFrom(src => src.Designation.Name))
             .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.Name));
