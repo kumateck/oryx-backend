@@ -6,6 +6,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
+using APP.Mapper.Resolvers;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
@@ -87,24 +88,10 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         return await jwtService.AuthenticateNewUser(user);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<UserDto>>>> GetUsers(int page, int pageSize, string searchQuery, string roleNames, bool withDisabled = false)
+    public async Task<Result<Paginateable<IEnumerable<UserDto>>>> GetUsers(int page, int pageSize, string searchQuery)
     {
         var query = context.Users.AsQueryable();
-
-        if (!string.IsNullOrEmpty(roleNames))
-        {
-            var roles = roleNames.Split(",").Select(str => str.Trim()).ToList();
-            var usersInRoles = new List<User>();
-
-            foreach (var role in roles)
-            {
-                var roleUsers = await userManager.GetUsersInRoleAsync(role);
-                usersInRoles.AddRange(roleUsers);
-            }
-            
-            query = usersInRoles.Distinct().AsQueryable();
-        }
-
+        
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.FirstName, q => q.LastName, q => q.Email);

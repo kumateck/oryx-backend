@@ -49,6 +49,7 @@ using DOMAIN.Entities.Users.Request;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
 using DOMAIN.Entities.WorkOrders;
+using INFRASTRUCTURE.Context;
 using SHARED;
 
 namespace APP.Mapper;
