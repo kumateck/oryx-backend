@@ -43,6 +43,23 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Creates a user from an employee.
+    /// </summary>
+    [HttpPost("user")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateUserFromEmployee([FromBody] EmployeeUserDto employeeUserDto)
+    {
+        var userId = (string) HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateEmployeeUser(employeeUserDto, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves a paginated list of employees based on search criteria.
     /// </summary>
     [HttpGet]
