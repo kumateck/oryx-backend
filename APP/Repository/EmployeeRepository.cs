@@ -296,8 +296,29 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
                 .Replace("{Email}", employee.Email)
                 .Replace("{DesignationName}", employee.Designation.Name)
                 .Replace("{DepartmentName}", employee.Department.Name);
+          
+            
+            var attempts = 0;
+            var sent = false;
+            const int maxRetries = 3;
 
-            emailService.SendMail(employee.Email, "Welcome to the Company", body, []);
+            while (attempts < maxRetries && !sent)
+            {
+                try 
+                {
+                    emailService.SendMail(employee.Email, "Welcome to the Company", body, []);
+                    logger.LogInformation($"Email sent to {employee.Email}");
+                    sent = true;
+                }
+                catch (Exception ex)
+                {
+                    attempts++;
+                    logger.LogWarning($"Failed attempt {attempts} for {employee.Email}: {ex.Message}");
+
+                    if (attempts == maxRetries)
+                        logger.LogError($"Giving up on {employee.Email} after {maxRetries} attempts.");
+                }
+            }
         }
         else
         {
