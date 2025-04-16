@@ -120,12 +120,6 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     public async Task<Result> CreateEmployeeUser(EmployeeDto employeeDto, UserDto userDto, Guid userId)
     {
         var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == employeeDto.Id && e.LastDeletedById == null);
-        
-        var templatePath = Path.GetFullPath(Path.Combine("..", "APP", "Services", "Email", "Templates", "PasswordSetup.html"));
-        if (!File.Exists(templatePath))
-            throw new FileNotFoundException("Email template not found", templatePath);
-
-        var emailTemplate = await File.ReadAllTextAsync(templatePath);
 
         if (employee == null)
         {
@@ -138,6 +132,12 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         
         context.Users.Add(newUser);
         await context.SaveChangesAsync();
+        
+        var templatePath = Path.GetFullPath(Path.Combine("..", "APP", "Services", "Email", "Templates", "PasswordSetup.html"));
+        if (!File.Exists(templatePath))
+            throw new FileNotFoundException("Email template not found", templatePath);
+
+        var emailTemplate = await File.ReadAllTextAsync(templatePath);
             
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwtKey = configuration["JwtSettings:Key"];
@@ -159,7 +159,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var jwt = tokenHandler.WriteToken(token);
 
-            var verificationLink = $"http://164.90.142.68:3005/set-password?email={employee.Email}/{jwt}";
+            var verificationLink = $"http://164.90.142.68:3005/reset-password?email={employee.Email}/{jwt}";
             
             var emailBody = emailTemplate
                 .Replace("{Email}", employee.Email)
