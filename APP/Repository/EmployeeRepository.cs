@@ -119,16 +119,16 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         return employee.Id;
     }
 
-    public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, UserDto userDto, Guid userId)
+    public async Task<Result> CreateEmployeeUser(EmployeeDto employeeDto, UserDto userDto, Guid userId)
     {
-        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Email == employeeUserDto.Email);
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == employeeDto.Id);
 
         if (employee == null)
         {
-            return Error.NotFound("Employee.NotFound",$"Employee with email {employeeUserDto.Email} not found");
+            return Error.NotFound("Employee.NotFound",$"Employee with email {employeeDto.Email} not found");
         }
         
-        var newUser = mapper.Map<User>(employeeUserDto);
+        var newUser = mapper.Map<User>(employeeDto);
         newUser.CreatedById = userId;
         newUser.CreatedAt = DateTime.UtcNow;
         
@@ -157,17 +157,17 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     {
         var query = context.Employees.Where(e => e.LastDeletedById == null).AsQueryable();
         
-        if (!string.IsNullOrEmpty(searchQuery))
+        if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.Email);
         }
 
-        if (!string.IsNullOrEmpty(designation))
+        if (!string.IsNullOrWhiteSpace(designation))
         {
             query = query.WhereSearch(designation, q => q.Designation.Name);
         }
 
-        if (!string.IsNullOrEmpty(department))
+        if (!string.IsNullOrWhiteSpace(department))
         {
             query = query.WhereSearch(department, q => q.Department.Name);
         }

@@ -12,7 +12,7 @@ public interface IUserRepository
     Task<Result<UserDto>> CreateUser(CreateUserRequest request);
     Task<Result<LoginResponse>> CreateNewUser(CreateClientRequest request);
     Task<Result<Paginateable<IEnumerable<UserDto>>>> GetUsers(int page, int pageSize,
-        string searchQuery, string roleNames, bool withDisabled = false);
+        string searchQuery);
     Task<Result<UserDto>> GetUser(Guid userId);
     Task<Result> UpdateUser(UpdateUserRequest request, Guid id, Guid userId);
     Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id, Guid userId);
