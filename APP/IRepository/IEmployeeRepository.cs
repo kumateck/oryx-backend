@@ -12,7 +12,7 @@ public interface IEmployeeRepository
    
    Task<Result<Guid?>> CreateEmployee(CreateEmployeeRequest request, Guid userId);
    
-   Task<Result> CreateEmployeeUser(EmployeeDto employeeUserDto, UserDto userDto, Guid userId);
+   Task<Result> CreateEmployeeUser(Guid employeeId, EmployeeUserDto employeeUserDto, Guid userId);
    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
       string searchQuery = null, string designation = null, string department = null);
    Task<Result<EmployeeDto>> GetEmployee(Guid id);

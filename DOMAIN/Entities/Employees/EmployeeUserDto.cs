@@ -4,6 +4,7 @@ namespace DOMAIN.Entities.Employees;
 
 public class EmployeeUserDto
 {
+    
     [Required] public string FullName { get; set; }
     
     [Required] [EmailAddress] public string Email { get; set; }
