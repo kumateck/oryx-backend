@@ -273,7 +273,6 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
         
-        
         mapper.Map(employeeDto, employee);
         employee.UpdatedAt = DateTime.UtcNow;
         employee.LastUpdatedById = userId;
@@ -296,7 +295,6 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
                 .Replace("{Email}", employee.Email)
                 .Replace("{DesignationName}", employee.Designation.Name)
                 .Replace("{DepartmentName}", employee.Department.Name);
-          
             
             var attempts = 0;
             var sent = false;
