@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Roles;
 using Microsoft.AspNetCore.Identity;
 using SHARED;
 
@@ -19,4 +20,9 @@ public class UserDto
     public DateTime CreatedAt { get; set; }
     public string Signature { get; set; }
     public CollectionItemDto Department { get; set; }
+}
+
+public class UserWithRoleDto : UserDto
+{ 
+    public List<RoleDto> Roles { get; set; } = [];
 }
