@@ -8,6 +8,10 @@ public class AssignEmployeeDto
     
     [Required] public Guid DepartmentId { get; set; }
     
+    public string StaffId { get; set; }
+    
+    public DateTime StartDate { get; set; }
+    
     [Required] public Guid ReportingManagerId {get; set;}
     
 }
