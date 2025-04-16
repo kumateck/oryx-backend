@@ -99,7 +99,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> AssignEmployee(Guid id, AssignEmployeeDto employeeDto)
+    public async Task<IResult> AssignEmployee([FromRoute] Guid id, AssignEmployeeDto employeeDto)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
