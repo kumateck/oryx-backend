@@ -9,6 +9,7 @@ namespace APP.IRepository;
 public interface IEmployeeRepository
 {
    Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDto);
+   
    Task<Result<Guid?>> CreateEmployee(CreateEmployeeRequest request, Guid userId);
    
    Task<Result> CreateEmployeeUser(EmployeeDto employeeUserDto, UserDto userDto, Guid userId);
