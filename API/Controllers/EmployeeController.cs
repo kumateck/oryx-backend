@@ -79,7 +79,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// </summary>
     [HttpPut("{id:guid}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateEmployee([FromRoute] Guid id, [FromBody] CreateEmployeeRequest request)
@@ -96,7 +96,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// </summary>
     [HttpPut("{id:guid}/assign")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> AssignEmployee([FromRoute] Guid id, AssignEmployeeDto employeeDto)
