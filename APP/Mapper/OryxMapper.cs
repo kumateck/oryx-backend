@@ -574,7 +574,8 @@ public class OryxMapper : Profile
 
         CreateMap<AssignEmployeeDto, Employee>();
         CreateMap<Employee, EmployeeDto>()
-            .ForMember(dest => dest.DesignationName, opt => opt.MapFrom(src => src.Designation.Name));
+            .ForMember(dest => dest.DesignationName, opt => opt.MapFrom(src => src.Designation.Name))
+            .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.Name));
         
         #endregion
 

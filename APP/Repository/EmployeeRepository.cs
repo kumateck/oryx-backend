@@ -155,7 +155,10 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
         string searchQuery, string designation, string department)
     {
-        var query = context.Employees.Where(e => e.LastDeletedById == null).AsQueryable();
+        var query = context.Employees
+            .Include(e => e.Department)
+            .Include(e => e.Designation)
+            .AsQueryable();
         
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
