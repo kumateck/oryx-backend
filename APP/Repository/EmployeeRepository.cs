@@ -11,6 +11,7 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -120,81 +121,101 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 
 public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Guid createdByUserId)
 {
-    var employee = await context.Employees.Include(employee => employee.Department)
+    var employee = await context.Employees.Include(e => e.Department)
         .FirstOrDefaultAsync(e => e.Id == employeeUserDto.EmployeeId && e.LastDeletedById == null);
 
     if (employee == null)
         return Error.NotFound("Employee.NotFound", "Employee not found");
-    
+
     var existingUser = await context.Users
         .FirstOrDefaultAsync(u => u.Email == employee.Email && u.LastDeletedById == null);
 
     if (existingUser != null)
         return Error.Conflict("User.Exists", "User already exists");
-    
-    var newUser = mapper.Map<User>(employee);
-    newUser.Email = employee.Email;
-    newUser.FirstName = employee.FullName;
-    newUser.LastName = employee.FullName;
-    newUser.Department = employee.Department;
-    newUser.CreatedById = createdByUserId;
-    newUser.CreatedAt = DateTime.UtcNow;
 
-    context.Users.Add(newUser);
+    using var transaction = await context.Database.BeginTransactionAsync();
 
-    await context.SaveChangesAsync();
-
-    // Step 5: Send password setup email
-    var templatePath = Path.Combine("..","APP", "Services", "Email", "Templates", "PasswordSetup.html");
-    if (!File.Exists(templatePath))
-        throw new FileNotFoundException("Email template not found", templatePath);
-
-    var emailTemplate = await File.ReadAllTextAsync(templatePath);
-
-    var jwtKey = configuration["JwtSettings:Key"];
-    var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
-    var tokenHandler = new JwtSecurityTokenHandler();
-
-    var tokenDescriptor = new SecurityTokenDescriptor
+    try
     {
-        Subject = new ClaimsIdentity([ new Claim("type", newUser.Id.ToString()) ]),
-        Expires = DateTime.UtcNow.AddDays(7),
-        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
-    };
+        var newUser = mapper.Map<User>(employee);
+        newUser.Email = employee.Email;
+        newUser.FirstName = employee.FullName;
+        newUser.LastName = employee.FullName;
+        newUser.Department = employee.Department;
+        newUser.CreatedById = createdByUserId;
+        newUser.CreatedAt = DateTime.UtcNow;
 
-    var token = tokenHandler.CreateToken(tokenDescriptor);
-    var jwt = tokenHandler.WriteToken(token);
-
-    var verificationLink = $"http://164.90.142.68:3005/reset-password?email={newUser.Email}/{jwt}";
-
-    var emailBody = emailTemplate
-        .Replace("{FullName}", employee.FullName)
-        .Replace("{Email}", employee.Email)
-        .Replace("{VerificationLink}", verificationLink);
-
-    const int maxRetries = 3;
-    var attempts = 0;
-    var sent = false;
-
-    while (attempts < maxRetries && !sent)
-    {
-        try
+        await context.Users.AddAsync(newUser);
+        await context.SaveChangesAsync();
+        
+        var userRole = new IdentityUserRole<Guid>
         {
-            emailService.SendMail(newUser.Email, "Password Setup", emailBody, []);
-            logger.LogInformation($"Password setup email sent to {newUser.Email}");
-            sent = true;
-        }
-        catch (Exception ex)
-        {
-            attempts++;
-            logger.LogWarning($"Failed attempt {attempts} for {newUser.Email}: {ex.Message}");
+            UserId = newUser.Id,
+            RoleId = employeeUserDto.RoleId
+        };
+        await context.UserRoles.AddAsync(userRole);
+        await context.SaveChangesAsync();
 
-            if (attempts == maxRetries)
-                logger.LogError($"Giving up on {newUser.Email} after {maxRetries} attempts.");
+        await transaction.CommitAsync();
+
+        // Email preparation
+        var templatePath = Path.Combine("..", "APP", "Services", "Email", "Templates", "PasswordSetup.html");
+        if (!File.Exists(templatePath))
+            throw new FileNotFoundException("Email template not found", templatePath);
+
+        var emailTemplate = await File.ReadAllTextAsync(templatePath);
+
+        var jwtKey = configuration["JwtSettings:Key"];
+        var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
+        var tokenHandler = new JwtSecurityTokenHandler();
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity([ new Claim("type", newUser.Id.ToString()) ]),
+            Expires = DateTime.UtcNow.AddDays(7),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var jwt = tokenHandler.WriteToken(token);
+
+        var verificationLink = $"http://164.90.142.68:3005/auth/reset-password?email={newUser.Email}/{jwt}";
+
+        var emailBody = emailTemplate
+            .Replace("{FullName}", employee.FullName)
+            .Replace("{Email}", employee.Email)
+            .Replace("{VerificationLink}", verificationLink);
+
+        const int maxRetries = 3;
+        var attempts = 0;
+        var sent = false;
+
+        while (attempts < maxRetries && !sent)
+        {
+            try
+            {
+                emailService.SendMail(newUser.Email, "Password Setup", emailBody, []);
+                logger.LogInformation($"Password setup email sent to {newUser.Email}");
+                sent = true;
+            }
+            catch (Exception ex)
+            {
+                attempts++;
+                logger.LogWarning($"Failed attempt {attempts} for {newUser.Email}: {ex.Message}");
+
+                if (attempts == maxRetries)
+                    logger.LogError($"Giving up on {newUser.Email} after {maxRetries} attempts.");
+            }
         }
+
+        return Result.Success(newUser.Id);
     }
-
-    return Result.Success(newUser.Id);
+    catch (Exception ex)
+    {
+        await transaction.RollbackAsync();
+        logger.LogError(ex, "Failed to create user and assign role.");
+        return Result.Failure(Error.Failure("User.CreationFailed", "An error occurred while creating the user."));
+    }
 }
 
     public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
@@ -292,8 +313,7 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     
     await context.Entry(employee).Reference(e => e.Department).LoadAsync();
     await context.Entry(employee).Reference(e => e.Designation).LoadAsync();
-
-    // Step 4: Prepare and send the email
+    
     var templatePath = Path.Combine("..","APP", "Services", "Email", "Templates", "EmployeeAcceptance.html");
     if (!File.Exists(templatePath))
         throw new FileNotFoundException("Email template not found", templatePath);
