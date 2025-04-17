@@ -1127,13 +1127,14 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 if (supplierQuotationItem != null)
                 {
                     supplierQuotationItem.Status = SupplierQuotationItemStatus.Processed;
-                    supplierQuotationItem.PurchaseOrderId = poId;
+                    //supplierQuotationItem.PurchaseOrderId = poId;
                     context.SupplierQuotationItems.Update(supplierQuotationItem);
                 }
             }
             
             await context.SupplierQuotationItems
-                .Where(s => quotation.Items.Select(i => i.MaterialId).Contains(s.MaterialId))
+                .Include(s => s.SupplierQuotation)
+                .Where(s => s.SupplierQuotation.SourceRequisitionId == quotation.SourceRequisitionId)
                 .ExecuteUpdateAsync(setters =>
                     setters.SetProperty(p => p.PurchaseOrderId, poId));
             await context.SaveChangesAsync();
