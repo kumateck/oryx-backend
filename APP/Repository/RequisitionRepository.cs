@@ -1123,20 +1123,40 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 var supplierQuotationItem = await context.SupplierQuotationItems
                     .FirstOrDefaultAsync(s => s.SupplierQuotation.SupplierId == quotation.SupplierId && 
                                               s.MaterialId == processSupplierQuote.MaterialId && s.Status == SupplierQuotationItemStatus.NotProcessed);
-
+                
                 if (supplierQuotationItem != null)
                 {
                     supplierQuotationItem.Status = SupplierQuotationItemStatus.Processed;
-                    //supplierQuotationItem.PurchaseOrderId = poId;
+                    supplierQuotationItem.PurchaseOrderId = poId;
                     context.SupplierQuotationItems.Update(supplierQuotationItem);
                 }
+                await context.SaveChangesAsync();
+                
+                var supplierQuotationItems = await context.SupplierQuotationItems
+                    .Where(s => s.MaterialId == processSupplierQuote.MaterialId 
+                                && s.Status != SupplierQuotationItemStatus.Processed 
+                        && !s.PurchaseOrderId.HasValue)
+                    .ToListAsync();
+
+                foreach (var supplierQuotation in supplierQuotationItems)
+                {
+                    supplierQuotation.PurchaseOrderId = poId;
+                    context.SupplierQuotationItems.Update(supplierQuotation);
+                }
             }
+
+            /*await context.SaveChangesAsync();
             
-            await context.SupplierQuotationItems
+            var updateSupplierQuotationItems = await context.SupplierQuotationItems
                 .Include(s => s.SupplierQuotation)
                 .Where(s => s.SupplierQuotation.SourceRequisitionId == quotation.SourceRequisitionId)
-                .ExecuteUpdateAsync(setters =>
-                    setters.SetProperty(p => p.PurchaseOrderId, poId));
+                .ToListAsync();
+            
+            foreach (var updateSupplierQuotationItem in updateSupplierQuotationItems)
+            {
+                updateSupplierQuotationItem.PurchaseOrderId = poId;
+                context.SupplierQuotationItems.Update(updateSupplierQuotationItem);
+            }*/
             await context.SaveChangesAsync();
         }
         

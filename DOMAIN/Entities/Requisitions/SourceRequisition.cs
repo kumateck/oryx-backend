@@ -73,7 +73,7 @@ public class SupplierQuotationItem : BaseEntity
     public decimal Quantity { get; set; }
     public decimal? QuotedPrice { get; set; }
     public SupplierQuotationItemStatus Status { get; set; }
-    public Guid PurchaseOrderId { get; set; }
+    public Guid? PurchaseOrderId { get; set; }
 }
 
 public enum SupplierQuotationItemStatus
