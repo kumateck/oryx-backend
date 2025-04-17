@@ -361,9 +361,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         
                         await context.SupplierQuotationItems
                             .Where(i => i.Status == SupplierQuotationItemStatus.NotUsed 
-                                        && i.MaterialId == poItem.MaterialId
-                                        && i.Quantity == poItem.Quantity
-                                        && i.UoMId == poItem.UoMId)
+                                        && i.MaterialId == poItem.MaterialId)
                             .ExecuteUpdateAsync(setters =>
                                 setters.SetProperty(p => p.Status, SupplierQuotationItemStatus.NotProcessed));
                         var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(i  => i.Id == revision.PurchaseOrderItemId);
@@ -381,7 +379,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
                         
                         var requisitionId = existingOrder.SourceRequisition.Items
-                            .FirstOrDefault(i => i.MaterialId == poItem.MaterialId && i.Quantity == poItem.Quantity)
+                            .FirstOrDefault(i => i.MaterialId == poItem.MaterialId)
                             ?.RequisitionId;
 
                         var requisition = await context.Requisitions
@@ -393,7 +391,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
                         var requisitionItem = requisition.Items.FirstOrDefault(r =>
                             r.MaterialId == poItem.MaterialId &&
-                            r.Quantity == poItem.Quantity &&
                             r.Status == RequestStatus.Sourced);
 
                         if (requisitionItem is null)
