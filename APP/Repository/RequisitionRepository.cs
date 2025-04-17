@@ -1127,6 +1127,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 if (supplierQuotationItem != null)
                 {
                     supplierQuotationItem.Status = SupplierQuotationItemStatus.Processed;
+                    supplierQuotationItem.PurchaseOrderId = poId;
                     context.SupplierQuotationItems.Update(supplierQuotationItem);
                 }
             }

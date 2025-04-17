@@ -335,8 +335,17 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             }
 
             // Clone revision to fill before-values where needed
-            var enrichedRevision = revision with { }; // Create a copy
-            enrichedRevision.RevisionNumber = latestRevisionNumber;
+            var enrichedRevision = new EnrichedRevision
+            {
+                Type = revision.Type,
+                PurchaseOrderItemId = revision.PurchaseOrderItemId,
+                MaterialId = revision.MaterialId,
+                UoMId = revision.UoMId,
+                Quantity = revision.Quantity,
+                Price = revision.Price,
+                CurrencyId = revision.CurrencyId,
+                RevisionNumber = latestRevisionNumber
+            };
 
             switch (revision.Type)
             {

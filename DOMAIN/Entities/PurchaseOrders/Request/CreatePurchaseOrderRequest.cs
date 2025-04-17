@@ -51,6 +51,10 @@ public record CreatePurchaseOrderRevision
     public decimal? Quantity { get; set; }
     public decimal? Price { get; set; }
     public Guid? CurrencyId { get; set; }
+}
+
+public record EnrichedRevision : CreatePurchaseOrderRevision
+{
     public Guid? UoMBeforeId { get; set; }
     public decimal? QuantityBefore { get; set; }
     public decimal? PriceBefore { get; set; }
