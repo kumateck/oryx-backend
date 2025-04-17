@@ -6,4 +6,6 @@ public class EmployeeUserDto
 {
     [Required] public Guid EmployeeId { get; set; }
     
+    [Required] public Guid RoleId { get; set; }
+    
 }
