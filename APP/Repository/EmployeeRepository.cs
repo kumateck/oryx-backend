@@ -147,11 +147,18 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
 
         await context.Users.AddAsync(newUser);
         await context.SaveChangesAsync();
+
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Name == employeeUserDto.RoleName);
+
+        if (role == null)
+        {
+            return Error.NotFound("Role.NotFound", "Role not found");
+        }
         
         var userRole = new IdentityUserRole<Guid>
         {
             UserId = newUser.Id,
-            RoleId = employeeUserDto.RoleId
+            RoleId = role.Id
         };
         await context.UserRoles.AddAsync(userRole);
         await context.SaveChangesAsync();
