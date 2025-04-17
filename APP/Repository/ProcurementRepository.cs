@@ -357,8 +357,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                                         && i.UoMId == poItem.UoMId)
                             .ExecuteUpdateAsync(setters =>
                                 setters.SetProperty(p => p.Status, SupplierQuotationItemStatus.NotProcessed));
-                        poItem.DeletedAt = DateTime.UtcNow;
-                        context.PurchaseOrderItems.Update(poItem);
+                        var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(i  => i.Id == revision.PurchaseOrderItemId);
+                        context.PurchaseOrderItems.Remove(poItemToDelete);
                     }
                     break;
 
@@ -392,8 +392,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
                         requisitionItem.Status = RequestStatus.Pending;
                         context.RequisitionItems.Update(requisitionItem);
-                        poItem.DeletedAt = DateTime.UtcNow;
-                        context.PurchaseOrderItems.Update(poItem);
+                        var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(i  => i.Id == revision.PurchaseOrderItemId);
+                        context.PurchaseOrderItems.Remove(poItemToDelete);
                     }
                     break;
 
@@ -444,8 +444,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         enrichedRevision.PriceBefore = poItem.Price;
                         enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
 
-                        poItem.DeletedAt = DateTime.UtcNow;
-                        context.PurchaseOrderItems.Update(poItem);
+                        var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(i  => i.Id == revision.PurchaseOrderItemId);
+                        context.PurchaseOrderItems.Remove(poItemToDelete);
                     }
                     break;
             }

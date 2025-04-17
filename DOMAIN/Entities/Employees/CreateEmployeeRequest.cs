@@ -42,7 +42,7 @@ public class CreateEmployeeRequest
                        "Total length must be between 11 and 15 characters.")]
     public string GhanaCardNumber { get; set; }
 
-    [StringLength(15)] public string? StaffNumber { get; set; }
+    [StringLength(15)] public string StaffNumber { get; set; }
     
     [Required] [EmailAddress] public string Email { get; set; }
     
