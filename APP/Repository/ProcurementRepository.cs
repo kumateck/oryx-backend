@@ -361,7 +361,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         
                         await context.SupplierQuotationItems
                             .Where(i => i.Status == SupplierQuotationItemStatus.NotUsed 
-                                        && i.MaterialId == poItem.MaterialId)
+                                        && i.MaterialId == poItem.MaterialId
+                                        && i.PurchaseOrderId == purchaseOrderId)
                             .ExecuteUpdateAsync(setters =>
                                 setters.SetProperty(p => p.Status, SupplierQuotationItemStatus.NotProcessed));
                         var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(i  => i.Id == revision.PurchaseOrderItemId);
