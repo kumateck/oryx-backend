@@ -372,13 +372,14 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="supplierType">The type of the supplier (example Local, Foreign).</param>
     /// <param name="materialId">The materialId of the item</param>
     /// <param name="purchaseOrderId">The purchase order associated</param>
+    /// <param name="status">The status of the price comparison (NotProcessed, Processed, NotUsed)</param>
     /// <returns>Returns a list of price comparisons.</returns>
     [HttpGet("source/material/price-comparison/by-material")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierPriceComparison>))]
-    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType, [FromQuery] Guid materialId, [FromQuery] Guid purchaseOrderId)
+    public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType, [FromQuery] Guid materialId, [FromQuery] Guid purchaseOrderId, [FromQuery] SupplierQuotationItemStatus? status)
     {
-        var result = await repository.GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(supplierType, materialId, purchaseOrderId);
+        var result = await repository.GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(supplierType, materialId, purchaseOrderId, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

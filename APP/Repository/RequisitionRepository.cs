@@ -358,7 +358,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
    
     public async Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities, Guid productId, Guid userId)
     {
-        decimal quantityIssued = 0;
         var product = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         foreach (var batch in batchQuantities)
         {
@@ -426,8 +425,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             await context.MassMaterialBatchMovements.AddAsync(batchMovement);
             
             await context.SaveChangesAsync();
-
-            quantityIssued += batch.Quantity;
 
             var toBinCardEvent =new BinCardInformation
             {
@@ -1075,16 +1072,21 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(
-        SupplierType supplierType, Guid materialId, Guid purchaseOrderId)
+        SupplierType supplierType, Guid materialId, Guid purchaseOrderId, SupplierQuotationItemStatus? status)
     {
         var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
             .Include(s => s.Material)
             .Include(s => s.UoM)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.SourceRequisition)
-            .Where(s => s.QuotedPrice != null && s.Status == SupplierQuotationItemStatus.NotProcessed
+            .Where(s => s.QuotedPrice != null
                                               && s.SupplierQuotation.Supplier.Type == supplierType && s.MaterialId == materialId && s.PurchaseOrderId == purchaseOrderId)
             .ToListAsync();
+
+        if (status.HasValue)
+        {
+            sourceRequisitionItemSuppliers = sourceRequisitionItemSuppliers.Where(s => s.Status == status).ToList();
+        }
         
         return sourceRequisitionItemSuppliers
             .GroupBy(s => new { s.Material, s.UoM })
