@@ -1066,6 +1066,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     {
                         Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
                         SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
+                        Status = s.Status,
                         Price = s.QuotedPrice
                     }).ToList()
             }).ToList();
@@ -1102,6 +1103,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     {
                         Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
                         SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
+                        Status = s.Status,
                         Price = s.QuotedPrice
                     }).ToList()
             }).ToList();

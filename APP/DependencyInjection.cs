@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using APP.Claims;
 using APP.IRepository;
 using APP.Repository;
 using APP.Services.Background;
@@ -10,6 +11,7 @@ using DinkToPdf;
 using DinkToPdf.Contracts;
 using DOMAIN.Entities.ActivityLogs;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
 using SHARED.Services.Identity;
@@ -44,6 +46,8 @@ public static class DependencyInjection
         services.AddScoped<IFormRepository, FormRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IDesignationRepository, DesignationRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();

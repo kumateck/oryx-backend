@@ -1753,12 +1753,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return product;
     }
 
-    public async Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId)
+    public Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<Result> ResturnLeftOverStockAfterProductionEnds(Guid productionScheduleId, Guid productId)
+    public Task<Result> ResturnLeftOverStockAfterProductionEnds(Guid productionScheduleId, Guid productId)
     {
         throw new NotImplementedException();
     }
