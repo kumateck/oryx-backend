@@ -35,7 +35,7 @@ public class UserController(IUserRepository repo) : ControllerBase
     
     [Authorize]
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserWithRoleDto>>))]
     public async Task<IResult> GetUsers([FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 5,
         [FromQuery(Name = "searchQuery")] string searchQuery = null)
@@ -46,7 +46,7 @@ public class UserController(IUserRepository repo) : ControllerBase
     
     [Authorize]
     [HttpGet("authenticated")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserWithRoleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetUser()
     {
