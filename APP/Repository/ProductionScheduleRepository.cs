@@ -1752,4 +1752,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         return product;
     }
+
+    public Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Result> ResturnLeftOverStockAfterProductionEnds(Guid productionScheduleId, Guid productId)
+    {
+        throw new NotImplementedException();
+    }
 }

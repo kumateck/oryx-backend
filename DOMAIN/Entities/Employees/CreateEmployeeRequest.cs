@@ -5,7 +5,6 @@ using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Siblings;
-using Microsoft.AspNetCore.Http;
 
 namespace DOMAIN.Entities.Employees;
 
@@ -43,7 +42,7 @@ public class CreateEmployeeRequest
                        "Total length must be between 11 and 15 characters.")]
     public string GhanaCardNumber { get; set; }
 
-    [StringLength(15)] public string? StaffNumber { get; set; }
+    [StringLength(15)] public string StaffNumber { get; set; }
     
     [Required] [EmailAddress] public string Email { get; set; }
     
@@ -51,18 +50,16 @@ public class CreateEmployeeRequest
     
     [Required] public PersonDto Father { get; set; }
     
-    public PersonDto? Spouse { get; set; }
-    
+    public PersonDto Spouse { get; set; }
     [Required] public EmergencyContactDto EmergencyContact { get; set; }
     
     [Required] public EmergencyContactDto NextOfKin { get; set; }
-    
-    public List<ChildDto>? Children { get; set; }
-    
-    public List<SiblingDto>? Siblings { get; set; }
-    
-    [Required] public List<EducationDto> EducationBackground { get; set; }
-    
-    [Required] public List<EmploymentHistoryDto> EmploymentHistory { get; set; }
-    
+
+    public List<ChildDto> Children { get; set; } = [];
+
+    public List<SiblingDto> Siblings { get; set; } = [];
+
+    [Required] public List<EducationDto> EducationBackground { get; set; } = [];
+
+    [Required] public List<EmploymentHistoryDto> EmploymentHistory { get; set; } = [];
 }

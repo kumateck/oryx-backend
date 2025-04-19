@@ -26,6 +26,7 @@ public class PurchaseOrder : BaseEntity, IRequireApproval
     public DateTime? SentAt { get; set; }
     public PurchaseOrderStatus Status { get; set; }
     public bool IsRevised => RevisedPurchaseOrders.Count != 0;
+    public int RevisionNumber { get; set; }
     public List<RevisedPurchaseOrder> RevisedPurchaseOrders { get; set; } = [];
     public DeliveryMode DeliveryMode { get; set; }
     public TermsOfPayment TermsOfPayment { get; set; }
@@ -96,7 +97,15 @@ public class PurchaseOrderDto : WithAttachment
     public decimal SeaFreight { get; set; }
     public string AmountInFigures { get; set; }
     public decimal Insurance { get; set; }
+    public int RevisionNumber { get; set; }
+    public List<PurchaseOrderRevisionDto> Revisions { get; set; } = [];
     public DateTime? EstimatedDeliveryDate { get; set; }
+}
+
+public class PurchaseOrderRevisionDto
+{
+    public int RevisionNumber { get; set; }
+    public List<PurchaseOrderItemDto> Items { get; set; } = [];
 }
 
 public class PurchaseOrderItemDto

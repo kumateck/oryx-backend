@@ -30,7 +30,7 @@ public class CurrentUserService : ICurrentUserService
         }
     }
 
-    private ClaimsPrincipal? ValidateToken(string token, string secret)
+    private ClaimsPrincipal ValidateToken(string token, string secret)
     {
         try
         {
