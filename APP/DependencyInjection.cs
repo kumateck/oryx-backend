@@ -46,9 +46,11 @@ public static class DependencyInjection
         services.AddScoped<IFormRepository, FormRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IDesignationRepository, DesignationRepository>();
+        services.AddScoped<ILeaveEntitlementRepository, LeaveEntitlementRepository>();
+        services.AddScoped<ILeaveTypeRepository, LeaveTypeRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
-        
+
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IJwtService, JwtService>();

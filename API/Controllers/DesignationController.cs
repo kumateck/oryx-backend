@@ -63,7 +63,7 @@ public class DesignationController(IDesignationRepository repository): Controlle
     /// <summary>
     /// Updates the details of an existing designation
     /// </summary>
-   [HttpPut("{id:guid}")]
+    [HttpPut("{id:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(DesignationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

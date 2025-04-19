@@ -11,6 +11,8 @@ public class Designation : BaseEntity
     
     [StringLength(1000)] public string Description { get; set; }
     
+    [Range(1, 366)] public int MaximumLeaveDays { get; set; }
+    
     public ICollection<Department> Departments { get; set; } = new List<Department>();
     
 }
