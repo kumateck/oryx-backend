@@ -587,6 +587,8 @@ public class OryxMapper : Profile
         
         CreateMap<Employee, EmployeeDto>()
             .ForMember(dest => dest.DesignationName, opt => opt.MapFrom(src => src.Designation.Name))
+            .ForMember(user => user.Avatar,
+                opt => opt.MapFrom<EmployeeAvatarResolver>())
             .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.Name));
 
         CreateMap<EmployeeUserDto, Employee>();
