@@ -298,6 +298,22 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
 
     /// <summary>
+    /// Retrieves a requisition id for a purchase order and material
+    /// </summary>
+    /// <param name="purchaseOrderId">The ID of the purchase order.</param>
+    /// <param name="materialId">The material ID to know the requisition</param>
+    /// <returns>Returns the purchase order details.</returns>
+    [HttpGet("purchase-order/requisition/{purchaseOrderId}/{materialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetRequisitionIdForPurchaseOrderAndMaterial(Guid purchaseOrderId, Guid materialId)
+    {
+        var result = await repository.GetRequisitionIdForPurchaseOrderAndMaterial(purchaseOrderId, materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves a paginated list of purchase orders.
     /// </summary>
     /// <param name="page">The current page number.</param>

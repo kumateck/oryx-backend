@@ -306,69 +306,107 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions)
     {
-        var existingOrder = await context.PurchaseOrders.Include(purchaseOrder => purchaseOrder.SourceRequisition)
-            .ThenInclude(sourceRequisition => sourceRequisition.Items)       
+        var existingOrder = await context.PurchaseOrders
+            .Include(p => p.SourceRequisition)
+                .ThenInclude(sr => sr.Items)       
             .Include(po => po.RevisedPurchaseOrders)
+            .Include(po => po.Items)
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+
         if (existingOrder is null)
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
-        
-        // Get the latest revision number and increment
+
         int latestRevisionNumber = existingOrder.RevisedPurchaseOrders.Count != 0
             ? existingOrder.RevisedPurchaseOrders.Max(r => r.RevisionNumber) + 1
             : 1;
 
+        var enrichedRevisions = new List<CreatePurchaseOrderRevision>();
+
         foreach (var revision in revisions)
         {
-            var poItem = existingOrder.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
-            if (poItem is null) return 
-                Error.NotFound("PurchaseOrderItem.NotFound", $"Purchase order with Id: {revision.PurchaseOrderItemId} item not found");
-            
+            PurchaseOrderItem poItem = null;
+            if (revision.PurchaseOrderItemId.HasValue)
+            {
+                poItem = existingOrder.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                if (poItem is null)
+                    return Error.NotFound("PurchaseOrderItem.NotFound", $"Purchase order with Id: {revision.PurchaseOrderItemId} item not found");
+            }
+
+            // Clone revision to fill before-values where needed
+            var enrichedRevision = new EnrichedRevision
+            {
+                Type = revision.Type,
+                PurchaseOrderItemId = revision.PurchaseOrderItemId,
+                MaterialId = revision.MaterialId,
+                UoMId = revision.UoMId,
+                Quantity = revision.Quantity,
+                Price = revision.Price,
+                CurrencyId = revision.CurrencyId,
+                RevisionNumber = latestRevisionNumber
+            };
+
             switch (revision.Type)
             {
                 case RevisedPurchaseOrderType.ReassignSuppler:
-                    await context.SupplierQuotationItems
-                        .Where(i => i.Status == SupplierQuotationItemStatus.NotUsed 
-                                    && i.MaterialId == poItem.MaterialId
-                                    && i.Quantity == poItem.Quantity
-                                    && i.UoMId == poItem.UoMId)
-                        .ExecuteUpdateAsync(setters =>
-                            setters.SetProperty(p => p.Status, SupplierQuotationItemStatus.NotProcessed));
-                    
-                    var removePoItem = await context.PurchaseOrderItems.FirstOrDefaultAsync(p => p.Id == revision.PurchaseOrderItemId);
-                    if (removePoItem is not null)
+                    // Capture before-values
+                    if (poItem is not null)
                     {
-                        context.PurchaseOrderItems.Remove(removePoItem);
-                        await context.SaveChangesAsync();
+                        enrichedRevision.MaterialId = poItem.MaterialId;
+                        enrichedRevision.UoMBeforeId = poItem.UoMId;
+                        enrichedRevision.QuantityBefore = poItem.Quantity;
+                        enrichedRevision.PriceBefore = poItem.Price;
+                        enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
+                        
+                        await context.SupplierQuotationItems
+                            .Where(i => i.Status == SupplierQuotationItemStatus.NotUsed 
+                                        && i.MaterialId == poItem.MaterialId
+                                        && i.PurchaseOrderId == purchaseOrderId)
+                            .ExecuteUpdateAsync(setters =>
+                                setters.SetProperty(p => p.Status, SupplierQuotationItemStatus.NotProcessed));
+                        var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(i  => i.Id == revision.PurchaseOrderItemId);
+                        context.PurchaseOrderItems.Remove(poItemToDelete);
                     }
                     break;
-                
+
                 case RevisedPurchaseOrderType.ChangeSource:
-                    var sourceRequisition = existingOrder.SourceRequisition;
-                    var requisitionId = sourceRequisition.Items.FirstOrDefault(i => i.MaterialId == poItem.MaterialId && i.Quantity == poItem.Quantity)?.RequisitionId;
-                    var requisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r => r.Id == requisitionId);
-                    if(requisition is null) return Error.NotFound("Requisition.NotFound", "Requisition not found");
-                    var requisitionItem = requisition.Items.FirstOrDefault(r => r.MaterialId == poItem.MaterialId && r.Quantity == poItem.Quantity && r.Status == RequestStatus.Sourced);
-                    if(requisitionItem is null) return Error.NotFound("Requisition.NotFound", "Requisition Item not found");
-                    requisitionItem.Status = RequestStatus.Pending;
-                    context.RequisitionItems.Update(requisitionItem);
-                    await context.SaveChangesAsync();
-                    var removedPoItem = await context.PurchaseOrderItems.FirstOrDefaultAsync(p => p.Id == revision.PurchaseOrderItemId);
-                    if (removedPoItem is not null)
+                    if (poItem is not null)
                     {
-                        context.PurchaseOrderItems.Remove(removedPoItem);
-                        await context.SaveChangesAsync();
+                        enrichedRevision.MaterialId = poItem.MaterialId;
+                        enrichedRevision.UoMBeforeId = poItem.UoMId;
+                        enrichedRevision.QuantityBefore = poItem.Quantity;
+                        enrichedRevision.PriceBefore = poItem.Price;
+                        enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
+                        
+                        var requisitionId = existingOrder.SourceRequisition.Items
+                            .FirstOrDefault(i => i.MaterialId == poItem.MaterialId)
+                            ?.RequisitionId;
+
+                        var requisition = await context.Requisitions
+                            .Include(r => r.Items)
+                            .FirstOrDefaultAsync(r => r.Id == requisitionId);
+
+                        if (requisition is null)
+                            return Error.NotFound("Requisition.NotFound", "Requisition not found");
+
+                        var requisitionItem = requisition.Items.FirstOrDefault(r =>
+                            r.MaterialId == poItem.MaterialId &&
+                            r.Status == RequestStatus.Sourced);
+
+                        if (requisitionItem is null)
+                            return Error.NotFound("Requisition.NotFound", "Requisition Item not found");
+
+                        requisitionItem.Status = RequestStatus.Pending;
+                        context.RequisitionItems.Update(requisitionItem);
+                        var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(i  => i.Id == revision.PurchaseOrderItemId);
+                        context.PurchaseOrderItems.Remove(poItemToDelete);
                     }
                     break;
-                
+
                 case RevisedPurchaseOrderType.AddItem:
-                    if (!revision.MaterialId.HasValue || 
-                        !revision.UoMId.HasValue || 
-                        !revision.Quantity.HasValue || 
-                        !revision.Price.HasValue || 
-                        !revision.CurrencyId.HasValue)
+                    if (!revision.MaterialId.HasValue || !revision.UoMId.HasValue || !revision.Quantity.HasValue || 
+                        !revision.Price.HasValue || !revision.CurrencyId.HasValue)
                     {
                         return Error.Validation("PurchaseOrder.MissingFields", "One or more required fields are missing for AddItem.");
                     }
@@ -383,41 +421,53 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         CurrencyId = revision.CurrencyId.Value
                     });
                     break;
-                
+
                 case RevisedPurchaseOrderType.UpdateItem:
-                    if (!revision.UoMId.HasValue || 
-                        !revision.Quantity.HasValue || 
-                        !revision.Price.HasValue)
+                    if (!revision.UoMId.HasValue || !revision.Quantity.HasValue || !revision.Price.HasValue)
                     {
                         return Error.Validation("PurchaseOrder.MissingFields", "One or more required fields are missing for UpdateItem.");
                     }
-                    
-                    var purchaseOrderItem = existingOrder.Items.FirstOrDefault(po => po.Id == revision.PurchaseOrderItemId);
-                    if (purchaseOrderItem is not null)
+
+                    if (poItem is not null)
                     {
-                        purchaseOrderItem.UoMId = revision.UoMId.Value;
-                        purchaseOrderItem.Quantity = revision.Quantity.Value;
-                        purchaseOrderItem.Price = revision.Price.Value;
-                        context.PurchaseOrderItems.Update(purchaseOrderItem);
+                        enrichedRevision.UoMBeforeId = poItem.UoMId;
+                        enrichedRevision.QuantityBefore = poItem.Quantity;
+                        enrichedRevision.PriceBefore = poItem.Price;
+                        enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
+
+                        poItem.UoMId = revision.UoMId.Value;
+                        poItem.Quantity = revision.Quantity.Value;
+                        poItem.Price = revision.Price.Value;
+                        context.PurchaseOrderItems.Update(poItem);
                     }
                     break;
-                
+
                 case RevisedPurchaseOrderType.RemoveItem:
-                    var removePurchaseOrderItem = existingOrder.Items.FirstOrDefault(po => po.Id == revision.PurchaseOrderItemId);
-                    if (removePurchaseOrderItem is not null)
+                    if (poItem is not null)
                     {
-                        context.PurchaseOrderItems.Remove(removePurchaseOrderItem);
+                        enrichedRevision.MaterialId = poItem.MaterialId;
+                        enrichedRevision.UoMBeforeId = poItem.UoMId;
+                        enrichedRevision.QuantityBefore = poItem.Quantity;
+                        enrichedRevision.PriceBefore = poItem.Price;
+                        enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
+
+                        var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(i  => i.Id == revision.PurchaseOrderItemId);
+                        context.PurchaseOrderItems.Remove(poItemToDelete);
                     }
                     break;
             }
+
+            enrichedRevisions.Add(enrichedRevision);
         }
-        
-        var mappedRevisions = mapper.Map<List<RevisedPurchaseOrder>>(revisions);
+
+        // Map and persist
+        var mappedRevisions = mapper.Map<List<RevisedPurchaseOrder>>(enrichedRevisions);
         foreach (var rev in mappedRevisions)
         {
             rev.RevisionNumber = latestRevisionNumber;
         }
-        
+        existingOrder.RevisionNumber = latestRevisionNumber;
+        context.PurchaseOrders.Update(existingOrder);
         existingOrder.RevisedPurchaseOrders.AddRange(mappedRevisions);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -443,6 +493,21 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         context.PurchaseOrders.Update(existingOrder);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<Result<Guid>> GetRequisitionIdForPurchaseOrderAndMaterial(Guid purchaseOrderId, Guid materialId)
+    {
+        var purchaseOrder = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(p => p.SourceRequisition)
+            .ThenInclude(s => s.Items)
+            .FirstOrDefaultAsync(p => p.Id == purchaseOrderId);
+        
+        var sourceRequisition = purchaseOrder.SourceRequisition;
+        
+        return sourceRequisition.Items.Any(i => i.MaterialId == materialId) ? sourceRequisition.Items
+            .First(i => i.MaterialId == materialId)
+            .RequisitionId : Error.NotFound("Requisition.NotFound", "Could not find a requisition with this material and purchase order");
     }
 
     public async Task<Result> DeletePurchaseOrder(Guid purchaseOrderId, Guid userId)

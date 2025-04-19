@@ -385,11 +385,11 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             .ToListAsync();
 
         if (!approvalStages.Any())
-            throw new InvalidOperationException($"No approval stages found for model type '{modelType}'");
+            return;
 
         switch (modelType)
         {
-            case "Requisition":
+            case "RawStockRequisition" or "PackageStockRequisition" or "PurchaseRequisition" or "Requisition": 
                 await CreateRequisitionApprovals(modelId, approvalStages);
                 break;
 
