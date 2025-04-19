@@ -192,7 +192,7 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
         var verificationLink = $"http://164.90.142.68:3005/auth/reset-password?email={newUser.Email}/{jwt}";
 
         var emailBody = emailTemplate
-            .Replace("{FullName}", employee.FullName)
+            .Replace("{Name}", employee.FullName)
             .Replace("{Email}", employee.Email)
             .Replace("{VerificationLink}", verificationLink);
 
