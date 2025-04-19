@@ -84,7 +84,7 @@ public class PermissionController(IPermissionRepository repo) : ControllerBase
     /// </summary>
     [HttpGet("menu")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof (List<MenuItem>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetFilteredMenu()
     {
@@ -92,6 +92,6 @@ public class PermissionController(IPermissionRepository repo) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repo.GetFilteredMenu(Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
