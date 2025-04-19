@@ -22,6 +22,8 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.LeaveEntitlements;
+using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Persons;
@@ -624,9 +626,9 @@ public class OryxMapper : Profile
 
         #endregion
 
-        #region Designation
+        #region Leave Type
 
-        CreateMap<Designation, DesignationDto>();
+        CreateMap<LeaveType, LeaveTypeDto>();
 
         #endregion
         
@@ -641,6 +643,13 @@ public class OryxMapper : Profile
 
         CreateMap<CreateDesignationRequest, Designation>();
         CreateMap<Designation, DesignationDto>();
+        #endregion
+        
+        #region Leave Entitlements
+
+        CreateMap<LeaveEntitlementDto, LeaveEntitlement>();
+        CreateMap<CreateLeaveEntitlementRequest, LeaveEntitlement>();
+
         #endregion
     }
 }

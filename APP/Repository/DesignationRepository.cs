@@ -13,7 +13,6 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
 {
     public async Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request, Guid userId)
     {
-       
         var designation = mapper.Map<Designation>(request);
         designation.CreatedById = userId;
         designation.CreatedAt = DateTime.UtcNow;

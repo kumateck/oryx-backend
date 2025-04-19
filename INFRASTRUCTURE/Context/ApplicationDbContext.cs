@@ -17,6 +17,8 @@ using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.LeaveEntitlements;
+using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Organizations;
@@ -337,7 +339,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Child> Children { get; set; }
 
     #endregion
+
+    #region Leave Entitlement
+
+    public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
+
+    #endregion 
     
+    #region Leave Type
+
+    public DbSet<LeaveType> LeaveTypes { get; set; }
+
+    #endregion
 
     #region Employement History
 

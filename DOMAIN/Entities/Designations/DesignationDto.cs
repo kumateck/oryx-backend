@@ -9,6 +9,8 @@ public class DesignationDto: BaseDto
     public string Name { get; set; }
     
     public string Description { get; set; }
+    
+    public int MaximumLeaveDays { get; set; }
 
     public List<DepartmentDto> Departments { get; set; } = [];
     
