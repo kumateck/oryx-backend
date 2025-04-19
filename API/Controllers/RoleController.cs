@@ -26,7 +26,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
         [FromQuery(Name = "pageSize")] int pageSize = 5,
         [FromQuery(Name = "searchQuery")] string searchQuery = null)
     {
-        var response = await repo.GetRolesWithPermissionsAndAssignees(page, pageSize, searchQuery);
+        var response = await repo.GetRolesWithPermissions(page, pageSize, searchQuery);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
 

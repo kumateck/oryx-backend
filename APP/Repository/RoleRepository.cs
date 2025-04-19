@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Security.Claims;
 using APP.Extensions;
 using APP.IRepository;
@@ -12,7 +13,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, RoleManager<Role> roleManager /*, IPermissionRepository permissionRepository*/)
+public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, RoleManager<Role> roleManager , IPermissionRepository permissionRepository)
     : IRoleRepository
 {
     public async Task<Result<List<RoleDto>>> GetRoles()
@@ -20,49 +21,41 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         var roles =  await context.Roles.ToListAsync();
         return roles.Select(mapper.Map<RoleDto>).ToList();
     }
-
-    public async Task<Result<Paginateable<IEnumerable<RolePermissionDto>>>> GetRolesWithPermissionsAndAssignees(int page, int pageSize, 
-        string searchQuery)
+    
+    public async Task<Result<Paginateable<IEnumerable<RoleDto>>>> GetRoles(int page, int pageSize, string searchQuery)
     {
-        var result = await GetRoles();
-        var roles = mapper.Map<List<RolePermissionDto>>(result.Value);
-        foreach (var role in roles)
-        {
-            //role.Permissions = await permissionRepository.GetPermissionByRole(role.Id);
-            role.Users = mapper.Map<List<CollectionItemDto>>(await userManager.GetUsersInRoleAsync(role.Name));
-        }
+        var roles =  context.Roles.AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            roles = roles.Where(
-                r => r.Name != null && r.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)
-                     ||
-                     r.DisplayName != null && r.DisplayName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)
-                     ||
-                     r.Users.Any(u => u.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
-                     ||
-                     r.Permissions.Any(p
-                         => p.Description != null && p.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)
-                         ||
-                         p.GroupName != null && p.GroupName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)
-                         ||
-                         p.Action != null && p.Action.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)
-                         )
-            ).ToList();
+            roles = roles.WhereSearch(searchQuery, q => q.Name, q => q.DisplayName);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(
-            roles.AsQueryable(), 
-            page, 
-            pageSize, 
-            mapper.Map<RolePermissionDto>
+            roles,
+            page,
+            pageSize,
+            mapper.Map<RoleDto>
         );
+    }
+
+    public async Task<Result<Paginateable<List<RolePermissionDto>>>> GetRolesWithPermissions(int page, int pageSize, 
+        string searchQuery)
+    {
+        var result = await GetRoles(page, pageSize, searchQuery);
+        var roles = mapper.Map<Paginateable<List<RolePermissionDto>>>(result.Value);
+        foreach (var role in roles.Data)
+        {
+            role.Permissions = await permissionRepository.GetPermissionByRole(role.Id);
+        }
+
+        return roles;
     }
 
     public async Task<Result<RolePermissionDto>> GetRole(Guid id)
     {
         var role = mapper.Map<RolePermissionDto>(await context.Roles.FirstOrDefaultAsync(item => item.Id == id));
-        //role.Permissions = await permissionRepository.GetPermissionByRole(role.Id);
+        role.Permissions = await permissionRepository.GetPermissionByRole(role.Id);
         return role;
     }
 
@@ -84,12 +77,8 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         {
             return Error.Failure("Role.Create", $"{result.Errors.First()}");
         }
-            
-        foreach (var permission in request.Permissions)
-        {
-            await roleManager.AddClaimAsync(newRole, new Claim(AppConstants.Permission, permission));
-        }
 
+        await permissionRepository.UpdateRolePermissions(request.Permissions, newRole.Id);
         return Result.Success();
     }
 

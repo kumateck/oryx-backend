@@ -173,6 +173,7 @@ public class OryxMapper : Profile
         CreateMap<CreateRoleRequest, Role>();
         CreateMap<Role, RoleDto>().ReverseMap();
         CreateMap<RoleDto, RolePermissionDto>();
+        CreateMap<Role, RolePermissionDto>();
         // CreateMap<string, PermissionResponseDto>()
         //     .ForMember(item => item.GroupName,
         //         opt => opt.MapFrom(src => src.GetGroupName()))

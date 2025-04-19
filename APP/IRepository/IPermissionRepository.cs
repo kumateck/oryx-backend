@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.Permissions;
 using SHARED;
 
 namespace APP.IRepository;
