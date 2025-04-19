@@ -22,6 +22,7 @@ using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Organizations;
+using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
@@ -340,17 +341,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
-    #region Leave Entitlement
+    #region Permission
 
-    public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
-
-    #endregion 
-    
-    #region Leave Type
-
-    public DbSet<LeaveType> LeaveTypes { get; set; }
+    public DbSet<PermissionType> PermissionTypes { get; set; }
 
     #endregion
+    
 
     #region Employement History
 
@@ -363,6 +359,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Designation> Designations { get; set; }
 
     #endregion
+
+    #region Leave
+
+    public DbSet<LeaveType> LeaveTypes { get; set; }
+    public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
+
+    #endregion
+    
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     // {

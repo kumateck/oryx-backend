@@ -73,9 +73,25 @@ public class PermissionController(IPermissionRepository repo) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UpdateRolePermissions(Guid roleId, [FromBody] List<string> permissions)
+    public async Task<IResult> UpdateRolePermissions(Guid roleId, [FromBody] List<PermissionModuleDto> permissions)
     {
         var result = await repo.UpdateRolePermissions(permissions, roleId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets filtered menu based on user role
+    /// </summary>
+    [HttpGet("menu")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetFilteredMenu()
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repo.GetFilteredMenu(Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

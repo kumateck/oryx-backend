@@ -9,5 +9,6 @@ public interface IPermissionRepository
     IEnumerable<PermissionDto> GetAllPermissions();
     Task<Result<List<PermissionModuleDto>>> GetAllPermissionForUser(Guid userId);
     Task<List<PermissionModuleDto>> GetPermissionByRole(Guid roleId);
-    Task<Result> UpdateRolePermissions(List<string> permissions, Guid roleId);
+    Task<Result> UpdateRolePermissions(List<PermissionModuleDto> permissions, Guid roleId); 
+    Task<Result<List<MenuItem>>> GetFilteredMenu(Guid userId);
 }

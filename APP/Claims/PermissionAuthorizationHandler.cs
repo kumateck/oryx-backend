@@ -20,7 +20,7 @@ internal class PermissionAuthorizationHandler(ApplicationDbContext context, IMem
 
         var cacheKey = $"UserId_{userId}_Permissions";
         
-        if (!cache.TryGetValue(cacheKey, out List<string> permissions))
+        if (!cache.TryGetValue(cacheKey, out Dictionary<string, List<string>> permissionsDict))
         {
             // Fetch permissions from database
             var roleIds = await context.UserRoles.IgnoreQueryFilters()
@@ -32,18 +32,30 @@ internal class PermissionAuthorizationHandler(ApplicationDbContext context, IMem
                 .Where(item => roleIds.Contains(item.RoleId))
                 .ToListAsync();
             
-            permissions = roleClaims.Select(rc => rc.ClaimValue)
-                .Distinct().ToList();
+            var allPermissions = roleClaims.Select(rc => rc.ClaimValue)
+                .Distinct();
+            
+            permissionsDict = new Dictionary<string, List<string>>();
+            
+            foreach (var perm in allPermissions)
+            {
+                var permissionTypes = await context.PermissionTypes
+                    .Where(p => p.Key == perm && roleClaims.Select(rc => rc.Id).Contains(p.RoleClaimId))
+                    .Select(p => p.Type)
+                    .ToListAsync();
+
+                permissionsDict[perm] = permissionTypes;
+            }
 
             var cacheEntryOptions = new MemoryCacheEntryOptions()
                 .SetSlidingExpiration(TimeSpan.FromMinutes(30))
                 .SetAbsoluteExpiration(TimeSpan.FromHours(12));
 
-            cache.Set(cacheKey, permissions, cacheEntryOptions);
+            cache.Set(cacheKey, permissionsDict, cacheEntryOptions);
         }
 
         // Check if the user has the required permission
-        if (permissions.Contains(requirement.Permission))
+        if (permissionsDict.TryGetValue(requirement.Permission, out var value) && value.Count != 0)
         {
             authorizationHandlerContext.Succeed(requirement);
         }

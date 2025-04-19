@@ -1,7 +1,6 @@
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.ActivityLogs;
-using DOMAIN.Entities.Procurement.Manufacturers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

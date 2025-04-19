@@ -2,6 +2,8 @@ namespace APP.Utils;
 
 public static class PermissionModules
 {
+    public const string Dashboard = "Dashboard";
+    public const string ProductBoard = "ProductBoard";
     public const string Procurement = "Procurement";
     public const string Logistics = "Logistics";
     public const string HumanResources = "HumanResources";
@@ -12,19 +14,86 @@ public static class PermissionModules
 
 // Note: PermissionSubmodules class seems less directly used by the desired structure,
 // The structured text provides more specific submodule groupings.
-public static class PermissionSubmodules
-{
-    public const string Manufacturers = "Manufacturers";
-    public const string Vendors = "Vendors";
-    public const string PurchaseRequisition = "Purchase Requisition";
-    public const string QuotationsRequest = "Quotations Request";
-    public const string QuotationsResponses = "Quotations Responses";
-    public const string PriceComparison = "Price Comparison";
-    public const string AwardedQuotations = "Awarded Quotations";
-    public const string ProformaResponses = "Proforma Responses";
-    public const string PurchaseOrders = "Purchase Orders";
-    public const string MaterialDistribution = "Material Distribution";
-}
+ public static class PermissionSubmodules
+ {
+        // Procurement
+        public const string Manufacturers = "Manufacturers";
+        public const string Vendors = "Vendors";
+        public const string PurchaseRequisition = "Purchase Requisition";
+        public const string QuotationsRequest = "Quotations Request";
+        public const string QuotationsResponses = "Quotations Responses";
+        public const string PriceComparison = "Price Comparison";
+        public const string AwardedQuotations = "Awarded Quotations";
+        public const string ProformaResponses = "Proforma Responses";
+        public const string PurchaseOrders = "Purchase Orders";
+        public const string MaterialDistribution = "Material Distribution";
+
+        // Logistics
+        public const string ShipmentInvoice = "Shipment Invoice";
+        public const string ShipmentDocument = "Shipment Document";
+        public const string BillingSheet = "Billing Sheet";
+        public const string Waybill = "Waybill";
+
+        // Human Resources
+        public const string EmployeeManagement = "Employee Management";
+        public const string UserManagement = "User Management";
+        public const string DesignationManagement = "Designation Management";
+        public const string RolesPermissionsManagement = "Roles & Permissions Management";
+        public const string LeaveManagement = "Leave Management";
+
+        // Warehouse
+        public const string ReceivingArea = "Receiving Area";
+        public const string QuarantineAreaGRN = "Quarantine Area / GRN";
+        public const string Departments = "Departments";
+        public const string Warehouses = "Warehouses";
+        public const string Locations = "Locations";
+        public const string Racks = "Racks";
+        public const string Shelves = "Shelves";
+        public const string Materials = "Materials";
+        public const string ApprovedMaterials = "Approved Materials";
+        public const string RejectedMaterials = "Rejected Materials";
+        public const string StockRequisitions = "Stock Requisitions";
+        public const string StockTransferIssues = "Stock Transfer Issues";
+        public const string LocationChartRecord = "Location Chart Record";
+
+        // Production
+        public const string RawMaterialRequisitions = "Raw Material Requisitions"; // Under REQUISITIONS group
+        public const string PackageMaterialRequisitions = "Package Material Requisitions"; // Under REQUISITIONS group
+        public const string Planning = "Planning";
+        public const string StockTransferRequests = "Stock Transfer Requests";
+        public const string ProductSchedule = "Product Schedule";
+
+         // Settings
+        public const string SystemSettings = "System Settings";
+        public const string UserSettings = "User Settings";
+        public const string AuditTrail = "Audit Trail";
+        // Settings -> Configurations (Sub-Group)
+        public const string Categories = "Categories"; // Group under Configurations
+        public const string ProductCategory = "Product Category"; // Child of Categories
+        public const string RawCategory = "Raw Category"; // Child of Categories
+        public const string PackageCategory = "Package Category"; // Child of Categories
+        public const string Procedures = "Procedures"; // Group under Configurations
+        public const string Resource = "Resource"; // Child of Procedures
+        public const string Operation = "Operation"; // Child of Procedures
+        public const string WorkCenter = "Work Center"; // Child of Procedures
+        public const string Products = "Products"; // Group under Configurations
+        public const string MaterialType = "Material Type"; // Child of Products
+        public const string UnitOfMeasure = "Unit of Measure";
+        public const string Address = "Address"; // Group under Configurations
+        public const string Country = "Country"; // Child of Address
+        public const string Container = "Container"; // Group under Configurations
+        public const string PackStyle = "Pack Style"; // Child of Container
+        public const string BillingSheetCharge = "Billing Sheet Charge";
+        public const string TermsOfPayment = "Terms of Payment";
+        public const string DeliveryMode = "Delivery Mode";
+        public const string CodeSettings = "Code Settings";
+        public const string Approvals = "Approvals";
+        public const string AlertsNotifications = "Alerts & Notifications";
+        public const string Equipment = "Equipment";
+        public const string WorkFlowForms = "Work Flow Forms"; // Group under Configurations
+        public const string Questions = "Questions"; // Child of WorkFlowForms
+        public const string Templates = "Templates"; // Child of WorkFlowForms
+ }
 
 
 public static class PermissionKeys
@@ -300,18 +369,21 @@ public static class PermissionKeys
     public const string CanDeleteTemplates = "CanDeleteTemplates";
 }
 
-public class PermissionDto(string module, string submodule, string key, string name, string description)
+public class PermissionDto(string module, string submodule, string key, string name, string description, /*bool hasOptions,*/ List<string> types = null)
 {
     public string Module { get; set; } = module;
     public string SubModule { get; set; } = submodule;
     public string Key { get; set; } = key;
     public string Name { get; set; } = name;
     public string Description { get; set; } = description;
+    public bool HasOptions { get; set; } 
+    public List<string> Types { get; set; } = types ?? ["Access"];
 }
 
 public class PermissionModuleDto
 {
     public string Module { get; set; }
+    public bool IsActive { get; set; }
     public List<PermissionDetailDto> Children { get; set; } = [];
 }
 
@@ -321,6 +393,8 @@ public class PermissionDetailDto
     public string Name { get; set; }
     public string Description { get; set; }
     public string SubModule { get; set; }
+    public bool HasOptions { get; set; }
+    public List<string> Types { get; set; } = [];
 }
 
 
