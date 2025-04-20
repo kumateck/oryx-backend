@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Security.Claims;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -68,7 +66,7 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
             CreatedById = userId
         };
         
-        if (!await ValidRoleName(request.Name))
+        if (!await IsValidRoleName(request.Name))
             return RoleErrors.InvalidRoleName(request.Name);
         
         var result = await roleManager.CreateAsync(newRole);
@@ -100,7 +98,7 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
     public async Task<Result<dynamic>> CheckRole(Guid id)
     {
         var role = await context.Roles.FirstOrDefaultAsync(item => item.Id == id);
-        if (role == null) RoleErrors.NotFound(id);
+        if (role is null) RoleErrors.NotFound(id);
         
         var usersWithRole = await userManager.GetUsersInRoleAsync(role.Name);
         return new { HasUsers = usersWithRole.Count != 0 };
@@ -119,9 +117,9 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         return Result.Success();
     }
     
-    private async Task<bool> ValidRoleName(string roleName)
+    private async Task<bool> IsValidRoleName(string roleName)
     {
         var role = await context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
-        return role != null;
+        return role == null;
     }
 }
