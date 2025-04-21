@@ -876,7 +876,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of Material Return Notes.</returns>
-    [HttpGet]
+    [HttpGet("material-return-note")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialReturnNoteDto>>))]
     public async Task<IResult> GetMaterialReturnNotes([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = "")
@@ -890,7 +890,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <param name="materialReturnNoteId">The ID of the Material Return Note.</param>
     /// <returns>Returns the Material Return Note.</returns>
-    [HttpGet("return/{materialReturnNoteId}")]
+    [HttpGet("material-return-note/{materialReturnNoteId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialReturnNoteDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -905,7 +905,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <param name="materialReturnNoteId">The ID of the Material Return Note.</param>
     /// <returns>Returns the Material Return Note.</returns>
-    [HttpPut("return/complete/{materialReturnNoteId}")]
+    [HttpPut("material-return-note/complete/{materialReturnNoteId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
