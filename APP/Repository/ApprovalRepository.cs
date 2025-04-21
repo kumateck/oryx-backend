@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using INFRASTRUCTURE.Context;
@@ -135,6 +136,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             stageToApprove.Approved = true;
             stageToApprove.ApprovalTime = DateTime.UtcNow;
             stageToApprove.Comments = comments;
+            stageToApprove.ApprovedById = userId;
             context.RequisitionApprovals.Update(stageToApprove);
 
             // Optionally mark requisition as fully approved if all required stages are approved
@@ -274,7 +276,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // 1. Get Purchase Orders requiring approval
         var purchaseOrders = await context.PurchaseOrders
-            .Include(po => po.Approvals)
+            .AsSplitQuery()
+            .Include(po => po.Approvals).ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
+            .Include(po => po.CreatedBy)
+            .ThenInclude(po => po.Department)
             .Where(po => po.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && !a.Approved))
             .ToListAsync();
@@ -286,13 +291,24 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 ModelType = nameof(PurchaseOrder),
                 Id = po.Id,
                 CreatedAt = po.CreatedAt,
-                Code = po.Code
+                Department = mapper.Map<DepartmentDto>(po.CreatedBy?.Department),
+                Code = po.Code,
+                ApprovalLogs = GetApprovalLogs(po.Approvals.Select(p => new ResponsibleApprovalStage
+                {
+                    Approved = p.Approved,
+                    Order = p.Order,
+                    Comments = p.Comments,
+                    ApprovedBy = p.ApprovedBy,
+                    ApprovalTime = p.ApprovalTime
+                }).ToList())
             });
         }
 
         // 2. Get Requisitions requiring approval
         var requisitions = await context.Requisitions
             .Include(r => r.Approvals)
+            .Include(po => po.CreatedBy)
+            .ThenInclude(po => po.Department)
             .Where(r => r.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && !a.Approved))
             .ToListAsync();
@@ -306,7 +322,16 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     ModelType = "StockRequisition",
                     Id = r.Id,
                     CreatedAt = r.CreatedAt,
-                    Code = r.Code
+                    Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
+                    Code = r.Code,
+                    ApprovalLogs = GetApprovalLogs(r.Approvals.Select(p => new ResponsibleApprovalStage
+                    {
+                        Approved = p.Approved,
+                        Order = p.Order,
+                        Comments = p.Comments,
+                        ApprovedBy = p.ApprovedBy,
+                        ApprovalTime = p.ApprovalTime
+                    }).ToList())
                 });
             }
             else
@@ -316,6 +341,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     ModelType = "PurchaseRequisition",
                     Id = r.Id,
                     CreatedAt = r.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
                     Code = r.Code
                 });
             }
@@ -324,6 +350,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         // 3. Get Billing Sheets requiring approval
         var billingSheets = await context.BillingSheets
             .Include(bs => bs.Approvals)
+            .Include(po => po.CreatedBy)
+            .ThenInclude(po => po.Department)
             .Where(bs => bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && !a.Approved))
             .ToListAsync();
@@ -335,7 +363,16 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 ModelType = nameof(BillingSheet),
                 Id = bs.Id,
                 Code = bs.Code,
-                CreatedAt = bs.CreatedAt
+                Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
+                CreatedAt = bs.CreatedAt,
+                ApprovalLogs = GetApprovalLogs(bs.Approvals.Select(p => new ResponsibleApprovalStage
+                {
+                    Approved = p.Approved,
+                    Order = p.Order,
+                    Comments = p.Comments,
+                    ApprovedBy = p.ApprovedBy,
+                    ApprovalTime = p.ApprovalTime
+                }).ToList())
             });
         }
 
@@ -462,4 +499,19 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return Result.Success();
     }
+    
+    public List<ApprovalLog> GetApprovalLogs(List<ResponsibleApprovalStage> stages)
+    {
+        return stages
+            .Where(s => s.Approved)
+            .OrderBy(s => s.Order)
+            .Select(s => new ApprovalLog
+            {
+                User = mapper.Map<CollectionItemDto>(s.ApprovedBy),
+                ApprovedAt = s.ApprovalTime,
+                Comments = s.Comments
+            })
+            .ToList();
+    }
+
 }

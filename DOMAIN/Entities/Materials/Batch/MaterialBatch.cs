@@ -171,6 +171,8 @@ public class MaterialBatchReservedQuantity : BaseEntity
     public ProductionSchedule ProductionSchedule { get; set; }
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
 }
 

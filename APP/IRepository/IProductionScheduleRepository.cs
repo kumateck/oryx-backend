@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
@@ -93,4 +94,13 @@ public interface IProductionScheduleRepository
     Task<Result<RequisitionDto>> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId);
     Task<Result<ProductionScheduleProductDto>> GetProductDetailsInProductionSchedule(
         Guid productionScheduleId, Guid productId);
+
+    Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId);
+    Task<Result> ReturnLeftOverStockAfterProductionEnds(Guid productionScheduleId, Guid productId,
+        List<PartialMaterialToReturn> returns);
+    Task<Result<Paginateable<IEnumerable<MaterialReturnNoteDto>>>> GetMaterialReturnNotes(int page,
+        int pageSize,
+        string searchQuery);
+    Task<Result<MaterialReturnNoteDto>> GetMaterialReturnNoteById(Guid materialReturnNoteId);
+    Task<Result> CompleteMaterialReturn(Guid materialReturnNoteId);
 }

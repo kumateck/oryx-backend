@@ -166,8 +166,9 @@ public class FinishedGoodsTransferNoteDto : BaseDto
 
 public class MaterialBatchReservedQuantityDto : BaseDto
 {
-    public CollectionItemDto MaterialBatch { get; set; }
+    public MaterialBatchDto MaterialBatch { get; set; }
     public CollectionItemDto Warehouse { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
 }
 

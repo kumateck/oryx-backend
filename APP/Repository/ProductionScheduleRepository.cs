@@ -19,6 +19,7 @@ using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
+using QueryableExtensions = System.Data.Entity.QueryableExtensions;
 
 namespace APP.Repository;
 
@@ -1143,7 +1144,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         foreach (var material in materialDetails)
         {
-            var batchResult = await materialRepository.BatchesToSupplyForGivenQuantity(material.Material.Id, material.StorageWarehouseId,
+            var batchResult = await materialRepository.BatchesToSupplyForGivenQuantity(material.Material.Id, material.ProductionWarehouseId,
                 material.QuantityNeeded);
 
             if (batchResult.IsSuccess)
@@ -1152,7 +1153,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 foreach (var batch in batches)
                 {
                     await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleId, productId,
-                        batch.QuantityToTake);
+                        batch.QuantityToTake, batch.Batch.UoM.Id);
                 }
             }
         }
@@ -1173,7 +1174,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 foreach (var batch in batches)
                 {
                     await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleId, productId,
-                        batch.QuantityToTake);
+                        batch.QuantityToTake, batch.Batch.UoM.Id);
                 }
             }
         }
@@ -1753,13 +1754,153 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return product;
     }
 
-    public Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId)
+    public async Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId)
     {
-        throw new NotImplementedException();
+        var product = await context.Products.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(p => p.Id == productId);
+
+        if (product is null) return ProductErrors.NotFound(productId);
+
+        var productionWarehouse = await context.Warehouses
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.Production);
+        if (productionWarehouse is null) return Error.NotFound("Warehouse.Production",  "Warehouse production record not found");
+        
+        var rawStorageWarehouse = await context.Warehouses
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.RawMaterialStorage);
+        if (rawStorageWarehouse is null) return Error.NotFound("Warehouse.RawStorage",  "Warehouse raw storage record not found");
+        
+        var packedStorageWarehouse = await context.Warehouses
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.PackagedStorage);
+        if (packedStorageWarehouse is null) return Error.NotFound("Warehouse.PackedStorage",  "Warehouse package storage record not found");
+        
+        var stockRequisitions = await context.Requisitions
+            .AsSplitQuery()
+            .Include(r => r.Items)
+            .Where(r => r.ProductId == productId && r.ProductionScheduleId == productionScheduleId).ToListAsync();
+            
+        foreach (var stockRequisition in stockRequisitions)
+        {
+            foreach (var item in stockRequisition.Items)
+            {
+                var batchesToConsume =
+                    await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
+                        item.MaterialId,
+                        productionWarehouse.Id, stockRequisition.ProductionScheduleId,
+                        stockRequisition.ProductId);
+
+                var materialReturnNote = new MaterialReturnNote
+                {
+                    ProductId = productId,
+                    ProductionScheduleId = productionScheduleId,
+                    ReturnDate = DateTime.UtcNow,
+                    BatchNumber = (await context.BatchManufacturingRecords
+                        .FirstOrDefaultAsync(b => b.ProductId == productId &&
+                                                  b.ProductionScheduleId == productionScheduleId))?.BatchNumber,
+                    FullReturns = batchesToConsume.Select(b => new MaterialReturnNoteFullReturn
+                    {
+                        MaterialBatchReservedQuantityId = b.Id,
+                        DestinationWarehouseId = b.MaterialBatch?.Material?.Kind == MaterialKind.Raw ? rawStorageWarehouse.Id : packedStorageWarehouse.Id
+                    }).ToList()
+                };
+                    
+                await context.MaterialReturnNotes.AddAsync(materialReturnNote);
+                context.MaterialBatchReservedQuantities.RemoveRange(batchesToConsume);
+            }
+        }
+        return Result.Success();
     }
 
-    public Task<Result> ResturnLeftOverStockAfterProductionEnds(Guid productionScheduleId, Guid productId)
+    public async Task<Result> ReturnLeftOverStockAfterProductionEnds(Guid productionScheduleId, Guid productId, List<PartialMaterialToReturn> returns)
     {
-        throw new NotImplementedException();
+        var product = await context.Products.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(p => p.Id == productId);
+
+        if (product is null) return ProductErrors.NotFound(productId);
+
+        var productionWarehouse = await context.Warehouses
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.Production);
+        if (productionWarehouse is null) return Error.NotFound("Warehouse.Production",  "Warehouse production record not found");
+        
+        var rawStorageWarehouse = await context.Warehouses
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.RawMaterialStorage);
+        if (rawStorageWarehouse is null) return Error.NotFound("Warehouse.RawStorage",  "Warehouse raw storage record not found");
+        
+        var packedStorageWarehouse = await context.Warehouses
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.PackagedStorage);
+        if (packedStorageWarehouse is null) return Error.NotFound("Warehouse.PackedStorage",  "Warehouse package storage record not found");
+        
+        var materialReturnNote = new MaterialReturnNote
+        {
+            ProductId = productId,
+            ProductionScheduleId = productionScheduleId,
+            ReturnDate = DateTime.UtcNow,
+            BatchNumber = (await context.BatchManufacturingRecords
+                .FirstOrDefaultAsync(b => b.ProductId == productId &&
+                                          b.ProductionScheduleId == productionScheduleId))?.BatchNumber,
+            PartialReturns = returns.Select(r => new MaterialReturnNotePartialReturn
+            {
+                MaterialId = r.MaterialId,
+                UoMId = r.UoMId,
+                Quantity = r.Quantity,
+                DestinationWarehouseId = context.Materials.FirstOrDefault(m => m.Id == r.MaterialId)?.Kind == MaterialKind.Raw ?
+                        rawStorageWarehouse.Id : packedStorageWarehouse.Id,
+            }).ToList()
+        };
+        await context.MaterialReturnNotes.AddAsync(materialReturnNote);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<MaterialReturnNoteDto>>>> GetMaterialReturnNotes(int page, int pageSize,
+        string searchQuery)
+    {
+        var query = context.MaterialReturnNotes.AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.BatchNumber);
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query, 
+            page,
+            pageSize,
+            mapper.Map<MaterialReturnNoteDto>
+            );
+    }
+
+    public async Task<Result<MaterialReturnNoteDto>> GetMaterialReturnNoteById(Guid materialReturnNoteId)
+    {
+        return mapper.Map<MaterialReturnNoteDto>(await context.MaterialReturnNotes
+            .Include(m => m.FullReturns)
+            .ThenInclude(mf => mf.MaterialBatchReservedQuantity)
+            .Include(m => m.FullReturns)
+            .ThenInclude(mf => mf.DestinationWarehouse)
+            .Include(m => m.PartialReturns)
+            .ThenInclude(mp => mp.Material)
+            .Include(m => m.PartialReturns)
+            .ThenInclude(mp => mp.DestinationWarehouse)
+            .FirstOrDefaultAsync(m => m.Id == materialReturnNoteId));
+    }
+
+    public async Task<Result> CompleteMaterialReturn(Guid materialReturnNoteId)
+    {
+        var materialReturnNote = await context.MaterialReturnNotes.FirstOrDefaultAsync(m => m.Id == materialReturnNoteId);
+        
+        if (materialReturnNote is null) return Error.NotFound("MaterialReturnNote", "MaterialReturnNote not found");
+
+        materialReturnNote.Status = MaterialReturnStatus.Completed;
+        context.MaterialReturnNotes.Update(materialReturnNote);
+        await context.SaveChangesAsync();
+        
+        return Result.Success();
     }
 }

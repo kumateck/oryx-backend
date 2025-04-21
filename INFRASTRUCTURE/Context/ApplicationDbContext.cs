@@ -85,6 +85,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DistributedFinishedProduct> DistributedFinishedProducts { get; set; }
     public DbSet<MaterialItemDistribution> MaterialItemDistributions { get; set; }
     public DbSet<MaterialBatchReservedQuantity> MaterialBatchReservedQuantities { get; set; }
+    public DbSet<MaterialReturnNote> MaterialReturnNotes { get; set; }
+    public DbSet<MaterialReturnNoteFullReturn> MaterialReturnNoteFullReturns { get; set; }
+    public DbSet<MaterialReturnNotePartialReturn> MaterialReturnNotePartialReturns { get; set; }
     
     #endregion
 
@@ -625,6 +628,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<MaterialBatchReservedQuantity>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.MaterialBatch.DeletedAt.HasValue);
         modelBuilder.Entity<FinishedProductBatchMovement>().HasQueryFilter(entity =>  !entity.Batch.DeletedAt.HasValue);
         modelBuilder.Entity<FinishedProductBatchEvent>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialReturnNote>().HasQueryFilter(entity => !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialReturnNoteFullReturn>().HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialReturnNotePartialReturn>().HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         
         #endregion
 

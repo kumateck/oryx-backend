@@ -1337,7 +1337,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity)
+    public async Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity, Guid? uoMId)
     {
         await context.MaterialBatchReservedQuantities.AddAsync(new MaterialBatchReservedQuantity
         {
@@ -1345,7 +1345,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             WarehouseId = warehouseId,
             ProductionScheduleId = productionScheduleId,
             ProductId = productId,
-            Quantity = quantity
+            Quantity = quantity,
+            UoMId = uoMId
         });
 
         await context.SaveChangesAsync();
@@ -1355,7 +1356,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         return 
             await context.MaterialBatchReservedQuantities
+                .AsSplitQuery()
                 .Include(r => r.MaterialBatch)
+                .ThenInclude(b => b.Material)
                 .Where(r => r.MaterialBatch.MaterialId == materialId && 
                             r.WarehouseId == warehouseId && r.ProductionScheduleId == productionScheduleId && r.ProductId == productId)
                 .ToListAsync();

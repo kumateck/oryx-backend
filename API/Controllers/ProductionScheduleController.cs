@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
@@ -829,6 +830,89 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var result = await repository.GetStockRequisitionForPackaging(productionScheduleId, productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    #endregion
+
+    #region Material Return Note
+
+     /// <summary>
+    /// Returns unused materials before production begins.
+    /// </summary>
+    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
+    /// <param name="productId">The ID of the Product.</param>
+    /// <returns>Returns a success result if materials were returned successfully.</returns>
+    [HttpPost("return-before-production")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ReturnBeforeProduction([FromQuery] Guid productionScheduleId, [FromQuery] Guid productId)
+    {
+        var result = await repository.ReturnStockBeforeProductionBegins(productionScheduleId, productId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Returns leftover materials after production ends.
+    /// </summary>
+    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
+    /// <param name="productId">The ID of the Product.</param>
+    /// <param name="returns">The list of partially used materials to return.</param>
+    /// <returns>Returns a success result if leftovers were recorded successfully.</returns>
+    [HttpPost("return-after-production")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ReturnAfterProduction([FromQuery] Guid productionScheduleId, [FromQuery] Guid productId, [FromBody] List<PartialMaterialToReturn> returns)
+    {
+        var result = await repository.ReturnLeftOverStockAfterProductionEnds(productionScheduleId, productId, returns);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of Material Return Notes.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of Material Return Notes.</returns>
+    [HttpGet]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialReturnNoteDto>>))]
+    public async Task<IResult> GetMaterialReturnNotes([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = "")
+    {
+        var result = await repository.GetMaterialReturnNotes(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific Material Return Note by its ID.
+    /// </summary>
+    /// <param name="materialReturnNoteId">The ID of the Material Return Note.</param>
+    /// <returns>Returns the Material Return Note.</returns>
+    [HttpGet("return/{materialReturnNoteId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialReturnNoteDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialReturnNoteById(Guid materialReturnNoteId)
+    {
+        var result = await repository.GetMaterialReturnNoteById(materialReturnNoteId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a specific Material Return Note by its ID.
+    /// </summary>
+    /// <param name="materialReturnNoteId">The ID of the Material Return Note.</param>
+    /// <returns>Returns the Material Return Note.</returns>
+    [HttpPut("return/complete/{materialReturnNoteId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CompleteMaterialReturnNoteById(Guid materialReturnNoteId)
+    {
+        var result = await repository.CompleteMaterialReturn(materialReturnNoteId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     #endregion

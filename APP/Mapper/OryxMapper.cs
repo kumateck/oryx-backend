@@ -270,7 +270,11 @@ public class OryxMapper : Profile
         CreateMap<Sr, SrDto>();
 
         CreateMap<MaterialCategory, MaterialCategoryDto>();
-
+        
+        CreateMap<MaterialReturnNote, MaterialReturnNoteDto>();
+        CreateMap<MaterialReturnNoteFullReturn, MaterialReturnNoteFullReturnDto>();
+        CreateMap<MaterialReturnNotePartialReturn, MaterialReturnNotePartialReturnDto>();
+        
         #endregion
 
         #region Requisition
