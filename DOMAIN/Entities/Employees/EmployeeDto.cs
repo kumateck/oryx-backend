@@ -23,6 +23,12 @@ public class EmployeeDto
     
     public string Nationality { get; set; }
     
+    public string BankAccountNumber { get; set; }
+    
+    public string SsnitNumber { get; set; }
+    
+    public string GhanaCardNumber { get; set; }
+    
     public string Region { get; set; }
 
     public MaritalStatus MaritalStatus { get; set; }
