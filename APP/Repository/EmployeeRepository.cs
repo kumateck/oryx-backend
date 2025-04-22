@@ -114,6 +114,13 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
             return Error.Validation("Employee.Exists", "Employee already exists.");
         }
         
+        var country = await context.Countries.FirstOrDefaultAsync(c => c.Id == Guid.Parse(request.Nationality));
+
+        if (country != null)
+        {
+            request.Nationality = country.Name;
+        }
+        
         var employee = mapper.Map<Employee>(request);
         employee.CreatedById = userId;
         employee.CreatedAt = DateTime.UtcNow;
