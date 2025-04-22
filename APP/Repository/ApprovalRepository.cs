@@ -111,7 +111,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 RoleId = item.RoleId,
                 UserId = item.UserId,
                 Order = item.Order,
-                Approved = item.Approved,
+                Status = item.Status,
                 Required = item.Required,
                 ApprovalTime = item.ApprovalTime,
                 Comments = item.Comments
@@ -133,7 +133,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 (stage.UserId == approvableStage.UserId && stage.UserId == userId) ||
                 (stage.RoleId == approvableStage.RoleId && approvableStage.RoleId.HasValue && roleIds.Contains(approvableStage.RoleId.Value)));
 
-            stageToApprove.Approved = true;
+            stageToApprove.Status = ApprovalStatus.Approved;
             stageToApprove.ApprovalTime = DateTime.UtcNow;
             stageToApprove.Comments = comments;
             stageToApprove.ApprovedById = userId;
@@ -142,7 +142,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             // Optionally mark requisition as fully approved if all required stages are approved
             var allRequiredApproved = requisition.Approvals
                 .Where(s => s.Required)
-                .All(s => s.Approved);
+                .All(s => s.Status == ApprovalStatus.Approved);
 
             if (allRequiredApproved)
             {
@@ -169,7 +169,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     RoleId = item.RoleId,
                     UserId = item.UserId,
                     Order = item.Order,
-                    Approved = item.Approved,
+                    Status = item.Status,
                     Required = item.Required,
                     ApprovalTime = item.ApprovalTime,
                     Comments = item.Comments
@@ -191,14 +191,14 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     (stage.UserId == purchaseOrderApprovingStage.UserId && stage.UserId == userId) ||
                     (stage.RoleId == purchaseOrderApprovingStage.RoleId && purchaseOrderApprovingStage.RoleId.HasValue && roleIds.Contains(purchaseOrderApprovingStage.RoleId.Value)));
 
-                stageToApprovePo.Approved = true;
+                stageToApprovePo.Status = ApprovalStatus.Approved;
                 stageToApprovePo.ApprovalTime = DateTime.UtcNow;
                 stageToApprovePo.Comments = comments;
 
                 // Optionally mark purchase order as fully approved
                 var allRequiredPoApproved = purchaseOrder.Approvals
                     .Where(s => s.Required)
-                    .All(s => s.Approved);
+                    .All(s => s.Status == ApprovalStatus.Approved);
 
                 if (allRequiredPoApproved)
                 {
@@ -222,7 +222,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 RoleId = item.RoleId,
                 UserId = item.UserId,
                 Order = item.Order,
-                Approved = item.Approved,
+                Status = item.Status,
                 Required = item.Required,
                 ApprovalTime = item.ApprovalTime,
                 Comments = item.Comments
@@ -244,14 +244,14 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 (stage.UserId == billingSheetApprovingStage.UserId && stage.UserId == userId) ||
                 (stage.RoleId == billingSheetApprovingStage.RoleId && billingSheetApprovingStage.RoleId.HasValue && roleIds.Contains(billingSheetApprovingStage.RoleId.Value)));
 
-            stageToApproveBs.Approved = true;
+            stageToApproveBs.Status = ApprovalStatus.Approved;
             stageToApproveBs.ApprovalTime = DateTime.UtcNow;
             stageToApproveBs.Comments = comments;
 
             // Optionally mark billing sheet as fully approved
             var allRequiredBsApproved = billingSheet.Approvals
                 .Where(s => s.Required)
-                .All(s => s.Approved);
+                .All(s => s.Status == ApprovalStatus.Approved);
 
             if (allRequiredBsApproved)
             {
@@ -281,7 +281,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
             .Where(po => po.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && !a.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var po in purchaseOrders)
@@ -295,7 +295,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 Code = po.Code,
                 ApprovalLogs = GetApprovalLogs(po.Approvals.Select(p => new ResponsibleApprovalStage
                 {
-                    Approved = p.Approved,
+                    Status = p.Status,
                     Order = p.Order,
                     Comments = p.Comments,
                     ApprovedBy = p.ApprovedBy,
@@ -310,7 +310,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
             .Where(r => r.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && !a.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var r in requisitions)
@@ -326,7 +326,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     Code = r.Code,
                     ApprovalLogs = GetApprovalLogs(r.Approvals.Select(p => new ResponsibleApprovalStage
                     {
-                        Approved = p.Approved,
+                        Status = p.Status,
                         Order = p.Order,
                         Comments = p.Comments,
                         ApprovedBy = p.ApprovedBy,
@@ -353,7 +353,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
             .Where(bs => bs.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && !a.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var bs in billingSheets)
@@ -367,7 +367,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 CreatedAt = bs.CreatedAt,
                 ApprovalLogs = GetApprovalLogs(bs.Approvals.Select(p => new ResponsibleApprovalStage
                 {
-                    Approved = p.Approved,
+                    Status = p.Status,
                     Order = p.Order,
                     Comments = p.Comments,
                     ApprovedBy = p.ApprovedBy,
@@ -389,21 +389,21 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         var sortedStages = stages.OrderBy(s => s.Order).ToList();
 
         // Find the next required unapproved stage
-        var nextRequired = sortedStages.FirstOrDefault(s => s.Required && !s.Approved);
+        var nextRequired = sortedStages.FirstOrDefault(s => s.Required && s.Status != ApprovalStatus.Approved);
 
         if (nextRequired == null)
         {
             // If there's no more required stages, return any unapproved unrequired ones
             result.AddRange(
                 sortedStages
-                    .Where(s => !s.Required && !s.Approved)
+                    .Where(s => !s.Required && s.Status != ApprovalStatus.Approved)
             );
             return result;
         }
 
         // Get all unrequired unapproved stages that come *before* the required one
         var priorUnrequired = sortedStages
-            .Where(s => !s.Required && !s.Approved && s.Order < nextRequired.Order)
+            .Where(s => !s.Required && s.Status != ApprovalStatus.Approved && s.Order < nextRequired.Order)
             .ToList();
 
         result.AddRange(priorUnrequired);
@@ -503,7 +503,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
     public List<ApprovalLog> GetApprovalLogs(List<ResponsibleApprovalStage> stages)
     {
         return stages
-            .Where(s => s.Approved)
+            .Where(s => s.Status != ApprovalStatus.Approved)
             .OrderBy(s => s.Order)
             .Select(s => new ApprovalLog
             {

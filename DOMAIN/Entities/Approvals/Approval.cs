@@ -34,13 +34,19 @@ public class ResponsibleApprovalStage : CurrentApprovalStage
 { 
     public bool Required { get; set; }     
     public int Order { get; set; }
-    public bool Approved { get; set; }             
+    public ApprovalStatus Status { get; set; }             
     public DateTime? ApprovalTime { get; set; }    
     public Guid? ApprovedById { get; set; }
     public User ApprovedBy { get; set; }
     [StringLength(1000)] public string Comments { get; set; } 
 }
 
+public enum ApprovalStatus
+{
+    Pending = 0,
+    Approved = 1,
+    Rejected = 2
+}
 public class ApprovalEntity
 {
     public Guid Id { get; set; } 

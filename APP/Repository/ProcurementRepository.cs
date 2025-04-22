@@ -134,6 +134,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<SupplierDto>> GetSupplier(Guid supplierId)
     {
         var supplier = await context.Suppliers
+            .AsSplitQuery()
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
             .FirstOrDefaultAsync(s => s.Id == supplierId);
