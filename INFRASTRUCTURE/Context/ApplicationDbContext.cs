@@ -1,4 +1,5 @@
 using System.Reflection;
+using DOMAIN.Entities.AbsenceRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Auth;
@@ -365,11 +366,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #endregion
 
     #region Leave
-
     public DbSet<LeaveType> LeaveTypes { get; set; }
     public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
-    
     public DbSet<LeaveRequest> LeaveRequests { get; set; }
+    
+    public DbSet<AbsenceRequest> AbsenceRequests { get; set; }
 
     #endregion
     
