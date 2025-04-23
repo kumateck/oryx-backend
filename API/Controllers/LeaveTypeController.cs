@@ -1,4 +1,5 @@
 using APP.IRepository;
+using APP.Utils;
 using DOMAIN.Entities.LeaveTypes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     /// </summary>
     [HttpPost]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveType([FromBody] LeaveTypeDto leaveType)
     {
@@ -32,7 +33,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     /// </summary>
     [HttpGet]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveTypeDto>>))]
     public async Task<IResult> GetLeaveTypes([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
         var userId = (string) HttpContext.Items["Sub"];
@@ -48,7 +49,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     /// </summary>
     [HttpGet("{id:guid}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LeaveTypeDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveType([FromRoute] Guid id)
     {
@@ -65,7 +66,8 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     /// </summary>
     [HttpPut("{id:guid}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveTypeDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateLeaveType([FromRoute] Guid id, [FromBody] LeaveTypeDto leaveType)
     {
