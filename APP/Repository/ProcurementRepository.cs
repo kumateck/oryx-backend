@@ -801,6 +801,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
              case ShipmentStatus.InTransit:
                  shipmentDocument.TransitStartedAt = DateTime.UtcNow;
                  break;
+             case ShipmentStatus.Arrived:
+                 shipmentDocument.ArrivedAt = DateTime.UtcNow;
+                 break;
          }
      
          context.ShipmentDocuments.Update(shipmentDocument);
@@ -1369,7 +1372,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(items=>items.Material)
             .Include(shipmentDoc => shipmentDoc.ShipmentInvoice)
             .ThenInclude(shipmenInvoice => shipmenInvoice.Supplier)
-            .Where(sd => sd.ArrivedAt != null && sd.CompletedDistributionAt == null)
+            .Where(sd => sd.Status == ShipmentStatus.Arrived)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
