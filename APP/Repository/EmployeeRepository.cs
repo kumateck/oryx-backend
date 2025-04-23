@@ -322,6 +322,7 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     mapper.Map(employeeDto, employee);
     employee.DepartmentId = employeeDto.DepartmentId;
     employee.DesignationId = employeeDto.DesignationId;
+    employee.AnnualLeaveDays = employee.Designation.MaximumLeaveDays;
     employee.UpdatedAt = DateTime.UtcNow;
     employee.LastUpdatedById = userId;
 

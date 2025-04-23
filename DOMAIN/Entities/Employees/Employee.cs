@@ -45,6 +45,8 @@ public class Employee : BaseEntity
     
     [StringLength(15)] public string GhanaCardNumber { get; set; }
     
+    public int AnnualLeaveDays { get; set; }
+    
     public EmployeeType Type { get; set; } 
     
     public Person Mother { get; set; }

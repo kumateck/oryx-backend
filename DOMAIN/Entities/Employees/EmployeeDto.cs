@@ -21,6 +21,8 @@ public class EmployeeDto
     
     public string ResidentialAddress { get; set; }
     
+    public int AnnualLeaveDays { get; set; }
+    
     public string Nationality { get; set; }
     
     public string BankAccountNumber { get; set; }

@@ -1242,6 +1242,9 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AnnualLeaveDays")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Avatar")
                         .HasColumnType("text");
 
