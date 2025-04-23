@@ -122,6 +122,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         var existingSupplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Name == request.Name);
         if(existingSupplier is not null) return Error.Validation("Supplier.Name", $"Supplier with name {request.Name} already exists");
+
+        if (request.AssociatedManufacturers.GroupBy(m => new { m.ManufacturerId, m.MaterialId })
+            .Any(g => g.Count() > 1))
+            return Error.Validation("Suppler.Manufactures", "You have duplicate manufacturers supplying the same material");
         
         var supplier = mapper.Map<Supplier>(request);
         supplier.CreatedById = userId;
@@ -200,15 +204,19 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result> UpdateSupplier(CreateSupplierRequest request, Guid supplierId, Guid userId)
     {
-        var existingSupplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Id == supplierId);
+        var existingSupplier = await context.Suppliers.Include(supplier => supplier.AssociatedManufacturers).FirstOrDefaultAsync(s => s.Id == supplierId);
         if (existingSupplier is null)
         {
             return Error.NotFound("Supplier.NotFound", "Supplier not found");
         }
+        
+        if (request.AssociatedManufacturers.GroupBy(m => new { m.ManufacturerId, m.MaterialId })
+            .Any(g => g.Count() > 1))
+            return Error.Validation("Suppler.Manufactures", "You have duplicate manufacturers supplying the same material");
 
+        context.SupplierManufacturers.RemoveRange(existingSupplier.AssociatedManufacturers);
         mapper.Map(request, existingSupplier);
         existingSupplier.LastUpdatedById = userId;
-
         context.Suppliers.Update(existingSupplier);
         await context.SaveChangesAsync();
         return Result.Success();
