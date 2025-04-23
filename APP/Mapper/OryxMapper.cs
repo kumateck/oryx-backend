@@ -23,6 +23,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.LeaveEntitlements;
+using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -643,6 +644,13 @@ public class OryxMapper : Profile
         #region Leave Type
 
         CreateMap<LeaveType, LeaveTypeDto>();
+
+        #endregion
+
+        #region Leave Requests
+
+        CreateMap<CreateLeaveRequest, LeaveRequest>();
+        CreateMap<LeaveRequestDto, LeaveRequest>();
 
         #endregion
         

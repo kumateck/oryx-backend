@@ -18,6 +18,7 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.LeaveEntitlements;
+using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -367,6 +368,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<LeaveType> LeaveTypes { get; set; }
     public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
+    
+    public DbSet<LeaveRequest> LeaveRequests { get; set; }
 
     #endregion
     
