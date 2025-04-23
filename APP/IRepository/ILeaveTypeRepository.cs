@@ -6,7 +6,7 @@ namespace APP.IRepository;
 
 public interface ILeaveTypeRepository
 {
-    Task<Result<Guid>> CreateLeaveType(LeaveTypeDto leaveTypeDto, Guid userId);
+    Task<Result<Guid>> CreateLeaveType(CreateLeaveTypeRequest leaveTypeDto, Guid userId);
     
     Task<Result<Paginateable<IEnumerable<LeaveTypeDto>>>> GetLeaveTypes(int page, int pageSize,
         string searchQuery = null);

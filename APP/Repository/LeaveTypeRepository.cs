@@ -10,7 +10,7 @@ namespace APP.Repository;
 
 public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) : ILeaveTypeRepository
 {
-    public async Task<Result<Guid>> CreateLeaveType(LeaveTypeDto leaveTypeDto, Guid userId)
+    public async Task<Result<Guid>> CreateLeaveType(CreateLeaveTypeRequest leaveTypeDto, Guid userId)
     {
         var existingLeaveType = await context.LeaveTypes.FirstOrDefaultAsync(l => l.Name == leaveTypeDto.Name);
 
