@@ -30,8 +30,11 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<ApprovalDto>> GetApproval(Guid approvalId) 
     { 
         var approval = await context.Approvals
+            .AsSplitQuery()
             .Include(a => a.ApprovalStages)
             .ThenInclude(a => a.User)
+            .Include(a => a.ApprovalStages)
+            .ThenInclude(s => s.Role)
             .FirstOrDefaultAsync(a => a.Id == approvalId);
 
         return approval is null ? Error.NotFound("Approval.NotFound", "Approval was not found") : mapper.Map<ApprovalDto>(approval);
@@ -40,7 +43,11 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<Paginateable<IEnumerable<ApprovalDto>>>> GetApprovals(int page, int pageSize, string searchQuery) 
     { 
         var query = context.Approvals
+            .AsSplitQuery()
             .Include(a => a.ApprovalStages)
+            .ThenInclude(s => s.User)
+            .Include(a => a.ApprovalStages)
+            .ThenInclude(s => s.Role)
             .AsQueryable();
         
         if (!string.IsNullOrEmpty(searchQuery))
