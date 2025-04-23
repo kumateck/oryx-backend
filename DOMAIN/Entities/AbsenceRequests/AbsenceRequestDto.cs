@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.LeaveTypes;
 
 namespace DOMAIN.Entities.AbsenceRequests;
 

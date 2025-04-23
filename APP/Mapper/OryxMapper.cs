@@ -1,5 +1,6 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
+using DOMAIN.Entities.AbsenceRequests;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
@@ -52,7 +53,6 @@ using DOMAIN.Entities.Users.Request;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
 using DOMAIN.Entities.WorkOrders;
-using INFRASTRUCTURE.Context;
 using SHARED;
 
 namespace APP.Mapper;
@@ -602,8 +602,7 @@ public class OryxMapper : Profile
         CreateMap<Employee, User>()
             .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FullName))
             .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.FullName))
-            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email));;
-        
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email));
         #endregion
 
         #region Children
@@ -651,6 +650,13 @@ public class OryxMapper : Profile
 
         CreateMap<CreateLeaveRequest, LeaveRequest>();
         CreateMap<LeaveRequestDto, LeaveRequest>();
+
+        #endregion
+
+        #region Absence Requests
+
+        CreateMap<CreateAbsenceRequest, AbsenceRequest>();
+        CreateMap<AbsenceRequestDto, AbsenceRequest>();
 
         #endregion
         
