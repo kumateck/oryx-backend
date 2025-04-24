@@ -643,6 +643,7 @@ public class OryxMapper : Profile
         #region Leave Type
 
         CreateMap<LeaveType, LeaveTypeDto>();
+        CreateMap<CreateLeaveTypeRequest, LeaveType>();
 
         #endregion
 

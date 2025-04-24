@@ -14,6 +14,10 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 {
     public async Task<Result<Guid>> CreateLeaveRequest(CreateLeaveRequest leaveRequest, Guid userId)
     {
+        if ((leaveRequest.EndDate - leaveRequest.StartDate).TotalDays + 1 < 3)
+        {
+            return Error.Validation("LeaveRequest.InvalidDates", "Leave request must be at least 3 days long.");
+        }
         var existingLeaveRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l => l.StartDate == leaveRequest.StartDate
             && l.EndDate == leaveRequest.EndDate && l.EmployeeId == leaveRequest.EmployeeId);
@@ -30,9 +34,51 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         
         var existingEmployee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == leaveRequest.EmployeeId && e.LastDeletedById == null);;
+        
+        var leaveType = await context.LeaveTypes
+            .FirstOrDefaultAsync(l => l.Id == leaveRequest.LeaveTypeId && l.LastDeletedById == null);
+        
         if (existingEmployee is null)
         {
             return Error.NotFound("Employee.NotFound", "Employee not found");
+        }
+        
+        if (leaveType is null)
+        {
+            return Error.NotFound("LeaveType.NotFound", "Leave type not found");
+        }
+        
+        var totalDays = (int) (leaveRequest.EndDate - leaveRequest.StartDate).TotalDays + 1;
+        var unpaidDays = 0;
+
+        if (leaveType.IsPaid)
+        {
+            var paidDays = 0;
+            if (leaveType.DeductFromBalance)
+            {
+                var deductionLimit = leaveType.DeductionLimit ?? 0;
+                var balance = existingEmployee.AnnualLeaveDays;
+
+                if (balance >= totalDays - deductionLimit)
+                {
+                    paidDays = totalDays;
+                    existingEmployee.AnnualLeaveDays -= (totalDays - deductionLimit);
+                }
+                else
+                {
+                    paidDays = balance + deductionLimit;
+                    unpaidDays = totalDays - paidDays;
+                    existingEmployee.AnnualLeaveDays = 0;
+                }
+            }
+            else
+            {
+                paidDays = totalDays;
+            }
+        }
+        else
+        {
+            unpaidDays = totalDays;
         }
         
         var leaveRequestEntity = mapper.Map<LeaveRequest>(leaveRequest);

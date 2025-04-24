@@ -10,6 +10,8 @@ public class LeaveType : BaseEntity
     
     public bool DeductFromBalance {get; set;}
     
+    public int? DeductionLimit { get; set; }
+    
     public int NumberOfDays { get; set; }
     
     public bool IsActive { get; set; }
