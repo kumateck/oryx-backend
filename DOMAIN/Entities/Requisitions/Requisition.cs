@@ -51,6 +51,8 @@ public class RequisitionApproval : ResponsibleApprovalStage
     public Guid Id { get; set; }
     public Guid RequisitionId { get; set; }
     public Requisition Requisition { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 public enum RequestStatus

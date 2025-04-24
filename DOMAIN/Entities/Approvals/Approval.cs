@@ -10,6 +10,7 @@ namespace DOMAIN.Entities.Approvals;
 public class Approval : BaseEntity
 {
     [StringLength(100)] public string ItemType { get; set; }
+    public TimeSpan EscalationDuration  { get; set; }
     public List<ApprovalStage> ApprovalStages { get; set; }
 }
 
@@ -34,10 +35,13 @@ public class ResponsibleApprovalStage : CurrentApprovalStage
 { 
     public bool Required { get; set; }     
     public int Order { get; set; }
+    public DateTime? StageStartTime { get; set; }
     public ApprovalStatus Status { get; set; }             
     public DateTime? ApprovalTime { get; set; }    
     public Guid? ApprovedById { get; set; }
     public User ApprovedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ActivatedAt { get; set; }
     [StringLength(1000)] public string Comments { get; set; } 
 }
 

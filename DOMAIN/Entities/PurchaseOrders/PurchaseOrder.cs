@@ -47,6 +47,8 @@ public class PurchaseOrderApproval : ResponsibleApprovalStage
     public Guid Id { get; set; }
     public Guid PurchaseOrderId { get; set; }
     public PurchaseOrder PurchaseOrder { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 

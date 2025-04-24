@@ -39,6 +39,8 @@ public class BillingSheetApproval : ResponsibleApprovalStage
     public Guid Id { get; set; }
     public Guid BillingSheetId { get; set; }
     public BillingSheet BillingSheet { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 

@@ -4,6 +4,7 @@ namespace DOMAIN.Entities.Approvals;
 public class CreateApprovalRequest
 {
     public string ItemType { get; set; }
+    public TimeSpan EscalationDuration  { get; set; }
     public List<CreateApprovalStageRequest> ApprovalStages { get; set; }
 }
 

@@ -19,6 +19,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             return Error.Validation("Approval", "Approval for this type already exists");
         }
+        
+        if(string.IsNullOrEmpty(request.ItemType))
+            return Error.Validation("Approval", "Approval item type is required");
+        
         var approval = mapper.Map<Approval>(request); 
         approval.CreatedById = userId; 
         await context.Approvals.AddAsync(approval); 
@@ -156,6 +160,41 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 requisition.Approved = true;
             }
             context.Requisitions.Update(requisition);
+            await context.SaveChangesAsync();
+            
+            //activate next pending stages
+            var nextPendingStages = requisition.Approvals
+                .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
+                .OrderBy(s => s.Order)
+                .ToList();
+
+            if (nextPendingStages.Any())
+            {
+                // Get the current approval stages after the approval
+                var updatedApprovalStages = requisition.Approvals.Select(item => new ResponsibleApprovalStage
+                {
+                    RoleId = item.RoleId,
+                    UserId = item.UserId,
+                    Order = item.Order,
+                    Status = item.Status,
+                    Required = item.Required,
+                    ApprovalTime = item.ApprovalTime,
+                    Comments = item.Comments
+                }).ToList();
+
+                var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
+                    .Where(s => !requisition.Approvals.First(ra =>
+                        (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                    .ToList();
+
+                foreach (var stageToActivate in newlyActiveStages)
+                {
+                    var actualStage = requisition.Approvals.First(ra =>
+                        (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                    actualStage.ActivatedAt = DateTime.UtcNow;
+                    context.RequisitionApprovals.Update(actualStage);
+                }
+            }
             await context.SaveChangesAsync();
             return Result.Success();
         }
@@ -388,9 +427,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
 
 
 
-    public List<CurrentApprovalStage> GetCurrentApprovalStage(List<ResponsibleApprovalStage> stages)
+    public List<ResponsibleApprovalStage> GetCurrentApprovalStage(List<ResponsibleApprovalStage> stages)
     {
-        var result = new List<CurrentApprovalStage>();
+        var result = new List<ResponsibleApprovalStage>();
 
         // Sort by order first
         var sortedStages = stages.OrderBy(s => s.Order).ToList();
@@ -422,6 +461,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task CreateInitialApprovalsAsync(string modelType, Guid modelId)
     {
+        var approval = await context.Approvals.FirstOrDefaultAsync(a => a.ItemType == modelType);
+        if (approval == null) return;
+        
         var approvalStages = await context.Approvals
             .Where(s => s.ItemType == modelType)
             .SelectMany(s => s.ApprovalStages)
@@ -434,15 +476,15 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         switch (modelType)
         {
             case "RawStockRequisition" or "PackageStockRequisition" or "PurchaseRequisition" or "Requisition": 
-                await CreateRequisitionApprovals(modelId, approvalStages);
+                await CreateRequisitionApprovals(modelId, approvalStages, approval);
                 break;
 
             case "BillingSheet":
-                await CreateBillingSheetApprovals(modelId, approvalStages);
+                await CreateBillingSheetApprovals(modelId, approvalStages, approval);
                 break;
 
             case "PurchaseOrder":
-                await CreatePurchaseOrderApprovals(modelId, approvalStages);
+                await CreatePurchaseOrderApprovals(modelId, approvalStages, approval);
                 break;
 
             default:
@@ -450,39 +492,48 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         }
     }
 
-    private async Task CreateRequisitionApprovals(Guid requisitionId,  List<ApprovalStage> stages)
+    private async Task CreateRequisitionApprovals(Guid requisitionId,  List<ApprovalStage> stages, Approval approval)
     {
         var approvals = stages.Select(stage => new RequisitionApproval
         {
             Required = stage.Required,
             Order = stage.Order,
-            RequisitionId = requisitionId
+            RequisitionId = requisitionId,
+            CreatedAt = DateTime.UtcNow,
+            ApprovalId = approval.Id,
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
         }).ToList();
 
         await context.RequisitionApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
 
-    private async Task CreateBillingSheetApprovals(Guid sheetId, List<ApprovalStage> stages)
+    private async Task CreateBillingSheetApprovals(Guid sheetId, List<ApprovalStage> stages, Approval approval)
     {
         var approvals = stages.Select(stage => new BillingSheetApproval
         {
             Required = stage.Required,
             Order = stage.Order,
-            BillingSheetId = sheetId
+            BillingSheetId = sheetId,
+            CreatedAt = DateTime.UtcNow,
+            ApprovalId = approval.Id,
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
         }).ToList();
 
         await context.BillingSheetApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
 
-    private async Task CreatePurchaseOrderApprovals(Guid orderId, List<ApprovalStage> stages)
+    private async Task CreatePurchaseOrderApprovals(Guid orderId, List<ApprovalStage> stages, Approval approval)
     {
         var approvals = stages.Select(stage => new PurchaseOrderApproval
         {
             Required = stage.Required,
             Order = stage.Order,
-            PurchaseOrderId = orderId
+            PurchaseOrderId = orderId,
+            CreatedAt = DateTime.UtcNow,
+            ApprovalId = approval.Id,
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
         }).ToList();
 
         await context.PurchaseOrderApprovals.AddRangeAsync(approvals);
@@ -520,5 +571,198 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             })
             .ToList();
     }
+    
+    public async Task ProcessApprovalEscalations()
+    {
+        var approvalsWithEscalation = await context.Approvals
+            .ToListAsync();
 
+        // Get entities that are not fully approved
+        var unapprovedRequisitions = await context.Requisitions
+            .Where(r => !r.Approved)
+            .Include(requisition => requisition.Approvals)
+            .ToListAsync();
+
+        var unapprovedBillingSheets = await context.BillingSheets
+            .Where(r => !r.Approved)
+            .Include(requisition => requisition.Approvals)
+            .ToListAsync();
+
+        var unapprovedPurchaseOrders = await context.PurchaseOrders
+            .Where(r => !r.Approved)
+            .Include(requisition => requisition.Approvals)
+            .ToListAsync();
+
+        foreach (var approval in approvalsWithEscalation)
+        {
+            switch (approval.ItemType)
+            {
+                case "PurchaseRequisition":
+                case "StockRequisition":
+                    var requisition = unapprovedRequisitions.FirstOrDefault(r => r.Approvals.Any(a => a.Approval.Id == approval.Id));
+                    if (requisition != null)
+                    {
+                        await ProcessRequisitionEscalations(requisition.Id, approval.EscalationDuration);
+                    }
+                    break;
+                case "BillingSheet":
+                    var billingSheet = unapprovedBillingSheets.FirstOrDefault(bs => bs.Approvals.Any(a => a.Approval.Id == approval.Id));
+                    if (billingSheet != null)
+                    {
+                        await ProcessBillingSheetEscalations(billingSheet.Id, approval.EscalationDuration);
+                    }
+                    break;
+                case "PurchaseOrder":
+                    var purchaseOrder = unapprovedPurchaseOrders.FirstOrDefault(po => po.Approvals.Any(a => a.Approval.Id == approval.Id));
+                    if (purchaseOrder != null)
+                    {
+                        await ProcessPurchaseOrderEscalations(purchaseOrder.Id, approval.EscalationDuration);
+                    }
+                    break;
+            }
+        }
+    }
+    
+    private async Task ProcessRequisitionEscalations(Guid approvalId, TimeSpan escalationDuration)
+    {
+        var requisition = await context.Requisitions
+            .Include(r => r.Approvals)
+            .FirstOrDefaultAsync(r => r.Approvals.Any(a => a.Approval.Id == approvalId));
+
+        if (requisition == null || !requisition.Approvals.Any()) return;
+
+        var currentApprovalStages = GetCurrentApprovalStage(requisition.Approvals.Select(a => new ResponsibleApprovalStage
+        {
+            Status = a.Status,
+            Required = a.Required,
+            Order = a.Order,
+            CreatedAt = a.CreatedAt,
+            ActivatedAt = a.ActivatedAt // Include ActivatedAt
+        }).ToList());
+
+        if (currentApprovalStages.Count <= 1) return;
+
+        var stagesToAutoApprove = currentApprovalStages
+            .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue && (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
+            .ToList();
+
+        if (stagesToAutoApprove.Any())
+        {
+            foreach (var stage in stagesToAutoApprove)
+            {
+                //var actualStage = requisition.Approvals.First(a => a.Id == stage.Id);
+                stage.Status = ApprovalStatus.Approved;
+                stage.ApprovalTime = DateTime.UtcNow;
+                stage.Comments = "Approval stage exceeded escalation duration.";
+                // You might want to record who auto-approved it (e.g., a system user)
+            }
+
+            // Check if the requisition is now fully approved
+            var allRequiredApproved = requisition.Approvals
+                .Where(s => s.Required)
+                .All(s => s.Status == ApprovalStatus.Approved);
+
+            if (allRequiredApproved)
+            {
+                requisition.Approved = true;
+            }
+
+            context.Requisitions.Update(requisition);
+            await context.SaveChangesAsync();
+        }
+    }
+    private async Task ProcessBillingSheetEscalations(Guid billingSheetId, TimeSpan escalationDuration)
+    {
+        var billingSheet = await context.BillingSheets
+            .Include(bs => bs.Approvals)
+            .FirstOrDefaultAsync(bs => bs.Id == billingSheetId); // Use billingSheetId directly
+
+        if (billingSheet == null || !billingSheet.Approvals.Any()) return;
+
+        var currentApprovalStages = GetCurrentApprovalStage(billingSheet.Approvals.Select(a => new ResponsibleApprovalStage
+        {
+            Status = a.Status,
+            Required = a.Required,
+            Order = a.Order,
+            CreatedAt = a.CreatedAt,
+            ActivatedAt = a.ActivatedAt
+        }).ToList());
+
+        if (currentApprovalStages.Count <= 1) return;
+
+        var stagesToAutoApprove = currentApprovalStages
+            .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue && (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
+            .ToList();
+
+        if (stagesToAutoApprove.Any())
+        {
+            foreach (var stage in stagesToAutoApprove)
+            {
+                //var actualStage = billingSheet.Approvals.First(a => a.Id == stage.Id);
+                stage.Status = ApprovalStatus.Approved;
+                stage.ApprovalTime = DateTime.UtcNow;
+                stage.Comments = "Approval stage exceeded escalation duration.";
+            }
+
+            var allRequiredApproved = billingSheet.Approvals
+                .Where(s => s.Required)
+                .All(s => s.Status == ApprovalStatus.Approved);
+
+            if (allRequiredApproved)
+            {
+                billingSheet.Approved = true;
+            }
+
+            context.BillingSheets.Update(billingSheet);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private async Task ProcessPurchaseOrderEscalations(Guid purchaseOrderId, TimeSpan escalationDuration)
+    {
+        var purchaseOrder = await context.PurchaseOrders
+            .Include(po => po.Approvals)
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId); // Use purchaseOrderId directly
+
+        if (purchaseOrder == null || !purchaseOrder.Approvals.Any()) return;
+
+        var currentApprovalStages = GetCurrentApprovalStage(purchaseOrder.Approvals.Select(a =>
+            new ResponsibleApprovalStage
+            {
+                Status = a.Status,
+                Required = a.Required,
+                Order = a.Order,
+                CreatedAt = a.CreatedAt,
+                ActivatedAt = a.ActivatedAt
+            }).ToList());
+
+        if (currentApprovalStages.Count <= 1) return;
+
+        var stagesToAutoApprove = currentApprovalStages
+            .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue &&
+                        (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
+            .ToList();
+
+        if (stagesToAutoApprove.Any())
+        {
+            foreach (var stage in stagesToAutoApprove)
+            {
+                //var actualStage = purchaseOrder.Approvals.First(a => a.Id == stage.Id);
+                stage.Status = ApprovalStatus.Approved;
+                stage.ApprovalTime = DateTime.UtcNow;
+                stage.Comments = "Approval stage exceeded escalation duration.";
+            }
+
+            var allRequiredApproved = purchaseOrder.Approvals
+                .Where(s => s.Required)
+                .All(s => s.Status == ApprovalStatus.Approved);
+
+            if (allRequiredApproved)
+            {
+                purchaseOrder.Approved = true;
+            }
+
+            await context.SaveChangesAsync();
+        }
+    }
 }

@@ -60,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IBackgroundWorkerService, BackgroundWorkerService>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+        services.AddHostedService<ApprovalEscalationService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)
