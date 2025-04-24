@@ -11,7 +11,7 @@ namespace API.Controllers;
 public class EmployeeController(IEmployeeRepository repository) : ControllerBase
 {
     /// <summary>
-    /// Sends emails to employees to fill their details.
+    /// Sends emails to employees to fill in their details.
     /// </summary>
     [HttpPost("register")]
     [Authorize]

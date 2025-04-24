@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250423230432_AddingDeductionLimitLeaveType")]
+    partial class AddingDeductionLimitLeaveType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -88,9 +91,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<TimeSpan>("EscalationDuration")
-                        .HasColumnType("interval");
 
                     b.Property<string>("ItemType")
                         .HasMaxLength(100)
@@ -4619,12 +4619,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ApprovalId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("ApprovalTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -4638,9 +4632,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("Order")
                         .HasColumnType("integer");
 
@@ -4650,9 +4641,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("RoleId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("StageStartTime")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -4660,8 +4648,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ApprovalId");
 
                     b.HasIndex("ApprovedById");
 
@@ -4783,12 +4769,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ApprovalId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("ApprovalTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -4798,9 +4778,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("Comments")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Order")
                         .HasColumnType("integer");
@@ -4814,9 +4791,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("RoleId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("StageStartTime")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -4824,8 +4798,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ApprovalId");
 
                     b.HasIndex("ApprovedById");
 
@@ -5211,12 +5183,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ApprovalId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("ApprovalTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -5226,9 +5192,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("Comments")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Order")
                         .HasColumnType("integer");
@@ -5242,9 +5205,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("RoleId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("StageStartTime")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -5252,8 +5212,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ApprovalId");
 
                     b.HasIndex("ApprovedById");
 
@@ -10060,12 +10018,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheetApproval", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
-                        .WithMany()
-                        .HasForeignKey("ApprovalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
                         .WithMany()
                         .HasForeignKey("ApprovedById");
@@ -10083,8 +10035,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
-
-                    b.Navigation("Approval");
 
                     b.Navigation("ApprovedBy");
 
@@ -10146,12 +10096,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderApproval", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
-                        .WithMany()
-                        .HasForeignKey("ApprovalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
                         .WithMany()
                         .HasForeignKey("ApprovedById");
@@ -10169,8 +10113,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
-
-                    b.Navigation("Approval");
 
                     b.Navigation("ApprovedBy");
 
@@ -10457,12 +10399,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.RequisitionApproval", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
-                        .WithMany()
-                        .HasForeignKey("ApprovalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
                         .WithMany()
                         .HasForeignKey("ApprovedById");
@@ -10480,8 +10416,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
-
-                    b.Navigation("Approval");
 
                     b.Navigation("ApprovedBy");
 

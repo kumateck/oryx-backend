@@ -28,7 +28,7 @@ public class AbsenceRequestRepository(ApplicationDbContext context, IMapper mapp
         }
         
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Id == request.EmployeeId && e.LastDeletedById == null);;
+            .FirstOrDefaultAsync(e => e.Id == request.EmployeeId && e.LastDeletedById == null);
         if (existingEmployee is null)
         {
             return Error.NotFound("Employee.NotFound", "Employee not found");
