@@ -48,6 +48,8 @@ public static class DependencyInjection
         services.AddScoped<IDesignationRepository, DesignationRepository>();
         services.AddScoped<ILeaveEntitlementRepository, LeaveEntitlementRepository>();
         services.AddScoped<ILeaveTypeRepository, LeaveTypeRepository>();
+        services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
+        services.AddScoped<IAbsenceRequestRepository, AbsenceRequestRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
