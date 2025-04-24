@@ -69,7 +69,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveTypeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateLeaveType([FromRoute] Guid id, [FromBody] LeaveTypeDto leaveType)
+    public async Task<IResult> UpdateLeaveType([FromRoute] Guid id, [FromBody] CreateLeaveTypeRequest leaveType)
     {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();

@@ -129,8 +129,16 @@ public class AbsenceRequestRepository(ApplicationDbContext context, IMapper mapp
         {
             return Error.NotFound("AbsenceRequest.NotFound", "AbsenceRequest not found");
         }
-        
+        var leaveType = await context.LeaveTypes
+            .FirstOrDefaultAsync(l => l.Id == request.LeaveTypeId && l.LastDeletedById == null);
+
+        if (leaveType is null)
+        {
+            return Error.NotFound("AbsenceType.NotFound", "Absence type not found");
+        }
+
         mapper.Map(request, absenceRequest);
+        
         absenceRequest.LastUpdatedById = userId;
         absenceRequest.UpdatedAt = DateTime.UtcNow;
         

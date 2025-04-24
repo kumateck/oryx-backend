@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Designations;
 
 namespace DOMAIN.Entities.LeaveTypes;
 
@@ -18,6 +19,6 @@ public class LeaveTypeDto
     
     public bool IsActive { get; set; }
     
-    public List<Guid> DesignationList { get; set; }
+    public List<DesignationDto> DesignationList { get; set; }
 
 }

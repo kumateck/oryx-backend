@@ -149,6 +149,15 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
         
+        var leaveType = await context.LeaveTypes
+            .FirstOrDefaultAsync(l => l.Id == leaveRequest.LeaveTypeId && l.LastDeletedById == null);
+
+        if (leaveType is null)
+        {
+            return Error.NotFound("AbsenceType.NotFound", "Absence type not found");
+        }
+
+        
         mapper.Map(leaveRequest, existingLeaveRequest);
         existingLeaveRequest.LastUpdatedById = userId;
         existingLeaveRequest.UpdatedAt = DateTime.UtcNow;

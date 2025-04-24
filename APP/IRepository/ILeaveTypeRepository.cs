@@ -13,7 +13,7 @@ public interface ILeaveTypeRepository
     
     Task<Result<LeaveTypeDto>> GetLeaveType(Guid id);
     
-    Task<Result> UpdateLeaveType(Guid id, LeaveTypeDto leaveTypeDto, Guid userId);
+    Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest leaveTypeDto, Guid userId);
     
     Task<Result> DeleteLeaveType(Guid id, Guid userId);
 }
