@@ -7,6 +7,7 @@ public class LeaveTypeDto
 {
     
     public Guid Id { get; set; }
+    
     public string Name { get; set; }
     
     public bool IsPaid { get; set; }
@@ -18,7 +19,7 @@ public class LeaveTypeDto
     public int NumberOfDays { get; set; }
     
     public bool IsActive { get; set; }
-    
-    public List<DesignationDto> DesignationList { get; set; }
+
+    public List<DesignationDto> DesignationList { get; set; } = [];
 
 }

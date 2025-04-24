@@ -16,8 +16,5 @@ public class LeaveType : BaseEntity
     public int NumberOfDays { get; set; }
     
     public bool IsActive { get; set; }
-    
-    public List<Guid> DesignationList { get; set; }
-    
-    public Designation Designation { get; set; }
+    public List<Designation> Designations { get; set; }
 }
