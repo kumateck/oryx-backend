@@ -10,6 +10,8 @@ public class CreateLeaveTypeRequest
     
     [Required] public bool DeductFromBalance {get; set;}
     
+    public int? DeductionLimit { get; set; }
+    
     [Range(1, 366, ErrorMessage = "Days must be between 1 and 366.")] [Required]
     public int NumberOfDays { get; set; }
     
