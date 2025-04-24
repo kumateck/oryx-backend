@@ -12,35 +12,76 @@ namespace APP.Repository;
 public class AbsenceRequestRepository(ApplicationDbContext context, IMapper mapper) : IAbsenceRequestRepository
 {
     public async Task<Result<Guid>> CreateAbsenceRequest(CreateAbsenceRequest request, Guid userId)
-    {
-        var existingLeaveRequest = await context.LeaveRequests
-            .FirstOrDefaultAsync(l => l.StartDate == request.StartDate
-                                      && l.EndDate == request.EndDate && l.EmployeeId == request.EmployeeId);
+    { 
         
-        if (existingLeaveRequest != null)
-        {
-            return Error.Validation("LeaveRequest.Exists", "Leave request already exists.");
-        }
+        var totalDays = (request.EndDate - request.StartDate).TotalDays + 1;
+        if (totalDays < 3)
+            return Error.Validation("AbsenceRequest.InvalidDuration", "Absence requests must be at least 3 days.");
 
-        if (request.StartDate > request.EndDate)
-        {
-            return Error.Validation("LeaveRequest.InvalidDates", "Start date must be before end date.");
-        }
-        
-        var existingEmployee = await context.Employees
+        // Check for existing absence request
+        var exists = await context.AbsenceRequests
+            .AnyAsync(a => a.EmployeeId == request.EmployeeId &&
+                           a.StartDate == request.StartDate &&
+                           a.EndDate == request.EndDate);
+        if (exists)
+            return Error.Validation("AbsenceRequest.Exists", "An absence request already exists for this period.");
+
+        // Check employee
+        var employee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == request.EmployeeId && e.LastDeletedById == null);
-        if (existingEmployee is null)
+        if (employee is null)
+            return Error.NotFound("Employee.NotFound", "Employee not found.");
+
+        var absenceType = await context.LeaveTypes.FindAsync(request.LeaveTypeId);
+        if (absenceType is null)
+            return Error.NotFound("AbsenceType.NotFound", "Absence type not found.");
+
+        var paidDays = 0;
+        var unpaidDays = 0;
+
+        if (absenceType.IsPaid)
         {
-            return Error.NotFound("Employee.NotFound", "Employee not found");
+            var balanceDeducted = 0;
+            if (absenceType.DeductFromBalance)
+            {
+                if (absenceType.DeductionLimit > 0)
+                {
+                    paidDays = (int)Math.Min(totalDays, absenceType.DeductionLimit ?? 0);
+                    var remaining = (int) totalDays - paidDays;
+
+                    balanceDeducted = Math.Min(employee.AnnualLeaveDays, remaining);
+                    unpaidDays = remaining - balanceDeducted;
+
+                    employee.AnnualLeaveDays -= balanceDeducted;
+                }
+                else
+                {
+                    balanceDeducted = Math.Min(employee.AnnualLeaveDays, (int)totalDays);
+                    unpaidDays = (int)totalDays - balanceDeducted;
+
+                    paidDays = balanceDeducted;
+                    employee.AnnualLeaveDays -= balanceDeducted;
+                }
+            }
+            else
+            {
+                paidDays = (int)totalDays;
+                unpaidDays = 0;
+                balanceDeducted = 0;
+            }
         }
-        
+        else
+        {
+            paidDays = 0;
+            unpaidDays = (int)totalDays;
+        }
         var requestEntity = mapper.Map<AbsenceRequest>(request);
         requestEntity.CreatedById = userId;
         requestEntity.CreatedAt = DateTime.UtcNow;
-        
+            
         await context.AbsenceRequests.AddAsync(requestEntity);
         await context.SaveChangesAsync();
-        
+            
         return requestEntity.Id;
     }
 
