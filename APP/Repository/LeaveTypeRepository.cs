@@ -31,7 +31,9 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
     public async Task<Result<Paginateable<IEnumerable<LeaveTypeDto>>>> GetLeaveTypes(int page, int pageSize, string searchQuery = null)
     {
-        var query = context.LeaveTypes.AsQueryable();
+        var query = context.LeaveTypes
+            .Include(d => d.Designation)
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -58,9 +60,10 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success(leaveTypeDto);
     }
 
-    public async Task<Result> UpdateLeaveType(Guid id, LeaveTypeDto leaveTypeDto, Guid userId)
+    public async Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest request, Guid userId)
     {
         var leaveType = await context.LeaveTypes
+            .Include(d => d.Designation)
             .FirstOrDefaultAsync(l => l.Id == id && l.LastDeletedById == userId);
         
         if (leaveType == null)
@@ -68,7 +71,16 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
             return Error.NotFound("LeaveType.NotFound", "LeaveType not found");
         }
         
-        mapper.Map(leaveTypeDto, leaveType);
+        mapper.Map(request, leaveType);
+
+        var desingations = await context.Designations
+            .Where(d => request.DesignationList.Contains(d.Id))
+            .ToListAsync();
+
+        if (desingations.Count != request.DesignationList.Count)
+        {
+            return Error.Validation("LeaveType.InvalidDesignations", "One or more designation IDs are invalid.");
+        }
         leaveType.UpdatedAt = DateTime.UtcNow;
         leaveType.LastDeletedById = userId;
         

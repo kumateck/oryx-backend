@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Designations;
 
 namespace DOMAIN.Entities.LeaveTypes;
 
@@ -17,4 +18,6 @@ public class LeaveType : BaseEntity
     public bool IsActive { get; set; }
     
     public List<Guid> DesignationList { get; set; }
+    
+    public Designation Designation { get; set; }
 }
