@@ -79,7 +79,7 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
     /// <summary>
     /// Deletes a specific shift type by its ID.
     /// </summary>
-    [HttpDelete]
+    [HttpDelete("{id:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
