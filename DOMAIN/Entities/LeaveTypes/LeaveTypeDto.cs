@@ -20,6 +20,6 @@ public class LeaveTypeDto
     
     public bool IsActive { get; set; }
 
-    public List<DesignationDto> DesignationList { get; set; } = [];
+    public List<DesignationDto> Designations { get; set; } = [];
 
 }
