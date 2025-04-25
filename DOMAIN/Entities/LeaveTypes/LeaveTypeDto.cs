@@ -5,7 +5,6 @@ namespace DOMAIN.Entities.LeaveTypes;
 
 public class LeaveTypeDto
 {
-    
     public Guid Id { get; set; }
     
     public string Name { get; set; }

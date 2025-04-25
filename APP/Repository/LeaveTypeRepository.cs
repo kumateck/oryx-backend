@@ -18,10 +18,17 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.Validation("LeaveType.Exists","Leave Type already exists.");
         }
+
+        var designations = await context.Designations
+            .Where(d => leaveTypeDto.DesignationList.Contains(d.Id))
+            .ToListAsync();
+        
         
         var leaveType = mapper.Map<LeaveType>(leaveTypeDto);
         leaveType.CreatedById = userId;
         leaveType.CreatedAt = DateTime.UtcNow;
+        
+        leaveType.Designations = designations;
         
         await context.LeaveTypes.AddAsync(leaveType);
         await context.SaveChangesAsync();
