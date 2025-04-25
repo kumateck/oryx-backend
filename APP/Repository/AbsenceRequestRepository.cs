@@ -15,8 +15,8 @@ public class AbsenceRequestRepository(ApplicationDbContext context, IMapper mapp
     { 
         
         var totalDays = (request.EndDate - request.StartDate).TotalDays + 1;
-        if (totalDays < 3)
-            return Error.Validation("AbsenceRequest.InvalidDuration", "Absence requests must be at least 3 days.");
+        if (totalDays > 2)
+            return Error.Validation("AbsenceRequest.InvalidDuration", "Absence requests must be at most 2 days.");
 
         // Check for existing absence request
         var exists = await context.AbsenceRequests
@@ -25,8 +25,7 @@ public class AbsenceRequestRepository(ApplicationDbContext context, IMapper mapp
                            a.EndDate == request.EndDate);
         if (exists)
             return Error.Validation("AbsenceRequest.Exists", "An absence request already exists for this period.");
-
-        // Check employee
+        
         var employee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == request.EmployeeId && e.LastDeletedById == null);
         if (employee is null)

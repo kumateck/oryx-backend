@@ -32,7 +32,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Paginateable<IEnumerable<LeaveTypeDto>>>> GetLeaveTypes(int page, int pageSize, string searchQuery = null)
     {
         var query = context.LeaveTypes
-            .Include(d => d.Designation)
+            .Include(d => d.Designations)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -63,7 +63,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest request, Guid userId)
     {
         var leaveType = await context.LeaveTypes
-            .Include(d => d.Designation)
+            .Include(d => d.Designations)
             .FirstOrDefaultAsync(l => l.Id == id && l.LastDeletedById == userId);
         
         if (leaveType == null)

@@ -6,18 +6,12 @@ namespace DOMAIN.Entities.LeaveTypes;
 public class LeaveType : BaseEntity
 {
     public string Name { get; set; }
-    
     public bool IsPaid { get; set; }
-    
     public bool DeductFromBalance {get; set;}
-    
     public int? DeductionLimit { get; set; }
     
     public int NumberOfDays { get; set; }
     
     public bool IsActive { get; set; }
-    
-    public List<Guid> DesignationList { get; set; }
-    
-    public Designation Designation { get; set; }
+    public List<Designation> Designations { get; set; }
 }
