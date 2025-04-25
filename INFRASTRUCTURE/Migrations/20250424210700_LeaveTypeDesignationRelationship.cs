@@ -20,15 +20,15 @@ namespace INFRASTRUCTURE.Migrations
                 name: "DesignationLeaveType",
                 columns: table => new
                 {
-                    DesignationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DesignationsId = table.Column<Guid>(type: "uuid", nullable: false),
                     LeaveTypesId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DesignationLeaveType", x => new { x.DesignationId, x.LeaveTypesId });
+                    table.PrimaryKey("PK_DesignationLeaveType", x => new { x.DesignationsId, x.LeaveTypesId });
                     table.ForeignKey(
                         name: "FK_DesignationLeaveType_Designations_DesignationListId",
-                        column: x => x.DesignationId,
+                        column: x => x.DesignationsId,
                         principalTable: "Designations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
