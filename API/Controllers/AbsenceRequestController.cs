@@ -21,7 +21,7 @@ public class AbsenceRequestController(IAbsenceRequestRepository repository): Con
     [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateAbsenceRequest([FromBody] CreateAbsenceRequest leaveRequest)
-    {
+    { 
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
@@ -29,6 +29,7 @@ public class AbsenceRequestController(IAbsenceRequestRepository repository): Con
         return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
 
     }
+    
 
     /// <summary>
     /// Returns a paginated list of absence requests based on a search criteria.

@@ -13,10 +13,14 @@ public class AbsenceRequestRepository(ApplicationDbContext context, IMapper mapp
 {
     public async Task<Result<Guid>> CreateAbsenceRequest(CreateAbsenceRequest request, Guid userId)
     { 
+        if (request.StartDate > request.EndDate)
+            return Error.Validation("AbsenceRequest.InvalidRange", "Start date must be before end date.");
         
         var totalDays = (request.EndDate - request.StartDate).TotalDays + 1;
         if (totalDays > 2)
+        {
             return Error.Validation("AbsenceRequest.InvalidDuration", "Absence requests must be at most 2 days.");
+        }
 
         // Check for existing absence request
         var exists = await context.AbsenceRequests
@@ -112,6 +116,8 @@ public class AbsenceRequestRepository(ApplicationDbContext context, IMapper mapp
     public async Task<Result<AbsenceRequestDto>> GetAbsenceRequest(Guid id)
     {
         var absenceRequest = await context.AbsenceRequests
+            .Include(l => l.Employee)
+            .Include(l => l.LeaveType)
             .FirstOrDefaultAsync(l => l.Id == id && l.LastDeletedById == null);
         
         return absenceRequest == null ? 

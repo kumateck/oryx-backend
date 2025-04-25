@@ -1,5 +1,8 @@
 
 
+using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.LeaveTypes;
+
 namespace DOMAIN.Entities.LeaveRequests;
 
 public class LeaveRequestDto
@@ -7,6 +10,8 @@ public class LeaveRequestDto
    public Guid Id { get; set; }
    
    public Guid LeaveTypeId { get; set; } 
+   
+   public LeaveTypeDto LeaveType { get; set; }
    
    public DateTime StartDate { get; set; }
     
@@ -17,5 +22,7 @@ public class LeaveRequestDto
    public string ContactPersonNumber { get; set; }
     
    public Guid EmployeeId { get; set; }
+   
+   public EmployeeDto Employee { get; set; }
 
 }

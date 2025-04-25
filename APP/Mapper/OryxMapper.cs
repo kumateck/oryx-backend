@@ -45,6 +45,7 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Siblings;
@@ -657,7 +658,14 @@ public class OryxMapper : Profile
         #region Absence Requests
 
         CreateMap<CreateAbsenceRequest, AbsenceRequest>();
-        CreateMap<AbsenceRequestDto, AbsenceRequest>();
+        CreateMap<AbsenceRequestDto, AbsenceRequest>().ReverseMap();
+
+        #endregion
+
+        #region Shift Types
+
+        CreateMap<CreateShiftTypeRequest, ShiftType>();
+        CreateMap<ShiftTypeDto, ShiftType>().ReverseMap();
 
         #endregion
         
