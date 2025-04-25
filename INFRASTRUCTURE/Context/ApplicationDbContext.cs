@@ -37,6 +37,8 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.ShiftSchedules;
+using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
@@ -371,8 +373,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LeaveRequest> LeaveRequests { get; set; }
     
     public DbSet<AbsenceRequest> AbsenceRequests { get; set; }
-
+    
     #endregion
+
+    #region Shifts
+
+    public DbSet<ShiftType> ShiftTypes { get; set; }
+    
+    #endregion
+
+    // #region Shift Schedule
+    //
+    // public DbSet<ShiftSchedule> ShiftSchedules { get; set; }
+    //
+    // #endregion
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
