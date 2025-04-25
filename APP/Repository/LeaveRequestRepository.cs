@@ -119,6 +119,8 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
     public async Task<Result<LeaveRequestDto>> GetLeaveRequest(Guid leaveRequestId)
     {
        var leaveRequest = await context.LeaveRequests
+           .Include(l => l.LeaveType)
+           .Include(l => l.Employee)
            .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);
        
        return leaveRequest is null ? 

@@ -650,7 +650,7 @@ public class OryxMapper : Profile
         #region Leave Requests
 
         CreateMap<CreateLeaveRequest, LeaveRequest>();
-        CreateMap<LeaveRequestDto, LeaveRequest>();
+        CreateMap<LeaveRequestDto, LeaveRequest>().ReverseMap();
 
         #endregion
 

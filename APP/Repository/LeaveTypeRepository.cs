@@ -58,6 +58,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<LeaveTypeDto>> GetLeaveType(Guid id)
     {
         var leaveType = await context.LeaveTypes
+            .Include(d => d.Designations)
             .FirstOrDefaultAsync(l=> l.Id == id && l.LastDeletedById == null);
         if (leaveType == null)
         {
