@@ -45,6 +45,7 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
@@ -591,12 +592,8 @@ public class OryxMapper : Profile
         CreateMap<AssignEmployeeDto, Employee>()
             .ForMember(dest => dest.Department, opt => opt.Ignore())
             .ForMember(dest => dest.Designation, opt => opt.Ignore());
-        
-        CreateMap<Employee, EmployeeDto>()
-            .ForMember(dest => dest.DesignationName, opt => opt.MapFrom(src => src.Designation.Name))
-            .ForMember(user => user.Avatar,
-                opt => opt.MapFrom<EmployeeAvatarResolver>())
-            .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department.Name));
+
+        CreateMap<Employee, EmployeeDto>();
 
         CreateMap<EmployeeUserDto, Employee>();
         
@@ -668,6 +665,13 @@ public class OryxMapper : Profile
         CreateMap<ShiftTypeDto, ShiftType>().ReverseMap();
 
         #endregion
+
+        // #region Shift Schedules
+        //
+        // CreateMap<ShiftScheduleDto, ShiftSchedule>();
+        // CreateMap<CreateShiftScheduleRequest, ShiftSchedule>();
+        //
+        // #endregion
         
         #region ActivityLog
 

@@ -341,8 +341,8 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     var body = emailTemplate
         .Replace("{Name}", employee.FullName)
         .Replace("{Email}", employee.Email)
-        .Replace("{DesignationName}", employee.Designation?.Name)
-        .Replace("{DepartmentName}", employee.Department?.Name);
+        .Replace("{DesignationName}", employee.Designation.Name)
+        .Replace("{DepartmentName}", employee.Department.Name);
 
     const int maxRetries = 3;
     var attempts = 0;

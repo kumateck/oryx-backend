@@ -50,7 +50,6 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
             query = query.WhereSearch(searchQuery, q => q.ShiftName);
         }
         
-        
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,

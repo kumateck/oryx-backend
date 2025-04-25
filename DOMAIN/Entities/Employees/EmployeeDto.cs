@@ -1,4 +1,6 @@
 using DOMAIN.Entities.Children;
+using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
@@ -46,10 +48,10 @@ public class EmployeeDto
     public EmployeeType Type { get; set; } 
     
     public DateTime DateEmployed { get; set; }
-
-    public string DesignationName { get; set; }
     
-    public string DepartmentName { get; set; }
+    public DesignationDto Designation { get; set; }
+    
+    public DepartmentDto Department { get; set; }
 
     public PersonDto Mother { get; set; }
     public PersonDto Father { get; set; }
