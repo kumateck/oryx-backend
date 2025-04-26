@@ -97,6 +97,5 @@ jobs:
             --env SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }} \
             --env MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_INITDB_ROOT_USERNAME }} \
             --env MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_INITDB_ROOT_PASSWORD }} \
-            --env CONTAINER_PORT=${{ env.CONTAINER_PORT }} \ 
             "${DOCKER_IMAGE_NAME}:latest"
           EOF
