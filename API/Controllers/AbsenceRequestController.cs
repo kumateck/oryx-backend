@@ -1,85 +1,78 @@
-using DOMAIN.Entities.AbsenceRequests;
-
-namespace API.Controllers;
-
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.AbsenceRequests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+namespace API.Controllers;
 
-[ApiController]
 [Route("api/v{version:apiVersion}/absence-request")]
+[ApiController]
 public class AbsenceRequestController(IAbsenceRequestRepository repository): ControllerBase
 {
 
     /// <summary>
-    /// Creates a absence request.
+    /// Creates an absence request
     /// </summary>
     [HttpPost]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateAbsenceRequest([FromBody] CreateAbsenceRequest leaveRequest)
-    { 
-        var userId = (string) HttpContext.Items["Sub"];
+    public async Task<IResult> CreateAbsenceRequest(CreateAbsenceRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.CreateAbsenceRequest(leaveRequest, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
-
+        var result = await repository.CreateAbsenceRequest(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
 
     /// <summary>
-    /// Returns a paginated list of absence requests based on a search criteria.
+    /// Retrieves a paginated list of absence requests based on search criteria.
     /// </summary>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<AbsenceRequestDto>>))]
-    public async Task<IResult> GetAbsenceRequests([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    public async Task<IResult> GetAbsenceRequests(int page, int pageSize, string searchQuery)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetAbsenceRequests(page, pageSize, searchQuery);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
-
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
-    /// Retrieves the details of a specific absence request.
+    /// Retrieves the details of a specific absence request by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AbsenceRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetAbsenceRequest([FromRoute] Guid id)
+    public async Task<IResult> GetAbsenceRequest(Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetAbsenceRequest(id);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
-
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-
+    
     /// <summary>
     /// Updates the details of an existing absence request.
     /// </summary>
     [HttpPut("{id:guid}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(AbsenceRequestDto))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateAbsenceRequest([FromRoute] Guid id, [FromBody] CreateAbsenceRequest leaveRequest)
+    public async Task<IResult> UpdateAbsenceRequest(Guid id, CreateAbsenceRequest request)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.UpdateAbsenceRequest(id, leaveRequest, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : TypedResults.NotFound();
-
+        var result = await repository.UpdateAbsenceRequest(id, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -89,12 +82,13 @@ public class AbsenceRequestController(IAbsenceRequestRepository repository): Con
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteAbsenceRequest([FromRoute] Guid id)
+    public async Task<IResult> DeleteAbsenceRequest(Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.DeleteAbsenceRequest(id, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
 }

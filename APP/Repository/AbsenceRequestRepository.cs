@@ -15,20 +15,17 @@ public class AbsenceRequestRepository(ApplicationDbContext context, IMapper mapp
     { 
         if (request.StartDate > request.EndDate)
             return Error.Validation("AbsenceRequest.InvalidRange", "Start date must be before end date.");
-        
+
+        // if (request.StartDate.Date <= DateTime.UtcNow.Date || request.EndDate.Date >= DateTime.UtcNow.Date)
+        // {
+        //     return Error.Validation("AbsenceRequest.InvalidRange", "Start date must be after today.");
+        // }
+        //
         var totalDays = (request.EndDate - request.StartDate).TotalDays + 1;
         if (totalDays > 2)
         {
             return Error.Validation("AbsenceRequest.InvalidDuration", "Absence requests must be at most 2 days.");
         }
-
-        // Check for existing absence request
-        var exists = await context.AbsenceRequests
-            .AnyAsync(a => a.EmployeeId == request.EmployeeId &&
-                           a.StartDate == request.StartDate &&
-                           a.EndDate == request.EndDate);
-        if (exists)
-            return Error.Validation("AbsenceRequest.Exists", "An absence request already exists for this period.");
         
         var employee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == request.EmployeeId && e.LastDeletedById == null);
@@ -38,6 +35,14 @@ public class AbsenceRequestRepository(ApplicationDbContext context, IMapper mapp
         var absenceType = await context.LeaveTypes.FindAsync(request.LeaveTypeId);
         if (absenceType is null)
             return Error.NotFound("AbsenceType.NotFound", "Absence type not found.");
+
+        var exists = await context.AbsenceRequests
+            .AnyAsync(a => a.EmployeeId == request.EmployeeId &&
+                           a.StartDate == request.StartDate &&
+                           a.EndDate == request.EndDate);
+        if (exists)
+            return Error.Validation("AbsenceRequest.Exists", "An absence request already exists for this period.");
+        
 
         var paidDays = 0;
         var unpaidDays = 0;
