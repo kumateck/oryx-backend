@@ -387,6 +387,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     // public DbSet<ShiftSchedule> ShiftSchedules { get; set; }
     //
     // #endregion
+
+    #region Exit Pass Requests
+    
+
+    #endregion
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType

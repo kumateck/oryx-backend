@@ -1,94 +1,96 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
-using DOMAIN.Entities.AbsenceRequests;
+using DOMAIN.Entities.ShiftSchedules;
+using DOMAIN.Entities.ShiftTypes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("api/v{version:apiVersion}/absence-request")]
 [ApiController]
-public class AbsenceRequestController(IAbsenceRequestRepository repository): ControllerBase
+[Route("api/v{version:apiVersion}/shift-schedule")]
+public class ShiftScheduleController(IShiftScheduleRepository repository): ControllerBase
 {
-
     /// <summary>
-    /// Creates an absence request
+    /// Creates a new shift schedule.
     /// </summary>
     [HttpPost]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateAbsenceRequest(CreateAbsenceRequest request)
+    public async Task<IResult> CreateShiftSchedule([FromBody] CreateShiftScheduleRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.CreateAbsenceRequest(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        var result = await repository.CreateShiftSchedule(request, Guid.Parse(userId));
+        
+        return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
     }
 
     /// <summary>
-    /// Retrieves a paginated list of absence requests based on search criteria.
+    /// Returns a paginated list of shift schedules based on a search criteria.
     /// </summary>
     [HttpGet]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<AbsenceRequestDto>>))]
-    public async Task<IResult> GetAbsenceRequests(int page, int pageSize, string searchQuery)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShiftScheduleDto>>))]
+    public async Task<IResult> GetShiftSchedules([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetAbsenceRequests(page, pageSize, searchQuery);
+        var result = await repository.GetShiftSchedules(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
-    /// Retrieves the details of a specific absence request by its ID.
+    /// Returns a shift schedule by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AbsenceRequestDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShiftScheduleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetAbsenceRequest(Guid id)
+    public async Task<IResult> GetShiftSchedule(Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.GetAbsenceRequest(id);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+
+        var result = await repository.GetShiftSchedule(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
     }
     
     /// <summary>
-    /// Updates the details of an existing absence request.
+    /// Updates the details of an existing shift schedule.
     /// </summary>
     [HttpPut("{id:guid}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(AbsenceRequestDto))]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ShiftScheduleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateAbsenceRequest(Guid id, CreateAbsenceRequest request)
+    public async Task<IResult> UpdateShiftSchedule([FromRoute] Guid id, [FromBody] CreateShiftScheduleRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.UpdateAbsenceRequest(id, request, Guid.Parse(userId));
+        var result = await repository.UpdateShiftSchedule(id, request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
-    /// Deletes a specific absence request by its ID.
+    /// Deletes a specific shift schedule by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteAbsenceRequest(Guid id)
+    public async Task<IResult> DeleteShiftSchedule(Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.DeleteAbsenceRequest(id, Guid.Parse(userId));
+        var result = await repository.DeleteShiftSchedule(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
     
 }
