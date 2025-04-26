@@ -31,6 +31,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
+          context: .
           push: true
           tags: ${{ env.DOCKER_IMAGE_NAME }}:latest
           build-args: |
@@ -43,6 +44,8 @@ jobs:
             SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
             MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_INITDB_ROOT_USERNAME }}
             MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache
+          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache,mode=max
 
   deploy:
     runs-on: ubuntu-latest

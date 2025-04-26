@@ -77,7 +77,10 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 //add memory caching
-builder.Services.AddMemoryCache(); 
+builder.Services.AddMemoryCache(options =>
+{
+    options.SizeLimit = 1024 * 1024 * 100;
+});
 
 //Add Cors
 builder.Services.AddCors(options =>
@@ -243,12 +246,8 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseMiddleware<ActivityLogMiddleware>();
 
-app.SeedData();
-
 app.UseRouting();
 
-// Apply rate limiting middleware
-//app.UseRateLimiter();
 
 app.UseStaticFiles();
 

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Email;
@@ -239,9 +240,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
+            Debug.Assert(stockRequisition.ProductId != null, "stockRequisition.ProductId != null");
+            Debug.Assert(stockRequisition.ProductionScheduleId != null, "stockRequisition.ProductionScheduleId != null");
             var batchesToConsume =
                 await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
-                    productionWarehouse.Id, stockRequisition.ProductionScheduleId, stockRequisition.ProductId);
+                    productionWarehouse.Id, stockRequisition.ProductionScheduleId.Value, stockRequisition.ProductId.Value);
             
             foreach (var batch in batchesToConsume)
             {

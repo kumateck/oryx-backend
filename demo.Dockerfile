@@ -1,15 +1,33 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-env
+### --- Build Stage ---
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 WORKDIR /app
+
+# Copy everything
 COPY . .
 
+# Install global tools needed during build
 RUN dotnet tool install -g dotnet-ef
 
-RUN apt-get update && apt-get install -y --allow-unauthenticated libgdiplus
+# Install dependencies needed for build (like libgdiplus)
+RUN apt-get update && apt-get install -y --no-install-recommends libgdiplus \
+    && rm -rf /var/lib/apt/lists/*
 
-# Define build arguments
+# Publish the application
+RUN dotnet publish API/API.csproj -c Release -o /app/out
+
+### --- Runtime Stage ---
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+
+WORKDIR /app
+
+# Install runtime dependencies (if needed again)
+RUN apt-get update && apt-get install -y --no-install-recommends libgdiplus \
+    && rm -rf /var/lib/apt/lists/*
+
+# Define build arguments (optional if used during build, not runtime)
 ARG DB_USERNAME
 ARG DB_PASSWORD
 ARG ACCESS_KEY
@@ -22,8 +40,7 @@ ARG MONGO_INITDB_ROOT_USERNAME
 ARG MONGO_INITDB_ROOT_PASSWORD
 
 # Set environment variables
-ENV DOTNET_USE_POLLING_FILE_WATCHER=1
-ENV PATH=$PATH:/root/.dotnet/tools
+ENV ASPNETCORE_URLS=http://+:${CONTAINER_PORT:-5006}
 ENV connectionString="Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=oryxdbdemo"
 ENV redisConnectionString="redis:6379,abortConnect=false"
 ENV MINIO_ENDPOINT="minio"
@@ -31,7 +48,7 @@ ENV MINIO_ACCESS_KEY="${ACCESS_KEY}"
 ENV MINIO_SECRET_KEY="${SECRET_KEY}"
 ENV MINIO_PORT=9000
 ENV REDIS_HOST="redis"
-ENV REDIS_PORT=6379 
+ENV REDIS_PORT=6379
 ENV DEFAULT_USER_PASSWORD="${DEFAULT_PASSWORD}"
 ENV SMTP_USERNAME="${SMTP_USERNAME}"
 ENV SMTP_PASSWORD="${SMTP_PASSWORD}"
@@ -39,4 +56,11 @@ ENV CLIENT_BASE_URL="http://164.90.142.68:3006"
 ENV MONGO_DB_CONNECTION_STRING="mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017"
 ENV Environment="demo"
 
-ENTRYPOINT ["dotnet", "watch", "run", "--urls=http://+:5006", "--project", "API/API.csproj"]
+# Copy published output
+COPY --from=build /app/out .
+
+# Expose the port (for documentation purposes)
+EXPOSE 5006
+
+# Run the app
+ENTRYPOINT ["dotnet", "API.dll"]

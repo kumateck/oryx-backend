@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -277,7 +278,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                                 {
                                     var batchesToConsume =
                                         await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
-                                            productionWarehouse.Id, stockRequisition.ProductionScheduleId, stockRequisition.ProductId);
+                                            productionWarehouse.Id, stockRequisition.ProductionScheduleId.Value, stockRequisition.ProductId.Value);
 
                                     foreach (var batch in batchesToConsume)
                                     {
@@ -1786,11 +1787,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         {
             foreach (var item in stockRequisition.Items)
             {
+                Debug.Assert(stockRequisition.ProductionScheduleId != null, "stockRequisition.ProductionScheduleId != null");
+                Debug.Assert(stockRequisition.ProductId != null, "stockRequisition.ProductId != null");
                 var batchesToConsume =
                     await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
                         item.MaterialId,
-                        productionWarehouse.Id, stockRequisition.ProductionScheduleId,
-                        stockRequisition.ProductId);
+                        productionWarehouse.Id, stockRequisition.ProductionScheduleId.Value,
+                        stockRequisition.ProductId.Value);
 
                 var materialReturnNote = new MaterialReturnNote
                 {

@@ -489,4 +489,37 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetStockByDepartment(materialId);
         return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
     }
+    
+    /// <summary>
+    /// Creates a new material department.
+    /// </summary>
+    /// <param name="materialDepartments">The list of material departments to create.</param>
+    /// <param name="departmentId">The ID of the department.</param>
+    /// <returns>Returns the result of the creation process.</returns>
+    [HttpPost("department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateMaterialDepartment([FromBody] List<CreateMaterialDepartment> materialDepartments, Guid departmentId)
+    {
+        var result = await repository.CreateMaterialDepartment(materialDepartments, departmentId);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of material departments.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="departmentId">Optional department ID filter.</param>
+    /// <returns>Returns a paginated list of material departments.</returns>
+    [HttpGet("department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentDto>>))]
+    public async Task<IResult> GetMaterialDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] Guid? departmentId = null)
+    {
+        var result = await repository.GetMaterialDepartments(page, pageSize, searchQuery, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

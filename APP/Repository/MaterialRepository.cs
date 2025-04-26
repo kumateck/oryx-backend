@@ -13,6 +13,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Win32.SafeHandles;
 using OfficeOpenXml;
 using SHARED.Requests;
 
@@ -103,7 +104,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task<Result> UpdateReOrderLevel(Guid materialId, int reOrderLevel, Guid userId)
     {
-        var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return UserErrors.NotFound(userId);
+        
+        
+        var material = await context.MaterialDepartments.FirstOrDefaultAsync(m => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId);
         if (material is null)
         {
             return MaterialErrors.NotFound(materialId);
@@ -112,7 +117,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         material.ReOrderLevel = reOrderLevel;
         material.LastUpdatedById = userId;
 
-        context.Materials.Update(material);
+        context.MaterialDepartments.Update(material);
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -1573,8 +1578,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 Description = worksheet.Cells[row, headers["Description"]].Text.Trim(),
                 Pharmacopoeia = worksheet.Cells[row, headers["Pharmacopoeia"]].Text.Trim(),
                 MaterialCategoryId = category.Id,
-                MinimumStockLevel = int.TryParse(worksheet.Cells[row, headers["MinimumStockLevel"]].Text.Trim(), out var minStock) ? minStock : 0,
-                MaximumStockLevel = int.TryParse(worksheet.Cells[row, headers["MaximumStockLevel"]].Text.Trim(), out var maxStock) ? maxStock : 0,
+                //MinimumStockLevel = int.TryParse(worksheet.Cells[row, headers["MinimumStockLevel"]].Text.Trim(), out var minStock) ? minStock : 0,
+                //MaximumStockLevel = int.TryParse(worksheet.Cells[row, headers["MaximumStockLevel"]].Text.Trim(), out var maxStock) ? maxStock : 0,
                 Kind = kind
             };
 
@@ -1615,5 +1620,54 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
+    public async Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments, Guid departmentId)
+    {
+        if (materialDepartments.Select(m => m.MaterialId).Distinct().Count() != materialDepartments.Count)
+        {
+            return Error.Validation("MaterialDepartment.Validation", "Cant have more than one of the same amterial Id in the list");
+        }
+        
+        var existingMaterialDepartments = await context.MaterialDepartments.Where(m => m.DepartmentId == departmentId).ToListAsync();
+        if (existingMaterialDepartments.Count != 0)
+        {
+            context.MaterialDepartments.RemoveRange(existingMaterialDepartments);
+        }
+        
+        await context.MaterialDepartments.AddRangeAsync(materialDepartments.Select(m => new MaterialDepartment()
+        {
+            MaterialId = m.MaterialId,
+            DepartmentId = departmentId,
+            ReOrderLevel = m.ReOrderLevel,
+            MaximumStockLevel = m.MaximumStockLevel,
+            MinimumStockLevel = m.MinimumStockLevel,
+        }));
+        
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
+    public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentDto>>>> GetMaterialDepartments(int page, int pageSize,
+        string searchQuery, Guid? departmentId)
+    {
+        var query = context.MaterialDepartments
+            .Include(m => m.Material)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.ReOrderLevel.ToString());
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(m => m.DepartmentId == departmentId.Value);
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialDepartmentDto>
+            );
+    }
 }
