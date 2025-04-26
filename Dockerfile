@@ -40,4 +40,4 @@ ENV MONGO_INITDB_ROOT_PASSWORD="${MONGO_INITDB_ROOT_PASSWORD}"
 ENV MONGO_DB_CONNECTION_STRING="mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017"
 ENV Environment="dev"
 
-ENTRYPOINT ["dotnet", "watch", "run", "--urls=http://+:5001", "--project", "API/API.csproj"]
+ENTRYPOINT ["dotnet", "run", "--urls=http://+:5001", "--project", "API/API.csproj"]
