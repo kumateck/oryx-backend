@@ -52,7 +52,7 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
             }
 
             // Delay to prevent excessive CPU usage
-            await Task.Delay(5000, stoppingToken); // Poll every second for new logs
+            await Task.Delay(10000, stoppingToken); // Poll every second for new logs
         }
     }
     
