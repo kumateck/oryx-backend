@@ -12,6 +12,13 @@ public class CreateMaterialRequest
     public int ReOrderLevel { get; set; }
 }
 
+public class CreateMaterialDepartment
+{
+    public Guid MaterialId { get; set; }
+    public int ReOrderLevel { get; set; }
+    public int MinimumStockLevel { get; set; }
+    public int MaximumStockLevel { get; set; }
+}
 public class UpdateReOrderLevelRequest
 {
     public int ReOrderLevel { get; set; }

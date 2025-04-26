@@ -40,8 +40,7 @@ ARG MONGO_INITDB_ROOT_USERNAME
 ARG MONGO_INITDB_ROOT_PASSWORD
 
 # Set environment variables
-ENV DOTNET_USE_POLLING_FILE_WATCHER=1
-ENV PATH=$PATH:/root/.dotnet/tools
+ENV ASPNETCORE_URLS=http://+:${CONTAINER_PORT:-5006}
 ENV connectionString="Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=oryxdbdemo"
 ENV redisConnectionString="redis:6379,abortConnect=false"
 ENV MINIO_ENDPOINT="minio"

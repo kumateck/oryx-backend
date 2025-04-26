@@ -22,9 +22,9 @@ public class Requisition : BaseEntity, IRequireApproval
     public RequestStatus Status { get; set; }  
     [StringLength(1000)] public string Comments { get; set; }
     public DateTime? ExpectedDelivery { get; set; }
-    public Guid ProductId { get; set; }
+    public Guid? ProductId { get; set; }
     public Product Product { get; set; }
-    public Guid ProductionScheduleId { get; set; }
+    public Guid? ProductionScheduleId { get; set; }
     public ProductionSchedule ProductionSchedule { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }

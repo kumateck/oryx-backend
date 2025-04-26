@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250426220601_MaterialDeparmtentAddition")]
+    partial class MaterialDeparmtentAddition
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -5204,13 +5207,13 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductId")
+                    b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductionScheduleId")
+                    b.Property<Guid>("ProductionScheduleId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("RequestedById")
@@ -10561,7 +10564,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Products.Product", "Product")
                         .WithMany()
-                        .HasForeignKey("ProductId");
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
@@ -10569,7 +10574,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
                         .WithMany()
-                        .HasForeignKey("ProductionScheduleId");
+                        .HasForeignKey("ProductionScheduleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("DOMAIN.Entities.Users.User", "RequestedBy")
                         .WithMany()

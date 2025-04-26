@@ -92,6 +92,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialReturnNote> MaterialReturnNotes { get; set; }
     public DbSet<MaterialReturnNoteFullReturn> MaterialReturnNoteFullReturns { get; set; }
     public DbSet<MaterialReturnNotePartialReturn> MaterialReturnNotePartialReturns { get; set; }
+    public DbSet<MaterialDepartment> MaterialDepartments { get; set; }
     
     #endregion
 
