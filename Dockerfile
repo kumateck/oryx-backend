@@ -47,6 +47,7 @@ ARG MONGO_INITDB_ROOT_USERNAME
 ARG MONGO_INITDB_ROOT_PASSWORD
 
 # Set environment variables
+ENV ASPNETCORE_URLS=http://+:${CONTAINER_PORT:-5001}
 ENV connectionString="Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=oryxdb"
 ENV redisConnectionString="redis:6379,abortConnect=false"
 ENV MINIO_ENDPOINT="minio"
@@ -67,8 +68,7 @@ ENV Environment="dev"
 # Copy the built output from build-env
 COPY --from=build-env /app/out .
 
-# Expose the app port (if you want, optional)
-EXPOSE 5001
+EXPOSE ${CONTAINER_PORT:-5001}
 
 # Run the app
 ENTRYPOINT ["dotnet", "API.dll"]
