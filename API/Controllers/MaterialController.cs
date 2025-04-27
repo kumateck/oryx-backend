@@ -512,7 +512,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Returns a list of materials that have not been linked.
     /// </summary>
     /// <returns>Returns the materials that have not been linked.</returns>
-    [HttpPost("department/not-linked")]
+    [HttpGet("department/not-linked")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
