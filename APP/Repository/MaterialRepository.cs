@@ -1654,7 +1654,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task<Result<List<MaterialDto>>> GetMaterialsThatHaveNotBeenLinked(Guid userId)
+    public async Task<Result<List<MaterialDto>>> GetMaterialsThatHaveNotBeenLinked(MaterialKind? kind, Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return UserErrors.NotFound(userId);
@@ -1674,11 +1674,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Where(m => !linkedMaterialIds.Contains(m.Id))
             .ToListAsync();
 
+        if (kind.HasValue)
+        {
+            unlinkedMaterials = unlinkedMaterials.Where(m => m.Kind == kind).ToList();
+        }
+
         return mapper.Map<List<MaterialDto>>(unlinkedMaterials);
     }
 
     public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentDto>>>> GetMaterialDepartments(int page, int pageSize,
-        string searchQuery, Guid userId)
+        string searchQuery, MaterialKind? kind, Guid userId)
     {
         
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -1701,6 +1706,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (user.DepartmentId.HasValue)
         {
             query = query.Where(m => m.DepartmentId == user.DepartmentId.Value);
+        }
+
+        if (kind.HasValue)
+        {
+            query = query.Where(q => q.Material.Kind == kind);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(
