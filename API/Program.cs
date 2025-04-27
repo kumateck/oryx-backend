@@ -14,7 +14,6 @@ using API.Database.Seeds;
 using APP;
 using APP.Mapper;
 using APP.Middlewares;
-using APP.Services.Email;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -77,10 +76,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 //add memory caching
-builder.Services.AddMemoryCache(options =>
-{
-    options.SizeLimit = 1024 * 1024 * 100;
-});
+builder.Services.AddMemoryCache();
 
 //Add Cors
 builder.Services.AddCors(options =>
@@ -248,17 +244,16 @@ app.UseMiddleware<ActivityLogMiddleware>();
 
 app.UseRouting();
 
-
 app.UseStaticFiles();
 
 //use CORS
 app.UseCors("default");
 
+app.UseMiddleware<JwtMiddleware>();
+
 app.UseAuthentication();
 
 app.UseAuthorization();
-
-app.UseMiddleware<JwtMiddleware>();
 
 app.MapControllers();
 
