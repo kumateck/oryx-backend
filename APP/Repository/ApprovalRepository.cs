@@ -339,6 +339,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 CreatedAt = po.CreatedAt,
                 Department = mapper.Map<DepartmentDto>(po.CreatedBy?.Department),
                 Code = po.Code,
+                RequestedBy = mapper.Map<CollectionItemDto>(po.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(po.Approvals.Select(p => new ResponsibleApprovalStage
                 {
                     Status = p.Status,
@@ -354,7 +355,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         var requisitions = await context.Requisitions
             .AsSplitQuery()
             .Include(p => p.Department)
-            .Include(p => p.RequestedBy)
+            .Include(p => p.CreatedBy)
             .Include(po => po.Approvals).ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
@@ -373,6 +374,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     CreatedAt = r.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
                     Code = r.Code,
+                    RequestedBy = mapper.Map<CollectionItemDto>(r.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(r.Approvals.Select(p => new ResponsibleApprovalStage
                     {
                         Status = p.Status,
@@ -391,7 +393,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     Id = r.Id,
                     CreatedAt = r.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
-                    Code = r.Code
+                    Code = r.Code,
+                    RequestedBy = mapper.Map<CollectionItemDto>(r.CreatedBy),
                 });
             }
         }
@@ -414,6 +417,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 Code = bs.Code,
                 Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
                 CreatedAt = bs.CreatedAt,
+                RequestedBy = mapper.Map<CollectionItemDto>(bs.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(bs.Approvals.Select(p => new ResponsibleApprovalStage
                 {
                     Status = p.Status,
