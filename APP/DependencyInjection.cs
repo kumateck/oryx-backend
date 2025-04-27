@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<ILeaveTypeRepository, LeaveTypeRepository>();
         services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
         services.AddScoped<IAbsenceRequestRepository, AbsenceRequestRepository>();
+        services.AddScoped<IExitPassRequestRepository, ExitPassRequestRepository>();
         services.AddScoped<IShiftTypeRepository, ShiftTypeRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();

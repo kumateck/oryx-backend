@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("api/v{version:apiVersion}/absence-request")]
 [ApiController]
+[Route("api/v{version:apiVersion}/absence-request")]
 public class AbsenceRequestController(IAbsenceRequestRepository repository): ControllerBase
 {
 

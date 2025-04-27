@@ -20,6 +20,7 @@ using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.ExitPassRequests;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
@@ -661,6 +662,13 @@ public class OryxMapper : Profile
 
         #endregion
 
+        #region Exit Requests
+
+        CreateMap<CreateExitPassRequest, ExitPassRequest>();
+        CreateMap<ExitPassRequestDto, ExitPassRequest>();
+
+        #endregion
+
         #region Shift Types
 
         CreateMap<CreateShiftTypeRequest, ShiftType>();
@@ -668,12 +676,12 @@ public class OryxMapper : Profile
 
         #endregion
 
-        // #region Shift Schedules
-        //
-        // CreateMap<ShiftScheduleDto, ShiftSchedule>();
-        // CreateMap<CreateShiftScheduleRequest, ShiftSchedule>();
-        //
-        // #endregion
+        #region Shift Schedules
+        
+        CreateMap<ShiftScheduleDto, ShiftSchedule>();
+        CreateMap<CreateShiftScheduleRequest, ShiftSchedule>();
+        
+        #endregion
         
         #region ActivityLog
 

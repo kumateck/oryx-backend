@@ -1352,6 +1352,58 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("Employees");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ExitPassRequests.ExitPassRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Justification")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeOnly>("TimeIn")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<TimeOnly>("TimeOut")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("ExitPassRequests");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Forms.Form", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5868,6 +5920,58 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("RouteWorkCenters");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Frequency")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ScheduleName")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("StartDate")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("ShiftSchedules");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.ShiftTypes.ShiftType", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5901,6 +6005,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("ShiftName")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("ShiftScheduleId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -5914,6 +6021,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ShiftScheduleId");
 
                     b.ToTable("ShiftTypes");
                 });
@@ -8115,6 +8224,35 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Siblings");
 
                     b.Navigation("Spouse");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ExitPassRequests.ExitPassRequest", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Employees.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Form", b =>
@@ -11021,6 +11159,35 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("WorkCenter");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Departments.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.ShiftTypes.ShiftType", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -11034,6 +11201,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", null)
+                        .WithMany("ShiftTypes")
+                        .HasForeignKey("ShiftScheduleId");
 
                     b.Navigation("CreatedBy");
 
@@ -11934,6 +12105,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ResponsibleUsers");
 
                     b.Navigation("WorkCenters");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", b =>
+                {
+                    b.Navigation("ShiftTypes");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentDiscrepancy", b =>
