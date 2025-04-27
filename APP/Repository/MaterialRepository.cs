@@ -1620,14 +1620,22 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments, Guid departmentId)
+    public async Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments, Guid userId)
     {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+
+        if (!user.DepartmentId.HasValue)
+        {
+            return UserErrors.DepartmentNotFound;
+        }
+        
         if (materialDepartments.Select(m => m.MaterialId).Distinct().Count() != materialDepartments.Count)
         {
             return Error.Validation("MaterialDepartment.Validation", "Cant have more than one of the same amterial Id in the list");
         }
         
-        var existingMaterialDepartments = await context.MaterialDepartments.Where(m => m.DepartmentId == departmentId).ToListAsync();
+        var existingMaterialDepartments = await context.MaterialDepartments.Where(m => m.DepartmentId == user.DepartmentId).ToListAsync();
         if (existingMaterialDepartments.Count != 0)
         {
             context.MaterialDepartments.RemoveRange(existingMaterialDepartments);
@@ -1636,7 +1644,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.MaterialDepartments.AddRangeAsync(materialDepartments.Select(m => new MaterialDepartment()
         {
             MaterialId = m.MaterialId,
-            DepartmentId = departmentId,
+            DepartmentId = user.DepartmentId.Value,
             ReOrderLevel = m.ReOrderLevel,
             MaximumStockLevel = m.MaximumStockLevel,
             MinimumStockLevel = m.MinimumStockLevel,
@@ -1646,9 +1654,36 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentDto>>>> GetMaterialDepartments(int page, int pageSize,
-        string searchQuery, Guid? departmentId)
+    public async Task<Result<List<MaterialDto>>> GetMaterialsThatHaveNotBeenLinked(Guid userId)
     {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+        
+        if (!user.DepartmentId.HasValue)
+        {
+            return UserErrors.DepartmentNotFound;
+        }
+
+        var linkedMaterialIds = await context.MaterialDepartments
+            .Include(m => m.Material)
+            .Where(m => m.DepartmentId == user.DepartmentId)
+            .Select(m => m.MaterialId)
+            .ToListAsync();
+
+        var unlinkedMaterials = await context.Materials
+            .Where(m => !linkedMaterialIds.Contains(m.Id))
+            .ToListAsync();
+
+        return mapper.Map<List<MaterialDto>>(unlinkedMaterials);
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentDto>>>> GetMaterialDepartments(int page, int pageSize,
+        string searchQuery, Guid userId)
+    {
+        
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+        
         var query = context.MaterialDepartments
             .Include(m => m.Material)
             .AsQueryable();
@@ -1657,10 +1692,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             query = query.WhereSearch(searchQuery, q => q.ReOrderLevel.ToString());
         }
-
-        if (departmentId.HasValue)
+        
+        if (!user.DepartmentId.HasValue)
         {
-            query = query.Where(m => m.DepartmentId == departmentId.Value);
+            return UserErrors.DepartmentNotFound;
+        }
+
+        if (user.DepartmentId.HasValue)
+        {
+            query = query.Where(m => m.DepartmentId == user.DepartmentId.Value);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(
