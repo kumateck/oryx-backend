@@ -57,6 +57,16 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             query = query.WhereSearch(searchQuery);
         }
 
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.Department.Name);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.Frequency.ToString());
+        }
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,

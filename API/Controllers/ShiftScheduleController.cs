@@ -2,7 +2,6 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.ShiftSchedules;
-using DOMAIN.Entities.ShiftTypes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -51,7 +50,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShiftScheduleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetShiftSchedule(Guid id)
+    public async Task<IResult> GetShiftSchedule([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -83,7 +82,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteShiftSchedule(Guid id)
+    public async Task<IResult> DeleteShiftSchedule([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -91,6 +90,4 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
         var result = await repository.DeleteShiftSchedule(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
-    
 }

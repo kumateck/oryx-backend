@@ -54,6 +54,14 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             query = query.WhereSearch(searchQuery, q => q.RotationType.ToString());
         }
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            if (Enum.TryParse<DayOfWeek>(searchQuery, true, out var day))
+            {
+                query = query.Where(q => q.ApplicableDays.Contains(day));
+            }
+        }
         
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
