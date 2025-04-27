@@ -494,16 +494,35 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Creates a new material department.
     /// </summary>
     /// <param name="materialDepartments">The list of material departments to create.</param>
-    /// <param name="departmentId">The ID of the department.</param>
     /// <returns>Returns the result of the creation process.</returns>
     [HttpPost("department")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateMaterialDepartment([FromBody] List<CreateMaterialDepartment> materialDepartments, Guid departmentId)
+    public async Task<IResult> CreateMaterialDepartment([FromBody] List<CreateMaterialDepartment> materialDepartments)
     {
-        var result = await repository.CreateMaterialDepartment(materialDepartments, departmentId);
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.CreateMaterialDepartment(materialDepartments, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Returns a list of materials that have not been linked.
+    /// </summary>
+    /// <returns>Returns the materials that have not been linked.</returns>
+    [HttpPost("department/not-linked")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetNotLinkedMaterials()
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetMaterialsThatHaveNotBeenLinked(Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -519,7 +538,10 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentDto>>))]
     public async Task<IResult> GetMaterialDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] Guid? departmentId = null)
     {
-        var result = await repository.GetMaterialDepartments(page, pageSize, searchQuery, departmentId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetMaterialDepartments(page, pageSize, searchQuery, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

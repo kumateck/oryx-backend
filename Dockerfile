@@ -10,16 +10,12 @@ WORKDIR /app
 # Copy everything
 COPY . . 
 
-# Install any tools needed for building
 RUN dotnet tool install -g dotnet-ef
 
-# Install any Linux libraries needed
 RUN apt-get update && apt-get install -y --allow-unauthenticated libgdiplus
 
-# Set PATH so global tools work
 ENV PATH=$PATH:/root/.dotnet/tools
 
-# Restore dependencies
 RUN dotnet restore
 
 # Build the project (Release mode)
@@ -32,7 +28,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 
 WORKDIR /app
 
-# Install runtime dependencies (again, if needed)
 RUN apt-get update && apt-get install -y --allow-unauthenticated libgdiplus
 
 # Define build arguments (for environment variables)

@@ -23,11 +23,10 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 
 WORKDIR /app
 
-# Install runtime dependencies (if needed again)
 RUN apt-get update && apt-get install -y --no-install-recommends libgdiplus \
     && rm -rf /var/lib/apt/lists/*
 
-# Define build arguments (optional if used during build, not runtime)
+# Define build arguments (for environment variables)
 ARG DB_USERNAME
 ARG DB_PASSWORD
 ARG ACCESS_KEY
@@ -59,8 +58,6 @@ ENV Environment="demo"
 # Copy published output
 COPY --from=build /app/out .
 
-# Expose the port (for documentation purposes)
 EXPOSE 5006
 
-# Run the app
 ENTRYPOINT ["dotnet", "API.dll"]
