@@ -351,13 +351,13 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // 2. Get Requisitions requiring approval
-        var requisitions = await context.Requisitions
-            .Include(r => r.Approvals)
-            .Include(po => po.CreatedBy)
-            .ThenInclude(po => po.Department)
-            .Where(r => r.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+        var requisitionsApprovals = await context.RequisitionApprovals
+            .Include(po => po.Requisition)
+            .ThenInclude(p => p.Department)
+            .Where(r => r.UserId == userId || (r.RoleId.HasValue && roleIds.Contains(r.RoleId.Value)) && r.Status != ApprovalStatus.Approved)
             .ToListAsync();
+
+        var requisitions = requisitionsApprovals.Select(r => r.Requisition).ToList();
 
         foreach (var r in requisitions)
         {
@@ -501,6 +501,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             RequisitionId = requisitionId,
             CreatedAt = DateTime.UtcNow,
             ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
             ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
         }).ToList();
 
@@ -517,6 +519,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             BillingSheetId = sheetId,
             CreatedAt = DateTime.UtcNow,
             ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
             ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
         }).ToList();
 
@@ -533,6 +537,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             PurchaseOrderId = orderId,
             CreatedAt = DateTime.UtcNow,
             ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
             ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
         }).ToList();
 
