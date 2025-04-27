@@ -351,14 +351,17 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // 2. Get Requisitions requiring approval
-        var requisitionsApprovals = await context.RequisitionApprovals
-            .Include(po => po.Requisition)
-            .ThenInclude(p => p.Department)
-            .Where(r => r.UserId == userId || (r.RoleId.HasValue && roleIds.Contains(r.RoleId.Value)) && r.Status != ApprovalStatus.Approved)
+        var requisitions = await context.Requisitions
+            .AsSplitQuery()
+            .Include(p => p.Department)
+            .Include(p => p.RequestedBy)
+            .Include(po => po.Approvals).ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
+            .Include(po => po.CreatedBy)
+            .ThenInclude(po => po.Department)
+            .Where(po => po.Approvals.Any(a =>
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
             .ToListAsync();
-
-        var requisitions = requisitionsApprovals.Select(r => r.Requisition).ToList();
-
+        
         foreach (var r in requisitions)
         {
             if (r.RequisitionType == RequisitionType.Stock)
