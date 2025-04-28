@@ -1654,15 +1654,19 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task<Result<List<MaterialDto>>> GetMaterialsThatHaveNotBeenLinked(MaterialKind? kind, Guid userId)
+    public async Task<Result<List<MaterialWithWarehouseStockDto>>> GetMaterialsThatHaveNotBeenLinked(MaterialKind? kind, Guid userId)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await context.Users
+            .Include(u => u.Department)
+            .FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return UserErrors.NotFound(userId);
         
         if (!user.DepartmentId.HasValue)
         {
             return UserErrors.DepartmentNotFound;
         }
+
+        var department = user.Department;
 
         var linkedMaterialIds = await context.MaterialDepartments
             .Include(m => m.Material)
@@ -1679,10 +1683,24 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             unlinkedMaterials = unlinkedMaterials.Where(m => m.Kind == kind).ToList();
         }
 
-        return mapper.Map<List<MaterialDto>>(unlinkedMaterials);
+        var results = mapper.Map<List<MaterialWithWarehouseStockDto>>(unlinkedMaterials);
+        foreach (var result in results)
+        {
+            var warehouseType = result.Kind == MaterialKind.Raw
+                ? WarehouseType.RawMaterialStorage
+                : WarehouseType.PackagedStorage;
+            var warehouse = await context.Warehouses.FirstOrDefaultAsync(w =>
+                w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
+            if (warehouse == null) continue;
+            var warehouseStockResult = await GetMaterialStockInWarehouse(result.Id, warehouse.Id);
+            if(warehouseStockResult.IsFailure) continue;
+            result.WarehouseStock = warehouseStockResult.Value;
+        }
+
+        return results;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentDto>>>> GetMaterialDepartments(int page, int pageSize,
+    public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page, int pageSize,
         string searchQuery, MaterialKind? kind, Guid userId)
     {
         
@@ -1713,11 +1731,26 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             query = query.Where(q => q.Material.Kind == kind);
         }
         
-        return await PaginationHelper.GetPaginatedResultAsync(
+        var results = await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
-            mapper.Map<MaterialDepartmentDto>
+            mapper.Map<MaterialDepartmentWithWarehouseStockDto>
             );
+
+        foreach (var result in results.Data)
+        {
+            var warehouseType = result.Material.Kind == MaterialKind.Raw
+                ? WarehouseType.RawMaterialStorage
+                : WarehouseType.PackagedStorage;
+            var warehouse = await context.Warehouses.FirstOrDefaultAsync(w =>
+                w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
+            if (warehouse == null) continue;
+            var warehouseStockResult = await GetMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
+            if(warehouseStockResult.IsFailure) continue;
+            result.WarehouseStock = warehouseStockResult.Value;
+        }
+
+        return results;
     }
 }

@@ -515,7 +515,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns the materials that have not been linked.</returns>
     [HttpGet("department/not-linked")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDepartmentWithWarehouseStockDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetNotLinkedMaterials([FromQuery] MaterialKind? kind)
     {
@@ -537,7 +537,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("department")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
     public async Task<IResult> GetMaterialDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? kind = null,
