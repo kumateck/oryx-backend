@@ -657,7 +657,7 @@ public class OryxMapper : Profile
         #region Exit Requests
 
         CreateMap<CreateExitPassRequest, ExitPassRequest>();
-        CreateMap<ExitPassRequestDto, ExitPassRequest>();
+        CreateMap<ExitPassRequestDto, ExitPassRequest>().ReverseMap();
 
         #endregion
 

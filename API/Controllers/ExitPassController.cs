@@ -18,13 +18,13 @@ public class ExitPassController(IExitPassRequestRepository repository): Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateExitPass(CreateExitPassRequest request)
+    public async Task<IResult> CreateExitPass([FromBody] CreateExitPassRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.CreateExitPassRequest(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -33,13 +33,13 @@ public class ExitPassController(IExitPassRequestRepository repository): Controll
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ExitPassRequestDto>>))]
-    public async Task<IResult> GetExitPasses(int page, int pageSize, string searchQuery)
+    public async Task<IResult> GetExitPasses([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetExitPassRequests(page, pageSize, searchQuery);
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     /// <summary>
     /// Retrieves the details of a specific exit pass request by its ID.
@@ -48,13 +48,13 @@ public class ExitPassController(IExitPassRequestRepository repository): Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExitPassRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetExitPass(Guid id)
+    public async Task<IResult> GetExitPass([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetExitPassRequest(id);
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public class ExitPassController(IExitPassRequestRepository repository): Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ExitPassRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateExitPass(Guid id, CreateExitPassRequest request)
+    public async Task<IResult> UpdateExitPass([FromRoute] Guid id, [FromBody] CreateExitPassRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -80,7 +80,7 @@ public class ExitPassController(IExitPassRequestRepository repository): Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteExitPass(Guid id)
+    public async Task<IResult> DeleteExitPass([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();

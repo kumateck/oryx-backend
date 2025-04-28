@@ -1,10 +1,11 @@
-using System.Data.Entity;
+
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.ExitPassRequests;
 using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
@@ -23,9 +24,9 @@ public class ExitPassRequestRepository(ApplicationDbContext context, IMapper map
             return Error.Validation("ExitPassRequest.Exists", "Exit pass request already exists.");
         }
 
-        if (request.TimeIn > request.TimeOut)
+        if (request.TimeIn < request.TimeOut)
         {
-            return Error.Validation("ExitPassRequest.InvalidTime", "Time in must be before time out.");
+            return Error.Validation("ExitPassRequest.InvalidTime", "Time out must be before time in.");
         }
         
         var exitPass = mapper.Map<ExitPassRequest>(request);
