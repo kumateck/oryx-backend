@@ -1,5 +1,4 @@
 using System.Reflection;
-using DOMAIN.Entities.AbsenceRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Auth;
@@ -13,7 +12,6 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
-using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.ExitPassRequests;
@@ -373,8 +371,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LeaveType> LeaveTypes { get; set; }
     public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
     public DbSet<LeaveRequest> LeaveRequests { get; set; }
-    
-    public DbSet<AbsenceRequest> AbsenceRequests { get; set; }
     
     #endregion
 

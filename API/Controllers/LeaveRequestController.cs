@@ -19,12 +19,12 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateLeaveRequest([FromBody] CreateLeaveRequest leaveRequest)
+    public async Task<IResult> CreateLeaveOrAbsenceRequest([FromBody] CreateLeaveRequest leaveRequest)
     {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.CreateLeaveRequest(leaveRequest, Guid.Parse(userId));
+        var result = await repository.CreateLeaveOrAbsenceRequest(leaveRequest, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
 
     }

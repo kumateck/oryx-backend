@@ -1,6 +1,5 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
-using DOMAIN.Entities.AbsenceRequests;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
@@ -652,13 +651,6 @@ public class OryxMapper : Profile
 
         CreateMap<CreateLeaveRequest, LeaveRequest>();
         CreateMap<LeaveRequestDto, LeaveRequest>().ReverseMap();
-
-        #endregion
-
-        #region Absence Requests
-
-        CreateMap<CreateAbsenceRequest, AbsenceRequest>();
-        CreateMap<AbsenceRequestDto, AbsenceRequest>().ReverseMap();
 
         #endregion
 

@@ -20,6 +20,12 @@ public class LeaveRequestDto
    public string ContactPerson { get; set; }
     
    public string ContactPersonNumber { get; set; }
+   
+   public RequestCategory RequestCategory { get; set; }
+   
+   public int UnpaidDays { get; set; }
+   
+   public int PaidDays { get; set; }
     
    public Guid EmployeeId { get; set; }
    
