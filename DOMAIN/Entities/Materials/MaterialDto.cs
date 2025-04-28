@@ -16,6 +16,11 @@ public class MaterialDto
     public decimal TotalStock { get; set; }
 }
 
+public class MaterialWithWarehouseStockDto : MaterialDto
+{
+    public decimal WarehouseStock { get; set; }
+}
+
 public class MaterialDetailsDto
 {
     public MaterialDto Material { get; set; }
@@ -34,4 +39,9 @@ public class MaterialCategoryDto : BaseDto
     public string Name { get; set; }
     public string Description { get; set; }
     public MaterialKind MaterialKind { get; set; }
+}
+
+public class MaterialDepartmentWithWarehouseStockDto : MaterialDepartmentDto
+{
+    public decimal WarehouseStock { get; set; }
 }

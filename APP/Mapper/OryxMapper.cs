@@ -261,6 +261,10 @@ public class OryxMapper : Profile
         CreateMap<Material, MaterialDto>()
             .ForMember(dest => dest.TotalStock,
                 opt => opt.MapFrom(src => src. Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity)));
+        
+        CreateMap<Material, MaterialWithWarehouseStockDto>()
+            .ForMember(dest => dest.TotalStock,
+                opt => opt.MapFrom(src => src. Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity)));
 
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
         CreateMap<MaterialBatch, MaterialBatchDto>();
@@ -269,8 +273,8 @@ public class OryxMapper : Profile
         CreateMap<MassMaterialBatchMovement, MassMaterialBatchMovementDto>();
         CreateMap<MaterialBatchReservedQuantity, MaterialBatchReservedQuantityDto>();
         CreateMap<MaterialDepartment, MaterialDepartmentDto>();
-
-
+        CreateMap<MaterialDepartment, MaterialDepartmentWithWarehouseStockDto>();
+        
         CreateMap<CreateSrRequest, Sr>();
         CreateMap<Sr, SrDto>();
 
