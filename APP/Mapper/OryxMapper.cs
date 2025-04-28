@@ -9,6 +9,7 @@ using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Children;
+using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
@@ -665,6 +666,13 @@ public class OryxMapper : Profile
 
         CreateMap<CreateShiftTypeRequest, ShiftType>();
         CreateMap<ShiftTypeDto, ShiftType>().ReverseMap();
+
+        #endregion
+
+        #region Company Working Days
+
+        CreateMap<CompanyWorkingDaysRequest, CompanyWorkingDays>();
+        CreateMap<CompanyWorkingDaysDto, CompanyWorkingDays>().ReverseMap();
 
         #endregion
 

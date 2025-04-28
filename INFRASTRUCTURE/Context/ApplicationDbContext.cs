@@ -8,6 +8,7 @@ using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Children;
+using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
@@ -389,6 +390,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Exit Pass Requests
     
     public DbSet<ExitPassRequest> ExitPassRequests { get; set; }
+
+    #endregion
+
+    #region Company Working Days
+
+    public DbSet<CompanyWorkingDays> CompanyWorkingDays { get; set; }
 
     #endregion
     
