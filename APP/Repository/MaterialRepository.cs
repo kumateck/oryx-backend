@@ -13,7 +13,6 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Win32.SafeHandles;
 using OfficeOpenXml;
 using SHARED.Requests;
 
@@ -1665,9 +1664,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             return UserErrors.DepartmentNotFound;
         }
-
-        var department = user.Department;
-
+        
         var linkedMaterialIds = await context.MaterialDepartments
             .Include(m => m.Material)
             .Where(m => m.DepartmentId == user.DepartmentId)
@@ -1709,6 +1706,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         
         var query = context.MaterialDepartments
             .Include(m => m.Material)
+            .Include(m => m.UoM)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -1752,5 +1750,22 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         return results;
+    }
+
+    public async Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId)
+    {
+        var user = await context.Users
+            .Include(u => u.Department)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+        
+        if (!user.DepartmentId.HasValue)
+        {
+            return UserErrors.DepartmentNotFound;
+        }
+        
+        return mapper.Map<UnitOfMeasureDto>((await context.MaterialDepartments
+            .Include(materialDepartment => materialDepartment.UoM)
+            .FirstOrDefaultAsync(m => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId.Value)).UoM);
     }
 }

@@ -25,6 +25,8 @@ public class MaterialDepartment : BaseEntity
 {
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
     public Guid DepartmentId { get; set; }
     public Department Department { get; set; }
     public int ReOrderLevel { get; set; }
@@ -36,6 +38,7 @@ public class MaterialDepartmentDto
 {
     public MaterialDto Material { get; set; }
     public CollectionItemDto Department { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public int ReOrderLevel { get; set; }
     public int MinimumStockLevel { get; set; }
     public int MaximumStockLevel { get; set; }

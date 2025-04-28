@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -72,4 +73,5 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page,
         int pageSize,
         string searchQuery, MaterialKind? kind, Guid userId);
+    Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId);
 }

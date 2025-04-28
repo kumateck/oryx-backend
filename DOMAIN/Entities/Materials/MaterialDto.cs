@@ -12,7 +12,6 @@ public class MaterialDto
     public string Alphabet { get; set; }
     public MaterialKind Kind { get; set; }
     public MaterialCategoryDto MaterialCategory { get; set; }
-    public int ReOrderLevel { get; set; }
     public decimal TotalStock { get; set; }
 }
 

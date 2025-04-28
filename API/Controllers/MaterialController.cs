@@ -549,4 +549,22 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialDepartments(page, pageSize, searchQuery, kind,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Return the uom associated with the material
+    /// </summary>
+    /// <param name="materialId">The material Id for which you need the uom</param>
+    /// <returns>Returns the materials that have not been linked.</returns>
+    [HttpGet("{materialId}/uom")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDepartmentWithWarehouseStockDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetUoMForMaterial(Guid materialId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetUnitOfMeasureForMaterialDepartment(materialId,Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
