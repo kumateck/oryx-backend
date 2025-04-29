@@ -1,6 +1,5 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
-using DOMAIN.Entities.AbsenceRequests;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
@@ -10,6 +9,7 @@ using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Children;
+using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
@@ -20,6 +20,7 @@ using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.ExitPassRequests;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
@@ -658,10 +659,10 @@ public class OryxMapper : Profile
 
         #endregion
 
-        #region Absence Requests
+        #region Exit Requests
 
-        CreateMap<CreateAbsenceRequest, AbsenceRequest>();
-        CreateMap<AbsenceRequestDto, AbsenceRequest>().ReverseMap();
+        CreateMap<CreateExitPassRequest, ExitPassRequest>();
+        CreateMap<ExitPassRequestDto, ExitPassRequest>().ReverseMap();
 
         #endregion
 
@@ -672,12 +673,19 @@ public class OryxMapper : Profile
 
         #endregion
 
-        // #region Shift Schedules
-        //
-        // CreateMap<ShiftScheduleDto, ShiftSchedule>();
-        // CreateMap<CreateShiftScheduleRequest, ShiftSchedule>();
-        //
-        // #endregion
+        #region Company Working Days
+
+        CreateMap<CompanyWorkingDaysRequest, CompanyWorkingDays>();
+        CreateMap<CompanyWorkingDaysDto, CompanyWorkingDays>().ReverseMap();
+
+        #endregion
+
+        #region Shift Schedules
+        
+        CreateMap<ShiftScheduleDto, ShiftSchedule>();
+        CreateMap<CreateShiftScheduleRequest, ShiftSchedule>();
+        
+        #endregion
         
         #region ActivityLog
 

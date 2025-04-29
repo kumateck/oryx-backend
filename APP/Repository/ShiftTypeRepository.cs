@@ -49,6 +49,19 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             query = query.WhereSearch(searchQuery, q => q.ShiftName);
         }
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.RotationType.ToString());
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            if (Enum.TryParse<DayOfWeek>(searchQuery, true, out var day))
+            {
+                query = query.Where(q => q.ApplicableDays.Contains(day));
+            }
+        }
         
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
@@ -70,7 +83,21 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
     public async Task<Result> UpdateShiftType(Guid id, CreateShiftTypeRequest request, Guid userId)
     {
-        throw new NotImplementedException();
+        var shiftType = await context.ShiftTypes
+            .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
+        
+        if (shiftType is null)
+        {
+            return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
+        }
+        mapper.Map(request, shiftType);
+        
+        shiftType.LastUpdatedById = userId;
+        shiftType.UpdatedAt = DateTime.UtcNow;
+        
+        context.ShiftTypes.Update(shiftType);
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 
     public async Task<Result> DeleteShiftType(Guid id, Guid userId)

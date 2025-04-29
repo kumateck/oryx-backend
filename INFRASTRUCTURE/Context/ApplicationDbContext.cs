@@ -1,5 +1,4 @@
 using System.Reflection;
-using DOMAIN.Entities.AbsenceRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Auth;
@@ -9,13 +8,14 @@ using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Children;
+using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
-using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.ExitPassRequests;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.LeaveEntitlements;
@@ -373,8 +373,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
     public DbSet<LeaveRequest> LeaveRequests { get; set; }
     
-    public DbSet<AbsenceRequest> AbsenceRequests { get; set; }
-    
     #endregion
 
     #region Shifts
@@ -383,11 +381,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     #endregion
 
-    // #region Shift Schedule
-    //
-    // public DbSet<ShiftSchedule> ShiftSchedules { get; set; }
-    //
-    // #endregion
+    #region Shift Schedule
+    
+    public DbSet<ShiftSchedule> ShiftSchedules { get; set; }
+    
+    #endregion
+
+    #region Exit Pass Requests
+    
+    public DbSet<ExitPassRequest> ExitPassRequests { get; set; }
+
+    #endregion
+
+    #region Company Working Days
+
+    public DbSet<CompanyWorkingDays> CompanyWorkingDays { get; set; }
+
+    #endregion
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType

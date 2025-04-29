@@ -93,8 +93,10 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         {
             return Error.NotFound("Designation.NotFound", "Designation not found");
         }
+        
         designation.DeletedAt = DateTime.UtcNow;
         designation.LastDeletedById = userId;
+        
         context.Designations.Update(designation);
         await context.SaveChangesAsync();
         return Result.Success();
