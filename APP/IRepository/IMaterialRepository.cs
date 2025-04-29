@@ -69,7 +69,7 @@ public interface IMaterialRepository
     Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
     Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments,
         Guid userId);
-    Task<Result<List<MaterialWithWarehouseStockDto>>> GetMaterialsThatHaveNotBeenLinked(MaterialKind? kind, Guid userId);
+    Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery, MaterialKind? kind, Guid userId);
     Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page,
         int pageSize,
         string searchQuery, MaterialKind? kind, Guid userId);
