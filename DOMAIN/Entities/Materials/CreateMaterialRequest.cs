@@ -15,6 +15,7 @@ public class CreateMaterialRequest
 public class CreateMaterialDepartment
 {
     public Guid MaterialId { get; set; }
+    public Guid? UoMId { get; set; }
     public int ReOrderLevel { get; set; }
     public int MinimumStockLevel { get; set; }
     public int MaximumStockLevel { get; set; }

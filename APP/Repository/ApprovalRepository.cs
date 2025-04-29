@@ -339,6 +339,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 CreatedAt = po.CreatedAt,
                 Department = mapper.Map<DepartmentDto>(po.CreatedBy?.Department),
                 Code = po.Code,
+                RequestedBy = mapper.Map<CollectionItemDto>(po.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(po.Approvals.Select(p => new ResponsibleApprovalStage
                 {
                     Status = p.Status,
@@ -352,13 +353,16 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // 2. Get Requisitions requiring approval
         var requisitions = await context.Requisitions
-            .Include(r => r.Approvals)
+            .AsSplitQuery()
+            .Include(p => p.Department)
+            .Include(p => p.CreatedBy)
+            .Include(po => po.Approvals).ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
-            .Where(r => r.Approvals.Any(a =>
+            .Where(po => po.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
             .ToListAsync();
-
+        
         foreach (var r in requisitions)
         {
             if (r.RequisitionType == RequisitionType.Stock)
@@ -370,6 +374,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     CreatedAt = r.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
                     Code = r.Code,
+                    RequestedBy = mapper.Map<CollectionItemDto>(r.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(r.Approvals.Select(p => new ResponsibleApprovalStage
                     {
                         Status = p.Status,
@@ -388,7 +393,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     Id = r.Id,
                     CreatedAt = r.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
-                    Code = r.Code
+                    Code = r.Code,
+                    RequestedBy = mapper.Map<CollectionItemDto>(r.CreatedBy),
                 });
             }
         }
@@ -411,6 +417,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                 Code = bs.Code,
                 Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
                 CreatedAt = bs.CreatedAt,
+                RequestedBy = mapper.Map<CollectionItemDto>(bs.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(bs.Approvals.Select(p => new ResponsibleApprovalStage
                 {
                     Status = p.Status,
@@ -501,6 +508,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             RequisitionId = requisitionId,
             CreatedAt = DateTime.UtcNow,
             ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
             ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
         }).ToList();
 
@@ -517,6 +526,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             BillingSheetId = sheetId,
             CreatedAt = DateTime.UtcNow,
             ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
             ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
         }).ToList();
 
@@ -533,6 +544,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             PurchaseOrderId = orderId,
             CreatedAt = DateTime.UtcNow,
             ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
             ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
         }).ToList();
 

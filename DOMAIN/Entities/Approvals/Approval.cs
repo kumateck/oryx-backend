@@ -59,6 +59,7 @@ public class ApprovalEntity
     public DepartmentDto  Department { get; set; }
     public List<ApprovalLog>  ApprovalLogs { get; set; }
     public DateTime CreatedAt { get; set; } 
+    public CollectionItemDto RequestedBy { get; set; }
 }
 
 public class ApprovalRequestBody
