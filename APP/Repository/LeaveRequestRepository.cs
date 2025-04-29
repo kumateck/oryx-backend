@@ -155,12 +155,12 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.RequestStatus.ToString());
+            query = query.WhereSearch(searchQuery, q => q.RequestCategory.ToString());
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.RequestStatus.ToString());
+            query = query.WhereSearch(searchQuery, q => q.LeaveStatus.ToString());
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(

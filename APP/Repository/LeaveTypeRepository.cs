@@ -71,8 +71,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest request, Guid userId)
     {
         var leaveType = await context.LeaveTypes
-            .Include(d => d.Designations)
-            .FirstOrDefaultAsync(l => l.Id == id && l.LastDeletedById == userId);
+            .FirstOrDefaultAsync(l => l.Id == id && l.LastDeletedById == null);
         
         if (leaveType == null)
         {

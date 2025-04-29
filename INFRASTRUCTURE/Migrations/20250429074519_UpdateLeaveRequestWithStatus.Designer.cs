@@ -1924,7 +1924,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("RequestCategory")
                         .HasColumnType("integer");
 
-                    b.Property<int>("RequestStatus")
+                    b.Property<int>("LeaveStatus")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("StartDate")

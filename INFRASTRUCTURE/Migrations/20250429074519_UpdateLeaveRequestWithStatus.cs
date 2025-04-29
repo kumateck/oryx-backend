@@ -11,7 +11,7 @@ namespace INFRASTRUCTURE.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
-                name: "RequestStatus",
+                name: "LeaveStatus",
                 table: "LeaveRequests",
                 type: "integer",
                 nullable: false,
@@ -22,7 +22,7 @@ namespace INFRASTRUCTURE.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "RequestStatus",
+                name: "LeaveStatus",
                 table: "LeaveRequests");
         }
     }
