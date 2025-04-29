@@ -12,8 +12,12 @@ public class MaterialDto
     public string Alphabet { get; set; }
     public MaterialKind Kind { get; set; }
     public MaterialCategoryDto MaterialCategory { get; set; }
-    public int ReOrderLevel { get; set; }
     public decimal TotalStock { get; set; }
+}
+
+public class MaterialWithWarehouseStockDto : MaterialDto
+{
+    public decimal WarehouseStock { get; set; }
 }
 
 public class MaterialDetailsDto
@@ -34,4 +38,9 @@ public class MaterialCategoryDto : BaseDto
     public string Name { get; set; }
     public string Description { get; set; }
     public MaterialKind MaterialKind { get; set; }
+}
+
+public class MaterialDepartmentWithWarehouseStockDto : MaterialDepartmentDto
+{
+    public decimal WarehouseStock { get; set; }
 }
