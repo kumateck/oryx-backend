@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -557,7 +558,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns the materials that have not been linked.</returns>
     [HttpGet("{materialId}/uom")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDepartmentWithWarehouseStockDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UnitOfMeasureDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetUoMForMaterial(Guid materialId)
     {
