@@ -305,8 +305,6 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
 public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto, Guid userId)
 {
     var employee = await context.Employees
-        .Include(e => e.Department)
-        .Include(e => e.Designation)
         .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
 
     if (employee == null)
@@ -319,18 +317,29 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
         return Error.Validation("Already assigned to employee", "Employee already assigned");
     }
     
+    var designation = await context.Designations.FirstOrDefaultAsync(d => d.Id == employeeDto.DesignationId);
+
+    if (designation == null)
+    {
+        return Error.NotFound("Designation.NotFound", "Designation not found");
+    }
+    
+    var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == employeeDto.DepartmentId);
+
+    if (department == null)
+    {
+        return Error.NotFound("Department.NotFound", "Department not found");
+    }
+    
     mapper.Map(employeeDto, employee);
     employee.DepartmentId = employeeDto.DepartmentId;
     employee.DesignationId = employeeDto.DesignationId;
-    employee.AnnualLeaveDays = employee.Designation.MaximumLeaveDays;
+    employee.AnnualLeaveDays = designation.MaximumLeaveDays;
     employee.UpdatedAt = DateTime.UtcNow;
     employee.LastUpdatedById = userId;
 
     context.Employees.Update(employee);
     await context.SaveChangesAsync();
-    
-    await context.Entry(employee).Reference(e => e.Department).LoadAsync();
-    await context.Entry(employee).Reference(e => e.Designation).LoadAsync();
     
     var templatePath = Path.Combine("..","APP", "Services", "Email", "Templates", "EmployeeAcceptance.html");
     if (!File.Exists(templatePath))
@@ -341,8 +350,8 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     var body = emailTemplate
         .Replace("{Name}", employee.FullName)
         .Replace("{Email}", employee.Email)
-        .Replace("{DesignationName}", employee.Designation.Name)
-        .Replace("{DepartmentName}", employee.Department.Name);
+        .Replace("{DesignationName}", designation.Name)
+        .Replace("{DepartmentName}", department.Name);
 
     const int maxRetries = 3;
     var attempts = 0;
