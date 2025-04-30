@@ -6,18 +6,17 @@ using DOMAIN.Entities.LeaveRequests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-
 [ApiController]
 [Route("api/v{version:apiVersion}/leave-request")]
 public class LeaveRequestController(ILeaveRequestRepository repository): ControllerBase
 {
-
+    
     /// <summary>
     /// Creates a leave request.
     /// </summary>
     [HttpPost]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveOrAbsenceRequest([FromBody] CreateLeaveRequest leaveRequest)
     {
@@ -26,9 +25,8 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         
         var result = await repository.CreateLeaveOrAbsenceRequest(leaveRequest, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
-
+        
     }
-
     /// <summary>
     /// Returns a paginated list of leave requests based on a search criteria.
     /// </summary>

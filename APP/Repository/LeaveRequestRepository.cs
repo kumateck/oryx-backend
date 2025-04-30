@@ -21,10 +21,10 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         
         var existingEmployee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == request.EmployeeId && e.LastDeletedById == null);
-
+        
         if (existingEmployee is null)
             return Error.NotFound("Employee.NotFound", "Employee not found.");
-
+        
         var leaveType = await context.LeaveTypes
             .FirstOrDefaultAsync(l => l.Id == request.LeaveTypeId && l.LastDeletedById == null);
 
@@ -36,13 +36,13 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             .FirstOrDefaultAsync(l => l.EmployeeId == request.EmployeeId &&
                                       l.StartDate == request.StartDate &&
                                       l.EndDate == request.EndDate);
+     
         if (existingRequest is not null)
             return Error.Validation("Request.Exists", "A request already exists for this period.");
 
         int paidDays = 0;
         int unpaidDays = 0;
-
-        // IMPORTANT: Now using request.Category
+        
         if (request.RequestCategory == RequestCategory.Absence)
         {
             // Absence rules
@@ -128,7 +128,6 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         entity.CreatedAt = DateTime.UtcNow;
         entity.PaidDays = paidDays;
         entity.UnpaidDays = unpaidDays;
-        entity.RequestCategory = request.RequestCategory; 
 
         await context.LeaveRequests.AddAsync(entity);
         await context.SaveChangesAsync();
