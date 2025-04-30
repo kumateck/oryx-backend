@@ -341,7 +341,7 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     context.Employees.Update(employee);
     await context.SaveChangesAsync();
     
-    var templatePath = Path.Combine("..","APP", "Services", "Email", "Templates", "EmployeeAcceptance.html");
+    var templatePath = Path.Combine(AppContext.BaseDirectory,"APP", "Services", "Email", "Templates", "EmployeeAcceptance.html");
     if (!File.Exists(templatePath))
         throw new FileNotFoundException("Email template not found", templatePath);
 
