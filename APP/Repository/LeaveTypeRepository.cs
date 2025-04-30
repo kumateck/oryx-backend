@@ -40,6 +40,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var query = context.LeaveTypes
             .Include(d => d.Designations)
+            .Where(l => l.LastDeletedById == null)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
