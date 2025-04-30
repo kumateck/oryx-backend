@@ -1,22 +1,23 @@
-namespace API.Controllers;
-
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.LeaveRequests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+namespace API.Controllers;
+
 [ApiController]
 [Route("api/v{version:apiVersion}/leave-request")]
 public class LeaveRequestController(ILeaveRequestRepository repository): ControllerBase
 {
-    
+
     /// <summary>
     /// Creates a leave request.
     /// </summary>
     [HttpPost]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveOrAbsenceRequest([FromBody] CreateLeaveRequest leaveRequest)
     {
@@ -24,9 +25,9 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.CreateLeaveOrAbsenceRequest(leaveRequest, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
-        
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
     /// <summary>
     /// Returns a paginated list of leave requests based on a search criteria.
     /// </summary>
@@ -39,8 +40,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetLeaveRequests(page, pageSize, searchQuery);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
-
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
@@ -56,8 +56,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetLeaveRequest(id);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
-
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -74,8 +73,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.UpdateLeaveRequest(id, leaveRequest, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : TypedResults.NotFound();
-
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -91,6 +89,6 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.DeleteLeaveRequest(id, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

@@ -512,18 +512,22 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <summary>
     /// Returns a list of materials that have not been linked.
     /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search material</param>
     /// <param name="kind">The material kind to filter</param>
     /// <returns>Returns the materials that have not been linked.</returns>
     [HttpGet("department/not-linked")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDepartmentWithWarehouseStockDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetNotLinkedMaterials([FromQuery] MaterialKind? kind)
+    public async Task<IResult> GetNotLinkedMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 5,
+        [FromQuery] string searchQuery = null, [FromQuery] MaterialKind? kind = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetMaterialsThatHaveNotBeenLinked(kind,Guid.Parse(userId));
+        var result = await repository.GetMaterialsThatHaveNotBeenLinked(page, pageSize, searchQuery, kind,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -1653,7 +1653,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task<Result<List<MaterialWithWarehouseStockDto>>> GetMaterialsThatHaveNotBeenLinked(MaterialKind? kind, Guid userId)
+    public async Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery,MaterialKind? kind, Guid userId)
     {
         var user = await context.Users
             .Include(u => u.Department)
@@ -1671,17 +1671,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Select(m => m.MaterialId)
             .ToListAsync();
 
-        var unlinkedMaterials = await context.Materials
+        var unlinkedMaterials = context.Materials
             .Where(m => !linkedMaterialIds.Contains(m.Id))
-            .ToListAsync();
+            .AsQueryable();
 
         if (kind.HasValue)
         {
-            unlinkedMaterials = unlinkedMaterials.Where(m => m.Kind == kind).ToList();
+            unlinkedMaterials = unlinkedMaterials.Where(m => m.Kind == kind);
         }
 
-        var results = mapper.Map<List<MaterialWithWarehouseStockDto>>(unlinkedMaterials);
-        foreach (var result in results)
+        var results = await PaginationHelper.GetPaginatedResultAsync(
+            unlinkedMaterials, page, pageSize, mapper.Map<MaterialWithWarehouseStockDto>);
+        foreach (var result in results.Data)
         {
             var warehouseType = result.Kind == MaterialKind.Raw
                 ? WarehouseType.RawMaterialStorage
