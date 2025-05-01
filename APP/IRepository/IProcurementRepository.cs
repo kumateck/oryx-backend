@@ -18,6 +18,8 @@ public interface IProcurementRepository
     Task<Result<ManufacturerDto>> GetManufacturer(Guid manufacturerId);
     Task<Result<Paginateable<IEnumerable<ManufacturerDto>>>> GetManufacturers(int page, int pageSize, string searchQuery);
     Task<Result<List<ManufacturerDto>>> GetManufacturersByMaterial(Guid materialId);
+    Task<Result<List<SupplierManufacturerDto>>> GetSupplierManufacturersByMaterial(Guid materialId,
+        Guid supplierId);
     Task<Result> UpdateManufacturer(CreateManufacturerRequest request, Guid manufacturerId, Guid userId);
     Task<Result> DeleteManufacturer(Guid manufacturerId, Guid userId);
 

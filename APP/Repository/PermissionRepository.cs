@@ -176,6 +176,7 @@ public class PermissionRepository(ApplicationDbContext context, UserManager<User
 
             if (newClaim != null)
             {
+                if(permission.Types.Count == 0) continue;
                 // Add associated types to PermissionType table
                 await context.PermissionTypes.AddRangeAsync(permission.Types.Select(type => new PermissionType
                 {

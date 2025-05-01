@@ -163,8 +163,6 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         var existingRoles =  await userManager.GetRolesAsync(user);
         await userManager.RemoveFromRolesAsync(user, existingRoles);
         await userManager.AddToRolesAsync(user, request.RoleNames);
-        user.LastDeletedById = userId;
-        context.Users.Update(user);
         await context.SaveChangesAsync();
         return Result.Success();
     }
