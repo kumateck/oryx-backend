@@ -574,13 +574,14 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
     public List<ApprovalLog> GetApprovalLogs(List<ResponsibleApprovalStage> stages)
     {
         return stages
-            .Where(s => s.Status != ApprovalStatus.Approved)
+            //.Where(s => s.Status != ApprovalStatus.Approved)
             .OrderBy(s => s.Order)
             .Select(s => new ApprovalLog
             {
                 User = mapper.Map<CollectionItemDto>(s.ApprovedBy),
                 ApprovedAt = s.ApprovalTime,
-                Comments = s.Comments
+                Comments = s.Comments,
+                Status = s.Status
             })
             .ToList();
     }

@@ -72,6 +72,7 @@ public class ApprovalLog
 {
     public CollectionItemDto User { get; set; }
     public DateTime? ApprovedAt { get; set; }
+    public ApprovalStatus Status { get; set; }
     public string Comments { get; set; }
 }
 
