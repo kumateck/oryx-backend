@@ -62,7 +62,7 @@ public class DesignationController(IDesignationRepository repository): Controlle
 
     [HttpGet("department/{id:guid}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<DesignationDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DesignationDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDesignationByDepartment([FromRoute] Guid id)
     {
