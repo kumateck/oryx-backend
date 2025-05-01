@@ -27,8 +27,9 @@ public class EmployeeRepository(ApplicationDbContext context,
 public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 {
     const int maxRetries = 3;
+
+    const string templatePath = "wwwroot/email/RegistrationEmail.html";
     
-    var templatePath = Path.GetFullPath(Path.Combine("APP", "EmailTemplates", "RegistrationEmail.html"));
     if (!File.Exists(templatePath))
         throw new FileNotFoundException("Email template not found", templatePath);
 
@@ -335,8 +336,8 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
 
     context.Employees.Update(employee);
     await context.SaveChangesAsync();
-    
-    var templatePath = Path.Combine("..", "EmailTemplates", "EmployeeAcceptance.html");
+
+    var templatePath = "wwwroot/email/EmployeeAcceptance.html";
     Console.WriteLine(templatePath);
     if (!File.Exists(templatePath))
         throw new FileNotFoundException("Email template not found", templatePath);

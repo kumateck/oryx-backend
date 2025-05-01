@@ -39,4 +39,10 @@
       <Folder Include="wwwroot\images\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Include="wwwroot\email\EmployeeAcceptance.html" />
+      <None Include="wwwroot\email\PasswordSetup.html" />
+      <None Include="wwwroot\email\RegistrationEmail.html" />
+    </ItemGroup>
+
 </Project>
