@@ -50,6 +50,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     {
         var query = context.ShiftSchedules
             .Include(schedule => schedule.Department)
+            .Where(sc => sc.LastDeletedById == null)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))

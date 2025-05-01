@@ -43,7 +43,9 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
     public async Task<Result<Paginateable<IEnumerable<ShiftTypeDto>>>> GetShiftTypes(int page, int pageSize, string searchQuery)
     {
-        var query = context.ShiftTypes.AsQueryable();
+        var query = context.ShiftTypes
+            .Where(st => st.LastDeletedById == null)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -102,7 +104,8 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
     public async Task<Result> DeleteShiftType(Guid id, Guid userId)
     {
-        var shiftType = await context.ShiftTypes.FirstOrDefaultAsync(s => s.Id == id);
+        var shiftType = await context.ShiftTypes
+            .FirstOrDefaultAsync(s => s.Id == id && s.LastDeletedById == null);
 
         if (shiftType is null)
         {
