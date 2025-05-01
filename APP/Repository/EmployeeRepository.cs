@@ -58,9 +58,11 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var jwt = tokenHandler.WriteToken(token);
             
+            var partialUrl = Environment.GetEnvironmentVariable("CLIENT_BASE_URL");
+
             var verificationLink = employee.EmployeeType == EmployeeType.Casual
-                ? $"http://164.90.142.68:3005/onboarding/0?token={jwt}"
-                : $"http://164.90.142.68:3005/onboarding/1?token={jwt}";
+                ? $"{partialUrl}/onboarding/0?token={jwt}"
+                : $"{partialUrl}/onboarding/1?token={jwt}";
             
             var emailBody = emailTemplate
                 .Replace("{Email}", employee.Email)
@@ -177,7 +179,7 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
 
         await transaction.CommitAsync();
         
-        var templatePath = Path.Combine("..", "APP", "Services", "Email", "Templates", "PasswordSetup.html");
+        const string templatePath = "wwwroot/email/PasswordSetup.html";
         if (!File.Exists(templatePath))
             throw new FileNotFoundException("Email template not found", templatePath);
 
@@ -196,8 +198,10 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         var jwt = tokenHandler.WriteToken(token);
+        
+        var partialUrl = Environment.GetEnvironmentVariable("CLIENT_BASE_URL");
 
-        var verificationLink = $"http://164.90.142.68:3005/auth/reset-password?email={newUser.Email}/{jwt}";
+        var verificationLink = $"{partialUrl}/auth/reset-password?email={newUser.Email}/{jwt}";
 
         var emailBody = emailTemplate
             .Replace("{Name}", employee.FullName)
@@ -337,7 +341,7 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     context.Employees.Update(employee);
     await context.SaveChangesAsync();
 
-    var templatePath = "wwwroot/email/EmployeeAcceptance.html";
+    const string templatePath = "wwwroot/email/EmployeeAcceptance.html";
     Console.WriteLine(templatePath);
     if (!File.Exists(templatePath))
         throw new FileNotFoundException("Email template not found", templatePath);

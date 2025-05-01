@@ -75,7 +75,7 @@ public class Employee : BaseEntity
     public Guid? DesignationId { get; set; }
     public Designation Designation { get; set; }
     
-    public DateTime StartDate { get; set; }
+    public DateTime DateEmployed { get; set; }
 
 }
 
