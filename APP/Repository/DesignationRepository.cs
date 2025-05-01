@@ -94,6 +94,13 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
             return Error.NotFound("Designation.NotFound", "Designation not found");
         }
         
+        var employees = await context.Employees.FirstOrDefaultAsync(e => e.DesignationId == id);
+
+        if (employees is not null)
+        {
+            return Error.Validation("Designation.InUse", "Designation is in use.");       
+        }
+        
         designation.DeletedAt = DateTime.UtcNow;
         designation.LastDeletedById = userId;
         

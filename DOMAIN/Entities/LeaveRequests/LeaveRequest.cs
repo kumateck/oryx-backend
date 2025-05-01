@@ -16,7 +16,6 @@ public class LeaveRequest : BaseEntity
     
     public string? Justification { get; set; }
     public RequestCategory RequestCategory { get; set; }
-
     public LeaveStatus LeaveStatus { get; set; } = LeaveStatus.Pending;
     public int? UnpaidDays { get; set; }
     

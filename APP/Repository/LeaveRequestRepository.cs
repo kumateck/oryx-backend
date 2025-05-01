@@ -185,7 +185,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
        
        return leaveRequest is null ? 
            Error.NotFound("LeaveRequest.NotFound", "Leave request not found") : 
-           Result.Success(mapper.Map<LeaveRequestDto>(leaveRequest));
+           Result.Success(mapper.Map<LeaveRequestDto>(leaveRequest, opts => opts.Items[AppConstants.ModelType] = nameof(LeaveRequest)));
     }
 
     public async Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest, Guid userId)
