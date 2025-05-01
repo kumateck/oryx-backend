@@ -20,7 +20,6 @@ using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
-using DOMAIN.Entities.ExitPassRequests;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
@@ -656,13 +655,6 @@ public class OryxMapper : Profile
 
         CreateMap<CreateLeaveRequest, LeaveRequest>();
         CreateMap<LeaveRequestDto, LeaveRequest>().ReverseMap();
-
-        #endregion
-
-        #region Exit Requests
-
-        CreateMap<CreateExitPassRequest, ExitPassRequest>();
-        CreateMap<ExitPassRequestDto, ExitPassRequest>().ReverseMap();
 
         #endregion
 

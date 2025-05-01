@@ -23,6 +23,8 @@ public class LeaveRequestDto
    
    public RequestCategory RequestCategory { get; set; }
    
+   public DateTime CreatedAt { get; set; } 
+   
    public LeaveStatus LeaveStatus { get; set; }
    
    public int UnpaidDays { get; set; }
