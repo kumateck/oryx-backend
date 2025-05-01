@@ -60,7 +60,9 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
 
     public async Task<Result<Paginateable<IEnumerable<LeaveEntitlementDto>>>> GetLeaveEntitlements(int page, int pageSize, string searchQuery)
     {
-        var query = context.LeaveEntitlements.AsQueryable();
+        var query = context.LeaveEntitlements
+            .Where(l => l.LastDeletedById == null)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
