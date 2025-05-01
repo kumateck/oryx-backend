@@ -138,21 +138,14 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
                 await context.SaveChangesAsync();
             }
 
-            //var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-
-            //var result = await userManager.ConfirmEmailAsync(user, token);
-
-            // if (result.Succeeded)
-            // {
-            //     user.UserName = request.Email;
-            //     user.Email = request.Email;
-            //     context.Users.Update(user);
-            //     await context.SaveChangesAsync();
-            //     await userManager.UpdateNormalizedEmailAsync(user);
-            //     await userManager.UpdateNormalizedUserNameAsync(user);
-            // }
+            if (!string.IsNullOrEmpty(request.RoleName))
+            {
+                var existingRoles =  await userManager.GetRolesAsync(user);
+                await userManager.RemoveFromRolesAsync(user, existingRoles);
+                await userManager.AddToRoleAsync(user, request.RoleName);
+                await context.SaveChangesAsync();
+            }
         }
-
         return Result.Success();
     }
     

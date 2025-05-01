@@ -10,5 +10,5 @@ public class UpdateUserRequest
     public DateTime? DateOfBirth { get; set; }
     public Guid? DepartmentId { get; set; }
     public string Avatar { get; set; }
-    public List<string> RoleNames { get; } = [];
+    public string RoleName { get; set; }
 }
