@@ -1112,7 +1112,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             }).ToList();
     }
 
-    public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, Guid userId)
+    public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, SupplierType type, Guid userId)
     {
         foreach (var quotation in processQuotations)
         {
@@ -1140,7 +1140,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 await context.SaveChangesAsync();
                 
                 var supplierQuotationItems = await context.SupplierQuotationItems
+                    .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
                     .Where(s => s.MaterialId == processSupplierQuote.MaterialId 
+                                && s.SupplierQuotation.Supplier.Type == type
                                 && s.Status != SupplierQuotationItemStatus.Processed 
                         && !s.PurchaseOrderId.HasValue)
                     .ToListAsync();
