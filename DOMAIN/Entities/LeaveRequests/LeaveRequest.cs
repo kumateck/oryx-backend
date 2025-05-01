@@ -13,6 +13,8 @@ public class LeaveRequest : BaseEntity
     public string ContactPerson { get; set; }
     
     public string ContactPersonNumber { get; set; }
+    
+    public string? Justification { get; set; }
     public RequestCategory RequestCategory { get; set; }
 
     public LeaveStatus LeaveStatus { get; set; } = LeaveStatus.Pending;
@@ -30,8 +32,9 @@ public class LeaveRequest : BaseEntity
 
 public enum RequestCategory
 {
-    Leave,
-    Absence
+    LeaveRequest,
+    AbsenceRequest,
+    ExitPassRequest
 }
 
 public enum LeaveStatus

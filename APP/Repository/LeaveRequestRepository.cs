@@ -43,7 +43,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         int paidDays = 0;
         int unpaidDays = 0;
         
-        if (request.RequestCategory == RequestCategory.Absence)
+        if (request.RequestCategory == RequestCategory.AbsenceRequest)
         {
             // Absence rules
             if (totalDays > 2)
@@ -83,6 +83,12 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             {
                 paidDays = 0;
                 unpaidDays = (int)totalDays;
+            }
+        } else if (request.RequestCategory == RequestCategory.LeaveRequest)
+        {
+            if (request.StartDate != request.EndDate)
+            {
+                return Error.Validation("LeaveRequest.InvalidDates", "Exit Pass request must be a single day.");
             }
         }
         else
