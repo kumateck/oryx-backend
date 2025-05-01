@@ -90,6 +90,6 @@ jobs:
             --env MONGO_DB_CONNECTION_STRING="mongodb://${{ secrets.MONGO_INITDB_ROOT_USERNAME }}:${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}@mongodb:27017" \
             --env MINIO_ACCESS_KEY=${{ secrets.ACCESS_KEY }} \
             --env MINIO_SECRET_KEY=${{ secrets.SECRET_KEY }} \
-            --env connectionString="Host=postgres_db;Port=5432;Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};Database=oryxdb"
+            --env connectionString="Host=postgres_db;Port=5432;Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};Database=oryxdb" \
             "${DOCKER_IMAGE_NAME}:latest"
           EOF
