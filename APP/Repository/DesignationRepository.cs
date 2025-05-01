@@ -59,6 +59,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<List<DesignationDto>>> GetDesignationByDepartment(Guid departmentId)
     {
         return mapper.Map<List<DesignationDto>>(await context.Designations
+            .AsSplitQuery()
             .Include(d => d.Departments)
             .Where(d => d.Departments.Any(dd => dd.Id == departmentId))
             .ToListAsync());
