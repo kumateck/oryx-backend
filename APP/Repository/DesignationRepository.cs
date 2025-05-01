@@ -56,6 +56,16 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
             Result.Success(mapper.Map<DesignationDto>(designation));
     }
 
+    public async Task<Result<DesignationDto>> GetDesignationByDepartment(Guid departmentId)
+    {
+        var designation = await context.Designations.
+            Include(d => d.Departments)
+            .FirstOrDefaultAsync(d => d.Departments.Any(department => department.Id == departmentId));
+        return designation is null ? 
+            Error.NotFound("Designation.NotFound", "Designation not found") :
+            Result.Success(mapper.Map<DesignationDto>(designation));
+    }
+
     public async Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request, Guid userId)
     {
         var designation = await context.Designations.

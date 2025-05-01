@@ -59,6 +59,19 @@ public class DesignationController(IDesignationRepository repository): Controlle
         var result = await repository.GetDesignation(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    [HttpGet("department/{id:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<DesignationDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDesignationByDepartment([FromRoute] Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetDesignationByDepartment(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
     
     /// <summary>
     /// Updates the details of an existing designation
