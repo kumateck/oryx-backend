@@ -311,11 +311,6 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     {
         return Error.NotFound("Employee.NotFound", "Employee not found");
     }
-
-    if (employee.DepartmentId != null && employee.ReportingManagerId != null && employee.DesignationId != null)
-    {
-        return Error.Validation("Already assigned to employee", "Employee already assigned");
-    }
     
     var designation = await context.Designations.FirstOrDefaultAsync(d => d.Id == employeeDto.DesignationId);
 

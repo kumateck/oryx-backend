@@ -50,7 +50,6 @@ public static class DependencyInjection
         services.AddScoped<ILeaveTypeRepository, LeaveTypeRepository>();
         services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
         services.AddScoped<IShiftTypeRepository, ShiftTypeRepository>();
-        services.AddScoped<IExitPassRequestRepository, ExitPassRequestRepository>();
         services.AddScoped<IShiftScheduleRepository, ShiftScheduleRepository>();
         services.AddScoped<ICompanyWorkingDaysRepository, CompanyWorkingDaysRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();

@@ -15,7 +15,6 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
-using DOMAIN.Entities.ExitPassRequests;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.LeaveEntitlements;
@@ -385,12 +384,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<ShiftSchedule> ShiftSchedules { get; set; }
     
-    #endregion
-
-    #region Exit Pass Requests
-    
-    public DbSet<ExitPassRequest> ExitPassRequests { get; set; }
-
     #endregion
 
     #region Company Working Days
