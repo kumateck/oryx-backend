@@ -31,18 +31,18 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --allow-unauthenticated libgdiplus
 
 # Define build arguments (for environment variables)
-ARG DB_USERNAME
-ARG DB_PASSWORD
-ARG ACCESS_KEY
-ARG SECRET_KEY
-ARG DEFAULT_PASSWORD
-ARG SMTP_USERNAME
-ARG SMTP_PASSWORD
-ARG MONGO_INITDB_ROOT_USERNAME
-ARG MONGO_INITDB_ROOT_PASSWORD
+#ARG DB_USERNAME
+#ARG DB_PASSWORD
+#ARG ACCESS_KEY
+#ARG SECRET_KEY
+#ARG DEFAULT_PASSWORD
+#ARG SMTP_USERNAME
+#ARG SMTP_PASSWORD
+#ARG MONGO_INITDB_ROOT_USERNAME
+#ARG MONGO_INITDB_ROOT_PASSWORD
 
 # Set environment variables
-ENV ASPNETCORE_URLS=http://+:${CONTAINER_PORT:-5001}
+ENV ASPNETCORE_URLS=http://+:5001
 ENV connectionString="Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=oryxdb"
 ENV redisConnectionString="redis:6379,abortConnect=false"
 ENV MINIO_ENDPOINT="minio"
