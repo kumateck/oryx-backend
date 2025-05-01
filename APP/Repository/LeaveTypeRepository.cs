@@ -94,7 +94,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
             return Error.Validation("LeaveType.InvalidDesignations", "One or more designation IDs are invalid.");
         }
         leaveType.UpdatedAt = DateTime.UtcNow;
-        leaveType.LastDeletedById = userId;
+        leaveType.LastUpdatedById = userId;
         
         context.LeaveTypes.Update(leaveType);
         await context.SaveChangesAsync();
