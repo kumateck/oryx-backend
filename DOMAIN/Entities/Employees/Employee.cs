@@ -81,8 +81,8 @@ public class Employee : BaseEntity
 
 public enum EmployeeType
 {
-    Permanent,
-    Casual
+    Casual,
+    Permanent
 }
 
 public enum Gender
