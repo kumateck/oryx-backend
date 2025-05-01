@@ -9,7 +9,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper) : ILeaveRequestRepository
+public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper, IApprovalRepository approvalRepository) : ILeaveRequestRepository
 
 {
     public async Task<Result<Guid>> CreateLeaveOrAbsenceRequest(CreateLeaveRequest request, Guid userId)
@@ -137,7 +137,9 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
         await context.LeaveRequests.AddAsync(entity);
         await context.SaveChangesAsync();
-
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(LeaveRequest), entity.Id);
+        
         return entity.Id;
     }
     public async Task<Result<Paginateable<IEnumerable<LeaveRequestDto>>>> GetLeaveRequests(int page, int pageSize, string searchQuery)
