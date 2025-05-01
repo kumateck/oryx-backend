@@ -19,7 +19,7 @@ namespace APP.Repository;
 public class UserRepository(ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IBlobStorageService blobStorage, IMapper mapper)
     : IUserRepository
 {
-    public async Task<Result<UserDto>> CreateUser(CreateUserRequest request)
+    public async Task<Result<Guid>> CreateUser(CreateUserRequest request)
     {
         var user = mapper.Map<User>(request);
         user.CreatedAt = DateTime.UtcNow;
@@ -42,9 +42,9 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         await userManager.AddToRolesAsync(user, roleName);
         await context.SaveChangesAsync();
         
-        if (string.IsNullOrEmpty(request.Avatar))  return await GetUser(user.Id);
+        if (string.IsNullOrEmpty(request.Avatar))  return user.Id;
         
-        if (!request.Avatar.IsValidBase64String()) return Result.Failure<UserDto>(UserErrors.InvalidAvatar);
+        if (!request.Avatar.IsValidBase64String()) return UserErrors.InvalidAvatar;
          
         var image = request.Avatar.ConvertFromBase64();
         var reference = $"{user.Id}.{image.FileName.Split(".").Last()}";
@@ -56,7 +56,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             await context.SaveChangesAsync();
         }
         
-        return (await GetUser(user.Id)).Value;
+        return user.Id;
     }
 
     public async Task<Result<LoginResponse>> CreateNewUser(CreateClientRequest request)
@@ -104,11 +104,11 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         );
     }
     
-    public async Task<Result<UserDto>> GetUser(Guid userId)
+    public async Task<Result<UserWithRoleDto>> GetUser(Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return UserErrors.NotFound(userId);
-        return mapper.Map<UserDto>(user);
+        return mapper.Map<UserWithRoleDto>(user);
     }
 
     public async Task<Result> UpdateUser(UpdateUserRequest request, Guid id, Guid userId)

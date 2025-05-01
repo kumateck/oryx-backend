@@ -1681,6 +1681,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             unlinkedMaterials = unlinkedMaterials.Where(m => m.Kind == kind);
         }
 
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            unlinkedMaterials = unlinkedMaterials.WhereSearch(searchQuery, m => m.Name, m => m.Code);
+        }
+
         var results = await PaginationHelper.GetPaginatedResultAsync(
             unlinkedMaterials, page, pageSize, mapper.Map<MaterialWithWarehouseStockDto>);
         foreach (var result in results.Data)
@@ -1713,7 +1718,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.ReOrderLevel.ToString());
+            query = query.WhereSearch(searchQuery, q => q.ReOrderLevel.ToString(), q => q.Material.Name);
         }
         
         if (!user.DepartmentId.HasValue)
