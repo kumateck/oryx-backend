@@ -4,6 +4,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using INFRASTRUCTURE.Context;
@@ -307,7 +308,60 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
 
             await context.SaveChangesAsync();
             break;
+            
+            case nameof(LeaveRequest):
+                var leaveRequest = await context.LeaveRequests
+                    .Include(lr => lr.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+                
+                if (leaveRequest is null)
+                    return Error.Validation("LeaveRequest.NotFound", $"Leave Request {modelId} not found.");
+                
+                var leaveRequestApprovalStages = leaveRequest.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                        
+                    }).ToList();
+                
+                var leaveRequestCurrentApprovals = GetCurrentApprovalStage(leaveRequestApprovalStages);
+                
+                var leaveRequestApprovingStage = leaveRequestCurrentApprovals.FirstOrDefault(stage =>
+                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                
+                if (leaveRequestApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+                
+                // Approve the leave request stage in the actual tracked list
+                var stageToApproveLr = leaveRequest.Approvals.First(
+                    stage => (stage.UserId == leaveRequestApprovingStage.UserId && stage.UserId == userId) ||
+                    (stage.RoleId == leaveRequestApprovingStage.RoleId && leaveRequestApprovingStage.RoleId.HasValue && roleIds.Contains(leaveRequestApprovingStage.RoleId.Value)));
 
+                stageToApproveLr.Status = ApprovalStatus.Approved;
+                stageToApproveLr.ApprovalTime = DateTime.UtcNow;
+                stageToApproveLr.Comments = comments;
+                
+                // Optionally mark leave request as fully approved
+                var allRequiredLrApproved = leaveRequest.Approvals
+                    .Where(s => s.Required)
+                    .All(s => s.Status == ApprovalStatus.Approved);
+
+                if (allRequiredLrApproved)
+                {
+                    leaveRequest.Approved = true;
+                }
+                
+                await context.SaveChangesAsync();
+                break;
+            
             default:
                 return Error.Validation("Approval.InvalidType",
                     $"Unsupported model type: {modelType}");

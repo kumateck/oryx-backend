@@ -1,13 +1,13 @@
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveTypes;
 
 namespace DOMAIN.Entities.LeaveRequests;
 
-public class LeaveRequest : BaseEntity
+public class LeaveRequest : BaseEntity, IRequireApproval
 {
     public DateTime StartDate { get; set; }
-    
     public DateTime EndDate { get; set; }
     
     public string ContactPerson { get; set; }
@@ -25,8 +25,24 @@ public class LeaveRequest : BaseEntity
     public Employee Employee { get; set; }
     
     public Guid LeaveTypeId { get; set; }
-    
     public LeaveType LeaveType { get; set; }
+
+    public List<LeaveRequestApproval> Approvals { get; set; } = [];
+    
+    public bool Approved { get; set; }
+}
+
+public class LeaveRequestApproval: ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    
+    public Guid LeaveRequestId { get; set; }
+    
+    public LeaveRequest LeaveRequest { get; set; }
+    
+    public Guid ApprovalId { get; set; }
+    
+    public Approval Approval { get; set; }
 }
 
 public enum RequestCategory
