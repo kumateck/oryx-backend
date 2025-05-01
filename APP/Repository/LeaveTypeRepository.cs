@@ -20,12 +20,20 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         }
 
         var designations = await context.Designations
-            .Where(d => leaveTypeDto.DesignationList.Contains(d.Id))
+            .Where(d => leaveTypeDto.DesignationList.Contains(d.Id)).Include(designation => designation.LeaveTypes)
             .ToListAsync();
 
+        
         if (designations.Any(designation => leaveTypeDto.NumberOfDays > designation.MaximumLeaveDays))
         {
-            return Error.Validation("LeaveType.InvalidNumberOfDays", "Number of days cannot be greater than maximum leave days for designation.");
+            return Error.Validation("LeaveType.InvalidNumberOfDays", $"Number of days cannot be greater than maximum leave days for designation.");
+        }
+
+        var maximumLeave = designations.Sum(designation => designation.LeaveTypes.Sum(leaveType => leaveType.NumberOfDays));
+
+        if (maximumLeave > leaveTypeDto.NumberOfDays)
+        {
+            return Error.Validation("LeaveType.InvalidNumberOfDays", $"Number of days cannot be greater than maximum leave days for designation.");
         }
         
         var leaveType = mapper.Map<LeaveType>(leaveTypeDto);
