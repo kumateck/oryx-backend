@@ -30,8 +30,10 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
 
     public async Task<Result<Paginateable<IEnumerable<DesignationDto>>>> GetDesignations(int page, int pageSize, string searchQuery)
     {
-        var query = context.Designations.
-            Include(d => d.Departments).AsQueryable();
+        var query = context.Designations
+            .Where(d => d.DeletedAt == null)
+            .Include(d => d.Departments)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
