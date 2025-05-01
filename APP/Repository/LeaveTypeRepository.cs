@@ -22,7 +22,11 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         var designations = await context.Designations
             .Where(d => leaveTypeDto.DesignationList.Contains(d.Id))
             .ToListAsync();
-        
+
+        if (designations.Any(designation => leaveTypeDto.NumberOfDays > designation.MaximumLeaveDays))
+        {
+            return Error.Validation("LeaveType.InvalidNumberOfDays", "Number of days cannot be greater than maximum leave days for designation.");
+        }
         
         var leaveType = mapper.Map<LeaveType>(leaveTypeDto);
         leaveType.CreatedById = userId;

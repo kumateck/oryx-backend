@@ -28,7 +28,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 {
     const int maxRetries = 3;
     
-    var templatePath = Path.GetFullPath(Path.Combine("..", "APP", "Services", "Email", "Templates", "RegistrationEmail.html"));
+    var templatePath = Path.GetFullPath(Path.Combine("APP", "EmailTemplates", "RegistrationEmail.html"));
     if (!File.Exists(templatePath))
         throw new FileNotFoundException("Email template not found", templatePath);
 
@@ -341,7 +341,8 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     context.Employees.Update(employee);
     await context.SaveChangesAsync();
     
-    var templatePath = Path.Combine(AppContext.BaseDirectory,"APP", "Services", "Email", "Templates", "EmployeeAcceptance.html");
+    var templatePath = Path.Combine("..", "EmailTemplates", "EmployeeAcceptance.html");
+    Console.WriteLine(templatePath);
     if (!File.Exists(templatePath))
         throw new FileNotFoundException("Email template not found", templatePath);
 
