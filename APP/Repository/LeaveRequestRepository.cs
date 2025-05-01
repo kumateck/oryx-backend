@@ -84,7 +84,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                 paidDays = 0;
                 unpaidDays = (int)totalDays;
             }
-        } else if (request.RequestCategory == RequestCategory.LeaveRequest)
+        } else if (request.RequestCategory == RequestCategory.ExitPassRequest)
         {
             if (request.StartDate != request.EndDate)
             {
