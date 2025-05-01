@@ -37,7 +37,7 @@ public class CreateEmployeeRequest
     [Required] [StringLength(20)] public string SsnitNumber { get; set; }
     
     [Required] [StringLength(15)] 
-    [RegularExpression(@"^GHA-\d{9}-\d{1}$", 
+    [RegularExpression(@"^GHA-\d{9}-\d{1}$",
         ErrorMessage = "Ghana Card number must start with 'GHA-'. " +
                        "Total length must be between 11 and 15 characters.")]
     public string GhanaCardNumber { get; set; }

@@ -654,7 +654,10 @@ public class OryxMapper : Profile
         #region Leave Requests
 
         CreateMap<CreateLeaveRequest, LeaveRequest>();
-        CreateMap<LeaveRequestDto, LeaveRequest>().ReverseMap();
+        CreateMap<LeaveRequestDto, LeaveRequest>();
+        CreateMap<LeaveRequest, LeaveRequestDto>()
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());;
+         
 
         #endregion
 

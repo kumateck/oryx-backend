@@ -1,11 +1,12 @@
 
 
+using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveTypes;
 
 namespace DOMAIN.Entities.LeaveRequests;
 
-public class LeaveRequestDto
+public class LeaveRequestDto: WithAttachment
 {
    public Guid Id { get; set; }
    
