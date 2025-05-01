@@ -486,6 +486,17 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         return entitiesRequiringApproval;
     }
 
+    public async Task<Result<ApprovalEntity>> GetEntityRequiringApproval(string modelType,
+        Guid modelId)
+    {
+        var approval = await context.Approvals
+            .FirstOrDefaultAsync(a => a.ItemType == modelType && a.Id == modelId);
+        
+        return approval is null ? 
+            Error.Validation("Approval.NotFound", $"Approval for {modelType} {modelId} not found.") 
+            : Result.Success(mapper.Map<ApprovalEntity>(approval));
+    }
+
 
 
     public List<ResponsibleApprovalStage> GetCurrentApprovalStage(List<ResponsibleApprovalStage> stages)
