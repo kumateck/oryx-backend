@@ -1647,6 +1647,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             ReOrderLevel = m.ReOrderLevel,
             MaximumStockLevel = m.MaximumStockLevel,
             MinimumStockLevel = m.MinimumStockLevel,
+            UoMId = m.UoMId
         }));
         
         await context.SaveChangesAsync();
