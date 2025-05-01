@@ -12,6 +12,8 @@ public interface IDesignationRepository
     
     Task<Result<DesignationDto>> GetDesignation(Guid id);
     
+    Task<Result<DesignationDto>> GetDesignationByDepartment(Guid departmentId);
+    
     Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request, Guid userId);
     
     Task<Result> DeleteDesignation(Guid id, Guid userId);
