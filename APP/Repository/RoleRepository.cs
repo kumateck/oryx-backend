@@ -63,7 +63,8 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         {
             Name = request.Name,
             DisplayName = request.Name.Capitalize(),
-            CreatedById = userId
+            CreatedById = userId,
+            CreatedAt = DateTime.UtcNow
         };
         
         if (!await IsValidRoleName(request.Name))

@@ -80,6 +80,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ToListAsync());
     }
     
+    public async Task<Result<List<SupplierManufacturerDto>>> GetSupplierManufacturersByMaterial(Guid materialId, Guid supplierId)
+    {
+        return mapper.Map<List<SupplierManufacturerDto>>(await context.SupplierManufacturers
+            .AsSplitQuery()
+            .Include(m => m.Manufacturer)
+            .Include(m => m.Material)
+            .Where(m => m.MaterialId == materialId && m.SupplierId == supplierId)
+            .ToListAsync());
+    }
+    
     public async Task<Result> UpdateManufacturer(CreateManufacturerRequest request, Guid manufacturerId, Guid userId)
     {
         var existingManufacturer = await context.Manufacturers
@@ -270,7 +280,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         foreach (var item in result.Items)
         {
             if (item.Material?.Id != null)
-                item.Manufacturers = (await GetManufacturersByMaterial(item.Material.Id.Value)).Value;
+                item.Manufacturers = (await GetSupplierManufacturersByMaterial(item.Material.Id.Value, purchaseOrder.SupplierId)).Value;
         }
         return result;
     }
@@ -1321,10 +1331,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             foreach (var item in po.Items)
             {
                 if (item.Material?.Id != null)
-                    item.Manufacturers = (await GetManufacturersByMaterial(item.Material.Id.Value)).Value;
+                    item.Manufacturers = (await GetSupplierManufacturersByMaterial(item.Material.Id.Value, po.Supplier.Id)).Value;
             }
         }
-
         return result;
     }
     

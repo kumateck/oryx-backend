@@ -386,6 +386,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <summary>
     /// Processes quotations and creates purchase orders.
     /// </summary>
+    /// <param name="supplierType">The type of the supplier (example Local, Foreign).</param>
     /// <param name="processQuotations">The list of quotations to process.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("source/quotation/process-purchase-order")]
@@ -393,12 +394,13 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ProcessQuotationAndCreatePurchaseOrder(
-        [FromBody] List<ProcessQuotation> processQuotations)
+        [FromBody] List<ProcessQuotation> processQuotations,
+        [FromQuery] SupplierType supplierType)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.ProcessQuotationAndCreatePurchaseOrder(processQuotations, Guid.Parse(userId));
+        var result = await repository.ProcessQuotationAndCreatePurchaseOrder(processQuotations, supplierType, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

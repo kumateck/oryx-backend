@@ -13,6 +13,12 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
 {
     public async Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request, Guid userId)
     {
+        var existingDesignation = await context.Designations.FirstOrDefaultAsync(d => d.Name == request.Name);
+        if (existingDesignation is not null)
+        {
+            return Error.Validation("Designation.Exists", "Designation already exists.");
+        }
+        
         var designation = mapper.Map<Designation>(request);
         designation.CreatedById = userId;
         designation.CreatedAt = DateTime.UtcNow;
@@ -56,14 +62,13 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
             Result.Success(mapper.Map<DesignationDto>(designation));
     }
 
-    public async Task<Result<DesignationDto>> GetDesignationByDepartment(Guid departmentId)
+    public async Task<Result<List<DesignationDto>>> GetDesignationByDepartment(Guid departmentId)
     {
-        var designation = await context.Designations.
-            Include(d => d.Departments)
-            .FirstOrDefaultAsync(d => d.Departments.Any(department => department.Id == departmentId && department.LastDeletedById == null));;
-        return designation is null ? 
-            Error.NotFound("Designation.NotFound", "Designation not found") :
-            Result.Success(mapper.Map<DesignationDto>(designation));
+        return mapper.Map<List<DesignationDto>>(await context.Designations
+            .AsSplitQuery()
+            .Include(d => d.Departments)
+            .Where(d => d.Departments.Any(dd => dd.Id == departmentId && d.LastDeletedById == null))
+            .ToListAsync());
     }
 
     public async Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request, Guid userId)
@@ -100,13 +105,15 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
 
     public async Task<Result> DeleteDesignation(Guid id, Guid userId)
     {
-        var designation = await context.Designations.FirstOrDefaultAsync(d => d.Id == id && d.LastDeletedById == null);;
+        var designation = await context.Designations
+            .FirstOrDefaultAsync(d => d.Id == id && d.LastDeletedById == null);
         if (designation is null)
         {
             return Error.NotFound("Designation.NotFound", "Designation not found");
         }
         
-        var employees = await context.Employees.FirstOrDefaultAsync(e => e.DesignationId == id && e.LastDeletedById == null);
+        var employees = await context.Employees
+            .FirstOrDefaultAsync(e => e.DesignationId == id && e.LastDeletedById == null);
 
         if (employees is not null)
         {

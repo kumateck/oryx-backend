@@ -119,7 +119,7 @@ public class PurchaseOrderItemDto
     public decimal Quantity { get; set; }
     public decimal Price { get; set; }
     public CollectionItemDto Currency { get; set; }
-    public List<ManufacturerDto> Manufacturers { get; set; } = [];
+    public List<SupplierManufacturerDto> Manufacturers { get; set; } = [];
     public decimal Cost => Price * Quantity;
     public bool CanReassignSupplier { get; set; }
 }

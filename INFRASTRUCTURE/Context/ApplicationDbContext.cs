@@ -371,6 +371,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LeaveType> LeaveTypes { get; set; }
     public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
     public DbSet<LeaveRequest> LeaveRequests { get; set; }
+    public DbSet<LeaveRequestApproval> LeaveRequestApprovals { get; set; }
     
     #endregion
 

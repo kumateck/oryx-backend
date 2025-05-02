@@ -43,6 +43,6 @@ public interface IRequisitionRepository
   Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType);
   Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(
       SupplierType supplierType, Guid materialId, Guid purchaseOrderId, SupplierQuotationItemStatus? status);
-  Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations,
+  Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, SupplierType type,
       Guid userId);
 }
