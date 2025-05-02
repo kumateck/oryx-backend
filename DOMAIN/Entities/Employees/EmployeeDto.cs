@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Children;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
@@ -9,7 +10,7 @@ using DOMAIN.Entities.Siblings;
 
 namespace DOMAIN.Entities.Employees;
 
-public class EmployeeDto
+public class EmployeeDto: WithAttachment
 {
     public Guid Id { get; set; } 
 

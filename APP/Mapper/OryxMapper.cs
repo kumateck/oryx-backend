@@ -599,7 +599,8 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Department, opt => opt.Ignore())
             .ForMember(dest => dest.Designation, opt => opt.Ignore());
 
-        CreateMap<Employee, EmployeeDto>();
+        CreateMap<Employee, EmployeeDto>()
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         CreateMap<EmployeeUserDto, Employee>();
         
