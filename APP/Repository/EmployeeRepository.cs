@@ -21,7 +21,7 @@ namespace APP.Repository;
 
 public class EmployeeRepository(ApplicationDbContext context,
     ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper,
-    IConfiguration configuration) : IEmployeeRepository
+    IConfiguration configuration, UserManager<User> userManager) : IEmployeeRepository
 {
 
 public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
@@ -153,13 +153,14 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
     {
         var newUser = mapper.Map<User>(employee);
         newUser.Email = employee.Email;
+        newUser.UserName = employee.Email;
         newUser.FirstName = employee.FullName;
         newUser.LastName = employee.FullName;
         newUser.Department = employee.Department;
         newUser.CreatedById = createdByUserId;
         newUser.CreatedAt = DateTime.UtcNow;
 
-        await context.Users.AddAsync(newUser);
+        await userManager.CreateAsync(newUser);
         await context.SaveChangesAsync();
 
         var role = await context.Roles.FirstOrDefaultAsync(r => r.Name == employeeUserDto.RoleName);
@@ -169,12 +170,7 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
             return Error.NotFound("Role.NotFound", "Role not found");
         }
         
-        var userRole = new IdentityUserRole<Guid>
-        {
-            UserId = newUser.Id,
-            RoleId = role.Id
-        };
-        await context.UserRoles.AddAsync(userRole);
+        await userManager.AddToRoleAsync(newUser, employeeUserDto.RoleName);
         await context.SaveChangesAsync();
 
         await transaction.CommitAsync();
