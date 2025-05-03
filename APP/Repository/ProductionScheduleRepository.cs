@@ -127,10 +127,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var productionSchedule =
             await context.ProductionSchedules.Include(productionSchedule => productionSchedule.Products).FirstOrDefaultAsync(p => p.Id == productionScheduleId);
         
-        var product = await context.Products.Include(product => product.Routes).ThenInclude(route => route.Resources)
+        var product = await context.Products.AsSplitQuery().Include(product => product.Routes).ThenInclude(route => route.Resources)
             .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
             .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)
-            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles).AsSplitQuery().FirstOrDefaultAsync(p => p.Id == productId);
+            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles).FirstOrDefaultAsync(p => p.Id == productId);
         
         
         if(productionSchedule is null)
@@ -1153,7 +1153,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 var batches = batchResult.Value;
                 foreach (var batch in batches)
                 {
-                    await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleId, productId,
+                    await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.StorageWarehouseId, productionScheduleId, productId,
                         batch.QuantityToTake, batch.Batch.UoM.Id);
                 }
             }
