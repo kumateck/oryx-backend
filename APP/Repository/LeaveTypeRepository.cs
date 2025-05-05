@@ -23,19 +23,25 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
             .Where(d => leaveTypeDto.DesignationList.Contains(d.Id)).Include(designation => designation.LeaveTypes)
             .ToListAsync();
 
-        
-        if (designations.Any(designation => leaveTypeDto.NumberOfDays > designation.MaximumLeaveDays))
+        foreach (var designation in designations)
         {
-            return Error.Validation("LeaveType.InvalidNumberOfDays", $"Number of days cannot be greater than maximum leave days for designation.");
-        }
+            // new leave type days alone must not be more than the maximum allowed
+            if (leaveTypeDto.NumberOfDays > designation.MaximumLeaveDays)
+            {
+                return Error.Validation("LeaveType.InvalidNumberOfDays", 
+                    $"Leave days for designation '{designation.Name}' cannot exceed its maximum of {designation.MaximumLeaveDays} days.");
+            }
 
-        var maximumLeave = designations.Sum(designation => designation.LeaveTypes.Sum(leaveType => leaveType.NumberOfDays));
+            // new leave days and existing leave days must not exceed max
+            var existingTotal = designation.LeaveTypes.Sum(lt => lt.NumberOfDays);
+            var cumulative = existingTotal + leaveTypeDto.NumberOfDays;
 
-        if (maximumLeave > leaveTypeDto.NumberOfDays)
-        {
-            return Error.Validation("LeaveType.InvalidNumberOfDays", $"Number of days cannot be greater than maximum leave days for designation.");
+            if (cumulative > designation.MaximumLeaveDays)
+            {
+                return Error.Validation("LeaveType.CumulativeDaysExceeded",
+                    $"Total leave days for designation '{designation.Name}' would exceed its maximum of {designation.MaximumLeaveDays} days (Current total: {existingTotal}, Adding: {leaveTypeDto.NumberOfDays}).");
+            }
         }
-        
         var leaveType = mapper.Map<LeaveType>(leaveTypeDto);
         leaveType.CreatedById = userId;
         leaveType.CreatedAt = DateTime.UtcNow;
