@@ -12,8 +12,6 @@ namespace DOMAIN.Entities.Employees;
 
 public class EmployeeDto: WithAttachment
 {
-    public Guid Id { get; set; } 
-
     public string FirstName { get; set; }
     
     public string LastName { get; set; }

@@ -248,8 +248,9 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
 
-        var employeeDto = mapper.Map<EmployeeDto>(employee);
-        return Result.Success(employeeDto);
+        return
+            mapper.Map<EmployeeDto>(employee, 
+                opts => { opts.Items[AppConstants.ModelType] = nameof(Employee);});
     }
     
     public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
