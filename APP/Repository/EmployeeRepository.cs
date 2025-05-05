@@ -154,8 +154,8 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
         var newUser = mapper.Map<User>(employee);
         newUser.Email = employee.Email;
         newUser.UserName = employee.Email;
-        newUser.FirstName = employee.FullName;
-        newUser.LastName = employee.FullName;
+        newUser.FirstName = employee.FirstName;
+        newUser.LastName = employee.LastName;
         newUser.Department = employee.Department;
         newUser.CreatedById = createdByUserId;
         newUser.CreatedAt = DateTime.UtcNow;
@@ -200,7 +200,7 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
         var verificationLink = $"{partialUrl}/auth/reset-password?email={newUser.Email}/{jwt}";
 
         var emailBody = emailTemplate
-            .Replace("{Name}", employee.FullName)
+            .Replace("{Name}", $"{employee.FirstName} {employee.LastName}")
             .Replace("{Email}", employee.Email)
             .Replace("{VerificationLink}", verificationLink);
 
@@ -345,7 +345,7 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     var emailTemplate = await File.ReadAllTextAsync(templatePath);
 
     var body = emailTemplate
-        .Replace("{Name}", employee.FullName)
+        .Replace("{Name}", $"{employee.FirstName} {employee.LastName}")
         .Replace("{Email}", employee.Email)
         .Replace("{DesignationName}", designation.Name)
         .Replace("{DepartmentName}", department.Name);

@@ -152,7 +152,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Employee.FullName);
+            query = query.WhereSearch(searchQuery, q => q.Employee.FirstName);
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
