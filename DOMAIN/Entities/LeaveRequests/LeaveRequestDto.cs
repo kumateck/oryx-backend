@@ -22,6 +22,8 @@ public class LeaveRequestDto: WithAttachment
     
    public string ContactPersonNumber { get; set; }
    
+   public string Justification { get; set; }
+   
    public RequestCategory RequestCategory { get; set; }
    
    public DateTime CreatedAt { get; set; } 
