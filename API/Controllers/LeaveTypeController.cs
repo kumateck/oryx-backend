@@ -1,3 +1,4 @@
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.LeaveTypes;
@@ -24,7 +25,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.CreateLeaveType(leaveType, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
 
     }
 
@@ -40,7 +41,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetLeaveTypes(page, pageSize, searchQuery);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
 
     }
     
@@ -57,7 +58,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetLeaveType(id);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
 
     }
 
@@ -75,7 +76,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.UpdateLeaveType(id, leaveType, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
 
     }
 
@@ -92,6 +93,6 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.DeleteLeaveType(id, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
