@@ -59,6 +59,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
             echo "Logging in to Docker Hub"
+
             echo "----- DEBUG: Printing Secret Environment Variables -----"
             echo "ACCESS_KEY=\$ACCESS_KEY"
             echo "DB_PASSWORD=\$DB_PASSWORD"
@@ -75,8 +76,9 @@ jobs:
             echo "SSH_PORT=${{ secrets.SSH_PORT }}"
             echo "SSH_USERNAME=${{ secrets.SSH_USERNAME }}"
             echo "--------------------------------------------------------"
-            echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
 
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin  
+          
             echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
             docker pull "${DOCKER_IMAGE_NAME}:latest"
 
