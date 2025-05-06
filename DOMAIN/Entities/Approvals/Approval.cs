@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using SHARED;
@@ -74,5 +75,23 @@ public class ApprovalLog
     public DateTime? ApprovedAt { get; set; }
     public ApprovalStatus Status { get; set; }
     public string Comments { get; set; }
+}
+
+public class CreateApprovalLog
+{ 
+    public string Comments { get; set; }
+    public Guid ModelId { get; set; }
+    public ApprovalStatus Status { get; set; }
+    public Guid UserId { get; set; }
+}
+public class ApprovalActionLog
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ModelId { get; set; }
+    public Guid? UserId { get; set; }
+    public User User { get; set; }
+    public ApprovalStatus Status { get; set; }
+    [StringLength(1000)] public string Comments { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 

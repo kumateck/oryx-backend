@@ -209,6 +209,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Approval> Approvals { get; set; }
     public DbSet<ApprovalStage> ApprovalStages { get; set; }
+    public DbSet<ApprovalActionLog> ApprovalActionLogs { get; set; }
 
     #endregion
 

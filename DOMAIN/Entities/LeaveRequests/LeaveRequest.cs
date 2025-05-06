@@ -16,7 +16,7 @@ public class LeaveRequest : BaseEntity, IRequireApproval
     
     public string? Justification { get; set; }
     public RequestCategory RequestCategory { get; set; }
-    public LeaveStatus LeaveStatus { get; set; } = LeaveStatus.Pending;
+    public LeaveStatus LeaveStatus { get; set; }
     public int? UnpaidDays { get; set; }
     
     public int? PaidDays { get; set; }
@@ -54,6 +54,7 @@ public enum RequestCategory
 
 public enum LeaveStatus
 {
+    New,
     Pending,
     Approved,
     Rejected
