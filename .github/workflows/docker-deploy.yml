@@ -59,26 +59,8 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
             echo "Logging in to Docker Hub"
+            echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
 
-            echo "----- DEBUG: Printing Secret Environment Variables -----"
-            echo "ACCESS_KEY=\$ACCESS_KEY"
-            echo "DB_PASSWORD=\$DB_PASSWORD"
-            echo "DB_USERNAME=\$DB_USERNAME"
-            echo "DEFAULT_PASSWORD=\$DEFAULT_PASSWORD"
-            echo "DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}"
-            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}"
-            echo "MONGO_INITDB_ROOT_PASSWORD=\$MONGO_INITDB_ROOT_PASSWORD"
-            echo "MONGO_INITDB_ROOT_USERNAME=\$MONGO_INITDB_ROOT_USERNAME"
-            echo "SECRET_KEY=\$SECRET_KEY"
-            echo "SMTP_PASSWORD=\$SMTP_PASSWORD"
-            echo "SMTP_USERNAME=\$SMTP_USERNAME"
-            echo "SSH_HOST=${{ secrets.SSH_HOST }}"
-            echo "SSH_PORT=${{ secrets.SSH_PORT }}"
-            echo "SSH_USERNAME=${{ secrets.SSH_USERNAME }}"
-            echo "--------------------------------------------------------"
-
-            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin  
-          
             echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
             docker pull "${DOCKER_IMAGE_NAME}:latest"
 
