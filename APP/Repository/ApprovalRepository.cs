@@ -962,8 +962,55 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             .OrderBy(s => s.Order)
             .ToListAsync();
 
-        if (!approvalStages.Any())
+        if (approvalStages.Count == 0)
+        {
+            switch (modelType)
+            {
+                case "RawStockRequisition" or "PackageStockRequisition" or "PurchaseRequisition" or "Requisition":
+                    var requisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == modelId);
+                    if (requisition != null)
+                    {
+                        requisition.Status = RequestStatus.Pending;
+                        context.Requisitions.Update(requisition);
+                        await context.SaveChangesAsync();
+                    }
+
+                    break;
+
+                case nameof(BillingSheet):
+                    var billingSheet = await context.BillingSheets.FirstOrDefaultAsync(r => r.Id == modelId);
+                    if (billingSheet != null)
+                    {
+                        billingSheet.Status = BillingSheetStatus.Pending;
+                        context.BillingSheets.Update(billingSheet);
+                        await context.SaveChangesAsync();
+                    }
+
+                    break;
+
+                case nameof(PurchaseOrder):
+                    var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(r => r.Id == modelId);
+                    if (purchaseOrder != null)
+                    {
+                        purchaseOrder.Status = PurchaseOrderStatus.Pending;
+                        context.PurchaseOrders.Update(purchaseOrder);
+                        await context.SaveChangesAsync();
+                    }
+
+                    break;
+
+                case nameof(LeaveRequest):
+                    var leaveRequest = await context.LeaveRequests.FirstOrDefaultAsync(r => r.Id == modelId);
+                    if (leaveRequest != null)
+                    {
+                        leaveRequest.LeaveStatus = LeaveStatus.Pending;
+                        context.LeaveRequests.Update(leaveRequest);
+                        await context.SaveChangesAsync();
+                    }
+                    break;
+            }
             return;
+        }
 
         switch (modelType)
         {
