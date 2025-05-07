@@ -124,13 +124,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                     {
                         paidDays = balance + deductionLimit;
                         unpaidDays = (int)totalDays - paidDays;
-                        existingEmployee.AnnualLeaveDays = 0;
                     }
-                }
-                else
-                {
-                    paidDays = (int)totalDays;
-                    unpaidDays = 0;
                 }
             }
             else
@@ -245,7 +239,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
     public async Task<Result> DeleteLeaveRequest(Guid leaveRequestId, Guid userId)
     {
         var leaveRequest = await context.LeaveRequests
-            .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);;
+            .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);
         
         if (leaveRequest is null)
         {
