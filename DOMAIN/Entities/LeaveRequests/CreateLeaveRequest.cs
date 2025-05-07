@@ -10,9 +10,9 @@ public class CreateLeaveRequest
     [Required] public Guid EmployeeId { get; set; }
     [Required] public RequestCategory RequestCategory { get; set; }
     
-    [Required] [StringLength(100)] public string ContactPerson { get; set; }
+    [StringLength(100)] public string ContactPerson { get; set; }
     
-    [Required] [Phone] public string ContactPersonNumber { get; set; }
+    [Phone] public string ContactPersonNumber { get; set; }
     
     public string Justification { get; set; }
 }

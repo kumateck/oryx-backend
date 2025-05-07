@@ -8,7 +8,6 @@ namespace DOMAIN.Entities.LeaveRequests;
 
 public class LeaveRequestDto: WithAttachment
 {
-   public Guid Id { get; set; }
    
    public Guid LeaveTypeId { get; set; } 
    

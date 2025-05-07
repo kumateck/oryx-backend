@@ -12,6 +12,6 @@ public class DesignationDto: BaseDto
     
     public int MaximumLeaveDays { get; set; }
 
-    public List<DepartmentDto> Departments { get; set; } = [];
+    public List<DepartmentDto> Departments { get; set; } 
     
 }
