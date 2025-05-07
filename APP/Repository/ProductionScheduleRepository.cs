@@ -502,6 +502,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 CompletedAt = pa.CompletedAt,
                 BatchNumber = pa.ProductionSchedule.Products.FirstOrDefault(p => p.ProductId == pa.ProductId)?.BatchNumber ??
                               context.BatchManufacturingRecords.FirstOrDefault(b => b.ProductionScheduleId == pa.ProductionScheduleId && b.ProductId == pa.ProductId)?.BatchNumber,
+                Quantity = pa.ProductionSchedule.Products.FirstOrDefault(p => p.ProductId == pa.ProductId)?.Quantity ?? 0, 
                 CurrentStep = mapper.Map<ProductionActivityStepDto>(
                     pa.Steps
                         .OrderBy(s => s.Order)
