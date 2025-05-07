@@ -45,6 +45,11 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         
         if (request.RequestCategory == RequestCategory.AbsenceRequest)
         {
+            if (string.IsNullOrWhiteSpace(request.ContactPerson) ||
+                string.IsNullOrWhiteSpace(request.ContactPersonNumber))
+            {
+                return Error.Validation("AbsenceRequest.InvalidContactPerson", "Contact person and contact person number are required.");
+            }
             // Absence rules
             if (totalDays > 2)
                 return Error.Validation("AbsenceRequest.InvalidDuration", "Absence requests must be at most 2 days.");
@@ -96,6 +101,12 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             // Leave rules
             if (totalDays < 3)
                 return Error.Validation("LeaveRequest.InvalidDuration", "Leave request must be at least 3 days long.");
+            
+            if (string.IsNullOrWhiteSpace(request.ContactPerson) ||
+                string.IsNullOrWhiteSpace(request.ContactPersonNumber))
+            {
+                return Error.Validation("AbsenceRequest.InvalidContactPerson", "Contact person and contact person number are required.");
+            }
 
             if (leaveType.IsPaid)
             {

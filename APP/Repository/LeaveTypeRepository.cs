@@ -12,7 +12,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
 {
     public async Task<Result<Guid>> CreateLeaveType(CreateLeaveTypeRequest leaveTypeDto, Guid userId)
     {
-        var existingLeaveType = await context.LeaveTypes.FirstOrDefaultAsync(l => l.Name == leaveTypeDto.Name);
+        var existingLeaveType = await context.LeaveTypes.FirstOrDefaultAsync(l => l.Name == leaveTypeDto.Name && l.LastDeletedById == null);
 
         if (existingLeaveType != null)
         {
@@ -39,7 +39,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
             if (cumulative > designation.MaximumLeaveDays)
             {
                 return Error.Validation("LeaveType.CumulativeDaysExceeded",
-                    $"Total leave days for designation '{designation.Name}' would exceed its maximum of {designation.MaximumLeaveDays} days (Current total: {existingTotal}, Adding: {leaveTypeDto.NumberOfDays}).");
+                    $"Total leave days for designation '{designation.Name}' would exceed its maximum of {designation.MaximumLeaveDays} days.");
             }
         }
         var leaveType = mapper.Map<LeaveType>(leaveTypeDto);
