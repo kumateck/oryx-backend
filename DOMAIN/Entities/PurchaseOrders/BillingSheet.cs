@@ -46,6 +46,7 @@ public class BillingSheetApproval : ResponsibleApprovalStage
 
 public enum BillingSheetStatus
 {
+    New,
     Pending,
     Paid
 }

@@ -57,6 +57,7 @@ public class RequisitionApproval : ResponsibleApprovalStage
 
 public enum RequestStatus
 {
+    New,
     Pending,
     Sourced,
     Completed,

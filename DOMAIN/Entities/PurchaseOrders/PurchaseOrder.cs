@@ -68,6 +68,7 @@ public class PurchaseOrderItem : BaseEntity
 
 public enum PurchaseOrderStatus
 {
+    New,
     Pending,
     Delivered,
     Attached,
