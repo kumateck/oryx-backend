@@ -7,6 +7,7 @@ using APP.IRepository;
 using APP.Services.Email;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -180,24 +181,22 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
             throw new FileNotFoundException("Email template not found", templatePath);
 
         var emailTemplate = await File.ReadAllTextAsync(templatePath);
-
-        var jwtKey = configuration["JwtSettings:Key"];
-        var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
-        var tokenHandler = new JwtSecurityTokenHandler();
-
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity([ new Claim("type", newUser.Id.ToString()) ]),
-            Expires = DateTime.UtcNow.AddDays(7),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        var jwt = tokenHandler.WriteToken(token);
+        
+        var key = Guid.NewGuid().ToString();
         
         var partialUrl = Environment.GetEnvironmentVariable("CLIENT_BASE_URL");
+        
+        var token = await userManager.GeneratePasswordResetTokenAsync(newUser);
 
-        var verificationLink = $"{partialUrl}/auth/reset-password?email={newUser.Email}/{jwt}";
+        await context.PasswordResets.AddAsync(new PasswordReset
+        {
+            UserId = newUser.Id,
+            Token = token,
+            KeyName = key,
+            CreatedAt = DateTime.Now
+        });
+
+        var verificationLink = $"{partialUrl}/reset-password?email={newUser.Email}&key={key}";
 
         var emailBody = emailTemplate
             .Replace("{Name}", $"{employee.FirstName} {employee.LastName}")
