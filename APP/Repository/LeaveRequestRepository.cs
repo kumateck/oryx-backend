@@ -95,12 +95,6 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             {
                 return Error.Validation("LeaveRequest.InvalidDates", "Exit Pass request must be a single day.");
             }
-
-                  if (string.IsNullOrWhiteSpace(request.ContactPerson) ||
-                string.IsNullOrWhiteSpace(request.ContactPersonNumber))
-            {
-                return Error.Validation("AbsenceRequest.InvalidContactPerson", "Contact person and contact person number are required.");
-            }
         }
         else
         {
