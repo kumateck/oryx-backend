@@ -975,7 +975,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>Returns the Extra Packing with batches.</returns>
     [HttpGet("extra-packing/by-product{productionScheduleId}/{productId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionExtraPackingDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionExtraPackingDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductionExtraPackingByProduct(Guid productionScheduleId, Guid productId)
     {
