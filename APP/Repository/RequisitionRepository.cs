@@ -1171,7 +1171,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         
         var supplierQuotations =  await context.SupplierQuotations
             .Include(s => s.Items)
-            .Where(s => s.ReceivedQuotation && s.Items.Any(i => i.Status == SupplierQuotationItemStatus.NotProcessed)).ToListAsync();
+            .Where(s => s.ReceivedQuotation &&
+                        s.Items.Any(i => i.Status == SupplierQuotationItemStatus.NotProcessed 
+                                         && i.SupplierQuotation.Supplier.Type == type)).ToListAsync();
 
         foreach (var supplierQuotation in supplierQuotations)
         {
