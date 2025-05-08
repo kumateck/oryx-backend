@@ -968,6 +968,22 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     /// <summary>
+    /// Retrieves a specific Extra Packing entry by ID, including associated batches.
+    /// </summary>
+    /// <param name="productionScheduleId">The production schedule Id linked to the extra packing></param>
+    /// <param name="productId">The product Id linked to the extra paccking</param>
+    /// <returns>Returns the Extra Packing with batches.</returns>
+    [HttpGet("extra-packing/by-product{productionScheduleId}/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionExtraPackingDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionExtraPackingByProduct(Guid productionScheduleId, Guid productId)
+    {
+        var result = await repository.GetProductionExtraPackingByProduct(productionScheduleId, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves batches that can be supplied for a specific Extra Packing Material.
     /// </summary>
     /// <param name="extraPackingMaterialId">The ID of the Extra Packing Material.</param>

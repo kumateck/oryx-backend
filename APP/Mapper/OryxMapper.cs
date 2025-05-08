@@ -235,6 +235,10 @@ public class OryxMapper : Profile
 
         CreateMap<FinalPacking, FinalPackingDto>();
         CreateMap<FinalPackingMaterial, FinalPackingMaterialDto>();
+
+        CreateMap<ProductionExtraPacking, ProductionExtraPackingDto>();
+        CreateMap<ProductionExtraPacking, ProductionExtraPackingWithBatchesDto>();
+
         #endregion
 
         #region Route

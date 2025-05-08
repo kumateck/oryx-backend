@@ -1656,7 +1656,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         return mapper.Map<FinalPackingDto>(finalPacking);
     }
-
+    
     /// ✅ **Extra Method: Get Final Packing by ProductionScheduleId & ProductId**
     public async Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId) 
     { 
@@ -1962,6 +1962,19 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var batchesResult = await BatchesToSupplyForExtraPackingMaterial(productionExtraPacking.Id);
         productionExtraPacking.Batches = batchesResult.IsSuccess ? batchesResult.Value : [];
         return productionExtraPacking;
+    }
+    
+    public async Task<Result<List<ProductionExtraPackingDto>>> GetProductionExtraPackingByProduct(Guid productionScheduleId, Guid productId)
+    {
+        return mapper.Map<List<ProductionExtraPackingDto>>(await context.ProductionExtraPackings
+            .AsSplitQuery()
+            .Include(p => p.Material)
+            .Include(p => p.Product)
+            .Include(P => P.ProductionSchedule)
+            .Include(p => p.UoM)
+            .Include(p => p.IssuedBy)
+            .Where(p => p.ProductionScheduleId == productionScheduleId && p.ProductId == productId)
+            .ToListAsync());
     }
     
     public async Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId)

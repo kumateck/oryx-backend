@@ -110,6 +110,8 @@ public interface IProductionScheduleRepository
         int pageSize, string searchQuery);
    Task<Result<ProductionExtraPackingWithBatchesDto>> GetProductionExtraPackingById(
        Guid productionExtraPackingId);
+  Task<Result<List<ProductionExtraPackingDto>>> GetProductionExtraPackingByProduct(
+       Guid productionScheduleId, Guid productId);
    Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId);
    Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
        List<BatchTransferRequest> batches, Guid userId);
