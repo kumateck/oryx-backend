@@ -149,7 +149,10 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
     {
         var query = context.LeaveRequests
             .Include(l => l.LeaveType)
+                .ThenInclude(l=> l.Designations)
             .Include(l => l.Employee)
+                .ThenInclude(l => l.Designation)
+                .ThenInclude(l => l.Departments)
             .Where(l => l.LastDeletedById == null)
             .AsQueryable();
 
