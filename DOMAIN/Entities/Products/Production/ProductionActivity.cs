@@ -96,7 +96,7 @@ public class ProductionActivityListDto : BaseDto
 public class ProductionActivityGroupDto : BaseDto
 {
     public CollectionItemDto ProductionSchedule { get; set; }
-    public CollectionItemDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public ProductionStatus Status { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }

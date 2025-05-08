@@ -496,7 +496,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 Id = pa.Id,
                 CreatedAt = pa.CreatedAt,
                 ProductionSchedule = mapper.Map<CollectionItemDto>(pa.ProductionSchedule),
-                Product = mapper.Map<CollectionItemDto>(pa.Product),
+                Product = mapper.Map<ProductListDto>(pa.Product),
                 Status = pa.Status,
                 StartedAt = pa.StartedAt,
                 CompletedAt = pa.CompletedAt,
