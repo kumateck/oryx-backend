@@ -103,4 +103,14 @@ public interface IProductionScheduleRepository
         string searchQuery);
     Task<Result<MaterialReturnNoteDto>> GetMaterialReturnNoteById(Guid materialReturnNoteId);
     Task<Result> CompleteMaterialReturn(Guid materialReturnNoteId);
+
+    Task<Result> CreateExtraPacking(Guid productionScheduleId, Guid productId,
+        List<CreateProductionExtraPacking> extraPackings);
+   Task<Result<Paginateable<IEnumerable<ProductionExtraPackingDto>>>> GetProductionExtraPackings(int page,
+        int pageSize, string searchQuery);
+   Task<Result<ProductionExtraPackingWithBatchesDto>> GetProductionExtraPackingById(
+       Guid productionExtraPackingId);
+   Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId);
+   Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
+       List<BatchTransferRequest> batches, Guid userId);
 }

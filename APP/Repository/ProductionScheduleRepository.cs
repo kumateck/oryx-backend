@@ -1908,4 +1908,217 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         return Result.Success();
     }
+
+
+    public async Task<Result> CreateExtraPacking(Guid productionScheduleId, Guid productId, List<CreateProductionExtraPacking> extraPackings)
+    {
+        foreach (var extraPacking in extraPackings)
+        {
+            await context.ProductionExtraPackings.AddAsync(new ProductionExtraPacking
+            {
+                ProductionScheduleId = productionScheduleId,
+                ProductId = productId,
+                MaterialId = extraPacking.MaterialId,
+                Quantity = extraPacking.Quantity,
+                UoMId = extraPacking.UoMId,
+            });
+        }
+        
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<ProductionExtraPackingDto>>>> GetProductionExtraPackings(int page,
+        int pageSize, string searchQuery)
+    {
+        var query = context.ProductionExtraPackings
+            .Where(q => q.Status == ProductionExtraPackingStatus.InProgress)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.Material.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<ProductionExtraPackingDto>
+        );
+    }
+
+    public async Task<Result<ProductionExtraPackingWithBatchesDto>> GetProductionExtraPackingById(Guid productionExtraPackingId)
+    {
+        var productionExtraPacking = mapper.Map<ProductionExtraPackingWithBatchesDto>(await context.ProductionExtraPackings
+            .AsSplitQuery()
+            .Include(p => p.Material)
+            .Include(p => p.Product)
+            .Include(P => P.ProductionSchedule)
+            .Include(p => p.UoM)
+            .Include(p => p.IssuedBy)
+            .FirstOrDefaultAsync(p => p.Id == productionExtraPackingId));
+
+        var batchesResult = await BatchesToSupplyForExtraPackingMaterial(productionExtraPacking.Id);
+        productionExtraPacking.Batches = batchesResult.IsSuccess ? batchesResult.Value : [];
+        return productionExtraPacking;
+    }
+    
+    public async Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId)
+    {
+        var extraPacking = await context.ProductionExtraPackings
+            .Include(s => s.Material).Include(productionExtraPacking => productionExtraPacking.Product)
+            .FirstOrDefaultAsync(st => st.Id == extraPackingMaterialId);
+        
+        if (extraPacking == null)
+        {
+            return Error.NotFound("ExtraPacking.NotFound", "Extra packing not found");
+        }
+
+        var department = extraPacking.Product.Department;
+
+        var fromWarehouse = department.Warehouses.FirstOrDefault(q => q.Type == WarehouseType.PackagedStorage);
+        if (fromWarehouse is null)
+            return UserErrors.WarehouseNotFound(MaterialKind.Package);
+        
+        var toWarehouse = department.Warehouses.FirstOrDefault(w => w.Type == WarehouseType.Production);
+        if (toWarehouse is null)
+            return Error.NotFound("Production.Warehouse", "Production.Warehouse not found");
+        
+        return await materialRepository.BatchesToSupplyForGivenQuantity(extraPacking.MaterialId, fromWarehouse.Id, extraPacking.Quantity);
+    }
+
+
+    public async Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId, List<BatchTransferRequest> batches, Guid userId)
+    {
+        var productionExtraPacking = await context.ProductionExtraPackings
+            .AsSplitQuery()
+            .Include(p => p.Product)
+            .ThenInclude(pp => pp.Department)
+            .ThenInclude(p => p.Warehouses).ThenInclude(warehouse => warehouse.ArrivalLocation)
+            .FirstOrDefaultAsync(p => p.Id == productionExtraPackingId);
+        if(productionExtraPacking is null) return Error.NotFound("ProductionExtraPacking", "ProductionExtraPacking not found");
+
+        var department = productionExtraPacking.Product.Department;
+
+        var fromWarehouse = department.Warehouses.FirstOrDefault(q => q.Type == WarehouseType.PackagedStorage);
+        if (fromWarehouse is null)
+            return UserErrors.WarehouseNotFound(MaterialKind.Package);
+        
+        var toWarehouse = department.Warehouses.FirstOrDefault(w => w.Type == WarehouseType.Production);
+        if (toWarehouse is null)
+            return Error.NotFound("Production.Warehouse", "Production.Warehouse not found");
+        
+        decimal remainingQuantity = productionExtraPacking.Quantity;
+        
+        var distributedBatches = new List<MaterialBatch>();
+
+        foreach (var batchRequest in batches)
+        {
+            var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == batchRequest.BatchId);
+            
+            if (batch == null || batch.RemainingQuantity < batchRequest.Quantity)
+            {
+                return Error.Failure("Batch.InsufficientStock", $"Not enough stock in batch {batchRequest.BatchId}");
+            }
+
+            batch.QuantityAssigned = 0;
+            var shelfMaterialBatches =
+                await context.ShelfMaterialBatches.Where(sb => sb.MaterialBatchId == batch.Id).ToListAsync();
+            context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
+
+            var movement = new MassMaterialBatchMovement
+            {
+                BatchId = batch.Id,
+                FromWarehouseId = fromWarehouse.Id,
+                ToWarehouseId = toWarehouse.Id,
+                Quantity = batchRequest.Quantity,
+                MovedAt = DateTime.UtcNow,
+                MovedById = userId
+            };
+            
+            await context.MassMaterialBatchMovements.AddAsync(movement);
+            
+            var batchEvent = new MaterialBatchEvent
+            {
+                BatchId = batch.Id,
+                Type = EventType.Moved,
+                Quantity = batchRequest.Quantity,
+                UserId = userId
+            };
+            await context.MaterialBatchEvents.AddAsync(batchEvent);
+            
+            await context.SaveChangesAsync();
+            
+            var toBinCardEvent =new BinCardInformation
+            {
+                MaterialBatchId = batch.Id,
+                Description = fromWarehouse.Name,
+                WayBill = "N/A",
+                ArNumber = "N/A",
+                QuantityReceived = 0,
+                QuantityIssued = batchRequest.Quantity,
+                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(batch.MaterialId, fromWarehouse.Id)).Value,
+                UoMId = batch.UoMId,
+                ProductId = productionExtraPacking.ProductId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedById = userId
+            };
+
+            await context.BinCardInformation.AddAsync(toBinCardEvent);
+
+            var fromBinCardEvent =new BinCardInformation
+            {
+                MaterialBatchId = batch.Id,
+                Description = toWarehouse.Name,
+                WayBill = "N/A",
+                ArNumber = "N/A",
+                QuantityReceived = batchRequest.Quantity,
+                QuantityIssued = 0,
+                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(batch.MaterialId, toWarehouse.Id)).Value,
+                UoMId = batch.UoMId,
+                ProductId =  productionExtraPacking.ProductId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedById = userId
+            };
+
+            await context.BinCardInformation.AddAsync(fromBinCardEvent);
+            //batch.StockTransferSourceId = id;
+            //context.MaterialBatches.Update(batch);
+            
+            await context.SaveChangesAsync();
+            
+            distributedBatches.Add(batch);
+            
+            remainingQuantity -= batchRequest.Quantity;
+
+            if (remainingQuantity <= 0) break;
+        }
+        
+        if (toWarehouse.ArrivalLocation == null)
+        {
+            toWarehouse.ArrivalLocation = new WarehouseArrivalLocation
+            {
+                WarehouseId = toWarehouse.Id,
+                Name = "Default Arrival Location",
+                FloorName = "Ground Floor",
+                Description = "Automatically created arrival location"
+            };
+            await context.WarehouseArrivalLocations.AddAsync(toWarehouse.ArrivalLocation);
+        }
+            
+        toWarehouse.ArrivalLocation.DistributedStockTransferBatches.AddRange(distributedBatches);
+
+        if (remainingQuantity > 0)
+        {
+            return Error.Failure("StockTransfer.InsufficientStock", "Not enough batches to fulfill the transfer");
+        }
+
+        productionExtraPacking.IssuedAt = DateTime.UtcNow;
+        productionExtraPacking.IssuedById = userId;
+        productionExtraPacking.Status = ProductionExtraPackingStatus.Approved;
+        context.ProductionExtraPackings.Update(productionExtraPacking);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 }
