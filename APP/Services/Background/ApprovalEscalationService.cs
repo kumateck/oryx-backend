@@ -16,7 +16,14 @@ public class ApprovalEscalationService(IServiceProvider serviceProvider) : Backg
             using (var scope = serviceProvider.CreateScope())
             {
                 var approvalRepository = scope.ServiceProvider.GetRequiredService<IApprovalRepository>();
-                await approvalRepository.ProcessApprovalEscalations();
+                try
+                {
+                    await approvalRepository.ProcessApprovalEscalations();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to process approval escalations. Error: {e.Message}");
+                }
             }
 
             await Task.Delay(_checkInterval, stoppingToken);
