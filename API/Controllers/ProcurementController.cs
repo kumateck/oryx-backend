@@ -298,6 +298,22 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
 
     /// <summary>
+    /// Retrieves a requisition id for a purchase order and material
+    /// </summary>
+    /// <param name="purchaseOrderId">The ID of the purchase order.</param>
+    /// <param name="materialId">The material ID to know the requisition</param>
+    /// <returns>Returns the purchase order details.</returns>
+    [HttpGet("purchase-order/requisition/{purchaseOrderId}/{materialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetRequisitionIdForPurchaseOrderAndMaterial(Guid purchaseOrderId, Guid materialId)
+    {
+        var result = await repository.GetRequisitionIdForPurchaseOrderAndMaterial(purchaseOrderId, materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves a paginated list of purchase orders.
     /// </summary>
     /// <param name="page">The current page number.</param>
@@ -358,12 +374,32 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdatePurchaseOrder([FromBody] CreatePurchaseOrderRequest request, Guid purchaseOrderId)
+    public async Task<IResult> UpdatePurchaseOrder([FromBody] UpdatePurchaseOrderRequest request, Guid purchaseOrderId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.UpdatePurchaseOrder(request, purchaseOrderId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Revises a specific purchase order by its ID.
+    /// </summary>
+    /// <param name="revisions">The list of revisions to be made for the purchase order</param>
+    /// <param name="purchaseOrderId">The ID of the purchase order to revise.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("purchase-order/{purchaseOrderId}/revise")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> RevisePurchaseOrder([FromBody] List<CreatePurchaseOrderRevision> revisions, Guid purchaseOrderId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.RevisePurchaseOrder(purchaseOrderId, revisions);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -516,13 +552,14 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="status">The status of the billing sheet( 0 -> Pending, 1 -> Paid </param>
     /// <returns>Returns a paginated list of billing sheets.</returns>
     [HttpGet("billing-sheet")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BillingSheetDto>>))]
-    public async Task<IResult> GetBillingSheets([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetBillingSheets([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] BillingSheetStatus? status = null)
     {
-        var result = await repository.GetBillingSheets(page, pageSize, searchQuery);
+        var result = await repository.GetBillingSheets(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -685,20 +722,21 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetWaybillDocument(waybillId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of waybills.
     /// </summary>
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="status">The status of the shipment. (0 -> New, 1 -> In Transit, 2 -> Cleared, 3 -> Arrived.</param>
     /// <returns>Returns a paginated list of waybills.</returns>
     [HttpGet("waybill")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShipmentDocumentDto>>))]
-    public async Task<IResult> GetWaybillDocuments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetWaybillDocuments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] ShipmentStatus? status = null)
     {
-        var result = await repository.GetWaybillDocuments(page, pageSize, searchQuery);
+        var result = await repository.GetWaybillDocuments(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -762,19 +800,18 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Updates the status of a specific shipment document by its ID.
     /// </summary>
     /// <param name="shipmentId">The ID of the shipment document.</param>
-    /// <param name="status"></param>The status of the shipment.
+    /// <param name="request"></param>The status of the shipment.
     /// <returns>Returns success or failure.</returns>
     [HttpPut("shipments/{shipmentId}/status")]
-    [Authorize(Roles = "Admin,Manager")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateShipmentStatus(Guid shipmentId, [FromBody] ShipmentStatus status)
+    public async Task<IResult> UpdateShipmentStatus(Guid shipmentId, [FromBody] UpdateShipmentStatusRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
     
-        var result = await repository.UpdateShipmentStatus(shipmentId, status, Guid.Parse(userId));
+        var result = await repository.UpdateShipmentStatus(shipmentId, request.Status, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     

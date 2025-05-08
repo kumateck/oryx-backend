@@ -1,10 +1,10 @@
-using DOMAIN.Entities.Requisitions;
 
 namespace DOMAIN.Entities.Approvals;
 
 public class CreateApprovalRequest
 {
-    public RequisitionType RequisitionType { get; set; }
+    public string ItemType { get; set; }
+    public TimeSpan EscalationDuration  { get; set; }
     public List<CreateApprovalStageRequest> ApprovalStages { get; set; }
 }
 

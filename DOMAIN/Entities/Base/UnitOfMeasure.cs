@@ -25,3 +25,15 @@ public class PackageStyleDto : BaseDto
     public string Name { get; set; }
     public string Description { get; set; }
 }
+
+public class TermsOfPaymentDto : BaseDto
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+}
+
+public class DeliveryModeDto : BaseDto
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+}

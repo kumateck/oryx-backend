@@ -1,26 +1,97 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using SHARED;
 
 namespace DOMAIN.Entities.Approvals;
 
 public class Approval : BaseEntity
 {
-    //[StringLength(1000)] public string ItemType { get; set; }
+    [StringLength(100)] public string ItemType { get; set; }
+    public TimeSpan EscalationDuration  { get; set; }
     public List<ApprovalStage> ApprovalStages { get; set; }
-    public RequisitionType RequisitionType { get; set; }
 }
 
-public class ApprovalStage : BaseEntity
+public class ApprovalStage :  CurrentApprovalStage
 {
+    public Guid Id { get; set; }
     public Guid ApprovalId { get; set; }
     public Approval Approval { get; set; }
-    public Guid? UserId { get; set; }       
+    public int Order { get; set; }
+    public bool Required { get; set; }     
+}
+
+public class CurrentApprovalStage
+{
+    public Guid? UserId { get; set; }
     public User User { get; set; }
-    public Guid? RoleId { get; set; }        
+    public Guid? RoleId { get; set; }
     public Role Role { get; set; }
+}
+
+public class ResponsibleApprovalStage : CurrentApprovalStage
+{ 
     public bool Required { get; set; }     
     public int Order { get; set; }
+    public DateTime? StageStartTime { get; set; }
+    public ApprovalStatus Status { get; set; }             
+    public DateTime? ApprovalTime { get; set; }    
+    public Guid? ApprovedById { get; set; }
+    public User ApprovedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ActivatedAt { get; set; }
+    [StringLength(1000)] public string Comments { get; set; } 
 }
+
+public enum ApprovalStatus
+{
+    Pending = 0,
+    Approved = 1,
+    Rejected = 2
+}
+public class ApprovalEntity
+{
+    public Guid Id { get; set; } 
+    public string Code { get; set; }       
+    public string ModelType { get; set; } 
+    public DepartmentDto  Department { get; set; }
+    public List<ApprovalLog>  ApprovalLogs { get; set; }
+    public DateTime CreatedAt { get; set; } 
+    public CollectionItemDto RequestedBy { get; set; }
+}
+
+public class ApprovalRequestBody
+{
+    public string Comments { get; set; }
+}
+
+
+public class ApprovalLog
+{
+    public CollectionItemDto User { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public ApprovalStatus Status { get; set; }
+    public string Comments { get; set; }
+}
+
+public class CreateApprovalLog
+{ 
+    public string Comments { get; set; }
+    public Guid ModelId { get; set; }
+    public ApprovalStatus Status { get; set; }
+    public Guid UserId { get; set; }
+}
+public class ApprovalActionLog
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ModelId { get; set; }
+    public Guid? UserId { get; set; }
+    public User User { get; set; }
+    public ApprovalStatus Status { get; set; }
+    [StringLength(1000)] public string Comments { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+

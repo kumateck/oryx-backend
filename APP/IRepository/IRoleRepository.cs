@@ -7,7 +7,7 @@ namespace APP.IRepository;
 public interface IRoleRepository
 {
     Task<Result<List<RoleDto>>> GetRoles();
-    Task<Result<Paginateable<IEnumerable<RolePermissionDto>>>> GetRolesWithPermissionsAndAssignees(int page, int pageSize, 
+    Task<Result<Paginateable<List<RolePermissionDto>>>> GetRolesWithPermissions(int page, int pageSize, 
         string searchQuery);
     Task<Result<RolePermissionDto>> GetRole(Guid id);
     Task<Result> CreateRole(CreateRoleRequest request, Guid userId);

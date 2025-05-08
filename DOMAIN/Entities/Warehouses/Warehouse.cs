@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -30,6 +31,7 @@ public class WarehouseArrivalLocation:BaseEntity
     [StringLength(1000)] public string Description { get; set; }
     public List<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
     public List<DistributedFinishedProduct> DistributedFinishedProducts { get; set; }
+    public List<MaterialBatch> DistributedStockTransferBatches { get; set; }
 }
 
 public class DistributedRequisitionMaterial : BaseEntity
@@ -51,6 +53,7 @@ public class DistributedRequisitionMaterial : BaseEntity
     public DateTime? CheckedAt { get; set; }
     public DateTime? GrnGeneratedAt { get; set; }
     public DistributedRequisitionMaterialStatus Status { get; set; }
+    public List<Checklist> CheckLists { get; set; }
 }
 
 public class DistributedFinishedProduct : BaseEntity

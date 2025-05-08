@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Distribution;
@@ -55,6 +56,7 @@ public class WarehouseArrivalLocationDto
     public string Description { get; set; }
     public List<DistributedRequisitionMaterialDto> DistributedRequisitionMaterials { get; set; } = [];
     public List<DistributedFinishedProductDto> DistributedFinishedProducts { get; set; }
+    public List<MaterialBatchDto> DistributedStockTransferBatches { get; set; }
 }
 
 public class DistributedRequisitionMaterialDto
@@ -71,6 +73,7 @@ public class DistributedRequisitionMaterialDto
     public DateTime? GrnGeneratedAt { get; set; }
     public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; } = [];
     public DistributedRequisitionMaterialStatus Status { get; set; }
+    public List<DistributedChecklistDto> Checklists { get; set; }
 }
 
 public class DistributedFinishedProductDto

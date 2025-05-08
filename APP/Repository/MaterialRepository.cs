@@ -100,6 +100,26 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> UpdateReOrderLevel(Guid materialId, int reOrderLevel, Guid userId)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return UserErrors.NotFound(userId);
+        
+        
+        var material = await context.MaterialDepartments.FirstOrDefaultAsync(m => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId);
+        if (material is null)
+        {
+            return MaterialErrors.NotFound(materialId);
+        }
+
+        material.ReOrderLevel = reOrderLevel;
+        material.LastUpdatedById = userId;
+
+        context.MaterialDepartments.Update(material);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
     // Delete Material (soft delete)
     public async Task<Result> DeleteMaterial(Guid materialId, Guid userId)
@@ -778,6 +798,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             };
             
             await context.MaterialBatchEvents.AddAsync(batchEvent);
+            await context.SaveChangesAsync();
         }
 
         var warehouse = await context.Warehouses
@@ -785,7 +806,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .FirstOrDefault(s => s.Id == request.ShelfMaterialBatches.First().WarehouseLocationShelfId)
                 .WarehouseLocationRack.WarehouseLocation.Warehouse.Id);
         
-        var binCardEvent = new BinCardInformation
+        var binCardEvent =new BinCardInformation
         {
             MaterialBatchId = materialBatch.Id,
             Description = warehouse.Name,
@@ -793,7 +814,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             ArNumber = "N/A",
             QuantityReceived = totalQuantityToAssign,
             QuantityIssued = 0,
-            BalanceQuantity = (await GetMaterialStockInWarehouseByBatch(materialBatch.Id, warehouse.Id)).Value + totalQuantityToAssign,
+            BalanceQuantity = (await GetMaterialStockInWarehouseByBatch(materialBatch.Id, warehouse.Id)).Value,
             UoMId = materialBatch.UoMId,
             CreatedAt = DateTime.UtcNow
         };
@@ -1320,7 +1341,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity)
+    public async Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity, Guid? uoMId)
     {
         await context.MaterialBatchReservedQuantities.AddAsync(new MaterialBatchReservedQuantity
         {
@@ -1328,7 +1349,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             WarehouseId = warehouseId,
             ProductionScheduleId = productionScheduleId,
             ProductId = productId,
-            Quantity = quantity
+            Quantity = quantity,
+            UoMId = uoMId
         });
 
         await context.SaveChangesAsync();
@@ -1338,7 +1360,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         return 
             await context.MaterialBatchReservedQuantities
+                .AsSplitQuery()
                 .Include(r => r.MaterialBatch)
+                .ThenInclude(b => b.Material)
                 .Where(r => r.MaterialBatch.MaterialId == materialId && 
                             r.WarehouseId == warehouseId && r.ProductionScheduleId == productionScheduleId && r.ProductId == productId)
                 .ToListAsync();
@@ -1452,7 +1476,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await file.CopyToAsync(stream);
         stream.Position = 0;
 
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial; 
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage(stream);
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
         if (worksheet == null)
@@ -1515,7 +1539,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var materials = new List<Material>();
 
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial; 
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage(new FileInfo(filePath));
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
 
@@ -1553,8 +1577,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 Description = worksheet.Cells[row, headers["Description"]].Text.Trim(),
                 Pharmacopoeia = worksheet.Cells[row, headers["Pharmacopoeia"]].Text.Trim(),
                 MaterialCategoryId = category.Id,
-                MinimumStockLevel = int.TryParse(worksheet.Cells[row, headers["MinimumStockLevel"]].Text.Trim(), out var minStock) ? minStock : 0,
-                MaximumStockLevel = int.TryParse(worksheet.Cells[row, headers["MaximumStockLevel"]].Text.Trim(), out var maxStock) ? maxStock : 0,
+                //MinimumStockLevel = int.TryParse(worksheet.Cells[row, headers["MinimumStockLevel"]].Text.Trim(), out var minStock) ? minStock : 0,
+                //MaximumStockLevel = int.TryParse(worksheet.Cells[row, headers["MaximumStockLevel"]].Text.Trim(), out var maxStock) ? maxStock : 0,
                 Kind = kind
             };
 
@@ -1595,5 +1619,160 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
+    public async Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments, Guid userId)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
 
+        if (!user.DepartmentId.HasValue)
+        {
+            return UserErrors.DepartmentNotFound;
+        }
+        
+        if (materialDepartments.Select(m => m.MaterialId).Distinct().Count() != materialDepartments.Count)
+        {
+            return Error.Validation("MaterialDepartment.Validation", "Cant have more than one of the same amterial Id in the list");
+        }
+        
+        var existingMaterialDepartments = await context.MaterialDepartments.Where(m => m.DepartmentId == user.DepartmentId).ToListAsync();
+        if (existingMaterialDepartments.Count != 0)
+        {
+            context.MaterialDepartments.RemoveRange(existingMaterialDepartments);
+        }
+        
+        await context.MaterialDepartments.AddRangeAsync(materialDepartments.Select(m => new MaterialDepartment()
+        {
+            MaterialId = m.MaterialId,
+            DepartmentId = user.DepartmentId.Value,
+            ReOrderLevel = m.ReOrderLevel,
+            MaximumStockLevel = m.MaximumStockLevel,
+            MinimumStockLevel = m.MinimumStockLevel,
+            UoMId = m.UoMId
+        }));
+        
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery,MaterialKind? kind, Guid userId)
+    {
+        var user = await context.Users
+            .Include(u => u.Department)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+        
+        if (!user.DepartmentId.HasValue)
+        {
+            return UserErrors.DepartmentNotFound;
+        }
+        
+        var linkedMaterialIds = await context.MaterialDepartments
+            .Include(m => m.Material)
+            .Where(m => m.DepartmentId == user.DepartmentId)
+            .Select(m => m.MaterialId)
+            .ToListAsync();
+
+        var unlinkedMaterials = context.Materials
+            .Where(m => !linkedMaterialIds.Contains(m.Id))
+            .AsQueryable();
+
+        if (kind.HasValue)
+        {
+            unlinkedMaterials = unlinkedMaterials.Where(m => m.Kind == kind);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            unlinkedMaterials = unlinkedMaterials.WhereSearch(searchQuery, m => m.Name, m => m.Code);
+        }
+
+        var results = await PaginationHelper.GetPaginatedResultAsync(
+            unlinkedMaterials, page, pageSize, mapper.Map<MaterialWithWarehouseStockDto>);
+        foreach (var result in results.Data)
+        {
+            var warehouseType = result.Kind == MaterialKind.Raw
+                ? WarehouseType.RawMaterialStorage
+                : WarehouseType.PackagedStorage;
+            var warehouse = await context.Warehouses.FirstOrDefaultAsync(w =>
+                w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
+            if (warehouse == null) continue;
+            var warehouseStockResult = await GetMaterialStockInWarehouse(result.Id, warehouse.Id);
+            if(warehouseStockResult.IsFailure) continue;
+            result.WarehouseStock = warehouseStockResult.Value;
+        }
+
+        return results;
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page, int pageSize,
+        string searchQuery, MaterialKind? kind, Guid userId)
+    {
+        
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+        
+        var query = context.MaterialDepartments
+            .Include(m => m.Material)
+            .Include(m => m.UoM)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.ReOrderLevel.ToString(), q => q.Material.Name);
+        }
+        
+        if (!user.DepartmentId.HasValue)
+        {
+            return UserErrors.DepartmentNotFound;
+        }
+
+        if (user.DepartmentId.HasValue)
+        {
+            query = query.Where(m => m.DepartmentId == user.DepartmentId.Value);
+        }
+
+        if (kind.HasValue)
+        {
+            query = query.Where(q => q.Material.Kind == kind);
+        }
+        
+        var results = await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialDepartmentWithWarehouseStockDto>
+            );
+
+        foreach (var result in results.Data)
+        {
+            var warehouseType = result.Material.Kind == MaterialKind.Raw
+                ? WarehouseType.RawMaterialStorage
+                : WarehouseType.PackagedStorage;
+            var warehouse = await context.Warehouses.FirstOrDefaultAsync(w =>
+                w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
+            if (warehouse == null) continue;
+            var warehouseStockResult = await GetMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
+            if(warehouseStockResult.IsFailure) continue;
+            result.WarehouseStock = warehouseStockResult.Value;
+        }
+
+        return results;
+    }
+
+    public async Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId)
+    {
+        var user = await context.Users
+            .Include(u => u.Department)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+        
+        if (!user.DepartmentId.HasValue)
+        {
+            return UserErrors.DepartmentNotFound;
+        }
+        
+        return mapper.Map<UnitOfMeasureDto>((await context.MaterialDepartments
+            .Include(materialDepartment => materialDepartment.UoM)
+            .FirstOrDefaultAsync(m => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId.Value)).UoM);
+    }
 }

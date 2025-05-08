@@ -1,5 +1,6 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
+using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
@@ -7,16 +8,27 @@ using DOMAIN.Entities.BillOfMaterials.Request;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Children;
+using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
+using DOMAIN.Entities.Designations;
+using DOMAIN.Entities.EducationHistories;
+using DOMAIN.Entities.EmergencyContacts;
+using DOMAIN.Entities.EmployeeHistories;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.LeaveEntitlements;
+using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -33,8 +45,11 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.ShiftSchedules;
+using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
+using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
 using DOMAIN.Entities.Warehouses;
@@ -63,6 +78,8 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, Currency>();
         CreateMap<CreateItemRequest, ShipmentDiscrepancyType>();
         CreateMap<CreateItemRequest, PackageStyle>();
+        CreateMap<CreateItemRequest, TermsOfPayment>();
+        CreateMap<CreateItemRequest, DeliveryMode>();
         CreateMap<CreateItemRequest, Charge>();
         
         #endregion
@@ -112,6 +129,8 @@ public class OryxMapper : Profile
         CreateMap<Department, CollectionItemDto>();
         CreateMap<Equipment, CollectionItemDto>();
         CreateMap<PackageStyle, CollectionItemDto>();
+        CreateMap<TermsOfPayment, CollectionItemDto>();
+        CreateMap<DeliveryMode, CollectionItemDto>();
         CreateMap<ShipmentInvoice, CollectionItemDto>();
         CreateMap<Charge, CollectionItemDto>();
         
@@ -137,10 +156,18 @@ public class OryxMapper : Profile
         #region UserMapper
         CreateMap<CreateUserRequest, User>();
         CreateMap<User, UserDto>()
-            // .ForMember(user => user.Roles,
-            //     opt => opt.MapFrom<UserRoleResolver>())
             .ForMember(user => user.Avatar,
-                opt => opt.MapFrom<AvatarResolver>());
+                opt => opt.MapFrom<AvatarResolver>())
+            .ForMember(user => user.Signature,
+                opt => opt.MapFrom<SignatureResolver>());
+        
+        CreateMap<User, UserWithRoleDto>()
+             .ForMember(user => user.Roles,
+                 opt => opt.MapFrom<UserRoleResolver>())
+            .ForMember(user => user.Avatar,
+                opt => opt.MapFrom<AvatarResolver>())
+            .ForMember(user => user.Signature,
+                opt => opt.MapFrom<SignatureResolver>());
         
         #endregion
 
@@ -149,6 +176,7 @@ public class OryxMapper : Profile
         CreateMap<CreateRoleRequest, Role>();
         CreateMap<Role, RoleDto>().ReverseMap();
         CreateMap<RoleDto, RolePermissionDto>();
+        CreateMap<Role, RolePermissionDto>();
         // CreateMap<string, PermissionResponseDto>()
         //     .ForMember(item => item.GroupName,
         //         opt => opt.MapFrom(src => src.GetGroupName()))
@@ -233,18 +261,29 @@ public class OryxMapper : Profile
         CreateMap<Material, MaterialDto>()
             .ForMember(dest => dest.TotalStock,
                 opt => opt.MapFrom(src => src. Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity)));
+        
+        CreateMap<Material, MaterialWithWarehouseStockDto>()
+            .ForMember(dest => dest.TotalStock,
+                opt => opt.MapFrom(src => src. Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity)));
 
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
         CreateMap<MaterialBatch, MaterialBatchDto>();
+        CreateMap<MaterialBatch, DistributedMaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
         CreateMap<MassMaterialBatchMovement, MassMaterialBatchMovementDto>();
         CreateMap<MaterialBatchReservedQuantity, MaterialBatchReservedQuantityDto>();
-
+        CreateMap<MaterialDepartment, MaterialDepartmentDto>();
+        CreateMap<MaterialDepartment, MaterialDepartmentWithWarehouseStockDto>();
+        
         CreateMap<CreateSrRequest, Sr>();
         CreateMap<Sr, SrDto>();
 
         CreateMap<MaterialCategory, MaterialCategoryDto>();
-
+        
+        CreateMap<MaterialReturnNote, MaterialReturnNoteDto>();
+        CreateMap<MaterialReturnNoteFullReturn, MaterialReturnNoteFullReturnDto>();
+        CreateMap<MaterialReturnNotePartialReturn, MaterialReturnNotePartialReturnDto>();
+        
         #endregion
 
         #region Requisition
@@ -388,13 +427,23 @@ public class OryxMapper : Profile
         #region Purchase Order
         
         CreateMap<CreatePurchaseOrderRequest, PurchaseOrder>();
+        CreateMap<UpdatePurchaseOrderRequest, PurchaseOrder>();
         CreateMap<CreatePurchaseOrderItemRequest, PurchaseOrderItem>();
         CreateMap<PurchaseOrder, PurchaseOrderDto>()
             .ForMember(dest => dest.Attachments,
                 opt => opt.MapFrom<AttachmentsResolver>())
             .ForMember(dest => dest.AttachmentStatus,
-                opt => opt.MapFrom<PurchaseOrderStatusResolver>());
-        CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>();
+                opt => opt.MapFrom<PurchaseOrderStatusResolver>())
+            .ForMember(dest => dest.Revisions,
+                opt => opt.MapFrom<PurchaseOrderRevisionResolver>())
+            .ForMember(dest => dest.Items,
+                opt => opt.MapFrom(src =>
+                    src.Items.Where(item => item.DeletedAt == null)));
+        
+        CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>()
+            .ForMember(dest => dest.CanReassignSupplier,
+                opt => opt.MapFrom<CanReassignPurchaseOrderItemResolver>());
+        CreateMap<PurchaseOrderItemSnapshot, PurchaseOrderItemDto>();
 
         CreateMap<CreatePurchaseOrderInvoiceRequest, PurchaseOrderInvoice>();
         CreateMap<CreateBatchItemRequest, BatchItem>();
@@ -413,6 +462,7 @@ public class OryxMapper : Profile
         CreateMap<CreatePurchaseOrderRequest, RevisedPurchaseOrder>();
         CreateMap<CreatePurchaseOrderItemRequest, RevisedPurchaseOrderItem>();
         CreateMap<RevisedPurchaseOrder, RevisedPurchaseOrderDto>();
+        CreateMap<CreatePurchaseOrderRevision, RevisedPurchaseOrder>();
         CreateMap<RevisedPurchaseOrderItem, RevisedPurchaseOrderItemDto>();
 
         #endregion
@@ -441,6 +491,7 @@ public class OryxMapper : Profile
         #region Checklist
 
         CreateMap<Checklist, ChecklistDto>();
+        CreateMap<Checklist, DistributedChecklistDto>();
         CreateMap<Checklist, BatchChecklistDto>();
         CreateMap<CreateChecklistRequest, Checklist>()
             .ForMember(dest => dest.MaterialBatches,
@@ -511,7 +562,9 @@ public class OryxMapper : Profile
         CreateMap<CreateStockTransferRequest, StockTransfer>();
         CreateMap<StockTransferSourceRequest, StockTransferSource>();
         CreateMap<StockTransfer, StockTransferDto>();
+        CreateMap<StockTransfer, MaterialBatchStockTransferDto>();
         CreateMap<StockTransferSource, StockTransferSourceDto>();
+        CreateMap<StockTransferSource, MaterialBatchStockTransferSourceDto>();
         CreateMap<StockTransferSource, DepartmentStockTransferDto>()
             .ForMember(dest => dest.Material,
                 opt => opt.MapFrom(src => src.StockTransfer.Material))
@@ -526,6 +579,127 @@ public class OryxMapper : Profile
 
         CreateMap<CreateEquipmentRequest, Equipment>();
         CreateMap<Equipment, EquipmentDto>();
+
+        #endregion
+        
+        #region Employee
+
+        CreateMap<CreateEmployeeRequest, Employee>()
+            .ForMember(dest => dest.Mother, opt => opt.MapFrom(src => src.Mother))
+            .ForMember(dest => dest.Father, opt => opt.MapFrom(src => src.Father))
+            .ForMember(dest => dest.Spouse, opt => opt.MapFrom(src => src.Spouse))
+            .ForMember(dest => dest.EmergencyContact, opt => opt.MapFrom(src => src.EmergencyContact))
+            .ForMember(dest => dest.NextOfKin, opt => opt.MapFrom(src => src.NextOfKin))
+            .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.Children))
+            .ForMember(dest => dest.Siblings, opt => opt.MapFrom(src => src.Siblings))
+            .ForMember(dest => dest.EducationBackground, opt => opt.MapFrom(src => src.EducationBackground))
+            .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
+
+        CreateMap<AssignEmployeeDto, Employee>()
+            .ForMember(dest => dest.Department, opt => opt.Ignore())
+            .ForMember(dest => dest.Designation, opt => opt.Ignore());
+
+        CreateMap<Employee, EmployeeDto>()
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+
+        CreateMap<EmployeeUserDto, Employee>();
+        
+        CreateMap<Employee, User>()
+            .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName))
+            .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email));
+        #endregion
+
+        #region Children
+        CreateMap<Child, ChildDto>().ReverseMap();
+
+        #endregion
+
+        #region Siblings
+
+        CreateMap<Sibling, SiblingDto>().ReverseMap();
+
+        #endregion
+
+        #region Persons
+
+        CreateMap<Person, PersonDto>().ReverseMap();
+
+        #endregion
+
+        #region Emergency Contact
+
+        CreateMap<EmergencyContact, EmergencyContactDto>().ReverseMap();
+
+        #endregion
+        
+        #region Education
+
+        CreateMap<Education, EducationDto>().ReverseMap();
+
+        #endregion
+
+        #region Employment
+
+        CreateMap<EmploymentHistory, EmploymentHistoryDto>().ReverseMap();
+
+        #endregion
+
+        #region Leave Type
+
+        CreateMap<LeaveType, LeaveTypeDto>();
+        CreateMap<CreateLeaveTypeRequest, LeaveType>();
+
+        #endregion
+
+        #region Leave Requests
+
+        CreateMap<CreateLeaveRequest, LeaveRequest>();
+        CreateMap<LeaveRequestDto, LeaveRequest>();
+        CreateMap<LeaveRequest, LeaveRequestDto>()
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());;
+         
+
+        #endregion
+
+        #region Shift Types
+
+        CreateMap<CreateShiftTypeRequest, ShiftType>();
+        CreateMap<ShiftTypeDto, ShiftType>().ReverseMap();
+
+        #endregion
+
+        #region Company Working Days
+
+        CreateMap<CompanyWorkingDaysRequest, CompanyWorkingDays>();
+        CreateMap<CompanyWorkingDaysDto, CompanyWorkingDays>().ReverseMap();
+
+        #endregion
+
+        #region Shift Schedules
+        
+        CreateMap<ShiftScheduleDto, ShiftSchedule>();
+        CreateMap<CreateShiftScheduleRequest, ShiftSchedule>();
+        
+        #endregion
+        
+        #region ActivityLog
+
+        CreateMap<CreateActivityLog, ActivityLog>();
+        CreateMap<ActivityLog, ActivityLogDto>();
+
+        #endregion
+        
+        #region Designations
+
+        CreateMap<CreateDesignationRequest, Designation>();
+        CreateMap<Designation, DesignationDto>();
+        #endregion
+        
+        #region Leave Entitlements
+
+        CreateMap<LeaveEntitlementDto, LeaveEntitlement>();
+        CreateMap<CreateLeaveEntitlementRequest, LeaveEntitlement>();
 
         #endregion
     }

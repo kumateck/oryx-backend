@@ -3,6 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
@@ -20,6 +21,8 @@ public class MaterialBatch : BaseEntity
     [StringLength(10000)] public string BatchNumber { get; set; }
     public Guid? GrnId { get; set; }
     public Grn Grn { get; set; }
+    public Guid? StockTransferSourceId { get; set; }
+    public StockTransferSource StockTransferSource { get; set; } 
     public int NumberOfContainers { get; set; }
     public Guid? ContainerPackageStyleId { get; set; }
     public PackageStyle ContainerPackageStyle { get; set; }
@@ -28,7 +31,7 @@ public class MaterialBatch : BaseEntity
     public decimal TotalQuantity { get; set; }  
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity - ReservedQuantity;
-    public decimal QuantityUnassigned => TotalQuantity - QuantityAssigned;
+    public decimal QuantityUnassigned => RemainingQuantity - QuantityAssigned;
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public BatchStatus Status { get; set; }  
@@ -168,6 +171,8 @@ public class MaterialBatchReservedQuantity : BaseEntity
     public ProductionSchedule ProductionSchedule { get; set; }
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
 }
 

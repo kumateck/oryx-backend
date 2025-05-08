@@ -9,7 +9,7 @@ public interface IFormRepository
 {
     Task<Result<Guid>> CreateForm(CreateFormRequest request);
     Task<Result<FormDto>> GetForm(Guid formId, string userId);
-    Task<Result<Paginateable<IEnumerable<FormDto>>>> GetForms(FormFilter filter, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<FormDto>>>> GetForms(FormFilter filter);
     Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId);
     //Task<Result> ResetForm(Guid formId, Guid userId);
     Task<Result> DeleteForm(Guid formId, Guid userId);
@@ -19,7 +19,7 @@ public interface IFormRepository
    Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId);
    Task<Result<QuestionDto>> GetQuestion(Guid questionId);
    Task<Result<Paginateable<IEnumerable<QuestionDto>>>>
-       GetQuestions(PagedQuery filter, string searchQuery);
+       GetQuestions(FormFilter filter);
    Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId);
    Task<Result> DeleteQuestion(Guid id, Guid userId);
 }

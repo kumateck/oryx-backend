@@ -9,4 +9,18 @@ public class CreateMaterialRequest
     public string Alphabet { get; set; }
     public Guid? MaterialCategoryId { get; set; }
     public MaterialKind Kind { get; set; }
+    public int ReOrderLevel { get; set; }
+}
+
+public class CreateMaterialDepartment
+{
+    public Guid MaterialId { get; set; }
+    public Guid? UoMId { get; set; }
+    public int ReOrderLevel { get; set; }
+    public int MinimumStockLevel { get; set; }
+    public int MaximumStockLevel { get; set; }
+}
+public class UpdateReOrderLevelRequest
+{
+    public int ReOrderLevel { get; set; }
 }

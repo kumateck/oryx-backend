@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -16,6 +17,7 @@ public interface IMaterialRepository
     Task<Result<List<MaterialCategoryDto>>> GetMaterialCategories(MaterialKind? materialKind);
     Task<Result<List<MaterialDto>>> GetMaterials();
     Task<Result> UpdateMaterial(CreateMaterialRequest request, Guid materialId, Guid userId);
+    Task<Result> UpdateReOrderLevel(Guid materialId, int reOrderLevel, Guid userId);
     Task<Result> DeleteMaterial(Guid materialId, Guid userId);
     Task<Result<decimal>> CheckStockLevel(Guid materialId);
     //Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId);
@@ -60,9 +62,16 @@ public interface IMaterialRepository
     Task<Result<decimal>> GetProductStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
     Task<Result<List<BatchToSupply>>> GetFrozenBatchesForRequisitionItem(Guid materialId, Guid warehouseId,
         decimal requestedQuantity);
-    Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity);
+    Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity, Guid? uomId);
     Task<List<MaterialBatchReservedQuantity>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, 
         Guid warehouseId, Guid productionScheduleId, Guid productId);
 
     Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
+    Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments,
+        Guid userId);
+    Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery, MaterialKind? kind, Guid userId);
+    Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page,
+        int pageSize,
+        string searchQuery, MaterialKind? kind, Guid userId);
+    Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId);
 }

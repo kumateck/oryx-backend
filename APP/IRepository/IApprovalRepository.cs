@@ -15,5 +15,14 @@ public interface IApprovalRepository
     Task<Result> UpdateApproval(CreateApprovalRequest request, Guid approvalId, Guid userId);
 
     Task<Result> DeleteApproval(Guid approvalId, Guid userId);
+    Task<Result> ApproveItem(string modelType, Guid modelId, Guid userId, List<Guid> roleIds,
+        string comments = null);
+    Task<Result> RejectItem(string modelType, Guid modelId, Guid userId, List<Guid> roleIds,
+        string comments = null);
+    Task<List<ApprovalEntity>> GetEntitiesRequiringApproval(Guid userId, List<Guid> roleIds);
     
+    Task<Result<ApprovalEntity>> GetEntityRequiringApproval(string modelType, Guid modelId);
+     List<ResponsibleApprovalStage> GetCurrentApprovalStage(List<ResponsibleApprovalStage> stages);
+     Task CreateInitialApprovalsAsync(string modelType, Guid modelId);
+     Task ProcessApprovalEscalations();
 }

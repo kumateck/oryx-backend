@@ -35,20 +35,18 @@ public class UserController(IUserRepository repo) : ControllerBase
     
     [Authorize]
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserWithRoleDto>>))]
     public async Task<IResult> GetUsers([FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 5,
-        [FromQuery(Name = "roleNames")] string roleNames = null,
-        [FromQuery(Name = "searchQuery")] string searchQuery = null,
-        [FromQuery(Name = "with-disabled")] bool withDisabled = false)
+        [FromQuery(Name = "searchQuery")] string searchQuery = null)
     {
-        var response = await repo.GetUsers(page, pageSize, searchQuery, roleNames, withDisabled);
+        var response = await repo.GetUsers(page, pageSize, searchQuery);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
     
     [Authorize]
     [HttpGet("authenticated")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserWithRoleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetUser()
     {
@@ -118,6 +116,26 @@ public class UserController(IUserRepository repo) : ControllerBase
             if (userId == null) return TypedResults.Unauthorized();
         
             await repo.UploadAvatar(request, id ?? Guid.Parse(userId));
+            return  TypedResults.NoContent();
+        }
+        catch (Exception)
+        {
+            return TypedResults.NoContent();
+        }
+    }
+    
+    [AllowAnonymous]
+    [HttpPost("signature/{id?}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UploadSignature([Required][FromBody] UploadFileRequest request, Guid? id = null)
+    {
+        try
+        {
+            var userId = (string)HttpContext.Items["Sub"];
+            if (userId == null) return TypedResults.Unauthorized();
+        
+            await repo.UploadSignature(request, id ?? Guid.Parse(userId));
             return  TypedResults.NoContent();
         }
         catch (Exception)

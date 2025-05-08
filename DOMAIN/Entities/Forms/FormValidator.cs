@@ -22,14 +22,14 @@ public static class FormValidator
                 {
                     errors.Add(FormErrors.SectionWithoutQuestions(section.Name));
                 }
-                else
-                {
-                    // Validate each question in the section
-                    foreach (var question in section.Fields)
-                    {
-                        ValidateQuestionOptions(question.Question, errors);
-                    }
-                }
+                // else
+                // {
+                //     // Validate each question in the section
+                //     foreach (var question in section.Fields)
+                //     {
+                //         ValidateQuestionOptions(question.Question, errors);
+                //     }
+                // }
             }
         }
 

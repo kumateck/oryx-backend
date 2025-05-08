@@ -6,28 +6,25 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <NoWarn>$(NoWarn);1591</NoWarn> <!-- Optional: Suppress missing XML comment warnings -->
+        <ServerGarbageCollection>true</ServerGarbageCollection>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
         <PackageReference Include="AutoMapper" Version="13.0.1" />
-        <PackageReference Include="Azure.Storage.Blobs" Version="12.21.1" />
         <PackageReference Include="DinkToPdf" Version="1.0.8" />
-        <PackageReference Include="EPPlus" Version="7.5.3" />
         <PackageReference Include="IdentityModel" Version="7.0.0" />
-        <PackageReference Include="LinqKit" Version="1.3.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.6" />
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.6" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.2"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.1" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.1">
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.3" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.3" />
         <PackageReference Include="Minio" Version="6.0.3" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
-        <PackageReference Include="Sentry.AspNetCore" Version="4.10.2" />
-        <PackageReference Include="StackExchange.Redis" Version="2.8.0" />
+        <PackageReference Include="StackExchange.Redis" Version="2.8.31" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.6.2" />
     </ItemGroup>
@@ -40,6 +37,12 @@
 
     <ItemGroup>
       <Folder Include="wwwroot\images\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="wwwroot\email\EmployeeAcceptance.html" />
+      <None Include="wwwroot\email\PasswordSetup.html" />
+      <None Include="wwwroot\email\RegistrationEmail.html" />
     </ItemGroup>
 
 </Project>

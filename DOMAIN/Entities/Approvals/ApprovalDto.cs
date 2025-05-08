@@ -6,7 +6,8 @@ namespace DOMAIN.Entities.Approvals;
 public class ApprovalDto
 {
     public Guid Id { get; set; }
-    public RequisitionType RequisitionType { get; set; }
+    public string ItemType { get; set; }
+    public TimeSpan EscalationDuration  { get; set; }
     public List<ApprovalStageDto> ApprovalStages { get; set; } = [];
     public CollectionItemDto CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }

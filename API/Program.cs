@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using Asp.Versioning;
@@ -75,7 +76,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 //add memory caching
-builder.Services.AddMemoryCache(); 
+builder.Services.AddMemoryCache();
 
 //Add Cors
 builder.Services.AddCors(options =>
@@ -168,7 +169,9 @@ TokenValidationParameters tokenValidation = new()
     ValidateLifetime = true,
     ValidateAudience = false,
     ValidateIssuer = false,
-    ClockSkew = TimeSpan.Zero
+    ClockSkew = TimeSpan.Zero,
+    NameClaimType = ClaimTypes.NameIdentifier,
+    RoleClaimType = ClaimTypes.Role
 };
 
 builder.Services.AddSingleton(tokenValidation);
@@ -237,21 +240,18 @@ app.UseMiddleware<SentryPerformanceMiddleware>();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.SeedData();
+app.UseMiddleware<ActivityLogMiddleware>();
 
 app.UseRouting();
-
-// Apply rate limiting middleware
-//app.UseRateLimiter();
 
 app.UseStaticFiles();
 
 //use CORS
 app.UseCors("default");
 
-app.UseAuthentication();
-
 app.UseMiddleware<JwtMiddleware>();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

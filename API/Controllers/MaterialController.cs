@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -108,6 +109,25 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.UpdateMaterial(request, materialId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Updates the ReOrderLevel of a specific material by its ID.
+    /// </summary>
+    /// <param name="materialId">The ID of the material to be updated.</param>
+    /// <param name="reOrderLevel">The new ReOrderLevel value.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("{materialId}/reorder-level")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateReOrderLevel([FromRoute]Guid materialId, [FromBody] UpdateReOrderLevelRequest reOrderLevel)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateReOrderLevel(materialId, reOrderLevel.ReOrderLevel, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -469,5 +489,87 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var result = await repository.GetStockByDepartment(materialId);
         return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
+    }
+    
+    /// <summary>
+    /// Creates a new material department.
+    /// </summary>
+    /// <param name="materialDepartments">The list of material departments to create.</param>
+    /// <returns>Returns the result of the creation process.</returns>
+    [HttpPost("department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateMaterialDepartment([FromBody] List<CreateMaterialDepartment> materialDepartments)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.CreateMaterialDepartment(materialDepartments, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Returns a list of materials that have not been linked.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search material</param>
+    /// <param name="kind">The material kind to filter</param>
+    /// <returns>Returns the materials that have not been linked.</returns>
+    [HttpGet("department/not-linked")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetNotLinkedMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 5,
+        [FromQuery] string searchQuery = null, [FromQuery] MaterialKind? kind = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetMaterialsThatHaveNotBeenLinked(page, pageSize, searchQuery, kind,Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of material departments.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="kind">The material kind to filter</param>
+    /// <param name="departmentId">Optional department ID filter.</param>
+    /// <returns>Returns a paginated list of material departments.</returns>
+    [HttpGet("department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
+    public async Task<IResult> GetMaterialDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MaterialKind? kind = null,
+        [FromQuery] Guid? departmentId = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetMaterialDepartments(page, pageSize, searchQuery, kind,Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Return the uom associated with the material
+    /// </summary>
+    /// <param name="materialId">The material Id for which you need the uom</param>
+    /// <returns>Returns the materials that have not been linked.</returns>
+    [HttpGet("{materialId}/uom")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UnitOfMeasureDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetUoMForMaterial(Guid materialId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetUnitOfMeasureForMaterialDepartment(materialId,Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

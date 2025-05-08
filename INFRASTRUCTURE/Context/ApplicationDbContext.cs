@@ -7,14 +7,23 @@ using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Children;
+using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Designations;
+using DOMAIN.Entities.EmployeeHistories;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.LeaveEntitlements;
+using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Organizations;
+using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules;
@@ -27,6 +36,8 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.ShiftSchedules;
+using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
@@ -77,6 +88,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DistributedFinishedProduct> DistributedFinishedProducts { get; set; }
     public DbSet<MaterialItemDistribution> MaterialItemDistributions { get; set; }
     public DbSet<MaterialBatchReservedQuantity> MaterialBatchReservedQuantities { get; set; }
+    public DbSet<MaterialReturnNote> MaterialReturnNotes { get; set; }
+    public DbSet<MaterialReturnNoteFullReturn> MaterialReturnNoteFullReturns { get; set; }
+    public DbSet<MaterialReturnNotePartialReturn> MaterialReturnNotePartialReturns { get; set; }
+    public DbSet<MaterialDepartment> MaterialDepartments { get; set; }
     
     #endregion
 
@@ -89,6 +104,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region PackageStyle
 
     public DbSet<PackageStyle> PackageStyles { get; set; }
+
+    #endregion
+    
+    #region TermsOfPayment
+
+    public DbSet<TermsOfPayment> TermsOfPayments { get; set; }
+
+    #endregion
+    
+    #region DeliveryMode
+
+    public DbSet<DeliveryMode> DeliveryModes { get; set; }
 
     #endregion
 
@@ -182,6 +209,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Approval> Approvals { get; set; }
     public DbSet<ApprovalStage> ApprovalStages { get; set; }
+    public DbSet<ApprovalActionLog> ApprovalActionLogs { get; set; }
 
     #endregion
 
@@ -239,9 +267,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Purchase Order
 
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
+    public DbSet<PurchaseOrderApproval> PurchaseOrderApprovals { get; set; }
+    public DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; }
     public DbSet<PurchaseOrderInvoice> PurchaseOrderInvoices { get; set; }
     public DbSet<BillingSheet> BillingSheets { get; set; }
-    public DbSet<RevisedPurchaseOrder> RevisedPurchaseOrders { get; set; }
+    public DbSet<BillingSheetApproval> BillingSheetApprovals { get; set; }
+
 
     #endregion
     
@@ -305,8 +336,64 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Charge> Charges { get; set; }
 
     #endregion
+
+    #region Employee
+
+    public DbSet<Employee> Employees { get; set; }
+
+    #endregion
+    
+    #region Children
+
+    public DbSet<Child> Children { get; set; }
+
+    #endregion
+
+    #region Permission
+
+    public DbSet<PermissionType> PermissionTypes { get; set; }
+
+    #endregion
     
 
+    #region Employement History
+
+    public DbSet<EmploymentHistory> EmploymentHistories { get; set; }
+
+    #endregion
+    
+    #region Designation
+
+    public DbSet<Designation> Designations { get; set; }
+
+    #endregion
+
+    #region Leave
+    public DbSet<LeaveType> LeaveTypes { get; set; }
+    public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
+    public DbSet<LeaveRequest> LeaveRequests { get; set; }
+    public DbSet<LeaveRequestApproval> LeaveRequestApprovals { get; set; }
+    
+    #endregion
+
+    #region Shifts
+
+    public DbSet<ShiftType> ShiftTypes { get; set; }
+    
+    #endregion
+
+    #region Shift Schedule
+    
+    public DbSet<ShiftSchedule> ShiftSchedules { get; set; }
+    
+    #endregion
+
+    #region Company Working Days
+
+    public DbSet<CompanyWorkingDays> CompanyWorkingDays { get; set; }
+
+    #endregion
+    
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     // {
@@ -380,6 +467,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         ConfigureTableMappings(modelBuilder);
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
+        ConfigureRelationships(modelBuilder);
+        
     }
 
     private void ConfigureTableMappings(ModelBuilder modelBuilder)
@@ -463,6 +552,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Supplier).AutoInclude();
         modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.Items).AutoInclude();
+        modelBuilder.Entity<PurchaseOrder>().Navigation(p => p.RevisedPurchaseOrders).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Material).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.UoM).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Currency).AutoInclude();
@@ -527,6 +617,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ShipmentInvoiceItem>().Navigation(p => p.UoM).AutoInclude();
 
         #endregion
+
+        #region Designation
+
+        modelBuilder.Entity<Designation>().Navigation(p => p.Departments).AutoInclude();
+
+        #endregion
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
@@ -556,12 +652,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<MaterialBatchReservedQuantity>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.MaterialBatch.DeletedAt.HasValue);
         modelBuilder.Entity<FinishedProductBatchMovement>().HasQueryFilter(entity =>  !entity.Batch.DeletedAt.HasValue);
         modelBuilder.Entity<FinishedProductBatchEvent>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialReturnNote>().HasQueryFilter(entity => !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialReturnNoteFullReturn>().HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialReturnNotePartialReturn>().HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         
         #endregion
 
-        #region Requisition Filters
-        modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
-        #endregion
+         #region Requisition Filters
+         modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity => entity.Requisition != null);
+         #endregion
 
         #region WorkOrder Filters
         modelBuilder.Entity<WorkOrder>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
@@ -679,14 +778,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Purchase Order
 
         modelBuilder.Entity<PurchaseOrder>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<PurchaseOrderApproval>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderItem>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderInvoice>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderInvoice>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
         modelBuilder.Entity<BatchItem>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
         modelBuilder.Entity<PurchaseOrderCharge>().HasQueryFilter(a => !a.PurchaseOrderInvoice.DeletedAt.HasValue);
         modelBuilder.Entity<BillingSheet>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<RevisedPurchaseOrder>().HasQueryFilter(a => !a.PurchaseOrder.DeletedAt.HasValue);
-        modelBuilder.Entity<RevisedPurchaseOrderItem>().HasQueryFilter(a => !a.RevisedPurchaseOrder.DeletedAt.HasValue);
+        modelBuilder.Entity<BillingSheetApproval>().HasQueryFilter(a => !a.BillingSheet.DeletedAt.HasValue);
+        modelBuilder.Entity<RevisedPurchaseOrderItem>().HasQueryFilter(a => !a.Material.DeletedAt.HasValue);
 
         #endregion
 
@@ -753,7 +853,42 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<FinishedGoodsTransferNote>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && entity.BatchManufacturingRecord != null);
 
-
         #endregion
+    }
+
+    private void ConfigureRelationships(ModelBuilder modelBuilder)
+    {
+        #region Employee
+
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.Mother);
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.Father);
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.Spouse);
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.EmergencyContact);
+        modelBuilder.Entity<Employee>().OwnsOne(f => f.NextOfKin);
+
+        modelBuilder.Entity<Employee>().OwnsMany(e => e.Children, b =>
+        {
+            b.WithOwner().HasForeignKey("EmployeeId");
+            b.Property<Guid>("Id");
+            b.HasKey("Id");
+        });
+
+        modelBuilder.Entity<Employee>().OwnsMany(e => e.EducationBackground, b =>
+        {
+            b.WithOwner().HasForeignKey("EmployeeId");
+            b.Property<Guid>("Id");
+            b.HasKey("Id");
+        });
+        
+        modelBuilder.Entity<Employee>().OwnsMany(e => e.EmploymentHistory, b =>
+        {
+            b.WithOwner().HasForeignKey("EmployeeId");
+            b.Property<Guid>("Id");
+            b.HasKey("Id");
+            
+        });
+        
+        #endregion
+
     }
 }

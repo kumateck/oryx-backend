@@ -1,11 +1,17 @@
+using System.Collections.Concurrent;
+using APP.Claims;
 using APP.IRepository;
 using APP.Repository;
+using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Services.Storage;
 using APP.Services.Token;
 using DinkToPdf;
 using DinkToPdf.Contracts;
+using DOMAIN.Entities.ActivityLogs;
+using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
 using SHARED.Services.Identity;
@@ -38,7 +44,17 @@ public static class DependencyInjection
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IFormRepository, FormRepository>();
-        
+        services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+        services.AddScoped<IDesignationRepository, DesignationRepository>();
+        services.AddScoped<ILeaveEntitlementRepository, LeaveEntitlementRepository>();
+        services.AddScoped<ILeaveTypeRepository, LeaveTypeRepository>();
+        services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
+        services.AddScoped<IShiftTypeRepository, ShiftTypeRepository>();
+        services.AddScoped<IShiftScheduleRepository, ShiftScheduleRepository>();
+        services.AddScoped<ICompanyWorkingDaysRepository, CompanyWorkingDaysRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IJwtService, JwtService>();
@@ -46,6 +62,9 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IPdfService, PdfService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IBackgroundWorkerService, BackgroundWorkerService>();
+        services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+        services.AddHostedService<ApprovalEscalationService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)
@@ -56,5 +75,9 @@ public static class DependencyInjection
         services.AddSingleton(sp => 
             sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
         services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+        services.AddSingleton<MongoDbContext>();
+        services.AddHostedService<ConsumeBackgroundWorkerService>();
+        services.AddSingleton<ConcurrentQueue<CreateActivityLog>>();
+        services.AddSingleton<ConcurrentQueue<PrevStateCaptureRequest>>();
     }
 }

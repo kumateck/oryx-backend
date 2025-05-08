@@ -516,13 +516,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<WarehouseArrivalLocationDto>> GetArrivalLocationDetails(Guid warehouseId)
     {
         var warehouse = await context.Warehouses
+            .AsSplitQuery()
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(drm => drm.ShipmentInvoice)
-            .Include(w => w.ArrivalLocation)
-            .ThenInclude(al => al.DistributedRequisitionMaterials)
-            .Include(w => w.ArrivalLocation)
-            .ThenInclude(al => al.DistributedRequisitionMaterials)
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(drm => drm.Material)
@@ -532,6 +529,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(w => w.ArrivalLocation)
             .ThenInclude(al => al.DistributedRequisitionMaterials)
             .ThenInclude(sr=>sr.RequisitionItem)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedRequisitionMaterials)
+            .ThenInclude(sr=>sr.CheckLists)
+            .ThenInclude(cl=>cl.MaterialBatches)
             .FirstOrDefaultAsync(w => w.Id == warehouseId);
 
         if (warehouse == null || warehouse.ArrivalLocation == null)
@@ -542,57 +543,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         var arrivalLocationDto = mapper.Map<WarehouseArrivalLocationDto>(warehouse.ArrivalLocation);
         return Result.Success(arrivalLocationDto);
     }
-    
-    public async Task<Result<WarehouseArrivalLocationDto>> GetFinishedArrivalLocationDetails(Guid warehouseId)
-    {
-        var warehouse = await context.Warehouses
-            .Include(w => w.ArrivalLocation)
-            .ThenInclude(al => al.DistributedFinishedProducts)
-            .ThenInclude(drm => drm.Product)
-            .Include(w => w.ArrivalLocation)
-            .ThenInclude(al => al.DistributedFinishedProducts)
-            .ThenInclude(drm => drm.BatchManufacturingRecord)
-            .FirstOrDefaultAsync(w => w.Id == warehouseId);
 
-        if (warehouse == null || warehouse.ArrivalLocation == null)
-        {
-            return Error.NotFound("Warehouse.ArrivalLocationNotFound", "Arrival location not found for the specified warehouse.");
-        }
-
-        var arrivalLocationDto = mapper.Map<WarehouseArrivalLocationDto>(warehouse.ArrivalLocation);
-        return Result.Success(arrivalLocationDto);
-    }
-    
-    public async Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(Guid warehouseId,int page, int pageSize, string searchQuery)
-    {
-        try
-        {
-            var query = context.DistributedRequisitionMaterials
-                .Include(drm => drm.ShipmentInvoice)
-                .Include(drm => drm.Material)
-                .Include(drm => drm.RequisitionItem)
-                .Include(drm=>drm.MaterialItemDistributions)
-                .Where(drm => drm.WarehouseArrivalLocation.WarehouseId == warehouseId && !drm.Status.Equals(DistributedRequisitionMaterialStatus.GrnGenerated))
-                .AsQueryable();
-
-            if (!string.IsNullOrEmpty(searchQuery))
-            {
-                query = query.WhereSearch(searchQuery, drm => drm.Material.Name);
-            }
-
-            return await PaginationHelper.GetPaginatedResultAsync(
-                query,
-                page,
-                pageSize,
-                mapper.Map<DistributedRequisitionMaterialDto>
-            );
-        }
-        catch (Exception e)
-        {
-            return Result.Failure<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>(Error.Failure("500",e.Message));
-        }
-    }
-    
     public async Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialById(Guid id)
     {
         var distributedMaterial = await context.DistributedRequisitionMaterials
@@ -1049,6 +1000,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(drm => drm.RequisitionItem)
             .Include(drm => drm.WarehouseArrivalLocation)
             .Include(drm=>drm.MaterialItemDistributions)
+            .Include(sr=>sr.CheckLists)
+            .ThenInclude(cl=>cl.MaterialBatches)
             .Where(drm => !drm.Status.Equals(DistributedRequisitionMaterialStatus.GrnGenerated))
             .AsQueryable();
 
@@ -1078,7 +1031,88 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(drm => drm.RequisitionItem)
             .Include(drm => drm.WarehouseArrivalLocation)
             .Include(drm => drm.MaterialItemDistributions)
+            .Include(sr=>sr.CheckLists)
+            .ThenInclude(cl=>cl.MaterialBatches)
             .FirstOrDefaultAsync(drm => drm.Id == distributedMaterialId));
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<DistributedFinishedProductDto>>>> GetFinishedGoodsDetails(int page, int pageSize, string searchQuery, Guid userId)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+
+        var warehouses = await context.Warehouses.Where(w => w.DepartmentId == user.DepartmentId).ToListAsync();
+
+        var finishedGoodsWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.FinishedGoodsStorage);
+
+        if (finishedGoodsWarehouse is null)
+            return Error.NotFound("Warehouse.FinishedGoods", "This user has no finished goods configured for his department");
+        
+        var query = context.DistributedFinishedProducts
+            .Include(drm => drm.Product)
+            .AsQueryable();
+
+        query = query.Where(q => q.WarehouseArrivalLocation.WarehouseId == finishedGoodsWarehouse.Id);
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, drm => drm.Product.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<DistributedFinishedProductDto>
+        );
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetStockTransferDetails(int page, int pageSize, string searchQuery,MaterialKind kind, Guid userId)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+
+        var warehouses = await context.Warehouses.Where(w => w.DepartmentId == user.DepartmentId).ToListAsync();
+
+        var rawMaterialWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.RawMaterialStorage);
+
+        if (rawMaterialWarehouse is null)
+            return Error.NotFound("Warehouse.Raw", "This user has no raw material configured for his department");
+
+        var packageMaterialWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.PackagedStorage);
+        
+        if (packageMaterialWarehouse is null)
+            return Error.NotFound("Warehouse.Package", "This user has no packaging material configured for his department");
+
+
+        var query = context.Warehouses
+            .AsSplitQuery()
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedStockTransferBatches)
+            .ThenInclude(sb => sb.StockTransferSource)
+            .ThenInclude(sts => sts.StockTransfer)
+            .Include(w => w.ArrivalLocation)
+            .ThenInclude(al => al.DistributedStockTransferBatches)
+            .ThenInclude(sb => sb.Material)
+            .AsQueryable();
+        
+        query = kind == MaterialKind.Raw
+            ? query.Where(w => w.ArrivalLocation.DistributedStockTransferBatches.Any(sb => sb.Material.Kind == MaterialKind.Raw))
+            : query.Where(w => w.ArrivalLocation.DistributedStockTransferBatches.Any(sb => sb.Material.Kind == MaterialKind.Package));
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, drm => drm.Department.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialBatchDto>
+        );
     }
 }
     

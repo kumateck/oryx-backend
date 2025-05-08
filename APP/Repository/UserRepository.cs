@@ -19,7 +19,7 @@ namespace APP.Repository;
 public class UserRepository(ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IBlobStorageService blobStorage, IMapper mapper)
     : IUserRepository
 {
-    public async Task<Result<UserDto>> CreateUser(CreateUserRequest request)
+    public async Task<Result<Guid>> CreateUser(CreateUserRequest request)
     {
         var user = mapper.Map<User>(request);
         user.CreatedAt = DateTime.UtcNow;
@@ -42,9 +42,9 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         await userManager.AddToRolesAsync(user, roleName);
         await context.SaveChangesAsync();
         
-        if (string.IsNullOrEmpty(request.Avatar))  return await GetUser(user.Id);
+        if (string.IsNullOrEmpty(request.Avatar))  return user.Id;
         
-        if (!request.Avatar.IsValidBase64String()) return Result.Failure<UserDto>(UserErrors.InvalidAvatar);
+        if (!request.Avatar.IsValidBase64String()) return UserErrors.InvalidAvatar;
          
         var image = request.Avatar.ConvertFromBase64();
         var reference = $"{user.Id}.{image.FileName.Split(".").Last()}";
@@ -56,7 +56,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             await context.SaveChangesAsync();
         }
         
-        return (await GetUser(user.Id)).Value;
+        return user.Id;
     }
 
     public async Task<Result<LoginResponse>> CreateNewUser(CreateClientRequest request)
@@ -87,24 +87,10 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         return await jwtService.AuthenticateNewUser(user);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<UserDto>>>> GetUsers(int page, int pageSize, string searchQuery, string roleNames, bool withDisabled = false)
+    public async Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize, string searchQuery)
     {
         var query = context.Users.AsQueryable();
-
-        if (!string.IsNullOrEmpty(roleNames))
-        {
-            var roles = roleNames.Split(",").Select(str => str.Trim()).ToList();
-            var usersInRoles = new List<User>();
-
-            foreach (var role in roles)
-            {
-                var roleUsers = await userManager.GetUsersInRoleAsync(role);
-                usersInRoles.AddRange(roleUsers);
-            }
-            
-            query = usersInRoles.Distinct().AsQueryable();
-        }
-
+        
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.FirstName, q => q.LastName, q => q.Email);
@@ -114,15 +100,15 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             query, 
             page, 
             pageSize, 
-            mapper.Map<UserDto>
+            mapper.Map<UserWithRoleDto>
         );
     }
     
-    public async Task<Result<UserDto>> GetUser(Guid userId)
+    public async Task<Result<UserWithRoleDto>> GetUser(Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return UserErrors.NotFound(userId);
-        return mapper.Map<UserDto>(user);
+        return mapper.Map<UserWithRoleDto>(user);
     }
 
     public async Task<Result> UpdateUser(UpdateUserRequest request, Guid id, Guid userId)
@@ -132,8 +118,9 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         {
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
-            user.PhoneNumber = request.PhoneNumber;
             user.DateOfBirth = request.DateOfBirth;
+            user.PhoneNumber = request.PhoneNumber;
+            user.DepartmentId = request.DepartmentId;
             user.LastUpdatedById = userId;
             user.UpdatedAt = DateTime.UtcNow;
 
@@ -151,21 +138,14 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
                 await context.SaveChangesAsync();
             }
 
-            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-
-            var result = await userManager.ConfirmEmailAsync(user, token);
-
-            if (result.Succeeded)
+            if (!string.IsNullOrEmpty(request.RoleName))
             {
-                user.UserName = request.Email;
-                user.Email = request.Email;
-                context.Users.Update(user);
+                var existingRoles =  await userManager.GetRolesAsync(user);
+                await userManager.RemoveFromRolesAsync(user, existingRoles);
+                await userManager.AddToRoleAsync(user, request.RoleName);
                 await context.SaveChangesAsync();
-                await userManager.UpdateNormalizedEmailAsync(user);
-                await userManager.UpdateNormalizedUserNameAsync(user);
             }
         }
-
         return Result.Success();
     }
     
@@ -183,8 +163,6 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         var existingRoles =  await userManager.GetRolesAsync(user);
         await userManager.RemoveFromRolesAsync(user, existingRoles);
         await userManager.AddToRolesAsync(user, request.RoleNames);
-        user.LastDeletedById = userId;
-        context.Users.Update(user);
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -225,6 +203,24 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         if (result.IsSuccess)
         {
             user.Avatar = reference;
+            context.Users.Update(user);
+            await context.SaveChangesAsync();
+        }
+
+        return result;
+    }
+    
+    public async Task<Result> UploadSignature(UploadFileRequest request, Guid userId)
+    {
+        var signature = request.File.ConvertFromBase64();
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+        var reference = $"{userId}.{signature.FileName.Split(".").Last()}";
+
+        var result = await blobStorage.UploadBlobAsync("signature", signature, reference, user.Signature);
+        if (result.IsSuccess)
+        {
+            user.Signature = reference;
             context.Users.Update(user);
             await context.SaveChangesAsync();
         }

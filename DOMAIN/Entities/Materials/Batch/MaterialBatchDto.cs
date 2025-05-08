@@ -2,6 +2,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Warehouses;
@@ -16,6 +17,37 @@ public class MaterialBatchDto
     public string Code { get; set; }
     public string BatchNumber { get; set; }
     public BatchChecklistDto Checklist { get; set; }
+    public MaterialBatchStockTransferSourceDto StockTransferSource { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public int NumberOfContainers { get; set; }
+    public PackageStyleDto ContainerPackageStyle { get; set; }
+    public decimal QuantityPerContainer { get; set; }
+    public BatchStatus Status { get; set; }  
+    public DateTime DateReceived { get; set; }
+    public DateTime? DateApproved { get; set; }
+    public decimal QuantityAssigned { get; set; }
+    public decimal QuantityUnassigned { get; set; }
+    public decimal TotalQuantity { get; set; }        
+    public decimal ConsumedQuantity { get; set; }  
+    public decimal RemainingQuantity { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public DateTime? ManufacturingDate { get; set; }
+    public DateTime? RetestDate { get; set; }
+    public List<MaterialBatchEventDto> Events { get; set; } = [];
+    public List<MaterialBatchMovementDto> Movements { get; set; } = [];
+    public List<SrDto> SampleWeights { get; set; } = [];
+    public List<MassMaterialBatchMovementDto> MassMovements { get; set; } = [];
+    public List<CurrentLocationDto> Locations { get; set; } = [];
+    public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
+    public decimal ReservedQuantity { get; set; }
+}
+
+public class DistributedMaterialBatchDto
+{
+    public Guid Id { get; set; }
+    public CollectionItemDto Material { get; set; }
+    public string Code { get; set; }
+    public string BatchNumber { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public int NumberOfContainers { get; set; }
     public PackageStyleDto ContainerPackageStyle { get; set; }
@@ -134,8 +166,8 @@ public class FinishedGoodsTransferNoteDto : BaseDto
 
 public class MaterialBatchReservedQuantityDto : BaseDto
 {
-    public CollectionItemDto MaterialBatch { get; set; }
     public CollectionItemDto Warehouse { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
 }
 

@@ -16,6 +16,12 @@ namespace APP.Repository;
  {
      public async Task<Result<Guid>> CreateProduct(CreateProductRequest request, Guid userId)
      {
+         if (context.Products.IgnoreQueryFilters().Any(p => p.Name == request.Name))
+             return Error.Validation("Product.Name","Product with same name already exists");
+         
+         if (context.Products.IgnoreQueryFilters().Any(p => p.Code == request.Code))
+             return Error.Validation("Product.Code","Product with code already exists");
+         
          var product = mapper.Map<Product>(request);
          product.CreatedById = userId;
          await context.Products.AddAsync(product); 

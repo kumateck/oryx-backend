@@ -67,8 +67,31 @@ public class StockTransferDto : BaseDto
     public List<StockTransferSourceDto> Sources { get; set; } = [];
 }
 
+public class MaterialBatchStockTransferDto : BaseDto
+{
+    public string Code { get; set; }
+    public MaterialDto Material { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public CollectionItemDto Product { get; set; }
+    public CollectionItemDto ProductionSchedule { get; set; }
+    [StringLength(1000)] public string Reason { get; set; }
+    public decimal RequiredQuantity { get; set; }
+    public StockTransferStatus Status { get; set; }
+}
+
 public class StockTransferSourceDto : BaseDto
 {
+    public DepartmentDto FromDepartment { get; set; }
+    public DepartmentDto ToDepartment { get; set; }
+    public decimal Quantity { get; set; }
+    public StockTransferStatus Status { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public DateTime? IssuedAt { get; set; }
+}
+
+public class MaterialBatchStockTransferSourceDto : BaseDto
+{
+    public MaterialBatchStockTransferDto StockTransfer { get; set; }
     public DepartmentDto FromDepartment { get; set; }
     public DepartmentDto ToDepartment { get; set; }
     public decimal Quantity { get; set; }

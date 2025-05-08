@@ -10,6 +10,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
     {
         var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "admin@kumateck.com";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
+        
         try
         {
             // Configure SMTP client
@@ -32,13 +33,17 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
             // Add recipient
             mail.To.Add(to);
 
-            // Add attachments from byte array list
-            foreach (var attachment in attachments)
+            if (attachments != null)
             {
-                var stream = new MemoryStream(attachment.fileContent);
-                var mailAttachment = new Attachment(stream, attachment.fileName, attachment.fileType);
-                mail.Attachments.Add(mailAttachment);
+                // Add attachments from byte array list
+                foreach (var attachment in attachments)
+                {
+                    var stream = new MemoryStream(attachment.fileContent);
+                    var mailAttachment = new Attachment(stream, attachment.fileName, attachment.fileType);
+                    mail.Attachments.Add(mailAttachment);
+                }
             }
+           
 
             // Send email
             smtpClient.Send(mail);

@@ -46,8 +46,6 @@ public interface IWarehouseRepository
         Guid userId);
     Task<Result> DeleteWarehouseLocationShelf(Guid shelfId, Guid userId);
     Task<Result<WarehouseArrivalLocationDto>> GetArrivalLocationDetails(Guid warehouseId);
-    Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(
-        Guid warehouseId, int page, int pageSize, string searchQuery);
     Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialById(Guid id);
     Task<Result> UpdateArrivalLocation(UpdateArrivalLocationRequest request);
     Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request);
@@ -70,6 +68,8 @@ public interface IWarehouseRepository
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize,
         string searchQuery, Guid warehouseId);
     Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
+    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>>GetStockTransferDetails(int page, int pageSize, string searchQuery, MaterialKind kind,Guid userId);
+    Task<Result<Paginateable<IEnumerable<DistributedFinishedProductDto>>>> GetFinishedGoodsDetails(int page, int pageSize, string searchQuery, Guid userId);
     Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialsById(
         Guid distributedMaterialId);
 
@@ -77,6 +77,4 @@ public interface IWarehouseRepository
 
     Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize,
         string searchQuery, Guid productId);
-
-    Task<Result<WarehouseArrivalLocationDto>> GetFinishedArrivalLocationDetails(Guid warehouseId);
 }
