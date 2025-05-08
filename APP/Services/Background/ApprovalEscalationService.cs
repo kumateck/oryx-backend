@@ -22,7 +22,7 @@ public class ApprovalEscalationService(IServiceProvider serviceProvider) : Backg
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Failed to process approval escalations. Error: {e.Message}");
+                    Console.WriteLine($"Failed to process approval escalations. Error: {e.Message}. Data:  {e.Data}. Stack Trace: {e.StackTrace}");
                 }
             }
 

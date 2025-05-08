@@ -1161,21 +1161,25 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Get entities that are not fully approved
         var unapprovedRequisitions = await context.Requisitions
+            .AsSplitQuery()
             .Where(r => !r.Approved)
             .Include(requisition => requisition.Approvals)
             .ToListAsync();
 
         var unapprovedBillingSheets = await context.BillingSheets
+            .AsSplitQuery()
             .Where(r => !r.Approved)
             .Include(requisition => requisition.Approvals)
             .ToListAsync();
 
         var unapprovedPurchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
             .Where(r => !r.Approved)
             .Include(requisition => requisition.Approvals)
             .ToListAsync();
         
         var unapprovedLeaveRequests = await context.LeaveRequests
+            .AsSplitQuery()
             .Where(r => !r.Approved)
             .Include(requisition => requisition.Approvals)
             .ToListAsync();
@@ -1189,41 +1193,37 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
                     var requisition = unapprovedRequisitions.FirstOrDefault(r => r.Approvals.Any(a => a.Approval.Id == approval.Id));
                     if (requisition != null)
                     {
-                        await ProcessRequisitionEscalations(requisition.Id, approval.EscalationDuration);
+                        await ProcessRequisitionEscalations(requisition, approval.EscalationDuration);
                     }
                     break;
                 case "BillingSheet":
                     var billingSheet = unapprovedBillingSheets.FirstOrDefault(bs => bs.Approvals.Any(a => a.Approval.Id == approval.Id));
                     if (billingSheet != null)
                     {
-                        await ProcessBillingSheetEscalations(billingSheet.Id, approval.EscalationDuration);
+                        await ProcessBillingSheetEscalations(billingSheet, approval.EscalationDuration);
                     }
                     break;
                 case "PurchaseOrder":
                     var purchaseOrder = unapprovedPurchaseOrders.FirstOrDefault(po => po.Approvals.Any(a => a.Approval.Id == approval.Id));
                     if (purchaseOrder != null)
                     {
-                        await ProcessPurchaseOrderEscalations(purchaseOrder.Id, approval.EscalationDuration);
+                        await ProcessPurchaseOrderEscalations(purchaseOrder, approval.EscalationDuration);
                     }
                     break;
                 case nameof(LeaveRequest):
                     var leaveRequest = unapprovedLeaveRequests.FirstOrDefault(po => po.Approvals.Any(a => a.Approval.Id == approval.Id));
                     if (leaveRequest != null)
                     {
-                        await ProcessLeaveRequestEscalations(leaveRequest.Id, approval.EscalationDuration);
+                        await ProcessLeaveRequestEscalations(leaveRequest, approval.EscalationDuration);
                     }
                     break;
             }
         }
     }
     
-    private async Task ProcessRequisitionEscalations(Guid approvalId, TimeSpan escalationDuration)
+    private async Task ProcessRequisitionEscalations(Requisition requisition, TimeSpan escalationDuration)
     {
-        var requisition = await context.Requisitions
-            .Include(r => r.Approvals)
-            .FirstOrDefaultAsync(r => r.Approvals.Any(a => a.Approval.Id == approvalId));
-
-        if (requisition == null || !requisition.Approvals.Any()) return;
+        if (requisition is null || requisition.Approvals.Count == 0) return;
 
         var currentApprovalStages = GetCurrentApprovalStage(requisition.Approvals.Select(a => new ResponsibleApprovalStage
         {
@@ -1265,13 +1265,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             await context.SaveChangesAsync();
         }
     }
-    private async Task ProcessBillingSheetEscalations(Guid billingSheetId, TimeSpan escalationDuration)
+    private async Task ProcessBillingSheetEscalations(BillingSheet billingSheet, TimeSpan escalationDuration)
     {
-        var billingSheet = await context.BillingSheets
-            .Include(bs => bs.Approvals)
-            .FirstOrDefaultAsync(bs => bs.Id == billingSheetId); // Use billingSheetId directly
-
-        if (billingSheet == null || !billingSheet.Approvals.Any()) return;
+        if (billingSheet is null || billingSheet.Approvals.Count == 0) return;
 
         var currentApprovalStages = GetCurrentApprovalStage(billingSheet.Approvals.Select(a => new ResponsibleApprovalStage
         {
@@ -1312,16 +1308,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         }
     }
 
-    private async Task ProcessPurchaseOrderEscalations(Guid purchaseOrderId, TimeSpan escalationDuration)
+    private async Task ProcessPurchaseOrderEscalations(PurchaseOrder purchaseOrder, TimeSpan escalationDuration)
     {
-        var purchaseOrder = await context.PurchaseOrders
-            .AsSplitQuery()
-            .Include(po => po.Approvals)
-            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId); // Use purchaseOrderId directly
-
-        if (purchaseOrder == null) return;
-
-        if (purchaseOrder.Approvals.Count == 0) return;
+        if (purchaseOrder is null || purchaseOrder.Approvals.Count == 0) return;
 
         var currentApprovalStages = GetCurrentApprovalStage(purchaseOrder.Approvals.Select(a =>
             new ResponsibleApprovalStage
@@ -1363,13 +1352,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
         }
     }
     
-    private async Task ProcessLeaveRequestEscalations(Guid purchaseOrderId, TimeSpan escalationDuration)
+    private async Task ProcessLeaveRequestEscalations(LeaveRequest leaveRequest, TimeSpan escalationDuration)
     {
-        var leaveRequest = await context.LeaveRequests
-            .Include(po => po.Approvals)
-            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId); // Use purchaseOrderId directly
-
-        if (leaveRequest == null || !leaveRequest.Approvals.Any()) return;
+        if (leaveRequest is null || leaveRequest.Approvals.Count == 0) return;
 
         var currentApprovalStages = GetCurrentApprovalStage(leaveRequest.Approvals.Select(a =>
             new ResponsibleApprovalStage
