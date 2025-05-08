@@ -9,10 +9,11 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SHARED;
 
 namespace APP.Repository;
-public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : IApprovalRepository 
+public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IMemoryCache cache) : IApprovalRepository 
 { 
     public async Task<Result<Guid>> CreateApproval(CreateApprovalRequest request, Guid userId) 
     {
@@ -1156,8 +1157,16 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task ProcessApprovalEscalations()
     {
-        var approvalsWithEscalation = await context.Approvals
-            .ToListAsync();
+        var cacheKey = "ApprovalsWithEscalation";
+        if (!cache.TryGetValue(cacheKey, out List<Approval> approvalsWithEscalation))
+        {
+            approvalsWithEscalation = await context.Approvals.ToListAsync();
+
+            var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromMinutes(10)); // Adjust expiration as needed
+
+            cache.Set(cacheKey, approvalsWithEscalation, cacheEntryOptions);
+        }
 
         // Get entities that are not fully approved
         var unapprovedRequisitions = await context.Requisitions
@@ -1190,28 +1199,28 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
             {
                 case "PurchaseRequisition":
                 case "StockRequisition":
-                    var requisition = unapprovedRequisitions.FirstOrDefault(r => r.Approvals.Any(a => a.Approval.Id == approval.Id));
+                    var requisition = unapprovedRequisitions.FirstOrDefault(r => r.Approvals.Any(a => a.ApprovalId == approval.Id));
                     if (requisition != null)
                     {
                         await ProcessRequisitionEscalations(requisition, approval.EscalationDuration);
                     }
                     break;
                 case "BillingSheet":
-                    var billingSheet = unapprovedBillingSheets.FirstOrDefault(bs => bs.Approvals.Any(a => a.Approval.Id == approval.Id));
+                    var billingSheet = unapprovedBillingSheets.FirstOrDefault(bs => bs.Approvals.Any(a => a.ApprovalId == approval.Id));
                     if (billingSheet != null)
                     {
                         await ProcessBillingSheetEscalations(billingSheet, approval.EscalationDuration);
                     }
                     break;
                 case "PurchaseOrder":
-                    var purchaseOrder = unapprovedPurchaseOrders.FirstOrDefault(po => po.Approvals.Any(a => a.Approval.Id == approval.Id));
+                    var purchaseOrder = unapprovedPurchaseOrders.FirstOrDefault(po => po.Approvals.Any(a => a.ApprovalId == approval.Id));
                     if (purchaseOrder != null)
                     {
                         await ProcessPurchaseOrderEscalations(purchaseOrder, approval.EscalationDuration);
                     }
                     break;
                 case nameof(LeaveRequest):
-                    var leaveRequest = unapprovedLeaveRequests.FirstOrDefault(po => po.Approvals.Any(a => a.Approval.Id == approval.Id));
+                    var leaveRequest = unapprovedLeaveRequests.FirstOrDefault(po => po.Approvals.Any(a => a.ApprovalId == approval.Id));
                     if (leaveRequest != null)
                     {
                         await ProcessLeaveRequestEscalations(leaveRequest, approval.EscalationDuration);
