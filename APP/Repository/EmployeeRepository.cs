@@ -157,7 +157,7 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
         newUser.UserName = employee.Email;
         newUser.FirstName = employee.FirstName;
         newUser.LastName = employee.LastName;
-        newUser.Department = employee.Department;
+        newUser.DepartmentId = employee.DepartmentId;
         newUser.CreatedById = createdByUserId;
         newUser.CreatedAt = DateTime.UtcNow;
 
