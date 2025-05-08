@@ -1134,6 +1134,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
             ModelId = log.ModelId,
             Status = log.Status,
             CreatedAt = DateTime.UtcNow,
+            Comments = log.Comments,
         });
         await context.SaveChangesAsync();
     }
