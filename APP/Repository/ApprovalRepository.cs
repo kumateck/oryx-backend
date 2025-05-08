@@ -1315,10 +1315,13 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper) : 
     private async Task ProcessPurchaseOrderEscalations(Guid purchaseOrderId, TimeSpan escalationDuration)
     {
         var purchaseOrder = await context.PurchaseOrders
+            .AsSplitQuery()
             .Include(po => po.Approvals)
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId); // Use purchaseOrderId directly
 
-        if (purchaseOrder == null || !purchaseOrder.Approvals.Any()) return;
+        if (purchaseOrder == null) return;
+
+        if (purchaseOrder.Approvals.Count == 0) return;
 
         var currentApprovalStages = GetCurrentApprovalStage(purchaseOrder.Approvals.Select(a =>
             new ResponsibleApprovalStage
