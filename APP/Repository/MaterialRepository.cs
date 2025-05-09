@@ -1743,6 +1743,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             mapper.Map<MaterialDepartmentWithWarehouseStockDto>
             );
 
+        results.Data = results.Data.ToList();
         foreach (var result in results.Data)
         {
             var warehouseType = result.Material.Kind == MaterialKind.Raw

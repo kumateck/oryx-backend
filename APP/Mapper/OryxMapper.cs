@@ -278,6 +278,8 @@ public class OryxMapper : Profile
         CreateMap<MaterialBatchReservedQuantity, MaterialBatchReservedQuantityDto>();
         CreateMap<MaterialDepartment, MaterialDepartmentDto>();
         CreateMap<MaterialDepartment, MaterialDepartmentWithWarehouseStockDto>();
+            // .ForMember(dest => dest.WarehouseStock,
+            //     opt => opt.MapFrom<>());
         
         CreateMap<CreateSrRequest, Sr>();
         CreateMap<Sr, SrDto>();
