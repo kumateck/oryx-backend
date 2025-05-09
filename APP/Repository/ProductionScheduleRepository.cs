@@ -1928,7 +1928,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductionExtraPackingDto>>>> GetProductionExtraPackings(int page,
+    public async Task<Result<Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>>> GetProductionExtraPackings(int page,
         int pageSize, string searchQuery)
     {
         var query = context.ProductionExtraPackings
@@ -1945,12 +1945,21 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             query = query.WhereSearch(searchQuery, q => q.Material.Name);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
+        var results = await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
-            mapper.Map<ProductionExtraPackingDto>
+            mapper.Map<ProductionExtraPackingWithBatchesDto>
         );
+
+        results.Data = results.Data.ToList();
+        foreach (var result in results.Data)
+        {
+            var batchesResult = await BatchesToSupplyForExtraPackingMaterial(result.Id);
+            result.Batches = batchesResult.IsSuccess ? batchesResult.Value : [];
+        }
+
+        return results;
     }
 
     public async Task<Result<ProductionExtraPackingWithBatchesDto>> GetProductionExtraPackingById(Guid productionExtraPackingId)
