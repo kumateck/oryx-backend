@@ -45,4 +45,16 @@
       <None Include="wwwroot\email\RegistrationEmail.html" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Update="wwwroot\email\PasswordSetup.html">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Update="wwwroot\email\RegistrationEmail.html">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Update="wwwroot\email\EmployeeAcceptance.html">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>
