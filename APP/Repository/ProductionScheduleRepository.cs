@@ -1938,6 +1938,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(p => p.Product)
             .Include(p => p.ProductionSchedule)
             .Include(p => p.UoM)
+            .Include(p => p.CreatedBy)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
