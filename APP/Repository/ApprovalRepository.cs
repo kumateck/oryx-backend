@@ -103,7 +103,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
         if (modelType is "PurchaseRequisition" or "StockRequisition")
         {
             var requisition = await context.Requisitions
-                .Include(r => r.Approvals)
+                .AsSplitQuery()
+                .Include(r => r.Approvals).Include(requisition => requisition.Items)
                 .FirstOrDefaultAsync(r => r.Id == modelId);
 
             if (requisition is null)
@@ -161,6 +162,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
             {
                 requisition.Approved = true;
                 requisition.Status = RequestStatus.Pending;
+                foreach (var item in requisition.Items)
+                {
+                    item.Status = RequestStatus.Pending;
+                }
                 context.Requisitions.Update(requisition);
             }
             context.Requisitions.Update(requisition);
