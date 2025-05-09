@@ -30,19 +30,23 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // Create Stock Requisition
     public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
-        var existingRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
-            r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
-            r.RequisitionType == request.RequisitionType);
 
-        if (existingRequisition is { RequisitionType: RequisitionType.Stock })
-            return Error.Validation("Requisition.Validation",
-                $"A {request.RequisitionType.ToString()} requisition for this production schedule and product has already been created");
-
-        if (existingRequisition != null &&
-            existingRequisition.Items.Any(r => request.Items.Select(i => i.MaterialId).Contains(r.MaterialId)))
+        if (request.ProductionScheduleId.HasValue && request.ProductId.HasValue)
         {
-            return Error.Validation("Requisition.Validation",
-                $"A {request.RequisitionType.ToString()} requisition for this production schedule and product with at least one of the materials has already been created");
+            var existingRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
+                r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
+                r.RequisitionType == request.RequisitionType);
+
+            if (existingRequisition is { RequisitionType: RequisitionType.Stock })
+                return Error.Validation("Requisition.Validation",
+                    $"A {request.RequisitionType.ToString()} requisition for this production schedule and product has already been created");
+
+            if (existingRequisition != null &&
+                existingRequisition.Items.Any(r => request.Items.Select(i => i.MaterialId).Contains(r.MaterialId)))
+            {
+                return Error.Validation("Requisition.Validation",
+                    $"A {request.RequisitionType.ToString()} requisition for this production schedule and product with at least one of the materials has already been created");
+            }
         }
 
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
