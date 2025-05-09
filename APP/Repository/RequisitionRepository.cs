@@ -1140,6 +1140,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 await context.SaveChangesAsync();
                 
                 var supplierQuotationItems = await context.SupplierQuotationItems
+                    .AsSplitQuery()
                     .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
                     .Where(s => s.MaterialId == processSupplierQuote.MaterialId 
                                 && s.SupplierQuotation.Supplier.Type == type
@@ -1170,8 +1171,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         }
         
         var supplierQuotations =  await context.SupplierQuotations
+            .AsSplitQuery()
             .Include(s => s.Items)
-            .Where(s => s.ReceivedQuotation && s.Items.Any(i => i.Status == SupplierQuotationItemStatus.NotProcessed)).ToListAsync();
+            .ThenInclude(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
+            .Where(s => s.ReceivedQuotation &&
+                        s.Items.Any(i => i.Status == SupplierQuotationItemStatus.NotProcessed 
+                                         && i.SupplierQuotation.Supplier.Type == type)).ToListAsync();
 
         foreach (var supplierQuotation in supplierQuotations)
         {

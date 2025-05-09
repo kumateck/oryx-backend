@@ -155,6 +155,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<FinalPacking> FinalPackings { get; set; }
     public DbSet<FinalPackingMaterial> FinalPackingMaterials { get; set; }
+    public DbSet<ProductionExtraPacking> ProductionExtraPackings { get; set; }
+
 
     #endregion
 
