@@ -10,7 +10,7 @@ public interface IEmployeeRepository
 {
    Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDto);
    
-   Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request, Guid userId);
+   Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request);
    
    Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Guid userId);
    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,

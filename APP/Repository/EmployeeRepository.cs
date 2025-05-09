@@ -109,7 +109,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 
         return $"{prefix}-{year}-{uniqueNumber}";
     }
-    public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)
     {
         var existingEmployee = await context.Employees.FirstOrDefaultAsync(e => e.Email == request.Email);
 
@@ -126,7 +126,6 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         }
         
         var employee = mapper.Map<Employee>(request);
-        employee.CreatedById = userId;
         employee.CreatedAt = DateTime.UtcNow;
         context.Employees.Add(employee);
         await context.SaveChangesAsync();

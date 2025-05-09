@@ -17,6 +17,7 @@ using APP.Middlewares;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -244,6 +245,10 @@ app.UseMiddleware<ActivityLogMiddleware>();
 
 app.UseRouting();
 
+app.UseAuthentication();
+
+app.UseAuthorization();
+
 app.UseStaticFiles();
 
 //use CORS
@@ -251,9 +256,6 @@ app.UseCors("default");
 
 app.UseMiddleware<JwtMiddleware>();
 
-app.UseAuthentication();
-
-app.UseAuthorization();
 
 app.MapControllers();
 
