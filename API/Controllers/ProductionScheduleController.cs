@@ -945,7 +945,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>Returns a paginated list of Extra Packing entries.</returns>
     [HttpGet("extra-packing")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionExtraPackingDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>))]
     public async Task<IResult> GetProductionExtraPackings([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = "")
     {
         var result = await repository.GetProductionExtraPackings(page, pageSize, searchQuery);
