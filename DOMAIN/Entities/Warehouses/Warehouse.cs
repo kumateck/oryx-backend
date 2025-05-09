@@ -29,9 +29,9 @@ public class WarehouseArrivalLocation:BaseEntity
     [StringLength(255)] public string Name { get; set; }
     [StringLength(255)] public string FloorName { get; set; }
     [StringLength(1000)] public string Description { get; set; }
-    public List<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
-    public List<DistributedFinishedProduct> DistributedFinishedProducts { get; set; }
-    public List<MaterialBatch> DistributedStockTransferBatches { get; set; }
+    public List<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; } = [];
+    public List<DistributedFinishedProduct> DistributedFinishedProducts { get; set; } = [];
+    public List<MaterialBatch> DistributedStockTransferBatches { get; set; } = [];
 }
 
 public class DistributedRequisitionMaterial : BaseEntity

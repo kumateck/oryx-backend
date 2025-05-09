@@ -1452,8 +1452,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         decimal remainingQuantity = stockTransferSource.Quantity;
         
-        var distributedBatches = new List<MaterialBatch>();
-
         foreach (var batchRequest in batches)
         {
             var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == batchRequest.BatchId);
@@ -1530,8 +1528,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             
             await context.SaveChangesAsync();
             
-            distributedBatches.Add(batch);
-            
             remainingQuantity -= batchRequest.Quantity;
 
             if (remainingQuantity <= 0) break;
@@ -1549,7 +1545,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             await context.WarehouseArrivalLocations.AddAsync(toWarehouse.ArrivalLocation);
         }
             
-        toWarehouse.ArrivalLocation.DistributedStockTransferBatches.AddRange(distributedBatches);
 
         if (remainingQuantity > 0)
         {
