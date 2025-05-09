@@ -1932,7 +1932,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         int pageSize, string searchQuery)
     {
         var query = context.ProductionExtraPackings
+            .AsSplitQuery()
             .Where(q => q.Status == ProductionExtraPackingStatus.InProgress)
+            .Include(p => p.Material)
+            .Include(p => p.Product)
+            .Include(p => p.ProductionSchedule)
+            .Include(p => p.UoM)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -1954,7 +1959,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(p => p.Material)
             .Include(p => p.Product)
-            .Include(P => P.ProductionSchedule)
+            .Include(p => p.ProductionSchedule)
             .Include(p => p.UoM)
             .Include(p => p.IssuedBy)
             .FirstOrDefaultAsync(p => p.Id == productionExtraPackingId));
