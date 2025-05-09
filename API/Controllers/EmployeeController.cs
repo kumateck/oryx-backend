@@ -13,15 +13,12 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// <summary>
     /// Sends emails to employees to fill in their details.
     /// </summary>
-    [HttpPost("register")]
     [AllowAnonymous]
+    [HttpPost("register")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> OnboardEmployee([FromBody] OnboardEmployeeDto request)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
         var result = await repository.OnboardEmployees(request);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
@@ -29,16 +26,13 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// <summary>
     /// Creates a new employee.
     /// </summary>
-    [HttpPost]
     [AllowAnonymous]
+    [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
     {
-        var userId = (string) HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.CreateEmployee(request, Guid.Parse(userId));
+        var result = await repository.CreateEmployee(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
