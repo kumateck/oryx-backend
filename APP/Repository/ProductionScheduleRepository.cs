@@ -1972,6 +1972,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(p => p.ProductionSchedule)
             .Include(p => p.UoM)
             .Include(p => p.IssuedBy)
+            .Include(p => p.CreatedBy)
             .FirstOrDefaultAsync(p => p.Id == productionExtraPackingId));
 
         var batchesResult = await BatchesToSupplyForExtraPackingMaterial(productionExtraPacking.Id);
@@ -1979,17 +1980,26 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return productionExtraPacking;
     }
     
-    public async Task<Result<List<ProductionExtraPackingDto>>> GetProductionExtraPackingByProduct(Guid productionScheduleId, Guid productId)
+    public async Task<Result<List<ProductionExtraPackingWithBatchesDto>>> GetProductionExtraPackingByProduct(Guid productionScheduleId, Guid productId)
     {
-        return mapper.Map<List<ProductionExtraPackingDto>>(await context.ProductionExtraPackings
+        var productionExtraPackings = mapper.Map<List<ProductionExtraPackingWithBatchesDto>>(await context.ProductionExtraPackings
             .AsSplitQuery()
             .Include(p => p.Material)
             .Include(p => p.Product)
-            .Include(P => P.ProductionSchedule)
+            .Include(p => p.ProductionSchedule)
             .Include(p => p.UoM)
             .Include(p => p.IssuedBy)
+            .Include(p => p.CreatedBy)
             .Where(p => p.ProductionScheduleId == productionScheduleId && p.ProductId == productId)
             .ToListAsync());
+
+        foreach (var productionExtraPacking in productionExtraPackings)
+        {
+            var batchesResult = await BatchesToSupplyForExtraPackingMaterial(productionExtraPacking.Id);
+            productionExtraPacking.Batches = batchesResult.IsSuccess ? batchesResult.Value : [];
+        }
+
+        return productionExtraPackings;
     }
     
     public async Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId)
