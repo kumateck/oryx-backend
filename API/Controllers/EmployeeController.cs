@@ -14,7 +14,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// Sends emails to employees to fill in their details.
     /// </summary>
     [HttpPost("register")]
-    [Authorize]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> OnboardEmployee([FromBody] OnboardEmployeeDto request)
@@ -30,7 +30,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// Creates a new employee.
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
