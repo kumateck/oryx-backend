@@ -84,6 +84,7 @@ public class ProductionExtraPackingDto : BaseDto
     public CollectionItemDto Product { get; set; }
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
+    public ProductionExtraPackingStatus Status  { get; set; }
     public decimal Quantity { get; set; }
 }
 

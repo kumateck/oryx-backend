@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 public class ApprovalEscalationService(IServiceProvider serviceProvider) : BackgroundService
 {
-    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(10); // Adjust interval as needed
+    //private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(10); // Adjust interval as needed
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -26,7 +26,7 @@ public class ApprovalEscalationService(IServiceProvider serviceProvider) : Backg
                 }
             }
 
-            await Task.Delay(_checkInterval, stoppingToken);
+            await Task.Delay(100000000, stoppingToken);
         }
     }
 }

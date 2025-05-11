@@ -973,7 +973,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleId">The production schedule Id linked to the extra packing></param>
     /// <param name="productId">The product Id linked to the extra paccking</param>
     /// <returns>Returns the Extra Packing with batches.</returns>
-    [HttpGet("extra-packing/by-product{productionScheduleId}/{productId}")]
+    [HttpGet("extra-packing/by-product/{productionScheduleId}/{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionExtraPackingWithBatchesDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
