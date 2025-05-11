@@ -92,6 +92,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
     public async Task<Result<DepartmentDto>> GetDepartment(Guid departmentId)
     {
         var department = await context.Departments
+            .AsSplitQuery()
             .Include(d => d.Warehouses)
             .FirstOrDefaultAsync(d => d.Id == departmentId);
 
@@ -128,6 +129,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
     public async Task<Result> UpdateDepartment(CreateDepartmentRequest request, Guid departmentId, Guid userId)
     {
         var existingDepartment = await context.Departments
+            .AsSplitQuery()
             .Include(d => d.Warehouses)
             .FirstOrDefaultAsync(d => d.Id == departmentId);
         if (existingDepartment is null)

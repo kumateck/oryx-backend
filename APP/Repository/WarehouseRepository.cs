@@ -141,6 +141,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<WarehouseLocationRackDto>> GetWarehouseLocation(Guid locationId)
     {
         var rack = await context.WarehouseLocations
+            .AsSplitQuery()
             .Include(r => r.Warehouse)
             .Include(wl=>wl.Racks)
             .ThenInclude(r=>r.Shelves)

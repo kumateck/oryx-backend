@@ -60,7 +60,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     public async Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId)
     {
         var form = await context.Forms
-            .AsSplitQuery().Include(form => form.Reviewers).Include(form => form.Assignees)
+            .AsSplitQuery()
+            .Include(form => form.Reviewers).Include(form => form.Assignees)
             .FirstOrDefaultAsync(f => f.Id == formId);
 
         if (form == null)
@@ -110,6 +111,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         foreach (var response in request.FormResponses)
         {
             var formField = await context.FormFields
+                .AsSplitQuery()
                 .Include(f => f.Question)
                 .ThenInclude(q => q.Type)
                 .FirstOrDefaultAsync(field => field.Id == response.FormFieldId);
@@ -151,6 +153,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     public async Task<Result<FormResponseDto>> GetFormResponse(Guid formResponseId)
     {
         var formResponse = await context.Responses
+            .AsSplitQuery()
             .Include(fr => fr.Form)
             //.ThenInclude(fr => fr.Sections).ThenInclude(fr => fr.Fields)
             .Include(fr => fr.CreatedBy)

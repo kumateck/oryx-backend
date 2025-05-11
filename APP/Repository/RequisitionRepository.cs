@@ -33,7 +33,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         if (request.ProductionScheduleId.HasValue && request.ProductId.HasValue)
         {
-            var existingRequisition = await context.Requisitions.Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
+            var existingRequisition = await context.Requisitions
+                .AsSplitQuery()
+                .Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
                 r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
                 r.RequisitionType == request.RequisitionType);
 
@@ -354,6 +356,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
    private async Task<List<ShelfMaterialBatchDto>> GetShelvesOfBatch(Guid batchId, Guid warehouseId)
    {
        var shelves = await context.ShelfMaterialBatches
+           .AsSplitQuery()
            .Include(smb => smb.WarehouseLocationShelf)
            .Where(smb =>
                smb.MaterialBatchId == batchId &&
@@ -369,6 +372,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         foreach (var batch in batchQuantities)
         {
             var shelfMaterialBatch = await context.ShelfMaterialBatches
+                .AsSplitQuery()
                 .Include(smb => smb.WarehouseLocationShelf)
                 .ThenInclude(wls => wls.WarehouseLocationRack)
                 .ThenInclude(wlr => wlr.WarehouseLocation)

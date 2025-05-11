@@ -57,6 +57,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Paginateable<IEnumerable<LeaveTypeDto>>>> GetLeaveTypes(int page, int pageSize, string searchQuery = null)
     {
         var query = context.LeaveTypes
+            .AsSplitQuery()
             .Include(d => d.Designations)
             .Where(l => l.LastDeletedById == null)
             .AsQueryable();
