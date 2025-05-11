@@ -36,6 +36,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<MaterialDto>> GetMaterial(Guid materialId)
     {
         var material = await context.Materials
+            .AsSplitQuery()
             .Include(m => m.MaterialCategory)  // Include category if needed
             .FirstOrDefaultAsync(m => m.Id == materialId);
 
@@ -227,6 +228,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(int page, int pageSize, string searchQuery)
     {
         var query = context.MaterialBatches
+            .AsSplitQuery()
             .Include(b => b.Material)
             .Include(b => b.Events).ThenInclude(m => m.User)
             .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
@@ -258,6 +260,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<List<MaterialBatchDto>>> GetMaterialBatchesByMaterialId(Guid materialId)
     {
         var query =  await context.MaterialBatches
+            .AsSplitQuery()
             .Include(b => b.Material)
             .Include(b => b.Events).ThenInclude(m => m.User)
             .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)

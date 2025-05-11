@@ -74,7 +74,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<List<ManufacturerDto>>> GetManufacturersByMaterial(Guid materialId)
     {
        return mapper.Map<List<ManufacturerDto>>( await context.Manufacturers
-           .AsSplitQuery()
+            .AsSplitQuery()
             .Include(m => m.Materials).ThenInclude(m => m.Material)
             .Where(m => m.Materials.Any(ma => ma.MaterialId == materialId))
             .ToListAsync());

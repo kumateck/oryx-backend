@@ -148,6 +148,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
     public async Task<Result<Paginateable<IEnumerable<LeaveRequestDto>>>> GetLeaveRequests(int page, int pageSize, string searchQuery)
     {
         var query = context.LeaveRequests
+            .AsSplitQuery()
             .Include(l => l.LeaveType)
                 .ThenInclude(l=> l.Designations)
             .Include(l => l.Employee)
@@ -187,6 +188,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
     public async Task<Result<LeaveRequestDto>> GetLeaveRequest(Guid leaveRequestId)
     {
        var leaveRequest = await context.LeaveRequests
+           .AsSplitQuery()
            .Include(l => l.LeaveType)
            .Include(l => l.Employee)
            .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);

@@ -52,6 +52,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
     public async Task<Result<BillOfMaterialDto>> GetBillOfMaterial(Guid billOfMaterialId) 
     { 
         var billOfMaterial = await context.BillOfMaterials
+            .AsSplitQuery()
             .Include(b => b.Items)
             .ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(b => b.Id == billOfMaterialId);

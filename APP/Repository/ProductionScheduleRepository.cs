@@ -40,6 +40,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId) 
     { 
         var productionSchedule = await context.ProductionSchedules
+            .AsSplitQuery()
             .Include(s => s.Products).ThenInclude(s => s.Product)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
@@ -127,7 +128,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var productionSchedule =
             await context.ProductionSchedules.Include(productionSchedule => productionSchedule.Products).FirstOrDefaultAsync(p => p.Id == productionScheduleId);
         
-        var product = await context.Products.AsSplitQuery().Include(product => product.Routes).ThenInclude(route => route.Resources)
+        var product = await context.Products
+            .AsSplitQuery()
+            .Include(product => product.Routes).ThenInclude(route => route.Resources)
             .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
             .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)
             .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles).FirstOrDefaultAsync(p => p.Id == productId);
