@@ -8,7 +8,7 @@ public class CreateHolidayRequest
     
     [Required] public DateTime Date { get; set; }
     
-    [Required] public List<Guid> Shifts { get; set; }
+    [Required] public List<Guid> ShiftSchedules { get; set; }
     
     public string Description { get; set; }
 }
