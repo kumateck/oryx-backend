@@ -126,7 +126,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         }
         
         var employee = mapper.Map<Employee>(request);
-        employee.CreatedAt = DateTime.UtcNow;
+
         context.Employees.Add(employee);
         await context.SaveChangesAsync();
 
@@ -157,8 +157,6 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
         newUser.FirstName = employee.FirstName;
         newUser.LastName = employee.LastName;
         newUser.DepartmentId = employee.DepartmentId;
-        newUser.CreatedById = createdByUserId;
-        newUser.CreatedAt = DateTime.UtcNow;
 
         await userManager.CreateAsync(newUser);
         await context.SaveChangesAsync();
@@ -294,8 +292,7 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
         }
 
         mapper.Map(request, employee);
-        employee.UpdatedAt = DateTime.UtcNow;
-        employee.LastUpdatedById = userId;
+
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
 
@@ -330,8 +327,6 @@ public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto,
     employee.DepartmentId = employeeDto.DepartmentId;
     employee.DesignationId = employeeDto.DesignationId;
     employee.AnnualLeaveDays = designation.MaximumLeaveDays;
-    employee.UpdatedAt = DateTime.UtcNow;
-    employee.LastUpdatedById = userId;
 
     context.Employees.Update(employee);
     await context.SaveChangesAsync();

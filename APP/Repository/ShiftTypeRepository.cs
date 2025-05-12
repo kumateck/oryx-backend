@@ -32,9 +32,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         }
         
         var shiftType = mapper.Map<ShiftType>(request);
-        shiftType.CreatedById = userId;
-        shiftType.CreatedAt = DateTime.UtcNow;
-        
+ 
         await context.ShiftTypes.AddAsync(shiftType);
         await context.SaveChangesAsync();
         
@@ -93,9 +91,6 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
             return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
         }
         mapper.Map(request, shiftType);
-        
-        shiftType.LastUpdatedById = userId;
-        shiftType.UpdatedAt = DateTime.UtcNow;
         
         context.ShiftTypes.Update(shiftType);
         await context.SaveChangesAsync();

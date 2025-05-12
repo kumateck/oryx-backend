@@ -39,8 +39,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         }
         
         var leaveEntitlement = mapper.Map<LeaveEntitlement>(leaveEntitlementRequest);
-        leaveEntitlement.CreatedById = userId;
-        leaveEntitlement.CreatedAt = DateTime.UtcNow;
+
         await context.LeaveEntitlements.AddAsync(leaveEntitlement);
         await context.SaveChangesAsync();
         
@@ -88,8 +87,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         }
         
         mapper.Map(leaveEntitlementDto, leaveEntitlement);
-        leaveEntitlement.LastUpdatedById = userId;
-        leaveEntitlement.UpdatedAt = DateTime.UtcNow;
+
         context.LeaveEntitlements.Update(leaveEntitlement);
         await context.SaveChangesAsync();
         return Result.Success();
