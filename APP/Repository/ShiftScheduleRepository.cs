@@ -14,7 +14,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result<Guid>> CreateShiftSchedule(CreateShiftScheduleRequest request, Guid userId)
     {
         var shiftSchedule = await context.ShiftSchedules
-            .FirstOrDefaultAsync(s => s.ScheduleName == request.ScheduleName);
+            .FirstOrDefaultAsync(s => s.ScheduleName == request.ScheduleName && s.LastDeletedById == null);
         if (shiftSchedule is not null)
         {
             return Error.Validation("ShiftSchedule.Exists", "Shift schedule already exists.");
@@ -78,6 +78,8 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result<ShiftScheduleDto>> GetShiftSchedule(Guid id)
     {
         var shiftSchedule = await context.ShiftSchedules
+            .Include(schedule => schedule.Department)
+            .Include(schedule => schedule.ShiftTypes)
             .FirstOrDefaultAsync(s => s.Id == id && s.LastDeletedById == null);
         
         return shiftSchedule is null ? 
