@@ -104,7 +104,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             return Error.Validation("ShiftSchedule.InvalidShiftTypes", "One or more shift type IDs are invalid.");
         }
         shiftSchedule.ShiftTypes.Clear();
-        shiftSchedule.ShiftTypes = shiftTypes;
+        shiftSchedule.ShiftTypes.AddRange(shiftTypes);
         mapper.Map(request, shiftSchedule);
         
         context.ShiftSchedules.Update(shiftSchedule);

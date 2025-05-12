@@ -20,8 +20,6 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         }
         
         var designation = mapper.Map<Designation>(request);
-        designation.CreatedById = userId;
-        designation.CreatedAt = DateTime.UtcNow;
         
         var departments = await context.Departments
             .Where(d => request.DepartmentIds.Contains(d.Id) && d.LastDeletedById == null).ToListAsync();
@@ -94,9 +92,6 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         
         designation.Departments.Clear(); 
         designation.Departments = departments;
-        
-        designation.LastUpdatedById = userId;
-        designation.UpdatedAt = DateTime.UtcNow;
         
         context.Designations.Update(designation);
         await context.SaveChangesAsync();

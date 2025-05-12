@@ -105,7 +105,7 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result> DeleteHoliday(Guid id)
+    public async Task<Result> DeleteHoliday(Guid id, Guid userId)
     {
         var holiday = await context.Holidays.FirstOrDefaultAsync(h => h.Id == id && h.DeletedAt == null);
         
@@ -115,6 +115,7 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
         }
         
         holiday.DeletedAt = DateTime.UtcNow;
+        holiday.LastDeletedById = userId;
         
         context.Holidays.Update(holiday);
         await context.SaveChangesAsync();

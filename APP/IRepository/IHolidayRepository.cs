@@ -14,5 +14,5 @@ public interface IHolidayRepository
     
     Task<Result> UpdateHoliday(CreateHolidayRequest request, Guid id);
     
-    Task<Result> DeleteHoliday(Guid id);
+    Task<Result> DeleteHoliday(Guid id, Guid userId);
 }

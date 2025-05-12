@@ -43,8 +43,6 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
             }
         }
         var leaveType = mapper.Map<LeaveType>(leaveTypeDto);
-        leaveType.CreatedById = userId;
-        leaveType.CreatedAt = DateTime.UtcNow;
         
         leaveType.Designations = designations;
         
@@ -108,8 +106,6 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.Validation("LeaveType.InvalidDesignations", "One or more designation IDs are invalid.");
         }
-        leaveType.UpdatedAt = DateTime.UtcNow;
-        leaveType.LastUpdatedById = userId;
         
         context.LeaveTypes.Update(leaveType);
         await context.SaveChangesAsync();

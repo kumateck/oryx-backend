@@ -133,8 +133,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
 
         var entity = mapper.Map<LeaveRequest>(request);
-        entity.CreatedById = userId;
-        entity.CreatedAt = DateTime.UtcNow;
+
         entity.PaidDays = paidDays;
         entity.UnpaidDays = unpaidDays;
 
@@ -231,8 +230,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
         
         mapper.Map(leaveRequest, existingLeaveRequest);
-        existingLeaveRequest.LastUpdatedById = userId;
-        existingLeaveRequest.UpdatedAt = DateTime.UtcNow;
+
         context.LeaveRequests.Update(existingLeaveRequest);
         
         await context.SaveChangesAsync();

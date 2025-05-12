@@ -26,8 +26,7 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
         {
             var companyWorkingDayEntity = mapper.Map<CompanyWorkingDays>(companyWorkingDay);
             companyWorkingDayEntity.Day = companyWorkingDay.Day;
-            companyWorkingDayEntity.CreatedById = userId;
-            companyWorkingDayEntity.CreatedAt = DateTime.UtcNow;
+   
             await context.CompanyWorkingDays.AddAsync(companyWorkingDayEntity);
         }
         
@@ -73,8 +72,6 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
         }
         
         mapper.Map(companyWorkingDaysDto, workingDay);
-        workingDay.LastUpdatedById = userId;
-        workingDay.UpdatedAt = DateTime.UtcNow;
         
         context.CompanyWorkingDays.Update(workingDay);
         await context.SaveChangesAsync();
