@@ -23,6 +23,7 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -679,6 +680,13 @@ public class OryxMapper : Profile
 
         CreateMap<CompanyWorkingDaysRequest, CompanyWorkingDays>();
         CreateMap<CompanyWorkingDaysDto, CompanyWorkingDays>().ReverseMap();
+
+        #endregion
+
+        #region Holidays
+
+        CreateMap<CreateHolidayRequest, Holiday>();
+        CreateMap<Holiday, HolidayDto>();
 
         #endregion
 
