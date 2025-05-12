@@ -664,12 +664,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<MaterialReturnNote>().HasQueryFilter(entity => !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialReturnNoteFullReturn>().HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialReturnNotePartialReturn>().HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionExtraPacking>().HasQueryFilter(entity => !entity.Material.DeletedAt.HasValue);
         
         #endregion
 
-         #region Requisition Filters
-         modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity => entity.Requisition != null);
-         #endregion
+        #region Requisition Filters
+        modelBuilder.Entity<RequisitionApproval>().HasQueryFilter(entity => entity.Requisition != null);
+        #endregion
 
         #region WorkOrder Filters
         modelBuilder.Entity<WorkOrder>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
@@ -731,6 +732,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Approval Filters
         modelBuilder.Entity<Approval>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<ApprovalStage>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
+        modelBuilder.Entity<LeaveRequestApproval>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
         #endregion
 
         #region Procurement Filters
@@ -742,7 +744,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Department Filters
         modelBuilder.Entity<Department>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        // modelBuilder.Entity<DepartmentWarehouse>().HasQueryFilter(a => !a.Department.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialDepartment>().HasQueryFilter(a => !a.Department.DeletedAt.HasValue);
         #endregion
 
         #region Warehouse Filters

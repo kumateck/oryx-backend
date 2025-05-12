@@ -1446,10 +1446,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         var toWarehouse =  stockTransferSource.StockTransfer.Material.Kind == MaterialKind.Raw
             ? await context.Warehouses.IgnoreQueryFilters()
+                .Include(w => w.ArrivalLocation)
                 .FirstOrDefaultAsync(w =>
                     w.DepartmentId == stockTransferSource.ToDepartmentId &&
                     w.Type == WarehouseType.RawMaterialStorage)
             : await context.Warehouses.IgnoreQueryFilters()
+                .Include(w => w.ArrivalLocation)
                 .FirstOrDefaultAsync(w =>
                     w.DepartmentId == stockTransferSource.ToDepartmentId && w.Type == WarehouseType.PackagedStorage);
 
