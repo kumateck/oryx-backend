@@ -43,7 +43,6 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateUserFromEmployee([FromBody] EmployeeUserDto employeeUserDto)
     {
         var userId = (string) HttpContext.Items["Sub"];

@@ -14,7 +14,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result<Guid>> CreateShiftSchedule(CreateShiftScheduleRequest request, Guid userId)
     {
         var shiftSchedule = await context.ShiftSchedules
-            .FirstOrDefaultAsync(s => s.ScheduleName == request.ScheduleName);
+            .FirstOrDefaultAsync(s => s.ScheduleName == request.ScheduleName && s.LastDeletedById == null);
         if (shiftSchedule is not null)
         {
             return Error.Validation("ShiftSchedule.Exists", "Shift schedule already exists.");
@@ -36,8 +36,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         }
         
         var shiftScheduleEntity = mapper.Map<ShiftSchedule>(request);
-        shiftScheduleEntity.CreatedById = userId;
-        shiftScheduleEntity.CreatedAt = DateTime.UtcNow;
+        
         shiftScheduleEntity.ShiftTypes = shiftTypes;
         
         await context.ShiftSchedules.AddAsync(shiftScheduleEntity);
@@ -50,6 +49,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     {
         var query = context.ShiftSchedules
             .Include(schedule => schedule.Department)
+            .Include(schedule => schedule.ShiftTypes)
             .Where(sc => sc.LastDeletedById == null)
             .AsQueryable();
 
@@ -78,6 +78,8 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result<ShiftScheduleDto>> GetShiftSchedule(Guid id)
     {
         var shiftSchedule = await context.ShiftSchedules
+            .Include(schedule => schedule.Department)
+            .Include(schedule => schedule.ShiftTypes)
             .FirstOrDefaultAsync(s => s.Id == id && s.LastDeletedById == null);
         
         return shiftSchedule is null ? 
@@ -105,9 +107,6 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         shiftSchedule.ShiftTypes = shiftTypes;
         mapper.Map(request, shiftSchedule);
         
-        shiftSchedule.LastUpdatedById = userId;
-        shiftSchedule.UpdatedAt = DateTime.UtcNow;
-        
         context.ShiftSchedules.Update(shiftSchedule);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -122,8 +121,6 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         {
             return Error.NotFound("ShiftSchedule.NotFound", "Shift schedule is not found");
         }
-        shiftSchedule.LastDeletedById = userId;
-        shiftSchedule.DeletedAt = DateTime.UtcNow;
         
         context.ShiftSchedules.Update(shiftSchedule);
         await context.SaveChangesAsync();

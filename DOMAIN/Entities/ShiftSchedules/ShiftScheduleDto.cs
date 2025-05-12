@@ -8,6 +8,8 @@ public class ShiftScheduleDto: BaseDto
 {
    public string ScheduleName { get; set; }
    
+   public DateTime StartTime { get; set; }
+   
    public List<ShiftTypeDto> ShiftType { get; set; }
    
    public Guid DepartmentId { get; set; }

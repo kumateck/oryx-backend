@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.ShiftSchedules;
 
 namespace DOMAIN.Entities.ShiftTypes;
 
@@ -11,6 +12,8 @@ public class ShiftType: BaseEntity
     public DateTime StartTime { get; set; }
     
     public DateTime EndTime { get; set; }
+    
+    public List<ShiftSchedule> ShiftSchedules { get; set; }
     
     public List<DayOfWeek> ApplicableDays { get; set; }
     

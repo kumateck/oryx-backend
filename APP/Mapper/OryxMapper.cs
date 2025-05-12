@@ -23,6 +23,7 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -682,10 +683,23 @@ public class OryxMapper : Profile
 
         #endregion
 
+        #region Holidays
+
+        CreateMap<CreateHolidayRequest, Holiday>()
+            .ForMember(dest => dest.ShiftSchedules, opts => opts.Ignore());
+        CreateMap<HolidayDto, Holiday>();
+        CreateMap<Holiday, HolidayDto>()
+            .ForMember(dest => dest.ShiftSchedules, opts => opts.MapFrom(src => src.ShiftSchedules));
+
+        #endregion
+
         #region Shift Schedules
-        
+
         CreateMap<ShiftScheduleDto, ShiftSchedule>();
-        CreateMap<CreateShiftScheduleRequest, ShiftSchedule>();
+        CreateMap<ShiftSchedule, ShiftScheduleDto>()
+            .ForMember(dest => dest.ShiftType, opts => opts.MapFrom(src => src.ShiftTypes));
+        CreateMap<CreateShiftScheduleRequest, ShiftSchedule>()
+            .ForMember(dest => dest.ShiftTypes, opts => opts.Ignore());
         
         #endregion
         

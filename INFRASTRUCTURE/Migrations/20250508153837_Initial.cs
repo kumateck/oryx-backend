@@ -1010,7 +1010,7 @@ namespace INFRASTRUCTURE.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ScheduleName = table.Column<string>(type: "text", nullable: true),
                     Frequency = table.Column<int>(type: "integer", nullable: false),
-                    StartTime = table.Column<TimeOnly>(type: "time without time zone", nullable: false),
+                    StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     StartDate = table.Column<int>(type: "integer", nullable: true),
                     DepartmentId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),

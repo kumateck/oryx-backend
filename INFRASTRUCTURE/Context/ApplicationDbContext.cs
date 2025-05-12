@@ -17,6 +17,7 @@ using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -393,6 +394,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Company Working Days
 
     public DbSet<CompanyWorkingDays> CompanyWorkingDays { get; set; }
+
+    #endregion
+
+    #region Holidays
+
+    public DbSet<Holiday> Holidays { get; set; } 
 
     #endregion
     
