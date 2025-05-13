@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Text;
 using APP.IRepository;
@@ -19,7 +21,13 @@ public class ActivityLogMiddleware(RequestDelegate next)
         var stopwatch = Stopwatch.StartNew();
         var request = context.Request;
 
-        var userId = context.Items["Sub"]?.ToString();
+        var token = context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
+        var userId = "";
+        if (!string.IsNullOrEmpty(token))
+        {
+            var jwtToken = new JwtSecurityToken(token);
+            userId = jwtToken.Subject ?? context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? context.Connection.RemoteIpAddress?.ToString();
         var userAgent = request.Headers["User-Agent"].ToString();
         var queryParams = request.QueryString.ToString();

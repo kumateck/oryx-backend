@@ -1,10 +1,13 @@
 using DOMAIN.Entities.Users;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace DOMAIN.Entities.ActivityLogs;
 
 public class CreateActivityLog
 {
     public Guid? UserId { get; set; }
+    public UserDto User { get; set; }
     public string Action { get; set; }
     public string Module { get; set; }
     public string SubModule { get; set; }
@@ -24,8 +27,10 @@ public class CreateActivityLog
 
 public class ActivityLog
 {
+    [BsonElement("id")]
+    public ObjectId Id { get; set; }
     public Guid? UserId { get; set; }
-    public User User { get; set; }
+    public UserDto User { get; set; }
     public string Action { get; set; }
     public string Module { get; set; }
     public string SubModule { get; set; }
