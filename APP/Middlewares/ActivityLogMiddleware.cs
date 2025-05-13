@@ -58,13 +58,11 @@ public class ActivityLogMiddleware(RequestDelegate next)
                     RequestBody = requestBody
                 });
             }
-            else if (_excludedPaths.Any(path => pathValue != null && pathValue.Contains(path)))
-            {
-                await next(context);
-                return;
-            }
+            await next(context);
+            return;
         }
-        else if (_excludedPaths.Any(path => pathValue != null && pathValue.Contains(path)))
+        
+        if (_excludedPaths.Any(path => pathValue != null && pathValue.Contains(path)))
         {
             await next(context);
             return;
