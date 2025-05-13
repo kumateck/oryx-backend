@@ -18,7 +18,7 @@ public class ActivityLogRepository(MongoDbContext context, IMapper mapper, Appli
     {
         if (model.UserId.HasValue)
         {
-            model.User = mapper.Map<UserDto>(await dbContext.Users.FirstOrDefaultAsync(u => u.Id == model.UserId.Value));
+            model.User = mapper.Map<BsonUserDto>(await dbContext.Users.FirstOrDefaultAsync(u => u.Id == model.UserId.Value));
         }
         var activityLog = mapper.Map<ActivityLog>(model);
         await _activityLogs.InsertOneAsync(activityLog);
@@ -26,6 +26,10 @@ public class ActivityLogRepository(MongoDbContext context, IMapper mapper, Appli
     
     public void RecordActivity(CreateActivityLog model)
     {
+        if (model.UserId.HasValue)
+        {
+            model.User = mapper.Map<BsonUserDto>(dbContext.Users.FirstOrDefault(u => u.Id == model.UserId.Value));
+        }
         var activityLog = mapper.Map<ActivityLog>(model);
         _activityLogs.InsertOne(activityLog);
     }
@@ -34,8 +38,8 @@ public class ActivityLogRepository(MongoDbContext context, IMapper mapper, Appli
     {
         var filterDefinition = Builders<ActivityLog>.Filter.Empty;
         
-        filter.StartDate ??= DateTime.UtcNow;
-        filter.EndDate ??= DateTime.UtcNow.AddDays(1);
+        filter.StartDate ??= DateTime.UtcNow.Date;
+        filter.EndDate ??= DateTime.UtcNow.AddDays(1).Date;
 
         // Apply date range filters
         if (filter.StartDate.HasValue)

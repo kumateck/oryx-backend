@@ -14,7 +14,7 @@ public class LeaveRequest : BaseEntity, IRequireApproval
     
     public string ContactPersonNumber { get; set; }
     
-    public string? Justification { get; set; }
+    public string Justification { get; set; }
     public RequestCategory RequestCategory { get; set; }
     public LeaveStatus LeaveStatus { get; set; }
     public int? UnpaidDays { get; set; }

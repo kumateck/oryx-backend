@@ -17,8 +17,8 @@ using APP.Middlewares;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 var builder = WebApplication.CreateBuilder(args);
 

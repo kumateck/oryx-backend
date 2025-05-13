@@ -14,6 +14,7 @@ namespace APP.Middlewares;
 public class ActivityLogMiddleware(RequestDelegate next)
 {
     private readonly string[] _excludedPaths = ["/auth", "/collections", "/details", "/pagination"];
+    private readonly string[] _excludedMethods = ["OPTIONS"];
     private readonly string[] _allowedGetPaths = ["toggle-disable"];
 
     public async Task Invoke(HttpContext context, IActivityLogRepository repo, IBackgroundWorkerService backgroundService)
@@ -36,10 +37,16 @@ public class ActivityLogMiddleware(RequestDelegate next)
         var pathValue = request.Path.Value?.ToLower();
         string requestBody = await ReadRequestBodyAsync(request);
 
+        if (_excludedMethods.Contains(request.Method))
+        {
+            await next(context);
+            return;
+        }
+        
         // Skip excluded paths (unless it's an allowed GET request)
         if (request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
         {
-            if (_allowedGetPaths.Any(p => pathValue != null && pathValue.Contains(p)))
+            if (_allowedGetPaths.Any(p => pathValue != null && pathValue.EndsWith(p)))
             {
                 var model = GetModelFromPath(context.Request.Path);
                 backgroundService.EnqueuePrevStateCapture(new PrevStateCaptureRequest
