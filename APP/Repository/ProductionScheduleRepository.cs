@@ -1058,6 +1058,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         batchRecord.IssuedById = userId;
         context.BatchManufacturingRecords.Update(batchRecord);
+        await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
+        {
+            ProductionActivityId = batchRecord.ProductionActivityStep.ProductionActivityId,
+            UserId = userId,
+            Message = "Issued batch manufacturing record",
+            Timestamp = DateTime.UtcNow
+        });
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -1136,6 +1143,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
         batchRecord.IssuedById = userId;
         context.BatchPackagingRecords.Update(batchRecord);
+        await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
+        {
+            ProductionActivityId = batchRecord.ProductionActivityStep.ProductionActivityId,
+            UserId = userId,
+            Message = "Issued batch packaging record",
+            Timestamp = DateTime.UtcNow
+        });
         await context.SaveChangesAsync();
         return Result.Success();
     }

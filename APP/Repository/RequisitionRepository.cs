@@ -14,6 +14,7 @@ using SHARED;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions.Request;
@@ -212,6 +213,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var stockRequisition = await context.Requisitions
             .AsSplitQuery()
             .Include(r => r.Items).ThenInclude(requisitionItem => requisitionItem.Material)
+            .Include(requisition => requisition.ProductionActivityStep)
             .FirstOrDefaultAsync(r => r.Id == stockRequisitionId);
         
         if (stockRequisition is null)
@@ -345,6 +347,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     productionActivityStep.Status = ProductionStatus.Completed;
                     productionActivityStep.CompletedAt = DateTime.UtcNow;
                     context.ProductionActivitySteps.Update(productionActivityStep);
+                    await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
+                    {
+                        ProductionActivityId = stockRequisition.ProductionActivityStep.ProductionActivityId,
+                        UserId = userId,
+                        Message = "Issued stock requisition.",
+                        Timestamp = DateTime.UtcNow
+                    });
                     await context.SaveChangesAsync();
                 }
             }
