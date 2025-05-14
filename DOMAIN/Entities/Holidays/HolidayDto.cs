@@ -9,7 +9,5 @@ public class HolidayDto : BaseDto
     
     public DateTime Date { get; set; }
     
-    public List<ShiftScheduleDto> ShiftSchedules { get; set; }
-    
     public string Description { get; set; }
 }

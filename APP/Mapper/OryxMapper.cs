@@ -667,7 +667,7 @@ public class OryxMapper : Profile
         CreateMap<CreateLeaveRequest, LeaveRequest>();
         CreateMap<LeaveRequestDto, LeaveRequest>();
         CreateMap<LeaveRequest, LeaveRequestDto>()
-            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());;
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
          
 
         #endregion
@@ -688,12 +688,9 @@ public class OryxMapper : Profile
 
         #region Holidays
 
-        CreateMap<CreateHolidayRequest, Holiday>()
-            .ForMember(dest => dest.ShiftSchedules, opts => opts.Ignore());
-        CreateMap<HolidayDto, Holiday>();
-        CreateMap<Holiday, HolidayDto>()
-            .ForMember(dest => dest.ShiftSchedules, opts => opts.MapFrom(src => src.ShiftSchedules));
-
+        CreateMap<CreateHolidayRequest, Holiday>();
+        CreateMap<HolidayDto, Holiday>().ReverseMap();
+            
         #endregion
 
         #region Shift Schedules

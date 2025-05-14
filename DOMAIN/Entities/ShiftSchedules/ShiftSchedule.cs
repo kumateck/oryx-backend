@@ -16,8 +16,6 @@ public class ShiftSchedule: BaseEntity
     public DayOfWeek? StartDate { get; set; }
     public List<ShiftType> ShiftTypes { get; set; }
     
-    public List<Holiday> Holidays { get; set; }
-    
     public Guid DepartmentId { get; set; }
     public Department Department { get; set; }
 
