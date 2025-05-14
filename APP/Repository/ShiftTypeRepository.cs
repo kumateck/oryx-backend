@@ -106,6 +106,14 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
         }
+
+        var shiftSchedule = await context.ShiftSchedules.FirstOrDefaultAsync(sc => sc.ShiftTypes.Contains(shiftType));
+
+        if (shiftSchedule is not null)
+        {
+            return Error.Validation("ShiftType.InUse", "Shift type is in use by a shift schedule.");
+        }
+        
         shiftType.LastDeletedById = userId;
         shiftType.DeletedAt = DateTime.UtcNow;
         
