@@ -19,19 +19,9 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
         {
             return Error.Validation("Holiday.Exists", "Holiday already exists.");
         }
-
-        var shiftSchedules = await context.ShiftSchedules
-            .Where(sc => request.ShiftSchedules.Contains(sc.Id))
-            .ToListAsync();
-
-        if (shiftSchedules.Count != request.ShiftSchedules.Count)
-        {
-            return Error.Validation("Holiday.InvalidShiftSchedules", "One or more shift schedule IDs are invalid.");
-        }
         
         var holidayEntity = mapper.Map<Holiday>(request);
         
-        holidayEntity.ShiftSchedules = shiftSchedules;
         
         await context.Holidays.AddAsync(holidayEntity);
         await context.SaveChangesAsync();
@@ -44,10 +34,6 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
     {
         var query = context.Holidays
             .AsSplitQuery()
-            .Include(h => h.ShiftSchedules)
-                .ThenInclude(h=> h.ShiftTypes)
-            .Include(h => h.ShiftSchedules)
-                .ThenInclude(h=> h.Department)
             .Where(h => h.DeletedAt == null)
             .AsQueryable();
 
@@ -64,10 +50,6 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
     {
         var holiday = await context.Holidays
             .AsSplitQuery()
-            .Include(h => h.ShiftSchedules)
-                .ThenInclude(h=> h.ShiftTypes)
-            .Include(h => h.ShiftSchedules)
-                .ThenInclude(h=> h.Department)
             .FirstOrDefaultAsync(h => h.Id == id && h.DeletedAt == null);
         
         return holiday is null ? 
@@ -78,27 +60,14 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
     public async Task<Result> UpdateHoliday(CreateHolidayRequest request, Guid id)
     {
         var holiday = await context.Holidays
-            .Include(h => h.ShiftSchedules)
             .FirstOrDefaultAsync(h => h.Id == id && h.DeletedAt == null);
 
         if (holiday is null)
         {
             return Error.NotFound("Holiday.NotFound", "Holiday not found");
         }
-        
-        var shiftSchedules = await context.ShiftSchedules
-            .Where(sc => request.ShiftSchedules.Contains(sc.Id))
-            .ToListAsync();
-
-        if (shiftSchedules.Count != request.ShiftSchedules.Count)
-        {
-            return Error.Validation("Holiday.InvalidShiftSchedules", "One or more shift schedule IDs are invalid.");
-        }
 
         mapper.Map(request, holiday);
-        
-        holiday.ShiftSchedules.Clear();
-        holiday.ShiftSchedules.AddRange(shiftSchedules);
         
         context.Holidays.Update(holiday);
         await context.SaveChangesAsync();
