@@ -969,7 +969,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(e => e.Quantity);
 
         // Calculate the total available quantity for the material in this location
-        // Calculate the total available quantity for the material in this location
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
 
         return Math.Max(totalQuantityInLocation, 0);

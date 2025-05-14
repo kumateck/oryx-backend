@@ -18,7 +18,6 @@ using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +69,7 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
     options.OperationFilter<ReApplyOptionalParameterFilter>();
+    options.OperationFilter<SwaggerHeaderFilter>();
     
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);

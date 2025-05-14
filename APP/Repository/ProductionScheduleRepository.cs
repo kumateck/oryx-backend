@@ -20,7 +20,6 @@ using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
-using QueryableExtensions = System.Data.Entity.QueryableExtensions;
 
 namespace APP.Repository;
 
