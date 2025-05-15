@@ -19,6 +19,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.LeaveEntitlements;
+using DOMAIN.Entities.LeaveRecalls;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
@@ -376,6 +377,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LeaveEntitlement> LeaveEntitlements { get; set; }
     public DbSet<LeaveRequest> LeaveRequests { get; set; }
     public DbSet<LeaveRequestApproval> LeaveRequestApprovals { get; set; }
+    
+    public DbSet<LeaveRecall> LeaveRecalls { get; set; }
     
     #endregion
 

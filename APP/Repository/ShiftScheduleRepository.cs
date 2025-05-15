@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.ShiftSchedules;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -111,6 +112,73 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    // public async Task<Result> AssignEmployeesToShiftAsync(Guid shiftId, List<Guid> employeeIds)
+    // {
+    //     var shift = await context.ShiftSchedules
+    //         .FirstOrDefaultAsync(s => s.Id == shiftId);
+    //
+    //     if (shift == null)
+    //         return Error.NotFound("Shift not found.");
+    //
+    //     var shiftStart = shift.StartTime;
+    //     var shiftEnd = shift.EndTime;
+    //
+    //     var successfulAssignments = new List<Guid>();
+    //     var violations = new List<string>();
+    //
+    //     foreach (var employeeId in employeeIds)
+    //     {
+    //         // Leave Check
+    //         var onLeave = await context.LeaveRequests.AnyAsync(l =>
+    //             l.EmployeeId == employeeId &&
+    //             l.LeaveStatus == LeaveStatus.Approved &&
+    //             l.StartDate <= shiftEnd &&
+    //             l.EndDate >= shiftStart);
+    //
+    //         if (onLeave)
+    //         {
+    //             violations.Add($"Employee {employeeId} is on approved leave during the shift.");
+    //             continue;
+    //         }
+    //
+    //         // Conflict Check
+    //         var hasConflict = await context.ShiftAssignments.AnyAsync(sa =>
+    //             sa.EmployeeId == employeeId &&
+    //             context.ShiftSchedules.Any(s =>
+    //                 s.Id == sa.ShiftScheduleId &&
+    //                 s.Id != shiftId &&
+    //                 s.StartTime < shiftEnd &&
+    //                 s.EndTime > shiftStart
+    //             )
+    //         );
+    //
+    //         if (hasConflict)
+    //         {
+    //             violations.Add($"Employee {employeeId} has a conflicting shift.");
+    //             continue;
+    //         }
+    //
+    //         // Assign
+    //         var assignment = new ShiftAssignment
+    //         {
+    //             Id = Guid.NewGuid(),
+    //             EmployeeId = employeeId,
+    //             ShiftScheduleId = shiftId
+    //         };
+    //
+    //         context.ShiftAssignments.Add(assignment);
+    //         successfulAssignments.Add(employeeId);
+    //     }
+    //
+    //     await context.SaveChangesAsync();
+    //
+    //     return Result.Success(new
+    //     {
+    //         Assigned = successfulAssignments,
+    //         Skipped = violations
+    //     });
+    // }
 
     public async Task<Result> DeleteShiftSchedule(Guid id, Guid userId)
     {

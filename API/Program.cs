@@ -243,6 +243,8 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseMiddleware<ActivityLogMiddleware>();
 
+app.UseMiddleware<HolidayBlockingMiddleware>();
+
 app.UseRouting();
 
 app.UseAuthentication();

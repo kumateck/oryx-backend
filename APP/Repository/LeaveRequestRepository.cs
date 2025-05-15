@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.LeaveRecalls;
 using DOMAIN.Entities.LeaveRequests;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -232,6 +233,29 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         mapper.Map(leaveRequest, existingLeaveRequest);
 
         context.LeaveRequests.Update(existingLeaveRequest);
+        
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> SubmitLeaveRecallRequest(CreateLeaveRecallRequest createLeaveRecallRequest)
+    {
+        var leaveRequest = await context.LeaveRequests
+            .FirstOrDefaultAsync(l =>
+                l.EmployeeId == createLeaveRecallRequest.EmployeeId &&
+                l.LeaveStatus == LeaveStatus.Approved &&
+                l.StartDate <= createLeaveRecallRequest.RecallDate &&
+                l.EndDate >= createLeaveRecallRequest.RecallDate);
+
+        if (leaveRequest == null)
+            return Error.Validation("LeaveRecall.Invalid", "No approved leave found for the specified date.");
+        
+        var leaveRecall = mapper.Map<LeaveRecall>(createLeaveRecallRequest);
+
+        await context.LeaveRecalls.AddAsync(leaveRecall);
+        
+        leaveRequest.DeletedAt = DateTime.UtcNow;
+        context.LeaveRequests.Update(leaveRequest);
         
         await context.SaveChangesAsync();
         return Result.Success();
