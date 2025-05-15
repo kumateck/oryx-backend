@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250514120026_RemovingShiftScheduleFromHoliday")]
+    partial class RemovingShiftScheduleFromHoliday
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1902,50 +1905,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.ToTable("LeaveEntitlements");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.LeaveRecalls.LeaveRecall", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("RecallDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.ToTable("LeaveRecalls");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.LeaveRequests.LeaveRequest", b =>
@@ -6171,8 +6130,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int?>("StartDate")
                         .HasColumnType("integer");
 
-                    b.Property<TimeOnly>("StartTime")
-                        .HasColumnType("time without time zone");
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -8747,27 +8706,6 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.LeaveEntitlements.LeaveEntitlement", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.LeaveRecalls.LeaveRecall", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
