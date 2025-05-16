@@ -1760,7 +1760,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             result.WarehouseStock = warehouseStockResult.Value;
             result.PendingStockTransferQuantity = await context.StockTransferSources
                 .Include(s => s.StockTransfer)
-                .CountAsync(s => s.StockTransfer.MaterialId == result.Material.Id &&
+                .CountAsync(s => s.StockTransfer.MaterialId == result.Material.Id && 
+                                 s.FromDepartmentId == user.DepartmentId &&
                             s.Status == StockTransferStatus.InProgress);
         }
 
