@@ -156,7 +156,6 @@ public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)
             !conflictingEmployeeIds.Contains(id))
         .Select(id => new ShiftAssignment
         {
-            Id = Guid.NewGuid(),
             EmployeeId = id,
             ShiftScheduleId = shiftSchedule.Id,
         })
