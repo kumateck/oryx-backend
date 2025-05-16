@@ -12,6 +12,7 @@ using DinkToPdf.Contracts;
 using DOMAIN.Entities.ActivityLogs;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
 using SHARED.Services.Identity;
@@ -66,6 +67,7 @@ public static class DependencyInjection
         services.AddScoped<IBackgroundWorkerService, BackgroundWorkerService>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddHostedService<ApprovalEscalationService>();
+        services.AddHostedService<LeaveExpiryService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)
