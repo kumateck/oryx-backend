@@ -76,6 +76,17 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
+    [HttpPut("recall")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SubmitLeaveRequest([FromBody] CreateLeaveRecallRequest leaveRecallRequest)
+    {
+        var result = await repository.SubmitLeaveRecallRequest(leaveRecallRequest);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Deletes a specific leave request by its ID.
     /// </summary>
