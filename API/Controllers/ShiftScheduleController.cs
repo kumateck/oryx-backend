@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [ApiController]
-[Route("api/v{version:apiVersion}/shift-schedule")]
+[Route("api/v{version:apiVersion}/shift-schedules")]
 public class ShiftScheduleController(IShiftScheduleRepository repository): ControllerBase
 {
     /// <summary>
@@ -26,6 +27,19 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
         var result = await repository.CreateShiftSchedule(request, Guid.Parse(userId));
         
         return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Assigns employees a shift schedule
+    /// </summary>
+    [HttpPost("assign")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> AssignShiftToEmployee([FromBody] AssignShiftRequest request)
+    {
+        var result = await repository.AssignEmployeesToShift(request);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
     /// <summary>
