@@ -17,7 +17,6 @@ using APP.Middlewares;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -70,6 +69,7 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
     options.OperationFilter<ReApplyOptionalParameterFilter>();
+    options.OperationFilter<SwaggerHeaderFilter>();
     
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);

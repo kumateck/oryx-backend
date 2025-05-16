@@ -1,4 +1,4 @@
-using APP.IRepository;
+/*using APP.IRepository;
 using AutoMapper;
 using DOMAIN.Entities.Materials;
 using INFRASTRUCTURE.Context;
@@ -12,4 +12,4 @@ public class DepartmentWarehouseStockResolver(IMaterialRepository repo, Applicat
     {
         throw new NotImplementedException();
     }
-}
+}*/

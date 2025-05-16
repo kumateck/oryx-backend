@@ -1,4 +1,5 @@
 using DOMAIN.Entities.ActivityLogs;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace INFRASTRUCTURE.Context;

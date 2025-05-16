@@ -162,6 +162,9 @@ public class OryxMapper : Profile
             .ForMember(user => user.Signature,
                 opt => opt.MapFrom<SignatureResolver>());
         
+        CreateMap<User, BsonUserDto>();
+        CreateMap<BsonUserDto, BsonUserDto>();
+        
         CreateMap<User, UserWithRoleDto>()
              .ForMember(user => user.Roles,
                  opt => opt.MapFrom<UserRoleResolver>())

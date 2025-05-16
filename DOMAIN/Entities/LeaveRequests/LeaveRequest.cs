@@ -13,7 +13,7 @@ public class LeaveRequest : BaseEntity, IRequireApproval
     public string ContactPerson { get; set; }
     
     public string ContactPersonNumber { get; set; }
-    
+
     public string? Justification { get; set; }
     
     public DateTime RecallDate { get; set; }

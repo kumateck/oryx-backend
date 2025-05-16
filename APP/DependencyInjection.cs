@@ -72,7 +72,7 @@ public static class DependencyInjection
 
     public static void AddSingletonServices(this IServiceCollection services)
     {
-        var redisConnectionString = Environment.GetEnvironmentVariable("redisConnectionString") ?? "localhost:6379,abortConnect=false";
+        var redisConnectionString = Environment.GetEnvironmentVariable("redisConnectionString") ?? "localhost:6380,abortConnect=false";
         services.AddSingleton<IConnectionMultiplexer>(_ => 
             ConnectionMultiplexer.Connect(redisConnectionString));
         services.AddSingleton(sp => 

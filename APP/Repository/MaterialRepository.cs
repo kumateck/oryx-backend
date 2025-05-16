@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using SHARED;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Http;
@@ -969,7 +970,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(e => e.Quantity);
 
         // Calculate the total available quantity for the material in this location
-        // Calculate the total available quantity for the material in this location
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
 
         return Math.Max(totalQuantityInLocation, 0);
@@ -1758,6 +1758,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var warehouseStockResult = await GetMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
             if(warehouseStockResult.IsFailure) continue;
             result.WarehouseStock = warehouseStockResult.Value;
+            result.PendingStockTransferQuantity = await context.StockTransferSources
+                .Include(s => s.StockTransfer)
+                .CountAsync(s => s.StockTransfer.MaterialId == result.Material.Id && 
+                                 s.FromDepartmentId == user.DepartmentId &&
+                            s.Status == StockTransferStatus.InProgress);
         }
 
         return results;

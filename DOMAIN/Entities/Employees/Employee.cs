@@ -15,9 +15,8 @@ namespace DOMAIN.Entities.Employees;
 public class Employee : BaseEntity
 {
     [StringLength(200)] public string FirstName { get; set; }
-    
     [StringLength(200)] public string LastName { get; set; }
-    public string Avatar {get; set;}
+    [StringLength(1000)] public string Avatar {get; set;}
     
     public DateTime DateOfBirth { get; set; }
     

@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Text;
 using APP.IRepository;
@@ -11,7 +13,8 @@ namespace APP.Middlewares;
 
 public class ActivityLogMiddleware(RequestDelegate next)
 {
-    private readonly string[] _excludedPaths = ["/auth", "/collections", "/details", "/pagination"];
+    private readonly string[] _excludedPaths = ["/auth", "/collections", "/details", "/pagination", "/favicon.ico"];
+    private readonly string[] _excludedMethods = ["OPTIONS"];
     private readonly string[] _allowedGetPaths = ["toggle-disable"];
 
     public async Task Invoke(HttpContext context, IActivityLogRepository repo, IBackgroundWorkerService backgroundService)
@@ -19,7 +22,13 @@ public class ActivityLogMiddleware(RequestDelegate next)
         var stopwatch = Stopwatch.StartNew();
         var request = context.Request;
 
-        var userId = context.Items["Sub"]?.ToString();
+        var token = context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
+        var userId = "";
+        if (!string.IsNullOrEmpty(token))
+        {
+            var jwtToken = new JwtSecurityToken(token);
+            userId = jwtToken.Subject ?? context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? context.Connection.RemoteIpAddress?.ToString();
         var userAgent = request.Headers["User-Agent"].ToString();
         var queryParams = request.QueryString.ToString();
@@ -28,10 +37,16 @@ public class ActivityLogMiddleware(RequestDelegate next)
         var pathValue = request.Path.Value?.ToLower();
         string requestBody = await ReadRequestBodyAsync(request);
 
+        if (_excludedMethods.Contains(request.Method))
+        {
+            await next(context);
+            return;
+        }
+        
         // Skip excluded paths (unless it's an allowed GET request)
         if (request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
         {
-            if (_allowedGetPaths.Any(p => pathValue != null && pathValue.Contains(p)))
+            if (_allowedGetPaths.Any(p => pathValue != null && pathValue.EndsWith(p)))
             {
                 var model = GetModelFromPath(context.Request.Path);
                 backgroundService.EnqueuePrevStateCapture(new PrevStateCaptureRequest
@@ -43,13 +58,11 @@ public class ActivityLogMiddleware(RequestDelegate next)
                     RequestBody = requestBody
                 });
             }
-            else if (_excludedPaths.Any(path => pathValue != null && pathValue.Contains(path)))
-            {
-                await next(context);
-                return;
-            }
+            await next(context);
+            return;
         }
-        else if (_excludedPaths.Any(path => pathValue != null && pathValue.Contains(path)))
+        
+        if (_excludedPaths.Any(path => pathValue != null && pathValue.Contains(path)))
         {
             await next(context);
             return;

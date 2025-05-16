@@ -20,7 +20,6 @@ using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
-using QueryableExtensions = System.Data.Entity.QueryableExtensions;
 
 namespace APP.Repository;
 
@@ -1059,6 +1058,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         batchRecord.IssuedById = userId;
         context.BatchManufacturingRecords.Update(batchRecord);
+        await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
+        {
+            ProductionActivityId = batchRecord.ProductionActivityStep.ProductionActivityId,
+            UserId = userId,
+            Message = "Issued batch manufacturing record",
+            Timestamp = DateTime.UtcNow
+        });
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -1137,6 +1143,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
         batchRecord.IssuedById = userId;
         context.BatchPackagingRecords.Update(batchRecord);
+        await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
+        {
+            ProductionActivityId = batchRecord.ProductionActivityStep.ProductionActivityId,
+            UserId = userId,
+            Message = "Issued batch packaging record",
+            Timestamp = DateTime.UtcNow
+        });
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -1446,10 +1459,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         var toWarehouse =  stockTransferSource.StockTransfer.Material.Kind == MaterialKind.Raw
             ? await context.Warehouses.IgnoreQueryFilters()
+                .Include(w => w.ArrivalLocation)
                 .FirstOrDefaultAsync(w =>
                     w.DepartmentId == stockTransferSource.ToDepartmentId &&
                     w.Type == WarehouseType.RawMaterialStorage)
             : await context.Warehouses.IgnoreQueryFilters()
+                .Include(w => w.ArrivalLocation)
                 .FirstOrDefaultAsync(w =>
                     w.DepartmentId == stockTransferSource.ToDepartmentId && w.Type == WarehouseType.PackagedStorage);
 
