@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.Globalization;
+using System.Text;
 using INFRASTRUCTURE.Context;
 
 namespace APP.Middlewares;
+
 
 public class HolidayBlockingMiddleware(RequestDelegate next, ILogger<HolidayBlockingMiddleware> logger)
 {
@@ -31,24 +32,26 @@ public class HolidayBlockingMiddleware(RequestDelegate next, ILogger<HolidayBloc
 
                 var violations = allDates.Where(date => holidayDates.Contains(date.Date)).ToList();
 
-                if (violations.Count != 0)
+                if (violations.Count > 0)
                 {
-                    foreach (var date in violations)
-                    {
-                        logger.LogWarning("Holiday date violation detected: {Date}", date.ToShortDateString());
-                    }
+                    // Log and add a header with excluded dates
+                    var excludedDates = violations.Select(d => d.ToString("yyyy-MM-dd")).ToList();
 
-                    var problem = new ProblemDetails
-                    {
-                        Status = StatusCodes.Status400BadRequest,
-                        Title = "Date Conflict with Holiday",
-                        Detail = $"The following dates are holidays: {string.Join(", ", violations.Select(d => d.ToString("yyyy-MM-dd")))}"
-                    };
+                    logger.LogInformation("Auto-removed holiday dates from request: {Dates}", string.Join(", ", excludedDates));
 
-                    context.Response.StatusCode = problem.Status.Value;
-                    context.Response.ContentType = "application/problem+json";
-                    await context.Response.WriteAsJsonAsync(problem);
-                    return;
+                    context.Response.OnStarting(() =>
+                    {
+                        context.Response.Headers["X-Excluded-Holiday-Dates"] = string.Join(", ", excludedDates);
+                        return Task.CompletedTask;
+                    });
+
+                    // Remove dates from the JToken
+                    RemoveDatesFromToken(jToken, holidayDates);
+
+                    // Replace the request body with modified content
+                    var newBody = Encoding.UTF8.GetBytes(jToken.ToString());
+                    context.Request.Body = new MemoryStream(newBody);
+                    context.Request.ContentLength = newBody.Length;
                 }
             }
         }
@@ -60,17 +63,12 @@ public class HolidayBlockingMiddleware(RequestDelegate next, ILogger<HolidayBloc
     {
         var result = new List<DateTime>();
 
-        Traverse(token);
-        return result;
-
         void Traverse(JToken current)
         {
             switch (current.Type)
             {
                 case JTokenType.String:
                     var str = current.ToString();
-
-                    // Only try parse if it's likely a date
                     if (str.Length >= 8 && DateTime.TryParse(str, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsedDate))
                     {
                         result.Add(parsedDate.Date);
@@ -78,15 +76,48 @@ public class HolidayBlockingMiddleware(RequestDelegate next, ILogger<HolidayBloc
                     break;
 
                 case JTokenType.Array:
-                    foreach (var item in current.Children())
-                        Traverse(item);
+                    foreach (var item in current.Children()) Traverse(item);
                     break;
 
                 case JTokenType.Object:
-                    foreach (var prop in current.Children<JProperty>())
-                        Traverse(prop.Value);
+                    foreach (var prop in current.Children<JProperty>()) Traverse(prop.Value);
                     break;
             }
         }
+
+        Traverse(token);
+        return result;
+    }
+
+    private static void RemoveDatesFromToken(JToken token, HashSet<DateTime> holidayDates)
+    {
+        void Traverse(JToken current)
+        {
+            if (current.Type == JTokenType.Array)
+            {
+                var itemsToRemove = current.Children()
+                    .Where(c => c.Type == JTokenType.String && DateTime.TryParse(c.ToString(), out var d) && holidayDates.Contains(d.Date))
+                    .ToList();
+
+                foreach (var item in itemsToRemove)
+                {
+                    item.Remove();
+                }
+
+                foreach (var item in current.Children())
+                {
+                    Traverse(item);
+                }
+            }
+            else if (current.Type == JTokenType.Object)
+            {
+                foreach (var prop in current.Children<JProperty>())
+                {
+                    Traverse(prop.Value);
+                }
+            }
+        }
+
+        Traverse(token);
     }
 }

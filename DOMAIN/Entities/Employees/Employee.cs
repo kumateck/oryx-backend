@@ -7,6 +7,8 @@ using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
+using DOMAIN.Entities.ShiftAssignments;
+using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Users;
 
@@ -64,6 +66,8 @@ public class Employee : BaseEntity
     public List<Sibling> Siblings { get; set; } = [];
     public List<Education> EducationBackground { get; set; } = [];
     public List<EmploymentHistory> EmploymentHistory { get; set; } = [];
+    
+    public List<ShiftAssignment> ShiftAssignments { get; set; } = [];
     
     public Guid? ReportingManagerId { get; set; }
     

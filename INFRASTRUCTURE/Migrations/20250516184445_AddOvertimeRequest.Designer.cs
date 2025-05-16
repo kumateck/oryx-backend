@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250516184445_AddOvertimeRequest")]
+    partial class AddOvertimeRequest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1352,9 +1355,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<Guid?>("ShiftScheduleId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("SsnitNumber")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
@@ -1382,8 +1382,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("ReportingManagerId");
-
-                    b.HasIndex("ShiftScheduleId");
 
                     b.ToTable("Employees");
                 });
@@ -6171,51 +6169,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("RouteWorkCenters");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.ShiftAssignments.ShiftAssignment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ShiftScheduleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("ShiftScheduleId");
-
-                    b.ToTable("ShiftAssignments");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8223,10 +8176,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Users.User", "ReportingManager")
                         .WithMany()
                         .HasForeignKey("ReportingManagerId");
-
-                    b.HasOne("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", null)
-                        .WithMany("Employees")
-                        .HasForeignKey("ShiftScheduleId");
 
                     b.OwnsMany("DOMAIN.Entities.Children.Child", "Children", b1 =>
                         {
@@ -11585,43 +11534,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("WorkCenter");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.ShiftAssignments.ShiftAssignment", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Employees.Employee", "Employee")
-                        .WithMany("ShiftAssignments")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", "ShiftSchedules")
-                        .WithMany()
-                        .HasForeignKey("ShiftScheduleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Employee");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("ShiftSchedules");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -12419,11 +12331,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Warehouses");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Employees.Employee", b =>
-                {
-                    b.Navigation("ShiftAssignments");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Forms.Form", b =>
                 {
                     b.Navigation("Assignees");
@@ -12589,11 +12496,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ResponsibleUsers");
 
                     b.Navigation("WorkCenters");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", b =>
-                {
-                    b.Navigation("Employees");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentDiscrepancy", b =>

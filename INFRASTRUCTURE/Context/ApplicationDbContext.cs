@@ -39,6 +39,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
@@ -394,8 +395,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #endregion
 
     #region Shift Schedule
-    
     public DbSet<ShiftSchedule> ShiftSchedules { get; set; }
+    
+    public DbSet<ShiftAssignment> ShiftAssignments { get; set; }
     
     #endregion
 

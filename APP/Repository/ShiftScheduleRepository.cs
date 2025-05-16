@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -104,6 +105,72 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             Result.Success(mapper.Map<ShiftScheduleDto>(shiftSchedule));
     }
 
+public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)
+{
+    var shiftSchedule = await context.ShiftSchedules
+        .Include(s => s.ShiftTypes)
+        .FirstOrDefaultAsync(s => s.Id == request.ShiftScheduleId);
+
+    if (shiftSchedule is null)
+        return Error.NotFound("Shift.NotFound", "Shift schedule not found.");
+
+    if (shiftSchedule.StartDate is null)
+        return Error.Validation("Shift.Invalid", "Shift Start Day is required.");
+
+    var shiftDay = shiftSchedule.StartDate.Value;
+    var employeeIds = request.EmployeeIds.Distinct().ToList();
+
+    // 🔹 Find any leave requests where the employee is off on the same day of the week
+    var employeesOnLeave = await context.LeaveRequests
+        .Where(l =>
+            employeeIds.Contains(l.EmployeeId) &&
+            l.LeaveStatus == LeaveStatus.Approved &&
+            l.StartDate.DayOfWeek <= shiftDay &&
+            l.EndDate.DayOfWeek >= shiftDay)
+        .Select(l => l.EmployeeId)
+        .Distinct()
+        .ToListAsync();
+
+    // 🔹 Check if there's a restricted holiday on this day of the week
+    var isRestrictedHoliday = await context.Holidays
+        .AnyAsync(h => h.Date.DayOfWeek == shiftDay);
+
+    // 🔹 Get employees already assigned to a conflicting shift on the same day
+    var conflictingEmployeeIds = await context.ShiftAssignments
+        .Include(sa => sa.ShiftSchedules)
+            .ThenInclude(ss => ss.ShiftTypes)
+        .Where(sa =>
+            employeeIds.Contains(sa.EmployeeId) &&
+            sa.ShiftSchedules.StartDate == shiftDay &&
+            sa.ShiftSchedules.ShiftTypes.Any(existing =>
+                shiftSchedule.ShiftTypes.Any(newShift =>
+                    existing.StartTime < newShift.EndTime && existing.EndTime > newShift.StartTime)))
+        .Select(sa => sa.EmployeeId)
+        .Distinct()
+        .ToListAsync();
+
+    var validAssignments = employeeIds
+        .Where(id =>
+            !employeesOnLeave.Contains(id) &&
+            !isRestrictedHoliday &&
+            !conflictingEmployeeIds.Contains(id))
+        .Select(id => new ShiftAssignment
+        {
+            Id = Guid.NewGuid(),
+            EmployeeId = id,
+            ShiftScheduleId = shiftSchedule.Id,
+        })
+        .ToList();
+
+    if (validAssignments.Count == 0)
+        return Error.Validation("Employees.NotFound", "No valid employees to assign due to leave, holidays, or conflicts.");
+
+    await context.ShiftAssignments.AddRangeAsync(validAssignments);
+    await context.SaveChangesAsync();
+
+    return Result.Success();
+}
+    
     public async Task<Result> UpdateShiftSchedule(Guid id, CreateShiftScheduleRequest request, Guid userId)
     {
         var shiftSchedule = await context.ShiftSchedules
@@ -129,72 +196,6 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
     
-    // public async Task<Result> AssignEmployeesToShiftAsync(Guid shiftId, List<Guid> employeeIds)
-    // {
-    //     var shift = await context.ShiftSchedules
-    //         .FirstOrDefaultAsync(s => s.Id == shiftId);
-    //
-    //     if (shift == null)
-    //         return Error.NotFound("Shift not found.");
-    //
-    //     var shiftStart = shift.StartTime;
-    //     var shiftEnd = shift.EndTime;
-    //
-    //     var successfulAssignments = new List<Guid>();
-    //     var violations = new List<string>();
-    //
-    //     foreach (var employeeId in employeeIds)
-    //     {
-    //         // Leave Check
-    //         var onLeave = await context.LeaveRequests.AnyAsync(l =>
-    //             l.EmployeeId == employeeId &&
-    //             l.LeaveStatus == LeaveStatus.Approved &&
-    //             l.StartDate <= shiftEnd &&
-    //             l.EndDate >= shiftStart);
-    //
-    //         if (onLeave)
-    //         {
-    //             violations.Add($"Employee {employeeId} is on approved leave during the shift.");
-    //             continue;
-    //         }
-    //
-    //         // Conflict Check
-    //         var hasConflict = await context.ShiftAssignments.AnyAsync(sa =>
-    //             sa.EmployeeId == employeeId &&
-    //             context.ShiftSchedules.Any(s =>
-    //                 s.Id == sa.ShiftScheduleId &&
-    //                 s.Id != shiftId &&
-    //                 s.StartTime < shiftEnd &&
-    //                 s.EndTime > shiftStart
-    //             )
-    //         );
-    //
-    //         if (hasConflict)
-    //         {
-    //             violations.Add($"Employee {employeeId} has a conflicting shift.");
-    //             continue;
-    //         }
-    //
-    //         // Assign
-    //         var assignment = new ShiftAssignment
-    //         {
-    //             Id = Guid.NewGuid(),
-    //             EmployeeId = employeeId,
-    //             ShiftScheduleId = shiftId
-    //         };
-    //
-    //         context.ShiftAssignments.Add(assignment);
-    //         successfulAssignments.Add(employeeId);
-    //     }
-    //
-    //     await context.SaveChangesAsync();
-    //
-    //     return Result.Success(new
-    //     {
-    //         Assigned = successfulAssignments,
-    //         Skipped = violations
-    //     });
-    // }
 
     public async Task<Result> DeleteShiftSchedule(Guid id, Guid userId)
     {
