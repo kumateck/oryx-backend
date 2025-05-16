@@ -1,7 +1,9 @@
+using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.ShiftSchedules;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +27,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             return Error.Validation("ShiftSchedule.StartDayRequired", "Start day is required for weekly and biweekly frequencies.");
 
         }
+
+        if (!IsValidStartTime(request.StartTime))
+        {
+            return Error.Validation("ShiftSchedule.InvalidStartTime", "Start time must be in 12-hour format.");
+        }
         
         var shiftTypes = await context.ShiftTypes
             .Where(shift => request.ShiftTypeIds.Contains(shift.Id))
@@ -43,6 +50,16 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         await context.SaveChangesAsync();
         
         return shiftScheduleEntity.Id;
+    }
+    
+    private static bool IsValidStartTime(string input)
+    {
+        return DateTime.TryParseExact(
+            input,
+            "h:mm tt", // supports 12-hour format with AM/PM
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out _);
     }
 
     public async Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize, string searchQuery)
@@ -111,6 +128,73 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    // public async Task<Result> AssignEmployeesToShiftAsync(Guid shiftId, List<Guid> employeeIds)
+    // {
+    //     var shift = await context.ShiftSchedules
+    //         .FirstOrDefaultAsync(s => s.Id == shiftId);
+    //
+    //     if (shift == null)
+    //         return Error.NotFound("Shift not found.");
+    //
+    //     var shiftStart = shift.StartTime;
+    //     var shiftEnd = shift.EndTime;
+    //
+    //     var successfulAssignments = new List<Guid>();
+    //     var violations = new List<string>();
+    //
+    //     foreach (var employeeId in employeeIds)
+    //     {
+    //         // Leave Check
+    //         var onLeave = await context.LeaveRequests.AnyAsync(l =>
+    //             l.EmployeeId == employeeId &&
+    //             l.LeaveStatus == LeaveStatus.Approved &&
+    //             l.StartDate <= shiftEnd &&
+    //             l.EndDate >= shiftStart);
+    //
+    //         if (onLeave)
+    //         {
+    //             violations.Add($"Employee {employeeId} is on approved leave during the shift.");
+    //             continue;
+    //         }
+    //
+    //         // Conflict Check
+    //         var hasConflict = await context.ShiftAssignments.AnyAsync(sa =>
+    //             sa.EmployeeId == employeeId &&
+    //             context.ShiftSchedules.Any(s =>
+    //                 s.Id == sa.ShiftScheduleId &&
+    //                 s.Id != shiftId &&
+    //                 s.StartTime < shiftEnd &&
+    //                 s.EndTime > shiftStart
+    //             )
+    //         );
+    //
+    //         if (hasConflict)
+    //         {
+    //             violations.Add($"Employee {employeeId} has a conflicting shift.");
+    //             continue;
+    //         }
+    //
+    //         // Assign
+    //         var assignment = new ShiftAssignment
+    //         {
+    //             Id = Guid.NewGuid(),
+    //             EmployeeId = employeeId,
+    //             ShiftScheduleId = shiftId
+    //         };
+    //
+    //         context.ShiftAssignments.Add(assignment);
+    //         successfulAssignments.Add(employeeId);
+    //     }
+    //
+    //     await context.SaveChangesAsync();
+    //
+    //     return Result.Success(new
+    //     {
+    //         Assigned = successfulAssignments,
+    //         Skipped = violations
+    //     });
+    // }
 
     public async Task<Result> DeleteShiftSchedule(Guid id, Guid userId)
     {

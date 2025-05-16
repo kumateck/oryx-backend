@@ -668,8 +668,7 @@ public class OryxMapper : Profile
         CreateMap<LeaveRequestDto, LeaveRequest>();
         CreateMap<LeaveRequest, LeaveRequestDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
-         
-
+        
         #endregion
 
         #region Shift Types

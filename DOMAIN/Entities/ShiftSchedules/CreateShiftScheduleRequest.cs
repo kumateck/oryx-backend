@@ -8,7 +8,7 @@ public class CreateShiftScheduleRequest
     
     [Required] public ScheduleFrequency Frequency { get; set; }
     
-    [Required] public DateTime StartTime { get; set; }
+    [Required] public string StartTime { get; set; }
     
     public DayOfWeek? StartDate { get; set; }
 

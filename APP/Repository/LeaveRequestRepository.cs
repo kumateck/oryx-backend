@@ -237,6 +237,29 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         return Result.Success();
     }
 
+    public async Task<Result> SubmitLeaveRecallRequest(CreateLeaveRecallRequest createLeaveRecallRequest)
+    {
+        var leaveRequest = await context.LeaveRequests
+            .FirstOrDefaultAsync(l =>
+                l.EmployeeId == createLeaveRecallRequest.EmployeeId &&
+                l.LeaveStatus == LeaveStatus.Approved &&
+                l.StartDate <= createLeaveRecallRequest.RecallDate &&
+                l.EndDate >= createLeaveRecallRequest.RecallDate);
+
+        if (leaveRequest == null)
+            return Error.Validation("LeaveRecall.Invalid", "No approved leave found for the specified date.");
+        
+        var leaveRecall = mapper.Map<LeaveRequest>(createLeaveRecallRequest);
+
+        context.LeaveRequests.Update(leaveRecall);
+        
+        leaveRequest.DeletedAt = DateTime.UtcNow;
+        context.LeaveRequests.Update(leaveRequest);
+        
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> DeleteLeaveRequest(Guid leaveRequestId, Guid userId)
     {
         var leaveRequest = await context.LeaveRequests
