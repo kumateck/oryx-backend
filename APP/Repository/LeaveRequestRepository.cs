@@ -263,6 +263,8 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         {
             employee.AnnualLeaveDays += daysRemaining;
         }
+
+        leaveRequest.LeaveStatus = LeaveStatus.Expired;
         
         var leaveRecall = mapper.Map<LeaveRequest>(createLeaveRecallRequest);
 
