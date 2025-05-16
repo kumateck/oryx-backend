@@ -105,7 +105,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             Result.Success(mapper.Map<ShiftScheduleDto>(shiftSchedule));
     }
 
-public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)
+  public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)
 {
     var shiftSchedule = await context.ShiftSchedules
         .Include(s => s.ShiftTypes)
@@ -120,7 +120,7 @@ public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)
     var shiftDay = shiftSchedule.StartDate.Value;
     var employeeIds = request.EmployeeIds.Distinct().ToList();
 
-    // 🔹 Find any leave requests where the employee is off on the same day of the week
+    // 🔹 Get employees on approved leave for this day of the week
     var employeesOnLeave = await context.LeaveRequests
         .Where(l =>
             employeeIds.Contains(l.EmployeeId) &&
@@ -131,24 +131,30 @@ public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)
         .Distinct()
         .ToListAsync();
 
-    // 🔹 Check if there's a restricted holiday on this day of the week
+    // 🔹 Check for restricted holidays on this day
     var isRestrictedHoliday = await context.Holidays
         .AnyAsync(h => h.Date.DayOfWeek == shiftDay);
 
-    // 🔹 Get employees already assigned to a conflicting shift on the same day
-    var conflictingEmployeeIds = await context.ShiftAssignments
+    // 🔹 Load potential conflicting shift assignments
+    var conflictingAssignments = await context.ShiftAssignments
         .Include(sa => sa.ShiftSchedules)
             .ThenInclude(ss => ss.ShiftTypes)
         .Where(sa =>
             employeeIds.Contains(sa.EmployeeId) &&
-            sa.ShiftSchedules.StartDate == shiftDay &&
-            sa.ShiftSchedules.ShiftTypes.Any(existing =>
-                shiftSchedule.ShiftTypes.Any(newShift =>
-                    existing.StartTime < newShift.EndTime && existing.EndTime > newShift.StartTime)))
-        .Select(sa => sa.EmployeeId)
-        .Distinct()
+            sa.ShiftSchedules.StartDate == shiftDay)
         .ToListAsync();
 
+    // 🔹 Detect overlaps in-memory (EF can't handle nested Any comparisons)
+    var conflictingEmployeeIds = conflictingAssignments
+        .Where(sa => sa.ShiftSchedules.ShiftTypes.Any(existing =>
+            shiftSchedule.ShiftTypes.Any(newShift =>
+                existing.StartTime < newShift.EndTime &&
+                existing.EndTime > newShift.StartTime)))
+        .Select(sa => sa.EmployeeId)
+        .Distinct()
+        .ToList();
+
+    // 🔹 Filter valid employees for assignment
     var validAssignments = employeeIds
         .Where(id =>
             !employeesOnLeave.Contains(id) &&
@@ -158,7 +164,7 @@ public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)
         {
             Id = Guid.NewGuid(),
             EmployeeId = id,
-            ShiftScheduleId = shiftSchedule.Id,
+            ShiftScheduleId = shiftSchedule.Id
         })
         .ToList();
 
