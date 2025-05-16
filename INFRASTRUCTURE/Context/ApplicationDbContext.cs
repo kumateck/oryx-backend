@@ -1,4 +1,5 @@
 using System.Reflection;
+using DOMAIN.Entities;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Auth;
@@ -24,6 +25,7 @@ using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Organizations;
+using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -377,6 +379,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LeaveRequest> LeaveRequests { get; set; }
     public DbSet<LeaveRequestApproval> LeaveRequestApprovals { get; set; }
     
+    #endregion
+
+    #region Overtime Request
+
+    public DbSet<OvertimeRequest> OvertimeRequests { get; set; }
+
     #endregion
 
     #region Shifts
