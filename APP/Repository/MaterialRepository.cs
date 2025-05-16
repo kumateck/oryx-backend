@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using SHARED;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Http;
@@ -1757,6 +1758,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var warehouseStockResult = await GetMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
             if(warehouseStockResult.IsFailure) continue;
             result.WarehouseStock = warehouseStockResult.Value;
+            result.PendingStockTransferQuantity = await context.StockTransferSources
+                .Include(s => s.StockTransfer)
+                .CountAsync(s => s.StockTransfer.MaterialId == result.Material.Id &&
+                            s.Status == StockTransferStatus.InProgress);
         }
 
         return results;

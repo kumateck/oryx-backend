@@ -43,4 +43,5 @@ public class MaterialCategoryDto : BaseDto
 public class MaterialDepartmentWithWarehouseStockDto : MaterialDepartmentDto
 {
     public decimal WarehouseStock { get; set; }
+    public decimal PendingStockTransferQuantity { get; set; }
 }
