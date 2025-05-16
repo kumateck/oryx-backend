@@ -15,7 +15,7 @@ public class LeaveExpiryService(IServiceScopeFactory scopeFactory) : BackgroundS
             using var scope = scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var today = DateTime.Today;
+            var today = DateTime.UtcNow;
 
             var expiredLeaves = await dbContext.LeaveRequests
                 .Where(l => l.EndDate < today && l.LeaveStatus == LeaveStatus.Approved)
