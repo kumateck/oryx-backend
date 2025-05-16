@@ -75,7 +75,10 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         var result = await repository.UpdateLeaveRequest(id, leaveRequest, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-
+    
+    /// <summary>
+    /// Recalls an employee from a leave.
+    /// </summary>
     [HttpPut("recall")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]

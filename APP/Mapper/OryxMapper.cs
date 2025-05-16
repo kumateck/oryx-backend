@@ -29,6 +29,7 @@ using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -719,6 +720,13 @@ public class OryxMapper : Profile
 
         CreateMap<LeaveEntitlementDto, LeaveEntitlement>();
         CreateMap<CreateLeaveEntitlementRequest, LeaveEntitlement>();
+
+        #endregion
+
+        #region Overtime Requests
+
+        CreateMap<CreateOvertimeRequest, OvertimeRequest>();
+        CreateMap<OvertimeRequestDto, OvertimeRequest>();
 
         #endregion
     }
