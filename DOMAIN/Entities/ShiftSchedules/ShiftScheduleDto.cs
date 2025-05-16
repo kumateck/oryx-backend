@@ -8,7 +8,7 @@ public class ShiftScheduleDto: BaseDto
 {
    public string ScheduleName { get; set; }
    
-   public DateTime StartTime { get; set; }
+   public string StartTime { get; set; }
    
    public DayOfWeek? StartDate { get; set; }
    

@@ -25,7 +25,6 @@ using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.LeaveEntitlements;
-using DOMAIN.Entities.LeaveRecalls;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
@@ -667,13 +666,6 @@ public class OryxMapper : Profile
         CreateMap<LeaveRequest, LeaveRequestDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
         
-        #endregion
-
-        #region Leave Recalls
-
-        CreateMap<CreateLeaveRecallRequest, LeaveRecall>();
-        CreateMap<LeaveRecallDto, LeaveRecall>();
-
         #endregion
 
         #region Shift Types

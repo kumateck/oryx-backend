@@ -11,7 +11,7 @@ public class ShiftSchedule: BaseEntity
     
     public ScheduleFrequency Frequency { get; set; }
     
-    public TimeOnly StartTime { get; set; }
+    public string StartTime { get; set; }
     
     public DayOfWeek? StartDate { get; set; }
     public List<ShiftType> ShiftTypes { get; set; }

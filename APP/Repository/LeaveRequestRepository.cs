@@ -2,7 +2,6 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
-using DOMAIN.Entities.LeaveRecalls;
 using DOMAIN.Entities.LeaveRequests;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -250,9 +249,9 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         if (leaveRequest == null)
             return Error.Validation("LeaveRecall.Invalid", "No approved leave found for the specified date.");
         
-        var leaveRecall = mapper.Map<LeaveRecall>(createLeaveRecallRequest);
+        var leaveRecall = mapper.Map<LeaveRequest>(createLeaveRecallRequest);
 
-        await context.LeaveRecalls.AddAsync(leaveRecall);
+        context.LeaveRequests.Update(leaveRecall);
         
         leaveRequest.DeletedAt = DateTime.UtcNow;
         context.LeaveRequests.Update(leaveRequest);

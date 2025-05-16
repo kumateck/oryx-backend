@@ -67,24 +67,25 @@ public class HolidayBlockingMiddleware(RequestDelegate next, ILogger<HolidayBloc
         {
             switch (current.Type)
             {
-                case JTokenType.String when
-                    DateTime.TryParse(current.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsedDate):
-                    result.Add(parsedDate.Date);
+                case JTokenType.String:
+                    var str = current.ToString();
+
+                    // Only try parse if it's likely a date
+                    if (str.Length >= 8 && DateTime.TryParse(str, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsedDate))
+                    {
+                        result.Add(parsedDate.Date);
+                    }
                     break;
+
                 case JTokenType.Array:
-                {
                     foreach (var item in current.Children())
                         Traverse(item);
                     break;
-                }
+
                 case JTokenType.Object:
-                {
                     foreach (var prop in current.Children<JProperty>())
                         Traverse(prop.Value);
                     break;
-                }
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
         }
     }
