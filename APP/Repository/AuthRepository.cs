@@ -6,14 +6,16 @@ using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
 using APP.Services.Email;
 using DOMAIN.Entities.Auth;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using MassTransit;
 using SHARED;
 using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
 namespace APP.Repository;
 
-public class AuthRepository(IEmailService emailService,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService /*, IEmailService emailService*/) 
+public class AuthRepository(IEmailService emailService,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IPublishEndpoint publishEndpoint /*, IEmailService emailService*/) 
     : IAuthRepository
 {
     public async Task<Result<LoginResponse>> Login(LoginRequest request)
@@ -43,6 +45,10 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
         
         try
         {
+            await publishEndpoint.Publish(new NotificationDto
+            {
+                Message = "test notification"
+            });
             return await jwtService.Authenticate(user, "web");
         }
         catch (Exception)

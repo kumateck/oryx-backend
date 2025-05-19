@@ -1,7 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
-using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
 using SHARED;
 
@@ -18,12 +17,11 @@ public interface IProductRepository
     Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId);
     Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId);
     Task<Result<RouteDto>> GetRoute(Guid routeId);
-    Task<Result<Paginateable<IEnumerable<RouteDto>>>> GetRoutes(int page, int pageSize,
-        string searchQuery = null);
+    Task<Result<IEnumerable<RouteDto>>> GetRoutes();
     Task<Result> DeleteRoute(Guid routeId, Guid userId);
     Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId);
     Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId);
-    Task<Result<Paginateable<IEnumerable<ProductPackageDto>>>> GetProductPackages(int page, int pageSize, string searchQuery = null);
+    Task<Result<IEnumerable<ProductPackageDto>>> GetProductPackages();
     Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId);
     Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId);
     Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId,

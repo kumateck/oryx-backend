@@ -11,6 +11,7 @@ using DinkToPdf;
 using DinkToPdf.Contracts;
 using DOMAIN.Entities.ActivityLogs;
 using INFRASTRUCTURE.Context;
+using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +25,41 @@ public static class DependencyInjection
 {
     public static void AddTransientServices(this IServiceCollection services)
     {
+    }
+    
+     public static void AddInfrastructure(this IServiceCollection services)
+    {
+        //add mass transit
+        var rabbitHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST");
+        var rabbitUserName = Environment.GetEnvironmentVariable("RABBITMQ_DEFAULT_USER");
+        var rabbitPassword = Environment.GetEnvironmentVariable("RABBITMQ_DEFAULT_PASS");
+
+        services.AddMassTransit(configure =>
+        {
+            configure.SetKebabCaseEndpointNameFormatter();
+
+            //configure.AddConsumer<LocationFilterConsumer>();
+    
+            configure.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host(rabbitHost ?? throw new ArgumentException("Invalid rabbit host name"), h =>
+                {
+                    h.Username(rabbitUserName ?? throw new ArgumentException("Invalid rabbit username"));
+                    h.Password(rabbitPassword ?? throw new ArgumentException("Invalid rabbit password"));
+                });
+        
+                cfg.ReceiveEndpoint("push_notification_queue", e =>
+                {
+                    //e.ConfigureConsumer<LocationFilterConsumer>(context);
+                    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+                    e.UseMessageRetry(r =>
+                    {
+                        r.Immediate(5); 
+                    });
+                });
+                cfg.ConfigureEndpoints(context);
+            });
+        });
     }
     
     public static void AddScopedServices(this IServiceCollection services)
