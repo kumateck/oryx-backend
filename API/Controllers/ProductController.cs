@@ -210,7 +210,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     [HttpGet("{productId}/packages")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<RouteDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductPackageDto>))]
     public async Task<IResult> GetProductPackages()
     {
         var result = await repository.GetProductPackages();
