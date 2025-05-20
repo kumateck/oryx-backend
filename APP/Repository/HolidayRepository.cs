@@ -30,20 +30,21 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
         
     }
 
-    public async Task<Result<Paginateable<IEnumerable<HolidayDto>>>> GetHolidays(int page, int pageSize, string searchQuery)
+    public async Task<Result<IEnumerable<HolidayDto>>> GetHolidays(string searchQuery)
     {
         var query = context.Holidays
             .AsSplitQuery()
-            .Where(h => h.DeletedAt == null)
-            .AsQueryable();
+            .Where(h => h.DeletedAt == null);
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.Name, q => q.Description);
         }
 
-        return await 
-            PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<HolidayDto>);
+        var holidays = await query.ToListAsync();
+        var holidayDtos = mapper.Map<IEnumerable<HolidayDto>>(holidays);
+
+        return Result.Success(holidayDtos);
     }
 
     public async Task<Result<HolidayDto>> GetHoliday(Guid id)
