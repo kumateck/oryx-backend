@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250520144250_ChangeDateTimeToStringShiftType")]
+    partial class ChangeDateTimeToStringShiftType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -8721,35 +8724,7 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.OwnsOne("DOMAIN.Entities.Forms.Formula", "Formula", b1 =>
-                        {
-                            b1.Property<Guid>("QuestionId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("Expression")
-                                .HasMaxLength(1000)
-                                .HasColumnType("character varying(1000)");
-
-                            b1.Property<string>("Marker")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
-
-                            b1.Property<string>("Variables")
-                                .HasMaxLength(100000000)
-                                .HasColumnType("text");
-
-                            b1.HasKey("QuestionId");
-
-                            b1.ToTable("Questions");
-
-                            b1.WithOwner()
-                                .HasForeignKey("QuestionId");
-                        });
-
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("Formula");
 
                     b.Navigation("LastDeletedBy");
 
