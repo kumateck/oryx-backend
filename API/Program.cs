@@ -192,7 +192,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddTransientServices();
 builder.Services.AddScopedServices();
 builder.Services.AddSingletonServices();
-//builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure();
 
 //add api versioning
 builder.Services.AddApiVersioning(options =>

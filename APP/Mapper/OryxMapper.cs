@@ -538,6 +538,8 @@ public class OryxMapper : Profile
         CreateMap<CreateQuestionOptionsRequest, QuestionOption>();
         CreateMap<Question, QuestionDto>();
         CreateMap<QuestionOption, QuestionOptionDto>();
+        CreateMap<Formula, FormulaDto>();
+        CreateMap<FormulaDto, Formula>();
 
         #endregion
 

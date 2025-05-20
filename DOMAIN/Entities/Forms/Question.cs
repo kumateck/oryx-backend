@@ -12,6 +12,7 @@ public class Question : BaseEntity
     public List<QuestionOption> Options { get; set; } = [];
     public bool IsMultiSelect { get; set; }
     [StringLength(100)] public string Reference { get; set; }
+    public Formula Formula { get; set; }
 }
 
 public class QuestionOption : BaseEntity
@@ -29,6 +30,7 @@ public class QuestionDto : BaseDto
     public bool IsMultiSelect { get; set; }
     public string Reference { get; set; }
     public List<QuestionOptionDto> Options { get; set; } = [];
+    public FormulaDto Formula { get; set; } 
 }
 
 public class QuestionOptionDto : BaseDto
@@ -57,4 +59,24 @@ public enum QuestionValidationType
     Letter = 1,
     Alphanumeric= 2,
     None = 3
+}
+
+public class Formula
+{
+    [Required][StringLength(100)] public string Marker { get; set; } = "present";
+    [StringLength(1000)] public string Expression { get; set; }
+    [StringLength(100000000)] public string Variables { get; set; }
+}
+
+public class FormulaDto
+{
+    [StringLength(1000)] public string Expression { get; set; }
+    [StringLength(100000000)] public string Variables { get; set; }
+}
+
+
+public class Variable
+{
+    public string Key { get; set; }
+    public string Label { get; set; }
 }

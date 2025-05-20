@@ -10,6 +10,7 @@ public class CreateQuestionRequest
     public QuestionValidationType Validation { get; set; }
     public List<CreateQuestionOptionsRequest> Options { get; set; } = [];
     public string Reference { get; set; }
+    public FormulaDto Formula { get; set; }
 }
 
 public class CreateQuestionOptionsRequest

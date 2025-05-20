@@ -911,5 +911,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         #endregion
 
+        #region Question
+
+        modelBuilder.Entity<Question>().OwnsOne(f => f.Formula);
+
+        #endregion
+
     }
 }
