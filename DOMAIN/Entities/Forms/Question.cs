@@ -12,14 +12,13 @@ public class Question : BaseEntity
     public List<QuestionOption> Options { get; set; } = [];
     public bool IsMultiSelect { get; set; }
     [StringLength(100)] public string Reference { get; set; }
-    public Formula Formula { get; set; }
 }
 
 public class QuestionOption : BaseEntity
 {
     public Guid QuestionId { get; set; }
     public Question Question { get; set; }
-    [StringLength(1000)]  public string Name { get; set; }
+    [StringLength(100000000)]  public string Name { get; set; }
 }
 
 public class QuestionDto : BaseDto
@@ -30,7 +29,6 @@ public class QuestionDto : BaseDto
     public bool IsMultiSelect { get; set; }
     public string Reference { get; set; }
     public List<QuestionOptionDto> Options { get; set; } = [];
-    public FormulaDto Formula { get; set; } 
 }
 
 public class QuestionOptionDto : BaseDto
@@ -50,7 +48,8 @@ public enum QuestionType
     Checkbox = 6, 
     FileUpload = 7,
     Signature = 8,
-    Reference = 9
+    Reference = 9,
+    Formula = 10
 }
 
 public enum QuestionValidationType
