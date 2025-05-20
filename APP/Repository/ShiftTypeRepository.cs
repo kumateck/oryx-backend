@@ -1,3 +1,4 @@
+using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -20,12 +21,20 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.Validation("ShiftType.Exists", "Shift type already exists.");
         }
+        
+        if (!request.StartTime.Contains("AM") || request.StartTime.Contains("PM") ||
+            !request.EndTime.Contains("AM") || request.EndTime.Contains("PM"))
+        {
+            return Error.Validation("ShiftType.InvalidTime", "Start time must be in 12 hour format.");
+        }
 
-        if (request.StartTime > request.EndTime)
+
+        if (ConvertTime(request.StartTime) > ConvertTime(request.EndTime))
         {
             return Error.Validation("ShiftType.InvalidTime", "Start time must be before end time.");
         }
 
+      
         if (request.ApplicableDays.Count == 0)
         {
             return Error.Validation("ShiftType.InvalidDays", "At least one day must be selected.");
@@ -37,6 +46,11 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         await context.SaveChangesAsync();
         
         return shiftType.Id;
+    }
+
+    private static TimeOnly ConvertTime(string time)
+    {
+        return TimeOnly.ParseExact(time, "hh:mm t", CultureInfo.InvariantCulture);
     }
 
     public async Task<Result<Paginateable<IEnumerable<ShiftTypeDto>>>> GetShiftTypes(int page, int pageSize, string searchQuery)
@@ -90,6 +104,13 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
         }
+        
+        if (!request.StartTime.Contains("AM") || request.StartTime.Contains("PM") 
+            || !request.EndTime.Contains("AM") || request.EndTime.Contains("PM"))
+        {
+            return Error.Validation("ShiftType.InvalidTime", "Start time must be in 12 hour format.");
+        }
+
         mapper.Map(request, shiftType);
         
         context.ShiftTypes.Update(shiftType);

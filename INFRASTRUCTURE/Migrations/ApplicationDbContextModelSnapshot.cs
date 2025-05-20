@@ -6286,8 +6286,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("EndTime")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("EndTime")
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -6301,8 +6301,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("ShiftName")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("StartTime")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");

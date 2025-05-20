@@ -9,9 +9,9 @@ public class ShiftType: BaseEntity
     
     public RotationType RotationType { get; set; }
     
-    public DateTime StartTime { get; set; }
+    public string StartTime { get; set; }
     
-    public DateTime EndTime { get; set; }
+    public string EndTime { get; set; }
     
     public List<ShiftSchedule> ShiftSchedules { get; set; }
     

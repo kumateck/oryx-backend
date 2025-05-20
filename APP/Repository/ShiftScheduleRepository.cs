@@ -148,8 +148,8 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     var conflictingEmployeeIds = conflictingAssignments
         .Where(sa => sa.ShiftSchedules.ShiftTypes.Any(existing =>
             shiftSchedule.ShiftTypes.Any(newShift =>
-                existing.StartTime < newShift.EndTime &&
-                existing.EndTime > newShift.StartTime)))
+                ConvertTime(existing.StartTime) < ConvertTime(newShift.EndTime) &&
+                ConvertTime(existing.EndTime) > ConvertTime(newShift.StartTime))))
         .Select(sa => sa.EmployeeId)
         .Distinct()
         .ToList();
@@ -175,6 +175,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     await context.SaveChangesAsync();
 
     return Result.Success();
+}
+
+private static TimeOnly ConvertTime(string time)
+{
+    return TimeOnly.ParseExact(time, "hh:mm tt", CultureInfo.InvariantCulture);
 }
     
     public async Task<Result> UpdateShiftSchedule(Guid id, CreateShiftScheduleRequest request, Guid userId)
