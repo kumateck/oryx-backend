@@ -50,7 +50,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
     private static TimeOnly ConvertTime(string time)
     {
-        return TimeOnly.ParseExact(time, "hh:mm t", CultureInfo.InvariantCulture);
+        return TimeOnly.ParseExact(time, "hh:mm tt", CultureInfo.InvariantCulture);
     }
 
     public async Task<Result<Paginateable<IEnumerable<ShiftTypeDto>>>> GetShiftTypes(int page, int pageSize, string searchQuery)

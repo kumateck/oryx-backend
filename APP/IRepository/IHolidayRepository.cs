@@ -8,7 +8,7 @@ public interface IHolidayRepository
 {
     Task<Result<Guid>> CreateHoliday(CreateHolidayRequest request);
     
-    Task<Result<Paginateable<IEnumerable<HolidayDto>>>> GetHolidays(int page, int pageSize, string searchQuery);
+    Task<Result<IEnumerable<HolidayDto>>> GetHolidays(string searchQuery);
     
     Task<Result<HolidayDto>> GetHoliday(Guid id);
     

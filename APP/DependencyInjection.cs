@@ -91,6 +91,7 @@ public static class DependencyInjection
         services.AddScoped<ICompanyWorkingDaysRepository, CompanyWorkingDaysRepository>();
         services.AddScoped<IHolidayRepository, HolidayRepository>();
         services.AddScoped<IOvertimeRequestRepository, OvertimeRequestRepository>();
+        services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 

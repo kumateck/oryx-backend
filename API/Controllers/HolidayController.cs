@@ -34,12 +34,12 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<HolidayDto>>))]
-    public async Task<IResult> GetHolidays([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    public async Task<IResult> GetHolidays([FromQuery] string searchQuery)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetHolidays(page, pageSize, searchQuery);
+        var result = await repository.GetHolidays(searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -44,6 +44,7 @@ using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
+using DOMAIN.Entities.StandardTestProcedures;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.WorkOrders;
@@ -410,6 +411,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Holidays
 
     public DbSet<Holiday> Holidays { get; set; } 
+
+    #endregion
+
+    #region Standard Test Procedures
+
+    public DbSet<StandardTestProcedure> StandardTestProcedures { get; set; }
 
     #endregion
     
