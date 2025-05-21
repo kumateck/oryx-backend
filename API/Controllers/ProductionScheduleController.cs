@@ -836,19 +836,20 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
 
     #region Material Return Note
 
-     /// <summary>
+    /// <summary>
     /// Returns unused materials before production begins.
     /// </summary>
     /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
     /// <param name="productId">The ID of the Product.</param>
+    /// <param name="reason">The reason for cancelling the production</param>
     /// <returns>Returns a success result if materials were returned successfully.</returns>
     [HttpPost("return-before-production")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> ReturnBeforeProduction([FromQuery] Guid productionScheduleId, [FromQuery] Guid productId)
+    public async Task<IResult> ReturnBeforeProduction([FromQuery] Guid productionScheduleId, [FromQuery] Guid productId, [FromQuery] string reason)
     {
-        var result = await repository.ReturnStockBeforeProductionBegins(productionScheduleId, productId);
+        var result = await repository.ReturnStockBeforeProductionBegins(productionScheduleId, productId, reason);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

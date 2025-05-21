@@ -45,6 +45,8 @@ public class ProductionScheduleProduct
     [StringLength(100)] public string BatchNumber { get; set; }
     public BatchSize BatchSize { get; set; }
     public decimal Quantity { get; set; }
+    public bool Cancelled { get; set; }
+    [StringLength(20000)] public string ReasonForCancellation { get; set; }
 }
 
 public class CreateProductionExtraPacking

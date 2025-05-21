@@ -95,7 +95,7 @@ public interface IProductionScheduleRepository
     Task<Result<ProductionScheduleProductDto>> GetProductDetailsInProductionSchedule(
         Guid productionScheduleId, Guid productId);
 
-    Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId);
+    Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId, string reason);
     Task<Result> ReturnLeftOverStockAfterProductionEnds(Guid productionScheduleId, Guid productId,
         List<PartialMaterialToReturn> returns);
     Task<Result<Paginateable<IEnumerable<MaterialReturnNoteDto>>>> GetMaterialReturnNotes(int page,

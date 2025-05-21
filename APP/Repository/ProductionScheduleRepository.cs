@@ -1770,14 +1770,19 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return product;
     }
 
-    public async Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId)
+    public async Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId, string reason)
     {
         var product = await context.Products.IgnoreQueryFilters()
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == productId);
-
         if (product is null) return ProductErrors.NotFound(productId);
-
+        
+        var productionSchedule = await context.ProductionSchedules.FirstOrDefaultAsync(p => p.Id == productionScheduleId);
+        if (productionSchedule is null) return ProductErrors.NotFound(productionScheduleId);
+        
+        var productionScheduleProduct = await context.ProductionScheduleProducts.FirstOrDefaultAsync(p => p.ProductionScheduleId == productionSchedule.Id && p.ProductId == product.Id);
+        if (productionScheduleProduct is null) return ProductErrors.NotFound(productionScheduleId);
+        
         var productionWarehouse = await context.Warehouses
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.Production);
@@ -1829,6 +1834,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 context.MaterialBatchReservedQuantities.RemoveRange(batchesToConsume);
             }
         }
+        
+        productionScheduleProduct.ReasonForCancellation = reason;
+        productionScheduleProduct.Cancelled = true;
+        context.ProductionScheduleProducts.Update(productionScheduleProduct);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
