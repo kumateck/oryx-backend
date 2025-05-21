@@ -1838,6 +1838,16 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         productionScheduleProduct.ReasonForCancellation = reason;
         productionScheduleProduct.Cancelled = true;
         context.ProductionScheduleProducts.Update(productionScheduleProduct);
+        var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.ProductionScheduleId == productionSchedule.Id &&  b.ProductId == product.Id);
+        if (bmr is not null)
+        {
+            context.BatchManufacturingRecords.Remove(bmr);
+        }
+        var bpr = await context.BatchPackagingRecords.FirstOrDefaultAsync(p => p.ProductionScheduleId == productionSchedule.Id && p.ProductId == product.Id);
+        if (bpr is not null)
+        {
+            context.BatchPackagingRecords.Remove(bpr);
+        }
         await context.SaveChangesAsync();
         return Result.Success();
     }
