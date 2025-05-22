@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DOMAIN.Entities.StandardTestProcedures;
+namespace DOMAIN.Entities.MaterialStandardTestProcedures;
 
 public class CreateMaterialStandardTestProcedureRequest
 {

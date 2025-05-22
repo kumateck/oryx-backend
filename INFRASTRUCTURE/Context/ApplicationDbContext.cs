@@ -1,5 +1,6 @@
 using System.Reflection;
 using DOMAIN.Entities;
+using DOMAIN.Entities.AnalyticalRawData;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Auth;
@@ -45,6 +46,7 @@ using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
+using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StandardTestProcedures;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
@@ -419,6 +421,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<MaterialStandardTestProcedure> MaterialStandardTestProcedures { get; set; }
 
+    #endregion
+    
+    #region Analytical Raw Data
+    
+    public DbSet<AnalyticalRawData> AnalyticalRawData { get; set; }
+    
+    #endregion
+    
+    
+    #region Staff Requisitions
+    
+    public DbSet<StaffRequisition> StaffRequisitions { get; set; }
+    
     #endregion
     
     // #region TenantFilter
