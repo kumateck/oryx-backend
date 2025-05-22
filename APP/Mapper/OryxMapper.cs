@@ -1,6 +1,7 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
 using DOMAIN.Entities.ActivityLogs;
+using DOMAIN.Entities.AnalyticalRawData;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
@@ -53,7 +54,6 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Siblings;
-using DOMAIN.Entities.StandardTestProcedures;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
 using DOMAIN.Entities.Warehouses;
@@ -742,6 +742,16 @@ public class OryxMapper : Profile
         
         CreateMap<MaterialStandardTestProcedure, MaterialStandardTestProcedureDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+
+        #endregion
+
+        #region Analytical Raw Data
+
+        CreateMap<CreateAnalyticalRawDataRequest, AnalyticalRawData>();
+        CreateMap<AnalyticalRawDataDto, AnalyticalRawData>()
+            .ForMember(dest => dest.MaterialStandardTestProcedure, opts => opts.Ignore());
+
+        CreateMap<AnalyticalRawData, AnalyticalRawDataDto>();
 
         #endregion
 

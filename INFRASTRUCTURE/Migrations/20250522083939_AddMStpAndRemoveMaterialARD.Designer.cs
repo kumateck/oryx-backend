@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250522083939_AddMStpAndRemoveMaterialARD")]
+    partial class AddMStpAndRemoveMaterialARD
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -50,7 +53,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("MaterialStandardTestProcedureId")
+                    b.Property<Guid?>("MaterialStandardTestProceduresId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("SpecNumber")
@@ -75,7 +78,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("MaterialStandardTestProcedureId");
+                    b.HasIndex("MaterialStandardTestProceduresId");
 
                     b.ToTable("AnalyticalRawData");
                 });
@@ -7712,9 +7715,9 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure", "MaterialStandardTestProcedure")
+                    b.HasOne("DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure", "MaterialStandardTestProcedures")
                         .WithMany()
-                        .HasForeignKey("MaterialStandardTestProcedureId");
+                        .HasForeignKey("MaterialStandardTestProceduresId");
 
                     b.Navigation("CreatedBy");
 
@@ -7724,7 +7727,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("MaterialStandardTestProcedure");
+                    b.Navigation("MaterialStandardTestProcedures");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>

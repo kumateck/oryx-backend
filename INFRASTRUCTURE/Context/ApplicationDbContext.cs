@@ -47,7 +47,6 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
-using DOMAIN.Entities.StandardTestProcedures;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.WorkOrders;
@@ -430,11 +429,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #endregion
     
     
-    #region Staff Requisitions
-    
-    public DbSet<StaffRequisition> StaffRequisitions { get; set; }
-    
-    #endregion
+    // #region Staff Requisitions
+    //
+    // public DbSet<StaffRequisition> StaffRequisitions { get; set; }
+    //
+    // #endregion
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
