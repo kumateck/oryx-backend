@@ -5,6 +5,8 @@ namespace DOMAIN.Entities.MaterialStandardTestProcedures;
 
 public class MaterialStandardTestProcedureDto : WithAttachment
 {
+    public Guid Id { get; set; }
+    
     public string StpNumber { get; set; }
     
     public Guid MaterialId { get; set; }
