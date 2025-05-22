@@ -6,6 +6,8 @@ namespace DOMAIN.Entities.OvertimeRequests;
 
 public class OvertimeRequestDto : BaseDto
 {
+    public string Code { get; set; }
+    
     public List<EmployeeDto> Employees { get; set; }
     
     public DateTime OvertimeDate { get; set; }

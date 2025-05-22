@@ -714,6 +714,13 @@ public class OryxMapper : Profile
         CreateMap<ActivityLog, ActivityLogDto>();
 
         #endregion
+
+        #region Overtime Requests
+
+        CreateMap<CreateOvertimeRequest, OvertimeRequest>();
+        CreateMap<OvertimeRequestDto, OvertimeRequest>().ReverseMap();
+
+        #endregion
         
         #region Designations
 
