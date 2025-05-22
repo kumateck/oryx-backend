@@ -1,7 +1,7 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Materials;
 
-namespace DOMAIN.Entities.StandardTestProcedures;
+namespace DOMAIN.Entities.MaterialStandardTestProcedures;
 
 public class MaterialStandardTestProcedureDto : WithAttachment
 {

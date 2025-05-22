@@ -3,7 +3,6 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
-using DOMAIN.Entities.StandardTestProcedures;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
