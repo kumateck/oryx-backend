@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [ApiController]
-[Route("api/v{version:apiVersion}/standard-test-procedures")]
+[Route("api/v{version:apiVersion}/material-stps")]
 [Authorize]
 public class MaterialStandardTestProcedureController(IMaterialStandardTestProcedureRepository repository) : ControllerBase
 {
