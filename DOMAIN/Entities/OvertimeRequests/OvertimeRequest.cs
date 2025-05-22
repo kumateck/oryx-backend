@@ -5,16 +5,11 @@ namespace DOMAIN.Entities.OvertimeRequests;
 
 public class OvertimeRequest: BaseEntity
 {
+    public string Code { get; set; }
     public List<Guid> EmployeeIds { get; set; }
     public DateTime OvertimeDate { get; set; }
-    
-    public DateTime StartDate { get; set; }
     public string StartTime { get; set; }
-    
-    public DateTime EndDate { get; set; }
-    
     public string EndTime { get; set; }
-    
     public OvertimeStatus Status { get; set; } = OvertimeStatus.Pending;
     
     public string Justification { get; set; }

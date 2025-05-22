@@ -1,5 +1,4 @@
 using System.Reflection;
-using DOMAIN.Entities;
 using DOMAIN.Entities.AnalyticalRawData;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
@@ -37,6 +36,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProductStandardTestProcedures;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
@@ -419,6 +419,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Standard Test Procedures
 
     public DbSet<MaterialStandardTestProcedure> MaterialStandardTestProcedures { get; set; }
+    
+    public DbSet<ProductStandardTestProcedure> ProductStandardTestProcedures { get; set; }
 
     #endregion
     

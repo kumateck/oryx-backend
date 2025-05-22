@@ -10,7 +10,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class OvertimeRequestRepository(ApplicationDbContext context, IMapper mapper) : IOvertimeRequestRepository
+public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurationRepository configurationRepository, IMapper mapper) : IOvertimeRequestRepository
 {
     public async Task<Result<Guid>> CreateOvertimeRequest(CreateOvertimeRequest request)
     {
@@ -62,12 +62,25 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
         }
         
         var overtimeRequestEntity = mapper.Map<OvertimeRequest>(request);
+        overtimeRequestEntity.Code = await GenerateOvertimeRequestCode();
         overtimeRequestEntity.EmployeeIds = request.EmployeeIds;
 
         await context.OvertimeRequests.AddAsync(overtimeRequestEntity);
         await context.SaveChangesAsync();
 
         return overtimeRequestEntity.Id;
+    }
+
+    private async Task<string> GenerateOvertimeRequestCode()
+    {
+        var config = await context.Configurations
+            .FirstOrDefaultAsync(c => c.ModelType == nameof(OvertimeRequest));
+        
+        if (config is null) throw new Exception("Overtime request configuration does not exist.");
+
+        var count = await configurationRepository
+            .GetCountForCodeConfiguration(nameof(OvertimeRequest),config.Prefix);
+        return count.IsFailure ? throw new Exception("No configuration exists") : CodeGenerator.GenerateCode(config, count.Value);
     }
 
     private static bool IsValidStartTime(string input)

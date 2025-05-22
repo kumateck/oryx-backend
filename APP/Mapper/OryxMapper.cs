@@ -43,6 +43,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProductStandardTestProcedures;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions;
@@ -713,6 +714,13 @@ public class OryxMapper : Profile
         CreateMap<ActivityLog, ActivityLogDto>();
 
         #endregion
+
+        #region Overtime Requests
+
+        CreateMap<CreateOvertimeRequest, OvertimeRequest>();
+        CreateMap<OvertimeRequestDto, OvertimeRequest>().ReverseMap();
+
+        #endregion
         
         #region Designations
 
@@ -749,9 +757,18 @@ public class OryxMapper : Profile
 
         CreateMap<CreateAnalyticalRawDataRequest, AnalyticalRawData>();
         CreateMap<AnalyticalRawDataDto, AnalyticalRawData>()
-            .ForMember(dest => dest.MaterialStandardTestProcedure, opts => opts.Ignore());
+            .ForMember(dest => dest.MaterialStandardTestProcedure, opt => opt.Ignore());
 
         CreateMap<AnalyticalRawData, AnalyticalRawDataDto>();
+
+        #endregion
+
+        #region Product Standard Test Procedures
+
+        CreateMap<CreateProductStandardTestProcedureRequest, ProductStandardTestProcedure>();
+        CreateMap<ProductStandardTestProcedureDto, ProductStandardTestProcedure>();
+        CreateMap<ProductStandardTestProcedure, ProductStandardTestProcedureDto>()
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         #endregion
 

@@ -6,6 +6,7 @@ using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
@@ -171,6 +172,12 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            
            case nameof(StockTransfer):
                return await context.StockTransfers
+                   .IgnoreQueryFilters()
+                   .Where(m => m.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(OvertimeRequest):
+               return await context.OvertimeRequests
                    .IgnoreQueryFilters()
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
