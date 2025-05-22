@@ -1,9 +1,9 @@
-using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Materials;
 
 namespace DOMAIN.Entities.StandardTestProcedures;
 
-public class StandardTestProcedure : BaseEntity
+public class MaterialStandardTestProcedureDto : WithAttachment
 {
     public string StpNumber { get; set; }
     
@@ -12,5 +12,4 @@ public class StandardTestProcedure : BaseEntity
     public Material Material { get; set; }
     
     public string Description { get; set; }
-    
 }

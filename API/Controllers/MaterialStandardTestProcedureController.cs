@@ -10,7 +10,7 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/standard-test-procedures")]
 [Authorize]
-public class StandardTestProcedureController(IStandardTestProcedureRepository repository) : ControllerBase
+public class MaterialStandardTestProcedureController(IMaterialStandardTestProcedureRepository repository) : ControllerBase
 {
     /// <summary>
     /// Creates a standard test procedure
@@ -18,9 +18,9 @@ public class StandardTestProcedureController(IStandardTestProcedureRepository re
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]  
-    public async Task<IResult> CreateStandardTestProcedure([FromBody] CreateStandardTestProcedureRequest request)
+    public async Task<IResult> CreateStandardTestProcedure([FromBody] CreateMaterialStandardTestProcedureRequest request)
     {
-        var result = await repository.CreateStandardTestProcedure(request);
+        var result = await repository.CreateMaterialStandardTestProcedure(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -28,10 +28,10 @@ public class StandardTestProcedureController(IStandardTestProcedureRepository re
     /// Retrieves a paginated list of standard test procedures.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StandardTestProcedureDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>))]
     public async Task<IResult> GetStandardTestProcedures([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
-        var result = await repository.GetStandardTestProcedures(page, pageSize, searchQuery);
+        var result = await repository.GetMaterialStandardTestProcedures(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -39,11 +39,11 @@ public class StandardTestProcedureController(IStandardTestProcedureRepository re
     /// Retrieves the details of a specific standard test procedure by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StandardTestProcedureDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialStandardTestProcedureDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetStandardTestProcedure([FromRoute] Guid id)
     {
-        var result = await repository.GetStandardTestProcedure(id);
+        var result = await repository.GetMaterialStandardTestProcedure(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -51,12 +51,12 @@ public class StandardTestProcedureController(IStandardTestProcedureRepository re
     /// Updates the details of an existing standard test procedure.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(StandardTestProcedureDto))]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(MaterialStandardTestProcedureDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateStandardTestProcedure([FromRoute] Guid id, [FromBody] CreateStandardTestProcedureRequest request)
+    public async Task<IResult> UpdateStandardTestProcedure([FromRoute] Guid id, [FromBody] CreateMaterialStandardTestProcedureRequest request)
     {
-        var result = await repository.UpdateStandardTestProcedure(id, request);
+        var result = await repository.UpdateMaterialStandardTestProcedure(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -71,7 +71,7 @@ public class StandardTestProcedureController(IStandardTestProcedureRepository re
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.DeleteStandardTestProcedure(id, Guid.Parse(userId));
+        var result = await repository.DeleteMaterialStandardTestProcedure(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
