@@ -24,6 +24,7 @@ using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Permissions;
@@ -416,7 +417,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #region Standard Test Procedures
 
-    public DbSet<StandardTestProcedure> StandardTestProcedures { get; set; }
+    public DbSet<MaterialStandardTestProcedure> MaterialStandardTestProcedures { get; set; }
 
     #endregion
     

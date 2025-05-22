@@ -29,6 +29,7 @@ using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
@@ -733,13 +734,13 @@ public class OryxMapper : Profile
 
         #endregion
         
-        #region Standard Test Procedures
+        #region Material Standard Test Procedures
 
-        CreateMap<CreateStandardTestProcedureRequest, StandardTestProcedure>();
+        CreateMap<CreateMaterialStandardTestProcedureRequest, MaterialStandardTestProcedure>();
         
-        CreateMap<StandardTestProcedureDto, StandardTestProcedure>();
+        CreateMap<MaterialStandardTestProcedureDto, MaterialStandardTestProcedure>();
         
-        CreateMap<StandardTestProcedure, StandardTestProcedureDto>()
+        CreateMap<MaterialStandardTestProcedure, MaterialStandardTestProcedureDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         #endregion

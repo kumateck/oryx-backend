@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DOMAIN.Entities.StandardTestProcedures;
 
-public class CreateStandardTestProcedureRequest
+public class CreateMaterialStandardTestProcedureRequest
 {
     [Required] public string StpNumber { get; set; }
     
