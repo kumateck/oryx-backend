@@ -1,6 +1,16 @@
+using System.ComponentModel.DataAnnotations;
+using APP.Utils;
+using DOMAIN.Entities.StaffRequisitions;
+using SHARED;
+
 namespace APP.IRepository;
 
-public class IStaffRequisitionRepository
+public interface IStaffRequisitionRepository
 {
+    Task<Result<Guid>> CreateStaffRequisition(CreateStaffRequisitionRequest request);
     
+    Task<Result<Paginateable<IEnumerable<StaffRequisitionDto>>>> GetStaffRequisitions(int page, int pageSize, string searchQuery);
+    Task<Result<StaffRequisitionDto>> GetStaffRequisition(Guid id);
+    Task<Result> UpdateStaffRequisition(Guid id, CreateStaffRequisitionRequest request);
+    Task<Result> DeleteStaffRequisitionRequest(Guid id, Guid userId);
 }
