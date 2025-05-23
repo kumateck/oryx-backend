@@ -8,6 +8,7 @@ public class CreateOvertimeRequest
     [Required] public List<Guid> EmployeeIds { get; set; }
     
     [Required] public DateTime OvertimeDate { get; set; }
+    
     [Required] public Guid DepartmentId { get; set; }
     [Required, StringLength(10)] public string StartTime { get; set; }
     
