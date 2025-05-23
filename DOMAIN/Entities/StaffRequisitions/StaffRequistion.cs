@@ -4,6 +4,7 @@ namespace DOMAIN.Entities.StaffRequisitions;
 
 public class StaffRequisition : BaseEntity
 {
+    //TODO: finalise attributes
     public PositionType PositionType { get; set; }
     
     public int StaffRequired { get; set; }
