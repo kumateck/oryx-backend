@@ -74,4 +74,7 @@ public interface IMaterialRepository
         int pageSize,
         string searchQuery, MaterialKind? kind, Guid userId);
     Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId);
+    Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
+        int page,
+        int pageSize, string searchQuery, bool withProcessed, Guid? userId);
 }

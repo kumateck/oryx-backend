@@ -299,6 +299,9 @@ public class OryxMapper : Profile
         CreateMap<MaterialReturnNoteFullReturn, MaterialReturnNoteFullReturnDto>();
         CreateMap<MaterialReturnNotePartialReturn, MaterialReturnNotePartialReturnDto>();
         
+        CreateMap<HoldingMaterialTransfer, HoldingMaterialTransferDto>();
+        CreateMap<HoldingMaterialTransferBatch, HoldingMaterialTransferBatchDto>();
+        
         #endregion
 
         #region Requisition

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250523224704_AddHoldingMaterialTransferEntity")]
+    partial class AddHoldingMaterialTransferEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,60 +25,6 @@ namespace INFRASTRUCTURE.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("DOMAIN.Entities.AnalyticalRawData.AnalyticalRawData", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("FormId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SpecNumber")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("StpId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("StpNumber")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FormId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("StpId");
-
-                    b.ToTable("AnalyticalRawData");
-                });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>
                 {
@@ -2160,52 +2109,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("LeaveTypes");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MaterialId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("StpNumber")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialId");
-
-                    b.ToTable("MaterialStandardTestProcedures");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3212,9 +3115,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Code")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3230,6 +3130,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.PrimitiveCollection<List<Guid>>("EmployeeIds")
                         .HasColumnType("uuid[]");
 
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("EndTime")
                         .HasColumnType("text");
 
@@ -3243,6 +3146,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("OvertimeDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("StartTime")
@@ -3517,49 +3423,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("SupplierId");
 
                     b.ToTable("SupplierManufacturers");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductStandardTestProcedures.ProductStandardTestProcedure", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("StpNumber")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("ProductStandardTestProcedures");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.MasterProductionSchedule", b =>
@@ -6932,23 +6795,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("Sites");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.StaffRequisitions.StaffRequisition", b =>
+            modelBuilder.Entity("DOMAIN.Entities.StandardTestProcedures.StandardTestProcedure", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<string>("AdditionalRequirements")
-                        .HasColumnType("text");
-
-                    b.Property<int>("AppointmentType")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("BudgetStatus")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -6959,13 +6810,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("DesignationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("EducationalQualification")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Justification")
+                    b.Property<string>("Description")
                         .HasColumnType("text");
 
                     b.Property<Guid?>("LastDeletedById")
@@ -6974,17 +6819,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Qualification")
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("StpNumber")
                         .HasColumnType("text");
-
-                    b.Property<DateTime>("RequestUrgency")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("StaffRequired")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("StaffRequisitionStatus")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -6993,74 +6832,13 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("CreatedById");
 
-                    b.HasIndex("DesignationId");
-
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("StaffRequisitions");
-                });
+                    b.HasIndex("MaterialId");
 
-            modelBuilder.Entity("DOMAIN.Entities.StaffRequisitions.StaffRequisitionApproval", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ApprovalId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ApprovalTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ApprovedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Required")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("StaffRequisitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("StageStartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApprovalId");
-
-                    b.HasIndex("ApprovedById");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("StaffRequisitionId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("StaffRequisitionApproval");
+                    b.ToTable("StandardTestProcedures");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Users.User", b =>
@@ -7939,43 +7717,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("ShiftTypesId");
 
                     b.ToTable("ShiftScheduleShiftType");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.AnalyticalRawData.AnalyticalRawData", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Forms.Form", "Form")
-                        .WithMany()
-                        .HasForeignKey("FormId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure", "MaterialStandardTestProcedure")
-                        .WithMany()
-                        .HasForeignKey("StpId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Form");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("MaterialStandardTestProcedure");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>
@@ -9340,35 +9081,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Material");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
@@ -10228,35 +9940,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Material");
 
                     b.Navigation("Supplier");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductStandardTestProcedures.ProductStandardTestProcedure", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.MasterProductionSchedule", b =>
@@ -12437,17 +12120,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.StaffRequisitions.StaffRequisition", b =>
+            modelBuilder.Entity("DOMAIN.Entities.StandardTestProcedures.StandardTestProcedure", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Designations.Designation", "Designation")
-                        .WithMany()
-                        .HasForeignKey("DesignationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
@@ -12457,50 +12134,19 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.Navigation("CreatedBy");
+                    b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
+                        .WithMany()
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Designation");
+                    b.Navigation("CreatedBy");
 
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
-                });
 
-            modelBuilder.Entity("DOMAIN.Entities.StaffRequisitions.StaffRequisitionApproval", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
-                        .WithMany()
-                        .HasForeignKey("ApprovalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
-                        .WithMany()
-                        .HasForeignKey("ApprovedById");
-
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId");
-
-                    b.HasOne("DOMAIN.Entities.StaffRequisitions.StaffRequisition", "StaffRequisition")
-                        .WithMany("Approvals")
-                        .HasForeignKey("StaffRequisitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("Approval");
-
-                    b.Navigation("ApprovedBy");
-
-                    b.Navigation("Role");
-
-                    b.Navigation("StaffRequisition");
-
-                    b.Navigation("User");
+                    b.Navigation("Material");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Users.User", b =>
@@ -13196,11 +12842,6 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentInvoice", b =>
                 {
                     b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.StaffRequisitions.StaffRequisition", b =>
-                {
-                    b.Navigation("Approvals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedRequisitionMaterial", b =>

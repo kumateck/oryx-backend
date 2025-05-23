@@ -1483,8 +1483,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var shelfMaterialBatches =
                 await context.ShelfMaterialBatches.Where(sb => sb.MaterialBatchId == batch.Id).ToListAsync();
             context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
+            
+            remainingQuantity -= batchRequest.Quantity;
+            if (remainingQuantity <= 0) break;
 
-            var movement = new MassMaterialBatchMovement
+            /*var movement = new MassMaterialBatchMovement
             {
                 BatchId = batch.Id,
                 FromWarehouseId = fromWarehouse.Id,
@@ -1546,12 +1549,28 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             
             await context.SaveChangesAsync();
             
-            remainingQuantity -= batchRequest.Quantity;
-
-            if (remainingQuantity <= 0) break;
+            */
         }
         
-        if (toWarehouse.ArrivalLocation == null)
+        if (remainingQuantity > 0)
+        {
+            return Error.Failure("StockTransfer.InsufficientStock", "Not enough batches to fulfill the transfer");
+        }
+
+        var holdingMaterial = new HoldingMaterialTransfer
+        {
+            ModelType = nameof(StockTransfer),
+            Batches = batches.Select(b => new HoldingMaterialTransferBatch
+            {
+                MaterialBatchId = b.BatchId,
+                Quantity = b.Quantity,
+                SourceWarehouseId = fromWarehouse.Id,
+                DestinationWarehouseId = toWarehouse.Id,
+            }).ToList()
+        };
+        
+        await context.GHoldingMaterialTransfers.AddAsync(holdingMaterial);
+        /*if (toWarehouse.ArrivalLocation == null)
         {
             toWarehouse.ArrivalLocation = new WarehouseArrivalLocation
             {
@@ -1561,13 +1580,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 Description = "Automatically created arrival location"
             };
             await context.WarehouseArrivalLocations.AddAsync(toWarehouse.ArrivalLocation);
-        }
-            
-
-        if (remainingQuantity > 0)
-        {
-            return Error.Failure("StockTransfer.InsufficientStock", "Not enough batches to fulfill the transfer");
-        }
+        }*/
 
         stockTransferSource.IssuedAt = DateTime.UtcNow;
         stockTransferSource.IssuedById = userId;
@@ -1893,6 +1906,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             }).ToList()
         };
         await context.MaterialReturnNotes.AddAsync(materialReturnNote);
+
+        // var holdingMaterial = new HoldingMaterialTransfer
+        // {
+        //     MaterialId = 
+        //
+        // };
         await context.SaveChangesAsync();
         return Result.Success();
     }
