@@ -232,7 +232,21 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Gu
     }
 }
 
-    public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
+public async Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId)
+{
+    var employees = await context.Employees
+        .Include(e => e.Department)
+        .Include(e => e.Designation)
+        .Where(e => e.DepartmentId == departmentId && e.LastDeletedById == null)
+        .ToListAsync();
+
+    var employeeDtos = employees.Select(e => mapper.Map<EmployeeDto>(e, 
+        opts => { opts.Items[AppConstants.ModelType] = nameof(Employee); }));
+
+    return Result.Success(employeeDtos);
+}
+
+public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
     {
         var employee = await context.Employees
             .Include(e=> e.Department)

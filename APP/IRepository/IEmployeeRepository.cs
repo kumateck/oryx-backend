@@ -15,6 +15,8 @@ public interface IEmployeeRepository
    Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Guid userId);
    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
       string searchQuery = null, string designation = null, string department = null);
+   
+   Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId);
    Task<Result<EmployeeDto>> GetEmployee(Guid id);
    Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request, Guid userId);
    

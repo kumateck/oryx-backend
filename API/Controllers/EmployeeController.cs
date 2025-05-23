@@ -61,10 +61,20 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     public async Task<IResult> GetEmployees([FromQuery] int page, [FromQuery] int pageSize,
         [FromQuery] string searchQuery, [FromQuery] string designation, [FromQuery] string department)
     {
-        var userId = (string) HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
         var result = await repository.GetEmployees(page, pageSize, searchQuery, designation, department);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of employees based on their department.
+    /// </summary>
+    [HttpGet("departments/{id:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<EmployeeDto>))]
+    public async Task<IResult> GetEmployeesByDepartment([FromRoute] Guid id)
+    {
+        
+        var result = await repository.GetEmployeesByDepartment(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -77,9 +87,6 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetEmployee([FromRoute] Guid id)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
         var result = await repository.GetEmployee(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
