@@ -47,6 +47,11 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         {
             query = query.WhereSearch(searchQuery, stp => stp.StpNumber);
         }
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, stp => stp.Material.MaterialCategory.MaterialKind.ToString());
+        }
         
         return await PaginationHelper
             .GetPaginatedResultAsync(query,

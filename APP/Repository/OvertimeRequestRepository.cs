@@ -121,6 +121,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
         }
         
         mapper.Map(request, overtimeRequest);
+        overtimeRequest.EmployeeIds = request.EmployeeIds;
         
         context.OvertimeRequests.Update(overtimeRequest);
         await context.SaveChangesAsync();
