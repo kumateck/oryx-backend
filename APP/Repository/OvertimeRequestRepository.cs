@@ -27,21 +27,6 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
             .Select(e => new { e.Id, e.FirstName, e.LastName, e.DepartmentId })
             .ToListAsync();
 
-        // Validate department membership
-        var invalidEmployees = selectedEmployees
-            .Where(e => e.DepartmentId != request.DepartmentId)
-            .ToList();
-
-        if (invalidEmployees.Count != 0)
-        {
-            var names = invalidEmployees
-                .Select(e => $"{e.FirstName} {e.LastName}")
-                .ToList();
-
-            return Error.Validation("OvertimeRequest.InvalidEmployees", 
-                $"The following employees do not belong to your department: {string.Join(", ", names)}");
-        }
-
         // Check for duplicate overtime requests in one query
         var duplicateEmployeeIds = await context.OvertimeRequests
             .Where(ot => request.EmployeeIds.Any(id => ot.EmployeeIds.Contains(id)) 
@@ -95,7 +80,10 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
 
     public async Task<Result<Paginateable<IEnumerable<OvertimeRequestDto>>>> GetOvertimeRequests(int page, int pageSize, string searchQuery)
     {
-        var query =  context.OvertimeRequests.AsQueryable();
+        var query =  context.OvertimeRequests
+            .Include(o => o.Department)
+            .Where(o => o.LastDeletedById == null)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -113,7 +101,9 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
 
     public async Task<Result<OvertimeRequestDto>> GetOvertimeRequest(Guid id)
     {
-        var overtimeRequest = await context.OvertimeRequests.FirstOrDefaultAsync(ot => ot.Id == id);
+        var overtimeRequest = await context.OvertimeRequests
+            .Include(o => o.Department)
+            .FirstOrDefaultAsync(ot => ot.Id == id && ot.LastDeletedById == null);
         
         return overtimeRequest is null ? 
             Error.NotFound("OvertimeRequest.NotFound", "Overtime request is not found") : 
@@ -123,7 +113,8 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
 
     public async Task<Result> UpdateOvertimeRequest(Guid id, CreateOvertimeRequest request)
     {
-        var overtimeRequest = await context.OvertimeRequests.FirstOrDefaultAsync(ot => ot.Id == id);
+        var overtimeRequest = await context.OvertimeRequests
+            .FirstOrDefaultAsync(ot => ot.Id == id && ot.LastDeletedById == null);
         if (overtimeRequest is null)
         {
             return Error.NotFound("OvertimeRequest.NotFound", "Overtime request is not found");
@@ -139,7 +130,8 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
 
     public async Task<Result> DeleteOvertimeRequest(Guid id, Guid userId)
     {
-        var overtimeRequest = await context.OvertimeRequests.FirstOrDefaultAsync(ot => ot.Id == id);
+        var overtimeRequest = await context.OvertimeRequests
+            .FirstOrDefaultAsync(ot => ot.Id == id && ot.LastDeletedById == null);
         if (overtimeRequest is null)
         {
             return Error.NotFound("OvertimeRequest.NotFound", "Overtime request is not found");

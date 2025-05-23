@@ -28,7 +28,7 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, sr => sr.EducationalBackground);
+            query = query.WhereSearch(searchQuery, sr => sr.EducationalQualification);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

@@ -12,7 +12,6 @@ public class CreateStaffRequisitionRequest
     
     [Required, StringLength(255)] public string Qualification { get; set; }
     
-    
     public string AdditionalRequests { get; set; }
     
     
