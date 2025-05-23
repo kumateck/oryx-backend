@@ -55,6 +55,7 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Siblings;
+using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
 using DOMAIN.Entities.Warehouses;
@@ -769,6 +770,13 @@ public class OryxMapper : Profile
         CreateMap<ProductStandardTestProcedureDto, ProductStandardTestProcedure>();
         CreateMap<ProductStandardTestProcedure, ProductStandardTestProcedureDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+
+        #endregion
+
+        #region Staff Requisitions
+
+        CreateMap<CreateStaffRequisitionRequest, StaffRequisition>();
+        CreateMap<StaffRequisitionDto, StaffRequisition>();
 
         #endregion
 

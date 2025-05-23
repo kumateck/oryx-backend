@@ -431,11 +431,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #endregion
     
     
-    // #region Staff Requisitions
-    //
-    // public DbSet<StaffRequisition> StaffRequisitions { get; set; }
-    //
-    // #endregion
+    #region Staff Requisitions
+    
+    public DbSet<StaffRequisition> StaffRequisitions { get; set; }
+    
+    #endregion
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
