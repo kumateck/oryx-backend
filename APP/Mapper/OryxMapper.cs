@@ -743,7 +743,6 @@ public class OryxMapper : Profile
 
         CreateMap<CreateOvertimeRequest, OvertimeRequest>();
         CreateMap<OvertimeRequestDto, OvertimeRequest>();
-
         #endregion
         
         #region Material Standard Test Procedures
