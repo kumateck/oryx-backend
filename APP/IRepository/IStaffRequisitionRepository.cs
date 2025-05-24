@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using APP.Utils;
 using DOMAIN.Entities.StaffRequisitions;
 using SHARED;

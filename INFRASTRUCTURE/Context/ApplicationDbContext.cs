@@ -1,5 +1,4 @@
 using System.Reflection;
-using DOMAIN.Entities.AnalyticalRawData;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Auth;
@@ -22,6 +21,7 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
+using DOMAIN.Entities.MaterialAnalyticalRawData;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
@@ -30,6 +30,7 @@ using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.ProductAnalyticalRawData;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -429,9 +430,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     #region Analytical Raw Data
     
-    public DbSet<AnalyticalRawData> AnalyticalRawData { get; set; }
+    public DbSet<MaterialAnalyticalRawData> MaterialAnalyticalRawData { get; set; }
+    
+    public DbSet<ProductAnalyticalRawData> ProductAnalyticalRawData { get; set; }
     
     #endregion
+    
+    
     
     
     #region Staff Requisitions

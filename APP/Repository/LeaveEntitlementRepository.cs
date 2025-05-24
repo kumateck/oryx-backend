@@ -11,7 +11,7 @@ namespace APP.Repository;
 
 public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper mapper) : ILeaveEntitlementRepository
 {
-    public async Task<Result<Guid>> CreateLeaveEntitlement(LeaveEntitlementDto leaveEntitlementRequest, Guid userId)
+    public async Task<Result<Guid>> CreateLeaveEntitlement(LeaveEntitlementDto leaveEntitlementRequest)
     {
         if (leaveEntitlementRequest.Year < DateTime.UtcNow.Year)
         {
@@ -76,7 +76,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         );
     }
 
-    public async Task<Result> UpdateLeaveEntitlement(Guid id, LeaveEntitlementDto leaveEntitlementDto, Guid userId)
+    public async Task<Result> UpdateLeaveEntitlement(Guid id, LeaveEntitlementDto leaveEntitlementDto)
     {
         var query = context.LeaveEntitlements.AsQueryable();
         var leaveEntitlement = await query

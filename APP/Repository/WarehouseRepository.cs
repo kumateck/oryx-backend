@@ -18,7 +18,7 @@ namespace APP.Repository;
 
 public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository) : IWarehouseRepository
 {
-    public async Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request)
     {
         var warehouse = mapper.Map<Warehouse>(request);
         await context.Warehouses.AddAsync(warehouse);
@@ -738,7 +738,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         return Result.Success(checklistDto);
     }
     
-    public async Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds, Guid userId)
+    public async Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds)
     {
         var grn = mapper.Map<Grn>(request);
         await context.Grns.AddAsync(grn);

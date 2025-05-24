@@ -1,30 +1,29 @@
-using System.Diagnostics.Contracts;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
-using DOMAIN.Entities.AnalyticalRawData;
+using DOMAIN.Entities.MaterialAnalyticalRawData;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
 
-public class AnalyticalRawDataRepository(ApplicationDbContext context, IMapper mapper) : IAnalyticalRawDataRepository
+public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, IMapper mapper) : IMaterialAnalyticalRawDataRepository
 {
-    public async Task<Result<Guid>> CreateAnalyticalRawData(CreateAnalyticalRawDataRequest request)
+    public async Task<Result<Guid>> CreateAnalyticalRawData(CreateMaterialAnalyticalRawDataRequest request)
     {
-        var existingAnalyticalRawData = await context.AnalyticalRawData.FirstOrDefaultAsync(ad => ad.SpecNumber == request.SpecNumber);
+        var existingAnalyticalRawData = await context.MaterialAnalyticalRawData.FirstOrDefaultAsync(ad => ad.SpecNumber == request.SpecNumber);
         if (existingAnalyticalRawData is not null)
         {
-            return Error.Validation("AnalyticalRawData.Exists", "Analytical raw data already exists.");
+            return Error.Validation("MaterialAnalyticalRawData.Exists", "Analytical raw data already exists.");
         }
         
         var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId && f.LastDeletedById == null);
 
         if (form.Name != "Analytical Raw Data")
         {
-            return Error.Validation("AnalyticalRawData.InvalidForm", "Analytical raw data form is invalid.");
+            return Error.Validation("MaterialAnalyticalRawData.InvalidForm", "Analytical raw data form is invalid.");
         }
         
         
@@ -33,20 +32,20 @@ public class AnalyticalRawDataRepository(ApplicationDbContext context, IMapper m
 
         if (!stpNumber)
         {
-            return Error.Validation("AnalyticalRawData.StpNumberNotFound", "Stp number not found.");
+            return Error.Validation("MaterialAnalyticalRawData.StpNumberNotFound", "Stp number not found.");
         }
         
-        var analyticalRawData = mapper.Map<AnalyticalRawData>(request);
+        var analyticalRawData = mapper.Map<MaterialAnalyticalRawData>(request);
         
-        await context.AnalyticalRawData.AddAsync(analyticalRawData);
+        await context.MaterialAnalyticalRawData.AddAsync(analyticalRawData);
         await context.SaveChangesAsync();
         
         return analyticalRawData.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<AnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery)
     {
-        var query = context.AnalyticalRawData
+        var query = context.MaterialAnalyticalRawData
             .AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
             .Where(ad => ad.LastDeletedById == null)
@@ -59,59 +58,59 @@ public class AnalyticalRawDataRepository(ApplicationDbContext context, IMapper m
         
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, ad => ad.SpecNumber);
+            query = query.WhereSearch(searchQuery, ad => ad.StpNumber);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
-            mapper.Map<AnalyticalRawDataDto>);
+            mapper.Map<MaterialAnalyticalRawDataDto>);
     }
 
-    public async Task<Result<AnalyticalRawDataDto>> GetAnalyticalRawData(Guid id)
+    public async Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id)
     {
-        var analyticalRawData = await context.AnalyticalRawData
+        var analyticalRawData = await context.MaterialAnalyticalRawData
             .AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
             .ThenInclude(ad => ad.Material)
             .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
         
         return analyticalRawData is null ?
-            Error.NotFound("AnalyticalRawData.NotFound", "Analytical raw data not found") : 
-            mapper.Map<AnalyticalRawDataDto>(analyticalRawData);
+            Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found") : 
+            mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData);
     }
 
-    public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateAnalyticalRawDataRequest request)
+    public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request)
     {
-        var analyticalRawData = await context.AnalyticalRawData
+        var analyticalRawData = await context.MaterialAnalyticalRawData
             .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
 
         if (analyticalRawData is null)
         {
-            return Error.NotFound("AnalyticalRawData.NotFound", "Analytical raw data not found");
+            return Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found");
         }
         
         mapper.Map(request, analyticalRawData);
         
-        context.AnalyticalRawData.Update(analyticalRawData);
+        context.MaterialAnalyticalRawData.Update(analyticalRawData);
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
     public async Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId)
     {
-        var analyticalRawData = await context.AnalyticalRawData
+        var analyticalRawData = await context.MaterialAnalyticalRawData
             .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
         if (analyticalRawData is null)
         {
-            return Error.NotFound("AnalyticalRawData.NotFound", "Analytical raw data not found");
+            return Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found");
         }
         
         analyticalRawData.DeletedAt = DateTime.UtcNow;
         analyticalRawData.LastDeletedById = userId;
         
-        context.AnalyticalRawData.Update(analyticalRawData);
+        context.MaterialAnalyticalRawData.Update(analyticalRawData);
         await context.SaveChangesAsync();
         return Result.Success();
     }

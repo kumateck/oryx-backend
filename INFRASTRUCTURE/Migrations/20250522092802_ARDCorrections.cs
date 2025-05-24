@@ -12,12 +12,12 @@ namespace INFRASTRUCTURE.Migrations
         {
             migrationBuilder.RenameColumn(
                 name: "MaterialStandardTestProceduresId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 newName: "MaterialStandardTestProcedureId");
 
             migrationBuilder.RenameIndex(
                 name: "IX_AnalyticalRawData_MaterialStandardTestProceduresId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 newName: "IX_AnalyticalRawData_MaterialStandardTestProcedureId");
         }
 
@@ -26,12 +26,12 @@ namespace INFRASTRUCTURE.Migrations
         {
             migrationBuilder.RenameColumn(
                 name: "MaterialStandardTestProcedureId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 newName: "MaterialStandardTestProceduresId");
 
             migrationBuilder.RenameIndex(
                 name: "IX_AnalyticalRawData_MaterialStandardTestProcedureId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 newName: "IX_AnalyticalRawData_MaterialStandardTestProceduresId");
         }
     }

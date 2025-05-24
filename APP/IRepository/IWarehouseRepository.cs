@@ -12,7 +12,7 @@ namespace APP.IRepository;
 
 public interface IWarehouseRepository
 {
-    Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request, Guid userId);
+    Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request);
     Task<Result<WarehouseDto>> GetWarehouse(Guid warehouseId);
     Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery, WarehouseType? type);
     Task<Result> UpdateWarehouse(CreateWarehouseRequest request, Guid warehouseId, Guid userId);
@@ -55,7 +55,7 @@ public interface IWarehouseRepository
     Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId);
     Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterials(List<Guid> distributedMaterialIds);
     Task<Result<ChecklistDto>> GetChecklistByDistributedMaterialId(Guid distributedMaterialId);
-    Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds, Guid userId);
+    Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds);
     Task<Result<GrnDto>> GetGrn(Guid id);
     Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery, MaterialKind? kind);
 

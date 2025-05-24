@@ -12,7 +12,7 @@ namespace APP.Repository;
 public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper, IApprovalRepository approvalRepository) : ILeaveRequestRepository
 
 {
-    public async Task<Result<Guid>> CreateLeaveOrAbsenceRequest(CreateLeaveRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateLeaveOrAbsenceRequest(CreateLeaveRequest request)
     {
         if (request.StartDate > request.EndDate)
             return Error.Validation("Request.InvalidDates", "Start date must be before end date.");
@@ -197,7 +197,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
            Result.Success(mapper.Map<LeaveRequestDto>(leaveRequest, opts => opts.Items[AppConstants.ModelType] = nameof(LeaveRequest)));
     }
 
-    public async Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest, Guid userId)
+    public async Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest)
     {
         var existingLeaveRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);

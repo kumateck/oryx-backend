@@ -9,6 +9,7 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/holidays")]
 [ApiController]
+[Authorize]
 public class HolidayController(IHolidayRepository repository) : ControllerBase
 {
 
@@ -16,7 +17,6 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Creates a holiday.
     /// </summary>
     [HttpPost]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateHoliday([FromBody] CreateHolidayRequest request)
@@ -32,7 +32,6 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Retrieves a list of holidays based on search criteria.
     /// </summary>
     [HttpGet]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<HolidayDto>>))]
     public async Task<IResult> GetHolidays([FromQuery] string searchQuery)
     {
@@ -48,7 +47,6 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Retrieves the details of a specific holiday by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HolidayDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetHoliday([FromRoute] Guid id)
@@ -64,7 +62,6 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Updates the details of an existing holiday.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(HolidayDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -81,7 +78,6 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Deletes a specific holiday by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteHoliday([FromRoute] Guid id)
@@ -92,6 +88,4 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
         var result = await repository.DeleteHoliday(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent(): result.ToProblemDetails();
     }
-    
-    
 }

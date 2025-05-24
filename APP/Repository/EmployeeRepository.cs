@@ -133,7 +133,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         return employee.Id;
     }
 
-public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto, Guid createdByUserId)
+public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
 {
     var employee = await context.Employees.Include(e => e.Department)
         .FirstOrDefaultAsync(e => e.Id == employeeUserDto.EmployeeId && e.LastDeletedById == null);
@@ -295,7 +295,7 @@ public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
         );
     }
 
-    public async Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request, Guid userId)
+    public async Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request)
     {
         var employee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
@@ -313,7 +313,7 @@ public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
         return Result.Success();
     }
 
-public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto, Guid userId)
+public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto)
 {
     var employee = await context.Employees
         .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);

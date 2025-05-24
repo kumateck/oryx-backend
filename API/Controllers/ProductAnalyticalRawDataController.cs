@@ -1,35 +1,33 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
-using DOMAIN.Entities.AnalyticalRawData;
+using DOMAIN.Entities.ProductAnalyticalRawData;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
-
 [ApiController]
-[Route("api/v{version:apiVersion}/analytical-raw-data")]
+[Route("api/v{version:apiVersion}/product-ard")]
 [Authorize]
-public class AnalyticalRawDataController(IAnalyticalRawDataRepository repository) : ControllerBase
+public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataRepository repository) : ControllerBase
 {
-
     /// <summary>
-    /// Creates analytical raw data.
+    /// Creates product analytical raw data.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateAnalyticalRawData([FromBody] CreateAnalyticalRawDataRequest request)
+    public async Task<IResult> CreateAnalyticalRawData([FromBody] CreateProductAnalyticalRawDataRequest request)
     {
         var result = await repository.CreateAnalyticalRawData(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
-    /// Retrieves a paginated list of analytical raw data based on search criteria.
+    /// Retrieves a paginated list of product analytical raw data based on search criteria.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<AnalyticalRawDataDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>))]
     public async Task<IResult> GetAnalyticalRawData([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
         var result = await repository.GetAnalyticalRawData(page, pageSize, searchQuery);
@@ -37,10 +35,10 @@ public class AnalyticalRawDataController(IAnalyticalRawDataRepository repository
     }
 
     /// <summary>
-    /// Retrieves specific analytical raw data by its ID.
+    /// Retrieves specific product analytical raw data by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AnalyticalRawDataDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductAnalyticalRawDataDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAnalyticalRawData([FromRoute] Guid id)
     {
@@ -49,19 +47,19 @@ public class AnalyticalRawDataController(IAnalyticalRawDataRepository repository
     }
     
     /// <summary>
-    /// Updates analytical raw data by its ID.
+    /// Updates a product analytical raw data by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(AnalyticalRawDataDto))]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ProductAnalyticalRawDataDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateAnalyticalRawData([FromRoute] Guid id, [FromBody] CreateAnalyticalRawDataRequest request)
+    public async Task<IResult> UpdateAnalyticalRawData([FromRoute] Guid id, [FromBody] CreateProductAnalyticalRawDataRequest request)
     {
         var result = await repository.UpdateAnalyticalRawData(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
-    /// Deletes analytical raw data by its ID.
+    /// Deletes a product analytical raw data by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

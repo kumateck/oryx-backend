@@ -12,7 +12,7 @@ namespace APP.Repository;
 
 public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) : IShiftTypeRepository
 {
-    public async Task<Result<Guid>> CreateShiftType(CreateShiftTypeRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateShiftType(CreateShiftTypeRequest request)
     {
         var existingShiftType = await context.ShiftTypes
             .FirstOrDefaultAsync(s => s.ShiftName == request.ShiftName && s.DeletedAt == null );
@@ -95,7 +95,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success(shiftTypeDto);
     }
 
-    public async Task<Result> UpdateShiftType(Guid id, CreateShiftTypeRequest request, Guid userId)
+    public async Task<Result> UpdateShiftType(Guid id, CreateShiftTypeRequest request)
     {
         var shiftType = await context.ShiftTypes
             .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);

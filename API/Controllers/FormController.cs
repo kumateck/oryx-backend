@@ -42,7 +42,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetForm(formId, userId);
+        var result = await repository.GetForm(formId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

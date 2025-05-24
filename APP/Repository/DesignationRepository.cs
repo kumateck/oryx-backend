@@ -11,7 +11,7 @@ namespace APP.Repository;
 
 public class DesignationRepository(ApplicationDbContext context, IMapper mapper) : IDesignationRepository
 {
-    public async Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request)
     {
         var existingDesignation = await context.Designations.FirstOrDefaultAsync(d => d.Name == request.Name);
         if (existingDesignation is not null)
@@ -69,7 +69,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
             .ToListAsync());
     }
 
-    public async Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request, Guid userId)
+    public async Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request)
     {
         var designation = await context.Designations.
             Include(d => d.Departments).

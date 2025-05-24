@@ -8,7 +8,7 @@ namespace APP.IRepository;
 public interface IFormRepository
 {
     Task<Result<Guid>> CreateForm(CreateFormRequest request);
-    Task<Result<FormDto>> GetForm(Guid formId, string userId);
+    Task<Result<FormDto>> GetForm(Guid formId);
     Task<Result<Paginateable<IEnumerable<FormDto>>>> GetForms(FormFilter filter);
     Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId);
     //Task<Result> ResetForm(Guid formId, Guid userId);

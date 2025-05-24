@@ -80,7 +80,7 @@ public class UserController(IUserRepository repo) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var response = await repo.UpdateRolesOfUser(request, id, Guid.Parse(userId));
+        var response = await repo.UpdateRolesOfUser(request, id);
         return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
     }
 

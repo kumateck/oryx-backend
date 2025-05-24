@@ -1,7 +1,6 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
 using DOMAIN.Entities.ActivityLogs;
-using DOMAIN.Entities.AnalyticalRawData;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
@@ -28,6 +27,7 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
+using DOMAIN.Entities.MaterialAnalyticalRawData;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
@@ -757,13 +757,13 @@ public class OryxMapper : Profile
 
         #endregion
 
-        #region Analytical Raw Data
+        #region Material Analytical Raw Data
 
-        CreateMap<CreateAnalyticalRawDataRequest, AnalyticalRawData>();
-        CreateMap<AnalyticalRawDataDto, AnalyticalRawData>()
+        CreateMap<CreateMaterialAnalyticalRawDataRequest, MaterialAnalyticalRawData>();
+        CreateMap<MaterialAnalyticalRawDataDto, MaterialAnalyticalRawData>()
             .ForMember(dest => dest.MaterialStandardTestProcedure, opt => opt.Ignore());
 
-        CreateMap<AnalyticalRawData, AnalyticalRawDataDto>();
+        CreateMap<MaterialAnalyticalRawData, MaterialAnalyticalRawDataDto>();
 
         #endregion
 

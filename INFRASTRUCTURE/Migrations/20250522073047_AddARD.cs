@@ -13,7 +13,7 @@ namespace INFRASTRUCTURE.Migrations
         {
 
             migrationBuilder.CreateTable(
-                name: "AnalyticalRawData",
+                name: "MaterialAnalyticalRawData",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -63,27 +63,27 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnalyticalRawData_CreatedById",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 column: "CreatedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnalyticalRawData_FormId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 column: "FormId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnalyticalRawData_LastDeletedById",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 column: "LastDeletedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnalyticalRawData_LastUpdatedById",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnalyticalRawData_MaterialId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 column: "MaterialId");
         }
 
@@ -91,7 +91,7 @@ namespace INFRASTRUCTURE.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "AnalyticalRawData");
+                name: "MaterialAnalyticalRawData");
             
         }
     }

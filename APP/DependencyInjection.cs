@@ -13,7 +13,6 @@ using DOMAIN.Entities.ActivityLogs;
 using INFRASTRUCTURE.Context;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
 using SHARED.Services.Identity;
@@ -93,7 +92,8 @@ public static class DependencyInjection
         services.AddScoped<IOvertimeRequestRepository, OvertimeRequestRepository>();
         services.AddScoped<IMaterialStandardTestProcedureRepository, MaterialStandardTestProcedureRepository>();
         services.AddScoped<IProductStandardTestProcedureRepository, ProductStandardTestProcedureRepository>();
-        services.AddScoped<IAnalyticalRawDataRepository, AnalyticalRawDataRepository>();
+        services.AddScoped<IMaterialAnalyticalRawDataRepository, MaterialAnalyticalRawDataRepository>();
+        services.AddScoped<IProductAnalyticalRawDataRepository, ProductAnalyticalRawDataRepository>();
         services.AddScoped<IStaffRequisitionRepository, StaffRequisitionRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
