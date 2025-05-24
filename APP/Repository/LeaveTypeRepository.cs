@@ -10,7 +10,7 @@ namespace APP.Repository;
 
 public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) : ILeaveTypeRepository
 {
-    public async Task<Result<Guid>> CreateLeaveType(CreateLeaveTypeRequest leaveTypeDto, Guid userId)
+    public async Task<Result<Guid>> CreateLeaveType(CreateLeaveTypeRequest leaveTypeDto)
     {
         var existingLeaveType = await context.LeaveTypes.FirstOrDefaultAsync(l => l.Name == leaveTypeDto.Name && l.LastDeletedById == null);
 
@@ -86,7 +86,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success(leaveTypeDto);
     }
 
-    public async Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest request, Guid userId)
+    public async Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest request)
     {
         var leaveType = await context.LeaveTypes
             .FirstOrDefaultAsync(l => l.Id == id && l.LastDeletedById == null);

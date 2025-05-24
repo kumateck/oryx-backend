@@ -9,6 +9,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/v{version:apiVersion}/leave-request")]
+[Authorize]
 public class LeaveRequestController(ILeaveRequestRepository repository): ControllerBase
 {
 
@@ -16,7 +17,6 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     /// Creates a leave request.
     /// </summary>
     [HttpPost]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveOrAbsenceRequest([FromBody] CreateLeaveRequest leaveRequest)
@@ -24,7 +24,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.CreateLeaveOrAbsenceRequest(leaveRequest, Guid.Parse(userId));
+        var result = await repository.CreateLeaveOrAbsenceRequest(leaveRequest);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -32,7 +32,6 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     /// Returns a paginated list of leave requests based on a search criteria.
     /// </summary>
     [HttpGet]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveRequestDto>>))]
     public async Task<IResult> GetLeaveRequests([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
@@ -47,7 +46,6 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     /// Retrieves the details of a specific leave request.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveRequest([FromRoute] Guid id)
@@ -63,7 +61,6 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     /// Updates the details of an existing leave request.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -72,7 +69,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.UpdateLeaveRequest(id, leaveRequest, Guid.Parse(userId));
+        var result = await repository.UpdateLeaveRequest(id, leaveRequest);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
@@ -80,7 +77,6 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     /// Recalls an employee from a leave.
     /// </summary>
     [HttpPut("recall")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -94,7 +90,6 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     /// Deletes a specific leave request by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteLeaveRequest([FromRoute] Guid id)

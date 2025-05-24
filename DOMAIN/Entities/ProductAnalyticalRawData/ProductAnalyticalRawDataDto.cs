@@ -1,13 +1,12 @@
-using DOMAIN.Entities.Base;
-using DOMAIN.Entities.MaterialStandardTestProcedures;
+namespace DOMAIN.Entities.ProductAnalyticalRawData;
 
-namespace DOMAIN.Entities.AnalyticalRawData;
-
-public class AnalyticalRawDataDto : BaseDto
+public class ProductAnalyticalRawDataDto
 {
     public string StpNumber { get; set; }
     
     public string SpecNumber { get; set; }
+    
+    public Stage Stage { get; set; }
     
     public string Description { get; set; }
     

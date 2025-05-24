@@ -31,7 +31,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateWarehouse(request, Guid.Parse(userId));
+        var result = await repository.CreateWarehouse(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -667,7 +667,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateGrn(request, request.MaterialBatchIds, Guid.Parse(userId));
+        var result = await repository.CreateGrn(request, request.MaterialBatchIds);
 
         return result.IsSuccess
             ? TypedResults.Created($"/api/v1/warehouse/grn/{result.Value}", result.Value)

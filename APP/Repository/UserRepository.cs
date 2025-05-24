@@ -149,7 +149,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         return Result.Success();
     }
     
-    public async Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id, Guid userId)
+    public async Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id)
     {
         foreach (var roleName in request.RoleNames)
         {

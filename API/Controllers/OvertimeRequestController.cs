@@ -9,6 +9,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/v{version:apiVersion}/overtime-requests")]
+[Authorize]
 public class OvertimeRequestController(IOvertimeRequestRepository repository) : ControllerBase
 {
     
@@ -16,7 +17,6 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Creates an overtime request.
     /// </summary>
     [HttpPost]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateOvertimeRequest([FromBody] CreateOvertimeRequest request)
@@ -29,7 +29,6 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Retrieves a paginated list of overtime requests based on a search criteria.
     /// </summary>
     [HttpGet]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<OvertimeRequestDto>>))]
     public async Task<IResult> GetOvertimeRequests([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
@@ -41,7 +40,6 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Retrieves the details of a specific overtime request by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OvertimeRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetOvertimeRequest([FromRoute] Guid id)
@@ -54,7 +52,6 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Updates a specific overtime request by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(OvertimeRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -68,7 +65,6 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Deletes a specific overtime request by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteOvertimeRequest([FromRoute] Guid id)
@@ -79,6 +75,5 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
         var result = await repository.DeleteOvertimeRequest(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
     
 }

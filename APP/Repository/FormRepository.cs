@@ -27,7 +27,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return form.Id;
     }
 
-    public async Task<Result<FormDto>> GetForm(Guid formId, string userId)
+    public async Task<Result<FormDto>> GetForm(Guid formId)
     {
         var form = await context.Forms
             .FirstOrDefaultAsync(f => f.Id == formId);

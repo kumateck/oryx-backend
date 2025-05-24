@@ -6,11 +6,11 @@ namespace APP.IRepository;
 
 public interface ILeaveEntitlementRepository
 {
-   Task<Result<Guid>> CreateLeaveEntitlement(LeaveEntitlementDto leaveEntitlementDto, Guid userId);
+   Task<Result<Guid>> CreateLeaveEntitlement(LeaveEntitlementDto leaveEntitlementDto);
    Task<Result<LeaveEntitlementDto>> GetLeaveEntitlement(Guid leaveEntitlementId);
    Task<Result<Paginateable<IEnumerable<LeaveEntitlementDto>>>> GetLeaveEntitlements(int page, int pageSize, string searchQuery);
    
-   Task<Result> UpdateLeaveEntitlement(Guid id, LeaveEntitlementDto leaveEntitlementDto, Guid userId);
+   Task<Result> UpdateLeaveEntitlement(Guid id, LeaveEntitlementDto leaveEntitlementDto);
    
    Task<Result> DeleteLeaveEntitlement(Guid id, Guid userId);
                                                                            

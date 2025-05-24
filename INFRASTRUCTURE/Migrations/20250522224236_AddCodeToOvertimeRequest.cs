@@ -13,11 +13,11 @@ namespace INFRASTRUCTURE.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_AnalyticalRawData_MaterialStandardTestProcedures_MaterialSt~",
-                table: "AnalyticalRawData");
+                table: "MaterialAnalyticalRawData");
 
             migrationBuilder.DropIndex(
                 name: "IX_AnalyticalRawData_MaterialStandardTestProcedureId",
-                table: "AnalyticalRawData");
+                table: "MaterialAnalyticalRawData");
 
             migrationBuilder.DropColumn(
                 name: "EndDate",
@@ -29,7 +29,7 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.DropColumn(
                 name: "MaterialStandardTestProcedureId",
-                table: "AnalyticalRawData");
+                table: "MaterialAnalyticalRawData");
 
             migrationBuilder.AddColumn<string>(
                 name: "Code",
@@ -39,12 +39,12 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnalyticalRawData_StpId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 column: "StpId");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_AnalyticalRawData_MaterialStandardTestProcedures_StpId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 column: "StpId",
                 principalTable: "MaterialStandardTestProcedures",
                 principalColumn: "Id",
@@ -56,11 +56,11 @@ namespace INFRASTRUCTURE.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_AnalyticalRawData_MaterialStandardTestProcedures_StpId",
-                table: "AnalyticalRawData");
+                table: "MaterialAnalyticalRawData");
 
             migrationBuilder.DropIndex(
                 name: "IX_AnalyticalRawData_StpId",
-                table: "AnalyticalRawData");
+                table: "MaterialAnalyticalRawData");
 
             migrationBuilder.DropColumn(
                 name: "Code",
@@ -82,18 +82,18 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.AddColumn<Guid>(
                 name: "MaterialStandardTestProcedureId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 type: "uuid",
                 nullable: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnalyticalRawData_MaterialStandardTestProcedureId",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 column: "MaterialStandardTestProcedureId");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_AnalyticalRawData_MaterialStandardTestProcedures_MaterialSt~",
-                table: "AnalyticalRawData",
+                table: "MaterialAnalyticalRawData",
                 column: "MaterialStandardTestProcedureId",
                 principalTable: "MaterialStandardTestProcedures",
                 principalColumn: "Id");

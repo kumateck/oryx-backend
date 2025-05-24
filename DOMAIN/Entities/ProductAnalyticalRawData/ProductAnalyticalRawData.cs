@@ -2,11 +2,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Forms;
-using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.ProductStandardTestProcedures;
 
-namespace DOMAIN.Entities.AnalyticalRawData;
+namespace DOMAIN.Entities.ProductAnalyticalRawData;
 
-public class AnalyticalRawData : BaseEntity
+public class ProductAnalyticalRawData : BaseEntity
 {
     public string StpNumber { get; set; }
     
@@ -14,13 +14,22 @@ public class AnalyticalRawData : BaseEntity
     
     public string Description { get; set; }
     
+    public Stage Stage { get; set; }
+    
     public Guid StpId { get; set; }
     
     [ForeignKey("StpId")]
-    public MaterialStandardTestProcedure MaterialStandardTestProcedure { get; set; }
+    public ProductStandardTestProcedure ProductStandardTestProcedure { get; set; }
     
     public Guid FormId { get; set; }
     
     [JsonIgnore]
     public Form Form { get; set; }
+}
+
+public enum Stage
+{
+    Intermediate,
+    Bulk,
+    Finished
 }
