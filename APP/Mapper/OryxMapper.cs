@@ -139,6 +139,7 @@ public class OryxMapper : Profile
         CreateMap<DeliveryMode, CollectionItemDto>();
         CreateMap<ShipmentInvoice, CollectionItemDto>();
         CreateMap<Charge, CollectionItemDto>();
+        CreateMap<Question, CollectionItemDto>();
         
         #endregion
 
