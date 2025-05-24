@@ -7,6 +7,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.StaffRequisitions;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -408,6 +409,101 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
                 });
                 return Result.Success();
             
+            
+            case nameof(StaffRequisition):
+                var staffRequisition = await context.StaffRequisitions
+                    .Include(lr => lr.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+                
+                if (staffRequisition is null)
+                    return Error.Validation("StaffRequisition.NotFound", $"Staff Requisition {modelId} not found.");
+                
+                var staffRequisitionApprovalStages = staffRequisition.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                        
+                    }).ToList();
+                
+                var staffRequisitionCurrentApprovals = GetCurrentApprovalStage(staffRequisitionApprovalStages);
+                
+                var staffRequisitionApprovingStage = staffRequisitionCurrentApprovals.FirstOrDefault(stage =>
+                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                
+                if (staffRequisitionApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+                
+                // Approve the leave request stage in the actual tracked list
+                var stageToApproveSr = staffRequisition.Approvals.First(
+                    stage => (stage.UserId == staffRequisitionApprovingStage.UserId && stage.UserId == userId) ||
+                    (stage.RoleId == staffRequisitionApprovingStage.RoleId && staffRequisitionApprovingStage.RoleId.HasValue && roleIds.Contains(staffRequisitionApprovingStage.RoleId.Value)));
+
+                stageToApproveSr.Status = ApprovalStatus.Approved;
+                stageToApproveSr.ApprovalTime = DateTime.UtcNow;
+                stageToApproveSr.Comments = comments;
+                
+                // Optionally mark staff requisition as fully approved
+                var allRequiredSrApproved = staffRequisition.Approvals
+                    .Where(s => s.Required)
+                    .All(s => s.Status == ApprovalStatus.Approved);
+                if (allRequiredSrApproved)
+                {
+                    staffRequisition.Approved = true;
+                    staffRequisition.StaffRequisitionStatus = StaffRequisitionStatus.Pending;
+                    context.StaffRequisitions.Update(staffRequisition);
+                }
+                await context.SaveChangesAsync();
+                
+                //activate next pending stages
+                var nextStaffRequisitionStage = staffRequisition.Approvals
+                    .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
+                    .OrderBy(s => s.Order)
+                    .ToList();
+
+                if (nextStaffRequisitionStage.Any())
+                {
+                    // Get the current approval stages after the approval
+                    var updatedApprovalStages = staffRequisition.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                    }).ToList();
+
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
+                        .Where(s => !staffRequisition.Approvals.First(ra =>
+                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                        .ToList();
+
+                    foreach (var stageToActivate in newlyActiveStages)
+                    {
+                        var actualStage = staffRequisition.Approvals.First(ra =>
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                        actualStage.ActivatedAt = DateTime.UtcNow;
+                        context.StaffRequisitionApprovals.Update(actualStage);
+                    }
+                }
+                await context.SaveChangesAsync();
+                await AddApprovalLogs(new CreateApprovalLog
+                {
+                    UserId = userId,
+                    Comments = comments,
+                    Status = ApprovalStatus.Approved,
+                    ModelId = staffRequisition.Id,
+                });
+                return Result.Success();
             
             case nameof(LeaveRequest):
                 var leaveRequest = await context.LeaveRequests

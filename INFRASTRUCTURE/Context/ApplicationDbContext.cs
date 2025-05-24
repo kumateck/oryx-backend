@@ -443,6 +443,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<StaffRequisition> StaffRequisitions { get; set; }
     
+    public DbSet<StaffRequisitionApproval> StaffRequisitionApprovals { get; set; }
+    
     #endregion
     
     // #region TenantFilter
