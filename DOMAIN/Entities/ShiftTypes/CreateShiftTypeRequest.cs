@@ -8,9 +8,9 @@ public class CreateShiftTypeRequest
     
     [Required] public RotationType RotationType { get; set; }
     
-    [Required, StringLength(7)] public string StartTime { get; set; }
+    [Required, StringLength(8)] public string StartTime { get; set; }
     
-    [Required, StringLength(7)] public string EndTime { get; set; }
+    [Required, StringLength(8)] public string EndTime { get; set; }
     
     [Required] public List<DayOfWeek> ApplicableDays { get; set; }
 }
