@@ -107,7 +107,7 @@ public class ProductionActivityGroupDto : BaseDto
 
 public class ProductionActivityGroupResultDto
 {
-    public CollectionItemDto Operation { get; set; } // Operation name and ID
+    public OperationDto Operation { get; set; } // Operation name and ID
     public List<ProductionActivityGroupDto> Activities { get; set; } = [];
 }
 
@@ -115,7 +115,7 @@ public class ProductionActivityGroupResultDto
 public class ProductionActivityStepDto : BaseDto
 {
     public CollectionItemDto ProductionActivity { get; set; }
-    public CollectionItemDto Operation { get; set; }
+    public OperationDto Operation { get; set; }
     public CollectionItemDto WorkFlow { get; set; }
     public List<ProductionActivityStepResourceDto> Resources { get; set; } = [];
     public List<ProductionActivityStepWorkCenterDto> WorkCenters { get; set; } = [];

@@ -1819,8 +1819,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         );
     }
 
-    public async Task<Result> MoveMaterialBatchToWarehouse()
+    public async Task<Result> MoveMaterialBatchToWarehouse(Guid holdingMaterialId, MoveShelfMaterialBatchRequest request, Guid userId)
     {
+        var shelfMaterialBatch = await context.ShelfMaterialBatches
+            .FirstOrDefaultAsync(b => b.Id == request.ShelfMaterialBatchId);
+
+        if (shelfMaterialBatch is null)
+        {
+            return MaterialErrors.NotFound(request.ShelfMaterialBatchId);
+        }
+        
         throw new NotImplementedException();
     }
 }
