@@ -741,8 +741,10 @@ public class OryxMapper : Profile
 
         #region Overtime Requests
 
-        CreateMap<CreateOvertimeRequest, OvertimeRequest>();
-        CreateMap<OvertimeRequestDto, OvertimeRequest>();
+        CreateMap<CreateOvertimeRequest, OvertimeRequest>()
+            .ForMember(dest => dest.Employees, opt => opt.Ignore());
+        CreateMap<OvertimeRequestDto, OvertimeRequest>()
+            .ForMember(dest => dest.Employees, opt => opt.MapFrom(src => src.Employees));
         #endregion
         
         #region Material Standard Test Procedures

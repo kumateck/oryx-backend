@@ -24,14 +24,14 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
         // Fetch all selected employees
         var selectedEmployees = await context.Employees
             .Where(e => request.EmployeeIds.Contains(e.Id))
-            .Select(e => new { e.Id, e.FirstName, e.LastName, e.DepartmentId })
             .ToListAsync();
 
         // Check for duplicate overtime requests in one query
         var duplicateEmployeeIds = await context.OvertimeRequests
-            .Where(ot => request.EmployeeIds.Any(id => ot.EmployeeIds.Contains(id)) 
-                         && ot.OvertimeDate == request.OvertimeDate)
-            .SelectMany(ot => ot.EmployeeIds)
+            .Where(ot => ot.OvertimeDate == request.OvertimeDate)
+            .SelectMany(ot => ot.Employees)
+            .Where(emp => request.EmployeeIds.Contains(emp.Id))
+            .Select(emp => emp.Id) 
             .Distinct()
             .ToListAsync();
 
@@ -47,7 +47,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
         }
         
         var overtimeRequestEntity = mapper.Map<OvertimeRequest>(request);
-        overtimeRequestEntity.EmployeeIds = request.EmployeeIds;
+        overtimeRequestEntity.Employees = selectedEmployees;
 
         await context.OvertimeRequests.AddAsync(overtimeRequestEntity);
         await context.SaveChangesAsync();
@@ -70,6 +70,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
     {
         var query =  context.OvertimeRequests
             .Include(o => o.Department)
+            .Include(o => o.Employees)
             .Where(o => o.LastDeletedById == null)
             .AsQueryable();
 
