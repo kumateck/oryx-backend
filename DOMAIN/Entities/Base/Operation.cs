@@ -19,11 +19,11 @@ public class OperationDto : BaseDto
 }
 public enum OperationAction
 {
-    BmrAndBprRequisition,
-    StockRequisition,
-    FullReturn,
-    AdditionalStockRequest,
-    FinalPackingOrPartialReturn,
-    FinishedGoodsTransferNote,
-    Dispatch
+    BmrAndBprRequisition = 0,
+    StockRequisition = 1,
+    FullReturn = 2,
+    AdditionalStockRequest = 3,
+    FinalPackingOrPartialReturn = 4,
+    FinishedGoodsTransferNote = 5,
+    Dispatch = 6
 }

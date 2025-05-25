@@ -3,13 +3,13 @@ name: Build and Deploy Docker Image
 on:
   push:
     branches:
-      - demo
+      - main
 
 env:
-  DOCKER_IMAGE_NAME: kumateck/oryx-erp-api-demo
-  CONTAINER_NAME: oryx-erp-api-demo
-  HOST_PORT: 8086
-  CONTAINER_PORT: 5006
+  DOCKER_IMAGE_NAME: kumateck/oryx-erp-api-test
+  CONTAINER_NAME: oryx-erp-api-test
+  HOST_PORT: 8087
+  CONTAINER_PORT: 5007
 
 jobs:
   build:
@@ -33,10 +33,11 @@ jobs:
         with:
           context: .
           push: true
-          file: demo.Dockerfile
+          file: test.Dockerfile
           tags: ${{ env.DOCKER_IMAGE_NAME }}:latest
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache,mode=max
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -90,6 +91,9 @@ jobs:
             --env MONGO_DB_CONNECTION_STRING="mongodb://${{ secrets.MONGO_INITDB_ROOT_USERNAME }}:${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}@mongodb:27017" \
             --env MINIO_ACCESS_KEY=${{ secrets.ACCESS_KEY }} \
             --env MINIO_SECRET_KEY=${{ secrets.SECRET_KEY }} \
-            --env connectionString="Host=postgres_db;Port=5432;Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};Database=oryxdemodb" \
+            --env connectionString="Host=postgres_db;Port=5432;Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};Database=oryxdb" \
+            --env RABBITMQ_DEFAULT_USER=${{ secrets.RABBITMQ_DEFAULT_USER }} \
+            --env RABBITMQ_DEFAULT_PASS=${{ secrets.RABBITMQ_DEFAULT_PASS }} \
+            --env RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }} \
             "${DOCKER_IMAGE_NAME}:latest"
           EOF
