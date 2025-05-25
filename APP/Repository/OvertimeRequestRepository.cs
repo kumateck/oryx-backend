@@ -10,7 +10,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurationRepository configurationRepository, IMapper mapper) : IOvertimeRequestRepository
+public class OvertimeRequestRepository(ApplicationDbContext context, IMapper mapper) : IOvertimeRequestRepository
 {
     public async Task<Result<Guid>> CreateOvertimeRequest(CreateOvertimeRequest request)
     {
@@ -28,7 +28,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
 
         // Check for duplicate overtime requests in one query
         var duplicateEmployeeIds = await context.OvertimeRequests
-            .Where(ot => ot.OvertimeDate == request.OvertimeDate)
+            .Where(ot => ot.OvertimeDate == request.OvertimeDate && ot.LastDeletedById == null)
             .SelectMany(ot => ot.Employees)
             .Where(emp => request.EmployeeIds.Contains(emp.Id))
             .Select(emp => emp.Id) 
@@ -81,7 +81,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IConfigurat
         
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, ot => ot.Status.ToString());;
+            query = query.WhereSearch(searchQuery, ot => ot.Status.ToString());
         }
 
         
