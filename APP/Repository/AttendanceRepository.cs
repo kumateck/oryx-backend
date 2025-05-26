@@ -137,6 +137,8 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
         .Include(e => e.Department)
         .Include(e => e.ShiftAssignments.Where(sa => sa.CreatedAt.Date == date.Date))
             .ThenInclude(sa => sa.ShiftCategory)
+        .Include(e => e.ShiftAssignments.Where(sa => sa.CreatedAt.Date == date.Date))
+            .ThenInclude(sa => sa.ShiftSchedules)
         .Where(e => employeeIds.Contains(e.StaffNumber))
         .ToListAsync();
 
@@ -156,7 +158,7 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
         foreach (var employee in group)
         {
             var shift = employee.ShiftAssignments.FirstOrDefault();
-            var shiftName = shift?.ShiftCategory?.Name?.ToLowerInvariant();
+            var shiftName = shift?.ShiftSchedules?.ScheduleName?.ToLowerInvariant();
 
             if (string.IsNullOrWhiteSpace(shiftName))
                 continue;
