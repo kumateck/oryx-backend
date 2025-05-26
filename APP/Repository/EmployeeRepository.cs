@@ -127,7 +127,7 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
         
         var employee = mapper.Map<Employee>(request);
 
-        context.Employees.Add(employee);
+        await context.Employees.AddAsync(employee);
         await context.SaveChangesAsync();
 
         return employee.Id;
