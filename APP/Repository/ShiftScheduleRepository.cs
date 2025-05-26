@@ -116,6 +116,14 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
     if (shiftSchedule.StartDate is null)
         return Error.Validation("Shift.Invalid", "Shift Start Day is required.");
+    
+    var shiftCategory = await context.ShiftCategories
+        .FirstOrDefaultAsync(sh => sh.Name == request.ShiftName && sh.LastDeletedById == null);
+
+    if (shiftCategory == null)
+    {
+        return Error.NotFound("ShiftCategory.NotFound", "Shift category not found.");
+    }
 
     var shiftDay = shiftSchedule.StartDate.Value;
     var employeeIds = request.EmployeeIds.Distinct().ToList();

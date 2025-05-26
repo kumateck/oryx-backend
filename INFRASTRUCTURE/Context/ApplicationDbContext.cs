@@ -1,6 +1,7 @@
 using System.Reflection;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
+using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
@@ -407,6 +408,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ShiftAssignment> ShiftAssignments { get; set; }
     
     #endregion
+    
+    #region Shift Category
+
+    public DbSet<ShiftCategory> ShiftCategories { get; set; }
+
+    #endregion
+
 
     #region Company Working Days
 
@@ -436,14 +444,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     #endregion
     
-    
-    
-    
     #region Staff Requisitions
     
     public DbSet<StaffRequisition> StaffRequisitions { get; set; }
     
     public DbSet<StaffRequisitionApproval> StaffRequisitionApprovals { get; set; }
+    
+    #endregion
+    
+    #region Attendance Records
+    public DbSet<AttendanceRecords> AttendanceRecords { get; set; }
     
     #endregion
     

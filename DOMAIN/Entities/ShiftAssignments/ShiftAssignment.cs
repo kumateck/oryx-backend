@@ -12,5 +12,14 @@ public class ShiftAssignment : BaseEntity
     
     public Guid ShiftScheduleId { get; set; }
     
+    public Guid ShiftCategoryId { get; set; }
+    
+    public ShiftCategory ShiftCategory { get; set; }
+    
     public ShiftSchedule ShiftSchedules { get; set; }
+}
+
+public class ShiftCategory : BaseEntity
+{
+    public string Name { get; set; }
 }
