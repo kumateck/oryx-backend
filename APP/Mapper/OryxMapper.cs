@@ -158,6 +158,7 @@ public class OryxMapper : Profile
         #region Country
 
         CreateMap<Country, CountryDto>();
+        CreateMap<CountryDto, CountryDto>();
 
         #endregion
 
