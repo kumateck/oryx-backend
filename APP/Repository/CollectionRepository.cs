@@ -8,6 +8,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
@@ -33,7 +34,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(WorkCenter) => mapper.Map<List<CollectionItemDto>>(await context.WorkCenters.ToListAsync()),
             nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
-            nameof(MaterialCategory) => await GetMaterialCategories(materialKind), 
+            nameof(MaterialCategory) => await GetMaterialCategories(materialKind),
+            nameof(ShiftCategory) => mapper.Map<List<CollectionItemDto>>(await context.ShiftCategories.ToListAsync()),
             nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
             nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
             nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
@@ -118,6 +120,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var materialCategory = await context.MaterialCategories.ToListAsync();
                     if(materialKind != null) materialCategory = materialCategory.Where(m => m.MaterialKind == materialKind).ToList();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(materialCategory);
+                    break;
+                
+                case nameof(ShiftCategory):
+                    var shiftCategory = await context.ShiftCategories.ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(shiftCategory);
                     break;
                 
                 case nameof(PackageType):
@@ -225,6 +232,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Operation),
             nameof(MaterialType),
             nameof(MaterialCategory),
+            nameof(ShiftCategory),
             nameof(PackageType),
             nameof(User),
             nameof(Role),
@@ -304,6 +312,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.MaterialCategories.AddAsync(materialCategory);
                 await context.SaveChangesAsync();
                 return materialCategory.Id;
+            
+            case nameof(ShiftCategory):
+                var shiftCategory = mapper.Map<ShiftCategory>(request);
+                await context.ShiftCategories.AddAsync(shiftCategory);
+                await context.SaveChangesAsync();
+                return shiftCategory.Id;
             
             case nameof(PackageType):
                 var productPackageType = mapper.Map<PackageType>(request);
@@ -424,6 +438,14 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.SaveChangesAsync();
                 return materialCategory.Id;
             
+            case nameof(ShiftCategory):
+                var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, shiftCategory);
+                shiftCategory.LastUpdatedById = userId;
+                context.ShiftCategories.Update(shiftCategory);
+                await context.SaveChangesAsync();
+                return shiftCategory.Id;
+            
             case nameof(PackageType):
                 var productPackageType = await context.PackageTypes.FirstOrDefaultAsync(p => p.Id == itemId);
                 mapper.Map(request, productPackageType);
@@ -475,6 +497,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Operation) => await context.Operations.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(MaterialType) => await context.MaterialTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(MaterialCategory) => await context.MaterialCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(ShiftCategory) => await context.ShiftCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(PackageType) => await context.PackageTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Currency) => await context.Currencies.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(ShipmentDiscrepancyType) => await context.ShipmentDiscrepancyTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
@@ -586,6 +609,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 materialCategory.DeletedAt = currentTime;
                 materialCategory.LastDeletedById = userId;
                 context.MaterialCategories.Update(materialCategory);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(ShiftCategory):
+                var shiftCategory =  await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (shiftCategory == null)
+                    return Error.Validation("ShiftCategory", "Not found");
+                shiftCategory.DeletedAt = currentTime;
+                shiftCategory.LastDeletedById = userId;
+                context.ShiftCategories.Update(shiftCategory);
                 await context.SaveChangesAsync();
                 return Result.Success();
             
