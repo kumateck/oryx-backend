@@ -17,16 +17,3 @@ public enum WorkState
     CheckIn,
     CheckOut,
 }
-
-public static class WorkStateExtensions
-{
-    public static string ToDisplayString(this WorkState state)
-    {
-        return state switch
-        {
-            WorkState.CheckIn => "Check In",
-            WorkState.CheckOut => "Check Out",
-            _ => state.ToString()
-        };
-    }
-}

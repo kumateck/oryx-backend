@@ -1,0 +1,193 @@
+using System.Globalization;
+using APP.IRepository;
+using DOMAIN.Entities.AttendanceRecords;
+using DOMAIN.Entities.Employees;
+using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
+using SHARED;
+
+namespace APP.Repository;
+
+public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRepository
+{
+    public async Task<Result<Guid>> UploadAttendance(CreateAttendanceRequest request)
+    {
+        if (Path.GetExtension(request.Attendance.FileName) != ".xlsx" && Path.GetExtension(request.Attendance.FileName) != ".xls")
+        {
+            return Error.Validation("Attendance.Invalid", "Invalid file type. Only .xlsx or .xls files are allowed.");
+        }
+
+        using var stream = new MemoryStream();
+        await request.Attendance.CopyToAsync(stream);
+        
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets[0];
+
+        var attendanceRecords = new List<AttendanceRecords>();
+
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            var empId = worksheet.Cells[row, 1].Text;
+            var timestampStr = worksheet.Cells[row, 3].Text;
+            var workState = worksheet.Cells[row, 4].Text;
+            
+
+            if (!DateTime.TryParseExact(timestampStr, "dd/MM/yyyy HH:mm:ss", null, DateTimeStyles.None,
+                    out var timestamp))
+            {
+                return Error.Validation("Attendance.Invalid", "Invalid timestamp format. Please use dd/MM/yyyy HH:mm:ss format.");
+            }
+            
+            if (!Enum.TryParse<WorkState>(workState, true, out var parsedWorkState))
+            {
+                return Error.Validation("Attendance.InvalidWorkState", $"Invalid work state '{workState}' at row {row}. Allowed values: Check In, Check Out.");
+            }
+            
+            var existingAttendance = await context.AttendanceRecords.FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timestamp);
+
+            if (existingAttendance != null)
+            {
+                return Error.Validation("Attendance.Duplicate", $"Duplicate record found at row {row}.");
+            }
+            
+            var employee = await context.Employees.AnyAsync(e => e.StaffNumber == empId);
+
+            if (!employee)
+            {
+                return Error.Validation("Attendance.InvalidEmployee", $"Employee with staff number '{empId}' not found.");
+            }
+            
+            attendanceRecords.Add(new AttendanceRecords
+            {
+                EmployeeId = empId,
+                TimeStamp = timestamp,
+                WorkState = parsedWorkState
+            });
+
+            await context.AttendanceRecords.AddRangeAsync();
+            
+            await context.SaveChangesAsync();
+        }
+
+        if (attendanceRecords.Count != 0)
+        {
+            await context.AttendanceRecords.AddRangeAsync(attendanceRecords);
+            await context.SaveChangesAsync();
+        }
+        
+        return attendanceRecords[0].Id;
+        
+    }
+
+    public async Task<Result<List<AttendanceRecordDepartmentDto>>> DepartmentDailySummaryAttendance(string departmentName, DateTime date)
+    {
+        // Filter attendance records for the given date
+        var dailyRecords = await context.AttendanceRecords
+            .Where(a => a.TimeStamp.Date == date.Date)
+            .ToListAsync();
+
+        if (dailyRecords.Count == 0)
+            return Error.NotFound("Attendance.NotFound", $"No attendance records found for {date:yyyy-MM-dd}");
+
+        // Get employees in the specified department
+        var employeeIds = dailyRecords.Select(r => r.EmployeeId).Distinct().ToList();
+
+        var employees = await context.Employees
+            .Include(e => e.Department)
+            .Include(e => e.ShiftAssignments)
+            .ThenInclude(sa => sa.ShiftCategory)
+            .Where(e => employeeIds.Contains(e.StaffNumber) && e.Department.Name == departmentName)
+            .ToListAsync();
+
+        return (from employee in employees
+            let records = dailyRecords
+                .Where(r => r.EmployeeId == employee.StaffNumber && r.LastDeletedById == null).ToList()
+            where records.Count != 0
+            let clockIn = records.Min(r => r.TimeStamp)
+            let clockOut = records.Max(r => r.TimeStamp)
+            let workHours = (clockOut - clockIn).TotalHours
+            let shift = employee.ShiftAssignments.FirstOrDefault(sa => sa.CreatedAt.Date == date.Date)
+            select new AttendanceRecordDepartmentDto
+            {
+                StaffName = $"{employee.FirstName} {employee.LastName}",
+                EmployeeId = employee.StaffNumber,
+                ShiftName = shift?.ShiftCategory?.Name ?? "N/A",
+                ClockInTime = clockIn.ToString("hh:mm tt"),
+                ClockOutTime = clockOut.ToString("hh:mm tt"),
+                WorkHours = Math.Round(workHours, 2)
+            }).ToList();
+    }
+
+public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport(DateTime date)
+{
+    var dailyRecords = await context.AttendanceRecords
+        .Where(a => a.TimeStamp.Date == date.Date && a.LastDeletedById == null)
+        .ToListAsync();
+
+    if (dailyRecords.Count == 0)
+        return Error.NotFound("Attendance.NotFound", $"No attendance records found for {date:yyyy-MM-dd}");
+
+    var employeeIds = dailyRecords
+        .Select(r => r.EmployeeId)
+        .Distinct()
+        .ToList();
+
+    var employees = await context.Employees
+        .Include(e => e.Department)
+        .Include(e => e.ShiftAssignments.Where(sa => sa.CreatedAt.Date == date.Date))
+            .ThenInclude(sa => sa.ShiftCategory)
+        .Where(e => employeeIds.Contains(e.StaffNumber))
+        .ToListAsync();
+
+    var groupedByDepartment = employees
+        .GroupBy(e => e.Department.Name)
+        .ToList();
+
+    var report = new List<GeneralAttendanceReportDto>();
+
+    foreach (var group in groupedByDepartment)
+    {
+        var summary = new GeneralAttendanceReportDto
+        {
+            DepartmentName = string.IsNullOrWhiteSpace(group.Key) ? "Unassigned" : group.Key
+        };
+
+        foreach (var employee in group)
+        {
+            var shift = employee.ShiftAssignments.FirstOrDefault();
+            var shiftName = shift?.ShiftCategory?.Name?.ToLowerInvariant();
+
+            if (string.IsNullOrWhiteSpace(shiftName))
+                continue;
+
+            var isCasual = employee.Type == EmployeeType.Casual;
+
+            if (isCasual)
+                summary.CasualStaff++;
+            else
+                summary.PermanentStaff++;
+
+            switch (shiftName)
+            {
+                case "morning":
+                    if (isCasual) summary.CasualMorning++;
+                    else summary.PermanentMorning++;
+                    break;
+                case "afternoon":
+                    if (isCasual) summary.CasualAfternoon++;
+                    else summary.PermanentAfternoon++;
+                    break;
+                case "night":
+                    if (isCasual) summary.CasualNight++;
+                    else summary.PermanentNight++;
+                    break;
+            }
+        }
+
+        report.Add(summary);
+    }
+
+    return report;
+    }
+}
