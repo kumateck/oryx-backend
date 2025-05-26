@@ -89,6 +89,7 @@ public static class DependencyInjection
         services.AddScoped<IShiftScheduleRepository, ShiftScheduleRepository>();
         services.AddScoped<ICompanyWorkingDaysRepository, CompanyWorkingDaysRepository>();
         services.AddScoped<IHolidayRepository, HolidayRepository>();
+        services.AddScoped<ICountryRepository, CountryRepository>();
         services.AddScoped<IOvertimeRequestRepository, OvertimeRequestRepository>();
         services.AddScoped<IMaterialStandardTestProcedureRepository, MaterialStandardTestProcedureRepository>();
         services.AddScoped<IProductStandardTestProcedureRepository, ProductStandardTestProcedureRepository>();
