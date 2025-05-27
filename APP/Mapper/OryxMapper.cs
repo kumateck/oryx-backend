@@ -788,7 +788,7 @@ public class OryxMapper : Profile
         #region Staff Requisitions
 
         CreateMap<CreateStaffRequisitionRequest, StaffRequisition>();
-        CreateMap<StaffRequisitionDto, StaffRequisition>();
+        CreateMap<StaffRequisitionDto, StaffRequisition>().ReverseMap();
 
         #endregion
 
