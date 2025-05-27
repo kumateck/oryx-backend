@@ -1561,6 +1561,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var holdingMaterial = new HoldingMaterialTransfer
         {
             ModelType = nameof(StockTransfer),
+            StockTransferId = stockTransferSource.StockTransferId,
             Batches = batches.Select(b => new HoldingMaterialTransferBatch
             {
                 MaterialBatchId = b.BatchId,
@@ -1570,7 +1571,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             }).ToList()
         };
         
-        await context.GHoldingMaterialTransfers.AddAsync(holdingMaterial);
+        await context.HoldingMaterialTransfers.AddAsync(holdingMaterial);
         /*if (toWarehouse.ArrivalLocation == null)
         {
             toWarehouse.ArrivalLocation = new WarehouseArrivalLocation

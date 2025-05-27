@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
@@ -12,6 +13,8 @@ namespace DOMAIN.Entities.Materials;
 public class HoldingMaterialTransfer : BaseEntity
 {
     [StringLength(1000)] public string ModelType { get; set; }
+    public Guid? StockTransferId { get; set; }
+    public StockTransfer StockTransfer { get; set; }
     public HoldingMaterialTransferStatus Status { get; set; }
     public List<HoldingMaterialTransferBatch> Batches { get; set; } = [];
 }

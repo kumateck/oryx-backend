@@ -6,8 +6,6 @@ namespace DOMAIN.Entities.ProductStandardTestProcedures;
 
 public class ProductStandardTestProcedureDto : WithAttachment
 {
-    public Guid Id { get; set; }
-    
     public string StpNumber { get; set; }
     
     public Guid ProductId { get; set; }

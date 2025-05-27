@@ -101,7 +101,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialReturnNoteFullReturn> MaterialReturnNoteFullReturns { get; set; }
     public DbSet<MaterialReturnNotePartialReturn> MaterialReturnNotePartialReturns { get; set; }
     public DbSet<MaterialDepartment> MaterialDepartments { get; set; }
-    public DbSet<HoldingMaterialTransfer> GHoldingMaterialTransfers { get; set; }
+    public DbSet<HoldingMaterialTransfer> HoldingMaterialTransfers { get; set; }
     public DbSet<HoldingMaterialTransferBatch> HoldingMaterialTransferBatches { get; set; }
 
     
