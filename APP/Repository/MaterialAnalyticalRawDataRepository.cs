@@ -48,6 +48,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         var query = context.MaterialAnalyticalRawData
             .AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
+                .ThenInclude(ad => ad.Material)
             .Where(ad => ad.LastDeletedById == null)
             .AsQueryable();
 

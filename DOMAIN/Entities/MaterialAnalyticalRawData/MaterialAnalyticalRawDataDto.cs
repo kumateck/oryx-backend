@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.MaterialStandardTestProcedures;
 
 namespace DOMAIN.Entities.MaterialAnalyticalRawData;
 
@@ -13,5 +14,7 @@ public class MaterialAnalyticalRawDataDto : BaseDto
     public Guid StpId { get; set; }
     
     public Guid FormId { get; set; }
+    
+    public MaterialStandardTestProcedure MaterialStandardTestProcedure { get; set; }
 
 }
