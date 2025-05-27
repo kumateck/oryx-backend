@@ -35,7 +35,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         var existingRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l => l.EmployeeId == request.EmployeeId &&
                                       l.StartDate == request.StartDate &&
-                                      l.EndDate == request.EndDate);
+                                      l.EndDate == request.EndDate && l.LastDeletedById == null);
      
         if (existingRequest is not null)
             return Error.Validation("Request.Exists", "A request already exists for this period.");
@@ -239,6 +239,13 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
     public async Task<Result> SubmitLeaveRecallRequest(CreateLeaveRecallRequest createLeaveRecallRequest)
     {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == createLeaveRecallRequest.EmployeeId);
+
+        if (employee == null)
+        {
+            return Error.NotFound("Employee.NotFound", "Employee not found");
+        }
+        
         // employee leave request must be approved, and the recall date should fall within the leave date range
         var leaveRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l =>
@@ -249,13 +256,6 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
         if (leaveRequest == null)
             return Error.Validation("LeaveRecall.Invalid", "No approved leave found for the specified date.");
-        
-        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == createLeaveRecallRequest.EmployeeId);
-
-        if (employee == null)
-        {
-            return Error.NotFound("Employee.NotFound", "Employee not found");
-        }
 
         var daysRemaining = (leaveRequest.EndDate.Date - createLeaveRecallRequest.RecallDate.Date).Days;
 
