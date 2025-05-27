@@ -48,6 +48,19 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
         var result = await repository.GetStaffRequisition(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Updates a staff requisition by its ID.
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(StaffRequisitionDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateStaffRequisition([FromRoute] Guid id,
+        [FromBody] CreateStaffRequisitionRequest request)
+    {
+        var result = await repository.UpdateStaffRequisition(id, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
     
     /// <summary>
     /// Deletes a staff requisition by its ID.
@@ -55,7 +68,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteStaffRequisition(Guid id)
+    public async Task<IResult> DeleteStaffRequisition([FromRoute] Guid id)
     {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
