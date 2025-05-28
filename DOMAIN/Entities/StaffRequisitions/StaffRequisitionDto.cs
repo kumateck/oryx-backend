@@ -15,6 +15,8 @@ public class StaffRequisitionDto : BaseDto
     
     public string AdditionalRequests { get; set; }
     
+    public string DepartmentName { get; set; }
+    
     public AppointmentType AppointmentType { get; set; }
     
     public StaffRequisitionStatus StaffRequisitionStatus { get; set; }
