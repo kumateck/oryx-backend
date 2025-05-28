@@ -88,6 +88,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, TermsOfPayment>();
         CreateMap<CreateItemRequest, DeliveryMode>();
         CreateMap<CreateItemRequest, Charge>();
+        CreateMap<CreateItemRequest, ShiftCategory>();
         
         #endregion
         
