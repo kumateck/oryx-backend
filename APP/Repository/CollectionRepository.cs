@@ -35,7 +35,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
             nameof(MaterialCategory) => await GetMaterialCategories(materialKind),
-            nameof(ShiftCategory) => mapper.Map<List<CollectionItemDto>>(await context.ShiftCategories.ToListAsync()),
+            nameof(ShiftCategory) => mapper.Map<List<CollectionItemDto>>(await context.ShiftCategories.Where(sc => sc.DeletedAt == null).ToListAsync()),
             nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
             nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
             nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
@@ -123,7 +123,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     break;
                 
                 case nameof(ShiftCategory):
-                    var shiftCategory = await context.ShiftCategories.ToListAsync();
+                    var shiftCategory = await context.ShiftCategories.Where(sc => sc.DeletedAt == null).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(shiftCategory);
                     break;
                 
@@ -439,7 +439,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return materialCategory.Id;
             
             case nameof(ShiftCategory):
-                var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId && p.LastDeletedById == null);
                 mapper.Map(request, shiftCategory);
                 shiftCategory.LastUpdatedById = userId;
                 context.ShiftCategories.Update(shiftCategory);
@@ -613,7 +613,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
             
             case nameof(ShiftCategory):
-                var shiftCategory =  await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var shiftCategory =  await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId && p.LastDeletedById == null);
                 if (shiftCategory == null)
                     return Error.Validation("ShiftCategory", "Not found");
                 shiftCategory.DeletedAt = currentTime;
