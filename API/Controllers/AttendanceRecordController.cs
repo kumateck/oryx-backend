@@ -20,7 +20,7 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     public async Task<IResult> UploadAttendance([FromForm] CreateAttendanceRequest request)
     {
         var result = await repository.UploadAttendance(request);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
     /// <summary>

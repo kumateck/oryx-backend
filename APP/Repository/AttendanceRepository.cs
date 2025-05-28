@@ -11,7 +11,7 @@ namespace APP.Repository;
 
 public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRepository
 {
-    public async Task<Result<Guid>> UploadAttendance(CreateAttendanceRequest request)
+    public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
     {
         if (Path.GetExtension(request.Attendance.FileName) != ".xlsx" && Path.GetExtension(request.Attendance.FileName) != ".xls")
         {
@@ -64,10 +64,6 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 TimeStamp = timestamp,
                 WorkState = parsedWorkState
             });
-
-            await context.AttendanceRecords.AddRangeAsync();
-            
-            await context.SaveChangesAsync();
         }
 
         if (attendanceRecords.Count != 0)
@@ -76,7 +72,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             await context.SaveChangesAsync();
         }
         
-        return attendanceRecords[0].Id;
+        return Result.Success();
         
     }
 
