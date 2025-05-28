@@ -50,6 +50,7 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
@@ -140,6 +141,7 @@ public class OryxMapper : Profile
         CreateMap<ShipmentInvoice, CollectionItemDto>();
         CreateMap<Charge, CollectionItemDto>();
         CreateMap<Question, CollectionItemDto>();
+        CreateMap<ShiftCategory, CollectionItemDto>();
         
         #endregion
 
