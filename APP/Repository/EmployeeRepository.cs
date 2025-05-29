@@ -161,14 +161,14 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
         await userManager.CreateAsync(newUser);
         await context.SaveChangesAsync();
 
-        var role = await context.Roles.FirstOrDefaultAsync(r => r.Name == employeeUserDto.RoleName);
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId);
 
         if (role == null)
         {
             return Error.NotFound("Role.NotFound", "Role not found");
         }
         
-        await userManager.AddToRoleAsync(newUser, employeeUserDto.RoleName);
+        await userManager.AddToRoleAsync(newUser, role.DisplayName);
         await context.SaveChangesAsync();
 
         await transaction.CommitAsync();
