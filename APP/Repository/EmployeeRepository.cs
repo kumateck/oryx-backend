@@ -9,6 +9,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
@@ -153,6 +154,16 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
         existingUser.DeletedAt = null;
         existingUser.LastDeletedById = null;
         context.Users.Update(existingUser);
+
+        var roles = await userManager.GetRolesAsync(existingUser);
+        await userManager.RemoveFromRolesAsync(existingUser, roles);
+
+        var newRole = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId);
+        if (newRole is null) return RoleErrors.NotFound(employeeUserDto.RoleId);
+
+        if (string.IsNullOrEmpty(newRole.Name)) return RoleErrors.InvalidRoleName(newRole.Name);
+
+        await userManager.AddToRoleAsync(existingUser, newRole.Name);
         await context.SaveChangesAsync();
         return Result.Success();
     }
