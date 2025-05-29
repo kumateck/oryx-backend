@@ -142,10 +142,20 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
         return Error.NotFound("Employee.NotFound", "Employee not found");
 
     var existingUser = await context.Users
-        .FirstOrDefaultAsync(u => u.Email == employee.Email && u.LastDeletedById == null);
+        .IgnoreQueryFilters()
+        .FirstOrDefaultAsync(u => u.Email == employee.Email);
 
-    if (existingUser != null)
+    if (existingUser is not null && !existingUser.DeletedAt.HasValue)
         return Error.Conflict("User.Exists", "User already exists");
+
+    if (existingUser?.DeletedAt != null)
+    {
+        existingUser.DeletedAt = null;
+        existingUser.LastDeletedById = null;
+        context.Users.Update(existingUser);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
     await using var transaction = await context.Database.BeginTransactionAsync();
 
@@ -168,7 +178,7 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
             return Error.NotFound("Role.NotFound", "Role not found");
         }
         
-        await userManager.AddToRoleAsync(newUser, role.DisplayName);
+        await userManager.AddToRoleAsync(newUser, role.Name ?? "");
         await context.SaveChangesAsync();
 
         await transaction.CommitAsync();
