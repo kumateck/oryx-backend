@@ -193,7 +193,7 @@ public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
             CreatedAt = DateTime.Now
         });
 
-        var verificationLink = $"{partialUrl}/reset-password?email={newUser.Email}&key={token}";
+        var verificationLink = $"{partialUrl}/reset-password?email={newUser.Email}&key={key}";
 
         var emailBody = emailTemplate
             .Replace("{Name}", $"{employee.FirstName} {employee.LastName}")
