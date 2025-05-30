@@ -246,17 +246,20 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
         
-        // employee leave request must be approved, and the recall date should fall within the leave date range
         var leaveRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l =>
                 l.EmployeeId == createLeaveRecallRequest.EmployeeId &&
-                l.LeaveStatus == LeaveStatus.Approved &&
-                l.StartDate <= createLeaveRecallRequest.RecallDate &&
-                l.EndDate >= createLeaveRecallRequest.RecallDate && l.DeletedAt == null);
-
+                l.LeaveStatus == LeaveStatus.Approved && l.DeletedAt == null);
+        
         if (leaveRequest == null)
             return Error.Validation("LeaveRecall.Invalid", "No approved leave found for the specified date.");
-
+        
+        if (createLeaveRecallRequest.RecallDate < leaveRequest.StartDate || 
+            createLeaveRecallRequest.RecallDate > leaveRequest.EndDate)
+        {
+            return Error.Validation("LeaveRecall.Invalid", "Recall date must fall within the leave period.");
+        }
+        
         var daysRemaining = (leaveRequest.EndDate.Date - createLeaveRecallRequest.RecallDate.Date).Days;
 
         if (daysRemaining > 0)
@@ -277,11 +280,22 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
     public async Task<Result> DeleteLeaveRequest(Guid leaveRequestId, Guid userId)
     {
         var leaveRequest = await context.LeaveRequests
+            .Include(l => l.Employee)
             .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);
         
         if (leaveRequest is null)
         {
             return Error.NotFound("LeaveRequest.NotFound", "Leave request not found");
+        }
+
+        if (leaveRequest.LeaveStatus == LeaveStatus.Approved && leaveRequest.StartDate > DateTime.UtcNow.Date)
+        {
+            var daysRemaining = (leaveRequest.EndDate.Date - leaveRequest.StartDate.Date).Days;
+
+            if (daysRemaining > 0)
+            {
+                leaveRequest.Employee.AnnualLeaveDays += daysRemaining;
+            }
         }
         
         leaveRequest.DeletedAt = DateTime.UtcNow;
