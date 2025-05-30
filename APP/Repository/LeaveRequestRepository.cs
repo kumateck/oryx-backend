@@ -254,8 +254,15 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         if (leaveRequest == null)
             return Error.Validation("LeaveRecall.Invalid", "No approved leave found for the specified date.");
         
-        if (createLeaveRecallRequest.RecallDate < leaveRequest.StartDate || 
-            createLeaveRecallRequest.RecallDate > leaveRequest.EndDate)
+        var today = DateTime.UtcNow.Date;
+
+        if (today < leaveRequest.StartDate.Date || today > leaveRequest.EndDate.Date)
+        {
+            return Error.Validation("LeaveRecall.Invalid", "You can only recall a leave that is currently ongoing.");
+        }
+        
+        if (createLeaveRecallRequest.RecallDate.Date < leaveRequest.StartDate.Date || 
+            createLeaveRecallRequest.RecallDate.Date > leaveRequest.EndDate.Date)
         {
             return Error.Validation("LeaveRecall.Invalid", "Recall date must fall within the leave period.");
         }
