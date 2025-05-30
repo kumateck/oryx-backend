@@ -4,8 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace DOMAIN.Entities.AttendanceRecords;
 
-public class CreateAttendanceRequest : BaseEntity
+public class CreateAttendanceRequest
 {
-    [Required]
-    public IFormFile Attendance { get; set; }
+    [Required] public IFormFile Attendance { get; set; }
 }
