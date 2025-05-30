@@ -8,7 +8,7 @@ public interface IMaterialAnalyticalRawDataRepository
 {
     Task<Result<Guid>> CreateAnalyticalRawData(CreateMaterialAnalyticalRawDataRequest request);
     
-    Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, int materialKind);
     
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id);
     
