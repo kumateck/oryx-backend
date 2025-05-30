@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddScoped<IMaterialAnalyticalRawDataRepository, MaterialAnalyticalRawDataRepository>();
         services.AddScoped<IProductAnalyticalRawDataRepository, ProductAnalyticalRawDataRepository>();
         services.AddScoped<IStaffRequisitionRepository, StaffRequisitionRepository>();
+        services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
