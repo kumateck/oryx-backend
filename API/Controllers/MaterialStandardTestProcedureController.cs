@@ -29,9 +29,9 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>))]
-    public async Task<IResult> GetStandardTestProcedures([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    public async Task<IResult> GetStandardTestProcedures([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery, [FromQuery] int materialKind)
     {
-        var result = await repository.GetMaterialStandardTestProcedures(page, pageSize, searchQuery);
+        var result = await repository.GetMaterialStandardTestProcedures(page, pageSize, searchQuery, materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -35,12 +36,14 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         return materialStandardTestProcedure.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, int materialKind = 0)
     {
         var query = context.MaterialStandardTestProcedures
             .AsQueryable()
             .Include(stp => stp.Material)
+            .ThenInclude(m => m.MaterialCategory)
             .Where(stp => stp.DeletedAt == null)
+            .Where(stp => (int) stp.Material.MaterialCategory.MaterialKind == materialKind)
             .AsSplitQuery();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -48,11 +51,6 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             query = query.WhereSearch(searchQuery, stp => stp.StpNumber);
         }
 
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, stp => stp.Material.MaterialCategory.MaterialKind.ToString());
-        }
-        
         return await PaginationHelper
             .GetPaginatedResultAsync(query,
                 page,

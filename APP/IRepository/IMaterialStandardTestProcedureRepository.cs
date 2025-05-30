@@ -8,7 +8,7 @@ public interface IMaterialStandardTestProcedureRepository
 {
     Task<Result<Guid>> CreateMaterialStandardTestProcedure(CreateMaterialStandardTestProcedureRequest request);
     
-    Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, int materialKind);
     
     Task<Result<MaterialStandardTestProcedureDto>> GetMaterialStandardTestProcedure(Guid id);
     
