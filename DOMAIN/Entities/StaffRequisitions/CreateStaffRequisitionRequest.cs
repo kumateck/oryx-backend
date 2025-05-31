@@ -14,6 +14,8 @@ public class CreateStaffRequisitionRequest
     
     [Required] public Guid DesignationId { get; set; }
     
+    [Required] public Guid DepartmentId { get; set; }
+    
     public string AdditionalRequests { get; set; }
     
     [Required] public AppointmentType AppointmentType { get; set; }

@@ -20,10 +20,13 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
             return Error.NotFound("Invalid.Designation","Invalid Designation");
         }
         
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var department = await context.Departments.FindAsync(request.DepartmentId);
+        if (department == null)
+        {
+            return Error.NotFound("Invalid.Department","Invalid Department");
+        }
         
         var staffRequisition = mapper.Map<StaffRequisition>(request);
-        staffRequisition.DepartmentName = user.Department.Name;
         
         await context.StaffRequisitions.AddAsync(staffRequisition);
         
@@ -106,6 +109,12 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
         {
             return Error.Validation("StaffRequisition.NotEditable",
                 "Cannot modify a staff requisition approved that is approved");
+        }
+        
+        var department = await context.Departments.FindAsync(request.DepartmentId);
+        if (department is null)
+        {
+            return Error.NotFound("Department.Invalid", "Invalid Department");
         }
         
         mapper.Map(request, requisition);
