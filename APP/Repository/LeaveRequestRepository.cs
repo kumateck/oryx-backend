@@ -247,6 +247,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
         
         var leaveRequest = await context.LeaveRequests
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(l =>
                 l.EmployeeId == createLeaveRecallRequest.EmployeeId &&
                 l.LeaveStatus == LeaveStatus.Approved && l.DeletedAt == null);
@@ -275,10 +276,10 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
 
         leaveRequest.LeaveStatus = LeaveStatus.Expired;
-        
-        var leaveRecall = mapper.Map<LeaveRequest>(createLeaveRecallRequest);
+        leaveRequest.RecallDate = createLeaveRecallRequest.RecallDate;
+        leaveRequest.RecallReason = createLeaveRecallRequest.RecallReason;
 
-        context.LeaveRequests.Update(leaveRecall);
+        context.LeaveRequests.Update(leaveRequest);
         await context.SaveChangesAsync();
         
         return Result.Success();
