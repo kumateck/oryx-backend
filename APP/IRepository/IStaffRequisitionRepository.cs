@@ -6,7 +6,7 @@ namespace APP.IRepository;
 
 public interface IStaffRequisitionRepository
 {
-    Task<Result<Guid>> CreateStaffRequisition(CreateStaffRequisitionRequest request);
+    Task<Result<Guid>> CreateStaffRequisition(CreateStaffRequisitionRequest request, Guid userId);
     
     Task<Result<Paginateable<IEnumerable<StaffRequisitionDto>>>> GetStaffRequisitions(int page, int pageSize, string searchQuery,
         DateTime? startDate, DateTime? endDate);

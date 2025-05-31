@@ -24,5 +24,5 @@ public class CreateStaffRequisitionRequest
     
     public string AdditionalRequirements { get; set; }
     
-    
+    public string DepartmentName { get; set; }
 }

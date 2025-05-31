@@ -247,7 +247,6 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
         
         var leaveRequest = await context.LeaveRequests
-            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(l =>
                 l.EmployeeId == createLeaveRecallRequest.EmployeeId &&
                 l.LeaveStatus == LeaveStatus.Approved && l.DeletedAt == null);

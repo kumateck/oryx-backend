@@ -8,10 +8,10 @@ using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
-//TODO: approval configuration for staff requisition
+ 
 public class StaffRequisitionRepository(ApplicationDbContext context, IMapper mapper) : IStaffRequisitionRepository
 {
-    public async Task<Result<Guid>> CreateStaffRequisition(CreateStaffRequisitionRequest request)
+    public async Task<Result<Guid>> CreateStaffRequisition(CreateStaffRequisitionRequest request, Guid userId)
     {
         var designation = await context.Designations.FindAsync(request.DesignationId);
         
@@ -20,7 +20,11 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
             return Error.NotFound("Invalid.Designation","Invalid Designation");
         }
         
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        
         var staffRequisition = mapper.Map<StaffRequisition>(request);
+        staffRequisition.DepartmentName = user.Department.Name;
+        
         await context.StaffRequisitions.AddAsync(staffRequisition);
         
         await context.SaveChangesAsync();
@@ -47,12 +51,18 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, sr => sr.BudgetStatus.ToString());
-        }
+            var hasBudgetMatch = Enum.TryParse<BudgetStatus>(searchQuery, true, out var parsedBudgetStatus);
+            var hasAppointmentMatch = Enum.TryParse<AppointmentType>(searchQuery, true, out var parsedAppointmentType);
 
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, sr => sr.AppointmentType.ToString());
+            if (hasBudgetMatch)
+            {
+                query = query.Where(sr => sr.BudgetStatus == parsedBudgetStatus);
+            }
+
+            if (hasAppointmentMatch)
+            {
+                query = query.Where(sr => sr.AppointmentType == parsedAppointmentType);
+            }
         }
 
         if (startDate.HasValue)

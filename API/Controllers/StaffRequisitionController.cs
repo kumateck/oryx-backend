@@ -21,7 +21,10 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateStaffRequisition([FromBody] CreateStaffRequisitionRequest request)
     {
-        var result = await repository.CreateStaffRequisition(request);
+        var userId = (string) HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.CreateStaffRequisition(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
