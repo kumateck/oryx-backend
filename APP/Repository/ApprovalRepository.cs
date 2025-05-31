@@ -457,7 +457,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
                 if (allRequiredSrApproved)
                 {
                     staffRequisition.Approved = true;
-                    staffRequisition.StaffRequisitionStatus = StaffRequisitionStatus.Pending;
+                    staffRequisition.StaffRequisitionStatus = StaffRequisitionStatus.Approved;
                     context.StaffRequisitions.Update(staffRequisition);
                 }
                 await context.SaveChangesAsync();
@@ -545,14 +545,14 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
                 stageToApproveLr.ApprovalTime = DateTime.UtcNow;
                 stageToApproveLr.Comments = comments;
                 
-                // Optionally mark leave request as fully approved
+                // Optionally mark a leave request as fully approved
                 var allRequiredLrApproved = leaveRequest.Approvals
                     .Where(s => s.Required)
                     .All(s => s.Status == ApprovalStatus.Approved);
                 if (allRequiredLrApproved)
                 {
                     leaveRequest.Approved = true;
-                    leaveRequest.LeaveStatus = LeaveStatus.Pending;
+                    leaveRequest.LeaveStatus = LeaveStatus.Approved;
                     context.LeaveRequests.Update(leaveRequest);
                 }
                 await context.SaveChangesAsync();
