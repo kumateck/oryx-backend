@@ -14,6 +14,8 @@ public class StaffRequisition : BaseEntity, IRequireApproval
 
     public StaffRequisitionStatus StaffRequisitionStatus { get; set; } = StaffRequisitionStatus.Pending;
     
+    public string DepartmentName { get; set; }
+    
     public DateTime RequestUrgency { get; set; }
     
     public string Justification { get; set; }
