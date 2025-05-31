@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
 
 namespace DOMAIN.Entities.StaffRequisitions;
@@ -30,5 +31,9 @@ public class StaffRequisitionDto : BaseDto
     public Guid DesignationId { get; set; }
     
     public DesignationDto Designation { get; set; }
+    
+    public Guid DepartmentId { get; set; }
+    
+    public DepartmentDto Department { get; set; }
     
 }

@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
 
 namespace DOMAIN.Entities.StaffRequisitions;
@@ -14,7 +15,9 @@ public class StaffRequisition : BaseEntity, IRequireApproval
 
     public StaffRequisitionStatus StaffRequisitionStatus { get; set; } = StaffRequisitionStatus.Pending;
     
-    public string DepartmentName { get; set; }
+    public Guid DepartmentId { get; set; }
+    
+    public Department Department { get; set; }
     
     public DateTime RequestUrgency { get; set; }
     
