@@ -39,6 +39,7 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
     {
         var query = context.StaffRequisitions
             .Include(sr => sr.Designation)
+            .Include(sr => sr.Department)
             .Where(sr => sr.LastDeletedById == null)
             .AsQueryable();
 
@@ -89,6 +90,7 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
     {
         var requisition = await context.StaffRequisitions
             .Include(sr => sr.Designation)
+            .Include(sr => sr.Department)
             .FirstOrDefaultAsync(sr => sr.Id == id && sr.LastDeletedById == null);
         
         return requisition is null ? Error.NotFound("StaffRequisition.NotFound", "Staff requisition not found")
