@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.ShiftSchedules;
+using DOMAIN.Entities.ShiftTypes;
 
 namespace DOMAIN.Entities.ShiftAssignments;
 
@@ -15,7 +16,11 @@ public class ShiftAssignmentDto
     
     public Guid ShiftCategoryId { get; set; }
     
+    public Guid ShiftTypeId { get; set; }
+    
     public ShiftCategory ShiftCategory { get; set; }
     
     public ShiftSchedule ShiftSchedules { get; set; }
+    
+    public ShiftType ShiftType { get; set; }
 }
