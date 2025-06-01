@@ -59,7 +59,6 @@ public enum RequestCategory
 
 public enum LeaveStatus
 {
-    New,
     Pending,
     Approved,
     Rejected,
