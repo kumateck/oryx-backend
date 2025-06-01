@@ -132,12 +132,12 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     if (shiftSchedule.StartDate is null)
         return Error.Validation("Shift.Invalid", "Shift Start Day is required.");
     
-    var shiftCategory = await context.ShiftCategories
-        .FirstOrDefaultAsync(sh => sh.Name == request.ShiftName && sh.LastDeletedById == null);
+    var shiftType = await context.ShiftTypes
+        .FirstOrDefaultAsync(st => st.Id == request.ShiftTypeId && st.LastDeletedById == null);
 
-    if (shiftCategory == null)
+    if (shiftType == null)
     {
-        return Error.NotFound("ShiftCategory.NotFound", "Shift category not found.");
+        return Error.NotFound("ShiftType.NotFound", "Shift type not found.");
     }
 
     var shiftDay = shiftSchedule.StartDate.Value;
@@ -188,6 +188,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             EmployeeId = id,
             ShiftScheduleId = shiftSchedule.Id,
             ShiftCategoryId = request.ShiftCategoryId,
+            ShiftTypeId = request.ShiftTypeId,
             ScheduleDate = request.ScheduleDate
         })
         .ToList();
