@@ -62,6 +62,7 @@ public enum LeaveStatus
     Pending,
     Approved,
     Rejected,
-    Expired
+    Expired,
+    Recalled
 }
 
