@@ -274,7 +274,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             employee.AnnualLeaveDays += daysRemaining;
         }
 
-        leaveRequest.LeaveStatus = LeaveStatus.Expired;
+        leaveRequest.LeaveStatus = LeaveStatus.Recalled;
         leaveRequest.RecallDate = createLeaveRecallRequest.RecallDate;
         leaveRequest.RecallReason = createLeaveRecallRequest.RecallReason;
 
