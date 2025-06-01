@@ -172,7 +172,9 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         {
             Id = Guid.NewGuid(),
             EmployeeId = id,
-            ShiftScheduleId = shiftSchedule.Id
+            ShiftScheduleId = shiftSchedule.Id,
+            ShiftCategoryId = request.ShiftCategoryId,
+            ScheduleDate = request.ScheduleDate
         })
         .ToList();
 

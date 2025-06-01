@@ -11,5 +11,11 @@ public class ShiftAssignmentDto
     
     public Guid ShiftScheduleId { get; set; }
     
+    public DateTime ScheduleDate { get; set; }
+    
+    public Guid ShiftCategoryId { get; set; }
+    
+    public ShiftCategory ShiftCategory { get; set; }
+    
     public ShiftSchedule ShiftSchedules { get; set; }
 }
