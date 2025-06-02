@@ -4,6 +4,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.OvertimeRequests;
@@ -181,6 +182,13 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .IgnoreQueryFilters()
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
+           
+           case nameof(Employee):
+               return await context.Employees
+                   .IgnoreQueryFilters()
+                   .Where(m => m.StaffNumber.StartsWith(prefix))
+                   .CountAsync();
+           
            
            case "FinishedGoodsTransfer":
                return 0;

@@ -10,8 +10,7 @@ public class OnboardEmployeeDto
 
 public class EmployeeInviteDto
 {
-    public string Email { get; set; }
-    public EmployeeType EmployeeType { get; set; }
+    [Required, EmailAddress] public string Email { get; set; }
+    [Required] public EmployeeType EmployeeType { get; set; }
     
-    public string StaffNumber { get; set; }
 }
