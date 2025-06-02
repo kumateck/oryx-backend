@@ -4,8 +4,7 @@ namespace DOMAIN.Entities.Employees;
 
 public class OnboardEmployeeDto
 {
-    [Required] 
-    public List<EmployeeInviteDto> EmailList { get; set; }
+    [Required] public List<EmployeeInviteDto> EmailList { get; set; }
 }
 
 public class EmployeeInviteDto

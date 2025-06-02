@@ -22,15 +22,10 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
             return Error.Validation("ShiftType.Exists", "Shift type already exists.");
         }
         
-        if (!request.StartTime.Contains("AM") || request.StartTime.Contains("PM") ||
-            !request.EndTime.Contains("AM") || request.EndTime.Contains("PM"))
+        if (!DateTime.TryParseExact(request.StartTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) ||
+            !DateTime.TryParseExact(request.EndTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
-            return Error.Validation("ShiftType.InvalidTime", "Start time must be in 12 hour format.");
-        }
-        
-        if (ConvertTime(request.StartTime) > ConvertTime(request.EndTime))
-        {
-            return Error.Validation("ShiftType.InvalidTime", "Start time must be before end time.");
+            return Error.Validation("ShiftType.InvalidTime", "Start and End times must be in 12-hour format (e.g., 08:30 AM).");
         }
 
       

@@ -23,4 +23,6 @@ public class ShiftAssignmentDto
     public ShiftSchedule ShiftSchedules { get; set; }
     
     public ShiftType ShiftType { get; set; }
+    
+    public List<EmployeeDto> Employees { get; set; } 
 }

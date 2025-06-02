@@ -105,7 +105,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             Result.Success(mapper.Map<ShiftScheduleDto>(shiftSchedule));
     }
 
-    public async Task<Result<IEnumerable<ShiftScheduleDto>>> GetShiftScheduleRangeView(Guid shiftScheduleId, DateTime startDate, DateTime endDate)
+    public async Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleRangeView(Guid shiftScheduleId, DateTime startDate, DateTime endDate)
     {
         var schedule = await context.ShiftAssignments
             .Where(s => s.ShiftScheduleId == shiftScheduleId 
@@ -116,7 +116,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             .AsQueryable()
             .ToListAsync();
         
-        var mapped = mapper.Map<IEnumerable<ShiftScheduleDto>>(schedule);
+        var mapped = mapper.Map<IEnumerable<ShiftAssignmentDto>>(schedule);
         return Result.Success(mapped);
     }
 
