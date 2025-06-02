@@ -15,7 +15,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Guid>> CreateShiftType(CreateShiftTypeRequest request)
     {
         var existingShiftType = await context.ShiftTypes
-            .FirstOrDefaultAsync(s => s.ShiftName == request.ShiftName && s.DeletedAt == null );
+            .FirstOrDefaultAsync(s => s.ShiftName == request.ShiftName && s.DeletedAt == null);
 
         if (existingShiftType != null)
         {
@@ -27,8 +27,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.Validation("ShiftType.InvalidTime", "Start time must be in 12 hour format.");
         }
-
-
+        
         if (ConvertTime(request.StartTime) > ConvertTime(request.EndTime))
         {
             return Error.Validation("ShiftType.InvalidTime", "Start time must be before end time.");
