@@ -15,23 +15,17 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Guid>> CreateShiftType(CreateShiftTypeRequest request)
     {
         var existingShiftType = await context.ShiftTypes
-            .FirstOrDefaultAsync(s => s.ShiftName == request.ShiftName && s.DeletedAt == null );
+            .FirstOrDefaultAsync(s => s.ShiftName == request.ShiftName && s.DeletedAt == null);
 
         if (existingShiftType != null)
         {
             return Error.Validation("ShiftType.Exists", "Shift type already exists.");
         }
         
-        if (!request.StartTime.Contains("AM") || request.StartTime.Contains("PM") ||
-            !request.EndTime.Contains("AM") || request.EndTime.Contains("PM"))
+        if (!DateTime.TryParseExact(request.StartTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) ||
+            !DateTime.TryParseExact(request.EndTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
-            return Error.Validation("ShiftType.InvalidTime", "Start time must be in 12 hour format.");
-        }
-
-
-        if (ConvertTime(request.StartTime) > ConvertTime(request.EndTime))
-        {
-            return Error.Validation("ShiftType.InvalidTime", "Start time must be before end time.");
+            return Error.Validation("ShiftType.InvalidTime", "Start and End times must be in 12-hour format (e.g., 08:30 AM).");
         }
 
       

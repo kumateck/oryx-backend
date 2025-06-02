@@ -45,8 +45,6 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
     {
         try
         {
-            var generateStaffNumber = employee.EmployeeType == EmployeeType.Casual ? GenerateStaffNumber(): "";
-            employee.StaffNumber = generateStaffNumber;
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {

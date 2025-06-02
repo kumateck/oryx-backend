@@ -21,11 +21,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateShiftSchedule([FromBody] CreateShiftScheduleRequest request)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.CreateShiftSchedule(request, Guid.Parse(userId));
-        
+        var result = await repository.CreateShiftSchedule(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
     }
 
@@ -45,13 +41,9 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     /// Returns a paginated list of shift schedules based on a search criteria.
     /// </summary>
     [HttpGet]
-    
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShiftScheduleDto>>))]
     public async Task<IResult> GetShiftSchedules([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery = null)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
         var result = await repository.GetShiftSchedules(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -64,10 +56,19 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShiftSchedule([FromRoute] Guid id)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
         var result = await repository.GetShiftSchedule(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Returns the schedule for a specified date range
+    /// </summary>
+    [HttpGet("view")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShiftScheduleDto>))]
+    public async Task<IResult> GetShiftScheduleRangeView([FromRoute] Guid scheduleId,[FromQuery] DateTime startDate,
+       [FromQuery] DateTime endDate)
+    {
+        var result = await repository.GetShiftScheduleRangeView(scheduleId, startDate, endDate);
         return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
     }
     
@@ -75,15 +76,20 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     /// Updates the details of an existing shift schedule.
     /// </summary>
     [HttpPut("{id:guid}")]
-    
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ShiftScheduleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateShiftSchedule([FromRoute] Guid id, [FromBody] CreateShiftScheduleRequest request)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.UpdateShiftSchedule(id, request, Guid.Parse(userId));
+        var result = await repository.UpdateShiftSchedule(id, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    [HttpPut("{id:guid}/update-schedule")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateAssignments(Guid id, UpdateShiftAssignment request)
+    {
+        var result = await repository.UpdateShiftAssignment(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

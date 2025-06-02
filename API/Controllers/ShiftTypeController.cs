@@ -20,11 +20,8 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateShiftType([FromBody] CreateShiftTypeRequest shiftType)
     {
-        var userId = (string) HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
         var result = await repository.CreateShiftType(shiftType);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
@@ -35,11 +32,8 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShiftTypes([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
-        var userId = (string) HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
         var result = await repository.GetShiftTypes(page, pageSize, searchQuery);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
 
@@ -51,11 +45,8 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShiftType([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-        
         var result = await repository.GetShiftType(id);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -66,9 +57,6 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateShiftType([FromRoute] Guid id, [FromBody] CreateShiftTypeRequest shiftType)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
         var result = await repository.UpdateShiftType(id, shiftType);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

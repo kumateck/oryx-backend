@@ -803,14 +803,14 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
                     stage => (stage.UserId == leaveRequestApprovingStage.UserId && stage.UserId == userId) ||
                     (stage.RoleId == leaveRequestApprovingStage.RoleId && leaveRequestApprovingStage.RoleId.HasValue && roleIds.Contains(leaveRequestApprovingStage.RoleId.Value)));
 
-                stageToApproveLr.Status = ApprovalStatus.Approved;
+                stageToApproveLr.Status = ApprovalStatus.Rejected;
                 stageToApproveLr.ApprovalTime = DateTime.UtcNow;
                 stageToApproveLr.Comments = comments;
                 await AddApprovalLogs(new CreateApprovalLog
                 {
                     UserId = userId,
                     Comments = comments,
-                    Status = ApprovalStatus.Approved,
+                    Status = ApprovalStatus.Rejected,
                     ModelId = leaveRequest.Id,
                 });
                 await context.SaveChangesAsync();
