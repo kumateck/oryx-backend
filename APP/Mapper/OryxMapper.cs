@@ -721,6 +721,12 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.ShiftTypes, opts => opts.Ignore());
         
         #endregion
+
+        #region Shift Assignments
+
+        CreateMap<ShiftAssignmentDto, ShiftAssignment>().ReverseMap();
+
+        #endregion
         
         #region ActivityLog
 
