@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using DOMAIN.Entities.Notifications;
 using Microsoft.Extensions.Logging;
 
 namespace APP.Services.Email;
@@ -55,6 +56,16 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
         {
             logger.LogError($"Error sending email: {ex.Message}");
             throw new Exception($"Error sending email: {ex.Message}");
+        }
+    }
+    
+    public void ProcessNotificationData(NotificationDto data)
+    {
+        const string subject = "New Notification";
+        foreach (var user in data.Recipients)
+        {
+            var encode = "EmailTemplates";
+            SendMail(user.Email, subject, encode, []);
         }
     }
 }

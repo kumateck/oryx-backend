@@ -1,4 +1,5 @@
 using System.Reflection;
+using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.AttendanceRecords;
@@ -455,6 +456,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Attendance Records
     public DbSet<AttendanceRecords> AttendanceRecords { get; set; }
     
+    #endregion
+
+    #region Alerts
+
+    public DbSet<Alert> Alerts { get; set; }
+
     #endregion
     
     // #region TenantFilter

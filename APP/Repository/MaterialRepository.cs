@@ -1805,7 +1805,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (userId.HasValue)
         {
-            var user = await context.Users.FirstOrDefaultAsync(U => U.Id == userId);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user is null) return UserErrors.NotFound(userId.Value);
 
             query = query.Where(q => q.Batches.Select(b => b.DestinationWarehouse.DepartmentId).Contains(user.DepartmentId.Value));
@@ -1933,17 +1933,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             
             context.MaterialBatches.Update(materialBatch);
 
-            if (toWarehouse.ArrivalLocation == null)
+            toWarehouse.ArrivalLocation ??= new WarehouseArrivalLocation
             {
-                toWarehouse.ArrivalLocation = new WarehouseArrivalLocation
-                {
-                    WarehouseId = toWarehouse.Id,
-                    Name = "Default Arrival Location",
-                    FloorName = "Ground Floor",
-                    Description = "Automatically created arrival location"
-                };
-
-            }
+                WarehouseId = toWarehouse.Id,
+                Name = "Default Arrival Location",
+                FloorName = "Ground Floor",
+                Description = "Automatically created arrival location"
+            };
 
             await context.WarehouseArrivalLocations.AddAsync(toWarehouse.ArrivalLocation);
                 
