@@ -3,10 +3,12 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
 using INFRASTRUCTURE.Context;
+using MassTransit.Initializers;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
@@ -108,15 +110,38 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleRangeView(Guid shiftScheduleId, DateTime startDate, DateTime endDate)
     {
         var schedule = await context.ShiftAssignments
-            .Where(s => s.ShiftScheduleId == shiftScheduleId 
-            && s.ScheduleDate.Date >= startDate.Date && s.ScheduleDate.Date <= endDate.Date)
-            .Include(sa => sa.Employee)
+            .Where(s => s.ShiftScheduleId == shiftScheduleId
+                        && s.ScheduleDate.Date >= startDate.Date && s.ScheduleDate.Date <= endDate.Date)
+            .Include(s => s.Employee)
+                .ThenInclude(e => e.Designation)
+            .Include(s => s.Employee)
+                .ThenInclude(e => e.Department)
+            .Include(sa => sa.ShiftType)
             .Include(sa => sa.ShiftCategory)
             .Include(sa => sa.ShiftSchedules)
             .ToListAsync();
-        
-        var mapped = mapper.Map<IEnumerable<ShiftAssignmentDto>>(schedule);
-        return Result.Success(mapped);
+
+        var grouped = schedule.GroupBy(s => s.ScheduleDate.Date)
+            .Select(g => new ShiftAssignmentDto
+            {
+                ScheduleDate = g.Key,
+                ShiftCategoryId = g.First().ShiftCategoryId,
+                ShiftTypeId = g.First().ShiftTypeId,
+                ShiftCategoryName = g.First().ShiftCategory.Name,
+                ShiftScheduleName = g.First().ShiftSchedules?.ScheduleName,
+                ShiftTypeName = g.First().ShiftType?.ShiftName,
+                Employees = g.Select(s => new MinimalEmployeeInfoDto
+                {
+                    FirstName = s.Employee.FirstName,
+                    LastName = s.Employee.LastName,
+                    StaffNumber = s.Employee.StaffNumber,
+                    Type = s.Employee.Type.ToString(),
+                    Department = s.Employee.Department?.Name,
+                    Designation = s.Employee.Designation?.Name
+                }).ToList()
+            });
+
+        return Result.Success(grouped);
     }
 
     public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)
