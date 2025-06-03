@@ -1,11 +1,9 @@
 using DOMAIN.Entities.Employees;
-using DOMAIN.Entities.ShiftSchedules;
 
 namespace DOMAIN.Entities.ShiftAssignments;
 
 public class ShiftAssignmentDto 
 {
-    
     public List<MinimalEmployeeInfoDto> Employees { get; set; }
     
     public DateTime ScheduleDate { get; set; }
@@ -19,6 +17,4 @@ public class ShiftAssignmentDto
     public string ShiftCategoryName { get; set; }
     
     public string ShiftScheduleName { get; set; }
-    
-    
 }
