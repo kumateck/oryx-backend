@@ -4,7 +4,6 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Analytical_Test_Requests;
 using INFRASTRUCTURE.Context;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 

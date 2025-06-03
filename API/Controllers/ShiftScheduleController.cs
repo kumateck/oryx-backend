@@ -77,6 +77,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ShiftScheduleDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateShiftSchedule([FromRoute] Guid id, [FromBody] CreateShiftScheduleRequest request)
     {
@@ -86,8 +87,9 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
 
     [HttpPut("{id:guid}/update-schedule")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateAssignments(Guid id, UpdateShiftAssignment request)
+    public async Task<IResult> UpdateAssignments([FromRoute] Guid id, [FromBody] UpdateShiftAssignment request)
     {
         var result = await repository.UpdateShiftAssignment(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();

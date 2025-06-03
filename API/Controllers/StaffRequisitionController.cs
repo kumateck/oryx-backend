@@ -57,6 +57,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(StaffRequisitionDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateStaffRequisition([FromRoute] Guid id,
         [FromBody] CreateStaffRequisitionRequest request)

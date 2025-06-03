@@ -353,6 +353,8 @@ private static TimeOnly ConvertTime(string time)
         {
             return Error.NotFound("ShiftSchedule.NotFound", "Shift schedule is not found");
         }
+        shiftSchedule.LastDeletedById = userId;
+        shiftSchedule.DeletedAt = DateTime.UtcNow;
         
         context.ShiftSchedules.Update(shiftSchedule);
         await context.SaveChangesAsync();
