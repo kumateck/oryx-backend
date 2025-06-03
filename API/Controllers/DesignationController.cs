@@ -31,7 +31,7 @@ public class DesignationController(IDesignationRepository repository): Controlle
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DesignationDto>>))]
-    public async Task<IResult> GetDesignations([FromQuery] int page, [FromQuery] int pageSize,
+    public async Task<IResult> GetDesignations([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
         var userId = (string)HttpContext.Items["Sub"];

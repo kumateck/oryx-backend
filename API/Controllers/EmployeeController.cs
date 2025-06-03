@@ -54,8 +54,8 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EmployeeDto>>))]
-    public async Task<IResult> GetEmployees([FromQuery] int page, [FromQuery] int pageSize,
-        [FromQuery] string searchQuery, [FromQuery] string designation, [FromQuery] string department)
+    public async Task<IResult> GetEmployees([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null, [FromQuery] string designation = null, [FromQuery] string department = null)
     {
         var result = await repository.GetEmployees(page, pageSize, searchQuery, designation, department);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

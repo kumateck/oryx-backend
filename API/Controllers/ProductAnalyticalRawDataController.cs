@@ -28,7 +28,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>))]
-    public async Task<IResult> GetAnalyticalRawData([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    public async Task<IResult> GetAnalyticalRawData([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetAnalyticalRawData(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

@@ -30,7 +30,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<OvertimeRequestDto>>))]
-    public async Task<IResult> GetOvertimeRequests([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    public async Task<IResult> GetOvertimeRequests([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetOvertimeRequests(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

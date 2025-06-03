@@ -33,8 +33,8 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StaffRequisitionDto>>))]
-    public async Task<IResult> GetStaffRequisitions([FromQuery] int page, [FromQuery] int pageSize,
-        [FromQuery] string searchQuery, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    public async Task<IResult> GetStaffRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
     {
         var result = await repository.GetStaffRequisitions(page, pageSize, searchQuery, startDate, endDate);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
