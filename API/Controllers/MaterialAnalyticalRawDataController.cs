@@ -30,8 +30,8 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>))]
-    public async Task<IResult> GetAnalyticalRawData([FromQuery] int page, [FromQuery] int pageSize,
-        [FromQuery] string searchQuery, [FromQuery] int materialKind)
+    public async Task<IResult> GetAnalyticalRawData([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null, [FromQuery] int materialKind = 0)
     {
         var result = await repository.GetAnalyticalRawData(page, pageSize, searchQuery, materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

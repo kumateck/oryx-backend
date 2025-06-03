@@ -631,7 +631,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Designation, opt => opt.Ignore());
 
         CreateMap<Employee, EmployeeDto>()
-            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>()).ReverseMap();
 
         CreateMap<EmployeeUserDto, Employee>();
         
@@ -724,7 +724,14 @@ public class OryxMapper : Profile
 
         #region Shift Assignments
 
-        CreateMap<ShiftAssignmentDto, ShiftAssignment>().ReverseMap();
+        CreateMap<ShiftAssignment, ShiftAssignmentDto>()
+            .ForMember(dest => dest.Employee, opt => opt.MapFrom(src => src.Employee))
+            .ForMember(dest => dest.ShiftSchedules, opt => opt.MapFrom(src => src.ShiftSchedules))
+            .ForMember(dest => dest.ShiftCategory, opt => opt.MapFrom(src => src.ShiftCategory))
+            .ForMember(dest => dest.ShiftType, opt => opt.MapFrom(src => src.ShiftType));
+
+        CreateMap<ShiftAssignmentDto, ShiftAssignment>();
+        CreateMap<ShiftCategory, ShiftCategoryDto>().ReverseMap();
 
         #endregion
         

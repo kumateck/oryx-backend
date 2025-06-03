@@ -42,7 +42,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShiftScheduleDto>>))]
-    public async Task<IResult> GetShiftSchedules([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetShiftSchedules([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetShiftSchedules(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -63,7 +63,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     /// <summary>
     /// Returns the schedule for a specified date range
     /// </summary>
-    [HttpGet("view")]
+    [HttpGet("{scheduleId:guid}/view")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShiftScheduleDto>))]
     public async Task<IResult> GetShiftScheduleRangeView([FromRoute] Guid scheduleId,[FromQuery] DateTime startDate,
        [FromQuery] DateTime endDate)

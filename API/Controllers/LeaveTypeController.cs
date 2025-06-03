@@ -34,7 +34,8 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveTypeDto>>))]
-    public async Task<IResult> GetLeaveTypes([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    public async Task<IResult> GetLeaveTypes([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();

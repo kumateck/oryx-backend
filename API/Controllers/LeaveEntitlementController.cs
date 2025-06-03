@@ -33,7 +33,7 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveEntitlementDto>>))]
-    public async Task<IResult> GetLeaveEntitlements(int page, int pageSize, string searchQuery)
+    public async Task<IResult> GetLeaveEntitlements(int page = 1, int pageSize = 10, string searchQuery = null)
     {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
