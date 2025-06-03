@@ -1,17 +1,12 @@
-using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.ShiftSchedules;
-using DOMAIN.Entities.ShiftTypes;
 
 namespace DOMAIN.Entities.ShiftAssignments;
 
-public class ShiftAssignmentDto : BaseDto
+public class ShiftAssignmentDto 
 {
-    public Guid EmployeeId { get; set; }
     
-    public Employee Employee { get; set; }
-    
-    public Guid ShiftScheduleId { get; set; }
+    public List<MinimalEmployeeInfoDto> Employees { get; set; }
     
     public DateTime ScheduleDate { get; set; }
     
@@ -19,15 +14,11 @@ public class ShiftAssignmentDto : BaseDto
     
     public Guid ShiftTypeId { get; set; }
     
-    public ShiftCategory ShiftCategory { get; set; }
+    public string ShiftTypeName { get; set; }
     
-    public ShiftSchedule ShiftSchedules { get; set; }
+    public string ShiftCategoryName { get; set; }
     
-    public ShiftType ShiftType { get; set; }
-
-}
-
-public class ShiftCategoryDto : BaseDto
-{
-    public string Name { get; set; }
+    public string ShiftScheduleName { get; set; }
+    
+    
 }
