@@ -98,16 +98,6 @@ public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
 
     return Result.Success("Bulk onboarding completed.");
 }
-
-    private static string GenerateStaffNumber()
-    {
-        const string prefix = "EMP";
-        var year = DateTime.UtcNow.Year.ToString();
-        var random = new Random();
-        var uniqueNumber = random.Next(1000, 9999); 
-
-        return $"{prefix}-{year}-{uniqueNumber}";
-    }
     public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)
     {
         var existingEmployee = await context.Employees.FirstOrDefaultAsync(e => e.Email == request.Email);

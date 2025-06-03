@@ -1,6 +1,7 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
 using DOMAIN.Entities.ActivityLogs;
+using DOMAIN.Entities.Analytical_Test_Requests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
@@ -631,6 +632,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Designation, opt => opt.Ignore());
 
         CreateMap<Employee, EmployeeDto>()
+            .ForMember(dest => dest.Avatar, opt => opt.MapFrom<EmployeeAvatarResolver>())
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>()).ReverseMap();
 
         CreateMap<EmployeeUserDto, Employee>();
@@ -802,6 +804,12 @@ public class OryxMapper : Profile
 
         CreateMap<CreateStaffRequisitionRequest, StaffRequisition>();
         CreateMap<StaffRequisitionDto, StaffRequisition>().ReverseMap();
+
+        #endregion
+
+        #region Analytical Test Requests
+
+        CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>();
 
         #endregion
 
