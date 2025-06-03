@@ -63,7 +63,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     /// <summary>
     /// Returns the schedule for a specified date range
     /// </summary>
-    [HttpGet("view")]
+    [HttpGet("{scheduleId:guid}/view")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShiftScheduleDto>))]
     public async Task<IResult> GetShiftScheduleRangeView([FromRoute] Guid scheduleId,[FromQuery] DateTime startDate,
        [FromQuery] DateTime endDate)

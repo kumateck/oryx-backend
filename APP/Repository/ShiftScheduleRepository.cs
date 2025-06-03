@@ -109,11 +109,10 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     {
         var schedule = await context.ShiftAssignments
             .Where(s => s.ShiftScheduleId == shiftScheduleId 
-            && s.ScheduleDate >= startDate && s.ScheduleDate <= endDate)
+            && s.ScheduleDate.Date >= startDate.Date && s.ScheduleDate.Date <= endDate.Date)
             .Include(sa => sa.Employee)
             .Include(sa => sa.ShiftCategory)
             .Include(sa => sa.ShiftSchedules)
-            .AsQueryable()
             .ToListAsync();
         
         var mapped = mapper.Map<IEnumerable<ShiftAssignmentDto>>(schedule);
