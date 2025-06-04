@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.AnalyticalTestRequests;
 
 namespace DOMAIN.Entities.Analytical_Test_Requests;
 

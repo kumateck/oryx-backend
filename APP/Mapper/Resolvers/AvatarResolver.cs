@@ -1,5 +1,6 @@
 using AutoMapper;
 using DOMAIN.Entities.Analytical_Test_Requests;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Http;
