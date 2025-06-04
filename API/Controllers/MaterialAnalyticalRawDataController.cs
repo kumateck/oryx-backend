@@ -54,6 +54,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(MaterialAnalyticalRawDataDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateAnalyticalRawData([FromRoute] Guid id, [FromBody] CreateMaterialAnalyticalRawDataRequest request)
     {

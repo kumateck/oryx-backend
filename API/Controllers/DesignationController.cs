@@ -75,6 +75,7 @@ public class DesignationController(IDesignationRepository repository): Controlle
     [HttpPut("{id:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(DesignationDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateDesignation([FromRoute] Guid id, [FromBody] CreateDesignationRequest request)
     {

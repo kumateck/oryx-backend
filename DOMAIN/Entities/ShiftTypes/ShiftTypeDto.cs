@@ -14,3 +14,10 @@ public class ShiftTypeDto: BaseDto
     
     public List<DayOfWeek> ApplicableDays { get; set; }
 }
+
+public class MinimalShiftTypeDto
+{
+    public Guid ShiftTypeId { get; set; }
+    
+    public string ShiftName { get; set; }
+}

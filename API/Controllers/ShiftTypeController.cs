@@ -54,6 +54,7 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
     /// </summary>
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ShiftTypeDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateShiftType([FromRoute] Guid id, [FromBody] CreateShiftTypeRequest shiftType)
     {

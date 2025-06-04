@@ -63,6 +63,7 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveEntitlementDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateLeaveEntitlement([FromRoute] Guid id, [FromBody] LeaveEntitlementDto request)
     {
         var userId = (string) HttpContext.Items["Sub"];

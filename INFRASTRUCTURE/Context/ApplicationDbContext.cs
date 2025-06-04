@@ -1,5 +1,6 @@
 using System.Reflection;
 using DOMAIN.Entities.Alerts;
+using DOMAIN.Entities.Analytical_Test_Requests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.AttendanceRecords;
@@ -370,7 +371,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
     
-
     #region Employement History
 
     public DbSet<EmploymentHistory> EmploymentHistories { get; set; }
@@ -416,7 +416,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
-
     #region Company Working Days
 
     public DbSet<CompanyWorkingDays> CompanyWorkingDays { get; set; }
@@ -461,6 +460,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Alerts
 
     public DbSet<Alert> Alerts { get; set; }
+
+    #endregion
+
+    #region Analytical Test Requests
+
+    public DbSet<AnalyticalTestRequest> AnalyticalTestRequests { get; set; }
 
     #endregion
     

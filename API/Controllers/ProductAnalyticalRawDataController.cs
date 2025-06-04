@@ -47,10 +47,11 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     }
     
     /// <summary>
-    /// Updates a product analytical raw data by its ID.
+    /// Updates product analytical raw data by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ProductAnalyticalRawDataDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateAnalyticalRawData([FromRoute] Guid id, [FromBody] CreateProductAnalyticalRawDataRequest request)
     {
@@ -59,7 +60,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     }
 
     /// <summary>
-    /// Deletes a product analytical raw data by its ID.
+    /// Deletes product analytical raw data by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
