@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.AnalyticalTestRequests;
 
-namespace DOMAIN.Entities.Analytical_Test_Requests;
+namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class CreateAnalyticalTestRequest
 {
@@ -25,7 +24,7 @@ public class CreateAnalyticalTestRequest
     
     [Required]  public string QaManagerSignature { get; set; }
     
-    [Required] public Stage Stage { get; set; }
+    [Required] public TestStage Stage { get; set; }
     
     [Required] public Category Category { get; set; }
     

@@ -22,13 +22,13 @@ public class AnalyticalTestRequest : BaseEntity
     public string QcManagerSignature { get; set; }
     public string QaManagerSignature { get; set; }
     
-    public Stage Stage { get; set; }
+    public TestStage Stage { get; set; }
     
     public Category Category { get; set; }
     
     public Status Status { get; set; }
 } 
-public enum Stage
+public enum TestStage
 {
      Intermediate,
      Bulk,

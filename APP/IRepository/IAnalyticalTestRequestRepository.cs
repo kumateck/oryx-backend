@@ -1,5 +1,5 @@
 using APP.Utils;
-using DOMAIN.Entities.Analytical_Test_Requests;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using SHARED;
 
 namespace APP.IRepository;

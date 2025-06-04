@@ -13,7 +13,6 @@ public class ShiftScheduleDto: BaseDto
    public DayOfWeek? StartDate { get; set; }
    
    public ScheduleFrequency Frequency { get; set; }
-   
    public List<ShiftTypeDto> ShiftType { get; set; }
    
    public Guid DepartmentId { get; set; }

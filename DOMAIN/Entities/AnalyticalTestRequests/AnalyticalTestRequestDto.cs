@@ -1,7 +1,6 @@
-using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
 
-namespace DOMAIN.Entities.Analytical_Test_Requests;
+namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class AnalyticalTestRequestDto : BaseDto
 {
@@ -25,7 +24,7 @@ public class AnalyticalTestRequestDto : BaseDto
     
     public string QaManagerSignature { get; set; }
     
-    public Stage Stage { get; set; }
+    public TestStage Stage { get; set; }
     
     public Category Category { get; set; }
     

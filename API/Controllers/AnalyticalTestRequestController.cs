@@ -1,10 +1,9 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
-using DOMAIN.Entities.Analytical_Test_Requests;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SHARED;
 
 namespace API.Controllers;
 
