@@ -1,6 +1,7 @@
 using System.Reflection;
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.Analytical_Test_Requests;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.AttendanceRecords;
@@ -463,7 +464,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
-    #region Analytical Test Requests
+    #region AnalyticalTestRequests
 
     public DbSet<AnalyticalTestRequest> AnalyticalTestRequests { get; set; }
 
