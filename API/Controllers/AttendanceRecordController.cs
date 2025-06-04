@@ -26,6 +26,7 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// Get a daily attendance record summary based on a department and the date.
     /// </summary>
     [HttpGet("daily-summary")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<AttendanceRecordDepartmentDto>))]
     public async Task<IResult> DepartmentDailySummaryAttendance([FromQuery] string departmentName, [FromQuery] DateTime date)
     {
         var result = await repository.DepartmentDailySummaryAttendance(departmentName, date);
@@ -36,6 +37,7 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// Get a daily attendance record summary based on and the date.
     /// </summary>
     [HttpGet("general-summary")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GeneralAttendanceReportDto))]
     public async Task<IResult> GeneralDailySummary([FromQuery] DateTime date)
     {
         var result = await repository.GeneralAttendanceReport(date);

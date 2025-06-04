@@ -2,6 +2,7 @@ using APP.Mapper.Resolvers;
 using AutoMapper;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Analytical_Test_Requests;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
@@ -807,7 +808,7 @@ public class OryxMapper : Profile
 
         #endregion
 
-        #region Analytical Test Requests
+        #region AnalyticalTestRequests
 
         CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>();
 
