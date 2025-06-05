@@ -3,8 +3,10 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Alerts;
+using DOMAIN.Entities.Notifications;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using AlertType = DOMAIN.Entities.Alerts.AlertType;
 
 namespace APP.Repository;
 
@@ -67,4 +69,10 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper) : IAl
             await context.SaveChangesAsync();
         }
     }
+
+    public async Task SendAlert(NotificationDto notification, NotificationType type, Guid userId)
+    {
+        
+    }
+    
 }

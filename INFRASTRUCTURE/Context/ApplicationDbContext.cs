@@ -265,6 +265,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Department
 
     public DbSet<Department> Departments { get; set; }
+    public DbSet<RoleDepartment> RoleDepartments { get; set; }
 
     #endregion
 

@@ -12,6 +12,7 @@ public class Question : BaseEntity
     public List<QuestionOption> Options { get; set; } = [];
     public bool IsMultiSelect { get; set; }
     [StringLength(100)] public string Reference { get; set; }
+    [StringLength(10000)] public string Description { get; set; }
 }
 
 public class QuestionOption : BaseEntity
@@ -28,6 +29,7 @@ public class QuestionDto : BaseDto
     public QuestionValidationType Validation { get; set; }
     public bool IsMultiSelect { get; set; }
     public string Reference { get; set; }
+    public string Description { get; set; }
     public List<QuestionOptionDto> Options { get; set; } = [];
 }
 

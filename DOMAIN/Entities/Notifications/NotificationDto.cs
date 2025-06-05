@@ -7,3 +7,7 @@ public class NotificationDto
     public string Message { get; set; }
     public List<UserDto> Recipients { get; set; } = [];
 }
+
+public enum NotificationType
+{
+}

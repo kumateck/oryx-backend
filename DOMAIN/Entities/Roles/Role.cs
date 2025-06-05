@@ -16,3 +16,12 @@ public class Role : IdentityRole<Guid>, IBaseEntity
     public Guid? LastDeletedById { get; set; }
     public DepartmentType Type { get; set; }
 }
+
+public class RoleDepartment
+{
+    public Guid Id { get; set; }
+    public Guid RoleId { get; set; }
+    public Role Role { get; set; }
+    public Guid DepartmentId { get; set; }
+    public Department Department { get; set; }
+}
