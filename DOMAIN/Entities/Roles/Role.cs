@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Departments;
 using Microsoft.AspNetCore.Identity;
 
 namespace DOMAIN.Entities.Roles;
@@ -13,4 +14,5 @@ public class Role : IdentityRole<Guid>, IBaseEntity
     public Guid? LastUpdatedById { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid? LastDeletedById { get; set; }
+    public DepartmentType Type { get; set; }
 }
