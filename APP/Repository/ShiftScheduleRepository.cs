@@ -146,6 +146,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
                 Employees = g.Select(s => new MinimalEmployeeInfoDto
                 {
+                    EmployeeId = s.Employee.Id,
                     FirstName = s.Employee.FirstName,
                     LastName = s.Employee.LastName,
                     StaffNumber = s.Employee.StaffNumber,
