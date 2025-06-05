@@ -126,35 +126,34 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             .Select(g => new ShiftAssignmentDto
             {
                 ScheduleDate = g.Key,
-                Shifts = g.GroupBy(s => new { s.ShiftTypeId, s.ShiftCategoryId, s.ShiftScheduleId }) // group shifts of the same kind
-                    .Select(subGroup => new ShiftDetailDto
-                    {
-                        ShiftCategory = new ShiftCategoryDto
-                        {
-                            Id = subGroup.First().ShiftCategoryId,
-                            Name = subGroup.First().ShiftCategory?.Name
-                        },
-                        ShiftType = new MinimalShiftTypeDto
-                        {
-                            ShiftTypeId = subGroup.First().ShiftTypeId,
-                            ShiftName = subGroup.First().ShiftType?.ShiftName
-                        },
-                        ShiftSchedule = new MinimalShiftScheduleDto
-                        {
-                            ScheduleId = subGroup.First().ShiftScheduleId,
-                            ScheduleName = subGroup.First().ShiftSchedules?.ScheduleName
-                        },
-                        Employees = subGroup.Select(s => new MinimalEmployeeInfoDto
-                        {
-                            EmployeeId = s.Employee.Id,
-                            FirstName = s.Employee.FirstName,
-                            LastName = s.Employee.LastName,
-                            StaffNumber = s.Employee.StaffNumber,
-                            Type = s.Employee.Type.ToString(),
-                            Department = s.Employee.Department?.Name,
-                            Designation = s.Employee.Designation?.Name
-                        }).ToList()
-                    }).ToList()
+                ShiftCategory = g.Select(s => new ShiftCategoryDto
+                {
+                    Id = s.ShiftCategoryId,
+                    Name = s.ShiftCategory?.Name
+                }).FirstOrDefault(),
+
+                ShiftType = g.Select(s => new MinimalShiftTypeDto
+                {
+                    ShiftTypeId = s.ShiftTypeId,
+                    ShiftName = s.ShiftType?.ShiftName
+                }).FirstOrDefault(),
+
+                ShiftSchedule = g.Select(s => new MinimalShiftScheduleDto
+                {
+                    ScheduleId = s.ShiftScheduleId,
+                    ScheduleName = s.ShiftSchedules?.ScheduleName
+                }).FirstOrDefault(),
+
+                Employees = g.Select(s => new MinimalEmployeeInfoDto
+                {
+                    EmployeeId = s.Employee.Id,
+                    FirstName = s.Employee.FirstName,
+                    LastName = s.Employee.LastName,
+                    StaffNumber = s.Employee.StaffNumber,
+                    Type = s.Employee.Type.ToString(),
+                    Department = s.Employee.Department?.Name,
+                    Designation = s.Employee.Designation?.Name
+                }).Distinct().ToList()
             }).ToList();
 
         return Result.Success<IEnumerable<ShiftAssignmentDto>>(grouped);
