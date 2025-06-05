@@ -25,13 +25,15 @@ public class DepartmentSeeder : ISeeder
             {
                 Name = "Production Manager",
                 NormalizedName = "PRODUCTION_MANAGER",
-                DisplayName = "Production Manager"
+                DisplayName = "Production Manager",
+                Type = DepartmentType.Production
             },
             new()
             {
                 Name = "Warehouse Manager",
                 NormalizedName = "WAREHOUSE_MANAGER",
-                DisplayName = "Warehouse Manager"
+                DisplayName = "Warehouse Manager",
+                Type = DepartmentType.Production
             }
         };
 
@@ -47,16 +49,36 @@ public class DepartmentSeeder : ISeeder
         {
             new()
             {
-                Name = "Production Department",
-                Description = "Handles production operations",
+                Name = "SYRUP Department",
+                Description = "Handles production operations for syrup products",
                 Type = DepartmentType.Production,
                 CreatedAt = DateTime.UtcNow,
                 Warehouses = new List<Warehouse>()
             },
             new()
             {
-                
-            }
+                Name = "OINTMENT Department",
+                Description = "Handles production operations for ointment products",
+                Type = DepartmentType.Production,
+                CreatedAt = DateTime.UtcNow,
+                Warehouses = new List<Warehouse>()
+            },
+            new()
+            {
+                Name = "TABLET Department",
+                Description = "Handles production operations tablet operations",
+                Type = DepartmentType.Production,
+                CreatedAt = DateTime.UtcNow,
+                Warehouses = new List<Warehouse>()
+            },
+            new()
+            {
+                Name = "BETA Department",
+                Description = "Handles production operations beta operations",
+                Type = DepartmentType.Production,
+                CreatedAt = DateTime.UtcNow,
+                Warehouses = new List<Warehouse>()
+            },
             // Add more departments here if needed
         };
 
