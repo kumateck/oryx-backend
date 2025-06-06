@@ -1,3 +1,4 @@
+using APP.Utils;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Warehouses;
@@ -23,16 +24,16 @@ public class DepartmentSeeder : ISeeder
         {
             new()
             {
-                Name = "Production Manager",
-                NormalizedName = "PRODUCTION_MANAGER",
-                DisplayName = "Production Manager",
+                Name = RoleUtils.ProductionManger,
+                NormalizedName = RoleUtils.ProductionManger.Normalize(),
+                DisplayName = RoleUtils.ProductionManger,
                 Type = DepartmentType.Production
             },
             new()
             {
-                Name = "Warehouse Manager",
-                NormalizedName = "WAREHOUSE_MANAGER",
-                DisplayName = "Warehouse Manager",
+                Name = RoleUtils.WarehouseManger,
+                NormalizedName = RoleUtils.WarehouseManger.Normalize(),
+                DisplayName = RoleUtils.WarehouseManger,
                 Type = DepartmentType.Production
             }
         };

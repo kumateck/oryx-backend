@@ -1,19 +1,25 @@
 using System.Collections.Concurrent;
 using APP.IRepository;
 using DOMAIN.Entities.ActivityLogs;
+using DOMAIN.Entities.Notifications;
 using Microsoft.Extensions.Logging;
 using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 
 namespace APP.Services.Background;
-public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue,
-    ConcurrentQueue<PrevStateCaptureRequest> prevStateQueue, ILogger<BackgroundWorkerService> logger, IActivityLogRepository repo, ICollectionRepository collectionRepo)
+public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue, ConcurrentQueue<(string message, NotificationType type, Guid? departmentId)> notificationQueue,
+    ConcurrentQueue<PrevStateCaptureRequest> prevStateQueue, ILogger<BackgroundWorkerService> logger, IActivityLogRepository repo, ICollectionRepository collectionRepo, IAlertRepository alertRepo)
     : IBackgroundWorkerService
 {
     // Method to enqueue logs for background processing
     public void EnqueueLog(CreateActivityLog log) 
     { 
         logQueue.Enqueue(log);
+    }
+
+    public void EnqueueNotification(string message, NotificationType type, Guid? departmentId = null)
+    {
+        notificationQueue.Enqueue((message, type, departmentId));
     }
     
     public void EnqueuePrevStateCapture(PrevStateCaptureRequest prevStateCapture)
@@ -48,6 +54,18 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error capturing previous state.");
+                }
+            }
+
+            if (notificationQueue.TryDequeue(out var notification))
+            {
+                try
+                {
+                    await alertRepo.ProcessAlert(notification.message, notification.type);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error capturing notification.");
                 }
             }
 

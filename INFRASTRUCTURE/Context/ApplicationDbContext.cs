@@ -461,6 +461,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Alerts
 
     public DbSet<Alert> Alerts { get; set; }
+    public DbSet<AlertRole> AlertRoles { get; set; }
+    public DbSet<AlertUser> AlertUsers { get; set; }
+
 
     #endregion
 
