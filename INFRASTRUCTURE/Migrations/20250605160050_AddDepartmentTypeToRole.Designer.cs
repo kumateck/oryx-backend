@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250605160050_AddDepartmentTypeToRole")]
+    partial class AddDepartmentTypeToRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,8 +31,8 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.PrimitiveCollection<int[]>("AlertTypes")
-                        .HasColumnType("integer[]");
+                    b.Property<int>("AlertType")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -40,9 +43,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsConfigurable")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("IsDisabled")
                         .HasColumnType("boolean");
 
@@ -52,9 +52,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("NotificationType")
+                    b.Property<string>("ModelType")
                         .HasMaxLength(255)
-                        .HasColumnType("integer");
+                        .HasColumnType("character varying(255)");
 
                     b.Property<TimeSpan>("TimeFrame")
                         .HasColumnType("interval");
@@ -75,48 +75,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.ToTable("Alerts");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Alerts.AlertRole", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("AlertId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AlertId");
-
-                    b.HasIndex("RoleId");
-
-                    b.ToTable("AlertRoles");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Alerts.AlertUser", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("AlertId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AlertId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("AlertUsers");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.AnalyticalTestRequest", b =>
@@ -1872,10 +1830,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(10000)
-                        .HasColumnType("character varying(10000)");
 
                     b.Property<bool>("IsMultiSelect")
                         .HasColumnType("boolean");
@@ -6450,27 +6404,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("roles", (string)null);
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Roles.RoleDepartment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DepartmentId");
-
-                    b.HasIndex("RoleId");
-
-                    b.ToTable("RoleDepartments");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Routes.Route", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8325,36 +8258,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Alerts.AlertRole", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Alerts.Alert", null)
-                        .WithMany("Roles")
-                        .HasForeignKey("AlertId");
-
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Role");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Alerts.AlertUser", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Alerts.Alert", null)
-                        .WithMany("Users")
-                        .HasForeignKey("AlertId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.AnalyticalTestRequest", b =>
@@ -12415,25 +12318,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("UoM");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Roles.RoleDepartment", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Departments.Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Department");
-
-                    b.Navigation("Role");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Routes.Route", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -13548,13 +13432,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("ShiftTypesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Alerts.Alert", b =>
-                {
-                    b.Navigation("Roles");
-
-                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>
