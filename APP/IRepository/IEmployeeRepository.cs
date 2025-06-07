@@ -18,7 +18,7 @@ public interface IEmployeeRepository
    
    Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId);
    
-   Task<Result<IEnumerable<EmployeeDto>>> GetAvailableEmployees(DateTime date);
+   Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployees(DateTime date);
    Task<Result<EmployeeDto>> GetEmployee(Guid id);
    Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request);
    

@@ -641,6 +641,11 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName))
             .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email));
+
+        CreateMap<Employee, MinimalEmployeeInfoDto>()
+            .ForMember(dest => dest.EmployeeId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Designation, opt => opt.MapFrom(src => src.Designation.Name))
+            .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department.Name));
         #endregion
 
         #region Children
