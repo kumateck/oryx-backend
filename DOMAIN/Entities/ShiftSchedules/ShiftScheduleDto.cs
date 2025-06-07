@@ -8,8 +8,6 @@ public class ShiftScheduleDto: BaseDto
 {
    public string ScheduleName { get; set; }
    
-   public string StartTime { get; set; }
-   
    public DayOfWeek? StartDate { get; set; }
    
    public ScheduleFrequency Frequency { get; set; }

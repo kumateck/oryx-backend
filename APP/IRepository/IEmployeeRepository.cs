@@ -17,6 +17,8 @@ public interface IEmployeeRepository
       string searchQuery = null, string designation = null, string department = null);
    
    Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId);
+   
+   Task<Result<IEnumerable<EmployeeDto>>> GetAvailableEmployees(DateTime date);
    Task<Result<EmployeeDto>> GetEmployee(Guid id);
    Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request);
    

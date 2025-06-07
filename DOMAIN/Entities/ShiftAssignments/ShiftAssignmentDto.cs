@@ -15,6 +15,7 @@ public class ShiftAssignmentDto
     public MinimalShiftScheduleDto ShiftSchedule { get; set; }
 }
 
+
 public class MinimalShiftScheduleDto
 {
     public Guid ScheduleId { get; set; }
