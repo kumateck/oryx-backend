@@ -19,6 +19,7 @@ public class NotificationService(IEmailService emailService, IMessagingService s
                     break;
                 
                 case AlertType.Email:
+                    emailService.ProcessNotificationData(notification);
                     break;
                 
                 case AlertType.Combination:

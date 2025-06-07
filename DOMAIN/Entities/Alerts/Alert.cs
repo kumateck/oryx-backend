@@ -62,8 +62,8 @@ public enum AlertType
 public class AlertDto : BaseDto
 {
     public string Title { get; set; }
-    public string ModelType { get; set; }
-    public AlertType AlertType { get; set; }
+    public NotificationType NotificationType { get; set; }
+    public List<AlertType> AlertTypes { get; set; }
     public TimeSpan TimeFrame { get; set; }
     public bool IsDisabled { get; set; }
 }

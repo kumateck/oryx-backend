@@ -1,12 +1,14 @@
 using System.Diagnostics;
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Background;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -23,7 +25,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMaterialRepository materialRepository) 
+public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMaterialRepository materialRepository, IBackgroundWorkerService backgroundWorkerService) 
     : IProductionScheduleRepository
 {
     public async Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId) 
@@ -319,6 +321,23 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 {
                     activityStep.ProductionActivity.CompletedAt = DateTime.UtcNow;
                     activityStep.ProductionActivity.Status = ProductionStatus.Completed;
+                }
+                else
+                {
+                    var nextStep = await context
+                        .ProductionActivitySteps
+                        .AsSplitQuery()
+                        .Include(productionActivityStep => productionActivityStep.ResponsibleUsers)
+                        .FirstOrDefaultAsync(s =>
+                            s.ProductionActivityId == activityStep.ProductionActivityId &&
+                            s.Order == activityStep.Order + 1);
+                    if (nextStep is not null)
+                    {
+                        var nextStepUsers = nextStep.ResponsibleUsers.Select(u => u.User).ToList();
+                        backgroundWorkerService
+                            .EnqueueNotification("You have been assigned a production task",
+                                NotificationType.ProductionStageChanged, null, nextStepUsers);
+                    }
                 }
                 break;
         }

@@ -75,7 +75,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         return Result.Success();
     }
 
-    public async Task ProcessAlert(string message, NotificationType notificationType, Guid? departmentId)
+    public async Task ProcessAlert(string message, NotificationType notificationType, Guid? departmentId, List<User> assignedUsers = null)
     {
         var alert = await context.Alerts
             .AsSplitQuery()
@@ -104,6 +104,13 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         {
             users = users.Where(u => u.DepartmentId == departmentId).ToList();
         }
+
+        if (assignedUsers != null && assignedUsers.Count != 0)
+        {
+            users.AddRange(assignedUsers);
+        }
+        
+        users = users.Distinct().ToList();
         
         if(users.Count == 0) return;
         

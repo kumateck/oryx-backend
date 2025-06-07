@@ -61,7 +61,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
         const string subject = "New Notification";
         foreach (var user in data.Recipients)
         {
-            var encode = "EmailTemplates";
+            var encode = data.Message;
             SendMail(user.Email, subject, encode, []);
         }
     }

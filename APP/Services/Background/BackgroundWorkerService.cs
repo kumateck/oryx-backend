@@ -2,12 +2,13 @@ using System.Collections.Concurrent;
 using APP.IRepository;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Notifications;
+using DOMAIN.Entities.Users;
 using Microsoft.Extensions.Logging;
 using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 
 namespace APP.Services.Background;
-public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue, ConcurrentQueue<(string message, NotificationType type, Guid? departmentId)> notificationQueue,
+public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue, ConcurrentQueue<(string message, NotificationType type, Guid? departmentId, List<User> users)> notificationQueue,
     ConcurrentQueue<PrevStateCaptureRequest> prevStateQueue, ILogger<BackgroundWorkerService> logger, IActivityLogRepository repo, ICollectionRepository collectionRepo, IAlertRepository alertRepo)
     : IBackgroundWorkerService
 {
@@ -17,9 +18,9 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
         logQueue.Enqueue(log);
     }
 
-    public void EnqueueNotification(string message, NotificationType type, Guid? departmentId = null)
+    public void EnqueueNotification(string message, NotificationType type, Guid? departmentId = null, List<User> users = null)
     {
-        notificationQueue.Enqueue((message, type, departmentId));
+        notificationQueue.Enqueue((message, type, departmentId, users));
     }
     
     public void EnqueuePrevStateCapture(PrevStateCaptureRequest prevStateCapture)

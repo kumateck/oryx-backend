@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.Notifications;
+using DOMAIN.Entities.Users;
 using SHARED;
 
 namespace APP.IRepository;
@@ -13,5 +14,5 @@ public interface IAlertRepository
         bool withDisabled = false);
     Task<Result> UpdateAlert(CreateAlertRequest request, Guid userId, Guid approvalId);
     Task<Result> ToggleDisable(Guid id);
-    Task ProcessAlert(string message, NotificationType type, Guid? departmentId = null);
+    Task ProcessAlert(string message, NotificationType type, Guid? departmentId = null, List<User> assignedUsers = null);
 }

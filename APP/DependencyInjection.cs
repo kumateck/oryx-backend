@@ -13,6 +13,7 @@ using DinkToPdf;
 using DinkToPdf.Contracts;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Notifications;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
@@ -132,6 +133,6 @@ public static class DependencyInjection
         services.AddHostedService<ConsumeBackgroundWorkerService>();
         services.AddSingleton<ConcurrentQueue<CreateActivityLog>>();
         services.AddSingleton<ConcurrentQueue<PrevStateCaptureRequest>>();
-        services.AddSingleton<ConcurrentQueue<(string message, NotificationType type, Guid? departmentId)>>();
+        services.AddSingleton<ConcurrentQueue<(string message, NotificationType type, Guid? departmentId, List<User> users)>>();
     }
 }
