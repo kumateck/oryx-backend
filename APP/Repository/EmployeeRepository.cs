@@ -7,8 +7,10 @@ using APP.IRepository;
 using APP.Services.Email;
 using APP.Utils;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -255,9 +257,42 @@ public async Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Gui
     return Result.Success(employeeDtos);
 }
 
-public async Task<Result<IEnumerable<EmployeeDto>>> GetAvailableEmployees(DateTime date)
+public async Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployees(DateTime date)
 {
-    throw new NotImplementedException();
+    var isHoliday = await context.Holidays
+        .AnyAsync(h => h.Date.Date == date.Date);
+
+    if (isHoliday)
+    {
+        return Result.Success(Enumerable.Empty<MinimalEmployeeInfoDto>());
+    }
+
+    // Get IDs of employees unavailable due to leave
+    var leaveEmployeeIdsQuery = context.LeaveRequests
+        .Where(l =>
+            l.LeaveStatus == LeaveStatus.Approved &&
+            l.StartDate.Date <= date.Date &&
+            l.EndDate.Date >= date.Date)
+        .Select(l => l.EmployeeId);
+
+    // Get IDs of employees with assigned shift
+    var scheduledEmployeeIdsQuery = context.ShiftAssignments
+        .Where(s => s.ScheduleDate.Date == date.Date)
+        .Select(s => s.EmployeeId);
+
+    // Combine both into one set
+    var unavailableEmployeeIds = await leaveEmployeeIdsQuery
+        .Union(scheduledEmployeeIdsQuery)
+        .Distinct()
+        .ToListAsync();
+
+    // Fetch available employees directly from DB, filter and project to DTO
+    var availableEmployees = await context.Employees
+        .Where(e => e.LastDeletedById == null && !unavailableEmployeeIds.Contains(e.Id))
+        .ProjectTo<MinimalEmployeeInfoDto>(mapper.ConfigurationProvider)
+        .ToListAsync();
+
+    return Result.Success(availableEmployees.AsEnumerable());
 }
 
 public async Task<Result<EmployeeDto>> GetEmployee(Guid id)

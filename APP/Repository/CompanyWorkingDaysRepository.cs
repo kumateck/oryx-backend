@@ -1,3 +1,4 @@
+using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -5,11 +6,12 @@ using AutoMapper;
 using DOMAIN.Entities.CompanyWorkingDays;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SHARED;
 
 namespace APP.Repository;
 
-public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper mapper) : ICompanyWorkingDaysRepository
+public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper mapper, ILogger<CompanyWorkingDays> logger) : ICompanyWorkingDaysRepository
 {
     public async Task<Result> CreateCompanyWorkingDays(List<CompanyWorkingDaysRequest> companyWorkingDays)
     {
@@ -17,6 +19,7 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
         {
             return Error.Validation("CompanyWorkingDays.Invalid", "At least one working day must be selected.");
         }
+        
 
         var existingDays = await context.CompanyWorkingDays.ToListAsync();
 
@@ -29,6 +32,11 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
         {
             foreach (var request in companyWorkingDays)
             {
+                if (!IsValidStartTime(request.StartTime) || !IsValidStartTime(request.EndTime))
+                {
+                    return Error.Validation("Invalid.Time", "Invalid start or end time.");
+                }
+                
                 var existing = existingDays.FirstOrDefault(e => e.Day == request.Day);
                 if (existing != null)
                 {
@@ -43,8 +51,35 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
             }
         }
 
-        await context.SaveChangesAsync();
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            var message = ex.InnerException?.Message ?? ex.Message;
+            
+            if (message.Contains("String") && message.Contains("truncated", StringComparison.OrdinalIgnoreCase))
+            {
+                return Error.Validation("CompanyWorkingDays.TimeTooLong", "StartTime or EndTime exceeds the allowed length.");
+            }
+            
+            logger.LogError(ex, "Error saving CompanyWorkingDays");
+
+            return Error.Failure("CompanyWorkingDays.DatabaseError", "An error occurred while saving working days.");
+        }
+
         return Result.Success();
+    }
+    
+    private static bool IsValidStartTime(string input)
+    {
+        return DateTime.TryParseExact(
+            input,
+            "h:mm tt", // supports 12-hour format with AM/PM
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out _);
     }
 
     public async Task<Result<Paginateable<IEnumerable<CompanyWorkingDaysDto>>>> GetCompanyWorkingDays(int page, int pageSize, string searchQuery)

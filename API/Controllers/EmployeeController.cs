@@ -74,6 +74,16 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Returns a list of employees available for shift assignment
+    /// </summary>
+    [HttpGet("available")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<MinimalEmployeeInfoDto>))]
+    public async Task<IResult> GetAvailableEmployees([FromQuery] DateTime date)
+    {
+        var result = await repository.GetAvailableEmployees(date);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    /// <summary>
     /// Retrieves the details of a specific employee by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
