@@ -119,80 +119,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("AlertUsers");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.AnalyticalTestRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("BatchNumber")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Category")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("ManufacturingDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ProductName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ProductSchedule")
-                        .HasColumnType("text");
-
-                    b.Property<string>("QaManagerSignature")
-                        .HasColumnType("text");
-
-                    b.Property<string>("QcManagerSignature")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("ReleaseDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ReleasedAt")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SampledQuantity")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Stage")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.ToTable("AnalyticalTestRequests");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6837,9 +6763,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int?>("StartDate")
                         .HasColumnType("integer");
 
-                    b.Property<string>("StartTime")
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8355,27 +8278,6 @@ namespace INFRASTRUCTURE.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.AnalyticalTestRequest", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>
