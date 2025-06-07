@@ -10,6 +10,8 @@ public interface IShiftScheduleRepository
     Task<Result<Guid>> CreateShiftSchedule(CreateShiftScheduleRequest request);
     Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize, string searchQuery);
     Task<Result<ShiftScheduleDto>> GetShiftSchedule(Guid id);
+
+    Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleDayView(Guid shiftScheduleId, DateTime date);
     
     Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleRangeView(Guid shiftScheduleId, DateTime startDate, DateTime endDate);
     

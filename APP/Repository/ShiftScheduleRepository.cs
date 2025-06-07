@@ -107,10 +107,16 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             .ToListAsync();
 
         var grouped = schedule
-            .GroupBy(s => s.ScheduleDate.Date)
+            .GroupBy(s => new
+            {
+                s.ScheduleDate.Date,
+                s.ShiftCategoryId,
+                s.ShiftTypeId,
+                s.ShiftScheduleId
+            })
             .Select(g => new ShiftAssignmentDto
             {
-                ScheduleDate = g.Key,
+                ScheduleDate = g.Key.Date,
                 ShiftCategory = g.Select(s => new ShiftCategoryDto
                 {
                     Id = s.ShiftCategoryId,
@@ -141,7 +147,65 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                 }).Distinct().ToList()
             }).ToList();
 
-        return Result.Success<IEnumerable<ShiftAssignmentDto>>(grouped);
+        return Result.Success(grouped.AsEnumerable());
+    }
+    
+      public async Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleDayView(Guid shiftScheduleId, DateTime date)
+    {
+        var schedule = await context.ShiftAssignments
+            .Where(s => s.ShiftScheduleId == shiftScheduleId
+                        && s.ScheduleDate.Date == date.Date)
+            .Include(s => s.Employee)
+                .ThenInclude(e => e.Designation)
+            .Include(s => s.Employee)
+                .ThenInclude(e => e.Department)
+            .Include(sa => sa.ShiftType)
+            .Include(sa => sa.ShiftCategory)
+            .Include(sa => sa.ShiftSchedules)
+            .ToListAsync();
+
+        var grouped = schedule
+            .GroupBy(s => new 
+            {
+                s.ScheduleDate.Date,
+                s.ShiftScheduleId,
+                s.ShiftCategoryId,
+                s.ShiftTypeId
+            })
+            .Select(g => new ShiftAssignmentDto
+            {
+                ScheduleDate = g.Key.Date,
+                ShiftCategory = g.Select(s => new ShiftCategoryDto
+                {
+                    Id = s.ShiftCategoryId,
+                    Name = s.ShiftCategory?.Name
+                }).FirstOrDefault(),
+
+                ShiftType = g.Select(s => new MinimalShiftTypeDto
+                {
+                    ShiftTypeId = s.ShiftTypeId,
+                    ShiftName = s.ShiftType?.ShiftName
+                }).FirstOrDefault(),
+
+                ShiftSchedule = g.Select(s => new MinimalShiftScheduleDto
+                {
+                    ScheduleId = s.ShiftScheduleId,
+                    ScheduleName = s.ShiftSchedules?.ScheduleName
+                }).FirstOrDefault(),
+
+                Employees = g.Select(s => new MinimalEmployeeInfoDto
+                {
+                    EmployeeId = s.Employee.Id,
+                    FirstName = s.Employee.FirstName,
+                    LastName = s.Employee.LastName,
+                    StaffNumber = s.Employee.StaffNumber,
+                    Type = s.Employee.Type.ToString(),
+                    Department = s.Employee.Department?.Name,
+                    Designation = s.Employee.Designation?.Name
+                }).Distinct().ToList()
+            }).ToList();
+
+        return Result.Success(grouped.AsEnumerable());
     }
 
     public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)

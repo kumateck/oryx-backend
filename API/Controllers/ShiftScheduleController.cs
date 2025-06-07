@@ -71,6 +71,17 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
         var result = await repository.GetShiftScheduleRangeView(scheduleId, startDate, endDate);
         return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Returns the schedule for a specified date
+    /// </summary>
+    [HttpGet("{scheduleId:guid}/day")]
+    [ProducesResponseType(StatusCodes.Status200OK,Type = typeof(IEnumerable<ShiftAssignmentDto>))]
+    public async Task<IResult> GetShiftScheduleDayView([FromRoute] Guid scheduleId, [FromQuery] DateTime date)
+    {
+        var result = await repository.GetShiftScheduleDayView(scheduleId, date);
+        return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
+    }
     
     /// <summary>
     /// Updates the details of an existing shift schedule.
