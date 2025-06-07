@@ -4,12 +4,15 @@ using APP.IRepository;
 using APP.Repository;
 using APP.Services.Background;
 using APP.Services.Email;
+using APP.Services.Message;
+using APP.Services.Notification;
 using APP.Services.Pdf;
 using APP.Services.Storage;
 using APP.Services.Token;
 using DinkToPdf;
 using DinkToPdf.Contracts;
 using DOMAIN.Entities.ActivityLogs;
+using DOMAIN.Entities.Notifications;
 using INFRASTRUCTURE.Context;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
@@ -100,6 +103,7 @@ public static class DependencyInjection
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddScoped<IAlertRepository, AlertRepository>();
 
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();
@@ -110,6 +114,8 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IBackgroundWorkerService, BackgroundWorkerService>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+        services.AddScoped<IMessagingService, MessagingService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddHostedService<ApprovalEscalationService>();
         services.AddHostedService<LeaveExpiryService>();
     }
@@ -126,5 +132,6 @@ public static class DependencyInjection
         services.AddHostedService<ConsumeBackgroundWorkerService>();
         services.AddSingleton<ConcurrentQueue<CreateActivityLog>>();
         services.AddSingleton<ConcurrentQueue<PrevStateCaptureRequest>>();
+        services.AddSingleton<ConcurrentQueue<(string message, NotificationType type, Guid? departmentId)>>();
     }
 }

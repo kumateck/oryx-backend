@@ -9,6 +9,7 @@ public class CreateQuestionRequest
     public bool IsMultiSelect { get; set; }
     public QuestionValidationType Validation { get; set; }
     public List<CreateQuestionOptionsRequest> Options { get; set; } = [];
+    public string Description { get; set; }
     public string Reference { get; set; }
     public FormulaDto Formula { get; set; }
 }

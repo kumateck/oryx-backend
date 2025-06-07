@@ -44,12 +44,9 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
                     mail.Attachments.Add(mailAttachment);
                 }
             }
-           
 
-            // Send email
             smtpClient.Send(mail);
 
-            // Log success
             logger.LogInformation($"Email sent to {to}");
         }
         catch (Exception ex)

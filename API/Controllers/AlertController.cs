@@ -1,3 +1,4 @@
+using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
@@ -15,12 +16,12 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// </summary>
     [HttpPost]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateAlert([FromBody] CreateAlertRequest request)
     {
-        await repo.CreateAlert(request);
-        return TypedResults.Created();
+        var result = await repo.CreateAlert(request);
+        return result.IsSuccess ? TypedResults.Ok(await repo.CreateAlert(request)) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -33,7 +34,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     public async Task<IResult> GetAlert(Guid alertId)
     {
         var result = await repo.GetAlert(alertId);
-        return result != null ? TypedResults.Ok(result) : TypedResults.NotFound();
+        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -45,7 +46,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     public async Task<IResult> GetAlerts([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] bool withDisabled = false)
     {
         var result = await repo.GetAlerts(page, pageSize, searchQuery, withDisabled);
-        return TypedResults.Ok(result);
+        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
     }
     
     /// <summary>
@@ -61,8 +62,8 @@ public class AlertController(IAlertRepository repo) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        await repo.UpdateAlert(request, Guid.Parse(userId), alertId);
-        return TypedResults.NoContent();
+        var result = await repo.UpdateAlert(request, Guid.Parse(userId), alertId);
+        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -74,7 +75,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> ToggleDisable(Guid id)
     {
-        await repo.ToggleDisable(id);
-        return TypedResults.NoContent();
+        var result = await repo.ToggleDisable(id);
+        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
     }
 }
