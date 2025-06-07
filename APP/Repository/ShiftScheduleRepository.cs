@@ -30,11 +30,6 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             return Error.Validation("ShiftSchedule.StartDayRequired", "Start day is required for weekly and biweekly frequencies.");
 
         }
-
-        if (!IsValidStartTime(request.StartTime))
-        {
-            return Error.Validation("ShiftSchedule.InvalidStartTime", "Start time must be in 12-hour format.");
-        }
         
         var shiftTypes = await context.ShiftTypes
             .Where(shift => request.ShiftTypeIds.Contains(shift.Id))
@@ -53,16 +48,6 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         await context.SaveChangesAsync();
         
         return shiftScheduleEntity.Id;
-    }
-    
-    private static bool IsValidStartTime(string input)
-    {
-        return DateTime.TryParseExact(
-            input,
-            "h:mm tt", // supports 12-hour format with AM/PM
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.None,
-            out _);
     }
 
     public async Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize, string searchQuery)

@@ -255,6 +255,11 @@ public async Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Gui
     return Result.Success(employeeDtos);
 }
 
+public async Task<Result<IEnumerable<EmployeeDto>>> GetAvailableEmployees(DateTime date)
+{
+    throw new NotImplementedException();
+}
+
 public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
     {
         var employee = await context.Employees
