@@ -81,9 +81,11 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
         
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, ot => ot.Status.ToString());
+            if (Enum.TryParse<OvertimeStatus>(searchQuery, true, out var status))
+            {
+                  query = query.Where(ot => ot.Status == status);
+            }
         }
-
         
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<OvertimeRequestDto>);
     }

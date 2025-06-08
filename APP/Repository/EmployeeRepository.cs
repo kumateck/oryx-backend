@@ -320,12 +320,18 @@ public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
             .Include(e => e.Designation)
             .Where(e => e.LastDeletedById == null)
             .AsQueryable();
-        
+
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Email);
+            query = query.WhereSearch(searchQuery,
+                q => q.FirstName,
+                q=> q.LastName, q => q.Email, 
+                q => q.FirstName + " " +q.LastName,
+                q => q.StaffNumber,
+                q => q.PhoneNumber,
+                q => q.GhanaCardNumber);
         }
-
+        
         if (!string.IsNullOrWhiteSpace(designation))
         {
             query = query.WhereSearch(designation, q => q.Designation.Name);

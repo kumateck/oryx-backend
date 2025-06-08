@@ -158,22 +158,28 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Employee.FirstName);
+            query = query.WhereSearch(searchQuery,
+                q => q.Employee.FirstName,
+                q => q.Employee.LastName,
+                q => q.Employee.FirstName + " " + q.Employee.LastName,
+                q => q.Employee.Department.Name,
+                q => q.LeaveType.Name);
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.LeaveType.Name);
+            if (Enum.TryParse<RequestCategory>(searchQuery, true, out var requestCategory))
+            {
+                query = query.Where(q => q.RequestCategory == requestCategory);
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.RequestCategory.ToString());
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, q => q.LeaveStatus.ToString());
+            if (Enum.TryParse<LeaveStatus>(searchQuery, true, out var leaveStatus))
+            {
+               query = query.Where(q => q.LeaveStatus == leaveStatus); 
+            }
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(

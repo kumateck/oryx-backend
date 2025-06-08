@@ -27,12 +27,9 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.BatchNumber);
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, q => q.ProductName);
+            query = query.WhereSearch(searchQuery,
+                q => q.BatchNumber,
+                q => q.ProductName);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<AnalyticalTestRequestDto>);
