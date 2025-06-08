@@ -88,7 +88,8 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, d => d.Day.ToString());
+            if (Enum.TryParse<DayOfWeek>(searchQuery, out var day))
+                query = query.Where(d => d.Day == day);
         }
         return await PaginationHelper.GetPaginatedResultAsync(
             query,

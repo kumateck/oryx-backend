@@ -53,17 +53,15 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, ad => ad.SpecNumber);
-        }
-        
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, ad => ad.StpNumber);
+            query = query.WhereSearch(searchQuery,
+                ad => ad.SpecNumber
+                ,ad => ad.StpNumber);
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, ad => ad.Stage.ToString());
+            if (Enum.TryParse<Stage>(searchQuery, true, out var stage))
+                query = query.Where(ad => ad.Stage == stage);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.ShiftTypes;
+using DOMAIN.Entities.StaffRequisitions;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -55,8 +56,12 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.RotationType.ToString());
+            if (Enum.TryParse<RotationType>(searchQuery, true, out var parsedRotationType))
+            {
+                query = query.Where(sr => sr.RotationType == parsedRotationType);
+            }
         }
+        
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -94,10 +99,10 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
             return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
         }
         
-        if (!request.StartTime.Contains("AM") || request.StartTime.Contains("PM") 
-            || !request.EndTime.Contains("AM") || request.EndTime.Contains("PM"))
+        if (!DateTime.TryParseExact(request.StartTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) ||
+            !DateTime.TryParseExact(request.EndTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
-            return Error.Validation("ShiftType.InvalidTime", "Start time must be in 12 hour format.");
+            return Error.Validation("ShiftType.InvalidTime", "Start and End times must be in 12-hour format (e.g., 08:30 AM).");
         }
 
         mapper.Map(request, shiftType);

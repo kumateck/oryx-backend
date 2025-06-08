@@ -55,12 +55,9 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, ad => ad.SpecNumber);
-        }
-        
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, ad => ad.StpNumber);
+            query = query.WhereSearch(searchQuery, 
+                ad => ad.SpecNumber,
+                ad => ad.StpNumber);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

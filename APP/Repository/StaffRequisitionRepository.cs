@@ -45,12 +45,9 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, sr => sr.EducationalQualification);
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, sr => sr.Designation.Name);
+            query = query.WhereSearch(searchQuery,
+                sr => sr.EducationalQualification,
+                sr => sr.Designation.Name);
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
