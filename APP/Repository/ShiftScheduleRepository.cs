@@ -375,14 +375,14 @@ private static TimeOnly ConvertTime(string time)
             .ToList();
 
         var validNewAssignments = employeeIds
-            .Where(id =>
-                !employeesOnLeave.Contains(id) &&
+            .Where(eid =>
+                !employeesOnLeave.Contains(eid) &&
                 !isHoliday &&
-                !conflictingIds.Contains(id))
-            .Select(id => new ShiftAssignment
+                !conflictingIds.Contains(eid))
+            .Select(empId => new ShiftAssignment
             {
                 Id = Guid.NewGuid(),
-                EmployeeId = id,
+                EmployeeId = empId,
                 ShiftScheduleId = shiftSchedule.Id,
                 ShiftCategoryId = request.ShiftCategoryId,
                 ScheduleDate = shiftDay
@@ -406,6 +406,7 @@ private static TimeOnly ConvertTime(string time)
         }
         shiftSchedule.LastDeletedById = userId;
         shiftSchedule.DeletedAt = DateTime.UtcNow;
+        shiftSchedule.ScheduleStatus = ScheduleStatus.Cancelled;
         
         context.ShiftSchedules.Update(shiftSchedule);
         await context.SaveChangesAsync();
