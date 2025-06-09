@@ -100,26 +100,41 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         return Result.Success("Bulk onboarding completed.");
     }
+
     public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)
     {
-        var existingEmployee = await context.Employees.FirstOrDefaultAsync(e => e.Email == request.Email && e.LastDeletedById == null);
+        logger.LogInformation("Starting CreateEmployee for email: {Email}", request.Email);
+
+        var existingEmployee = await context.Employees
+            .FirstOrDefaultAsync(e => e.Email == request.Email && e.LastDeletedById == null);
 
         if (existingEmployee != null)
         {
+            logger.LogWarning("Employee already exists with email: {Email}", request.Email);
             return Error.Validation("Employee.Exists", "Employee already exists.");
         }
-        
-        var country = await context.Countries.FirstOrDefaultAsync(c => c.Id == Guid.Parse(request.Nationality));
+
+        var country = await context.Countries
+            .FirstOrDefaultAsync(c => c.Id == Guid.Parse(request.Nationality));
 
         if (country != null)
         {
+            logger.LogInformation("Resolved nationality ID {Id} to country name: {Country}", request.Nationality, country.Name);
             request.Nationality = country.Name;
         }
-        
+        else
+        {
+            logger.LogWarning("Nationality ID {Id} not found in countries table.", request.Nationality);
+        }
+
         var employee = mapper.Map<Employee>(request);
-        
+        logger.LogDebug("Mapped CreateEmployeeRequest to Employee: {@Employee}", employee);
+
         await context.Employees.AddAsync(employee);
+        logger.LogInformation("Employee entity added to context for email: {Email}", request.Email);
+
         await context.SaveChangesAsync();
+        logger.LogInformation("New employee created with ID: {Id}", employee.Id);
 
         return employee.Id;
     }
