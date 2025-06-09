@@ -10,6 +10,7 @@ using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver.Linq;
 using SHARED;
 
 namespace APP.Repository;
@@ -18,36 +19,46 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 {
     public async Task<Result<Guid>> CreateShiftSchedule(CreateShiftScheduleRequest request)
     {
-        var shiftSchedule = await context.ShiftSchedules
-            .FirstOrDefaultAsync(s => s.ScheduleName == request.ScheduleName && s.LastDeletedById == null);
+        var shiftSchedule = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.ShiftSchedules, s => s.ScheduleName == request.ScheduleName && s.LastDeletedById == null);
         if (shiftSchedule is not null)
         {
             return Error.Validation("ShiftSchedule.Exists", "Shift schedule already exists.");
         }
-
-        if (request.Frequency is ScheduleFrequency.Weekly or ScheduleFrequency.Biweekly && request.StartDate == null)
-        {
-            return Error.Validation("ShiftSchedule.StartDayRequired", "Start day is required for weekly and biweekly frequencies.");
-
-        }
         
-        var shiftTypes = await context.ShiftTypes
-            .Where(shift => request.ShiftTypeIds.Contains(shift.Id))
-            .ToListAsync();
+        var shiftTypes = await EntityFrameworkQueryableExtensions.ToListAsync(context.ShiftTypes
+                .Where(shift => request.ShiftTypeIds.Contains(shift.Id)));
         
         if (shiftTypes.Count != request.ShiftTypeIds.Count)
         {
             return Error.Validation("ShiftSchedule.InvalidShiftTypes", "One or more shift type IDs are invalid.");
         }
         
+        
         var shiftScheduleEntity = mapper.Map<ShiftSchedule>(request);
         
         shiftScheduleEntity.ShiftTypes = shiftTypes;
+        shiftScheduleEntity.ScheduleStatus = ScheduleStatus.New;
+        
+        shiftScheduleEntity.EndDate = ComputeEndDate(request.StartDate, shiftScheduleEntity.Frequency);
         
         await context.ShiftSchedules.AddAsync(shiftScheduleEntity);
         await context.SaveChangesAsync();
         
         return shiftScheduleEntity.Id;
+    }
+
+    private static DateTime ComputeEndDate(DateTime startDate, ScheduleFrequency frequency)
+    {
+        return frequency switch
+        {
+            ScheduleFrequency.Week => startDate.AddDays(6),
+            ScheduleFrequency.Month => startDate.AddMonths(13),
+            ScheduleFrequency.Biweek => startDate.AddWeeks(1).AddDays(-1),
+            ScheduleFrequency.Quarter => startDate.AddMonths(3).AddDays(-1),
+            ScheduleFrequency.Half => startDate.AddMonths(6).AddDays(-1),
+            ScheduleFrequency.Year => startDate.AddYears(1).AddDays(-1),
+            _ => startDate
+        };
     }
 
     public async Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize, string searchQuery)
@@ -81,10 +92,9 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
     public async Task<Result<ShiftScheduleDto>> GetShiftSchedule(Guid id)
     {
-        var shiftSchedule = await context.ShiftSchedules
-            .Include(schedule => schedule.Department)
-            .Include(schedule => schedule.ShiftTypes)
-            .FirstOrDefaultAsync(s => s.Id == id && s.LastDeletedById == null);
+        var shiftSchedule = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.ShiftSchedules
+                .Include(schedule => schedule.Department)
+                .Include(schedule => schedule.ShiftTypes), s => s.Id == id && s.LastDeletedById == null);
         
         return shiftSchedule is null ? 
             Error.NotFound("ShiftSchedule.NotFound", "Shift schedule is not found") : 
@@ -93,17 +103,16 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
     public async Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleRangeView(Guid shiftScheduleId, DateTime startDate, DateTime endDate)
     {
-        var schedule = await context.ShiftAssignments
-            .Where(s => s.ShiftScheduleId == shiftScheduleId
-                        && s.ScheduleDate.Date >= startDate.Date && s.ScheduleDate.Date <= endDate.Date)
-            .Include(s => s.Employee)
+        var schedule = await EntityFrameworkQueryableExtensions.ToListAsync(context.ShiftAssignments
+                .Where(s => s.ShiftScheduleId == shiftScheduleId
+                            && s.ScheduleDate.Date >= startDate.Date && s.ScheduleDate.Date <= endDate.Date)
+                .Include(s => s.Employee)
                 .ThenInclude(e => e.Designation)
-            .Include(s => s.Employee)
+                .Include(s => s.Employee)
                 .ThenInclude(e => e.Department)
-            .Include(sa => sa.ShiftType)
-            .Include(sa => sa.ShiftCategory)
-            .Include(sa => sa.ShiftSchedules)
-            .ToListAsync();
+                .Include(sa => sa.ShiftType)
+                .Include(sa => sa.ShiftCategory)
+                .Include(sa => sa.ShiftSchedules));
 
         var grouped = schedule
             .GroupBy(s => new
@@ -151,17 +160,16 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     
       public async Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleDayView(Guid shiftScheduleId, DateTime date)
     {
-        var schedule = await context.ShiftAssignments
-            .Where(s => s.ShiftScheduleId == shiftScheduleId
-                        && s.ScheduleDate.Date == date.Date)
-            .Include(s => s.Employee)
+        var schedule = await EntityFrameworkQueryableExtensions.ToListAsync(context.ShiftAssignments
+                .Where(s => s.ShiftScheduleId == shiftScheduleId
+                            && s.ScheduleDate.Date == date.Date)
+                .Include(s => s.Employee)
                 .ThenInclude(e => e.Designation)
-            .Include(s => s.Employee)
+                .Include(s => s.Employee)
                 .ThenInclude(e => e.Department)
-            .Include(sa => sa.ShiftType)
-            .Include(sa => sa.ShiftCategory)
-            .Include(sa => sa.ShiftSchedules)
-            .ToListAsync();
+                .Include(sa => sa.ShiftType)
+                .Include(sa => sa.ShiftCategory)
+                .Include(sa => sa.ShiftSchedules));
 
         var grouped = schedule
             .GroupBy(s => new 
@@ -209,50 +217,41 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
     public async Task<Result> AssignEmployeesToShift(AssignShiftRequest request)
 {
-    var shiftSchedule = await context.ShiftSchedules
-        .Include(s => s.ShiftTypes)
-        .FirstOrDefaultAsync(s => s.Id == request.ShiftScheduleId);
+    var shiftSchedule = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.ShiftSchedules
+            .Include(s => s.ShiftTypes), s => s.Id == request.ShiftScheduleId);
 
     if (shiftSchedule is null)
         return Error.NotFound("Shift.NotFound", "Shift schedule not found.");
-
-    if (shiftSchedule.StartDate is null)
-        return Error.Validation("Shift.Invalid", "Shift Start Day is required.");
     
-    var shiftType = await context.ShiftTypes
-        .FirstOrDefaultAsync(st => st.Id == request.ShiftTypeId && st.LastDeletedById == null);
+    var shiftType = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.ShiftTypes, st => st.Id == request.ShiftTypeId && st.LastDeletedById == null);
 
     if (shiftType == null)
     {
         return Error.NotFound("ShiftType.NotFound", "Shift type not found.");
     }
-
-    var shiftDay = shiftSchedule.StartDate.Value;
+    
     var employeeIds = request.EmployeeIds.Distinct().ToList();
 
     // 🔹 Get employees on approved leave for this day of the week
-    var employeesOnLeave = await context.LeaveRequests
-        .Where(l =>
-            employeeIds.Contains(l.EmployeeId) &&
-            l.LeaveStatus == LeaveStatus.Approved &&
-            l.StartDate.DayOfWeek <= shiftDay &&
-            l.EndDate.DayOfWeek >= shiftDay)
-        .Select(l => l.EmployeeId)
-        .Distinct()
-        .ToListAsync();
+    var employeesOnLeave = await EntityFrameworkQueryableExtensions.ToListAsync(context.LeaveRequests
+            .Where(l =>
+                employeeIds.Contains(l.EmployeeId) &&
+                l.LeaveStatus == LeaveStatus.Approved &&
+                l.StartDate <= request.ScheduleDate &&
+                l.EndDate >= request.ScheduleDate)
+            .Select(l => l.EmployeeId)
+            .Distinct());
 
     // 🔹 Check for restricted holidays on this day
-    var isRestrictedHoliday = await context.Holidays
-        .AnyAsync(h => h.Date.DayOfWeek == shiftDay);
+    var isRestrictedHoliday = await EntityFrameworkQueryableExtensions.AnyAsync(context.Holidays, h => h.Date == request.ScheduleDate);
 
     // 🔹 Load potential conflicting shift assignments
-    var conflictingAssignments = await context.ShiftAssignments
-        .Include(sa => sa.ShiftSchedules)
+    var conflictingAssignments = await EntityFrameworkQueryableExtensions.ToListAsync(context.ShiftAssignments
+            .Include(sa => sa.ShiftSchedules)
             .ThenInclude(ss => ss.ShiftTypes)
-        .Where(sa =>
-            employeeIds.Contains(sa.EmployeeId) &&
-            sa.ShiftSchedules.StartDate == shiftDay)
-        .ToListAsync();
+            .Where(sa =>
+                employeeIds.Contains(sa.EmployeeId) &&
+                sa.ScheduleDate == request.ScheduleDate));
     
     var conflictingEmployeeIds = conflictingAssignments
         .Where(sa => sa.ShiftSchedules.ShiftTypes.Any(existing =>
@@ -296,16 +295,14 @@ private static TimeOnly ConvertTime(string time)
     
     public async Task<Result> UpdateShiftSchedule(Guid id, CreateShiftScheduleRequest request)
     {
-        var shiftSchedule = await context.ShiftSchedules
-            .FirstOrDefaultAsync(s => s.Id == id && s.LastDeletedById == null);
+        var shiftSchedule = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.ShiftSchedules, s => s.Id == id && s.LastDeletedById == null);
         if (shiftSchedule is null)
         {
             return Error.NotFound("ShiftSchedule.NotFound", "Shift schedule is not found");
         }
 
-        var shiftTypes = await context.ShiftTypes
-            .Where(shift => request.ShiftTypeIds.Contains(shift.Id))
-            .ToListAsync();
+        var shiftTypes = await EntityFrameworkQueryableExtensions.ToListAsync(context.ShiftTypes
+                .Where(shift => request.ShiftTypeIds.Contains(shift.Id)));
         if (shiftTypes.Count != request.ShiftTypeIds.Count)
         {
             return Error.Validation("ShiftSchedule.InvalidShiftTypes", "One or more shift type IDs are invalid.");
@@ -321,16 +318,12 @@ private static TimeOnly ConvertTime(string time)
 
   public async Task<Result> UpdateShiftAssignment(Guid id, UpdateShiftAssignment request)
 {
-    var shiftSchedule = await context.ShiftSchedules
-        .Include(s => s.ShiftTypes)
-        .FirstOrDefaultAsync(s => s.Id == id);
+    var shiftSchedule = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.ShiftSchedules
+            .Include(s => s.ShiftTypes), s => s.Id == id);
 
     if (shiftSchedule == null)
         return Error.NotFound("Shift.NotFound", "Shift schedule not found.");
-
-    if (shiftSchedule.StartDate == null)
-        return Error.Validation("Shift.Invalid", "Shift Start Day is required.");
-
+    
     var shiftDay = request.ScheduleDate.Date;
 
     // 🔹 Remove employees from shift
@@ -338,12 +331,11 @@ private static TimeOnly ConvertTime(string time)
 
     if (isRemovable == true)
     {
-        var assignmentsToRemove = await context.ShiftAssignments
-            .Where(sa =>
-                request.RemoveEmployeeIds.Contains(sa.EmployeeId) &&
-                sa.ShiftScheduleId == id &&
-                sa.ScheduleDate.Date == shiftDay)
-            .ToListAsync();
+        var assignmentsToRemove = await EntityFrameworkQueryableExtensions.ToListAsync(context.ShiftAssignments
+                .Where(sa =>
+                    request.RemoveEmployeeIds.Contains(sa.EmployeeId) &&
+                    sa.ShiftScheduleId == id &&
+                    sa.ScheduleDate.Date == shiftDay));
 
         if (assignmentsToRemove.Count != 0)
             context.ShiftAssignments.RemoveRange(assignmentsToRemove);
@@ -357,25 +349,22 @@ private static TimeOnly ConvertTime(string time)
         var employeeIds = request.AddEmployeeIds.Distinct().ToList();
 
         // Check leave, holidays, conflicts
-        var employeesOnLeave = await context.LeaveRequests
-            .Where(l =>
-                employeeIds.Contains(l.EmployeeId) &&
-                l.LeaveStatus == LeaveStatus.Approved &&
-                l.StartDate.Date <= shiftDay &&
-                l.EndDate.Date >= shiftDay)
-            .Select(l => l.EmployeeId)
-            .ToListAsync();
+        var employeesOnLeave = await EntityFrameworkQueryableExtensions.ToListAsync(context.LeaveRequests
+                .Where(l =>
+                    employeeIds.Contains(l.EmployeeId) &&
+                    l.LeaveStatus == LeaveStatus.Approved &&
+                    l.StartDate.Date <= shiftDay &&
+                    l.EndDate.Date >= shiftDay)
+                .Select(l => l.EmployeeId));
 
-        var isHoliday = await context.Holidays
-            .AnyAsync(h => h.Date.Date == shiftDay);
+        var isHoliday = await EntityFrameworkQueryableExtensions.AnyAsync(context.Holidays, h => h.Date.Date == shiftDay);
 
-        var conflictingAssignments = await context.ShiftAssignments
-            .Include(sa => sa.ShiftSchedules)
+        var conflictingAssignments = await EntityFrameworkQueryableExtensions.ToListAsync(context.ShiftAssignments
+                .Include(sa => sa.ShiftSchedules)
                 .ThenInclude(ss => ss.ShiftTypes)
-            .Where(sa =>
-                employeeIds.Contains(sa.EmployeeId) &&
-                sa.ScheduleDate.Date == shiftDay)
-            .ToListAsync();
+                .Where(sa =>
+                    employeeIds.Contains(sa.EmployeeId) &&
+                    sa.ScheduleDate.Date == shiftDay));
 
         var conflictingIds = conflictingAssignments
             .Where(sa => sa.ShiftSchedules.ShiftTypes.Any(existing =>
@@ -409,8 +398,7 @@ private static TimeOnly ConvertTime(string time)
 
     public async Task<Result> DeleteShiftSchedule(Guid id, Guid userId)
     {
-        var shiftSchedule = await context.ShiftSchedules
-            .FirstOrDefaultAsync(s => s.Id == id && s.LastDeletedById == null);
+        var shiftSchedule = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.ShiftSchedules, s => s.Id == id && s.LastDeletedById == null);
         
         if (shiftSchedule is null)
         {
