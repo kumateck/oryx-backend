@@ -513,7 +513,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             {
                 case EntityState.Added:
                     entity.CreatedAt = DateTime.UtcNow;
-                    entity.CreatedById = currentUserService.UserId;
+                    entity.CreatedById = currentUserService.UserId ?? null;
                     break;
                 
                 case EntityState.Modified:
