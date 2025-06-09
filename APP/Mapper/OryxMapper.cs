@@ -784,6 +784,7 @@ public class OryxMapper : Profile
         CreateMap<MaterialStandardTestProcedureDto, MaterialStandardTestProcedure>();
         
         CreateMap<MaterialStandardTestProcedure, MaterialStandardTestProcedureDto>()
+            .ForMember(dest => dest.MaterialName, opt => opt.MapFrom(src => src.Material.Name))
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         #endregion
@@ -794,7 +795,8 @@ public class OryxMapper : Profile
         CreateMap<MaterialAnalyticalRawDataDto, MaterialAnalyticalRawData>()
             .ForMember(dest => dest.MaterialStandardTestProcedure, opt => opt.Ignore());
 
-        CreateMap<MaterialAnalyticalRawData, MaterialAnalyticalRawDataDto>();
+        CreateMap<MaterialAnalyticalRawData, MaterialAnalyticalRawDataDto>()
+            .ForMember(dest => dest.FormName, opt => opt.MapFrom(src => src.Form.Name));
 
         #endregion
 
@@ -803,6 +805,7 @@ public class OryxMapper : Profile
         CreateMap<CreateProductStandardTestProcedureRequest, ProductStandardTestProcedure>();
         CreateMap<ProductStandardTestProcedureDto, ProductStandardTestProcedure>();
         CreateMap<ProductStandardTestProcedure, ProductStandardTestProcedureDto>()
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         #endregion

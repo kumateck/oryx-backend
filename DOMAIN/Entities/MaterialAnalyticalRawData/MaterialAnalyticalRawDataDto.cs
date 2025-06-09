@@ -15,6 +15,6 @@ public class MaterialAnalyticalRawDataDto : BaseDto
     
     public Guid FormId { get; set; }
     
-    public MaterialStandardTestProcedure MaterialStandardTestProcedure { get; set; }
+    public string FormName { get; set; }
 
 }

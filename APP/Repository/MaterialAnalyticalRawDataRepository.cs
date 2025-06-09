@@ -74,11 +74,15 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .Include(ad => ad.MaterialStandardTestProcedure)
             .ThenInclude(ad => ad.Material)
             .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
-        
-        return analyticalRawData is null ?
-            Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found") : 
-            mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData);
-    }
+
+        return analyticalRawData is null
+            ? Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found")
+            : mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData,
+                opts =>
+                {
+                    opts.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
+                });
+}
 
     public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request)
     {

@@ -10,5 +10,5 @@ public class ProductStandardTestProcedureDto : WithAttachment
     
     public Guid ProductId { get; set; }
     
-    public Product Product { get; set; }
+    public string ProductName { get; set; }
 }

@@ -128,6 +128,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         }
 
         var employee = mapper.Map<Employee>(request);
+        // employee.CreatedById = null;
         logger.LogDebug("Mapped CreateEmployeeRequest to Employee: {@Employee}", employee);
 
         await context.Employees.AddAsync(employee);
@@ -303,7 +304,8 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         // Fetch available employees directly from DB, filter and project to DTO
         var availableEmployees = await context.Employees
-            .Where(e => e.LastDeletedById == null && !unavailableEmployeeIds.Contains(e.Id))
+            .Where(e => e.LastDeletedById == null 
+                        && !unavailableEmployeeIds.Contains(e.Id))
             .ProjectTo<MinimalEmployeeInfoDto>(mapper.ConfigurationProvider)
             .ToListAsync();
 
