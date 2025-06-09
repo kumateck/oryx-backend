@@ -24,7 +24,7 @@ public class CreateEmployeeRequest
 
     [Required] public string Region { get; set; }
     
-    [Required] public EmployeeType EmployeeType { get; set; }
+    [Required] public EmployeeType Type { get; set; }
     
     [Required] public string Nationality { get; set; }
     

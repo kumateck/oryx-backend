@@ -125,10 +125,11 @@ public class EmployeeRepository(ApplicationDbContext context,
         else
         {
             logger.LogWarning("Nationality ID {Id} not found in countries table.", request.Nationality);
+            return Error.Validation("Nationality.Invalid", "Invalid Nationality.");
         }
 
         var employee = mapper.Map<Employee>(request);
-        // employee.CreatedById = null;
+        
         logger.LogDebug("Mapped CreateEmployeeRequest to Employee: {@Employee}", employee);
 
         await context.Employees.AddAsync(employee);
