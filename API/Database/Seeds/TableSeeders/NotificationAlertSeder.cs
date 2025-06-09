@@ -90,7 +90,7 @@ public class NotificationAlertSeder : ISeeder
                 Roles =
                 [
                     new AlertRole { RoleId = prodManager.Id },
-                    new AlertRole(roleId: warehouseManager.Id)
+                    new AlertRole{ RoleId = warehouseManager.Id }
                 ],
                 IsConfigurable = false,
                 TimeFrame = TimeSpan.Zero

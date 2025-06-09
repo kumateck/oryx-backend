@@ -51,13 +51,36 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
     
     public async Task<Result> UpdateAlert(CreateAlertRequest request, Guid userId, Guid alertId)
     {
-        var alert = await context.Alerts.FirstOrDefaultAsync(alert => alert.Id == alertId);
+        var alert = await context.Alerts
+            .AsSplitQuery()
+            .Include(alert => alert.Roles)
+            .Include(alert => alert.Users).FirstOrDefaultAsync(alert => alert.Id == alertId);
         if (alert == null) return Result.Success();
+        
         if(!alert.IsConfigurable) return Error.Validation("Alert.IsConfigurable", "This alert is not configurable");
+
+        context.AlertRoles.RemoveRange(alert.Roles);
+        context.AlertUsers.RemoveRange(alert.Users);
+
+        if (request.RoleIds.Count != 0)
+        {
+            alert.Roles.AddRange(request.RoleIds.Select(r => new AlertRole
+            {
+                RoleId = r
+            }));
+        }
+
+        if (request.UserIds.Count != 0)
+        {
+            alert.Users.AddRange(request.UserIds.Select(u => new AlertUser
+            {
+                UserId = u
+            }));
+        }
         
         alert.Title = request.Title;
-        alert.NotificationType = request.NotificationType;
         alert.TimeFrame = request.TimeFrame;
+        alert.AlertTypes = request.AlertTypes;
         context.Alerts.Update(alert);
         await context.SaveChangesAsync();
         return Result.Success();

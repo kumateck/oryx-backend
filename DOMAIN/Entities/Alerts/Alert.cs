@@ -10,8 +10,11 @@ public class CreateAlertRequest
 {
     public string Title { get; set; }
     public NotificationType NotificationType { get; set; }
-    public AlertType AlertType { get; set; }
+    public List<AlertType> AlertTypes { get; set; }
     public TimeSpan TimeFrame { get; set; }
+    public List<Guid> RoleIds { get; set; } = [];
+    public List<Guid> UserIds { get; set; } = [];
+
 }
 
 public class Alert : BaseEntity
@@ -30,15 +33,6 @@ public class Alert : BaseEntity
 
 public class AlertRole
 {
-    public AlertRole()
-    {
-    }
-
-    public AlertRole(Guid roleId)
-    {
-        RoleId = roleId;
-    }
-
     public Guid Id { get; set; }
     public Guid RoleId { get; set; }
     public Role Role { get; set; }
