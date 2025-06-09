@@ -125,9 +125,11 @@ public class EmployeeRepository(ApplicationDbContext context,
         else
         {
             logger.LogWarning("Nationality ID {Id} not found in countries table.", request.Nationality);
+            return Error.Validation("Nationality.Invalid", "Invalid Nationality.");
         }
 
         var employee = mapper.Map<Employee>(request);
+        
         logger.LogDebug("Mapped CreateEmployeeRequest to Employee: {@Employee}", employee);
 
         await context.Employees.AddAsync(employee);
@@ -303,7 +305,8 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         // Fetch available employees directly from DB, filter and project to DTO
         var availableEmployees = await context.Employees
-            .Where(e => e.LastDeletedById == null && !unavailableEmployeeIds.Contains(e.Id))
+            .Where(e => e.LastDeletedById == null 
+                        && !unavailableEmployeeIds.Contains(e.Id))
             .ProjectTo<MinimalEmployeeInfoDto>(mapper.ConfigurationProvider)
             .ToListAsync();
 

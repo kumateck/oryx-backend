@@ -8,7 +8,6 @@ using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.ShiftAssignments;
-using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Users;
 
