@@ -20,7 +20,7 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
 
     public void EnqueueNotification(string message, NotificationType type, Guid? departmentId = null, List<User> users = null)
     {
-        notificationQueue.Enqueue((message, type, departmentId, users));
+        notificationQueue.Enqueue((message, type, departmentId, users ?? []));
     }
     
     public void EnqueuePrevStateCapture(PrevStateCaptureRequest prevStateCapture)

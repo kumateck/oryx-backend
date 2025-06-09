@@ -119,6 +119,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddHostedService<ApprovalEscalationService>();
         services.AddHostedService<LeaveExpiryService>();
+        services.AddHostedService<MaterialStockService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)
