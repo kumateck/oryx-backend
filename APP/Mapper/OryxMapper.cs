@@ -1,6 +1,7 @@
 using APP.Mapper.Resolvers;
 using AutoMapper;
 using DOMAIN.Entities.ActivityLogs;
+using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
@@ -815,6 +816,12 @@ public class OryxMapper : Profile
         #region AnalyticalTestRequests
 
         CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>();
+
+        #endregion
+
+        #region Alerts
+
+        CreateMap<Alert, AlertDto>();
 
         #endregion
 
