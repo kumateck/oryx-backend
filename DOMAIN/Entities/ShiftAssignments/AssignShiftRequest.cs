@@ -11,4 +11,6 @@ public class AssignShiftRequest
     [Required] public Guid ShiftCategoryId { get; set; }
     
     [Required] public Guid ShiftTypeId { get; set; }
+    
+    [Required] public DateTime ScheduleDate { get; set; }
 }
