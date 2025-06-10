@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Utils;
@@ -13,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using SHARED;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
@@ -24,7 +26,7 @@ using DOMAIN.Entities.Warehouses;
 namespace APP.Repository;
 
 public class RequisitionRepository(ApplicationDbContext context, IMapper mapper, IProcurementRepository procurementRepository, 
-    IEmailService emailService, IPdfService pdfService, IConfigurationRepository configurationRepository, IMaterialRepository materialRepository, IApprovalRepository approvalRepository) : IRequisitionRepository
+    IEmailService emailService, IPdfService pdfService, IConfigurationRepository configurationRepository, IMaterialRepository materialRepository, IApprovalRepository approvalRepository, IBackgroundWorkerService backgroundWorkerService) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
 
@@ -71,7 +73,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             // Separate items into Raw and Package
             var rawItems = request.Items.Where(i => materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Raw)).ToList();
             var packageItems = request.Items.Where(i => materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Package)).ToList();
-
+            
             // Create Raw Material Requisition
             var rawStockRequisitionId = await CreateStockRequisition("raw", rawItems);
             if (rawStockRequisitionId.HasValue)
@@ -85,11 +87,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
              {
                  await approvalRepository.CreateInitialApprovalsAsync("PackageStockRequisition", packageStockRequisitionId.Value);
              }
-
+             
+             
             async Task<Guid?> CreateStockRequisition(string suffix, List<CreateRequisitionItemRequest> items)
             {
                 if (items.Count == 0) return null; // Skip if no items
-
                 var requisition = mapper.Map<Requisition>(request);
                 requisition.Code = $"{request.Code}-{suffix}";
                 requisition.RequestedById = userId;
@@ -110,6 +112,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 productionActivityStep.Status = ProductionStatus.InProgress;
                 context.ProductionActivitySteps.Update(productionActivityStep);
             }
+            
+            backgroundWorkerService.EnqueueNotification("Stock requisition created", NotificationType.StockRequisitionCreated, user.DepartmentId,[]);
         }
         else
         {

@@ -1,12 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 
 namespace DOMAIN.Entities.BinCards;
 
-public class BinCardInformation:BaseEntity
+public class BinCardInformation : BaseEntity
 {
     public Guid? MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
