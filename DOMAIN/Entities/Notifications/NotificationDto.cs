@@ -10,19 +10,19 @@ public class NotificationDto
 
 public enum NotificationType
 {
-    ProductionStageChanged,
-    ShiftAssigned,
-    ShipmentArrived,
-    MaterialAboveMaxStock,
-    MaterialBelowMinStock,
-    MaterialReachedReorderLevel,
-    StockRequisitionCreated,
-    PartialRequisitionCreated,
-    PartialRequestProduction,
-    OvertimeRequest,
-    LeaveRequest,
-    StaffRequest,
-    AuditLogEvent,
-    BmrBprRequested,
-    BmrBprApproved
+    ProductionStageChanged = 0,
+    ShiftAssigned = 1,
+    ShipmentArrived = 2,
+    MaterialAboveMaxStock = 3,
+    MaterialBelowMinStock = 4,
+    MaterialReachedReorderLevel = 5,
+    StockRequisitionCreated = 6,
+    PartialRequisitionCreated = 7,
+    PartialRequestProduction = 8,
+    OvertimeRequest = 9,
+    LeaveRequest = 10,
+    StaffRequest = 11,
+    AuditLogEvent = 12,
+    BmrBprRequested = 13,
+    BmrBprApproved = 14
 }

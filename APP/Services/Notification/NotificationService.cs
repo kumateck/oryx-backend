@@ -16,13 +16,14 @@ public class NotificationService(IEmailService emailService, IMessagingService s
             switch (alertType)
             {
                 case AlertType.InApp:
+                    await publishEndpoint.Publish(notification);
                     break;
                 
                 case AlertType.Email:
                     emailService.ProcessNotificationData(notification);
                     break;
                 
-                case AlertType.Combination:
+                case AlertType.Sms:
                     break;
             }
         }

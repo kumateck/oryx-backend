@@ -5,8 +5,6 @@ namespace DOMAIN.Entities.MaterialAnalyticalRawData;
 
 public class MaterialAnalyticalRawDataDto : WithAttachment
 {
-    public Guid Id { get; set; }
-    
     public string StpNumber { get; set; }
     
     public string SpecNumber { get; set; }
@@ -20,7 +18,4 @@ public class MaterialAnalyticalRawDataDto : WithAttachment
     public Guid FormId { get; set; }
     public string FormName { get; set; }
     
-    public DateTime CreatedAt { get; set; }
-    
-
 }

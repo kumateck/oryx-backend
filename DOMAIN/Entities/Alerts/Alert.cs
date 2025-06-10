@@ -47,9 +47,9 @@ public class AlertUser
 
 public enum AlertType
 {
-    Email, 
-    InApp,
-    Combination
+    Email = 0, 
+    InApp = 1,
+    Sms = 2
 }
 
 
