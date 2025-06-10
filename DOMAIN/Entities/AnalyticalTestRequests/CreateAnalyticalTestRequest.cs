@@ -26,7 +26,7 @@ public class CreateAnalyticalTestRequest
     
     [Required] public TestStage Stage { get; set; }
     
-    [Required] public Category Category { get; set; }
+    [Required] public State State { get; set; }
     
     [Required] public Status Status { get; set; }
 }

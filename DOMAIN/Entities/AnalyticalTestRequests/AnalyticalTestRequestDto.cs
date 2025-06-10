@@ -16,6 +16,8 @@ public class AnalyticalTestRequestDto : BaseDto
     
     public string ReleasedAt { get; set; }
     
+    public string Filled { get; set; }
+    
     public DateTime ReleaseDate { get; set; }
     
     public string QcManagerSignature { get; set; }
@@ -26,7 +28,7 @@ public class AnalyticalTestRequestDto : BaseDto
     
     public TestStage Stage { get; set; }
     
-    public Category Category { get; set; }
+    public State State { get; set; }
     
     public Status Status { get; set; }
 }

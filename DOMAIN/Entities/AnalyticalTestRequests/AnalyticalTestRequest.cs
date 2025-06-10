@@ -13,8 +13,10 @@ public class AnalyticalTestRequest : BaseEntity
     public DateTime ManufacturingDate { get; set; }
     
     public DateTime ExpiryDate { get; set; }
+
+    public string ReleasedAt { get; set; } = "Quality Control";
     
-    public string ReleasedAt { get; set; }
+    public string Filled { get; set;}
     
     public string SampledQuantity { get; set; }
     
@@ -24,7 +26,7 @@ public class AnalyticalTestRequest : BaseEntity
     
     public TestStage Stage { get; set; }
     
-    public Category Category { get; set; }
+    public State State { get; set; }
     
     public Status Status { get; set; }
 } 
@@ -42,7 +44,7 @@ public enum Status
     Completed,
 }
 
-public enum Category
+public enum State
 {
     Liquid,
     Granules,
