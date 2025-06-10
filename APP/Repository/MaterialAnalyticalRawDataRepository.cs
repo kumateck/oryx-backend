@@ -49,6 +49,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
                 .ThenInclude(ad => ad.Material)
+            .Include(ad => ad.Form)
             .Where(ad => ad.LastDeletedById == null)
             .Where(ad => (int) ad.MaterialStandardTestProcedure.Material.MaterialCategory.MaterialKind == materialKind)
             .AsQueryable();
@@ -73,6 +74,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
             .ThenInclude(ad => ad.Material)
+            .Include(ad => ad.Form)
             .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
 
         return analyticalRawData is null
