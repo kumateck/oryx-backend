@@ -76,11 +76,11 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// <summary>
     /// Returns a list of employees available for shift assignment
     /// </summary>
-    [HttpGet("available")]
+    [HttpGet("{shiftScheduleId:guid}/available")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<MinimalEmployeeInfoDto>))]
-    public async Task<IResult> GetAvailableEmployees([FromQuery] DateTime date)
+    public async Task<IResult> GetAvailableEmployees([FromRoute] Guid shiftScheduleId ,[FromQuery] DateTime date)
     {
-        var result = await repository.GetAvailableEmployees(date);
+        var result = await repository.GetAvailableEmployeesByDepartment(shiftScheduleId, date);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     /// <summary>

@@ -734,12 +734,10 @@ public class OryxMapper : Profile
         #region Shift Assignments
 
         CreateMap<ShiftAssignment, ShiftAssignmentDto>();
-            
-
+        
         CreateMap<ShiftAssignmentDto, ShiftAssignment>()
             .ForMember(dest => dest.ShiftTypeId, opt => opt.Ignore());
         
-
         #endregion
         
         #region ActivityLog

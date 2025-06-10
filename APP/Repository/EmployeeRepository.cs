@@ -165,7 +165,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             var roles = await userManager.GetRolesAsync(existingUser);
             await userManager.RemoveFromRolesAsync(existingUser, roles);
 
-            var newRole = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId);
+            var newRole = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId && r.DeletedAt == null);
             if (newRole is null) return RoleErrors.NotFound(employeeUserDto.RoleId);
 
             if (string.IsNullOrEmpty(newRole.Name)) return RoleErrors.InvalidRoleName(newRole.Name);
@@ -189,7 +189,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             await userManager.CreateAsync(newUser);
             await context.SaveChangesAsync();
 
-            var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId);
+            var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId && r.DeletedAt == null);
 
             if (role == null)
             {
@@ -271,17 +271,24 @@ public class EmployeeRepository(ApplicationDbContext context,
         var employeeDtos = employees.Select(e => mapper.Map<EmployeeDto>(e, 
             opts => { opts.Items[AppConstants.ModelType] = nameof(Employee); }));
 
-        return Result.Success(employeeDtos);
+        return Result.Success(employeeDtos); 
     }
 
-    public async Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployees(DateTime date)
+    public async Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date)
     {
         var isHoliday = await context.Holidays
-            .AnyAsync(h => h.Date.Date == date.Date);
+            .AnyAsync(h => h.Date.Date == date.Date && h.LastDeletedById == null);
 
         if (isHoliday)
         {
             return Result.Success(Enumerable.Empty<MinimalEmployeeInfoDto>());
+        }
+        
+        var shiftSchedule = await context.ShiftSchedules.FirstOrDefaultAsync(ss => ss.Id == shiftScheduleId && ss.LastDeletedById == null);
+
+        if (shiftSchedule == null)
+        {
+            return Error.NotFound("ShiftSchedule.NotFound", "ShiftSchedule not found");
         }
 
         // Get IDs of employees unavailable due to leave
@@ -289,12 +296,12 @@ public class EmployeeRepository(ApplicationDbContext context,
             .Where(l =>
                 l.LeaveStatus == LeaveStatus.Approved &&
                 l.StartDate.Date <= date.Date &&
-                l.EndDate.Date >= date.Date)
+                l.EndDate.Date >= date.Date && l.LastDeletedById == null)
             .Select(l => l.EmployeeId);
 
         // Get IDs of employees with assigned shift
         var scheduledEmployeeIdsQuery = context.ShiftAssignments
-            .Where(s => s.ScheduleDate.Date == date.Date)
+            .Where(s => s.ShiftSchedules.StartDate == date.Date && s.LastDeletedById == null)
             .Select(s => s.EmployeeId);
 
         // Combine both into one set
@@ -306,7 +313,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         // Fetch available employees directly from DB, filter and project to DTO
         var availableEmployees = await context.Employees
             .Where(e => e.LastDeletedById == null 
-                        && !unavailableEmployeeIds.Contains(e.Id))
+                        && !unavailableEmployeeIds.Contains(e.Id) && e.DepartmentId == shiftSchedule.DepartmentId)
             .ProjectTo<MinimalEmployeeInfoDto>(mapper.ConfigurationProvider)
             .ToListAsync();
 
