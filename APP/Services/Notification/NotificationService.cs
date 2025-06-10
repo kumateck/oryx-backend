@@ -2,7 +2,6 @@ using APP.Services.Email;
 using APP.Services.Message;
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.Notifications;
-using DOMAIN.Entities.Users;
 using MassTransit;
 
 namespace APP.Services.Notification;
@@ -27,10 +26,5 @@ public class NotificationService(IEmailService emailService, IMessagingService s
                     break;
             }
         }
-    }
-
-    public async Task SendNotification(string message, List<UserDto> users)
-    {
-        
     }
 }
