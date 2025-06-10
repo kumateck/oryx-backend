@@ -884,6 +884,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             context.ProductionScheduleProducts.Update(productionScheduleProduct);
             await context.SaveChangesAsync();
         }
+        
+        backgroundWorkerService.EnqueueNotification("Batch manufacturing record created", NotificationType.BmrBprRequested);
+        
         return batchRecord.Id;
     }
      
@@ -1086,6 +1089,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             Timestamp = DateTime.UtcNow
         });
         await context.SaveChangesAsync();
+        
+        backgroundWorkerService.EnqueueNotification("Batch manufacturing issued", NotificationType.BmrBprApproved);
+
         return Result.Success();
     }
     
@@ -1171,6 +1177,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             Timestamp = DateTime.UtcNow
         });
         await context.SaveChangesAsync();
+        
+        backgroundWorkerService.EnqueueNotification("Batch packaging issued", NotificationType.BmrBprApproved);
+
         return Result.Success();
     }
     

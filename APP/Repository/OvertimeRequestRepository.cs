@@ -1,8 +1,10 @@
 using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Background;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.OvertimeRequests;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +12,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class OvertimeRequestRepository(ApplicationDbContext context, IMapper mapper) : IOvertimeRequestRepository
+public class OvertimeRequestRepository(ApplicationDbContext context, IMapper mapper, IBackgroundWorkerService backgroundWorkerService) : IOvertimeRequestRepository
 {
     public async Task<Result<Guid>> CreateOvertimeRequest(CreateOvertimeRequest request)
     {
@@ -51,6 +53,8 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
 
         await context.OvertimeRequests.AddAsync(overtimeRequestEntity);
         await context.SaveChangesAsync();
+        
+        backgroundWorkerService.EnqueueNotification("New overtime request created", NotificationType.OvertimeRequest);
 
         return overtimeRequestEntity.Id;
     }

@@ -1,7 +1,9 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Background;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.StaffRequisitions;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +11,7 @@ using SHARED;
 
 namespace APP.Repository;
  
-public class StaffRequisitionRepository(ApplicationDbContext context, IMapper mapper) : IStaffRequisitionRepository
+public class StaffRequisitionRepository(ApplicationDbContext context, IMapper mapper, IBackgroundWorkerService backgroundWorkerService) : IStaffRequisitionRepository
 {
     public async Task<Result<Guid>> CreateStaffRequisition(CreateStaffRequisitionRequest request, Guid userId)
     {
@@ -31,6 +33,9 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
         await context.StaffRequisitions.AddAsync(staffRequisition);
         
         await context.SaveChangesAsync();
+        
+        backgroundWorkerService.EnqueueNotification("Staff requisition created", NotificationType.StaffRequest);
+        
         return staffRequisition.Id;
     }
 

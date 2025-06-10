@@ -88,7 +88,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                  await approvalRepository.CreateInitialApprovalsAsync("PackageStockRequisition", packageStockRequisitionId.Value);
              }
              
-             
             async Task<Guid?> CreateStockRequisition(string suffix, List<CreateRequisitionItemRequest> items)
             {
                 if (items.Count == 0) return null; // Skip if no items

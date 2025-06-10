@@ -1,15 +1,17 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Background;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.Notifications;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
 
-public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper, IApprovalRepository approvalRepository) : ILeaveRequestRepository
+public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper, IApprovalRepository approvalRepository, IBackgroundWorkerService backgroundWorkerService) : ILeaveRequestRepository
 
 {
     public async Task<Result<Guid>> CreateLeaveOrAbsenceRequest(CreateLeaveRequest request)
@@ -141,6 +143,8 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         await context.SaveChangesAsync();
         
         await approvalRepository.CreateInitialApprovalsAsync(nameof(LeaveRequest), entity.Id);
+        
+        backgroundWorkerService.EnqueueNotification("New leave request created", NotificationType.LeaveRequest);
         
         return entity.Id;
     }
