@@ -8,6 +8,10 @@ public class ShiftAssignmentDto
     public List<MinimalEmployeeInfoDto> Employees { get; set; }
     public DateTime ScheduleDate { get; set; }
     
+    public DateTime StartDate { get; set; }
+    
+    public DateTime EndDate { get; set; }
+    
     public ShiftCategoryDto ShiftCategory { get; set; }
     
     public MinimalShiftTypeDto ShiftType { get; set; }
@@ -21,4 +25,8 @@ public class MinimalShiftScheduleDto
     public Guid ScheduleId { get; set; }
     
     public string ScheduleName { get; set; }
+    
+    public DateTime StartDate { get; set; }
+    
+    public DateTime EndDate { get; set; }
 }
