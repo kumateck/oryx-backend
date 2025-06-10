@@ -31,6 +31,8 @@ public class ActivityLogMiddleware(RequestDelegate next)
         }
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? context.Connection.RemoteIpAddress?.ToString();
         var userAgent = request.Headers["User-Agent"].ToString();
+        var module = request.Headers["Module"].ToString();
+        var subModule = request.Headers["Sub-Module"].ToString();
         var queryParams = request.QueryString.ToString();
         var headers = JsonSerializer.Serialize(request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString()));
 
@@ -101,8 +103,8 @@ public class ActivityLogMiddleware(RequestDelegate next)
             {
                 UserId = string.IsNullOrEmpty(userId) ? null : Guid.Parse(userId),
                 Action = action,
-                Module = ExtractModule(request.Path),
-                SubModule = ExtractSubModule(request.Path),
+                Module = module,
+                SubModule = subModule,
                 ActionType = DetermineActionType(request.Method),
                 IpAddress = ipAddress,
                 Url = $"{request.Scheme}://{request.Host}{request.Path}",
