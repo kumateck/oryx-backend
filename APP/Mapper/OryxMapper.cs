@@ -796,6 +796,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.MaterialStandardTestProcedure, opt => opt.Ignore());
 
         CreateMap<MaterialAnalyticalRawData, MaterialAnalyticalRawDataDto>()
+            .ForMember(dest => dest.MaterialName, opt => opt.MapFrom(src => src.MaterialStandardTestProcedure.Material.Name))
             .ForMember(dest => dest.FormName, opt => opt.MapFrom(src => src.Form.Name));
 
         #endregion
