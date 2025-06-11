@@ -7,7 +7,6 @@ namespace DOMAIN.Entities.ShiftAssignments;
 
 public class ShiftAssignment : BaseEntity
 {
-    public DateTime ScheduleDate { get; set; }
     public Guid EmployeeId { get; set; }
     
     public Employee Employee { get; set; }
