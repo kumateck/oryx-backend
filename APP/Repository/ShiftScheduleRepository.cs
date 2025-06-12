@@ -126,10 +126,12 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             {
                 s.ShiftCategoryId,
                 s.ShiftTypeId,
-                s.ShiftScheduleId
+                s.ShiftScheduleId,
+                s.ScheduleDate
             })
             .Select(g => new ShiftAssignmentDto
             {
+                ScheduleDate = g.Key.ScheduleDate,
                 ShiftCategory = g.Select(s => new ShiftCategoryDto
                 {
                     Id = s.ShiftCategoryId,
@@ -183,10 +185,12 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             {
                 s.ShiftScheduleId,
                 s.ShiftCategoryId,
-                s.ShiftTypeId
+                s.ShiftTypeId,
+                s.ScheduleDate
             })
             .Select(g => new ShiftAssignmentDto
             {
+                ScheduleDate = g.Key.ScheduleDate,
                 ShiftCategory = g.Select(s => new ShiftCategoryDto
                 {
                     Id = s.ShiftCategoryId,
@@ -295,14 +299,20 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     if (availableEmployees.Count == 0)
         return Error.Validation("Employees.NotFound", "No valid employees could be assigned due to leave or conflicts.");
 
-    var assignments = availableEmployees.Select(id => new ShiftAssignment
+    var assignments = new List<ShiftAssignment>();
+
+    for (var date = startDate; date <= endDate; date = date.AddDays(1))
     {
-        Id = Guid.NewGuid(),
-        EmployeeId = id,
-        ShiftScheduleId = shiftSchedule.Id,
-        ShiftCategoryId = request.ShiftCategoryId,
-        ShiftTypeId = request.ShiftTypeId
-    }).ToList();
+        assignments.AddRange(availableEmployees.Select(id => new ShiftAssignment
+        {
+            Id = Guid.NewGuid(),
+            EmployeeId = id,
+            ShiftScheduleId = shiftSchedule.Id,
+            ShiftCategoryId = request.ShiftCategoryId,
+            ShiftTypeId = request.ShiftTypeId,
+            ScheduleDate = date
+        }));
+    }
 
     await context.ShiftAssignments.AddRangeAsync(assignments);
     await context.SaveChangesAsync();

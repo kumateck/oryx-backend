@@ -152,4 +152,36 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
             Errors = result.Errors.Select(item => item.Description)
         };
     }
+
+    public async Task<Result<PasswordChangeResponse>> ChangePassword(UserPasswordChangeRequest model, Guid userId)
+    {
+        if (model.NewPassword != model.ConfirmNewPassword)
+        {
+            return Error.Validation("NewPassword.Invalid", "New Passwords do not match");
+        }
+
+        if (string.IsNullOrWhiteSpace(model.NewPassword) || model.NewPassword.Length < 8)
+        {
+            return Error.Validation("NewPassword.Invalid", "New Password must be at least 8 characters");
+        }
+        
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user == null) return UserErrors.NotFound(userId);
+        
+        var result = await userManager.ChangePasswordAsync(user, model.NewPassword, model.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            return new PasswordChangeResponse
+            {
+                Success = false,
+                Errors = result.Errors.Select(item => item.Description)
+            };
+        }
+        
+        return new PasswordChangeResponse
+        {
+            Success = true
+        };
+    }
 }
