@@ -6,6 +6,7 @@ using DOMAIN.Entities.ProductAnalyticalRawData;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
+using ZstdSharp.Unsafe;
 
 namespace APP.Repository;
 
@@ -21,11 +22,10 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         
         var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId && f.LastDeletedById == null);
 
-        if (form.Name != "Analytical Raw Data")
+        if (form is null)
         {
-            return Error.Validation("ProductAnalyticalRawData.InvalidForm", "Analytical raw data form is invalid.");
+            return Error.Validation("Form.Invalid", "Form is invalid.");
         }
-        
         
         var stpNumber = await context.ProductStandardTestProcedures
             .AnyAsync(mstp => mstp.StpNumber == request.StpNumber && mstp.LastDeletedById == null);
@@ -81,7 +81,10 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         
         return analyticalRawData is null ?
             Error.NotFound("ProductAnalyticalRawData.NotFound", "Product analytical raw data not found") : 
-            mapper.Map<ProductAnalyticalRawDataDto>(analyticalRawData);
+            mapper.Map<ProductAnalyticalRawDataDto>(analyticalRawData, opts =>
+            {
+                opts.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
+            });
     }
 
     public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateProductAnalyticalRawDataRequest request)
