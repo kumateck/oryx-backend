@@ -19,7 +19,9 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result<Guid>> CreateShiftSchedule(CreateShiftScheduleRequest request)
     {
         var shiftSchedule = await context.ShiftSchedules
-            .FirstOrDefaultAsync(s => s.ScheduleName == request.ScheduleName 
+            .FirstOrDefaultAsync(s => s.ScheduleName == request.ScheduleName
+                                      && s.DepartmentId == request.DepartmentId
+                                      && s.StartDate == request.StartDate
                                       && s.LastDeletedById == null);
         if (shiftSchedule is not null)
         {

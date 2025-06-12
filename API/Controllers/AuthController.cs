@@ -59,6 +59,9 @@ public class AuthController(IAuthRepository repo) : ControllerBase
         return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Password change for logged-in users.
+    /// </summary>
     [HttpPost("user-reset-password")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PasswordChangeResponse))]
