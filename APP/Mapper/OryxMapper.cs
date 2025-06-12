@@ -38,6 +38,7 @@ using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.ProductAnalyticalRawData;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -797,6 +798,20 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.MaterialName, opt => opt.MapFrom(src => src.MaterialStandardTestProcedure.Material.Name))
             .ForMember(dest => dest.FormName, opt => opt.MapFrom(src => src.Form.Name))
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+
+        #endregion
+
+        #region Product Analytical Raw Data
+        CreateMap<CreateProductAnalyticalRawDataRequest, ProductAnalyticalRawData>();
+        CreateMap<ProductAnalyticalRawDataDto, ProductAnalyticalRawData>()
+            .ForMember(dest => dest.ProductStandardTestProcedure, opt => opt.Ignore());
+
+        CreateMap<ProductAnalyticalRawData, ProductAnalyticalRawDataDto>()
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductStandardTestProcedure.Product.Name))
+            .ForMember(dest => dest.FormName, opt => opt.MapFrom(src => src.Form.Name))
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+
+        
 
         #endregion
 

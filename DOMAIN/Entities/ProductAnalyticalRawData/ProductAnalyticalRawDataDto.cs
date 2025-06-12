@@ -1,6 +1,8 @@
+using DOMAIN.Entities.Attachments;
+
 namespace DOMAIN.Entities.ProductAnalyticalRawData;
 
-public class ProductAnalyticalRawDataDto
+public class ProductAnalyticalRawDataDto : WithAttachment
 {
     public string StpNumber { get; set; }
     
@@ -13,5 +15,9 @@ public class ProductAnalyticalRawDataDto
     public Guid StpId { get; set; }
     
     public Guid FormId { get; set; }
+    
+    public string FormName { get; set; }
+    
+    public string ProductName { get; set; }
 
 }
