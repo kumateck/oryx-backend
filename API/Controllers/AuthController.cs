@@ -58,4 +58,16 @@ public class AuthController(IAuthRepository repo) : ControllerBase
         var response = await repo.ForgotPassword(request);
         return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
     }
+
+    [HttpPost("user-reset-password")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PasswordChangeResponse))]
+    public async Task<IResult> UserChangePassword([FromBody] UserPasswordChangeRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repo.ChangePassword(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
