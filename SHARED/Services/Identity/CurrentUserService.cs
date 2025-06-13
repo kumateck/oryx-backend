@@ -13,15 +13,23 @@ public class CurrentUserService : ICurrentUserService
     {
         var context = httpContextAccessor.HttpContext;
         var authHeader = context?.Request.Headers["Authorization"].ToString();
+        var environment = Environment.GetEnvironmentVariable("Environment");
 
         if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
         {
             var token = authHeader.Substring("Bearer ".Length).Trim();
             var jwtSecret = config["JwtSettings:Key"];
             var principal = ValidateToken(token, jwtSecret);
+            var tokenEnv = principal.FindFirst("environment")?.Value;
+
+            if (environment != tokenEnv)
+            {
+                return;
+            }
 
             var userIdString = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (Guid.TryParse(userIdString, out var userId))
+                
                 UserId = userId;
 
             var departmentIdString = principal?.FindFirst("department")?.Value;

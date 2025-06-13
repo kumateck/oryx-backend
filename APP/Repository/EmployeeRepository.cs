@@ -103,8 +103,6 @@ public class EmployeeRepository(ApplicationDbContext context,
 
     public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)
     {
-        logger.LogInformation("Starting CreateEmployee for email: {Email}", request.Email);
-
         var existingEmployee = await context.Employees
             .FirstOrDefaultAsync(e => e.Email == request.Email && e.LastDeletedById == null);
 
@@ -119,7 +117,6 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         if (country != null)
         {
-            logger.LogInformation("Resolved nationality ID {Id} to country name: {Country}", request.Nationality, country.Name);
             request.Nationality = country.Name;
         }
         else
@@ -130,13 +127,9 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         var employee = mapper.Map<Employee>(request);
         
-        logger.LogDebug("Mapped CreateEmployeeRequest to Employee: {@Employee}", employee);
-
         await context.Employees.AddAsync(employee);
-        logger.LogInformation("Employee entity added to context for email: {Email}", request.Email);
 
         await context.SaveChangesAsync();
-        logger.LogInformation("New employee created with ID: {Id}", employee.Id);
 
         return employee.Id;
     }
