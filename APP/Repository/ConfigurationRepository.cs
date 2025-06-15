@@ -7,10 +7,12 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
@@ -189,6 +191,17 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .Where(m => m.StaffNumber.StartsWith(prefix))
                    .CountAsync();
            
+           case nameof(ProductSampling):
+               return await context.ProductSamplings
+                   .IgnoreQueryFilters()
+                   .Where(m => m.ArNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           // case nameof(MaterialSampling):
+           //     return await context.MaterialSamplings
+           //         .IgnoreQueryFilters()
+           //         .Where(m => m.ArNumber.StartsWith(prefix))
+           //         .CountAsync();
            
            case "FinishedGoodsTransfer":
                return 0;

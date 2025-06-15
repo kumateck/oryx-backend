@@ -22,6 +22,12 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
             return Error.Validation("OvertimeRequest.InvalidTimeFormat", 
                 "Start time and end time must be in 12-hour format.");
         }
+        
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
+        if (department == null)
+        {
+            return Error.Validation("Department.Invalid", "Invalid department.");
+        }
 
         // Fetch all selected employees
         var selectedEmployees = await context.Employees

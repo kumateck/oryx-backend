@@ -21,9 +21,9 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         
         var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId && f.LastDeletedById == null);
 
-        if (form.Name != "Analytical Raw Data")
+        if (form is null)
         {
-            return Error.Validation("MaterialAnalyticalRawData.InvalidForm", "Analytical raw data form is invalid.");
+            return Error.Validation("Form.Invalid", "Form is invalid.");
         }
         
         

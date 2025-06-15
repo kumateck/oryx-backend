@@ -294,7 +294,9 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         // Get IDs of employees with assigned shift
         var scheduledEmployeeIdsQuery = context.ShiftAssignments
-            .Where(s => s.ShiftSchedules.StartDate == date.Date && s.LastDeletedById == null)
+            .Where(s => s.ShiftSchedules.StartDate <= date.Date
+                        && s.ShiftSchedules.EndDate >= date.Date
+                        && s.LastDeletedById == null)
             .Select(s => s.EmployeeId);
 
         // Combine both into one set
