@@ -63,6 +63,7 @@ public enum LeaveStatus
     Approved,
     Rejected,
     Expired,
-    Recalled
+    Recalled,
+    Reapplied
 }
 

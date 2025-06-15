@@ -247,6 +247,33 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         return Result.Success();
     }
 
+    public async Task<Result> ReapplyLeaveRequest(Guid leaveRequestId, ReapplyLeaveRequest reapplyLeaveRequest)
+    {
+        var existing = await context.LeaveRequests
+            .Include(l => l.Approvals)
+            .FirstOrDefaultAsync(l => l.Id == leaveRequestId
+                                      && l.LeaveStatus == LeaveStatus.Rejected
+                                      && l.LastDeletedById == null);
+
+        if (existing == null)
+            return Error.NotFound("Leave.NotFound", "Rejected leave request not found.");
+
+        // Reset fields
+        existing.StartDate = reapplyLeaveRequest.NewStartDate;
+        existing.EndDate = reapplyLeaveRequest.NewEndDate;
+        existing.Justification = reapplyLeaveRequest.Justification;
+        existing.LeaveStatus = LeaveStatus.Reapplied;
+        existing.Approved = false;
+        existing.RecallDate = DateTime.UtcNow;
+
+        // Reset approvals
+        context.LeaveRequestApprovals.RemoveRange(existing.Approvals);
+        existing.Approvals = [];
+
+        await context.SaveChangesAsync();
+        return Result.Success(existing.Id);
+    }
+
     public async Task<Result> SubmitLeaveRecallRequest(CreateLeaveRecallRequest createLeaveRecallRequest)
     {
         var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == createLeaveRecallRequest.EmployeeId);
@@ -293,6 +320,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         
         return Result.Success();
     }
+    
 
     public async Task<Result> DeleteLeaveRequest(Guid leaveRequestId, Guid userId)
     {

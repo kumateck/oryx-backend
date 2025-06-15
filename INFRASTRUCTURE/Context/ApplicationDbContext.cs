@@ -27,6 +27,7 @@ using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.MaterialAnalyticalRawData;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
@@ -40,6 +41,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProductStandardTestProcedures;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
@@ -471,6 +473,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<AnalyticalTestRequest> AnalyticalTestRequests { get; set; }
 
+    #endregion
+    
+    #region Sample Products
+    
+    public DbSet<ProductSampling> ProductSamplings { get; set; }
+        
+    #endregion
+    
+    #region Sample Materials 
+    
+    public DbSet<MaterialSampling> MaterialSamplings { get; set; }
     #endregion
     
     // #region TenantFilter
@@ -935,6 +948,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FinishedGoodsTransferNote>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && entity.BatchManufacturingRecord != null);
 
         #endregion
+        
     }
 
     private void ConfigureRelationships(ModelBuilder modelBuilder)

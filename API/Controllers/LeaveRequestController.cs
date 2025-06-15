@@ -86,6 +86,15 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
+    [HttpPut("{leaveRequestId:guid}/reapply")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ReapplyLeaveRequest([FromRoute] Guid leaveRequestId, [FromBody] ReapplyLeaveRequest reapplyLeaveRequest)
+    {
+        var result = await repository.ReapplyLeaveRequest(leaveRequestId, reapplyLeaveRequest);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Deletes a specific leave request by its ID.
     /// </summary>

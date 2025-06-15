@@ -32,6 +32,7 @@ using DOMAIN.Entities.LeaveTypes;
 using DOMAIN.Entities.MaterialAnalyticalRawData;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Persons;
@@ -46,6 +47,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProductStandardTestProcedures;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
@@ -810,7 +812,6 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductStandardTestProcedure.Product.Name))
             .ForMember(dest => dest.FormName, opt => opt.MapFrom(src => src.Form.Name))
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
-
         
 
         #endregion
@@ -843,6 +844,19 @@ public class OryxMapper : Profile
         CreateMap<Alert, AlertDto>();
 
         #endregion
+        
+        #region Product Sampling
+        
+        CreateMap<CreateProductSamplingRequest, ProductSampling>();
+        CreateMap<ProductSampling, ProductSamplingDto>().ForMember(dest => dest.AnalyticalTestRequest, opt => opt.MapFrom(src => src.AnalyticalTestRequest));
 
+        #endregion
+
+        #region Material Sampling
+        
+        CreateMap<CreateMaterialSamplingRequest, MaterialSampling>();
+        CreateMap<MaterialSampling, MaterialSamplingDto>().ForMember(dest => dest.GrnDto, opt => opt.MapFrom(src => src.Grn));
+
+        #endregion
     }
 }

@@ -39,9 +39,10 @@ public enum TestStage
 
 public enum Status
 {
-    Pending,
-    InProgress,
-    Completed,
+    Quarantine,
+    UnderTest,
+    TestComplete,
+    Approved,
 }
 
 public enum State
