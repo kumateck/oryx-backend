@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
 using SHARED;
 
@@ -44,6 +45,7 @@ public class ProductionActivityStepUser : BaseEntity
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public Guid UserId { get; set; }
     public User User { get; set; }
+    public List<RouteOperationAction> Actions { get; set; } = [];
 }
 
 public class ProductionActivityStepResource : BaseEntity
@@ -129,6 +131,7 @@ public class ProductionActivityStepDto : BaseDto
 public class ProductionActivityStepUserDto : BaseDto
 {
     public UserDto User { get; set; }
+    public List<RouteOperationActionDto> Actions { get; set; } = [];
 }
 
 public class ProductionActivityStepResourceDto : BaseDto

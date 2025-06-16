@@ -16,6 +16,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
@@ -134,7 +135,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(product => product.Routes).ThenInclude(route => route.Resources)
             .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
             .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)
-            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles).FirstOrDefaultAsync(p => p.Id == productId);
+            .ThenInclude(routeResponsibleUser => routeResponsibleUser.Actions)
+            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles)
+            .ThenInclude(routeResponsibleRole => routeResponsibleRole.Actions).FirstOrDefaultAsync(p => p.Id == productId);
         
         
         if(productionSchedule is null)
@@ -159,15 +162,53 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         {
             usersInRole.AddRange(await userManager.GetUsersInRoleAsync(role?.Name ?? ""));
         }
-
-        var totalUsers = users.Concat(usersInRole).Distinct().ToList();
-
-        if (totalUsers.Count == 0)
-            return Error.Validation("Product.Validation", "This product has no users associated for procedures defined hence a production activity cannot commence.");
         
         var quantity = productionSchedule.Products.First(p => p.ProductId == productId).Quantity;
 
         await FreezeMaterialInProduction(productionScheduleId, productId,  userId);
+        
+        // Step 1: Build a dictionary of users and their associated actions
+        var userActionsMap = new Dictionary<Guid, HashSet<RouteOperationAction>>();
+
+        // Add actions from RouteResponsibleUsers
+        foreach (var route in product.Routes)
+        {
+            foreach (var ru in route.ResponsibleUsers)
+            {
+                if (!userActionsMap.ContainsKey(ru.UserId))
+                    userActionsMap[ru.UserId] = [];
+
+                foreach (var action in ru.Actions)
+                    userActionsMap[ru.UserId].Add(action);
+            }
+        }
+
+        // Add actions from RouteResponsibleRoles
+        foreach (var route in product.Routes)
+        {
+            foreach (var rr in route.ResponsibleRoles)
+            {
+                var roleName = rr.Role?.Name ?? "";
+                var usersInThisRole = await userManager.GetUsersInRoleAsync(roleName);
+                foreach (var user in usersInThisRole)
+                {
+                    if (!userActionsMap.ContainsKey(user.Id))
+                        userActionsMap[user.Id] = [];
+
+                    foreach (var action in rr.Actions)
+                        userActionsMap[user.Id].Add(action);
+                }
+            }
+        }
+
+        // Final user list
+        var totalUsers = userActionsMap.Keys
+            .Select(uId => users.FirstOrDefault(u => u.Id == uId) ?? usersInRole.First(u => u.Id == uId))
+            .Distinct()
+            .ToList();
+        
+        if (totalUsers.Count == 0)
+            return Error.Validation("Product.Validation", "This product has no users associated for procedures defined hence a production activity cannot commence.");
         
         var activity = new ProductionActivity
         {
@@ -188,9 +229,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 {
                     WorkCenterId = re.WorkCenterId
                 }).ToList(),
-                ResponsibleUsers = totalUsers.Select(u => new ProductionActivityStepUser
+                ResponsibleUsers = userActionsMap.Select(kvp => new ProductionActivityStepUser
                 {
-                    UserId = u.Id
+                    UserId = kvp.Key,
+                    Actions = kvp.Value.ToList()
                 }).ToList(),
             }).ToList(),
             ActivityLogs =
@@ -321,6 +363,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 {
                     activityStep.ProductionActivity.CompletedAt = DateTime.UtcNow;
                     activityStep.ProductionActivity.Status = ProductionStatus.Completed;
+                    
                 }
                 else
                 {
@@ -415,6 +458,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps.OrderBy(p => p.Order))
             .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
+            .ThenInclude(pas => pas.Actions).ThenInclude(pas => pas.Form)
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
@@ -427,8 +471,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<ProductionActivityStepDto>>>> GetProductionActivitySteps(ProductionFilter filter)
     {
         var query = context.ProductionActivitySteps
+            .AsSplitQuery()
             .Include(pas => pas.ProductionActivity)
             .Include(pas => pas.ResponsibleUsers)
+            .ThenInclude(pas => pas.Actions).ThenInclude(pas => pas.Form)
             .Include(pas => pas.Resources)
             .Include(pas => pas.WorkCenters)
             .Include(psa => psa.Operation)
@@ -456,7 +502,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var productionActivityStep = await context.ProductionActivitySteps
             .AsSplitQuery()
             .Include(pas => pas.ProductionActivity)
-            .Include(pas => pas.ResponsibleUsers)
+            .Include(pas => pas.ResponsibleUsers)            
+            .ThenInclude(pas => pas.Actions).ThenInclude(pas => pas.Form)
             .Include(pas => pas.Resources)
             .Include(pas => pas.WorkCenters)
             .Include(pas => pas.WorkFlow)

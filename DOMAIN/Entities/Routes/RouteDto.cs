@@ -22,15 +22,23 @@ public class RouteResourceDto
 public class RouteResponsibleUserDto 
 {
     public CollectionItemDto User { get; set; }
+    public List<RouteOperationActionDto> Actions { get; set; } = [];
 }
 
 
 public class RouteResponsibleRoleDto
 {
     public CollectionItemDto Role { get; set; }
+    public List<RouteOperationActionDto> Actions { get; set; } = [];
 }
 
 public class RouteWorkCenterDto
 {
     public CollectionItemDto WorkCenter { get; set; }
+}
+
+public class RouteOperationActionDto
+{
+    public CollectionItemDto Form { get; set; }
+    public OperationAction Action { get; set; }
 }
