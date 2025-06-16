@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Products;
