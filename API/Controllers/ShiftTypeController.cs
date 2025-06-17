@@ -52,7 +52,7 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
     /// <summary>
     /// Updates the details of an existing shift type.
     /// </summary>
-    [HttpPut]
+    [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ShiftTypeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
