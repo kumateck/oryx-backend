@@ -1011,13 +1011,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
 
-    public async Task<Result<FinishedGoodsTransferDto>> GetFinishedGoodsTransferNote(Guid id)
+    public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id)
     {
         var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
         
         return transferNote is null ? 
             Error.NotFound("TransferNote.NotFound", "Transfer note not found") : 
-            mapper.Map<FinishedGoodsTransferDto>(transferNote);
+            mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
     }
 
 

@@ -12,7 +12,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
 {
     public async Task<Result<Guid>> CreateLeaveType(CreateLeaveTypeRequest leaveTypeDto)
     {
-        var existingLeaveType = await context.LeaveTypes.FirstOrDefaultAsync(l => l.Name == leaveTypeDto.Name && l.LastDeletedById == null);
+        var existingLeaveType = await context.LeaveTypes.FirstOrDefaultAsync(l => l.Name == leaveTypeDto.Name);
 
         if (existingLeaveType != null)
         {
@@ -77,7 +77,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var leaveType = await context.LeaveTypes
             .Include(d => d.Designations)
-            .FirstOrDefaultAsync(l=> l.Id == id && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l=> l.Id == id );
         if (leaveType == null)
         {
             return Error.NotFound("LeaveType.NotFound", "LeaveType not found");
@@ -89,7 +89,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest request)
     {
         var leaveType = await context.LeaveTypes
-            .FirstOrDefaultAsync(l => l.Id == id && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l => l.Id == id );
         
         if (leaveType == null)
         {

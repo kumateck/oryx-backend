@@ -22,13 +22,13 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         var totalDays = (request.EndDate - request.StartDate).TotalDays + 1;
         
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Id == request.EmployeeId && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.Id == request.EmployeeId);
         
         if (existingEmployee is null)
             return Error.NotFound("Employee.NotFound", "Employee not found.");
         
         var leaveType = await context.LeaveTypes
-            .FirstOrDefaultAsync(l => l.Id == request.LeaveTypeId && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l => l.Id == request.LeaveTypeId);
 
         if (leaveType is null)
             return Error.NotFound("LeaveType.NotFound", "Leave type not found.");
@@ -37,7 +37,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         var existingRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l => l.EmployeeId == request.EmployeeId &&
                                       l.StartDate == request.StartDate &&
-                                      l.EndDate == request.EndDate && l.LastDeletedById == null);
+                                      l.EndDate == request.EndDate);
      
         if (existingRequest is not null)
             return Error.Validation("Request.Exists", "A request already exists for this period.");
@@ -157,7 +157,6 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             .Include(l => l.Employee)
                 .ThenInclude(l => l.Designation)
                 .ThenInclude(l => l.Departments)
-            .Where(l => l.LastDeletedById == null)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -200,7 +199,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
            .AsSplitQuery()
            .Include(l => l.LeaveType)
            .Include(l => l.Employee)
-           .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);
+           .FirstOrDefaultAsync(l => l.Id == leaveRequestId);
        
        return leaveRequest is null ? 
            Error.NotFound("LeaveRequest.NotFound", "Leave request not found") : 
@@ -210,7 +209,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
     public async Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest)
     {
         var existingLeaveRequest = await context.LeaveRequests
-            .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l => l.Id == leaveRequestId);
         
         if (existingLeaveRequest is null)
         {
@@ -223,7 +222,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
         
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(l => l.Id == leaveRequest.EmployeeId && l.LastDeletedById == null);;
+            .FirstOrDefaultAsync(l => l.Id == leaveRequest.EmployeeId);;
         
         if (existingEmployee is null)
         {
@@ -231,7 +230,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
         
         var leaveType = await context.LeaveTypes
-            .FirstOrDefaultAsync(l => l.Id == leaveRequest.LeaveTypeId && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l => l.Id == leaveRequest.LeaveTypeId);
 
         if (leaveType is null)
         {
@@ -250,8 +249,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         var existing = await context.LeaveRequests
             .Include(l => l.Approvals)
             .FirstOrDefaultAsync(l => l.Id == leaveRequestId
-                                      && l.LeaveStatus == LeaveStatus.Rejected
-                                      && l.LastDeletedById == null);
+                                      && l.LeaveStatus == LeaveStatus.Rejected);
 
         if (existing == null)
             return Error.NotFound("Leave.Invalid", "Only rejected leave requests can be processed.");
@@ -283,7 +281,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         var leaveRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l =>
                 l.EmployeeId == createLeaveRecallRequest.EmployeeId &&
-                l.LeaveStatus == LeaveStatus.Approved && l.DeletedAt == null);
+                l.LeaveStatus == LeaveStatus.Approved);
         
         if (leaveRequest == null)
             return Error.Validation("LeaveRecall.Invalid", "No approved leave found for the specified date.");
@@ -323,7 +321,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
     {
         var leaveRequest = await context.LeaveRequests
             .Include(l => l.Employee)
-            .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l => l.Id == leaveRequestId);
         
         if (leaveRequest is null)
         {

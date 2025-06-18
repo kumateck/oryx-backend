@@ -1019,9 +1019,117 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Employee
 
-        modelBuilder.Entity<Employee>().HasQueryFilter(entity => !entity.DeletedAt.HasValue &&
-                                                                 !entity.Department.DeletedAt.HasValue
-                                                                 && !entity.Designation.DeletedAt.HasValue);
+        modelBuilder.Entity<Employee>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+        
+        #region Holiday
+        
+        modelBuilder.Entity<Holiday>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        
+        #endregion
+
+        #region Shift Type
+
+        modelBuilder.Entity<ShiftType>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Shift Schedule
+
+        modelBuilder.Entity<ShiftSchedule>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Department.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Shift Assignments
+
+        modelBuilder.Entity<ShiftAssignment>().HasQueryFilter(entity => !entity.ShiftCategory.DeletedAt.HasValue && !entity.Employee.DeletedAt.HasValue
+        && !entity.ShiftSchedules.DeletedAt.HasValue && !entity.ShiftType.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Leave Requests
+
+        modelBuilder.Entity<LeaveRequest>().HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Employee.DeletedAt.HasValue
+        &&!entity.LeaveType.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Leave Type
+
+        modelBuilder.Entity<LeaveType>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Designation
+
+        modelBuilder.Entity<Designation>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Department
+
+        modelBuilder.Entity<Department>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Analytical Test Requests
+
+        modelBuilder.Entity<AnalyticalTestRequest>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Material Analytical Raw Data
+
+        modelBuilder.Entity<MaterialAnalyticalRawData>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+        
+        #region Product Analytical Raw Data
+
+        modelBuilder.Entity<ProductAnalyticalRawData>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+        
+        #region Material Standard Test Procedure
+
+        modelBuilder.Entity<MaterialStandardTestProcedure>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+        
+        #region Product Standard Test Procedure
+
+        modelBuilder.Entity<ProductStandardTestProcedure>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Material Sampling
+
+        modelBuilder.Entity<MaterialSampling>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+        
+        #region Product Sampling
+
+        modelBuilder.Entity<ProductSampling>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region GRN
+
+        modelBuilder.Entity<Grn>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Overtime Request
+
+        modelBuilder.Entity<OvertimeRequest>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Staff Requisitions
+
+        modelBuilder.Entity<StaffRequisition>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }

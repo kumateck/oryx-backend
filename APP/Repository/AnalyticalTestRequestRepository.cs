@@ -23,7 +23,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
 
     public async Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery)
     {
-        var query = context.AnalyticalTestRequests.Where(atr => atr.LastDeletedById == null).AsQueryable();
+        var query = context.AnalyticalTestRequests.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -37,13 +37,13 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
 
     public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequest(Guid id)
     {
-        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id && atr.LastDeletedById == null);
+        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
     }
 
     public async Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request)
     {
-        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id && atr.LastDeletedById == null);
+        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
 
         if (test is null)
         {
@@ -60,7 +60,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
 
     public async Task<Result> DeleteAnalyticalTestRequest(Guid id, Guid userId)
     {
-        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id && atr.LastDeletedById == null);
+        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
 
         if (test is null)
         {

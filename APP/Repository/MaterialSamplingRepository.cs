@@ -11,8 +11,7 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
 {
     public async Task<Result<Guid>> CreateMaterialSampling(CreateMaterialSamplingRequest materialSamplingRequest)
     {
-        var grn = await context.Grns.FirstOrDefaultAsync(gr => gr.Id == materialSamplingRequest.GrnId 
-                                                    && gr.LastDeletedById == null);
+        var grn = await context.Grns.FirstOrDefaultAsync(gr => gr.Id == materialSamplingRequest.GrnId);
 
         if (grn == null)
         {

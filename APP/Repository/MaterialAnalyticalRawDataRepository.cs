@@ -19,7 +19,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             return Error.Validation("MaterialAnalyticalRawData.Exists", "Analytical raw data already exists.");
         }
         
-        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId && f.LastDeletedById == null);
+        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId);
 
         if (form is null)
         {
@@ -28,7 +28,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         
         
         var stpNumber = await context.MaterialStandardTestProcedures
-            .AnyAsync(mstp => mstp.StpNumber == request.StpNumber && mstp.LastDeletedById == null);
+            .AnyAsync(mstp => mstp.StpNumber == request.StpNumber);
 
         if (!stpNumber)
         {
@@ -50,7 +50,6 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .Include(ad => ad.MaterialStandardTestProcedure)
                 .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
-            .Where(ad => ad.LastDeletedById == null)
             .Where(ad => (int) ad.MaterialStandardTestProcedure.Material.MaterialCategory.MaterialKind == materialKind)
             .AsQueryable();
 
@@ -75,7 +74,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .Include(ad => ad.MaterialStandardTestProcedure)
             .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
-            .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
+            .FirstOrDefaultAsync(ad => ad.Id == id);
 
         return analyticalRawData is null
             ? Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found")
@@ -89,7 +88,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
     public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request)
     {
         var analyticalRawData = await context.MaterialAnalyticalRawData
-            .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
+            .FirstOrDefaultAsync(ad => ad.Id == id);
 
         if (analyticalRawData is null)
         {
@@ -106,7 +105,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
     public async Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId)
     {
         var analyticalRawData = await context.MaterialAnalyticalRawData
-            .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
+            .FirstOrDefaultAsync(ad => ad.Id == id);
         if (analyticalRawData is null)
         {
             return Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found");

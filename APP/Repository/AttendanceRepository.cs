@@ -109,7 +109,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
 
         return (from employee in employees
             let records = dailyRecords
-                .Where(r => r.EmployeeId == employee.StaffNumber && r.LastDeletedById == null).ToList()
+                .Where(r => r.EmployeeId == employee.StaffNumber).ToList()
             where records.Count != 0
             let clockIn = records.Min(r => r.TimeStamp)
             let clockOut = records.Max(r => r.TimeStamp)
@@ -129,7 +129,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
 public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport(DateTime date)
 {
     var dailyRecords = await context.AttendanceRecords
-        .Where(a => a.TimeStamp.Date == date.Date && a.LastDeletedById == null)
+        .Where(a => a.TimeStamp.Date == date.Date)
         .ToListAsync();
 
     if (dailyRecords.Count == 0)

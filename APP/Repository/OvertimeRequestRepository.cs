@@ -36,7 +36,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
 
         // Check for duplicate overtime requests in one query
         var duplicateEmployeeIds = await context.OvertimeRequests
-            .Where(ot => ot.OvertimeDate == request.OvertimeDate && ot.LastDeletedById == null)
+            .Where(ot => ot.OvertimeDate == request.OvertimeDate)
             .SelectMany(ot => ot.Employees)
             .Where(emp => request.EmployeeIds.Contains(emp.Id))
             .Select(emp => emp.Id) 
@@ -81,7 +81,6 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
         var query =  context.OvertimeRequests
             .Include(o => o.Department)
             .Include(o => o.Employees)
-            .Where(o => o.LastDeletedById == null)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -104,7 +103,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
     {
         var overtimeRequest = await context.OvertimeRequests
             .Include(o => o.Department)
-            .FirstOrDefaultAsync(ot => ot.Id == id && ot.LastDeletedById == null);
+            .FirstOrDefaultAsync(ot => ot.Id == id);
         
         return overtimeRequest is null ? 
             Error.NotFound("OvertimeRequest.NotFound", "Overtime request is not found") : 
@@ -115,7 +114,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
     public async Task<Result> UpdateOvertimeRequest(Guid id, CreateOvertimeRequest request)
     {
         var overtimeRequest = await context.OvertimeRequests
-            .FirstOrDefaultAsync(ot => ot.Id == id && ot.LastDeletedById == null);
+            .FirstOrDefaultAsync(ot => ot.Id == id);
         if (overtimeRequest is null)
         {
             return Error.NotFound("OvertimeRequest.NotFound", "Overtime request is not found");
@@ -132,7 +131,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
     public async Task<Result> DeleteOvertimeRequest(Guid id, Guid userId)
     {
         var overtimeRequest = await context.OvertimeRequests
-            .FirstOrDefaultAsync(ot => ot.Id == id && ot.LastDeletedById == null);
+            .FirstOrDefaultAsync(ot => ot.Id == id);
         if (overtimeRequest is null)
         {
             return Error.NotFound("OvertimeRequest.NotFound", "Overtime request is not found");

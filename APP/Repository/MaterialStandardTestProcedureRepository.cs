@@ -15,7 +15,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
     public async Task<Result<Guid>> CreateMaterialStandardTestProcedure(CreateMaterialStandardTestProcedureRequest request)
     {
         var existingProcedure = await context.MaterialStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.StpNumber == request.StpNumber && stp.LastDeletedById == null);
+            .FirstOrDefaultAsync(stp => stp.StpNumber == request.StpNumber);
 
         if (existingProcedure != null)
         {
@@ -42,7 +42,6 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .AsQueryable()
             .Include(stp => stp.Material)
             .ThenInclude(m => m.MaterialCategory)
-            .Where(stp => stp.DeletedAt == null)
             .Where(stp => (int) stp.Material.MaterialCategory.MaterialKind == materialKind)
             .AsSplitQuery();
 
@@ -63,7 +62,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
     {
         var procedure = await context.MaterialStandardTestProcedures
             .Include(stp => stp.Material)
-            .FirstOrDefaultAsync(stp => stp.Id == id && stp.LastDeletedById == null);
+            .FirstOrDefaultAsync(stp => stp.Id == id);
         
         return procedure is null ? 
             Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found") : 
@@ -74,7 +73,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
     public async Task<Result> UpdateMaterialStandardTestProcedure(Guid id, CreateMaterialStandardTestProcedureRequest request)
     {
         var procedure = await context.MaterialStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.Id == id && stp.LastDeletedById == null);
+            .FirstOrDefaultAsync(stp => stp.Id == id);
         
         if (procedure is null)
         {
@@ -92,7 +91,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
     public async Task<Result> DeleteMaterialStandardTestProcedure(Guid id, Guid userId)
     {
         var procedure = await context.MaterialStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.Id == id && stp.LastDeletedById == null);
+            .FirstOrDefaultAsync(stp => stp.Id == id);
         if (procedure is null)
         {
             return Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found");

@@ -445,6 +445,15 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
+    [HttpGet("finished-goods-transfer-note/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinishedGoodsTransferNoteDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferNotes(Guid id)
+    {
+        var result = await repository.GetFinishedGoodsTransferNote(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Retrieves a paginated list of batch manufacturing records.
     /// </summary>

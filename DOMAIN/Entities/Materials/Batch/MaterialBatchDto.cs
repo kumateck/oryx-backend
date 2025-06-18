@@ -154,14 +154,21 @@ public class BatchToSupply
 
 public class FinishedGoodsTransferNoteDto : BaseDto
 {
+    public string TransferNoteNumber { get; set; }
     public WarehouseDto FromWarehouse { get; set; }
+    public Guid? ToWarehouseId { get; set; }
     public WarehouseDto ToWarehouse { get; set; }
     public decimal QuantityPerPack { get; set; }
+    public Guid? PackageStyleId { get; set; }
     public PackageStyleDto PackageStyle { get; set; }
+    public Guid? UoMId { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal TotalQuantity { get; set; }
     public string QarNumber { get; set; }
+    public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+    public ProductionActivityStepDto ProductionActivityStep { get; set; }
 }
 
 public class MaterialBatchReservedQuantityDto : BaseDto

@@ -104,7 +104,7 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)
     {
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Email == request.Email && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.Email == request.Email);
 
         if (existingEmployee != null)
         {
@@ -137,7 +137,7 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
     {
         var employee = await context.Employees.Include(e => e.Department)
-            .FirstOrDefaultAsync(e => e.Id == employeeUserDto.EmployeeId && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.Id == employeeUserDto.EmployeeId);
 
         if (employee == null)
             return Error.NotFound("Employee.NotFound", "Employee not found");
@@ -258,7 +258,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         var employees = await context.Employees
             .Include(e => e.Department)
             .Include(e => e.Designation)
-            .Where(e => e.DepartmentId == departmentId && e.LastDeletedById == null)
+            .Where(e => e.DepartmentId == departmentId)
             .ToListAsync();
 
         var employeeDtos = employees.Select(e => mapper.Map<EmployeeDto>(e, 
@@ -270,14 +270,14 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date)
     {
         var isHoliday = await context.Holidays
-            .AnyAsync(h => h.Date.Date == date.Date && h.LastDeletedById == null);
+            .AnyAsync(h => h.Date.Date == date.Date);
 
         if (isHoliday)
         {
             return Result.Success(Enumerable.Empty<MinimalEmployeeInfoDto>());
         }
         
-        var shiftSchedule = await context.ShiftSchedules.FirstOrDefaultAsync(ss => ss.Id == shiftScheduleId && ss.LastDeletedById == null);
+        var shiftSchedule = await context.ShiftSchedules.FirstOrDefaultAsync(ss => ss.Id == shiftScheduleId);
 
         if (shiftSchedule == null)
         {
@@ -289,14 +289,13 @@ public class EmployeeRepository(ApplicationDbContext context,
             .Where(l =>
                 l.LeaveStatus == LeaveStatus.Approved &&
                 l.StartDate.Date <= date.Date &&
-                l.EndDate.Date >= date.Date && l.LastDeletedById == null)
+                l.EndDate.Date >= date.Date)
             .Select(l => l.EmployeeId);
 
         // Get IDs of employees with assigned shift
         var scheduledEmployeeIdsQuery = context.ShiftAssignments
             .Where(s => s.ShiftSchedules.StartDate <= date.Date
-                        && s.ShiftSchedules.EndDate >= date.Date
-                        && s.LastDeletedById == null)
+                        && s.ShiftSchedules.EndDate >= date.Date)
             .Select(s => s.EmployeeId);
 
         // Combine both into one set
@@ -307,8 +306,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         // Fetch available employees directly from DB, filter and project to DTO
         var availableEmployees = await context.Employees
-            .Where(e => e.LastDeletedById == null 
-                        && !unavailableEmployeeIds.Contains(e.Id) && e.DepartmentId == shiftSchedule.DepartmentId)
+            .Where(e => !unavailableEmployeeIds.Contains(e.Id) && e.DepartmentId == shiftSchedule.DepartmentId)
             .ProjectTo<MinimalEmployeeInfoDto>(mapper.ConfigurationProvider)
             .ToListAsync();
 
@@ -320,7 +318,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         var employee = await context.Employees
             .Include(e=> e.Department)
             .Include(e=> e.Designation)
-            .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.Id == id);
     
         return employee is null ?
             Error.NotFound("Employee.NotFound", "Employee not found") :
@@ -334,7 +332,6 @@ public class EmployeeRepository(ApplicationDbContext context,
         var query = context.Employees
             .Include(e => e.Department)
             .Include(e => e.Designation)
-            .Where(e => e.LastDeletedById == null)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -369,7 +366,7 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request)
     {
         var employee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
         {
@@ -387,7 +384,7 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto)
     {
         var employee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
         {
@@ -456,7 +453,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
     public async Task<Result> DeleteEmployee(Guid id, Guid userId)
     {
-        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
         {

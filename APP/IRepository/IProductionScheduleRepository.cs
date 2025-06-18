@@ -85,7 +85,7 @@ public interface IProductionScheduleRepository
     Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionId, Guid productionScheduleId);
     Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
     
-    Task<Result<FinishedGoodsTransferDto>> GetFinishedGoodsTransferNote(Guid id);
+    Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id);
     
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);

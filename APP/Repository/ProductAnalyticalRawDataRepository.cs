@@ -20,7 +20,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             return Error.Validation("ProductAnalyticalRawData.Exists", "Analytical raw data already exists.");
         }
         
-        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId && f.LastDeletedById == null);
+        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId);
 
         if (form is null)
         {
@@ -28,7 +28,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         }
         
         var stpNumber = await context.ProductStandardTestProcedures
-            .AnyAsync(mstp => mstp.StpNumber == request.StpNumber && mstp.LastDeletedById == null);
+            .AnyAsync(mstp => mstp.StpNumber == request.StpNumber);
 
         if (!stpNumber)
         {
@@ -48,7 +48,6 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         var query = context.ProductAnalyticalRawData
             .AsSplitQuery()
             .Include(ad => ad.ProductStandardTestProcedure)
-            .Where(ad => ad.LastDeletedById == null)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -77,7 +76,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .AsSplitQuery()
             .Include(ad => ad.ProductStandardTestProcedure)
             .ThenInclude(ad => ad.Product)
-            .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
+            .FirstOrDefaultAsync(ad => ad.Id == id);
         
         return analyticalRawData is null ?
             Error.NotFound("ProductAnalyticalRawData.NotFound", "Product analytical raw data not found") : 
@@ -90,7 +89,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateProductAnalyticalRawDataRequest request)
     {
         var analyticalRawData = await context.ProductAnalyticalRawData
-            .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
+            .FirstOrDefaultAsync(ad => ad.Id == id);
 
         if (analyticalRawData is null)
         {
@@ -107,7 +106,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     public async Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId)
     {
         var analyticalRawData = await context.ProductAnalyticalRawData
-            .FirstOrDefaultAsync(ad => ad.Id == id && ad.LastDeletedById == null);
+            .FirstOrDefaultAsync(ad => ad.Id == id);
         if (analyticalRawData is null)
         {
             return Error.NotFound("ProductAnalyticalRawData.NotFound", "Product analytical raw data not found");
