@@ -27,12 +27,11 @@ public class CurrentUserService : ICurrentUserService
                 return;
             }
 
-            var userIdString = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdString = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (Guid.TryParse(userIdString, out var userId))
-                
                 UserId = userId;
 
-            var departmentIdString = principal?.FindFirst("department")?.Value;
+            var departmentIdString = principal.FindFirst("department")?.Value;
             if (Guid.TryParse(departmentIdString, out var departmentId))
                 DepartmentId = departmentId;
         }

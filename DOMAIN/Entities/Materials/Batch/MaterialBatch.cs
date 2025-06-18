@@ -155,7 +155,7 @@ public class FinishedGoodsTransferNote:BaseEntity
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal TotalQuantity { get; set; }
-    public string QarNumber { get; set; }
+    [StringLength(1000)] public string QarNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? ProductionActivityStepId { get; set; }

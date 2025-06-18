@@ -1060,7 +1060,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
     public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id)
     {
-        var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
+        var transferNote = await context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(b => b.FromWarehouse)
+            .Include(b => b.ToWarehouse)
+            .Include(b => b.PackageStyle)
+            .FirstOrDefaultAsync(f => f.Id == id);
         
         return transferNote is null ? 
             Error.NotFound("TransferNote.NotFound", "Transfer note not found") : 
