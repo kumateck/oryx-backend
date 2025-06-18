@@ -8,5 +8,5 @@ public class CreateMaterialSamplingRequest
    
    [Required] public string ArNumber { get; set; }
    
-   [Required] public string SampleQuantity { get; set; }
+   [Required, MinLength(1)] public string SampleQuantity { get; set; }
 }

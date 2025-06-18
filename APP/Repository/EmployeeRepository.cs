@@ -321,13 +321,9 @@ public class EmployeeRepository(ApplicationDbContext context,
             .Include(e=> e.Department)
             .Include(e=> e.Designation)
             .FirstOrDefaultAsync(e => e.Id == id && e.LastDeletedById == null);
-
-        if (employee == null)
-        {
-            return Error.NotFound("Employee.NotFound", "Employee not found");
-        }
-
-        return
+    
+        return employee is null ?
+            Error.NotFound("Employee.NotFound", "Employee not found") :
             mapper.Map<EmployeeDto>(employee, 
                 opts => { opts.Items[AppConstants.ModelType] = nameof(Employee);});
     }

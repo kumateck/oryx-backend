@@ -237,10 +237,8 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         {
             return Error.NotFound("AbsenceType.NotFound", "Absence type not found");
         }
-
         
         mapper.Map(leaveRequest, existingLeaveRequest);
-
         context.LeaveRequests.Update(existingLeaveRequest);
         
         await context.SaveChangesAsync();
@@ -256,7 +254,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                                       && l.LastDeletedById == null);
 
         if (existing == null)
-            return Error.NotFound("Leave.NotFound", "Rejected leave request not found.");
+            return Error.NotFound("Leave.Invalid", "Only rejected leave requests can be processed.");
 
         // Reset fields
         existing.StartDate = reapplyLeaveRequest.NewStartDate;
@@ -264,7 +262,6 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         existing.Justification = reapplyLeaveRequest.Justification;
         existing.LeaveStatus = LeaveStatus.Reapplied;
         existing.Approved = false;
-        existing.RecallDate = DateTime.UtcNow;
 
         // Reset approvals
         context.LeaveRequestApprovals.RemoveRange(existing.Approvals);
