@@ -45,7 +45,6 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
         var query = context.StaffRequisitions
             .Include(sr => sr.Designation)
             .Include(sr => sr.Department)
-            .Where(sr => sr.LastDeletedById == null)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -93,7 +92,7 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
         var requisition = await context.StaffRequisitions
             .Include(sr => sr.Designation)
             .Include(sr => sr.Department)
-            .FirstOrDefaultAsync(sr => sr.Id == id && sr.LastDeletedById == null);
+            .FirstOrDefaultAsync(sr => sr.Id == id);
         
         return requisition is null ? Error.NotFound("StaffRequisition.NotFound", "Staff requisition not found")
             : mapper.Map<StaffRequisitionDto>(requisition);
@@ -102,7 +101,7 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
     public async Task<Result> UpdateStaffRequisition(Guid id, CreateStaffRequisitionRequest request)
     {
         
-        var requisition = await context.StaffRequisitions.FirstOrDefaultAsync(sr => sr.Id == id && sr.LastDeletedById == null);
+        var requisition = await context.StaffRequisitions.FirstOrDefaultAsync(sr => sr.Id == id);
 
         if (requisition is null)
         {
@@ -132,7 +131,7 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
     {
         //TODO: approval condition for deletion
         var requisition = await context.StaffRequisitions
-            .FirstOrDefaultAsync(sr => sr.Id == id && sr.LastDeletedById == null);
+            .FirstOrDefaultAsync(sr => sr.Id == id);
 
         if (requisition is null)
         {

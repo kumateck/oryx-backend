@@ -11,7 +11,9 @@ namespace API.Controllers;
 [Authorize]
 public class MaterialSamplingController(IMaterialSamplingRepository repository) : ControllerBase
 {
-    
+    /// <summary>
+    /// Creates a sampling material
+    /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -21,6 +23,9 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
         return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Retrieves the details of a sampling material by its ID.
+    /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialSamplingDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

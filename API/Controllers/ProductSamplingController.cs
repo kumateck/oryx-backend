@@ -12,6 +12,9 @@ namespace API.Controllers;
 public class ProductSamplingController(IProductSamplingRepository repository) : ControllerBase
 {
 
+    /// <summary>
+    /// Creates a sampling product
+    /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -21,6 +24,9 @@ public class ProductSamplingController(IProductSamplingRepository repository) : 
         return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Retrieves the details of a sampling product by its ID.
+    /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSamplingDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

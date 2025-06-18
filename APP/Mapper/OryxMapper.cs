@@ -836,6 +836,7 @@ public class OryxMapper : Profile
 
         #region AnalyticalTestRequests
 
+        CreateMap<CreateAnalyticalTestRequest, AnalyticalTestRequest>();
         CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>();
 
         #endregion

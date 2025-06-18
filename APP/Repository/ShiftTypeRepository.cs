@@ -16,7 +16,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result<Guid>> CreateShiftType(CreateShiftTypeRequest request)
     {
         var existingShiftType = await context.ShiftTypes
-            .FirstOrDefaultAsync(s => s.ShiftName == request.ShiftName && s.DeletedAt == null);
+            .FirstOrDefaultAsync(s => s.ShiftName == request.ShiftName);
 
         if (existingShiftType != null)
         {
@@ -45,9 +45,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
     public async Task<Result<Paginateable<IEnumerable<ShiftTypeDto>>>> GetShiftTypes(int page, int pageSize, string searchQuery)
     {
-        var query = context.ShiftTypes
-            .Where(st => st.LastDeletedById == null)
-            .AsQueryable();
+        var query = context.ShiftTypes.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -80,7 +78,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
     public async Task<Result<ShiftTypeDto>> GetShiftType(Guid id)
     {
-        var shiftType = await context.ShiftTypes.FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
+        var shiftType = await context.ShiftTypes.FirstOrDefaultAsync(s => s.Id == id);
         if (shiftType is null)
         {
             return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
@@ -92,7 +90,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result> UpdateShiftType(Guid id, CreateShiftTypeRequest request)
     {
         var shiftType = await context.ShiftTypes
-            .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
+            .FirstOrDefaultAsync(s => s.Id == id);
         
         if (shiftType is null)
         {
@@ -115,7 +113,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result> DeleteShiftType(Guid id, Guid userId)
     {
         var shiftType = await context.ShiftTypes
-            .FirstOrDefaultAsync(s => s.Id == id && s.LastDeletedById == null);
+            .FirstOrDefaultAsync(s => s.Id == id);
 
         if (shiftType is null)
         {

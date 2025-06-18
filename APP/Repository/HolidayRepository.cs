@@ -13,7 +13,7 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
 {
     public async Task<Result<Guid>> CreateHoliday(CreateHolidayRequest request)
     {
-        var holiday = await context.Holidays.FirstOrDefaultAsync(h => h.Name == request.Name && h.DeletedAt == null);
+        var holiday = await context.Holidays.FirstOrDefaultAsync(h => h.Name == request.Name);
 
         if (holiday is not null)
         {
@@ -33,8 +33,7 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
     public async Task<Result<IEnumerable<HolidayDto>>> GetHolidays(string searchQuery)
     {
         var query = context.Holidays
-            .AsSplitQuery()
-            .Where(h => h.DeletedAt == null);
+            .AsSplitQuery();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -51,7 +50,7 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
     {
         var holiday = await context.Holidays
             .AsSplitQuery()
-            .FirstOrDefaultAsync(h => h.Id == id && h.DeletedAt == null);
+            .FirstOrDefaultAsync(h => h.Id == id);
         
         return holiday is null ? 
             Error.NotFound("Holiday.NotFound", "Holiday not found") : 
@@ -61,7 +60,7 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
     public async Task<Result> UpdateHoliday(CreateHolidayRequest request, Guid id)
     {
         var holiday = await context.Holidays
-            .FirstOrDefaultAsync(h => h.Id == id && h.DeletedAt == null);
+            .FirstOrDefaultAsync(h => h.Id == id);
 
         if (holiday is null)
         {
@@ -77,7 +76,7 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result> DeleteHoliday(Guid id, Guid userId)
     {
-        var holiday = await context.Holidays.FirstOrDefaultAsync(h => h.Id == id && h.DeletedAt == null);
+        var holiday = await context.Holidays.FirstOrDefaultAsync(h => h.Id == id);
         
         if (holiday is null)
         {

@@ -144,6 +144,7 @@ public class FinishedProductBatchMovement : BaseEntity
 
 public class FinishedGoodsTransferNote:BaseEntity
 {
+    public string TransferNoteNumber { get; set; }
     public Guid? FromWarehouseId { get; set; }
     public Warehouse FromWarehouse { get; set; }
     public Guid? ToWarehouseId { get; set; }

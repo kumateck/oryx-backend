@@ -14,7 +14,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
      public async Task<Result<Guid>> CreateProductStandardTestProcedure(CreateProductStandardTestProcedureRequest request)
     {
         var existingProcedure = await context.ProductStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.StpNumber == request.StpNumber && stp.LastDeletedById == null);
+            .FirstOrDefaultAsync(stp => stp.StpNumber == request.StpNumber);
 
         if (existingProcedure != null)
         {
@@ -40,7 +40,6 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         var query = context.ProductStandardTestProcedures
             .AsQueryable()
             .Include(stp => stp.Product)
-            .Where(stp => stp.DeletedAt == null)
             .AsSplitQuery();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -60,7 +59,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     {
         var procedure = await context.ProductStandardTestProcedures
             .Include(stp => stp.Product)
-            .FirstOrDefaultAsync(stp => stp.Id == id && stp.LastDeletedById == null);
+            .FirstOrDefaultAsync(stp => stp.Id == id);
         
         return procedure is null ? 
             Error.NotFound("ProductStandardTestProcedure.NotFound", "Product Standard test procedure not found") : 
@@ -71,7 +70,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     public async Task<Result> UpdateProductStandardTestProcedure(Guid id, CreateProductStandardTestProcedureRequest request)
     {
         var procedure = await context.ProductStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.Id == id && stp.LastDeletedById == null);
+            .FirstOrDefaultAsync(stp => stp.Id == id);
         
         if (procedure is null)
         {
@@ -89,7 +88,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     public async Task<Result> DeleteProductStandardTestProcedure(Guid id, Guid userId)
     {
         var procedure = await context.ProductStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.Id == id && stp.LastDeletedById == null);
+            .FirstOrDefaultAsync(stp => stp.Id == id);
         if (procedure is null)
         {
             return Error.NotFound("ProductStandardTestProcedure.NotFound", "Product Standard test procedure not found");

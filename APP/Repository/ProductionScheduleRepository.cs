@@ -976,7 +976,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("User.Warehouse", "No finished goods warehouse is associated with current user");
         
         var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
-        transferNote.FromWarehouseId = productionWarehouse.Id;
         transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
         context.FinishedGoodsTransferNotes.Add(transferNote);
 
@@ -985,7 +984,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             BatchId = bmr.ProductId,
             FromWarehouseId = productionWarehouse.Id,
             ToWarehouseId = finishedGoodsWarehouse.Id,
-            Quantity = request.TotalQuantity,
+            Quantity = transferNote.TotalQuantity,
             MovedAt = DateTime.UtcNow,
             MovedById = userId
         };
@@ -1058,7 +1057,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
         return Result.Success();
     }
-    
+
+    public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id)
+    {
+        var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
+        
+        return transferNote is null ? 
+            Error.NotFound("TransferNote.NotFound", "Transfer note not found") : 
+            mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
+    }
+
+
     public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
         var query = context.BatchManufacturingRecords

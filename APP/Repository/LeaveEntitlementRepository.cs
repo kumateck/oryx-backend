@@ -19,8 +19,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         }
 
         var employee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Id == leaveEntitlementRequest.EmployeeId
-            && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.Id == leaveEntitlementRequest.EmployeeId);
         
         if (employee is null)
         {

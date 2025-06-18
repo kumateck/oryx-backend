@@ -18,6 +18,7 @@ public class ProductSamplingRepository(ApplicationDbContext context, IMapper map
         {
             return Error.Validation("ATR.Invalid", "Invalid analytical test request");
         }
+        
         var productSample =  context.ProductSamplings
             .FirstOrDefault(ps => ps.AnalyticalTestRequestId == analyticalTestRequest.Id);
 
@@ -36,7 +37,9 @@ public class ProductSamplingRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result<ProductSamplingDto>> GetProductSamplingByProductId(Guid id)
     {
-        var productSampling =  await context.ProductSamplings.FirstOrDefaultAsync(ps => ps.Id == id);
+        var productSampling =  await context.ProductSamplings
+            .Include(ps => ps.AnalyticalTestRequest)
+            .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return productSampling == null ? 
             Error.Validation("ProductSampling", "Product Sampling not found") 

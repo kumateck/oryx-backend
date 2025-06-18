@@ -11,22 +11,14 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
 {
     public async Task<Result<Guid>> CreateMaterialSampling(CreateMaterialSamplingRequest materialSamplingRequest)
     {
-        var grn = context.Grns.FirstOrDefault(gr =>
-            gr.Id == materialSamplingRequest.GrnId);
+        var grn = await context.Grns.FirstOrDefaultAsync(gr => gr.Id == materialSamplingRequest.GrnId);
 
         if (grn == null)
         {
             return Error.Validation("GRN.Invalid", "Invalid GRN");
         }
-        var materialSample =  context.MaterialSamplings
-            .FirstOrDefault(ps => ps.GrnId == materialSamplingRequest.GrnId);
-
-        if (materialSample != null)
-        {
-            return Error.Validation("MaterialSampling", "Material Sampling already exists");
-        }
         
-        var request = mapper.Map<MaterialSampling>(grn);
+        var request = mapper.Map<MaterialSampling>(materialSamplingRequest);
         
         await context.MaterialSamplings.AddAsync(request);
         await context.SaveChangesAsync();
@@ -36,7 +28,9 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
 
     public async Task<Result<MaterialSamplingDto>> GetMaterialSamplingByMaterialId(Guid id)
     {
-        var materialSampling =  await context.MaterialSamplings.FirstOrDefaultAsync(ps => ps.Id == id);
+        var materialSampling =  await context.MaterialSamplings
+            .Include(m => m.Grn)
+            .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return materialSampling == null ? 
             Error.Validation("MaterialSampling.NotFound", "Material Sampling not found") 
