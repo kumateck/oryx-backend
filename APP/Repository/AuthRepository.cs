@@ -106,7 +106,7 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
             return AuthErrors.NotFound;
         }
             
-        if (tokenDetails.CreatedAt.AddDays(1) < DateTime.Now)
+        if (tokenDetails.CreatedAt.AddDays(2) < DateTime.Now)
         {
             return AuthErrors.TokenExpired;
         }

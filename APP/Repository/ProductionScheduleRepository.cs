@@ -1060,11 +1060,46 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
     public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id)
     {
-        var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
+        var transferNote = await context.FinishedGoodsTransferNotes
+            .Include(p => p.PackageStyle)
+            .Include(u => u.UoM)
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(p => p.ProductionActivityStep)
+            .FirstOrDefaultAsync(f => f.Id == id);
         
         return transferNote is null ? 
             Error.NotFound("TransferNote.NotFound", "Transfer note not found") : 
             mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
+    }
+
+    public async Task<Result> ApproveTransferNote(Guid id, int quantityReceived)
+    {
+        var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
+
+        if (transferNote == null) return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
+        
+        transferNote.IsApproved = true;
+        transferNote.TotalQuantity = quantityReceived;
+        
+        context.FinishedGoodsTransferNotes.Update(transferNote);
+        return Result.Success();
+
+    }
+
+    public async Task<Result> UpdateTransferNote(Guid id,  CreateFinishedGoodsTransferNoteRequest request)
+    {
+       var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
+       if (transferNote == null) return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
+       
+       if (!transferNote.IsApproved) return Error.Validation("TransferNote.NotApproved", "Cannot edit transfer note that is not approved");
+       
+       var finishedGoodTransferNote = mapper.Map<FinishedGoodsTransferNote>(request);
+       context.FinishedGoodsTransferNotes.Update(finishedGoodTransferNote);
+       await context.SaveChangesAsync();
+       
+       return Result.Success();
+       
     }
 
 

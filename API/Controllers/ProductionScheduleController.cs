@@ -444,14 +444,37 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.CreateFinishedGoodsTransferNote(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-
+    
+    /// <summary>
+    /// Retrieves the details of a finished good transfer note
+    /// </summary>
     [HttpGet("finished-goods-transfer-note/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinishedGoodsTransferNoteDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFinishedGoodsTransferNotes(Guid id)
+    public async Task<IResult> GetFinishedGoodsTransferNotes([FromRoute] Guid id)
     {
         var result = await repository.GetFinishedGoodsTransferNote(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpPut("finished-goods-transfer-note/{id:guid}/approve")]
+    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, [FromBody] int quantityReceived)
+    {
+        var result = await repository.ApproveTransferNote(id, quantityReceived);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates the details of a transfer note.
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(FinishedGoodsTransferDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateFinishedGoodsTransferNote([FromRoute] Guid id, [FromBody] CreateFinishedGoodsTransferNoteRequest request)
+    {
+        var result = await repository.UpdateTransferNote(id,request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
