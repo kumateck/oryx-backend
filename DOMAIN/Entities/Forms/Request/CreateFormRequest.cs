@@ -22,6 +22,7 @@ public class CreateFormFieldRequest
     public Guid QuestionId { get; set; }
     public bool Required { get; set; }
     public int Rank { get; set; } 
+    public string Description { get; set; }
     public Guid? AssigneeId { get; set; }
     public Guid? ReviewerId { get; set; }
 }

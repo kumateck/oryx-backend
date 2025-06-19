@@ -29,7 +29,7 @@ public class FormField : BaseEntity
     public Guid QuestionId { get; set; }
     public Question Question { get; set; }
     public bool Required { get; set; }
-    [StringLength(1000000)] public string Response { get; set; }
+    [StringLength(1000)] public string Description { get; set; }
     public int Rank { get; set; } 
     public Guid? AssigneeId { get; set; }
     public User Assignee { get; set; }
