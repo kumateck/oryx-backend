@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250618114749_AddTransferNoteCodeFinishedGoods")]
+    partial class AddTransferNoteCodeFinishedGoods
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2507,9 +2510,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("FromWarehouseId")
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("IsApproved")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -2523,8 +2523,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("QarNumber")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("text");
 
                     b.Property<decimal>("QuantityPerPack")
                         .HasColumnType("numeric");
@@ -4672,7 +4671,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("BaseUomId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CategoryId")
+                    b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Code")
@@ -11411,7 +11410,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Products.ProductCategory", "Category")
                         .WithMany()
-                        .HasForeignKey("CategoryId");
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()

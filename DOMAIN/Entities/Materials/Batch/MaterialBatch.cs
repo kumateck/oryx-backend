@@ -154,6 +154,7 @@ public class FinishedGoodsTransferNote:BaseEntity
     public PackageStyle PackageStyle { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
+    public bool IsApproved { get; set; }
     public decimal TotalQuantity { get; set; }
     [StringLength(1000)] public string QarNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }

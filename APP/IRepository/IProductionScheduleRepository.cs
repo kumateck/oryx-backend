@@ -86,6 +86,10 @@ public interface IProductionScheduleRepository
     Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
     
     Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id);
+    Task<Result> ApproveTransferNote(Guid id, int quantityReceived);
+    
+    Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
+    
     
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);

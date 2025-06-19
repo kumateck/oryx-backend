@@ -585,7 +585,9 @@ public class OryxMapper : Profile
         CreateMap<BatchPackagingRecord, BatchPackagingRecordDto>();
 
         CreateMap<CreateFinishedGoodsTransferNoteRequest, FinishedGoodsTransferNote>();
-        CreateMap<FinishedGoodsTransferNote, FinishedGoodsTransferNoteDto>();
+        CreateMap<PackageStyle, PackageStyleDto>();
+        CreateMap<FinishedGoodsTransferNote, FinishedGoodsTransferNoteDto>()
+            .ForMember(dest => dest.PackageStyle, opt => opt.MapFrom(src => src.PackageStyle));
 
         CreateMap<ProductionActivity, ProductionActivityDto>();
         CreateMap<ProductionActivity, ProductionActivityListDto>();

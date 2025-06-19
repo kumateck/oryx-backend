@@ -715,6 +715,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Designation>().Navigation(p => p.Departments).AutoInclude();
 
         #endregion
+        
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
