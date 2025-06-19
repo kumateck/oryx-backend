@@ -74,5 +74,6 @@ public enum OperationAction
     FinalPackingOrPartialReturn = 4,
     FinishedGoodsTransferNote = 5,
     Dispatch = 6,
-    DynamicForm = 7
+    DynamicForm = 7,
+    Atr = 8,
 }

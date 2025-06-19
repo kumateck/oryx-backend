@@ -27,14 +27,40 @@ public class DepartmentSeeder : ISeeder
                 Name = RoleUtils.ProductionManger,
                 NormalizedName = RoleUtils.ProductionManger.Normalize(),
                 DisplayName = RoleUtils.ProductionManger,
-                Type = DepartmentType.Production
+                Type = DepartmentType.Production,
+                IsManager = true
             },
             new()
             {
                 Name = RoleUtils.WarehouseManger,
                 NormalizedName = RoleUtils.WarehouseManger.Normalize(),
                 DisplayName = RoleUtils.WarehouseManger,
-                Type = DepartmentType.Production
+                Type = DepartmentType.Production,
+                IsManager = true
+            },
+            new()
+            {
+                Name = RoleUtils.QaManager,
+                NormalizedName = RoleUtils.QaManager.Normalize(),
+                DisplayName = RoleUtils.QaManager,
+                Type = DepartmentType.NonProduction,
+                IsManager = true
+            },
+            new()
+            {
+                Name = RoleUtils.QcManager,
+                NormalizedName = RoleUtils.QcManager.Normalize(),
+                DisplayName = RoleUtils.QcManager,
+                Type = DepartmentType.NonProduction,
+                IsManager = true
+            },
+            new()
+            {
+                Name = RoleUtils.HrManager,
+                NormalizedName = RoleUtils.HrManager.Normalize(),
+                DisplayName = RoleUtils.HrManager,
+                Type = DepartmentType.NonProduction,
+                IsManager = true
             }
         };
 

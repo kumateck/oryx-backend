@@ -15,6 +15,7 @@ public class Role : IdentityRole<Guid>, IBaseEntity
     public DateTime? DeletedAt { get; set; }
     public Guid? LastDeletedById { get; set; }
     public DepartmentType Type { get; set; }
+    public bool IsManager { get; set; }
 }
 
 public class RoleDepartment
