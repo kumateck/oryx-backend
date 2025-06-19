@@ -54,8 +54,10 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .GetPaginatedResultAsync(query,
                 page,
                 pageSize,
-                mapper.Map<MaterialStandardTestProcedureDto>);
-        
+                entity => mapper.Map<MaterialStandardTestProcedureDto>(
+                    entity,
+                    opts => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); }
+                ));
     }
 
     public async Task<Result<MaterialStandardTestProcedureDto>> GetMaterialStandardTestProcedure(Guid id)
