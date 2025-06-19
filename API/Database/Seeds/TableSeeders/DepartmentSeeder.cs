@@ -61,6 +61,14 @@ public class DepartmentSeeder : ISeeder
                 DisplayName = RoleUtils.HrManager,
                 Type = DepartmentType.NonProduction,
                 IsManager = true
+            },
+            new()
+            {
+                Name = RoleUtils.LogisticsManager,
+                NormalizedName = RoleUtils.LogisticsManager.Normalize(),
+                DisplayName = RoleUtils.LogisticsManager,
+                Type = DepartmentType.NonProduction,
+                IsManager = true
             }
         };
 
