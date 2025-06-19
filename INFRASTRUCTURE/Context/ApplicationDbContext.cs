@@ -977,12 +977,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Production
 
         modelBuilder.Entity<BatchManufacturingRecord>()
-            .HasQueryFilter(a => a.Product != null && !a.Product.DeletedAt.HasValue);
+            .HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<BatchPackagingRecord>()
-            .HasQueryFilter(a => a.Product != null && !a.Product.DeletedAt.HasValue);
+            .HasQueryFilter(a => !a.DeletedAt.HasValue);
 
         modelBuilder.Entity<ProductionActivity>()
-            .HasQueryFilter(a => /*a.Product != null && */!a.Product.DeletedAt.HasValue);
+            .HasQueryFilter(a => !a.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(a => !a.Operation.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityStepResource>().HasQueryFilter(a => !a.Resource.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionActivityStepWorkCenter>().HasQueryFilter(a => !a.WorkCenter.DeletedAt.HasValue);
@@ -1013,9 +1013,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Finished Goods
 
-        modelBuilder.Entity<FinishedGoodsTransferNote>().HasQueryFilter(entity =>
-            !entity.DeletedAt.HasValue && entity.BatchManufacturingRecord != null);
-
+        modelBuilder.Entity<FinishedGoodsTransferNote>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        
         #endregion
 
         #region Employee

@@ -1061,11 +1061,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id)
     {
         var transferNote = await context.FinishedGoodsTransferNotes
-            .Include(p => p.PackageStyle)
-            .Include(u => u.UoM)
+            .AsSplitQuery()
             .Include(b => b.BatchManufacturingRecord)
             .ThenInclude(b => b.Product)
-            .Include(p => p.ProductionActivityStep)
+            .Include(b => b.FromWarehouse)
+            .Include(b => b.ToWarehouse)
+            .Include(b => b.PackageStyle)
             .FirstOrDefaultAsync(f => f.Id == id);
         
         return transferNote is null ? 
