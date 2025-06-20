@@ -87,8 +87,6 @@ public interface IProductionScheduleRepository
     Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
     
     Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id);
-    Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferDto>>>> GetFinishedGoodsTransferNote(int page, int pageSize,
-        string searchQuery = null);
     Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request);
     
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);

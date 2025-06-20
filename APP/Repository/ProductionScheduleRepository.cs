@@ -1057,27 +1057,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
         return Result.Success();
     }
-    
-    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferDto>>>> GetFinishedGoodsTransferNote(int page,
-        int pageSize, string searchQuery = null)
-    {
-        var query = context.FinishedGoodsTransferNotes
-            .AsSplitQuery()
-            .Include(b => b.BatchManufacturingRecord)
-            .ThenInclude(b => b.Product)
-            .Include(b => b.FromWarehouse)
-            .Include(u => u.UoM)
-            .Include(b => b.ToWarehouse)
-            .Include(b => b.PackageStyle)
-            .AsQueryable();
-
-        if (string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, q => q.TransferNoteNumber);
-        }
-        
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<FinishedGoodsTransferDto>);
-    }
 
     public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(int page, int pageSize,
         string searchQuery = null)
