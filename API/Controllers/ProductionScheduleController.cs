@@ -446,12 +446,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
     
     /// <summary>
-    /// Retrieves the finished goods transfer notes in the system
+    /// Retrieves a paginated list of finished good transfer notes
     /// </summary>
     [HttpGet("finished-goods-transfer-note")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFinishedGoodsTransferNotes([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetFinishedGoodsTransferNotes(int page = 1, int pageSize = 10, string searchQuery = null)
     {
         var result = await repository.GetFinishedGoodsTransferNote(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -463,14 +462,14 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [HttpGet("finished-goods-transfer-note/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinishedGoodsTransferNoteDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFinishedGoodsTransferNotes([FromRoute] Guid id)
+    public async Task<IResult> GetFinishedGoodsTransferNote([FromRoute] Guid id)
     {
         var result = await repository.GetFinishedGoodsTransferNote(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpPut("finished-goods-transfer-note/{id:guid}/approve")]
-    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, [FromBody] int quantityReceived)
+    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, [FromBody] ApproveTransferNoteRequest quantityReceived)
     {
         var result = await repository.ApproveTransferNote(id, quantityReceived);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
