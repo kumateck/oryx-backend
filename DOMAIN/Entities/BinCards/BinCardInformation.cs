@@ -49,15 +49,13 @@ public class ProductBinCardInformation:BaseEntity
     public decimal BalanceQuantity { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public Guid? UoMId { get; set; }
-    public Product Product { get; set; }
-    public Guid? ProductId { get; set; }
 }
 
 public class ProductBinCardInformationDto
 {
     public Guid Id { get; set; }
     public DateTime CreatedAt { get; set; }
-    public ProductDto Batch { get; set; }
+    public BatchManufacturingRecordDto Batch { get; set; }
     public string Description { get; set; }
     public string WayBill { get; set; }
     public string ArNumber { get; set; }
@@ -65,5 +63,4 @@ public class ProductBinCardInformationDto
     public decimal QuantityIssued { get; set; }
     public decimal BalanceQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
-    public ProductDto Product { get; set; }
 }

@@ -1089,9 +1089,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var query = context.ProductBinCardInformation
             .Include(bci => bci.Batch)
             .ThenInclude(mb => mb.Product)
-            .Include(bci => bci.Product)
             .Include(bci => bci.UoM)
-            .Where(bci => bci.ProductId == productId)
+            .Where(bci => bci.Batch.ProductId == productId)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

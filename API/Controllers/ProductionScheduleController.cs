@@ -459,18 +459,6 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
     
     /// <summary>
-    /// Retrieves the product bin card information for a product
-    /// </summary>
-    [HttpGet("bincardinformation/{productId}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductBinCardInformationDto>>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProductBinCardInformation(Guid productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
-    {
-        var result = await repository.GetProductBinCardInformation(page, pageSize, searchQuery, productId);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-    
-    /// <summary>
     /// Retrieves the details of a finished good transfer note
     /// </summary>
     [HttpGet("finished-goods-transfer-note/{id:guid}")]
