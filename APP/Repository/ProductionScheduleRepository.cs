@@ -1057,6 +1057,27 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
         return Result.Success();
     }
+    
+    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferDto>>>> GetFinishedGoodsTransferNote(int page,
+        int pageSize, string searchQuery = null)
+    {
+        var query = context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(b => b.FromWarehouse)
+            .Include(u => u.UoM)
+            .Include(b => b.ToWarehouse)
+            .Include(b => b.PackageStyle)
+            .AsQueryable();
+
+        if (string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.TransferNoteNumber);
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<FinishedGoodsTransferDto>);
+    }
 
     public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id)
     {
@@ -1065,6 +1086,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(b => b.BatchManufacturingRecord)
             .ThenInclude(b => b.Product)
             .Include(b => b.FromWarehouse)
+            .Include(u => u.UoM)
             .Include(b => b.ToWarehouse)
             .Include(b => b.PackageStyle)
             .FirstOrDefaultAsync(f => f.Id == id);
@@ -1074,16 +1096,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
     }
 
-    public async Task<Result> ApproveTransferNote(Guid id, int quantityReceived)
+    public async Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request)
     {
         var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
 
         if (transferNote == null) return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
         
         transferNote.IsApproved = true;
-        transferNote.TotalQuantity = quantityReceived;
+        transferNote.TotalQuantity = request.QuantityReceived;
         
         context.FinishedGoodsTransferNotes.Update(transferNote);
+        await context.SaveChangesAsync();
         return Result.Success();
 
     }

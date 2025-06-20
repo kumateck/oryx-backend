@@ -446,19 +446,30 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
     
     /// <summary>
+    /// Retrieves a paginated list of finished good transfer notes
+    /// </summary>
+    [HttpGet("finished-goods-transfer-note")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
+    public async Task<IResult> GetFinishedGoodsTransferNotes(int page = 1, int pageSize = 10, string searchQuery = null)
+    {
+        var result = await repository.GetFinishedGoodsTransferNote(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Retrieves the details of a finished good transfer note
     /// </summary>
     [HttpGet("finished-goods-transfer-note/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinishedGoodsTransferNoteDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFinishedGoodsTransferNotes([FromRoute] Guid id)
+    public async Task<IResult> GetFinishedGoodsTransferNote([FromRoute] Guid id)
     {
         var result = await repository.GetFinishedGoodsTransferNote(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpPut("finished-goods-transfer-note/{id:guid}/approve")]
-    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, [FromBody] int quantityReceived)
+    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, [FromBody] ApproveTransferNoteRequest quantityReceived)
     {
         var result = await repository.ApproveTransferNote(id, quantityReceived);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
