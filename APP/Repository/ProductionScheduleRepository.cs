@@ -1002,7 +1002,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         var binCardEvent = new ProductBinCardInformation
         {
-            BatchId = bmr.ProductId,
+            BatchId = bmr.Id,
             Description = finishedGoodsWarehouse.Name,
             WayBill = "N/A",
             ArNumber = "N/A",
@@ -1078,6 +1078,55 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<FinishedGoodsTransferDto>);
     }
+
+    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(int page, int pageSize,
+        string searchQuery = null)
+    {
+        var query = context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(b => b.FromWarehouse)
+            .Include(b => b.ToWarehouse)
+            .Include(b => b.PackageStyle)
+            .AsQueryable();
+        
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.QarNumber);
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<FinishedGoodsTransferNoteDto>
+        );
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize, 
+        string searchQuery, Guid productId)
+    {
+        var query = context.ProductBinCardInformation
+            .Include(bci => bci.Batch)
+            .ThenInclude(mb => mb.Product)
+            .Include(bci => bci.UoM)
+            .Where(bci => bci.Batch.ProductId == productId)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<ProductBinCardInformationDto>
+        );
+    }
+
 
     public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id)
     {

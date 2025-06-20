@@ -861,9 +861,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     {
         var query = context.ProductBinCardInformation
             .Include(bci => bci.Batch)
-            .Include(bci => bci.Product)
+            .ThenInclude(bci => bci.Product)
             .Include(bci => bci.UoM)
-            .Where(bci => bci.Batch.Id == productId)
+            .Where(bci => bci.Batch.ProductId == productId)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

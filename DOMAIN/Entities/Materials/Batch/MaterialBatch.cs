@@ -163,6 +163,20 @@ public class FinishedGoodsTransferNote:BaseEntity
     public ProductionActivityStep ProductionActivityStep { get; set; }
 }
 
+public class FinishedGoodsTransferNoteDto : BaseDto
+{
+    public string TransferNoteNumber { get; set; }
+    public WarehouseDto FromWarehouse { get; set; }
+    public WarehouseDto ToWarehouse { get; set; }
+    public decimal QuantityPerPack { get; set; }
+    public PackageStyleDto PackageStyle { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public string QarNumber { get; set; }
+    public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
+    public ProductionActivityStepDto ProductionActivityStep { get; set; }
+}
+
 public class MaterialBatchReservedQuantity : BaseEntity
 {
     public Guid MaterialBatchId { get; set; }

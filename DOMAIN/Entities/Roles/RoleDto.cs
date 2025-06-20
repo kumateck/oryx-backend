@@ -8,4 +8,5 @@ public class RoleDto
     public string Name { get; set; }
     public DepartmentType Type { get; set; }
     public string DisplayName { get; set; }
+    public bool IsManager { get; set; }
 }

@@ -26,7 +26,7 @@ public class FormFieldDto : BaseDto
     public CollectionItemDto FormSection { get; set; }
     public QuestionDto Question { get; set; }
     public bool Required { get; set; }
-    public string Response { get; set; }
+    public string Description { get; set; }
     public int Rank { get; set; } 
     public CollectionItemDto Assignee { get; set; }
     public CollectionItemDto Reviewer { get; set; }
