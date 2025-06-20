@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 
 namespace DOMAIN.Entities.BinCards;
 
@@ -39,7 +40,7 @@ public class BinCardInformationDto
 public class ProductBinCardInformation:BaseEntity
 {
     public Guid? BatchId { get; set; }
-    public Product Batch { get; set; }
+    public BatchManufacturingRecord Batch { get; set; }
     [StringLength(500)]public string Description { get; set; }
     [StringLength(500)]public string WayBill { get; set; }
     [StringLength(500)]public string ArNumber { get; set; }

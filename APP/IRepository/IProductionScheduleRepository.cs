@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
@@ -121,4 +122,9 @@ public interface IProductionScheduleRepository
    Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId);
    Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
        List<BatchTransferRequest> batches, Guid userId);
+   Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(int page, int pageSize,
+       string searchQuery = null);
+   Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(
+       int page, int pageSize,
+       string searchQuery, Guid productId);
 }

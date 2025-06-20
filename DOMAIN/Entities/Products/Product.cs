@@ -59,3 +59,15 @@ public class ProductBillOfMaterial : BaseEntity
     public DateTime EffectiveDate { get; set; }
     public bool IsActive { get; set; } = true;
 }
+
+public class ProductBatch : BaseEntity
+{
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public DateTime DateReceived { get; set; }
+    public DateTime? DateApproved { get; set; }
+    public DateTime? DateRejected { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public DateTime? ManufacturingDate { get; set; }
+    public DateTime? RetestDate { get; set; }
+}

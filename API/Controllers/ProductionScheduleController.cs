@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
@@ -443,6 +444,30 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         
         var result = await repository.CreateFinishedGoodsTransferNote(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the finished goods transfer notes in the system
+    /// </summary>
+    [HttpGet("finished-goods-transfer-note")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferNotes([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetFinishedGoodsTransferNote(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the product bin card information for a product
+    /// </summary>
+    [HttpGet("bincardinformation/{productId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductBinCardInformationDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductBinCardInformation(Guid productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetProductBinCardInformation(page, pageSize, searchQuery, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
