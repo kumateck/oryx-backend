@@ -76,4 +76,16 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
         var result = await repository.DeleteAnalyticalRawData(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Starts test for material batch
+    /// </summary>
+    [HttpGet("start-test/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> StartTestForMaterialBatch([FromRoute] Guid id)
+    {
+        var result = await repository.StartTestForMaterialBatch(id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

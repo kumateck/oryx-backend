@@ -15,5 +15,5 @@ public interface IMaterialAnalyticalRawDataRepository
     Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request);
     
     Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId);
-    
+    Task<Result> StartTestForMaterialBatch(Guid id);
 }

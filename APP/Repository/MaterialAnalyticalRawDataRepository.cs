@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.MaterialAnalyticalRawData;
+using DOMAIN.Entities.Materials.Batch;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -115,6 +116,17 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         analyticalRawData.LastDeletedById = userId;
         
         context.MaterialAnalyticalRawData.Update(analyticalRawData);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> StartTestForMaterialBatch(Guid id)
+    {
+        var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == id);
+        if(materialBatch is null) return Error.NotFound("MaterialBatch.NotFound", "MaterialBatch not found");
+
+        materialBatch.Status = BatchStatus.Testing;
+        context.MaterialBatches.Update(materialBatch);
         await context.SaveChangesAsync();
         return Result.Success();
     }

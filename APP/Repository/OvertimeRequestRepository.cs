@@ -79,6 +79,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<Paginateable<IEnumerable<OvertimeRequestDto>>>> GetOvertimeRequests(int page, int pageSize, string searchQuery)
     {
         var query =  context.OvertimeRequests
+            .AsSplitQuery()
             .Include(o => o.Department)
             .Include(o => o.Employees)
             .AsQueryable();
@@ -102,7 +103,9 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<OvertimeRequestDto>> GetOvertimeRequest(Guid id)
     {
         var overtimeRequest = await context.OvertimeRequests
+            .AsSplitQuery()
             .Include(o => o.Department)
+            .Include(o => o.Employees)
             .FirstOrDefaultAsync(ot => ot.Id == id);
         
         return overtimeRequest is null ? 
