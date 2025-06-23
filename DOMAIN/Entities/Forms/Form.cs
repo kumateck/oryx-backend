@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Users;
 
@@ -37,11 +38,15 @@ public class FormField : BaseEntity
     public User Reviewer { get; set; }
 }
 
-public class Response : BaseEntity
+public class Response : BaseEntity, IRequireApproval
 {
     public Guid FormId { get; set; }
     public Form Form { get; set; }
+    public Guid? MaterialAnalyticalRawDataId { get; set; }
+    public MaterialAnalyticalRawData.MaterialAnalyticalRawData MaterialAnalyticalRawData { get; set; }
     public List<FormResponse> FormResponses { get; set; } = [];
+    public List<ResponseApproval> Approvals { get; set; } = [];
+    public bool Approved { get; set; }
 }
 
 public class FormResponse : BaseEntity
@@ -51,6 +56,18 @@ public class FormResponse : BaseEntity
     public Guid FormFieldId { get; set; }
     public FormField FormField { get; set; }
     [StringLength(100000)] public string Value { get; set; }
+}
+
+public class ResponseApproval: ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    
+    public Guid ResponseId { get; set; }
+    
+    public Response Response { get; set; }
+    public Guid ApprovalId { get; set; }
+    
+    public Approval Approval { get; set; }
 }
 
 public class FormAssignee 

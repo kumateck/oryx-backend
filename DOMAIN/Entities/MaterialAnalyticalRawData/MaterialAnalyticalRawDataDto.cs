@@ -1,5 +1,4 @@
 using DOMAIN.Entities.Attachments;
-using DOMAIN.Entities.Base;
 
 namespace DOMAIN.Entities.MaterialAnalyticalRawData;
 

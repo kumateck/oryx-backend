@@ -10,7 +10,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileRepository fileRepository) : IFormRepository
+public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileRepository fileRepository, IApprovalRepository approvalRepository) : IFormRepository
 {
     public async Task<Result<Guid>> CreateForm(CreateFormRequest request)
     {
@@ -147,6 +147,11 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         await context.Responses.AddAsync(newResponse);
         await context.SaveChangesAsync();
+
+        if (request.MaterialAnalyticalRawDataId.HasValue)
+        {
+            await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), newResponse.Id);
+        }
         return Result.Success();
     }
 

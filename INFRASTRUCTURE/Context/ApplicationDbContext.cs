@@ -316,6 +316,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FormResponse> FormResponses { get; set; }
     public DbSet<FormReviewer> FormReviewers { get; set; }
     public DbSet<FormAssignee> FormAssignees { get; set; }
+    public DbSet<ResponseApproval> ResponseApprovals { get; set; }
 
     #endregion
 

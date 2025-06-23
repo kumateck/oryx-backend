@@ -30,6 +30,7 @@ public class CreateFormFieldRequest
 public class CreateResponseRequest 
 {
     public Guid FormId { get; set; }
+    public Guid? MaterialAnalyticalRawDataId { get; set; }
     public List<CreateFormResponseRequest> FormResponses { get; set; } = [];
 }
 
