@@ -1123,6 +1123,23 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             Error.NotFound("TransferNote.NotFound", "Transfer note not found") : 
             mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
     }
+    
+    public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNoteByProduct(Guid id)
+    {
+        var transferNote = await context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(b => b.FromWarehouse)
+            .Include(u => u.UoM)
+            .Include(b => b.ToWarehouse)
+            .Include(b => b.PackageStyle)
+            .FirstOrDefaultAsync(f => f.BatchManufacturingRecord.ProductId == id);
+        
+        return transferNote is null ? 
+            Error.NotFound("TransferNote.NotFound", "Transfer note not found") : 
+            mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
+    }
 
     public async Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request)
     {

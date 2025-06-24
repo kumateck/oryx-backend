@@ -467,6 +467,18 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetFinishedGoodsTransferNote(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves the details of a finished good transfer note by product Id
+    /// </summary>
+    [HttpGet("finished-goods-transfer-note/{productId:guid}/product")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinishedGoodsTransferNoteDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferNoteByProduct([FromRoute] Guid productId)
+    {
+        var result = await repository.GetFinishedGoodsTransferNoteByProduct(productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     [HttpPut("finished-goods-transfer-note/{id:guid}/approve")]
     public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, [FromBody] ApproveTransferNoteRequest quantityReceived)
