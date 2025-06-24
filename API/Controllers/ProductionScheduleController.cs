@@ -472,11 +472,14 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves the details of a finished good transfer note by product Id
     /// </summary>
     [HttpGet("finished-goods-transfer-note/{productId:guid}/product")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinishedGoodsTransferNoteDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFinishedGoodsTransferNoteByProduct([FromRoute] Guid productId)
+    public async Task<IResult> GetFinishedGoodsTransferNoteByProduct([FromRoute] Guid productId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetFinishedGoodsTransferNoteByProduct(productId);
+        var result = await repository.GetFinishedGoodsTransferNoteByProduct(page, pageSize, searchQuery, productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

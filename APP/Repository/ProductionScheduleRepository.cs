@@ -1124,9 +1124,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
     }
     
-    public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNoteByProduct(Guid id)
+    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNoteByProduct(int page, int pageSize, 
+        string searchQuery, Guid productId)
     {
-        var transferNote = await context.FinishedGoodsTransferNotes
+        var query = context.FinishedGoodsTransferNotes
             .AsSplitQuery()
             .Include(b => b.BatchManufacturingRecord)
             .ThenInclude(b => b.Product)
@@ -1134,11 +1135,20 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(u => u.UoM)
             .Include(b => b.ToWarehouse)
             .Include(b => b.PackageStyle)
-            .FirstOrDefaultAsync(f => f.BatchManufacturingRecord.ProductId == id);
+            .Where(f => f.BatchManufacturingRecord.ProductId == productId)
+            .AsQueryable();
         
-        return transferNote is null ? 
-            Error.NotFound("TransferNote.NotFound", "Transfer note not found") : 
-            mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.QarNumber, b => b.TransferNoteNumber);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<FinishedGoodsTransferNoteDto>
+        );
     }
 
     public async Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request)

@@ -127,5 +127,6 @@ public interface IProductionScheduleRepository
    Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(
        int page, int pageSize,
        string searchQuery, Guid productId);
-   Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNoteByProduct(Guid id);
+   Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNoteByProduct(int page, int pageSize, 
+       string searchQuery, Guid productId);
 }
