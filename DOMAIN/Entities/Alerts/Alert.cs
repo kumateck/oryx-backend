@@ -59,5 +59,7 @@ public class AlertDto : BaseDto
     public NotificationType NotificationType { get; set; }
     public List<AlertType> AlertTypes { get; set; }
     public TimeSpan TimeFrame { get; set; }
+    public List<RoleDto> Roles { get; set; } = [];
+    public List<UserDto> Users { get; set; } = [];
     public bool IsDisabled { get; set; }
 }

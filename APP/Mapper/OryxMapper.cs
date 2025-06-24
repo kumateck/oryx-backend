@@ -845,8 +845,9 @@ public class OryxMapper : Profile
 
         #region Alerts
 
-        CreateMap<Alert, AlertDto>();
-
+        CreateMap<Alert, AlertDto>()
+            .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles.Select(r => r.Role).ToList()))
+            .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Users.Select(r => r.User).ToList()));
         #endregion
         
         #region Product Sampling
