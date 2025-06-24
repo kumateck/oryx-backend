@@ -972,6 +972,20 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
                     Status = ApprovalStatus.Rejected,
                     ModelId = response.Id,
                 });
+                
+                var materialAnalyticalRawData =
+                    await context.MaterialAnalyticalRawData
+                        .AsSplitQuery()
+                        .Include(materialAnalyticalRawData => materialAnalyticalRawData.MaterialBatch)
+                        .FirstOrDefaultAsync(m =>
+                            m.Id == response.MaterialAnalyticalRawDataId);
+                if (materialAnalyticalRawData is null) return 
+                    Error.NotFound("Response.MaterialAnalyticalRawDataNotFound", $"Response {response.MaterialAnalyticalRawDataId} not found.");
+                    
+                var batch = materialAnalyticalRawData.MaterialBatch;
+                if (batch is null) return Error.NotFound("Response.BatchNotFound", $"Response batch in {response.MaterialAnalyticalRawDataId} not found.");
+                batch.Status = BatchStatus.Rejected;
+                context.MaterialBatches.Update(batch);
                 await context.SaveChangesAsync();
                 break;
             

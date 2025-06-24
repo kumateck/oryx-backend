@@ -67,15 +67,15 @@ public class SrDto
 
 public enum BatchStatus
 {
-    Received,
-    Quarantine,
-    Testing,
-    Available,
-    Rejected,
-    Retest,
-    Frozen,
-    Consumed,
-    Approved
+    Received = 0,
+    Quarantine = 1,
+    Testing = 2,
+    Available = 3,
+    Rejected = 4,
+    Retest = 5,
+    Frozen = 6,
+    Consumed = 7,
+    Approved = 8
 }
 
 public class MaterialBatchEvent : BaseEntity

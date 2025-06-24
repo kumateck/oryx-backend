@@ -6,7 +6,6 @@ namespace DOMAIN.Entities.Products;
 
 public class ProductDto : ProductListDto
 {
-    public List<FinishedProductDto> FinishedProducts { get; set; } = [];
     public List<ProductBillOfMaterialDto> BillOfMaterials { get; set; } = [];
     public ProductBillOfMaterialDto CurrentBillOfMaterial { get; set; } 
     public List<ProductBillOfMaterialDto> OutdatedBillOfMaterials { get; set; } = [];
