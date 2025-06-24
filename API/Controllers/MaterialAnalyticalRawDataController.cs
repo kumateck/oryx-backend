@@ -80,12 +80,12 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// <summary>
     /// Starts test for material batch
     /// </summary>
-    [HttpGet("start-test/{id:guid}")]
+    [HttpGet("start-test/{materialBatchId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> StartTestForMaterialBatch([FromRoute] Guid id)
+    public async Task<IResult> StartTestForMaterialBatch([FromRoute] Guid materialBatchId)
     {
-        var result = await repository.StartTestForMaterialBatch(id);
+        var result = await repository.StartTestForMaterialBatch(materialBatchId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
