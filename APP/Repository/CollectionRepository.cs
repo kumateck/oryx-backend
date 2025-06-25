@@ -1,5 +1,6 @@
 using APP.IRepository;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Countries;
@@ -48,6 +49,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ShipmentDiscrepancyType) => mapper.Map<List<CollectionItemDto>>(await context.ShipmentDiscrepancyTypes.OrderBy(c => c.Name).ToListAsync()),
             nameof(Department) => mapper.Map<List<CollectionItemDto>>(await context.Departments.OrderBy(c => c.Name).ToListAsync()),
             nameof(Charge) => mapper.Map<List<CollectionItemDto>>(await context.Charges.OrderBy(c => c.Name).ToListAsync()),
+            nameof(ProductState) => mapper.Map<List<CollectionItemDto>>(await context.ProductStates.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -186,6 +188,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var charges = await context.Charges.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(charges);
                     break;
+                
+                case nameof(ProductState):
+                    var productStates = await context.ProductStates.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(productStates);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -239,7 +246,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Country),
             nameof(WarehouseLocation),
             nameof(ShipmentDiscrepancyType),
-            nameof(Charge)
+            nameof(Charge),
+            nameof(ProductState),
         };
     }
     
@@ -342,6 +350,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.Charges.AddAsync(charge);
                 await context.SaveChangesAsync();
                 return charge.Id;
+            
+            case nameof(ProductState):
+                var productState = mapper.Map<ProductState>(request);
+                await context.ProductStates.AddAsync(productState);
+                await context.SaveChangesAsync();
+                return productState.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -476,6 +490,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Charges.Update(charge);
                 await context.SaveChangesAsync();
                 return charge.Id;
+            
+            case nameof(ProductState):
+                var productState = await context.ProductStates.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, productState);
+                context.ProductStates.Update(productState);
+                await context.SaveChangesAsync();
+                return productState.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -502,6 +523,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Currency) => await context.Currencies.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(ShipmentDiscrepancyType) => await context.ShipmentDiscrepancyTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Charge) => await context.Charges.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(ProductState) => await context.ProductStates.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -659,6 +681,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 charge.DeletedAt = currentTime;
                 charge.LastDeletedById = userId;
                 context.Charges.Update(charge);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(ProductState):
+                var productState = await context.ProductStates.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (productState == null)
+                    return Error.Validation("Charge", "Not found");
+                productState.DeletedAt = currentTime;
+                productState.LastDeletedById = userId;
+                context.ProductStates.Update(productState);
                 await context.SaveChangesAsync();
                 return Result.Success();
             

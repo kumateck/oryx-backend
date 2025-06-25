@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Forms;
@@ -42,8 +44,10 @@ public class Response : BaseEntity, IRequireApproval
 {
     public Guid FormId { get; set; }
     public Form Form { get; set; }
-    public Guid? MaterialAnalyticalRawDataId { get; set; }
-    public MaterialAnalyticalRawData.MaterialAnalyticalRawData MaterialAnalyticalRawData { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
     public List<FormResponse> FormResponses { get; set; } = [];
     public List<ResponseApproval> Approvals { get; set; } = [];
     public bool Approved { get; set; }

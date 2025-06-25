@@ -73,4 +73,16 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
         var result = await repository.DeleteAnalyticalRawData(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Starts test for BMR
+    /// </summary>
+    [HttpGet("start-test/{batchManufacturingRecordId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> StartTestForMaterialBatch([FromRoute] Guid batchManufacturingRecordId)
+    {
+        var result = await repository.StartTestForBatchManufacturingRecord(batchManufacturingRecordId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

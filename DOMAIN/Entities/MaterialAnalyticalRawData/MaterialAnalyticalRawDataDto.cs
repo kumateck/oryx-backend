@@ -1,4 +1,6 @@
 using DOMAIN.Entities.Attachments;
+using DOMAIN.Entities.MaterialStandardTestProcedures;
+using SHARED;
 
 namespace DOMAIN.Entities.MaterialAnalyticalRawData;
 
@@ -10,11 +12,8 @@ public class MaterialAnalyticalRawDataDto : WithAttachment
     
     public string Description { get; set; }
     
-    public string MaterialName { get; set; }
+    public MaterialStandardTestProcedureDto Stp { get; set; }
     
-    public Guid StpId { get; set; }
-    
-    public Guid FormId { get; set; }
-    public string FormName { get; set; }
+    public CollectionItemDto Form { get; set; }
     
 }

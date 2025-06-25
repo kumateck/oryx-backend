@@ -15,4 +15,5 @@ public interface IProductAnalyticalRawDataRepository
     Task<Result> UpdateAnalyticalRawData(Guid id, CreateProductAnalyticalRawDataRequest request);
     
     Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId);
+    Task<Result> StartTestForBatchManufacturingRecord(Guid id);
 }

@@ -104,6 +104,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         var newResponse = new Response
         {
             FormId = request.FormId,
+            MaterialBatchId = request.MaterialBatchId,
+            BatchManufacturingRecordId = request.BatchManufacturingRecordId,
             FormResponses = [],
             CreatedById = userId
         };
@@ -148,7 +150,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         await context.Responses.AddAsync(newResponse);
         await context.SaveChangesAsync();
 
-        if (request.MaterialAnalyticalRawDataId.HasValue)
+        if (request.BatchManufacturingRecordId.HasValue || request.MaterialBatchId.HasValue)
         {
             await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), newResponse.Id);
         }

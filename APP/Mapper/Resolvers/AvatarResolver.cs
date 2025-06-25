@@ -30,7 +30,7 @@ public class SignatureResolver(IHttpContextAccessor request) : IValueResolver<Us
     }
 }
 
-public class QCSignatureResolver(IHttpContextAccessor request) : IValueResolver<AnalyticalTestRequest, AnalyticalTestRequestDto, string>
+/*public class QCSignatureResolver(IHttpContextAccessor request) : IValueResolver<AnalyticalTestRequest, AnalyticalTestRequestDto, string>
 {
     public string Resolve(AnalyticalTestRequest source, AnalyticalTestRequestDto destination, string destMember,
         ResolutionContext context)
@@ -50,4 +50,4 @@ public class QASignatureResolver(IHttpContextAccessor request) : IValueResolver<
             ? null
             : $"https://{request.HttpContext?.Request.Host}/api/v1/file/signature/{source.QaManagerSignature}";
     }
-}
+}*/

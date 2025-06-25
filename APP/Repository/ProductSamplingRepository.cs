@@ -38,7 +38,9 @@ public class ProductSamplingRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<ProductSamplingDto>> GetProductSamplingByProductId(Guid id)
     {
         var productSampling =  await context.ProductSamplings
+            .AsSplitQuery()
             .Include(ps => ps.AnalyticalTestRequest)
+            .Include(ps => ps.CreatedBy)
             .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return productSampling == null ? 

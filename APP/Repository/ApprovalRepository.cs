@@ -7,6 +7,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.StaffRequisitions;
@@ -604,7 +605,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
             
             case nameof(Response):
                 var response = await context.Responses
+                    .AsSplitQuery()
                     .Include(lr => lr.Approvals)
+                    .Include(response => response.MaterialBatch)
+                    .Include(response => response.BatchManufacturingRecord)
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
                 
                 if (response is null)
@@ -650,20 +654,40 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
                 if (allRequiredReApproved)
                 {
                     response.Approved = true;
-                    var materialAnalyticalRawData =
-                        await context.MaterialAnalyticalRawData
-                            .AsSplitQuery()
-                            .Include(materialAnalyticalRawData => materialAnalyticalRawData.MaterialBatch)
-                            .FirstOrDefaultAsync(m =>
-                            m.Id == response.MaterialAnalyticalRawDataId);
-                    if (materialAnalyticalRawData is null) return 
-                        Error.NotFound("Response.MaterialAnalyticalRawDataNotFound", $"Response {response.MaterialAnalyticalRawDataId} not found.");
-                    
-                    var batch = materialAnalyticalRawData.MaterialBatch;
-                    if (batch is null) return Error.NotFound("Response.BatchNotFound", $"Response batch in {response.MaterialAnalyticalRawDataId} not found.");
-                    batch.Status = BatchStatus.Approved;
-                    context.MaterialBatches.Update(batch);
                     context.Responses.Update(response);
+                    
+                    if (response.MaterialBatchId.HasValue)
+                    {
+                        var materialAnalyticalRawData =
+                            await context.MaterialAnalyticalRawData
+                                .AsSplitQuery()
+                                .Include(materialAnalyticalRawData => materialAnalyticalRawData.MaterialStandardTestProcedure)
+                                .FirstOrDefaultAsync(m =>
+                                    m.MaterialStandardTestProcedure.MaterialId == response.MaterialBatch.MaterialId);
+                        if (materialAnalyticalRawData is null) return 
+                            Error.NotFound("Response.MaterialAnalyticalRawDataNotFound", $"Response {response.MaterialBatchId} not found.");
+                    
+                        var batch = response.MaterialBatch;
+                        if (batch is null) return Error.NotFound("Response.BatchNotFound", $"Response batch in {response.MaterialBatchId} not found.");
+                        batch.Status = BatchStatus.Approved;
+                        context.MaterialBatches.Update(batch);
+                    }
+
+                    if (response.BatchManufacturingRecordId.HasValue)
+                    {
+                        var productAnalyticalRawData = await context.ProductAnalyticalRawData
+                            .AsSplitQuery()
+                            .Include(p => p.ProductStandardTestProcedure)
+                            .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == response.BatchManufacturingRecord.ProductId);
+                        
+                        if (productAnalyticalRawData is null) return 
+                            Error.NotFound("Response.ProductAnalyticalRawDataNotFound", $"Response {response.BatchManufacturingRecordId} not found.");
+                        
+                        var bmr = response.BatchManufacturingRecord;
+                        if(bmr is null) return Error.NotFound("Response.BmrNotFound", $"Response bmr in {response.MaterialBatchId} not found.");
+                        bmr.Status = BatchManufacturingStatus.Approved;
+                        context.BatchManufacturingRecords.Update(bmr);
+                    }
                 }
                 await context.SaveChangesAsync();
                 
@@ -928,7 +952,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
             
             case nameof(Response):
                 var response = await context.Responses
+                    .AsSplitQuery()
                     .Include(lr => lr.Approvals)
+                    .Include(response => response.MaterialBatch)
+                    .Include(response => response.BatchManufacturingRecord)
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
                 
                 if (response is null)
@@ -972,20 +999,40 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
                     Status = ApprovalStatus.Rejected,
                     ModelId = response.Id,
                 });
-                
-                var materialAnalyticalRawData =
-                    await context.MaterialAnalyticalRawData
-                        .AsSplitQuery()
-                        .Include(materialAnalyticalRawData => materialAnalyticalRawData.MaterialBatch)
-                        .FirstOrDefaultAsync(m =>
-                            m.Id == response.MaterialAnalyticalRawDataId);
-                if (materialAnalyticalRawData is null) return 
-                    Error.NotFound("Response.MaterialAnalyticalRawDataNotFound", $"Response {response.MaterialAnalyticalRawDataId} not found.");
+
+                if (response.MaterialBatchId.HasValue)
+                {
+                    var materialAnalyticalRawData =
+                        await context.MaterialAnalyticalRawData
+                            .AsSplitQuery()
+                            .Include(materialAnalyticalRawData => materialAnalyticalRawData.MaterialStandardTestProcedure)
+                            .FirstOrDefaultAsync(m =>
+                                m.MaterialStandardTestProcedure.MaterialId == response.MaterialBatch.MaterialId);
+                    if (materialAnalyticalRawData is null) return 
+                        Error.NotFound("Response.MaterialAnalyticalRawDataNotFound", $"Response {response.MaterialBatchId} not found.");
                     
-                var batch = materialAnalyticalRawData.MaterialBatch;
-                if (batch is null) return Error.NotFound("Response.BatchNotFound", $"Response batch in {response.MaterialAnalyticalRawDataId} not found.");
-                batch.Status = BatchStatus.Rejected;
-                context.MaterialBatches.Update(batch);
+                    var batch = response.MaterialBatch;
+                    if (batch is null) return Error.NotFound("Response.BatchNotFound", $"Response batch in {response.MaterialBatchId} not found.");
+                    batch.Status = BatchStatus.Rejected;
+                    context.MaterialBatches.Update(batch);
+                }
+
+                if (response.BatchManufacturingRecordId.HasValue)
+                {
+                    var productAnalyticalRawData = await context.ProductAnalyticalRawData
+                        .AsSplitQuery()
+                        .Include(p => p.ProductStandardTestProcedure)
+                        .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == response.BatchManufacturingRecord.ProductId);
+                        
+                    if (productAnalyticalRawData is null) return 
+                        Error.NotFound("Response.ProductAnalyticalRawDataNotFound", $"Response {response.BatchManufacturingRecordId} not found.");
+                        
+                    var bmr = response.BatchManufacturingRecord;
+                    if(bmr is null) return Error.NotFound("Response.BmrNotFound", $"Response bmr in {response.MaterialBatchId} not found.");
+                    bmr.Status = BatchManufacturingStatus.Rejected;
+                    context.BatchManufacturingRecords.Update(bmr);
+                }
+                
                 await context.SaveChangesAsync();
                 break;
             

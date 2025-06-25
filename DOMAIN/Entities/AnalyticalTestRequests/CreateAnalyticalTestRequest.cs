@@ -4,11 +4,11 @@ namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class CreateAnalyticalTestRequest
 {
-    [Required] public string BatchNumber { get; set; }
+    public Guid BatchManufacturingRecordId { get; set; }
     
-    [Required] public string ProductName { get; set; }
+    public Guid ProductId { get; set; }
     
-    [Required] public string ProductSchedule { get; set; }
+    public Guid ProductionScheduleId { get; set; }
     
     [Required] public string SampledQuantity { get; set; }
     
@@ -20,9 +20,9 @@ public class CreateAnalyticalTestRequest
     
     [Required] public DateTime ReleaseDate { get; set; }
     
-    [Required] public string QcManagerSignature { get; set; }
+    //[Required] public string QcManagerSignature { get; set; }
     
-    [Required]  public string QaManagerSignature { get; set; }
+    //[Required]  public string QaManagerSignature { get; set; }
     
     [Required] public TestStage Stage { get; set; }
     
