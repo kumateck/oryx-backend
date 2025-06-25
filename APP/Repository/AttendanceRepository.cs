@@ -37,7 +37,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
     {
         var empId = worksheet.Cells[row, 1].Text?.Trim();
         var timestampStr = worksheet.Cells[row, 3].Text?.Trim();
-        var workState = worksheet.Cells[row, 4].Text?.Trim();
+        var workState = worksheet.Cells[row, 4].Text?.Trim().Replace(" ", "");
 
         if (string.IsNullOrWhiteSpace(empId) || string.IsNullOrWhiteSpace(timestampStr) || string.IsNullOrWhiteSpace(workState))
         {
