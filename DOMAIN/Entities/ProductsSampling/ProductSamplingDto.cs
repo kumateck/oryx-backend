@@ -1,8 +1,9 @@
 using DOMAIN.Entities.AnalyticalTestRequests;
+using DOMAIN.Entities.Base;
 
 namespace DOMAIN.Entities.ProductsSampling;
 
-public class ProductSamplingDto
+public class ProductSamplingDto : BaseDto
 {
     public Guid AnalyticalTestRequestId { get; set; }
      

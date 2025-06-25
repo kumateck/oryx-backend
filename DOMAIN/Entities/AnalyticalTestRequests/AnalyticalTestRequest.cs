@@ -1,14 +1,21 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 
 namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class AnalyticalTestRequest : BaseEntity
 {
-    public string BatchNumber { get; set; }
+    public Guid BatchManufacturingRecordId { get; set; }
+    public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     
-    public string ProductName { get; set; }
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
     
-    public string ProductSchedule { get; set; }
+    public Guid ProductionScheduleId { get; set; }
+    public ProductionSchedule ProductionSchedule { get; set; }
     
     public DateTime ManufacturingDate { get; set; }
     
@@ -21,15 +28,19 @@ public class AnalyticalTestRequest : BaseEntity
     public string SampledQuantity { get; set; }
     
     public DateTime ReleaseDate { get; set; }
-    public string QcManagerSignature { get; set; }
-    public string QaManagerSignature { get; set; }
+    //public string QcManagerSignature { get; set; }
+    //public string QaManagerSignature { get; set; }
     
     public TestStage Stage { get; set; }
-    
-    public State State { get; set; }
-    
+    public Guid StateId { get; set; }
+    public ProductState State { get; set; }
     public Status Status { get; set; }
-} 
+}
+
+public class ProductState : BaseEntity
+{
+    [StringLength(1000)] public string Name { get; set; }
+}
 public enum TestStage
 {
      Intermediate,
@@ -39,10 +50,9 @@ public enum TestStage
 
 public enum Status
 {
-    Quarantine,
-    UnderTest,
-    TestComplete,
-    Approved,
+    New,
+    Sampled,
+    Acknowledged,
 }
 
 public enum State

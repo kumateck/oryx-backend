@@ -3,10 +3,10 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.ProductAnalyticalRawData;
+using DOMAIN.Entities.Products.Production;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
-using ZstdSharp.Unsafe;
 
 namespace APP.Repository;
 
@@ -116,6 +116,17 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         analyticalRawData.LastDeletedById = userId;
         
         context.ProductAnalyticalRawData.Update(analyticalRawData);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> StartTestForBatchManufacturingRecord(Guid id)
+    {
+        var batchManufacturingRecord = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == id);
+        if(batchManufacturingRecord is null) return Error.NotFound("BMR.NotFound", "BMR not found");
+
+        batchManufacturingRecord.Status = BatchManufacturingStatus.UnderTest;
+        context.BatchManufacturingRecords.Update(batchManufacturingRecord);
         await context.SaveChangesAsync();
         return Result.Success();
     }

@@ -473,6 +473,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region AnalyticalTestRequests
 
     public DbSet<AnalyticalTestRequest> AnalyticalTestRequests { get; set; }
+    public DbSet<ProductState> ProductStates { get; set; }
 
     #endregion
     

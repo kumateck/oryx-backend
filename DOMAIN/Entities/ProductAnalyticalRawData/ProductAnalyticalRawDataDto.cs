@@ -1,4 +1,6 @@
 using DOMAIN.Entities.Attachments;
+using DOMAIN.Entities.Forms;
+using SHARED;
 
 namespace DOMAIN.Entities.ProductAnalyticalRawData;
 
@@ -12,12 +14,7 @@ public class ProductAnalyticalRawDataDto : WithAttachment
     
     public string Description { get; set; }
     
-    public Guid StpId { get; set; }
-    
-    public Guid FormId { get; set; }
-    
-    public string FormName { get; set; }
-    
+    public FormDto Form { get; set; }
     public string ProductName { get; set; }
 
 }

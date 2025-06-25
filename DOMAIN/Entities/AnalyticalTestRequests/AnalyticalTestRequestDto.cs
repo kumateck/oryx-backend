@@ -1,14 +1,15 @@
 using DOMAIN.Entities.Base;
+using SHARED;
 
 namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class AnalyticalTestRequestDto : BaseDto
 {
-    public string BatchNumber { get; set; }
+    public CollectionItemDto BatchManufacturingRecord { get; set; }
     
-    public string ProductName { get; set; }
+    public CollectionItemDto Product { get; set; }
     
-    public string ProductSchedule { get; set; }
+    public CollectionItemDto ProductionSchedule { get; set; }
     
     public DateTime ManufacturingDate { get; set; }
     
@@ -20,15 +21,11 @@ public class AnalyticalTestRequestDto : BaseDto
     
     public DateTime ReleaseDate { get; set; }
     
-    public string QcManagerSignature { get; set; }
-    
     public string SampledQuantity { get; set; }
-    
-    public string QaManagerSignature { get; set; }
     
     public TestStage Stage { get; set; }
     
-    public State State { get; set; }
+    public CollectionItemDto State { get; set; }
     
     public Status Status { get; set; }
 }

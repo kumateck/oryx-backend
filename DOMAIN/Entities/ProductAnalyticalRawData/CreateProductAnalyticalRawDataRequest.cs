@@ -13,6 +13,6 @@ public class CreateProductAnalyticalRawDataRequest
     public string Description { get; set; }
     
     [Required] public Guid StpId { get; set; }
-    
+    public Guid? BatchManufacturingRecordId { get; set; }
     [Required] public Guid FormId { get; set; }
 }

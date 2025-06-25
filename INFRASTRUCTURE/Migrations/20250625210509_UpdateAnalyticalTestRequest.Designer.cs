@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250625210509_UpdateAnalyticalTestRequest")]
+    partial class UpdateAnalyticalTestRequest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -170,8 +173,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Stage")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("StateId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("State")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -193,48 +196,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductionScheduleId");
 
-                    b.HasIndex("StateId");
-
                     b.ToTable("AnalyticalTestRequests");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.ProductState", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.ToTable("ProductStates");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>
@@ -2008,9 +1970,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<bool>("Approved")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid?>("BatchManufacturingRecordId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2029,15 +1988,13 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("MaterialBatchId")
+                    b.Property<Guid?>("MaterialAnalyticalRawDataId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("BatchManufacturingRecordId");
 
                     b.HasIndex("CreatedById");
 
@@ -2047,7 +2004,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("MaterialBatchId");
+                    b.HasIndex("MaterialAnalyticalRawDataId");
 
                     b.ToTable("Responses");
                 });
@@ -2474,6 +2431,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("MaterialBatchId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("SpecNumber")
                         .HasColumnType("text");
 
@@ -2495,6 +2455,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialBatchId");
 
                     b.HasIndex("StpId");
 
@@ -5102,9 +5064,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid>("ProductionScheduleId")
                         .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -8655,12 +8614,6 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.AnalyticalTestRequests.ProductState", "State")
-                        .WithMany()
-                        .HasForeignKey("StateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("BatchManufacturingRecord");
 
                     b.Navigation("CreatedBy");
@@ -8672,29 +8625,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("ProductionSchedule");
-
-                    b.Navigation("State");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.ProductState", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>
@@ -9893,10 +9823,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Response", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
-                        .WithMany()
-                        .HasForeignKey("BatchManufacturingRecordId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -9915,11 +9841,9 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
+                    b.HasOne("DOMAIN.Entities.MaterialAnalyticalRawData.MaterialAnalyticalRawData", "MaterialAnalyticalRawData")
                         .WithMany()
-                        .HasForeignKey("MaterialBatchId");
-
-                    b.Navigation("BatchManufacturingRecord");
+                        .HasForeignKey("MaterialAnalyticalRawDataId");
 
                     b.Navigation("CreatedBy");
 
@@ -9929,7 +9853,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("MaterialBatch");
+                    b.Navigation("MaterialAnalyticalRawData");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.ResponseApproval", b =>
@@ -10147,6 +10071,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
+                        .WithMany()
+                        .HasForeignKey("MaterialBatchId");
+
                     b.HasOne("DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure", "MaterialStandardTestProcedure")
                         .WithMany()
                         .HasForeignKey("StpId")
@@ -10160,6 +10088,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MaterialBatch");
 
                     b.Navigation("MaterialStandardTestProcedure");
                 });
