@@ -44,10 +44,12 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
             return Error.Validation("Attendance.MissingFields", $"Missing required fields at row {row}.");
         }
 
-        if (!DateTime.TryParseExact(timestampStr, "dd/MM/yyyy HH:mm:ss", null, DateTimeStyles.None, out var timestamp))
+        if (!DateTime.TryParseExact(timestampStr, "dd/MM/yyyy HH:mm:ss", null, DateTimeStyles.AssumeLocal, out var localTime))
         {
             return Error.Validation("Attendance.InvalidTimestamp", $"Invalid timestamp format at row {row}. Use dd/MM/yyyy HH:mm:ss.");
         }
+        
+        var timeStamp = localTime.ToUniversalTime();
 
         if (!Enum.TryParse<WorkState>(workState, true, out var parsedWorkState))
         {
@@ -55,7 +57,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
         }
 
         var existingAttendance = await context.AttendanceRecords
-            .FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timestamp);
+            .FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp);
 
         if (existingAttendance != null)
         {
@@ -71,7 +73,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
         attendanceRecords.Add(new AttendanceRecords
         {
             EmployeeId = empId,
-            TimeStamp = timestamp.ToUniversalTime(),
+            TimeStamp = timeStamp,
             WorkState = parsedWorkState
         });
     }
