@@ -71,7 +71,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
         attendanceRecords.Add(new AttendanceRecords
         {
             EmployeeId = empId,
-            TimeStamp = timestamp,
+            TimeStamp = timestamp.ToUniversalTime(),
             WorkState = parsedWorkState
         });
     }
