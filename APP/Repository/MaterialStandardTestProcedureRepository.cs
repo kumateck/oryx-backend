@@ -36,13 +36,13 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         return materialStandardTestProcedure.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, int materialKind = 0)
+    public async Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, MaterialKind materialKind = 0)
     {
         var query = context.MaterialStandardTestProcedures
             .AsQueryable()
             .Include(stp => stp.Material)
             .ThenInclude(m => m.MaterialCategory)
-            .Where(stp => (int) stp.Material.MaterialCategory.MaterialKind == materialKind)
+            .Where(stp =>  stp.Material.MaterialCategory.MaterialKind == materialKind)
             .AsSplitQuery();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))

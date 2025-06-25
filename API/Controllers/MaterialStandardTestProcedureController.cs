@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +31,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>))]
     public async Task<IResult> GetStandardTestProcedures([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null, [FromQuery] int materialKind = 0)
+        [FromQuery] string searchQuery = null, [FromQuery] MaterialKind materialKind = 0)
     {
         var result = await repository.GetMaterialStandardTestProcedures(page, pageSize, searchQuery, materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
