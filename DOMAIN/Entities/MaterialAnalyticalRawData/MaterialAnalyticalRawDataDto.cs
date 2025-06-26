@@ -12,7 +12,7 @@ public class MaterialAnalyticalRawDataDto : WithAttachment
     
     public string Description { get; set; }
     
-    public MaterialStandardTestProcedureDto Stp { get; set; }
+    public MaterialStandardTestProcedureDto MaterialStandardTestProcedure { get; set; }
     
     public CollectionItemDto Form { get; set; }
     

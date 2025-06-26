@@ -39,7 +39,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     }
 
     /// <summary>
-    /// Retrieves specific analytical raw data by its ID.
+    /// Retrieves specific analytical raw data by is ID.
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialAnalyticalRawDataDto))]
