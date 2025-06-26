@@ -17,7 +17,7 @@ public interface IProductRepository
     Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId);
     Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId);
     Task<Result<RouteDto>> GetRoute(Guid routeId);
-    Task<Result<IEnumerable<RouteDto>>> GetRoutes();
+    Task<Result<IEnumerable<RouteDto>>> GetRoutes(Guid productId);
     Task<Result> DeleteRoute(Guid routeId, Guid userId);
     Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId);
     Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId);

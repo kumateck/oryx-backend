@@ -192,7 +192,7 @@ namespace APP.Repository;
 
           var routes = new List<Route>();
           
-          foreach (var routeRequest in request)
+          foreach (var routeRequest in request.DistinctBy(r => r.OperationId).ToList())
           {
               routes.Add(mapper.Map<Route>(routeRequest));
           }
@@ -218,18 +218,19 @@ namespace APP.Repository;
         return Result.Success(routeDto);
     }
 
-    public async Task<Result<IEnumerable<RouteDto>>> GetRoutes()
+    public async Task<Result<IEnumerable<RouteDto>>> GetRoutes(Guid productId)
     {
-        var query = context.Routes
+        var query = await context.Routes
             .OrderBy(r => r.Order)
             .Include(r => r.Operation)
             .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
             .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
             .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
-            .AsQueryable();
+            .Where(r => r.ProductId == productId)
+            .ToListAsync();
         
-        return mapper.Map<List<RouteDto>>(await query.ToListAsync());
+        return mapper.Map<List<RouteDto>>(query);
     }
 
     public async Task<Result> UpdateRoute(UpdateRouteRequest request, Guid routeId, Guid userId)

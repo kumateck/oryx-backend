@@ -154,9 +154,9 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [HttpGet("{productId}/routes")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<RouteDto>))]
-    public async Task<IResult> GetRoutes()
+    public async Task<IResult> GetRoutes(Guid productId)
     {
-        var result = await repository.GetRoutes();
+        var result = await repository.GetRoutes(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

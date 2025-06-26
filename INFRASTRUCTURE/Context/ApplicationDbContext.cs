@@ -562,7 +562,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
         ConfigureRelationships(modelBuilder);
-        
     }
 
     private void ConfigureTableMappings(ModelBuilder modelBuilder)
@@ -806,7 +805,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Route Filters
 
         modelBuilder.Entity<Route>()
-            .HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Operation.DeletedAt.HasValue);
+            .HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         modelBuilder.Entity<RouteResponsibleUser>().HasQueryFilter(entity =>
             !entity.Route.DeletedAt.HasValue && !entity.User.DeletedAt.HasValue);
         modelBuilder.Entity<RouteResponsibleRole>().HasQueryFilter(entity =>
