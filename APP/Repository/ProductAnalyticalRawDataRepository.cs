@@ -28,7 +28,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         }
         
         var stpNumber = await context.ProductStandardTestProcedures
-            .AnyAsync(mstp => mstp.StpNumber == request.StpNumber);
+            .AnyAsync(mstp => mstp.Id == request.StpId);
 
         if (!stpNumber)
         {
@@ -48,13 +48,13 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         var query = context.ProductAnalyticalRawData
             .AsSplitQuery()
             .Include(ad => ad.ProductStandardTestProcedure)
+            .ThenInclude(p => p.Product)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery,
-                ad => ad.SpecNumber
-                ,ad => ad.StpNumber);
+                ad => ad.SpecNumber);
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))

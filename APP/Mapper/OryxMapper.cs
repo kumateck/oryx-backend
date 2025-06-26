@@ -810,7 +810,6 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.ProductStandardTestProcedure, opt => opt.Ignore());
 
         CreateMap<ProductAnalyticalRawData, ProductAnalyticalRawDataDto>()
-            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.ProductStandardTestProcedure.Product.Name))
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
         
 
@@ -821,7 +820,6 @@ public class OryxMapper : Profile
         CreateMap<CreateProductStandardTestProcedureRequest, ProductStandardTestProcedure>();
         CreateMap<ProductStandardTestProcedureDto, ProductStandardTestProcedure>();
         CreateMap<ProductStandardTestProcedure, ProductStandardTestProcedureDto>()
-            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         #endregion
