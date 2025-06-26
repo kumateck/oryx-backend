@@ -30,7 +30,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         
         
         var stpNumber = await context.MaterialStandardTestProcedures
-            .AnyAsync(mstp => mstp.StpNumber == request.StpNumber);
+            .AnyAsync(mstp => mstp.Id == request.StpId);
 
         if (!stpNumber)
         {
@@ -58,8 +58,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery, 
-                ad => ad.SpecNumber,
-                ad => ad.StpNumber);
+                ad => ad.SpecNumber);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

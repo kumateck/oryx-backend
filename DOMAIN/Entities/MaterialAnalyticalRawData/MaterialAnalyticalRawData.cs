@@ -7,8 +7,6 @@ namespace DOMAIN.Entities.MaterialAnalyticalRawData;
 
 public class MaterialAnalyticalRawData : BaseEntity
 {
-    public string StpNumber { get; set; }
-    
     public string SpecNumber { get; set; }
     
     public string Description { get; set; }

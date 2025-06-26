@@ -4,8 +4,6 @@ namespace DOMAIN.Entities.MaterialAnalyticalRawData;
 
 public class CreateMaterialAnalyticalRawDataRequest
 {
-    [Required] public string StpNumber { get; set; }
-    
     [Required] public string SpecNumber { get; set; }
     
     public string Description { get; set; }
