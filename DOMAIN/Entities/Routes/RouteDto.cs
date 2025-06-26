@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.ProductAnalyticalRawData;
 using SHARED;
 
 namespace DOMAIN.Entities.Routes;
@@ -39,6 +40,6 @@ public class RouteWorkCenterDto
 
 public class RouteOperationActionDto
 {
-    public CollectionItemDto Form { get; set; }
+    public ProductAnalyticalRawDataDto ProductAnalyticalRawData{ get; set; }
     public OperationAction Action { get; set; }
 }

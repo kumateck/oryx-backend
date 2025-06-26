@@ -12,7 +12,7 @@ public interface IMaterialAnalyticalRawDataRepository
     Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, MaterialKind materialKind);
     
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id);
-    
+    Task<Result<List<MaterialAnalyticalRawDataDto>>> GetAnalyticalRawDataByMaterial(Guid id);
     Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request);
     
     Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId);

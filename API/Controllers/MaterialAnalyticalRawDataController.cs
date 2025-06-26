@@ -51,6 +51,18 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     }
     
     /// <summary>
+    /// Retrieves specific analytical raw data by is material ID.
+    /// </summary>
+    [HttpGet("material/{materialId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialAnalyticalRawDataDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetAnalyticalRawDataByMaterial([FromRoute] Guid materialId)
+    {
+        var result = await repository.GetAnalyticalRawDataByMaterial(materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Updates analytical raw data by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]

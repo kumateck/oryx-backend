@@ -36,6 +36,6 @@ public class CreateRouteWorkCenter
 
 public class CreateRouteOperationAction
 {
-    public Guid? FormId { get; set; }
+    public Guid? ProductAnalyticalRawDataId { get; set; }
     public OperationAction Action { get; set; }
 }

@@ -47,6 +47,18 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     }
     
     /// <summary>
+    /// Retrieves specific product analytical raw data by product Id.
+    /// </summary>
+    [HttpGet("product/{productId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductAnalyticalRawDataDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetAnalyticalRawDataByProduct([FromRoute] Guid productId)
+    {
+        var result = await repository.GetAnalyticalRawDataByProduct(productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Updates product analytical raw data by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]

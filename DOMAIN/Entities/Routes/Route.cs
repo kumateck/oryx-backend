@@ -60,8 +60,8 @@ public class RouteWorkCenter : BaseEntity
 public class RouteOperationAction
 {
     public Guid Id { get; set; }
-    public Guid? FormId { get; set; }
-    public Form Form { get; set; }
+    public Guid? ProductAnalyticalRawDataId { get; set; }
+    public ProductAnalyticalRawData.ProductAnalyticalRawData ProductAnalyticalRawData { get; set; }
     public OperationAction Action { get; set; }
 }
 
@@ -74,6 +74,5 @@ public enum OperationAction
     FinalPackingOrPartialReturn = 4,
     FinishedGoodsTransferNote = 5,
     Dispatch = 6,
-    DynamicForm = 7,
-    Atr = 8,
+    Ard = 7,
 }

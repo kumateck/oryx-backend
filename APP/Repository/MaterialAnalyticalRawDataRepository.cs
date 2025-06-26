@@ -84,7 +84,23 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
                 {
                     opts.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
                 });
-}
+    }
+    
+    public async Task<Result<List<MaterialAnalyticalRawDataDto>>> GetAnalyticalRawDataByMaterial(Guid id)
+    {
+        var analyticalRawData = await context.MaterialAnalyticalRawData
+            .AsSplitQuery()
+            .Include(ad => ad.MaterialStandardTestProcedure)
+            .ThenInclude(ad => ad.Material)
+            .Include(ad => ad.Form)
+            .Where(ad => ad.MaterialStandardTestProcedure.MaterialId == id)
+            .ToListAsync();
+        
+        return mapper.Map<List<MaterialAnalyticalRawDataDto>>(analyticalRawData, opt =>
+        {
+            opt.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
+        });
+    }
 
     public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request)
     {

@@ -74,6 +74,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     {
         var analyticalRawData = await context.ProductAnalyticalRawData
             .AsSplitQuery()
+            .Include(ad => ad.Form)
             .Include(ad => ad.ProductStandardTestProcedure)
             .ThenInclude(ad => ad.Product)
             .FirstOrDefaultAsync(ad => ad.Id == id);
@@ -84,6 +85,22 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             {
                 opts.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
             });
+    }
+    
+    public async Task<Result<List<ProductAnalyticalRawDataDto>>> GetAnalyticalRawDataByProduct(Guid id)
+    {
+        var analyticalRawData = await context.ProductAnalyticalRawData
+            .AsSplitQuery()
+            .Include(ad => ad.Form)
+            .Include(ad => ad.ProductStandardTestProcedure)
+            .ThenInclude(ad => ad.Product)
+            .Where(ad => ad.ProductStandardTestProcedure.ProductId == id)
+            .ToListAsync();
+        
+        return mapper.Map<List<ProductAnalyticalRawDataDto>>(analyticalRawData, opt =>
+        {
+            opt.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
+        });
     }
 
     public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateProductAnalyticalRawDataRequest request)

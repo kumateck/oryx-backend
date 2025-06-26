@@ -11,6 +11,7 @@ public interface IProductAnalyticalRawDataRepository
     Task<Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery);
     
     Task<Result<ProductAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id);
+    Task<Result<List<ProductAnalyticalRawDataDto>>> GetAnalyticalRawDataByProduct(Guid id);
     
     Task<Result> UpdateAnalyticalRawData(Guid id, CreateProductAnalyticalRawDataRequest request);
     
