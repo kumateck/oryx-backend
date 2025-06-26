@@ -74,5 +74,6 @@ public enum OperationAction
     FinalPackingOrPartialReturn = 4,
     FinishedGoodsTransferNote = 5,
     Dispatch = 6,
-    Ard = 7,
+    Atr = 7,
+    Ard = 8,
 }
