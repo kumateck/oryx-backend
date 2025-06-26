@@ -44,10 +44,12 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
             return Error.Validation("Attendance.MissingFields", $"Missing required fields at row {row}.");
         }
 
-        if (!DateTime.TryParseExact(timestampStr, "dd/MM/yyyy HH:mm:ss", null, DateTimeStyles.None, out var timestamp))
+        if (!DateTime.TryParseExact(timestampStr, "dd/MM/yyyy HH:mm:ss", null, DateTimeStyles.AssumeLocal, out var localTime))
         {
             return Error.Validation("Attendance.InvalidTimestamp", $"Invalid timestamp format at row {row}. Use dd/MM/yyyy HH:mm:ss.");
         }
+        
+        var timeStamp = localTime.ToUniversalTime();
 
         if (!Enum.TryParse<WorkState>(workState, true, out var parsedWorkState))
         {
@@ -55,7 +57,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
         }
 
         var existingAttendance = await context.AttendanceRecords
-            .FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timestamp);
+            .FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp);
 
         if (existingAttendance != null)
         {
@@ -71,7 +73,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
         attendanceRecords.Add(new AttendanceRecords
         {
             EmployeeId = empId,
-            TimeStamp = timestamp.ToUniversalTime(),
+            TimeStamp = timeStamp,
             WorkState = parsedWorkState
         });
     }
@@ -114,12 +116,12 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
             let clockIn = records.Min(r => r.TimeStamp)
             let clockOut = records.Max(r => r.TimeStamp)
             let workHours = (clockOut - clockIn).TotalHours
-            let shift = employee.ShiftAssignments.FirstOrDefault(sa => sa.CreatedAt.Date == date.Date)
+            let shift = employee.ShiftAssignments.FirstOrDefault(sa => sa.ScheduleDate.Date == date.Date)
             select new AttendanceRecordDepartmentDto
             {
                 StaffName = $"{employee.FirstName} {employee.LastName}",
                 EmployeeId = employee.StaffNumber,
-                ShiftName = shift?.ShiftCategory?.Name ?? "N/A",
+                ShiftName = shift.ShiftCategory.Name,
                 ClockInTime = clockIn.ToString("hh:mm tt"),
                 ClockOutTime = clockOut.ToString("hh:mm tt"),
                 WorkHours = Math.Round(workHours, 2)
@@ -142,9 +144,9 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
 
     var employees = await context.Employees
         .Include(e => e.Department)
-        .Include(e => e.ShiftAssignments.Where(sa => sa.CreatedAt.Date == date.Date))
+        .Include(e => e.ShiftAssignments.Where(sa => sa.ScheduleDate.Date == date.Date))
             .ThenInclude(sa => sa.ShiftCategory)
-        .Include(e => e.ShiftAssignments.Where(sa => sa.CreatedAt.Date == date.Date))
+        .Include(e => e.ShiftAssignments.Where(sa => sa.ScheduleDate.Date == date.Date))
             .ThenInclude(sa => sa.ShiftSchedules)
         .Where(e => employeeIds.Contains(e.StaffNumber))
         .ToListAsync();
@@ -165,7 +167,7 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
         foreach (var employee in group)
         {
             var shift = employee.ShiftAssignments.FirstOrDefault();
-            var shiftName = shift?.ShiftSchedules?.ScheduleName?.ToLowerInvariant();
+            var shiftName = shift?.ShiftSchedules.ScheduleName.ToLowerInvariant();
 
             if (string.IsNullOrWhiteSpace(shiftName))
                 continue;
