@@ -51,7 +51,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .Include(ad => ad.MaterialStandardTestProcedure)
                 .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
-            .Where(ad => (int) ad.MaterialStandardTestProcedure.Material.MaterialCategory.MaterialKind == materialKind)
+            .Where(ad => (int) ad.MaterialStandardTestProcedure.Material.Kind == materialKind)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
