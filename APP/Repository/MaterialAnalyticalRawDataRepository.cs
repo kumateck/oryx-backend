@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.MaterialAnalyticalRawData;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -44,14 +45,14 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         return analyticalRawData.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, int materialKind = 0)
+    public async Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, MaterialKind materialKind)
     {
         var query = context.MaterialAnalyticalRawData
             .AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
                 .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
-            .Where(ad => (int) ad.MaterialStandardTestProcedure.Material.Kind == materialKind)
+            .Where(ad => ad.MaterialStandardTestProcedure.Material.Kind == materialKind)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))

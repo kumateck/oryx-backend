@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.MaterialAnalyticalRawData;
+using DOMAIN.Entities.Materials;
 
 namespace APP.IRepository;
 using SHARED;
@@ -8,7 +9,7 @@ public interface IMaterialAnalyticalRawDataRepository
 {
     Task<Result<Guid>> CreateAnalyticalRawData(CreateMaterialAnalyticalRawDataRequest request);
     
-    Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, int materialKind);
+    Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, MaterialKind materialKind);
     
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id);
     
