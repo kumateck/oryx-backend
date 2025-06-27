@@ -37,8 +37,9 @@ public class RouteResponsibleUser : BaseEntity
     public Route Route { get; set; }
     public Guid UserId { get; set; }
     public User User { get; set; }
-    public List<RouteOperationAction> Actions { get; set; } = [];
-}
+    public Guid? ProductAnalyticalRawDataId { get; set; }
+    public ProductAnalyticalRawData.ProductAnalyticalRawData ProductAnalyticalRawData { get; set; }
+    public OperationAction Action { get; set; }}
 
 public class RouteResponsibleRole : BaseEntity
 {
@@ -46,8 +47,9 @@ public class RouteResponsibleRole : BaseEntity
     public Route Route { get; set; }
     public Guid RoleId { get; set; }
     public Role Role { get; set; }
-    public List<RouteOperationAction> Actions { get; set; } = [];
-}
+    public Guid? ProductAnalyticalRawDataId { get; set; }
+    public ProductAnalyticalRawData.ProductAnalyticalRawData ProductAnalyticalRawData { get; set; }
+    public OperationAction Action { get; set; }}
 
 public class RouteWorkCenter : BaseEntity
 {
@@ -55,14 +57,6 @@ public class RouteWorkCenter : BaseEntity
     public Route Route { get; set; }
     public Guid WorkCenterId { get; set; }
     public WorkCenter WorkCenter { get; set; }
-}
-
-public class RouteOperationAction
-{
-    public Guid Id { get; set; }
-    public Guid? ProductAnalyticalRawDataId { get; set; }
-    public ProductAnalyticalRawData.ProductAnalyticalRawData ProductAnalyticalRawData { get; set; }
-    public OperationAction Action { get; set; }
 }
 
 public enum OperationAction

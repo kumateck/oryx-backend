@@ -135,9 +135,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(product => product.Routes).ThenInclude(route => route.Resources)
             .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
             .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)
-            .ThenInclude(routeResponsibleUser => routeResponsibleUser.Actions)
+            .ThenInclude(routeResponsibleUser => routeResponsibleUser.ProductAnalyticalRawData)
             .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles)
-            .ThenInclude(routeResponsibleRole => routeResponsibleRole.Actions).FirstOrDefaultAsync(p => p.Id == productId);
+            .ThenInclude(routeResponsibleRole => routeResponsibleRole.ProductAnalyticalRawData).FirstOrDefaultAsync(p => p.Id == productId);
         
         
         if(productionSchedule is null)
@@ -168,18 +168,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await FreezeMaterialInProduction(productionScheduleId, productId,  userId);
         
         // Step 1: Build a dictionary of users and their associated actions
-        var userActionsMap = new Dictionary<Guid, HashSet<RouteOperationAction>>();
+        var userActionsMap = new Dictionary<Guid, (Guid? productArdId, OperationAction action)>();
 
         // Add actions from RouteResponsibleUsers
         foreach (var route in product.Routes)
         {
             foreach (var ru in route.ResponsibleUsers)
             {
-                if (!userActionsMap.ContainsKey(ru.UserId))
-                    userActionsMap[ru.UserId] = [];
-
-                foreach (var action in ru.Actions)
-                    userActionsMap[ru.UserId].Add(action);
+                userActionsMap[ru.UserId] = (ru.ProductAnalyticalRawDataId, ru.Action);
             }
         }
 
@@ -192,11 +188,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 var usersInThisRole = await userManager.GetUsersInRoleAsync(roleName);
                 foreach (var user in usersInThisRole)
                 {
-                    if (!userActionsMap.ContainsKey(user.Id))
-                        userActionsMap[user.Id] = [];
-
-                    foreach (var action in rr.Actions)
-                        userActionsMap[user.Id].Add(action);
+                    userActionsMap[user.Id] = (rr.ProductAnalyticalRawDataId, rr.Action);
                 }
             }
         }
@@ -232,7 +224,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 ResponsibleUsers = userActionsMap.Select(kvp => new ProductionActivityStepUser
                 {
                     UserId = kvp.Key,
-                    Actions = kvp.Value.ToList()
+                    ProductAnalyticalRawDataId = kvp.Value.productArdId,
+                    Action = kvp.Value.action   
                 }).ToList(),
             }).ToList(),
             ActivityLogs =
@@ -458,7 +451,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps.OrderBy(p => p.Order))
             .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
-            .ThenInclude(pas => pas.Actions).ThenInclude(pas => pas.ProductAnalyticalRawData)
+            .ThenInclude(pas => pas.ProductAnalyticalRawData)
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
@@ -474,7 +467,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(pas => pas.ProductionActivity)
             .Include(pas => pas.ResponsibleUsers)
-            .ThenInclude(pas => pas.Actions)
             .ThenInclude(pas => pas.ProductAnalyticalRawData)
             .Include(pas => pas.Resources)
             .Include(pas => pas.WorkCenters)
@@ -504,7 +496,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(pas => pas.ProductionActivity)
             .Include(pas => pas.ResponsibleUsers)            
-            .ThenInclude(pas => pas.Actions).ThenInclude(pas => pas.ProductAnalyticalRawData)
+            .ThenInclude(pas => pas.ProductAnalyticalRawData)
             .Include(pas => pas.Resources)
             .Include(pas => pas.WorkCenters)
             .Include(pas => pas.WorkFlow)

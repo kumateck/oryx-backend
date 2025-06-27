@@ -278,7 +278,6 @@ public class OryxMapper : Profile
         CreateMap<RouteResponsibleRole, RouteResponsibleRoleDto>();
         CreateMap<RouteWorkCenter, RouteWorkCenterDto>();
         CreateMap<RouteResource, RouteResourceDto>();
-        CreateMap<RouteOperationAction, RouteOperationActionDto>();
         #endregion
 
         #region Configuration

@@ -19,23 +19,19 @@ public class CreateRouteResource
 public class CreateRouteResponsibleUser
 {
     public Guid UserId { get; set; }
-    public List<CreateRouteOperationAction> Actions { get; set; } = [];
+    public Guid? ProductAnalyticalRawDataId { get; set; }
+    public OperationAction Action { get; set; }
 }
 
 
 public class CreateRouteResponsibleRole 
 {
     public Guid RoleId { get; set; }
-    public List<CreateRouteOperationAction> Actions { get; set; } = [];
+    public Guid? ProductAnalyticalRawDataId { get; set; }
+    public OperationAction Action { get; set; }
 }
 
 public class CreateRouteWorkCenter
 {
     public Guid WorkCenterId { get; set; }
-}
-
-public class CreateRouteOperationAction
-{
-    public Guid? ProductAnalyticalRawDataId { get; set; }
-    public OperationAction Action { get; set; }
 }
