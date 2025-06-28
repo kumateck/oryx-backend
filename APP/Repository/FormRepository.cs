@@ -30,6 +30,11 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     public async Task<Result<FormDto>> GetForm(Guid formId)
     {
         var form = await context.Forms
+            .AsSplitQuery()
+            .Include(f => f.Sections)
+            .ThenInclude(s => s.Fields)
+            .ThenInclude(f => f.Question)
+            .ThenInclude(q => q.Options)
             .FirstOrDefaultAsync(f => f.Id == formId);
 
         if (form == null)
@@ -61,7 +66,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     {
         var form = await context.Forms
             .AsSplitQuery()
-            .Include(form => form.Reviewers).Include(form => form.Assignees)
+            .Include(form => form.Reviewers).Include(form => form.Assignees).Include(form => form.Sections)
             .FirstOrDefaultAsync(f => f.Id == formId);
 
         if (form == null)

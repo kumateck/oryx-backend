@@ -679,9 +679,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Form Entities
 
-        modelBuilder.Entity<Form>().Navigation(p => p.Sections).AutoInclude();
-        modelBuilder.Entity<FormSection>().Navigation(p => p.Fields).AutoInclude();
-        modelBuilder.Entity<FormField>().Navigation(p => p.Question).AutoInclude();
+        //modelBuilder.Entity<Form>().Navigation(p => p.Sections).AutoInclude();
+        //modelBuilder.Entity<FormSection>().Navigation(p => p.Fields).AutoInclude();
+        //modelBuilder.Entity<FormField>().Navigation(p => p.Question).AutoInclude();
         
         modelBuilder.Entity<Question>().Navigation(p => p.Options).AutoInclude();
         

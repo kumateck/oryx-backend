@@ -10,6 +10,6 @@ public class ProductAnalyticalRawDataDto : WithAttachment
     public string SpecNumber { get; set; }
     public Stage Stage { get; set; }
     public string Description { get; set; }
-    public FormDto Form { get; set; }
+    public CollectionItemDto Form { get; set; }
     public ProductStandardTestProcedureDto ProductStandardTestProcedure { get; set; }
 }
