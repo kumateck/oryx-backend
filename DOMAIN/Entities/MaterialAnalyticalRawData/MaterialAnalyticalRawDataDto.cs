@@ -13,5 +13,4 @@ public class MaterialAnalyticalRawDataDto : WithAttachment
     public MaterialStandardTestProcedureDto MaterialStandardTestProcedure { get; set; }
     
     public CollectionItemDto Form { get; set; }
-    
 }

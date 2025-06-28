@@ -89,7 +89,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// <summary>
     /// Starts test for BMR
     /// </summary>
-    [HttpGet("start-test/{batchManufacturingRecordId:guid}")]
+    [HttpPut("start-test/{batchManufacturingRecordId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> StartTestForMaterialBatch([FromRoute] Guid batchManufacturingRecordId)

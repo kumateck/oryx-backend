@@ -54,11 +54,23 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Retrieves specific analytical raw data by is material ID.
     /// </summary>
     [HttpGet("material/{materialId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialAnalyticalRawDataDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialAnalyticalRawDataDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAnalyticalRawDataByMaterial([FromRoute] Guid materialId)
     {
         var result = await repository.GetAnalyticalRawDataByMaterial(materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves specific analytical raw data by is material batch ID.
+    /// </summary>
+    [HttpGet("material/batch/{materialBatchId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialAnalyticalRawDataDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetAnalyticalRawDataByMaterialBatch([FromRoute] Guid materialBatchId)
+    {
+        var result = await repository.GetAnalyticalRawDataByMaterialBatch(materialBatchId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -93,7 +105,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// <summary>
     /// Starts test for material batch
     /// </summary>
-    [HttpGet("start-test/{materialBatchId:guid}")]
+    [HttpPut("start-test/{materialBatchId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> StartTestForMaterialBatch([FromRoute] Guid materialBatchId)

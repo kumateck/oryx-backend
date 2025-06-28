@@ -86,17 +86,34 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
                 });
     }
     
-    public async Task<Result<List<MaterialAnalyticalRawDataDto>>> GetAnalyticalRawDataByMaterial(Guid id)
+    public async Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterial(Guid id)
     {
         var analyticalRawData = await context.MaterialAnalyticalRawData
             .AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
             .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
-            .Where(ad => ad.MaterialStandardTestProcedure.MaterialId == id)
-            .ToListAsync();
+            .FirstOrDefaultAsync(ad => ad.MaterialStandardTestProcedure.MaterialId == id);
         
-        return mapper.Map<List<MaterialAnalyticalRawDataDto>>(analyticalRawData, opt =>
+        return mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData, opt =>
+        {
+            opt.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
+        });
+    }
+    
+    public async Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterialBatch(Guid id)
+    {
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(m => m.Id == id);
+        if(batch is null) return Error.NotFound("MaterialBatch.NotFound", "Batch not found.");
+
+        var analyticalRawData = await context.MaterialAnalyticalRawData
+            .AsSplitQuery()
+            .Include(ad => ad.MaterialStandardTestProcedure)
+            .ThenInclude(ad => ad.Material)
+            .Include(ad => ad.Form)
+            .FirstOrDefaultAsync(ad => ad.MaterialStandardTestProcedure.MaterialId == batch.MaterialId);
+        
+        return mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData, opt =>
         {
             opt.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
         });
