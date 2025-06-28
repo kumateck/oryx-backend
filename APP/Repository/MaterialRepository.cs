@@ -1255,6 +1255,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ThenInclude(m => m.ToWarehouse)
             .Include(b => b.MassMovements)
             .ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.UoM)
             .AsSplitQuery()
             .ToListAsync();
 

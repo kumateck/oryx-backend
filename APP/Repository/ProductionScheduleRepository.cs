@@ -1364,7 +1364,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 foreach (var batch in batches)
                 {
                     await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleId, productId,
-                        batch.QuantityToTake, batch.Batch.UoM.Id);
+                        batch.QuantityToTake, batch.Batch.UoM?.Id);
                 }
             }
         }
@@ -1385,7 +1385,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 foreach (var batch in batches)
                 {
                     await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleId, productId,
-                        batch.QuantityToTake, batch.Batch.UoM.Id);
+                        batch.QuantityToTake, batch.Batch.UoM?.Id);
                 }
             }
         }
