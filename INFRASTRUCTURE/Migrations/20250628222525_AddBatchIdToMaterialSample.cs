@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace INFRASTRUCTURE.Migrations
 {
     /// <inheritdoc />
-    public partial class AddMaterialBatchToMaterialSample : Migration
+    public partial class AddBatchIdToMaterialSample : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

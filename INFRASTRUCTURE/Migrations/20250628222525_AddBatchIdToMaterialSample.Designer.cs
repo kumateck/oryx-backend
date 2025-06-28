@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250628211645_AddMaterialBatchToMaterialSample")]
-    partial class AddMaterialBatchToMaterialSample
+    [Migration("20250628222525_AddBatchIdToMaterialSample")]
+    partial class AddBatchIdToMaterialSample
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
