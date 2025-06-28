@@ -204,10 +204,13 @@ namespace APP.Repository;
     public async Task<Result<RouteDto>> GetRoute(Guid routeId)
     {
         var route = await context.Routes
+            .AsSplitQuery()
             .Include(r => r.Operation)
             .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
             .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
+            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.Form)
             .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
+            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.Form)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .FirstOrDefaultAsync(r => r.Id == routeId);
 
@@ -222,10 +225,13 @@ namespace APP.Repository;
     {
         var query = await context.Routes
             .OrderBy(r => r.Order)
+            .AsSplitQuery()
             .Include(r => r.Operation)
             .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
             .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
+            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.Form)
             .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
+            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.Form)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .Where(r => r.ProductId == productId)
             .ToListAsync();
