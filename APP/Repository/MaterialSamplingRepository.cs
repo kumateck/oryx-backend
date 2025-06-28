@@ -32,13 +32,13 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
         return request.Id;
     }
 
-    public async Task<Result<MaterialSamplingDto>> GetMaterialSamplingByMaterialId(Guid id)
+    public async Task<Result<MaterialSamplingDto>> GetMaterialSamplingByGrnAndBatch(Guid grnId, Guid batchId)
     {
         var materialSampling =  await context.MaterialSamplings
             .AsSplitQuery()
             .Include(m => m.Grn)
             .Include(m => m.MaterialBatch)
-            .FirstOrDefaultAsync(ps => ps.Id == id);
+            .FirstOrDefaultAsync(ps => ps.GrnId == grnId && ps.MaterialBatchId == batchId);
 
         return materialSampling == null ? 
             Error.Validation("MaterialSampling.NotFound", "Material Sampling not found") 

@@ -69,5 +69,4 @@ public enum OperationAction
     FinishedGoodsTransferNote = 5,
     Dispatch = 6,
     Atr = 7,
-    Ard = 8,
 }

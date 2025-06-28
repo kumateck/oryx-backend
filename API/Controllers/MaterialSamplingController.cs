@@ -26,12 +26,12 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
     /// <summary>
     /// Retrieves the details of a sampling material by its ID.
     /// </summary>
-    [HttpGet("{id:guid}")]
+    [HttpGet("{grnId:guid}/{batchId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialSamplingDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialSamplingByMaterialId([FromRoute] Guid id)
+    public async Task<IResult> GetMaterialSamplingByMaterialId([FromRoute] Guid grnId, [FromRoute] Guid batchId)
     {
-        var result = await repository.GetMaterialSamplingByMaterialId(id);
+        var result = await repository.GetMaterialSamplingByGrnAndBatch(grnId, batchId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
