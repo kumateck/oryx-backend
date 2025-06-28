@@ -4,7 +4,6 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
-using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -297,7 +296,7 @@ namespace APP.Repository;
         }
 
         // Build a HashSet of existing MaterialIds for fast lookup
-        var existingMaterialIds = product.Packages.Select(p => p.MaterialId).ToHashSet();
+        //var existingMaterialIds = product.Packages.Select(p => p.MaterialId).ToHashSet();
 
         foreach (var newPackage in request)
         {

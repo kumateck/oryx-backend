@@ -1,5 +1,6 @@
 using APP.IRepository;
 using AutoMapper;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -18,9 +19,14 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
             return Error.Validation("GRN.Invalid", "Invalid GRN");
         }
         
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == materialSamplingRequest.MaterialBatchId);
+        if(batch is null) return Error.NotFound("MaterialBatchId.NotFound", "MaterialBatch not found");
+        
         var request = mapper.Map<MaterialSampling>(materialSamplingRequest);
         
         await context.MaterialSamplings.AddAsync(request);
+        batch.Status = BatchStatus.Testing;
+        context.MaterialBatches.Update(batch);
         await context.SaveChangesAsync();
         
         return request.Id;
@@ -29,7 +35,9 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
     public async Task<Result<MaterialSamplingDto>> GetMaterialSamplingByMaterialId(Guid id)
     {
         var materialSampling =  await context.MaterialSamplings
+            .AsSplitQuery()
             .Include(m => m.Grn)
+            .Include(m => m.MaterialBatch)
             .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return materialSampling == null ? 
