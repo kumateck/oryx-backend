@@ -7,6 +7,7 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.ShiftAssignments;
@@ -248,6 +249,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ShipmentDiscrepancyType),
             nameof(Charge),
             nameof(ProductState),
+            nameof(FinishedGoodsTransferNote),
         };
     }
     
