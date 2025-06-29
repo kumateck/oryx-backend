@@ -669,7 +669,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
                     
                         var batch = response.MaterialBatch;
                         if (batch is null) return Error.NotFound("Response.BatchNotFound", $"Response batch in {response.MaterialBatchId} not found.");
-                        batch.Status = BatchStatus.Approved;
+                        batch.Status = BatchStatus.Available;
                         context.MaterialBatches.Update(batch);
                     }
 

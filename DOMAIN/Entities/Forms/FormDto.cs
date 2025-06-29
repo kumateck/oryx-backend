@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Users;
 using SHARED;
 
 namespace DOMAIN.Entities.Forms;
@@ -42,6 +43,8 @@ public class FormResponseDto :  WithAttachment
 {
     public FormFieldDto FormField { get; set; }
     public string Value { get; set; }
+    public UserDto CheckedBy { get; set; }
+    public DateTime? CheckedAt { get; set; }
 }
 
 public class FormAssigneeDto : BaseDto

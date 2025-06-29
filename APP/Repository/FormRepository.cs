@@ -4,6 +4,9 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Products.Production;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -132,18 +135,17 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             if (type is QuestionType.Signature or QuestionType.FileUpload)
             {
                 var values = response.Value.Split("|");
-                var attachments = new List<string>();
+                var formResponse = new FormResponse
+                {
+                    FormFieldId = formField.Id,
+                    Value = "form response attachment.",
+                };
+                newResponse.FormResponses.Add(formResponse);
                 foreach (var value in values)
                 {
                     var reference = Guid.NewGuid().ToString();
-                    await fileRepository.SaveBlobItem(nameof(FormField).ToLower(), formField.Id, reference,value.ConvertFromBase64(), userId);
-                    attachments.Add(reference);
+                    await fileRepository.SaveBlobItem(nameof(FormResponse).ToLower(), formResponse.Id, reference,value.ConvertFromBase64(), userId);
                 }
-                newResponse.FormResponses.Add(new FormResponse
-                {
-                    FormFieldId = formField.Id,
-                    Value = string.Join("|", attachments)
-                });
             }
             else
             {
@@ -152,33 +154,103 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         }
 
         await context.Responses.AddAsync(newResponse);
-        await context.SaveChangesAsync();
-
+        
         if (request.BatchManufacturingRecordId.HasValue || request.MaterialBatchId.HasValue)
         {
-            await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), newResponse.Id);
+            if (request.MaterialBatchId.HasValue)
+            {
+                var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == request.MaterialBatchId);
+                batch.Status = BatchStatus.TestTaken;
+                context.MaterialBatches.Update(batch);
+            }
+            else if (request.BatchManufacturingRecordId.HasValue)
+            {
+                var bmr = await context.BatchManufacturingRecords
+                    .FirstOrDefaultAsync(b => b.Id == request.BatchManufacturingRecordId);
+                bmr.Status = BatchManufacturingStatus.TestTaken;
+                context.BatchManufacturingRecords.Update(bmr);
+            }
         }
+        
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
-    public async Task<Result<FormResponseDto>> GetFormResponse(Guid formResponseId)
+    public async Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId)
+    {
+        var response = await context.Responses.FirstOrDefaultAsync(r => r.MaterialBatchId == materialBatchId);
+        if (response == null) return FormErrors.NotFound(materialBatchId);
+        
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == response.MaterialBatchId);
+        if (batch == null) return MaterialErrors.NotFound(materialBatchId);
+        
+        var approval = await context.Approvals.FirstOrDefaultAsync(a => a.ItemType == nameof(Response));
+        if (approval == null)
+            return Error.Validation("Response.Approval",
+                "Approval configuration for response does not exist. Kindly create an approval in the settings.");
+        
+        response.CheckedAt = DateTime.UtcNow;
+        response.CheckedById = userId;
+        context.Responses.Update(response);
+        
+        batch.Status = BatchStatus.Checked;
+        context.MaterialBatches.Update(batch);
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+        
+    public async Task<Result<ResponseDto>> GetFormResponse(Guid formResponseId)
     {
         var formResponse = await context.Responses
             .AsSplitQuery()
             .Include(fr => fr.Form)
-            //.ThenInclude(fr => fr.Sections).ThenInclude(fr => fr.Fields)
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.FormResponses)
             .ThenInclude(r => r.FormField)
-            //.ThenInclude(r => r.Question)
-            //.ThenInclude(r => r.Options)
+            .ThenInclude(r => r.Question)
+            .ThenInclude(r => r.Options)
             .FirstOrDefaultAsync(fr => fr.Id == formResponseId);
 
         if (formResponse == null)
             return FormErrors.NotFound(formResponseId);
 
-        return mapper.Map<FormResponseDto>(formResponse);
+        return mapper.Map<ResponseDto>(formResponse);
     }
+    
+    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId)
+    {
+        var formResponse = await context.FormResponses
+            .AsSplitQuery()
+            .Include(fr => fr.CreatedBy)
+            .Include(fr => fr.Response)
+            .ThenInclude(fr => fr.CheckedBy)
+            .Include(r => r.FormField)
+            .ThenInclude(r => r.Question)
+            .ThenInclude(r => r.Options)
+            .Where(fr => fr.Response.MaterialBatchId == materialBatchId)
+            .ToListAsync();
+
+        return mapper.Map<List<FormResponseDto>>(formResponse, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+    }
+    
+    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(Guid batchManufacturingRecordId)
+    {
+        var formResponse = await context.FormResponses
+            .AsSplitQuery()
+            .Include(fr => fr.CreatedBy)
+            .Include(fr => fr.Response)
+            .ThenInclude(fr => fr.CheckedBy)
+            .Include(r => r.FormField)
+            .ThenInclude(r => r.Question)
+            .ThenInclude(r => r.Options)
+            .Where(fr => fr.Response.BatchManufacturingRecordId == batchManufacturingRecordId)
+            .ToListAsync();
+
+        return mapper.Map<List<FormResponseDto>>(formResponse, opt => opt.Items[AppConstants.ModelType]  = typeof(FormResponse));
+    }
+
 
     public async Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId)
     {

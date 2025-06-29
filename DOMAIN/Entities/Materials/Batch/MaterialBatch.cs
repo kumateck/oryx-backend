@@ -75,7 +75,9 @@ public enum BatchStatus
     Retest = 5,
     Frozen = 6,
     Consumed = 7,
-    Approved = 8
+    Approved = 8,
+    TestTaken = 9,
+    Checked =  10,
 }
 
 public class MaterialBatchEvent : BaseEntity

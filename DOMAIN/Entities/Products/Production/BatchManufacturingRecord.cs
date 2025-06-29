@@ -45,9 +45,11 @@ public class BatchManufacturingRecord : BaseEntity
 public enum BatchManufacturingStatus
 {
     New = 0,
-    UnderTest = 1,
+    Testing = 1,
     Approved = 2,
     Rejected = 3,
+    TestTaken = 4,
+    Checked = 5,
 }
 
 public class BatchManufacturingRecordDto : BaseDto

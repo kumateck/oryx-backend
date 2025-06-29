@@ -50,6 +50,9 @@ public class Response : BaseEntity, IRequireApproval
     public MaterialBatch MaterialBatch { get; set; }
     public List<FormResponse> FormResponses { get; set; } = [];
     public List<ResponseApproval> Approvals { get; set; } = [];
+    public Guid? CheckedById { get; set; }
+    public User CheckedBy { get; set; }
+    public DateTime? CheckedAt { get; set; }
     public bool Approved { get; set; }
 }
 

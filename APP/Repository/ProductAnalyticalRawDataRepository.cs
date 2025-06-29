@@ -145,7 +145,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         var batchManufacturingRecord = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == id);
         if(batchManufacturingRecord is null) return Error.NotFound("BMR.NotFound", "BMR not found");
 
-        batchManufacturingRecord.Status = BatchManufacturingStatus.UnderTest;
+        batchManufacturingRecord.Status = BatchManufacturingStatus.Testing;
         context.BatchManufacturingRecords.Update(batchManufacturingRecord);
         await context.SaveChangesAsync();
         return Result.Success();

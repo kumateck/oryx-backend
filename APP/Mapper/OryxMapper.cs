@@ -554,7 +554,11 @@ public class OryxMapper : Profile
         CreateMap<Response, ResponseDto>();
         CreateMap<FormResponse, FormResponseDto>()
             .ForMember(dest => dest.Attachments,
-                opt => opt.MapFrom<AttachmentsResolver>());
+                opt => opt.MapFrom<AttachmentsResolver>())
+            .ForMember(dest => dest.CheckedBy,
+                opt => opt.MapFrom(src => src.Response.CheckedBy))
+            .ForMember(dest => dest.CheckedAt,
+                opt => opt.MapFrom(src => src.Response.CheckedAt));
         CreateMap<FormAssignee, FormAssigneeDto>();
         CreateMap<FormReviewer, FormReviewerDto>();
 
