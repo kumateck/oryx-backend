@@ -120,7 +120,6 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             var formField = await context.FormFields
                 .AsSplitQuery()
                 .Include(f => f.Question)
-                .ThenInclude(q => q.Type)
                 .FirstOrDefaultAsync(field => field.Id == response.FormFieldId);
 
             if (formField == null)
