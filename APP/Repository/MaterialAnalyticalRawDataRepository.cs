@@ -95,6 +95,8 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .Include(ad => ad.Form)
             .FirstOrDefaultAsync(ad => ad.MaterialStandardTestProcedure.MaterialId == id);
         
+        if(analyticalRawData is null) return Error.NotFound("MaterialAnalyticalRawData.NotFound", "No material standard test procedure for this material found.");
+        
         return mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData, opt =>
         {
             opt.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
@@ -112,6 +114,8 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
             .FirstOrDefaultAsync(ad => ad.MaterialStandardTestProcedure.MaterialId == batch.MaterialId);
+        
+        if(analyticalRawData is null) return Error.NotFound("MaterialAnalyticalRawData.NotFound", "No material standard test procedure for this material found.");
         
         return mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData, opt =>
         {
