@@ -30,10 +30,10 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>))]
-    public async Task<IResult> GetStandardTestProcedures( [FromQuery] MaterialKind materialKind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetStandardTestProcedures( [FromQuery] MaterialKind materialKind, [FromQuery] bool unused, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetMaterialStandardTestProcedures(page, pageSize, searchQuery, materialKind);
+        var result = await repository.GetMaterialStandardTestProcedures(page, pageSize, searchQuery, materialKind, unused);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

@@ -36,7 +36,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         return materialStandardTestProcedure.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, MaterialKind materialKind)
+    public async Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, MaterialKind materialKind, bool unused)
     {
         var query = context.MaterialStandardTestProcedures
             .AsSplitQuery()
@@ -44,6 +44,12 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .ThenInclude(m => m.MaterialCategory)
             .Where(m => m.Material.Kind ==  materialKind)
             .AsQueryable();
+
+        if (unused)
+        {
+            var usedStpIds = await context.MaterialAnalyticalRawData.Select(item => item.StpId).ToListAsync();
+            query = query.Where(stp => !usedStpIds.Contains(stp.Id));
+        }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
