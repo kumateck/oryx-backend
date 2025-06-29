@@ -65,7 +65,8 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             query,
             page,
             pageSize,
-            mapper.Map<MaterialAnalyticalRawDataDto>);
+            entity => mapper.Map<MaterialAnalyticalRawDataDto>(entity, opts =>
+                opts.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData)));
     }
 
     public async Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id)

@@ -67,7 +67,10 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             query,
             page,
             pageSize,
-            mapper.Map<ProductAnalyticalRawDataDto>);
+            entity => mapper.Map<ProductAnalyticalRawDataDto>(entity, opts =>
+            {
+                opts.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawDataDto);
+            }));
     }
 
     public async Task<Result<ProductAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id)

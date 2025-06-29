@@ -51,7 +51,8 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             .GetPaginatedResultAsync(query,
                 page,
                 pageSize,
-                mapper.Map<ProductStandardTestProcedureDto>);
+                entity => mapper.Map<ProductStandardTestProcedureDto>(entity,
+                    opts => opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure)));
         
     }
 
