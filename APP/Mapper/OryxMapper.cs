@@ -563,6 +563,7 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom(src => src.Response.CheckedBy))
             .ForMember(dest => dest.CheckedAt,
                 opt => opt.MapFrom(src => src.Response.CheckedAt));
+        CreateMap<CreateFormResponseRequest, FormResponse>();
         CreateMap<FormAssignee, FormAssigneeDto>();
         CreateMap<FormReviewer, FormReviewerDto>();
 
