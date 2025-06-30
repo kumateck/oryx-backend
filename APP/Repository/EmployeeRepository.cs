@@ -406,7 +406,6 @@ public class EmployeeRepository(ApplicationDbContext context,
         }
         
         mapper.Map(employeeDto, employee);
-        employee.StaffNumber = employeeDto.StaffNumber;
         employee.DepartmentId = employeeDto.DepartmentId;
         employee.DesignationId = employeeDto.DesignationId;
         employee.AnnualLeaveDays = designation.MaximumLeaveDays;
