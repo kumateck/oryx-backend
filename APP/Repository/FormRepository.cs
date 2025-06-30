@@ -127,7 +127,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
             if (formField == null)
             {
-                continue;
+                return Error.Validation("Response.FormField", $"FormField not found {response.FormFieldId}");
             }
 
             var type = formField.Question.Type;
