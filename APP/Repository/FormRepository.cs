@@ -219,6 +219,46 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<ResponseDto>(formResponse);
     }
     
+    public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(Guid materialBatchId)
+    {
+        var form = await context.Forms
+            .AsSplitQuery()
+            .Include(f => f.Sections)
+            .ThenInclude(s => s.Fields)
+            .ThenInclude(fld => fld.Question)
+            .ThenInclude(q => q.Options)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.CreatedBy)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.FormField)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.Response)
+            .ThenInclude(res => res.CheckedBy)
+            .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.MaterialBatchId == materialBatchId));
+
+        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+    }
+    
+    public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByBmr(Guid batchManufacturingRecordId)
+    {
+        var form = await context.Forms
+            .AsSplitQuery()
+            .Include(f => f.Sections)
+            .ThenInclude(s => s.Fields)
+            .ThenInclude(fld => fld.Question)
+            .ThenInclude(q => q.Options)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.CreatedBy)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.FormField)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.Response)
+            .ThenInclude(res => res.CheckedBy)
+            .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.MaterialBatchId == batchManufacturingRecordId));
+
+        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+    }
+    
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId)
     {
         var formResponse = await context.FormResponses

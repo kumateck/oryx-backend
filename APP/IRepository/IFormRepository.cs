@@ -25,4 +25,6 @@ public interface IFormRepository
    Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId);
    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId);
    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(Guid batchManufacturingRecordId);
+   Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(Guid materialBatchId);
+   Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByBmr(Guid batchManufacturingRecordId);
 }

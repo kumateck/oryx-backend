@@ -263,4 +263,35 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormResponseByBmr(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    
+    /// <summary>
+    /// Gets form with response by material batch ID.
+    /// </summary>
+    /// <param name="materialBatchId">The ID of the material batch.</param>
+    /// <returns>Returns the form response.</returns>
+    [HttpGet("with-responses/material-batch/{materialBatchId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormWithResponseByMaterialBatch(Guid materialBatchId)
+    {
+        var result = await repository.GetFormWithResponseByMaterialBatch(materialBatchId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets form response by batch manufacturing record ID.
+    /// </summary>
+    /// <param name="batchManufacturingRecordId">The ID of the batch manufacturing record.</param>
+    /// <returns>Returns the form response.</returns>
+    [HttpGet("with-responses/bmr/{batchManufacturingRecordId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormWithResponseByBmr(Guid batchManufacturingRecordId)
+    {
+        var result = await repository.GetFormWithResponseByBmr(batchManufacturingRecordId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
