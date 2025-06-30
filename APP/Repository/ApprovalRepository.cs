@@ -1320,7 +1320,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task CreateInitialApprovalsAsync(string modelType, Guid modelId)
     {
         var approval = await context.Approvals.FirstOrDefaultAsync(a => a.ItemType == modelType);
-        if (approval == null) return;
+        if (approval == null) throw new Exception("Approval not found for {modelType}");
         
         var approvalStages = await context.Approvals
             .Where(s => s.ItemType == modelType)
