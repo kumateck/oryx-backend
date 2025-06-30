@@ -34,7 +34,7 @@ public class CompanyWorkingDaysController(ICompanyWorkingDaysRepository reposito
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<CompanyWorkingDaysDto>>))]
-    public async Task<IResult> GetWorkingDays([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    public async Task<IResult> GetWorkingDays([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
