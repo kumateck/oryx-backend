@@ -106,6 +106,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
             .AsSplitQuery()
             .Include(o => o.Department)
             .Include(o => o.Employees)
+            .Include(o => o.CreatedBy)
             .FirstOrDefaultAsync(ot => ot.Id == id);
         
         return overtimeRequest is null ? 
