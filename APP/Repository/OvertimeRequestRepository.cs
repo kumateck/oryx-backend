@@ -81,6 +81,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
         var query =  context.OvertimeRequests
             .AsSplitQuery()
             .Include(o => o.Employees)
+            .Include(o => o.Department)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
