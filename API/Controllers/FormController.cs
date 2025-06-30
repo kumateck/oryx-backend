@@ -5,7 +5,6 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SHARED;
 
 namespace API.Controllers;
 
@@ -223,7 +222,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("generate-certificate/{materialBatchId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GenerateCertificateOfAnalysis(Guid materialBatchId)
     {
@@ -231,7 +230,25 @@ public class FormController(IFormRepository repository) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.GenerateCertificateOfAnalysis(materialBatchId, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Generates the Certificate of Analysis for a given material batch.
+    /// </summary>
+    /// <param name="batchManufacturingRecordId">The ID of the batch manufacturing.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("generate-certificate/product/{materialBatchId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GenerateCertificateOfAnalysisForProduct(batchManufacturingRecordId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>

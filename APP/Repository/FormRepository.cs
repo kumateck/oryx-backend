@@ -200,6 +200,31 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid userId)
+    {
+        var response = await context.Responses.FirstOrDefaultAsync(r => r.BatchManufacturingRecordId == batchManufacturingRecordId);
+        if (response == null) return FormErrors.NotFound(batchManufacturingRecordId);
+        
+        var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == response.BatchManufacturingRecordId);
+        if (bmr == null) return MaterialErrors.NotFound(batchManufacturingRecordId);
+        
+        var approval = await context.Approvals.FirstOrDefaultAsync(a => a.ItemType == nameof(Response));
+        if (approval == null)
+            return Error.Validation("Response.Approval",
+                "Approval configuration for response does not exist. Kindly create an approval in the settings.");
+        
+        response.CheckedAt = DateTime.UtcNow;
+        response.CheckedById = userId;
+        context.Responses.Update(response);
+        
+        bmr.Status = BatchManufacturingStatus.Checked;
+        context.BatchManufacturingRecords.Update(bmr);
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
         
     public async Task<Result<ResponseDto>> GetFormResponse(Guid formResponseId)
     {
