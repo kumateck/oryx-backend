@@ -91,6 +91,7 @@ public class ProductionActivityListDto : BaseDto
     public ProductionStatus Status { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public List<ProductionActivityStepUserDto> ResponsibleUsers { get; set; } = [];
 
     public ProductionActivityStepDto CurrentStep =>
         Steps.Count != 0

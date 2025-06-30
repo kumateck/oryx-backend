@@ -429,7 +429,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.ProductionSchedule)
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps.OrderBy(p => p.Order))
-            .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
+            .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers).ThenInclude(ru => ru.ProductAnalyticalRawData)
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
