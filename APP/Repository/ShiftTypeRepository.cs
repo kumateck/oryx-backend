@@ -1,8 +1,10 @@
+using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.ShiftTypes;
+using DOMAIN.Entities.StaffRequisitions;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -11,30 +13,30 @@ namespace APP.Repository;
 
 public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) : IShiftTypeRepository
 {
-    public async Task<Result<Guid>> CreateShiftType(CreateShiftTypeRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateShiftType(CreateShiftTypeRequest request)
     {
         var existingShiftType = await context.ShiftTypes
-            .FirstOrDefaultAsync(s => s.ShiftName == request.ShiftName && s.DeletedAt == null );
+            .FirstOrDefaultAsync(s => s.ShiftName == request.ShiftName);
 
         if (existingShiftType != null)
         {
             return Error.Validation("ShiftType.Exists", "Shift type already exists.");
         }
-
-        if (request.StartTime > request.EndTime)
+        
+        if (!DateTime.TryParseExact(request.StartTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) ||
+            !DateTime.TryParseExact(request.EndTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
-            return Error.Validation("ShiftType.InvalidTime", "Start time must be before end time.");
+            return Error.Validation("ShiftType.InvalidTime", "Start and End times must be in 12-hour format (e.g., 08:30 AM).");
         }
 
+      
         if (request.ApplicableDays.Count == 0)
         {
             return Error.Validation("ShiftType.InvalidDays", "At least one day must be selected.");
         }
         
         var shiftType = mapper.Map<ShiftType>(request);
-        shiftType.CreatedById = userId;
-        shiftType.CreatedAt = DateTime.UtcNow;
-        
+ 
         await context.ShiftTypes.AddAsync(shiftType);
         await context.SaveChangesAsync();
         
@@ -43,9 +45,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
     public async Task<Result<Paginateable<IEnumerable<ShiftTypeDto>>>> GetShiftTypes(int page, int pageSize, string searchQuery)
     {
-        var query = context.ShiftTypes
-            .Where(st => st.LastDeletedById == null)
-            .AsQueryable();
+        var query = context.ShiftTypes.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -54,8 +54,12 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.RotationType.ToString());
+            if (Enum.TryParse<RotationType>(searchQuery, true, out var parsedRotationType))
+            {
+                query = query.Where(sr => sr.RotationType == parsedRotationType);
+            }
         }
+        
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -74,7 +78,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
     public async Task<Result<ShiftTypeDto>> GetShiftType(Guid id)
     {
-        var shiftType = await context.ShiftTypes.FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
+        var shiftType = await context.ShiftTypes.FirstOrDefaultAsync(s => s.Id == id);
         if (shiftType is null)
         {
             return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
@@ -83,19 +87,23 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success(shiftTypeDto);
     }
 
-    public async Task<Result> UpdateShiftType(Guid id, CreateShiftTypeRequest request, Guid userId)
+    public async Task<Result> UpdateShiftType(Guid id, CreateShiftTypeRequest request)
     {
         var shiftType = await context.ShiftTypes
-            .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
+            .FirstOrDefaultAsync(s => s.Id == id);
         
         if (shiftType is null)
         {
             return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
         }
-        mapper.Map(request, shiftType);
         
-        shiftType.LastUpdatedById = userId;
-        shiftType.UpdatedAt = DateTime.UtcNow;
+        if (!DateTime.TryParseExact(request.StartTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) ||
+            !DateTime.TryParseExact(request.EndTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+        {
+            return Error.Validation("ShiftType.InvalidTime", "Start and End times must be in 12-hour format (e.g., 08:30 AM).");
+        }
+
+        mapper.Map(request, shiftType);
         
         context.ShiftTypes.Update(shiftType);
         await context.SaveChangesAsync();
@@ -105,12 +113,20 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
     public async Task<Result> DeleteShiftType(Guid id, Guid userId)
     {
         var shiftType = await context.ShiftTypes
-            .FirstOrDefaultAsync(s => s.Id == id && s.LastDeletedById == null);
+            .FirstOrDefaultAsync(s => s.Id == id);
 
         if (shiftType is null)
         {
             return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
         }
+
+        var shiftSchedule = await context.ShiftSchedules.FirstOrDefaultAsync(sc => sc.ShiftTypes.Contains(shiftType));
+
+        if (shiftSchedule is not null)
+        {
+            return Error.Validation("ShiftType.InUse", "Shift type is in use by a shift schedule.");
+        }
+        
         shiftType.LastDeletedById = userId;
         shiftType.DeletedAt = DateTime.UtcNow;
         

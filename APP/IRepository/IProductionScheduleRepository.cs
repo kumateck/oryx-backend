@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
@@ -85,6 +86,12 @@ public interface IProductionScheduleRepository
     Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionId, Guid productionScheduleId);
     Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
     
+    Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id);
+    Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request);
+    
+    Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
+    
+    
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);
     Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId);
@@ -95,7 +102,7 @@ public interface IProductionScheduleRepository
     Task<Result<ProductionScheduleProductDto>> GetProductDetailsInProductionSchedule(
         Guid productionScheduleId, Guid productId);
 
-    Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId);
+    Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId, string reason);
     Task<Result> ReturnLeftOverStockAfterProductionEnds(Guid productionScheduleId, Guid productId,
         List<PartialMaterialToReturn> returns);
     Task<Result<Paginateable<IEnumerable<MaterialReturnNoteDto>>>> GetMaterialReturnNotes(int page,
@@ -115,4 +122,11 @@ public interface IProductionScheduleRepository
    Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId);
    Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
        List<BatchTransferRequest> batches, Guid userId);
+   Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(int page, int pageSize,
+       string searchQuery = null);
+   Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(
+       int page, int pageSize,
+       string searchQuery, Guid productId);
+   Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNoteByProduct(int page, int pageSize, 
+       string searchQuery, Guid productId);
 }

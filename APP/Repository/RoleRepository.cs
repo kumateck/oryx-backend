@@ -86,9 +86,12 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         var role =await context.Roles.FirstOrDefaultAsync(r => r.Id == id);
         if (role == null) return RoleErrors.NotFound(id);
 
+        if (role.IsManager) return RoleErrors.IsManager;
+
         role.Name = request.Name;
         role.DisplayName = request.DisplayName;
-        role.NormalizedName = request.Name.ToUpper();
+        role.NormalizedName = request.Name.Normalize();
+        role.Type = request.Type;
         role.LastUpdatedById = userid;
         context.Roles.Update(role);
         await context.SaveChangesAsync();

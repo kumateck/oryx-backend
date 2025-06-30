@@ -55,6 +55,8 @@ public class ProductionScheduleProductDto
     public decimal Quantity { get; set; }
     public string BatchNumber { get; set; }
     public BatchSize BatchSize { get; set; }
+    public bool Cancelled { get; set; }
+   public string ReasonForCancellation { get; set; }
 }
 
 public enum MaterialRequisitionStatus

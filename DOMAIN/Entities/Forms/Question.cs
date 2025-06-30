@@ -12,13 +12,14 @@ public class Question : BaseEntity
     public List<QuestionOption> Options { get; set; } = [];
     public bool IsMultiSelect { get; set; }
     [StringLength(100)] public string Reference { get; set; }
+    [StringLength(10000)] public string Description { get; set; }
 }
 
 public class QuestionOption : BaseEntity
 {
     public Guid QuestionId { get; set; }
     public Question Question { get; set; }
-    [StringLength(1000)]  public string Name { get; set; }
+    [StringLength(100000000)]  public string Name { get; set; }
 }
 
 public class QuestionDto : BaseDto
@@ -28,6 +29,7 @@ public class QuestionDto : BaseDto
     public QuestionValidationType Validation { get; set; }
     public bool IsMultiSelect { get; set; }
     public string Reference { get; set; }
+    public string Description { get; set; }
     public List<QuestionOptionDto> Options { get; set; } = [];
 }
 
@@ -48,7 +50,8 @@ public enum QuestionType
     Checkbox = 6, 
     FileUpload = 7,
     Signature = 8,
-    Reference = 9
+    Reference = 9,
+    Formula = 10
 }
 
 public enum QuestionValidationType
@@ -57,4 +60,24 @@ public enum QuestionValidationType
     Letter = 1,
     Alphanumeric= 2,
     None = 3
+}
+
+public class Formula
+{
+    [Required][StringLength(100)] public string Marker { get; set; } = "present";
+    [StringLength(1000)] public string Expression { get; set; }
+    [StringLength(100000000)] public string Variables { get; set; }
+}
+
+public class FormulaDto
+{
+    [StringLength(1000)] public string Expression { get; set; }
+    [StringLength(100000000)] public string Variables { get; set; }
+}
+
+
+public class Variable
+{
+    public string Key { get; set; }
+    public string Label { get; set; }
 }

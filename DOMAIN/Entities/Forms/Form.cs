@@ -1,5 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Forms;
@@ -29,7 +32,7 @@ public class FormField : BaseEntity
     public Guid QuestionId { get; set; }
     public Question Question { get; set; }
     public bool Required { get; set; }
-    [StringLength(1000000)] public string Response { get; set; }
+    [StringLength(1000)] public string Description { get; set; }
     public int Rank { get; set; } 
     public Guid? AssigneeId { get; set; }
     public User Assignee { get; set; }
@@ -37,11 +40,20 @@ public class FormField : BaseEntity
     public User Reviewer { get; set; }
 }
 
-public class Response : BaseEntity
+public class Response : BaseEntity, IRequireApproval
 {
     public Guid FormId { get; set; }
     public Form Form { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
     public List<FormResponse> FormResponses { get; set; } = [];
+    public List<ResponseApproval> Approvals { get; set; } = [];
+    public Guid? CheckedById { get; set; }
+    public User CheckedBy { get; set; }
+    public DateTime? CheckedAt { get; set; }
+    public bool Approved { get; set; }
 }
 
 public class FormResponse : BaseEntity
@@ -51,6 +63,18 @@ public class FormResponse : BaseEntity
     public Guid FormFieldId { get; set; }
     public FormField FormField { get; set; }
     [StringLength(100000)] public string Value { get; set; }
+}
+
+public class ResponseApproval: ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    
+    public Guid ResponseId { get; set; }
+    
+    public Response Response { get; set; }
+    public Guid ApprovalId { get; set; }
+    
+    public Approval Approval { get; set; }
 }
 
 public class FormAssignee 

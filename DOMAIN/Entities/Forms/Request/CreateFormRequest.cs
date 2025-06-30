@@ -22,6 +22,7 @@ public class CreateFormFieldRequest
     public Guid QuestionId { get; set; }
     public bool Required { get; set; }
     public int Rank { get; set; } 
+    public string Description { get; set; }
     public Guid? AssigneeId { get; set; }
     public Guid? ReviewerId { get; set; }
 }
@@ -29,6 +30,8 @@ public class CreateFormFieldRequest
 public class CreateResponseRequest 
 {
     public Guid FormId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public Guid? MaterialBatchId { get; set; }
     public List<CreateFormResponseRequest> FormResponses { get; set; } = [];
 }
 

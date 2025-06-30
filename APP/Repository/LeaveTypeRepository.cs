@@ -10,9 +10,9 @@ namespace APP.Repository;
 
 public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) : ILeaveTypeRepository
 {
-    public async Task<Result<Guid>> CreateLeaveType(CreateLeaveTypeRequest leaveTypeDto, Guid userId)
+    public async Task<Result<Guid>> CreateLeaveType(CreateLeaveTypeRequest leaveTypeDto)
     {
-        var existingLeaveType = await context.LeaveTypes.FirstOrDefaultAsync(l => l.Name == leaveTypeDto.Name && l.LastDeletedById == null);
+        var existingLeaveType = await context.LeaveTypes.FirstOrDefaultAsync(l => l.Name == leaveTypeDto.Name);
 
         if (existingLeaveType != null)
         {
@@ -43,8 +43,6 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
             }
         }
         var leaveType = mapper.Map<LeaveType>(leaveTypeDto);
-        leaveType.CreatedById = userId;
-        leaveType.CreatedAt = DateTime.UtcNow;
         
         leaveType.Designations = designations;
         
@@ -79,7 +77,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var leaveType = await context.LeaveTypes
             .Include(d => d.Designations)
-            .FirstOrDefaultAsync(l=> l.Id == id && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l=> l.Id == id );
         if (leaveType == null)
         {
             return Error.NotFound("LeaveType.NotFound", "LeaveType not found");
@@ -88,10 +86,10 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success(leaveTypeDto);
     }
 
-    public async Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest request, Guid userId)
+    public async Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest request)
     {
         var leaveType = await context.LeaveTypes
-            .FirstOrDefaultAsync(l => l.Id == id && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l => l.Id == id );
         
         if (leaveType == null)
         {
@@ -108,8 +106,6 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.Validation("LeaveType.InvalidDesignations", "One or more designation IDs are invalid.");
         }
-        leaveType.UpdatedAt = DateTime.UtcNow;
-        leaveType.LastUpdatedById = userId;
         
         context.LeaveTypes.Update(leaveType);
         await context.SaveChangesAsync();

@@ -27,6 +27,15 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    [HttpPost("delegate")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(DelegateApprovalDto))]
+    public async Task<IResult> DelegateApproval([FromBody] DelegateApproval approval)
+    {
+        var result = await repository.DelegateApproval(approval);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Retrieves a specific approval by its ID.
     /// </summary>

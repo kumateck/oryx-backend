@@ -12,4 +12,6 @@ public interface IAuthRepository
     Task<Result> ForgotPassword(ForgotPasswordRequest request);
     Task<Result<PasswordChangeResponse>> SetPassword(SetPasswordRequest model);
     Task<Result<PasswordChangeResponse>> ResetPassword(ChangePasswordRequest model, Guid userId);
+    
+    Task<Result<PasswordChangeResponse>> ChangePassword(UserPasswordChangeRequest model, Guid userId);
 }

@@ -8,10 +8,7 @@ public class CreateShiftScheduleRequest
     
     [Required] public ScheduleFrequency Frequency { get; set; }
     
-    [Required] public TimeOnly StartTime { get; set; }
-    
-    public DayOfWeek? StartDate { get; set; }
-
+    [Required] public DateTime StartDate { get; set; }
     [Required] public List<Guid> ShiftTypeIds { get; set; } = [];
     
     [Required] public Guid DepartmentId { get; set; }

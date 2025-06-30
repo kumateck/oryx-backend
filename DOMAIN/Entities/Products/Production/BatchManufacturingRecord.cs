@@ -37,17 +37,29 @@ public class BatchManufacturingRecord : BaseEntity
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public decimal BatchQuantity { get; set; }
+    public BatchManufacturingStatus Status { get; set; }
     public Guid? IssuedById { get; set; }
     public User IssuedBy { get; set; }
+}
+
+public enum BatchManufacturingStatus
+{
+    New = 0,
+    Testing = 1,
+    Approved = 2,
+    Rejected = 3,
+    TestTaken = 4,
+    Checked = 5,
 }
 
 public class BatchManufacturingRecordDto : BaseDto
 {
     public CollectionItemDto ProductionSchedule { get; set; }
-    public ProductDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public string BatchNumber { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public decimal BatchQuantity { get; set; }
+    public BatchManufacturingStatus Status { get; set; }
     public decimal ExpectedQuantity => BatchQuantity / Product.BasePackingQuantity;
 }

@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Users;
 using SHARED;
 
 namespace DOMAIN.Entities.Forms;
@@ -26,7 +27,7 @@ public class FormFieldDto : BaseDto
     public CollectionItemDto FormSection { get; set; }
     public QuestionDto Question { get; set; }
     public bool Required { get; set; }
-    public string Response { get; set; }
+    public string Description { get; set; }
     public int Rank { get; set; } 
     public CollectionItemDto Assignee { get; set; }
     public CollectionItemDto Reviewer { get; set; }
@@ -42,6 +43,8 @@ public class FormResponseDto :  WithAttachment
 {
     public FormFieldDto FormField { get; set; }
     public string Value { get; set; }
+    public UserDto CheckedBy { get; set; }
+    public DateTime? CheckedAt { get; set; }
 }
 
 public class FormAssigneeDto : BaseDto

@@ -1,18 +1,20 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Background;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.Notifications;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
 
-public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper, IApprovalRepository approvalRepository) : ILeaveRequestRepository
+public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper, IApprovalRepository approvalRepository, IBackgroundWorkerService backgroundWorkerService) : ILeaveRequestRepository
 
 {
-    public async Task<Result<Guid>> CreateLeaveOrAbsenceRequest(CreateLeaveRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateLeaveOrAbsenceRequest(CreateLeaveRequest request)
     {
         if (request.StartDate > request.EndDate)
             return Error.Validation("Request.InvalidDates", "Start date must be before end date.");
@@ -20,13 +22,13 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         var totalDays = (request.EndDate - request.StartDate).TotalDays + 1;
         
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Id == request.EmployeeId && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.Id == request.EmployeeId);
         
         if (existingEmployee is null)
             return Error.NotFound("Employee.NotFound", "Employee not found.");
         
         var leaveType = await context.LeaveTypes
-            .FirstOrDefaultAsync(l => l.Id == request.LeaveTypeId && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l => l.Id == request.LeaveTypeId);
 
         if (leaveType is null)
             return Error.NotFound("LeaveType.NotFound", "Leave type not found.");
@@ -133,8 +135,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
 
         var entity = mapper.Map<LeaveRequest>(request);
-        entity.CreatedById = userId;
-        entity.CreatedAt = DateTime.UtcNow;
+
         entity.PaidDays = paidDays;
         entity.UnpaidDays = unpaidDays;
 
@@ -142,6 +143,8 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         await context.SaveChangesAsync();
         
         await approvalRepository.CreateInitialApprovalsAsync(nameof(LeaveRequest), entity.Id);
+        
+        backgroundWorkerService.EnqueueNotification("New leave request created", NotificationType.LeaveRequest);
         
         return entity.Id;
     }
@@ -154,27 +157,32 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             .Include(l => l.Employee)
                 .ThenInclude(l => l.Designation)
                 .ThenInclude(l => l.Departments)
-            .Where(l => l.LastDeletedById == null)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Employee.FirstName);
+            query = query.WhereSearch(searchQuery,
+                q => q.Employee.FirstName,
+                q => q.Employee.LastName,
+                q => q.Employee.FirstName + " " + q.Employee.LastName,
+                q => q.Employee.Department.Name,
+                q => q.LeaveType.Name);
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.LeaveType.Name);
+            if (Enum.TryParse<RequestCategory>(searchQuery, true, out var requestCategory))
+            {
+                query = query.Where(q => q.RequestCategory == requestCategory);
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.RequestCategory.ToString());
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, q => q.LeaveStatus.ToString());
+            if (Enum.TryParse<LeaveStatus>(searchQuery, true, out var leaveStatus))
+            {
+               query = query.Where(q => q.LeaveStatus == leaveStatus); 
+            }
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -191,17 +199,17 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
            .AsSplitQuery()
            .Include(l => l.LeaveType)
            .Include(l => l.Employee)
-           .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);
+           .FirstOrDefaultAsync(l => l.Id == leaveRequestId);
        
        return leaveRequest is null ? 
            Error.NotFound("LeaveRequest.NotFound", "Leave request not found") : 
            Result.Success(mapper.Map<LeaveRequestDto>(leaveRequest, opts => opts.Items[AppConstants.ModelType] = nameof(LeaveRequest)));
     }
 
-    public async Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest, Guid userId)
+    public async Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest)
     {
         var existingLeaveRequest = await context.LeaveRequests
-            .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l => l.Id == leaveRequestId);
         
         if (existingLeaveRequest is null)
         {
@@ -214,7 +222,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
         
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(l => l.Id == leaveRequest.EmployeeId && l.LastDeletedById == null);;
+            .FirstOrDefaultAsync(l => l.Id == leaveRequest.EmployeeId);;
         
         if (existingEmployee is null)
         {
@@ -222,31 +230,112 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
         
         var leaveType = await context.LeaveTypes
-            .FirstOrDefaultAsync(l => l.Id == leaveRequest.LeaveTypeId && l.LastDeletedById == null);
+            .FirstOrDefaultAsync(l => l.Id == leaveRequest.LeaveTypeId);
 
         if (leaveType is null)
         {
             return Error.NotFound("AbsenceType.NotFound", "Absence type not found");
         }
-
         
         mapper.Map(leaveRequest, existingLeaveRequest);
-        existingLeaveRequest.LastUpdatedById = userId;
-        existingLeaveRequest.UpdatedAt = DateTime.UtcNow;
         context.LeaveRequests.Update(existingLeaveRequest);
         
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
+    public async Task<Result> ReapplyLeaveRequest(Guid leaveRequestId, ReapplyLeaveRequest reapplyLeaveRequest)
+    {
+        var existing = await context.LeaveRequests
+            .Include(l => l.Approvals)
+            .FirstOrDefaultAsync(l => l.Id == leaveRequestId
+                                      && l.LeaveStatus == LeaveStatus.Rejected);
+
+        if (existing == null)
+            return Error.NotFound("Leave.Invalid", "Only rejected leave requests can be processed.");
+
+        // Reset fields
+        existing.StartDate = reapplyLeaveRequest.NewStartDate;
+        existing.EndDate = reapplyLeaveRequest.NewEndDate;
+        existing.Justification = reapplyLeaveRequest.Justification;
+        existing.LeaveStatus = LeaveStatus.Reapplied;
+        existing.Approved = false;
+
+        // Reset approvals
+        context.LeaveRequestApprovals.RemoveRange(existing.Approvals);
+        existing.Approvals = [];
+
+        await context.SaveChangesAsync();
+        return Result.Success(existing.Id);
+    }
+
+    public async Task<Result> SubmitLeaveRecallRequest(CreateLeaveRecallRequest createLeaveRecallRequest)
+    {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == createLeaveRecallRequest.EmployeeId);
+
+        if (employee == null)
+        {
+            return Error.NotFound("Employee.NotFound", "Employee not found");
+        }
+        
+        var leaveRequest = await context.LeaveRequests
+            .FirstOrDefaultAsync(l =>
+                l.EmployeeId == createLeaveRecallRequest.EmployeeId &&
+                l.LeaveStatus == LeaveStatus.Approved);
+        
+        if (leaveRequest == null)
+            return Error.Validation("LeaveRecall.Invalid", "No approved leave found for the specified date.");
+        
+        var today = DateTime.UtcNow.Date;
+
+        if (today < leaveRequest.StartDate.Date || today > leaveRequest.EndDate.Date)
+        {
+            return Error.Validation("LeaveRecall.Invalid", "You can only recall a leave that is currently ongoing.");
+        }
+        
+        if (createLeaveRecallRequest.RecallDate.Date < leaveRequest.StartDate.Date || 
+            createLeaveRecallRequest.RecallDate.Date > leaveRequest.EndDate.Date)
+        {
+            return Error.Validation("LeaveRecall.Invalid", "Recall date must fall within the leave period.");
+        }
+        
+        var daysRemaining = (leaveRequest.EndDate.Date - createLeaveRecallRequest.RecallDate.Date).Days;
+
+        if (daysRemaining > 0)
+        {
+            employee.AnnualLeaveDays += daysRemaining;
+        }
+
+        leaveRequest.LeaveStatus = LeaveStatus.Recalled;
+        leaveRequest.RecallDate = createLeaveRecallRequest.RecallDate;
+        leaveRequest.RecallReason = createLeaveRecallRequest.RecallReason;
+
+        context.LeaveRequests.Update(leaveRequest);
+        await context.SaveChangesAsync();
+        
+        return Result.Success();
+    }
+    
+
     public async Task<Result> DeleteLeaveRequest(Guid leaveRequestId, Guid userId)
     {
         var leaveRequest = await context.LeaveRequests
-            .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.LastDeletedById == null);
+            .Include(l => l.Employee)
+            .FirstOrDefaultAsync(l => l.Id == leaveRequestId);
         
         if (leaveRequest is null)
         {
             return Error.NotFound("LeaveRequest.NotFound", "Leave request not found");
+        }
+
+        if (leaveRequest.LeaveStatus == LeaveStatus.Approved && leaveRequest.StartDate > DateTime.UtcNow.Date)
+        {
+            var daysRemaining = (leaveRequest.EndDate.Date - leaveRequest.StartDate.Date).Days;
+
+            if (daysRemaining > 0)
+            {
+                leaveRequest.Employee.AnnualLeaveDays += daysRemaining;
+            }
         }
         
         leaveRequest.DeletedAt = DateTime.UtcNow;

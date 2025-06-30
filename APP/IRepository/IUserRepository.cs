@@ -15,7 +15,7 @@ public interface IUserRepository
         string searchQuery);
     Task<Result<UserWithRoleDto>> GetUser(Guid userId);
     Task<Result> UpdateUser(UpdateUserRequest request, Guid id, Guid userId);
-    Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id, Guid userId);
+    Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id);
     Task<Result> DeleteUser(Guid id, Guid userId);
     Task<Result> ToggleDisableUser(Guid id, Guid userId);
     Task<Result> UploadAvatar(UploadFileRequest request, Guid userId);

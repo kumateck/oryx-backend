@@ -572,4 +572,46 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetUnitOfMeasureForMaterialDepartment(materialId,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Retrieves a paginated list of holding materials
+    /// </summary>
+    /// <param name="withProcessed">Filter to include transferred holding materials</param>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="userId">Optional user ID filter.</param>
+    /// <returns>Returns a paginated list of material departments.</returns>
+    [HttpGet("holding")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
+    public async Task<IResult> GetMaterialDepartments([FromQuery] bool withProcessed =  false,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] Guid? userId = null)
+    {
+        var result = await repository.GetHoldingMaterialTransfers(page, pageSize, searchQuery, withProcessed, userId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Moves a shelf material batch from one shelf to another when being held.
+    /// </summary>
+    /// <param name="holdingMaterialId">The holding material for which the items are to be moved</param>
+    /// <param name="request">The MoveShelfMaterialBatchRequest object.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("holding/move/{holdingMaterialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MoveMaterialBatchToWarehouseFromHolding(Guid holdingMaterialId,
+        [FromBody] MoveShelfMaterialBatchRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.MoveMaterialBatchToWarehouseFromHolding(holdingMaterialId, request,Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
 }

@@ -7,16 +7,10 @@ using INFRASTRUCTURE.Context;
 
 namespace APP.Mapper.Resolvers;
 
-public class AssignChargesResolver : IValueResolver<CreateBillingSheetRequest, BillingSheet, List<Charge>>
+public class AssignChargesResolver(ApplicationDbContext context)
+    : IValueResolver<CreateBillingSheetRequest, BillingSheet, List<Charge>>
 {
-    private readonly ApplicationDbContext _context;
-
-    public AssignChargesResolver(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
-    public List<Charge> Resolve(CreateBillingSheetRequest source, BillingSheet destination, List<Charge> destMember, ResolutionContext context)
+    public List<Charge> Resolve(CreateBillingSheetRequest source, BillingSheet destination, List<Charge> destMember, ResolutionContext context1)
     {
         var charges = new List<Charge>();
         foreach (var chargeRequest in source.Charges)
@@ -24,7 +18,7 @@ public class AssignChargesResolver : IValueResolver<CreateBillingSheetRequest, B
             Charge charge;
             if (chargeRequest.Id != null)
             {
-                charge = _context.Charges.Find(chargeRequest.Id);
+                charge = context.Charges.Find(chargeRequest.Id);
                 if (charge != null)
                 {
                     charge.Amount = chargeRequest.Amount;

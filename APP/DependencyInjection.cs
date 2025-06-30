@@ -4,13 +4,18 @@ using APP.IRepository;
 using APP.Repository;
 using APP.Services.Background;
 using APP.Services.Email;
+using APP.Services.Message;
+using APP.Services.Notification;
 using APP.Services.Pdf;
 using APP.Services.Storage;
 using APP.Services.Token;
 using DinkToPdf;
 using DinkToPdf.Contracts;
 using DOMAIN.Entities.ActivityLogs;
+using DOMAIN.Entities.Notifications;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
@@ -23,6 +28,41 @@ public static class DependencyInjection
 {
     public static void AddTransientServices(this IServiceCollection services)
     {
+    }
+    
+     public static void AddInfrastructure(this IServiceCollection services)
+    {
+        //add mass transit
+        var rabbitHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST");
+        var rabbitUserName = Environment.GetEnvironmentVariable("RABBITMQ_DEFAULT_USER");
+        var rabbitPassword = Environment.GetEnvironmentVariable("RABBITMQ_DEFAULT_PASS");
+
+        services.AddMassTransit(configure =>
+        {
+            configure.SetKebabCaseEndpointNameFormatter();
+
+            //configure.AddConsumer<LocationFilterConsumer>();
+    
+            configure.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host(rabbitHost ?? throw new ArgumentException("Invalid rabbit host name"), h =>
+                {
+                    h.Username(rabbitUserName ?? throw new ArgumentException("Invalid rabbit username"));
+                    h.Password(rabbitPassword ?? throw new ArgumentException("Invalid rabbit password"));
+                });
+        
+                cfg.ReceiveEndpoint("push_notification_queue", e =>
+                {
+                    //e.ConfigureConsumer<LocationFilterConsumer>(context);
+                    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+                    e.UseMessageRetry(r =>
+                    {
+                        r.Immediate(5); 
+                    });
+                });
+                cfg.ConfigureEndpoints(context);
+            });
+        });
     }
     
     public static void AddScopedServices(this IServiceCollection services)
@@ -52,8 +92,21 @@ public static class DependencyInjection
         services.AddScoped<IShiftTypeRepository, ShiftTypeRepository>();
         services.AddScoped<IShiftScheduleRepository, ShiftScheduleRepository>();
         services.AddScoped<ICompanyWorkingDaysRepository, CompanyWorkingDaysRepository>();
+        services.AddScoped<IHolidayRepository, HolidayRepository>();
+        services.AddScoped<ICountryRepository, CountryRepository>();
+        services.AddScoped<IOvertimeRequestRepository, OvertimeRequestRepository>();
+        services.AddScoped<IMaterialStandardTestProcedureRepository, MaterialStandardTestProcedureRepository>();
+        services.AddScoped<IProductStandardTestProcedureRepository, ProductStandardTestProcedureRepository>();
+        services.AddScoped<IMaterialAnalyticalRawDataRepository, MaterialAnalyticalRawDataRepository>();
+        services.AddScoped<IProductAnalyticalRawDataRepository, ProductAnalyticalRawDataRepository>();
+        services.AddScoped<IAnalyticalTestRequestRepository, AnalyticalTestRequestRepository>();
+        services.AddScoped<IStaffRequisitionRepository, StaffRequisitionRepository>();
+        services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddScoped<IAlertRepository, AlertRepository>();
+        services.AddScoped<IProductSamplingRepository, ProductSamplingRepository>();
+        services.AddScoped<IMaterialSamplingRepository, MaterialSamplingRepository>();
 
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();
@@ -64,12 +117,16 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IBackgroundWorkerService, BackgroundWorkerService>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+        services.AddScoped<IMessagingService, MessagingService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddHostedService<ApprovalEscalationService>();
+        services.AddHostedService<LeaveExpiryService>();
+        services.AddHostedService<MaterialStockService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)
     {
-        var redisConnectionString = Environment.GetEnvironmentVariable("redisConnectionString") ?? "localhost:6379,abortConnect=false";
+        var redisConnectionString = Environment.GetEnvironmentVariable("redisConnectionString") ?? "localhost:6380,abortConnect=false";
         services.AddSingleton<IConnectionMultiplexer>(_ => 
             ConnectionMultiplexer.Connect(redisConnectionString));
         services.AddSingleton(sp => 
@@ -79,5 +136,6 @@ public static class DependencyInjection
         services.AddHostedService<ConsumeBackgroundWorkerService>();
         services.AddSingleton<ConcurrentQueue<CreateActivityLog>>();
         services.AddSingleton<ConcurrentQueue<PrevStateCaptureRequest>>();
+        services.AddSingleton<ConcurrentQueue<(string message, NotificationType type, Guid? departmentId, List<User> users)>>();
     }
 }

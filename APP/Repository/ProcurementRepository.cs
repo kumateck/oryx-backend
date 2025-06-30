@@ -1,5 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Utils;
@@ -7,6 +8,7 @@ using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Procurement.Distribution;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -18,12 +20,13 @@ using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using Newtonsoft.Json;
 
 namespace APP.Repository;
 
-public class ProcurementRepository(ApplicationDbContext context, IMapper mapper, IEmailService emailService, IPdfService pdfService, IApprovalRepository approvalRepository) : IProcurementRepository
+public class ProcurementRepository(ApplicationDbContext context, IMapper mapper, IEmailService emailService, IPdfService pdfService, IApprovalRepository approvalRepository, IBackgroundWorkerService backgroundWorkerService) : IProcurementRepository
 {
     // ************* CRUD for Manufacturer *************
 
@@ -1354,7 +1357,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> MarkShipmentAsArrived(Guid shipmentDocumentId, Guid userId)
     {
         var shipmentDocument = await context.ShipmentDocuments
-            .Include(shipmentDocument => shipmentDocument.ShipmentInvoice).FirstOrDefaultAsync(sd => sd.Id == shipmentDocumentId);
+            .AsSplitQuery()
+            .Include(shipmentDocument => shipmentDocument.ShipmentInvoice)
+            .ThenInclude(shipmentInvoice => shipmentInvoice.Items).FirstOrDefaultAsync(sd => sd.Id == shipmentDocumentId);
         if (shipmentDocument is null)
         {
             return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
@@ -1366,6 +1371,39 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         context.ShipmentDocuments.Update(shipmentDocument);
         await context.SaveChangesAsync();
+
+        var purchaseOrdersIds = shipmentDocument.ShipmentInvoice.Items.Select(s => s.PurchaseOrderId).Distinct().ToList();
+        var purchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Where(p => purchaseOrdersIds.Contains(p.Id))
+            .Include(purchaseOrder => purchaseOrder.SourceRequisition)
+            .ThenInclude(sourceRequisition => sourceRequisition.Items).ToListAsync();
+        var sourceRequisitions = purchaseOrders.Select(p => p.SourceRequisition);
+        List<Guid> departmentIds = [];
+        List<User> creators = [];
+        foreach (var sourceRequisition in sourceRequisitions)
+        {
+            var requisitionIds = sourceRequisition.Items.Select(i => i.RequisitionId).ToList();
+            var requisition = await context.Requisitions
+                .AsSplitQuery()
+                .Include(r => r.CreatedBy)
+                .Where(r => requisitionIds.Contains(r.Id)).ToListAsync();
+            creators.AddRange(requisition.Select(r => r.CreatedBy));
+            departmentIds.AddRange(requisition.Select(r => r.DepartmentId));
+        }
+        
+        departmentIds = departmentIds.Distinct().ToList();
+        creators = creators.Distinct().ToList();
+        foreach (var departmentId in departmentIds)
+        {
+            backgroundWorkerService.EnqueueNotification(
+                $"Shipment for Invoice {shipmentDocument.ShipmentInvoice.Code} has arrived.",
+                NotificationType.ShipmentArrived, departmentId);
+        }
+        
+        backgroundWorkerService.EnqueueNotification(
+            $"Shipment for Invoice {shipmentDocument.ShipmentInvoice.Code} has arrived.",
+            NotificationType.ShipmentArrived, null, creators);
 
         return Result.Success();
     }

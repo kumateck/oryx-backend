@@ -13,8 +13,13 @@ public class LeaveRequest : BaseEntity, IRequireApproval
     public string ContactPerson { get; set; }
     
     public string ContactPersonNumber { get; set; }
+
+    public string Justification { get; set; }
     
-    public string? Justification { get; set; }
+    public DateTime RecallDate { get; set; }
+    
+    public string RecallReason { get; set; }
+
     public RequestCategory RequestCategory { get; set; }
     public LeaveStatus LeaveStatus { get; set; }
     public int? UnpaidDays { get; set; }
@@ -54,9 +59,11 @@ public enum RequestCategory
 
 public enum LeaveStatus
 {
-    New,
     Pending,
     Approved,
-    Rejected
+    Rejected,
+    Expired,
+    Recalled,
+    Reapplied
 }
 

@@ -1,0 +1,99 @@
+name: Build and Deploy Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE_NAME: kumateck/oryx-erp-api-test
+  CONTAINER_NAME: oryx-erp-api-test
+  HOST_PORT: 8087
+  CONTAINER_PORT: 5007
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          file: test.Dockerfile
+          tags: ${{ env.DOCKER_IMAGE_NAME }}:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache
+          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Install SSH Client
+        run: sudo apt-get install -y openssh-client
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to Server
+        env:
+          DOCKER_IMAGE_NAME: ${{ env.DOCKER_IMAGE_NAME }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          HOST_PORT: ${{ env.HOST_PORT }}
+          CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
+        run: |
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
+            echo "Logging in to Docker Hub"
+            echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
+
+            echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
+            docker pull "${DOCKER_IMAGE_NAME}:latest"
+
+            echo "Stopping and removing the existing container if it exists"
+            if [ \$(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
+              docker stop "${CONTAINER_NAME}"
+              docker rm "${CONTAINER_NAME}"
+            fi
+
+            echo "Ensuring 'sail' network exists"
+            docker network inspect sail >/dev/null 2>&1 || docker network create sail
+
+            echo "Pruning unused Docker images"
+            docker image prune -a -f
+
+            echo "Running the new Docker container"
+            docker run -d --restart always --net sail -p "${HOST_PORT}:${CONTAINER_PORT}" --name "${CONTAINER_NAME}" \
+            --env DB_USERNAME=${{ secrets.DB_USERNAME }} \
+            --env DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            --env ACCESS_KEY=${{ secrets.ACCESS_KEY }} \
+            --env SECRET_KEY=${{ secrets.SECRET_KEY }} \
+            --env DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD }} \
+            --env SMTP_USERNAME=${{ secrets.SMTP_USERNAME }} \
+            --env SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }} \
+            --env MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_INITDB_ROOT_USERNAME }} \
+            --env MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_INITDB_ROOT_PASSWORD }} \
+            --env MONGO_DB_CONNECTION_STRING="mongodb://${{ secrets.MONGO_INITDB_ROOT_USERNAME }}:${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}@mongodb:27017" \
+            --env MINIO_ACCESS_KEY=${{ secrets.ACCESS_KEY }} \
+            --env MINIO_SECRET_KEY=${{ secrets.SECRET_KEY }} \
+            --env connectionString="Host=postgres_db;Port=5432;Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};Database=oryxtestdb" \
+            --env RABBITMQ_DEFAULT_USER=${{ secrets.RABBITMQ_DEFAULT_USER }} \
+            --env RABBITMQ_DEFAULT_PASS=${{ secrets.RABBITMQ_DEFAULT_PASS }} \
+            --env RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }} \
+            "${DOCKER_IMAGE_NAME}:latest"
+          EOF

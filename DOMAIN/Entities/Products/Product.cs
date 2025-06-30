@@ -23,7 +23,7 @@ public class Product : BaseEntity
     [StringLength(1000000)] public string PrimaryPackDescription { get; set; }
     [StringLength(1000000)] public string SecondaryPackDescription { get; set; }
     [StringLength(1000000)] public string TertiaryPackDescription { get; set; }
-    public Guid CategoryId { get; set; }
+    public Guid? CategoryId { get; set; }
     public ProductCategory Category { get; set; }
     public decimal BaseQuantity { get; set; } 
     public decimal BasePackingQuantity { get; set; } 
@@ -58,4 +58,16 @@ public class ProductBillOfMaterial : BaseEntity
     public int Version { get; set; }   // Version of the BOM
     public DateTime EffectiveDate { get; set; }
     public bool IsActive { get; set; } = true;
+}
+
+public class ProductBatch : BaseEntity
+{
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public DateTime DateReceived { get; set; }
+    public DateTime? DateApproved { get; set; }
+    public DateTime? DateRejected { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public DateTime? ManufacturingDate { get; set; }
+    public DateTime? RetestDate { get; set; }
 }

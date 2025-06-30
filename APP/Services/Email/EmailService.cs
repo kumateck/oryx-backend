@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using DOMAIN.Entities.Notifications;
 using Microsoft.Extensions.Logging;
 
 namespace APP.Services.Email;
@@ -43,18 +44,25 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
                     mail.Attachments.Add(mailAttachment);
                 }
             }
-           
 
-            // Send email
             smtpClient.Send(mail);
 
-            // Log success
             logger.LogInformation($"Email sent to {to}");
         }
         catch (Exception ex)
         {
             logger.LogError($"Error sending email: {ex.Message}");
             throw new Exception($"Error sending email: {ex.Message}");
+        }
+    }
+    
+    public void ProcessNotificationData(NotificationDto data)
+    {
+        const string subject = "New Notification";
+        foreach (var user in data.Recipients)
+        {
+            var encode = data.Message;
+            SendMail(user.Email, subject, encode, []);
         }
     }
 }

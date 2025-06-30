@@ -8,13 +8,18 @@ using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using SHARED;
+using StackExchange.Redis;
+using Role = DOMAIN.Entities.Roles.Role;
 
 namespace APP.Repository;
 
-public class PermissionRepository(ApplicationDbContext context, UserManager<User> userManager, RoleManager<Role> roleManager, IMemoryCache cache) 
+public class PermissionRepository(ApplicationDbContext context, UserManager<User> userManager, RoleManager<Role> roleManager, IMemoryCache cache, IDatabase redisCache, ILogger<PermissionRepository> logger) 
     : IPermissionRepository
 {
+    private readonly TimeSpan _cacheExpiry = TimeSpan.FromDays(7); 
     public IEnumerable<PermissionModuleDto> GetAllPermissionInSystem()
     {
         return PermissionUtils.GeneratePermissions()
@@ -42,6 +47,22 @@ public class PermissionRepository(ApplicationDbContext context, UserManager<User
 
     public async Task<Result<List<PermissionModuleDto>>> GetAllPermissionForUser(Guid userId)
     {
+        var cacheKey = $"Permission_Cache_{userId}";
+
+        try
+        {
+            var cachedData = await redisCache.StringGetAsync(cacheKey);
+            if (cachedData.HasValue)
+            {
+                var cacheResponse = JsonConvert.DeserializeObject<List<PermissionModuleDto>>(cachedData);
+                return cacheResponse;
+            }
+        }
+        catch (Exception e)
+        {
+            logger.LogError("Error whiles retrieving cache, Message: {Message}", e);
+        }
+
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == userId);
         if (user == null) return UserErrors.NotFound(userId);
         var userRoles = await context.UserRoles.Where(item => item.UserId == userId).ToListAsync();
@@ -52,7 +73,7 @@ public class PermissionRepository(ApplicationDbContext context, UserManager<User
             rolePermissions.AddRange(await GetPermissionByRole(userRole.RoleId));
         }
 
-        return  rolePermissions
+        var response =  rolePermissions
             .GroupBy(section => section.Module)
             .Select(group => new PermissionModuleDto
             {
@@ -71,10 +92,31 @@ public class PermissionRepository(ApplicationDbContext context, UserManager<User
                     }).ToList()
             })
             .ToList();
+        
+        var serializedData = JsonConvert.SerializeObject(response);
+        await redisCache.StringSetAsync(cacheKey, serializedData, _cacheExpiry);
+        return response;
     }
     
     public async Task<List<PermissionModuleDto>> GetPermissionByRole(Guid roleId)
     {
+        
+        var cacheKey = $"Permission_Cache_{roleId}";
+
+        try
+        {
+            var cachedData = await redisCache.StringGetAsync(cacheKey);
+            if (cachedData.HasValue)
+            {
+                var cacheResponse = JsonConvert.DeserializeObject<List<PermissionModuleDto>>(cachedData);
+                return cacheResponse;
+            }
+        }
+        catch (Exception e)
+        {
+            logger.LogError("Error whiles retrieving cache, Message: {Message}", e);
+        }
+        
         // Get the list of permission keys for the role from the RoleClaims table
         var roleClaims = await context.RoleClaims
             .Where(item => item.RoleId == roleId && item.ClaimType == AppConstants.Permission)
@@ -96,7 +138,7 @@ public class PermissionRepository(ApplicationDbContext context, UserManager<User
             .ToDictionaryAsync(g => g.Key, g => g.Select(pt => pt.Type).ToList());
         
         // Group permissions by section and map to PermissionSectionDto structure
-        return filteredPermissions
+        var response = filteredPermissions
             .GroupBy(permission => permission.Module)
             .Select(g => new PermissionModuleDto
             {
@@ -113,6 +155,9 @@ public class PermissionRepository(ApplicationDbContext context, UserManager<User
             })
             .ToList();
         
+        var serializedData = JsonConvert.SerializeObject(response);
+        await redisCache.StringSetAsync(cacheKey, serializedData, _cacheExpiry);
+        return response;
         /*return allPermissions
             .GroupBy(permission => permission.Module)
             .Select(g => new PermissionModuleDto
@@ -187,11 +232,13 @@ public class PermissionRepository(ApplicationDbContext context, UserManager<User
             }
         }
         
+        await redisCache.KeyDeleteAsync($"Permission_Cache_{roleId}");
         // Clear the cache for users in the role
         var usersInRole = await userManager.GetUsersInRoleAsync(role.Name ?? "");
         foreach (var user in usersInRole)
         {
             cache.Remove($"UserId_{user.Id}_Permissions");
+            await redisCache.KeyDeleteAsync($"Permission_Cache_{user.Id}");
         }
 
         await context.SaveChangesAsync();

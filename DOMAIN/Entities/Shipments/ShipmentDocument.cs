@@ -5,7 +5,6 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
-using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.Shipments;
 
@@ -64,7 +63,7 @@ public class ShipmentInvoiceItem : BaseEntity
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
-    public bool Distributed { get; set; } = false;
+    public bool Distributed { get; set; }
     public decimal TotalCost { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }

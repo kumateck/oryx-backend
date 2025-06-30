@@ -6,14 +6,16 @@ using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
 using APP.Services.Email;
 using DOMAIN.Entities.Auth;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using MassTransit;
 using SHARED;
 using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
 namespace APP.Repository;
 
-public class AuthRepository(IEmailService emailService,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService /*, IEmailService emailService*/) 
+public class AuthRepository(IEmailService emailService,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IPublishEndpoint publishEndpoint /*, IEmailService emailService*/) 
     : IAuthRepository
 {
     public async Task<Result<LoginResponse>> Login(LoginRequest request)
@@ -43,6 +45,10 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
         
         try
         {
+            await publishEndpoint.Publish(new NotificationDto
+            {
+                Message = "test notification"
+            });
             return await jwtService.Authenticate(user, "web");
         }
         catch (Exception)
@@ -100,7 +106,7 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
             return AuthErrors.NotFound;
         }
             
-        if (tokenDetails.CreatedAt.AddDays(1) < DateTime.Now)
+        if (tokenDetails.CreatedAt.AddDays(2) < DateTime.UtcNow)
         {
             return AuthErrors.TokenExpired;
         }
@@ -144,6 +150,38 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
         {
             Success = false,
             Errors = result.Errors.Select(item => item.Description)
+        };
+    }
+
+    public async Task<Result<PasswordChangeResponse>> ChangePassword(UserPasswordChangeRequest model, Guid userId)
+    {
+        if (model.NewPassword != model.ConfirmNewPassword)
+        {
+            return Error.Validation("NewPassword.Invalid", "New Passwords do not match");
+        }
+
+        if (string.IsNullOrWhiteSpace(model.NewPassword) || model.NewPassword.Length < 8)
+        {
+            return Error.Validation("NewPassword.Invalid", "New Password must be at least 8 characters");
+        }
+        
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user == null) return UserErrors.NotFound(userId);
+        
+        var result = await userManager.ChangePasswordAsync(user, model.NewPassword, model.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            return new PasswordChangeResponse
+            {
+                Success = false,
+                Errors = result.Errors.Select(item => item.Description)
+            };
+        }
+        
+        return new PasswordChangeResponse
+        {
+            Success = true
         };
     }
 }

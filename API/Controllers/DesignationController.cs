@@ -9,6 +9,7 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/designation")]
 [ApiController]
+[Authorize]
 public class DesignationController(IDesignationRepository repository): ControllerBase
 {
 
@@ -16,15 +17,12 @@ public class DesignationController(IDesignationRepository repository): Controlle
     /// Creates a designation.
     /// </summary>
     [HttpPost]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateDesignation([FromBody] CreateDesignationRequest request)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.CreateDesignation(request, Guid.Parse(userId));
+        var result = await repository.CreateDesignation(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -32,9 +30,8 @@ public class DesignationController(IDesignationRepository repository): Controlle
     /// Retrieves a paginated list of designations based on search criteria.
     /// </summary>
     [HttpGet]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DesignationDto>>))]
-    public async Task<IResult> GetDesignations([FromQuery] int page, [FromQuery] int pageSize,
+    public async Task<IResult> GetDesignations([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -48,7 +45,6 @@ public class DesignationController(IDesignationRepository repository): Controlle
     /// </summary>
 
     [HttpGet("{id:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DesignationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDesignation([FromRoute] Guid id)
@@ -79,13 +75,14 @@ public class DesignationController(IDesignationRepository repository): Controlle
     [HttpPut("{id:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(DesignationDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateDesignation([FromRoute] Guid id, [FromBody] CreateDesignationRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.UpdateDesignation(id, request, Guid.Parse(userId));
+        var result = await repository.UpdateDesignation(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

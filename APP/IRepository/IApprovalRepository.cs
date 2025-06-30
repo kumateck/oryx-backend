@@ -25,4 +25,6 @@ public interface IApprovalRepository
      List<ResponsibleApprovalStage> GetCurrentApprovalStage(List<ResponsibleApprovalStage> stages);
      Task CreateInitialApprovalsAsync(string modelType, Guid modelId);
      Task ProcessApprovalEscalations();
+     
+     Task<Result> DelegateApproval(DelegateApproval approval);
 }

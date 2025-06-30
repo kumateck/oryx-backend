@@ -17,7 +17,6 @@ using APP.Middlewares;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -70,6 +69,7 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
     options.OperationFilter<ReApplyOptionalParameterFilter>();
+    options.OperationFilter<SwaggerHeaderFilter>();
     
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
@@ -192,6 +192,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddTransientServices();
 builder.Services.AddScopedServices();
 builder.Services.AddSingletonServices();
+builder.Services.AddInfrastructure();
 
 //add api versioning
 builder.Services.AddApiVersioning(options =>
@@ -242,6 +243,8 @@ app.UseMiddleware<SentryPerformanceMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseMiddleware<ActivityLogMiddleware>();
+
+app.UseMiddleware<HolidayBlockingMiddleware>();
 
 app.UseRouting();
 

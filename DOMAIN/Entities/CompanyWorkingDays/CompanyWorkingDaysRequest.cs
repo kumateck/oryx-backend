@@ -7,8 +7,7 @@ public class CompanyWorkingDaysRequest
     [Required] public DayOfWeek Day { get; set; }
     
     [Required] public bool IsWorkingDay { get; set; }
+    [Required, StringLength(8)] public string StartTime { get; set; }
     
-    [Required] public DateTime StartTime { get; set; }
-    
-    [Required] public DateTime EndTime { get; set; }
+    [Required, StringLength(8)] public string EndTime { get; set; }
 }

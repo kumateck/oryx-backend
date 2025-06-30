@@ -6,7 +6,7 @@ namespace APP.IRepository;
 
 public interface IDesignationRepository
 {
-    Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request, Guid userId);
+    Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request);
     
     Task<Result<Paginateable<IEnumerable<DesignationDto>>>> GetDesignations(int page, int pageSize, string searchQuery);
     
@@ -14,7 +14,7 @@ public interface IDesignationRepository
     
     Task<Result<List<DesignationDto>>> GetDesignationByDepartment(Guid departmentId);
     
-    Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request, Guid userId);
+    Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request);
     
     Task<Result> DeleteDesignation(Guid id, Guid userId);
 }

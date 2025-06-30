@@ -16,7 +16,11 @@
       "launchUrl": "",
       "applicationUrl": "http://localhost:5270",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "RABBITMQ_HOST" : "164.90.142.68",
+        "RABBITMQ_DEFAULT_USER" : "root",
+        "RABBITMQ_DEFAULT_PASS" : "MvK6o4yR1CUXarZ",
+        "Environment" : "dev"
       }
     },
     "https": {
@@ -26,9 +30,7 @@
       "launchUrl": "swagger",
       "applicationUrl": "https://localhost:7241;http://localhost:5270",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "MONGO_DB_CONNECTION_STRING" : "mongodb://root:SNsiilzMRr9UCzz@164.90.142.68:27018"
-        
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "IIS Express": {

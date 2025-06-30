@@ -67,15 +67,17 @@ public class SrDto
 
 public enum BatchStatus
 {
-    Received,
-    Quarantine,
-    Testing,
-    Available,
-    Rejected,
-    Retest,
-    Frozen,
-    Consumed,
-    Approved
+    Received = 0,
+    Quarantine = 1,
+    Testing = 2,
+    Available = 3,
+    Rejected = 4,
+    Retest = 5,
+    Frozen = 6,
+    Consumed = 7,
+    Approved = 8,
+    TestTaken = 9,
+    Checked =  10,
 }
 
 public class MaterialBatchEvent : BaseEntity
@@ -144,6 +146,7 @@ public class FinishedProductBatchMovement : BaseEntity
 
 public class FinishedGoodsTransferNote:BaseEntity
 {
+    public string TransferNoteNumber { get; set; }
     public Guid? FromWarehouseId { get; set; }
     public Warehouse FromWarehouse { get; set; }
     public Guid? ToWarehouseId { get; set; }
@@ -153,12 +156,27 @@ public class FinishedGoodsTransferNote:BaseEntity
     public PackageStyle PackageStyle { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
+    public bool IsApproved { get; set; }
     public decimal TotalQuantity { get; set; }
-    public string QarNumber { get; set; }
+    [StringLength(1000)] public string QarNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
+}
+
+public class FinishedGoodsTransferNoteDto : BaseDto
+{
+    public string TransferNoteNumber { get; set; }
+    public WarehouseDto FromWarehouse { get; set; }
+    public WarehouseDto ToWarehouse { get; set; }
+    public decimal QuantityPerPack { get; set; }
+    public PackageStyleDto PackageStyle { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public string QarNumber { get; set; }
+    public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
+    public ProductionActivityStepDto ProductionActivityStep { get; set; }
 }
 
 public class MaterialBatchReservedQuantity : BaseEntity

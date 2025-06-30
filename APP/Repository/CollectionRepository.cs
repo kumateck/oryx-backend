@@ -1,13 +1,16 @@
 using APP.IRepository;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
@@ -33,7 +36,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(WorkCenter) => mapper.Map<List<CollectionItemDto>>(await context.WorkCenters.ToListAsync()),
             nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
             nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
-            nameof(MaterialCategory) => await GetMaterialCategories(materialKind), 
+            nameof(MaterialCategory) => await GetMaterialCategories(materialKind),
+            nameof(ShiftCategory) => mapper.Map<List<CollectionItemDto>>(await context.ShiftCategories.Where(sc => sc.DeletedAt == null).ToListAsync()),
             nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
             nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
             nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
@@ -46,6 +50,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ShipmentDiscrepancyType) => mapper.Map<List<CollectionItemDto>>(await context.ShipmentDiscrepancyTypes.OrderBy(c => c.Name).ToListAsync()),
             nameof(Department) => mapper.Map<List<CollectionItemDto>>(await context.Departments.OrderBy(c => c.Name).ToListAsync()),
             nameof(Charge) => mapper.Map<List<CollectionItemDto>>(await context.Charges.OrderBy(c => c.Name).ToListAsync()),
+            nameof(ProductState) => mapper.Map<List<CollectionItemDto>>(await context.ProductStates.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -120,6 +125,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(materialCategory);
                     break;
                 
+                case nameof(ShiftCategory):
+                    var shiftCategory = await context.ShiftCategories.Where(sc => sc.DeletedAt == null).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(shiftCategory);
+                    break;
+                
                 case nameof(PackageType):
                     var packageType = await context.PackageTypes.ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(packageType);
@@ -179,6 +189,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var charges = await context.Charges.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(charges);
                     break;
+                
+                case nameof(ProductState):
+                    var productStates = await context.ProductStates.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(productStates);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -225,13 +240,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Operation),
             nameof(MaterialType),
             nameof(MaterialCategory),
+            nameof(ShiftCategory),
             nameof(PackageType),
             nameof(User),
             nameof(Role),
             nameof(Country),
             nameof(WarehouseLocation),
             nameof(ShipmentDiscrepancyType),
-            nameof(Charge)
+            nameof(Charge),
+            nameof(ProductState),
+            nameof(FinishedGoodsTransferNote),
         };
     }
     
@@ -305,6 +323,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.SaveChangesAsync();
                 return materialCategory.Id;
             
+            case nameof(ShiftCategory):
+                var shiftCategory = mapper.Map<ShiftCategory>(request);
+                await context.ShiftCategories.AddAsync(shiftCategory);
+                await context.SaveChangesAsync();
+                return shiftCategory.Id;
+            
             case nameof(PackageType):
                 var productPackageType = mapper.Map<PackageType>(request);
                 await context.PackageTypes.AddAsync(productPackageType);
@@ -328,6 +352,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.Charges.AddAsync(charge);
                 await context.SaveChangesAsync();
                 return charge.Id;
+            
+            case nameof(ProductState):
+                var productState = mapper.Map<ProductState>(request);
+                await context.ProductStates.AddAsync(productState);
+                await context.SaveChangesAsync();
+                return productState.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -424,6 +454,14 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.SaveChangesAsync();
                 return materialCategory.Id;
             
+            case nameof(ShiftCategory):
+                var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId && p.LastDeletedById == null);
+                mapper.Map(request, shiftCategory);
+                shiftCategory.LastUpdatedById = userId;
+                context.ShiftCategories.Update(shiftCategory);
+                await context.SaveChangesAsync();
+                return shiftCategory.Id;
+            
             case nameof(PackageType):
                 var productPackageType = await context.PackageTypes.FirstOrDefaultAsync(p => p.Id == itemId);
                 mapper.Map(request, productPackageType);
@@ -454,6 +492,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Charges.Update(charge);
                 await context.SaveChangesAsync();
                 return charge.Id;
+            
+            case nameof(ProductState):
+                var productState = await context.ProductStates.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, productState);
+                context.ProductStates.Update(productState);
+                await context.SaveChangesAsync();
+                return productState.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -475,10 +520,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Operation) => await context.Operations.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(MaterialType) => await context.MaterialTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(MaterialCategory) => await context.MaterialCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(ShiftCategory) => await context.ShiftCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(PackageType) => await context.PackageTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Currency) => await context.Currencies.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(ShipmentDiscrepancyType) => await context.ShipmentDiscrepancyTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Charge) => await context.Charges.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(ProductState) => await context.ProductStates.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -589,6 +636,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.SaveChangesAsync();
                 return Result.Success();
             
+            case nameof(ShiftCategory):
+                var shiftCategory =  await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId && p.LastDeletedById == null);
+                if (shiftCategory == null)
+                    return Error.Validation("ShiftCategory", "Not found");
+                shiftCategory.DeletedAt = currentTime;
+                shiftCategory.LastDeletedById = userId;
+                context.ShiftCategories.Update(shiftCategory);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
             case nameof(PackageType):
                 var productPackageType = await context.PackageTypes.FirstOrDefaultAsync(p => p.Id == itemId);
                 if (productPackageType == null)
@@ -626,6 +683,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 charge.DeletedAt = currentTime;
                 charge.LastDeletedById = userId;
                 context.Charges.Update(charge);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(ProductState):
+                var productState = await context.ProductStates.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (productState == null)
+                    return Error.Validation("Charge", "Not found");
+                productState.DeletedAt = currentTime;
+                productState.LastDeletedById = userId;
+                context.ProductStates.Update(productState);
                 await context.SaveChangesAsync();
                 return Result.Success();
             

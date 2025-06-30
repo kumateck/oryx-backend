@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Forms;
+using DOMAIN.Entities.ProductAnalyticalRawData;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
 using SHARED;
 
@@ -44,6 +46,9 @@ public class ProductionActivityStepUser : BaseEntity
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public Guid UserId { get; set; }
     public User User { get; set; }
+    public Guid? ProductAnalyticalRawDataId { get; set; }
+    public ProductAnalyticalRawData.ProductAnalyticalRawData ProductAnalyticalRawData { get; set; }
+    public OperationAction Action { get; set; }
 }
 
 public class ProductionActivityStepResource : BaseEntity
@@ -107,7 +112,7 @@ public class ProductionActivityGroupDto : BaseDto
 
 public class ProductionActivityGroupResultDto
 {
-    public CollectionItemDto Operation { get; set; } // Operation name and ID
+    public OperationDto Operation { get; set; } // Operation name and ID
     public List<ProductionActivityGroupDto> Activities { get; set; } = [];
 }
 
@@ -115,7 +120,7 @@ public class ProductionActivityGroupResultDto
 public class ProductionActivityStepDto : BaseDto
 {
     public CollectionItemDto ProductionActivity { get; set; }
-    public CollectionItemDto Operation { get; set; }
+    public OperationDto Operation { get; set; }
     public CollectionItemDto WorkFlow { get; set; }
     public List<ProductionActivityStepResourceDto> Resources { get; set; } = [];
     public List<ProductionActivityStepWorkCenterDto> WorkCenters { get; set; } = [];
@@ -129,7 +134,8 @@ public class ProductionActivityStepDto : BaseDto
 public class ProductionActivityStepUserDto : BaseDto
 {
     public UserDto User { get; set; }
-}
+    public ProductAnalyticalRawDataDto ProductAnalyticalRawData{ get; set; }
+    public OperationAction Action { get; set; }}
 
 public class ProductionActivityStepResourceDto : BaseDto
 {

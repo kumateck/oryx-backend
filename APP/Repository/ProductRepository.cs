@@ -4,7 +4,6 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
-using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -192,7 +191,7 @@ namespace APP.Repository;
 
           var routes = new List<Route>();
           
-          foreach (var routeRequest in request)
+          foreach (var routeRequest in request.DistinctBy(r => r.OperationId).ToList())
           {
               routes.Add(mapper.Map<Route>(routeRequest));
           }
@@ -204,10 +203,15 @@ namespace APP.Repository;
     public async Task<Result<RouteDto>> GetRoute(Guid routeId)
     {
         var route = await context.Routes
+            .AsSplitQuery()
             .Include(r => r.Operation)
             .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
             .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
+            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.Form)
             .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
+            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.Form)
+            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.ProductStandardTestProcedure)
+            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.ProductStandardTestProcedure)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .FirstOrDefaultAsync(r => r.Id == routeId);
 
@@ -218,30 +222,22 @@ namespace APP.Repository;
         return Result.Success(routeDto);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<RouteDto>>>> GetRoutes(int page, int pageSize, string searchQuery = null)
+    public async Task<Result<IEnumerable<RouteDto>>> GetRoutes(Guid productId)
     {
-        var query = context.Routes
+        var query = await context.Routes
             .OrderBy(r => r.Order)
+            .AsSplitQuery()
             .Include(r => r.Operation)
             .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
             .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
             .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
+            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.ProductStandardTestProcedure)
+            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.ProductStandardTestProcedure)
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, q => q.Operation.Name);
-        }
-
-        var paginatedRoutes = await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<RouteDto>
-        );
-
-        return Result.Success(paginatedRoutes);
+            .Where(r => r.ProductId == productId)
+            .ToListAsync();
+        
+        return mapper.Map<List<RouteDto>>(query);
     }
 
     public async Task<Result> UpdateRoute(UpdateRouteRequest request, Guid routeId, Guid userId)
@@ -300,7 +296,7 @@ namespace APP.Repository;
         }
 
         // Build a HashSet of existing MaterialIds for fast lookup
-        var existingMaterialIds = product.Packages.Select(p => p.MaterialId).ToHashSet();
+        //var existingMaterialIds = product.Packages.Select(p => p.MaterialId).ToHashSet();
 
         foreach (var newPackage in request)
         {
@@ -379,26 +375,14 @@ namespace APP.Repository;
         return Result.Success(productPackageDto);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductPackageDto>>>> GetProductPackages(int page, int pageSize, string searchQuery = null)
+    public async Task<Result<IEnumerable<ProductPackageDto>>> GetProductPackages()
     {
-        var query = context.ProductPackages
+        var query = await context.ProductPackages
             .Include(p => p.Product)
             .Include(p => p.Material)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, p => p.Material.Name, p => p.Product.Name);
-        }
-
-        var paginatedProductPackages = await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<ProductPackageDto>
-        );
-
-        return Result.Success(paginatedProductPackages);
+            .ToListAsync();
+        
+        return mapper.Map<List<ProductPackageDto>>(query);
     }
 
     public async Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId)

@@ -1,12 +1,14 @@
 using System.Diagnostics;
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Background;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -14,17 +16,17 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
-using QueryableExtensions = System.Data.Entity.QueryableExtensions;
 
 namespace APP.Repository;
 
-public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMaterialRepository materialRepository) 
+public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMaterialRepository materialRepository, IBackgroundWorkerService backgroundWorkerService) 
     : IProductionScheduleRepository
 {
     public async Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId) 
@@ -133,7 +135,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(product => product.Routes).ThenInclude(route => route.Resources)
             .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
             .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)
-            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles).FirstOrDefaultAsync(p => p.Id == productId);
+            .ThenInclude(routeResponsibleUser => routeResponsibleUser.ProductAnalyticalRawData)
+            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles)
+            .ThenInclude(routeResponsibleRole => routeResponsibleRole.ProductAnalyticalRawData).FirstOrDefaultAsync(p => p.Id == productId);
         
         
         if(productionSchedule is null)
@@ -158,15 +162,45 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         {
             usersInRole.AddRange(await userManager.GetUsersInRoleAsync(role?.Name ?? ""));
         }
-
-        var totalUsers = users.Concat(usersInRole).Distinct().ToList();
-
-        if (totalUsers.Count == 0)
-            return Error.Validation("Product.Validation", "This product has no users associated for procedures defined hence a production activity cannot commence.");
         
         var quantity = productionSchedule.Products.First(p => p.ProductId == productId).Quantity;
 
         await FreezeMaterialInProduction(productionScheduleId, productId,  userId);
+        
+        // Step 1: Build a dictionary of users and their associated actions
+        var userActionsMap = new Dictionary<Guid, (Guid? productArdId, OperationAction action)>();
+
+        // Add actions from RouteResponsibleUsers
+        foreach (var route in product.Routes)
+        {
+            foreach (var ru in route.ResponsibleUsers)
+            {
+                userActionsMap[ru.UserId] = (ru.ProductAnalyticalRawDataId, ru.Action);
+            }
+        }
+
+        // Add actions from RouteResponsibleRoles
+        foreach (var route in product.Routes)
+        {
+            foreach (var rr in route.ResponsibleRoles)
+            {
+                var roleName = rr.Role?.Name ?? "";
+                var usersInThisRole = await userManager.GetUsersInRoleAsync(roleName);
+                foreach (var user in usersInThisRole)
+                {
+                    userActionsMap[user.Id] = (rr.ProductAnalyticalRawDataId, rr.Action);
+                }
+            }
+        }
+
+        // Final user list
+        var totalUsers = userActionsMap.Keys
+            .Select(uId => users.FirstOrDefault(u => u.Id == uId) ?? usersInRole.First(u => u.Id == uId))
+            .Distinct()
+            .ToList();
+        
+        if (totalUsers.Count == 0)
+            return Error.Validation("Product.Validation", "This product has no users associated for procedures defined hence a production activity cannot commence.");
         
         var activity = new ProductionActivity
         {
@@ -187,9 +221,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 {
                     WorkCenterId = re.WorkCenterId
                 }).ToList(),
-                ResponsibleUsers = totalUsers.Select(u => new ProductionActivityStepUser
+                ResponsibleUsers = userActionsMap.Select(kvp => new ProductionActivityStepUser
                 {
-                    UserId = u.Id
+                    UserId = kvp.Key,
+                    ProductAnalyticalRawDataId = kvp.Value.productArdId,
+                    Action = kvp.Value.action   
                 }).ToList(),
             }).ToList(),
             ActivityLogs =
@@ -320,6 +356,24 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 {
                     activityStep.ProductionActivity.CompletedAt = DateTime.UtcNow;
                     activityStep.ProductionActivity.Status = ProductionStatus.Completed;
+                    
+                }
+                else
+                {
+                    var nextStep = await context
+                        .ProductionActivitySteps
+                        .AsSplitQuery()
+                        .Include(productionActivityStep => productionActivityStep.ResponsibleUsers)
+                        .FirstOrDefaultAsync(s =>
+                            s.ProductionActivityId == activityStep.ProductionActivityId &&
+                            s.Order == activityStep.Order + 1);
+                    if (nextStep is not null)
+                    {
+                        var nextStepUsers = nextStep.ResponsibleUsers.Select(u => u.User).ToList();
+                        backgroundWorkerService
+                            .EnqueueNotification("You have been assigned a production task",
+                                NotificationType.ProductionStageChanged, null, nextStepUsers);
+                    }
                 }
                 break;
         }
@@ -397,6 +451,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps.OrderBy(p => p.Order))
             .Include(pa => pa.Steps).ThenInclude(step => step.ResponsibleUsers)
+            .ThenInclude(pas => pas.ProductAnalyticalRawData)
             .Include(pa => pa.Steps).ThenInclude(step => step.Resources)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkCenters)
             .Include(pa => pa.Steps).ThenInclude(step => step.WorkFlow)
@@ -409,8 +464,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<ProductionActivityStepDto>>>> GetProductionActivitySteps(ProductionFilter filter)
     {
         var query = context.ProductionActivitySteps
+            .AsSplitQuery()
             .Include(pas => pas.ProductionActivity)
             .Include(pas => pas.ResponsibleUsers)
+            .ThenInclude(pas => pas.ProductAnalyticalRawData)
             .Include(pas => pas.Resources)
             .Include(pas => pas.WorkCenters)
             .Include(psa => psa.Operation)
@@ -438,7 +495,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var productionActivityStep = await context.ProductionActivitySteps
             .AsSplitQuery()
             .Include(pas => pas.ProductionActivity)
-            .Include(pas => pas.ResponsibleUsers)
+            .Include(pas => pas.ResponsibleUsers)            
+            .ThenInclude(pas => pas.ProductAnalyticalRawData)
             .Include(pas => pas.Resources)
             .Include(pas => pas.WorkCenters)
             .Include(pas => pas.WorkFlow)
@@ -476,7 +534,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         // Fetch all unique operation names in the correct order
         var allOperations = await context.Operations
             .OrderBy(o => o.Order) 
-            .Select(o => new CollectionItemDto { Id = o.Id, Name = o.Name })
+            .Select(o => new OperationDto
+                { Id = o.Id, Name = o.Name, Description =  o.Description , Order =  o.Order , Action = o.Action})
             .AsNoTracking()
             .ToListAsync();
 
@@ -865,6 +924,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             context.ProductionScheduleProducts.Update(productionScheduleProduct);
             await context.SaveChangesAsync();
         }
+        
+        backgroundWorkerService.EnqueueNotification("Batch manufacturing record created", NotificationType.BmrBprRequested);
+        
         return batchRecord.Id;
     }
      
@@ -907,7 +969,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("User.Warehouse", "No finished goods warehouse is associated with current user");
         
         var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
-        transferNote.FromWarehouseId = productionWarehouse.Id;
         transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
         context.FinishedGoodsTransferNotes.Add(transferNote);
 
@@ -916,7 +977,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             BatchId = bmr.ProductId,
             FromWarehouseId = productionWarehouse.Id,
             ToWarehouseId = finishedGoodsWarehouse.Id,
-            Quantity = request.TotalQuantity,
+            Quantity = transferNote.TotalQuantity,
             MovedAt = DateTime.UtcNow,
             MovedById = userId
         };
@@ -934,7 +995,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         var binCardEvent = new ProductBinCardInformation
         {
-            BatchId = bmr.ProductId,
+            BatchId = bmr.Id,
             Description = finishedGoodsWarehouse.Name,
             WayBill = "N/A",
             ArNumber = "N/A",
@@ -989,7 +1050,131 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
         return Result.Success();
     }
+
+    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(int page, int pageSize,
+        string searchQuery = null)
+    {
+        var query = context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(b => b.FromWarehouse)
+            .Include(b => b.ToWarehouse)
+            .Include(b => b.PackageStyle)
+            .AsQueryable();
+        
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.QarNumber);
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<FinishedGoodsTransferNoteDto>
+        );
+    }
     
+    public async Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize, 
+        string searchQuery, Guid productId)
+    {
+        var query = context.ProductBinCardInformation
+            .Include(bci => bci.Batch)
+            .ThenInclude(mb => mb.Product)
+            .Include(bci => bci.UoM)
+            .Where(bci => bci.Batch.ProductId == productId)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<ProductBinCardInformationDto>
+        );
+    }
+
+
+    public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id)
+    {
+        var transferNote = await context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(b => b.FromWarehouse)
+            .Include(u => u.UoM)
+            .Include(b => b.ToWarehouse)
+            .Include(b => b.PackageStyle)
+            .FirstOrDefaultAsync(f => f.Id == id);
+        
+        return transferNote is null ? 
+            Error.NotFound("TransferNote.NotFound", "Transfer note not found") : 
+            mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNoteByProduct(int page, int pageSize, 
+        string searchQuery, Guid productId)
+    {
+        var query = context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(b => b.FromWarehouse)
+            .Include(u => u.UoM)
+            .Include(b => b.ToWarehouse)
+            .Include(b => b.PackageStyle)
+            .Where(f => f.BatchManufacturingRecord.ProductId == productId)
+            .AsQueryable();
+        
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.QarNumber, b => b.TransferNoteNumber);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<FinishedGoodsTransferNoteDto>
+        );
+    }
+
+    public async Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request)
+    {
+        var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
+
+        if (transferNote == null) return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
+        
+        transferNote.IsApproved = true;
+        transferNote.TotalQuantity = request.QuantityReceived;
+        
+        context.FinishedGoodsTransferNotes.Update(transferNote);
+        await context.SaveChangesAsync();
+        return Result.Success();
+
+    }
+
+    public async Task<Result> UpdateTransferNote(Guid id,  CreateFinishedGoodsTransferNoteRequest request)
+    {
+       var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
+       if (transferNote == null) return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
+       
+       if (!transferNote.IsApproved) return Error.Validation("TransferNote.NotApproved", "Cannot edit transfer note that is not approved");
+       
+       var finishedGoodTransferNote = mapper.Map<FinishedGoodsTransferNote>(request);
+       context.FinishedGoodsTransferNotes.Update(finishedGoodTransferNote);
+       await context.SaveChangesAsync();
+       
+       return Result.Success();
+       
+    }
+
+
     public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
         var query = context.BatchManufacturingRecords
@@ -1059,7 +1244,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         batchRecord.IssuedById = userId;
         context.BatchManufacturingRecords.Update(batchRecord);
+        await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
+        {
+            ProductionActivityId = batchRecord.ProductionActivityStep.ProductionActivityId,
+            UserId = userId,
+            Message = "Issued batch manufacturing record",
+            Timestamp = DateTime.UtcNow
+        });
         await context.SaveChangesAsync();
+        
+        backgroundWorkerService.EnqueueNotification("Batch manufacturing issued", NotificationType.BmrBprApproved);
+
         return Result.Success();
     }
     
@@ -1137,7 +1332,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
         batchRecord.IssuedById = userId;
         context.BatchPackagingRecords.Update(batchRecord);
+        await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
+        {
+            ProductionActivityId = batchRecord.ProductionActivityStep.ProductionActivityId,
+            UserId = userId,
+            Message = "Issued batch packaging record",
+            Timestamp = DateTime.UtcNow
+        });
         await context.SaveChangesAsync();
+        
+        backgroundWorkerService.EnqueueNotification("Batch packaging issued", NotificationType.BmrBprApproved);
+
         return Result.Success();
     }
     
@@ -1159,7 +1364,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 foreach (var batch in batches)
                 {
                     await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleId, productId,
-                        batch.QuantityToTake, batch.Batch.UoM.Id);
+                        batch.QuantityToTake, batch.Batch.UoM?.Id);
                 }
             }
         }
@@ -1180,7 +1385,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 foreach (var batch in batches)
                 {
                     await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleId, productId,
-                        batch.QuantityToTake, batch.Batch.UoM.Id);
+                        batch.QuantityToTake, batch.Batch.UoM?.Id);
                 }
             }
         }
@@ -1446,10 +1651,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         var toWarehouse =  stockTransferSource.StockTransfer.Material.Kind == MaterialKind.Raw
             ? await context.Warehouses.IgnoreQueryFilters()
+                .Include(w => w.ArrivalLocation)
                 .FirstOrDefaultAsync(w =>
                     w.DepartmentId == stockTransferSource.ToDepartmentId &&
                     w.Type == WarehouseType.RawMaterialStorage)
             : await context.Warehouses.IgnoreQueryFilters()
+                .Include(w => w.ArrivalLocation)
                 .FirstOrDefaultAsync(w =>
                     w.DepartmentId == stockTransferSource.ToDepartmentId && w.Type == WarehouseType.PackagedStorage);
 
@@ -1468,8 +1675,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var shelfMaterialBatches =
                 await context.ShelfMaterialBatches.Where(sb => sb.MaterialBatchId == batch.Id).ToListAsync();
             context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
+            
+            remainingQuantity -= batchRequest.Quantity;
+            if (remainingQuantity <= 0) break;
 
-            var movement = new MassMaterialBatchMovement
+            /*var movement = new MassMaterialBatchMovement
             {
                 BatchId = batch.Id,
                 FromWarehouseId = fromWarehouse.Id,
@@ -1531,12 +1741,29 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             
             await context.SaveChangesAsync();
             
-            remainingQuantity -= batchRequest.Quantity;
-
-            if (remainingQuantity <= 0) break;
+            */
         }
         
-        if (toWarehouse.ArrivalLocation == null)
+        if (remainingQuantity > 0)
+        {
+            return Error.Failure("StockTransfer.InsufficientStock", "Not enough batches to fulfill the transfer");
+        }
+
+        var holdingMaterial = new HoldingMaterialTransfer
+        {
+            ModelType = nameof(StockTransfer),
+            StockTransferId = stockTransferSource.StockTransferId,
+            Batches = batches.Select(b => new HoldingMaterialTransferBatch
+            {
+                MaterialBatchId = b.BatchId,
+                Quantity = b.Quantity,
+                SourceWarehouseId = fromWarehouse.Id,
+                DestinationWarehouseId = toWarehouse.Id,
+            }).ToList()
+        };
+        
+        await context.HoldingMaterialTransfers.AddAsync(holdingMaterial);
+        /*if (toWarehouse.ArrivalLocation == null)
         {
             toWarehouse.ArrivalLocation = new WarehouseArrivalLocation
             {
@@ -1546,13 +1773,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 Description = "Automatically created arrival location"
             };
             await context.WarehouseArrivalLocations.AddAsync(toWarehouse.ArrivalLocation);
-        }
-            
-
-        if (remainingQuantity > 0)
-        {
-            return Error.Failure("StockTransfer.InsufficientStock", "Not enough batches to fulfill the transfer");
-        }
+        }*/
 
         stockTransferSource.IssuedAt = DateTime.UtcNow;
         stockTransferSource.IssuedById = userId;
@@ -1755,14 +1976,19 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return product;
     }
 
-    public async Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId)
+    public async Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleId, Guid productId, string reason)
     {
         var product = await context.Products.IgnoreQueryFilters()
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == productId);
-
         if (product is null) return ProductErrors.NotFound(productId);
-
+        
+        var productionSchedule = await context.ProductionSchedules.FirstOrDefaultAsync(p => p.Id == productionScheduleId);
+        if (productionSchedule is null) return ProductErrors.NotFound(productionScheduleId);
+        
+        var productionScheduleProduct = await context.ProductionScheduleProducts.FirstOrDefaultAsync(p => p.ProductionScheduleId == productionSchedule.Id && p.ProductId == product.Id);
+        if (productionScheduleProduct is null) return ProductErrors.NotFound(productionScheduleId);
+        
         var productionWarehouse = await context.Warehouses
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(w => w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.Production);
@@ -1814,6 +2040,21 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 context.MaterialBatchReservedQuantities.RemoveRange(batchesToConsume);
             }
         }
+        
+        productionScheduleProduct.ReasonForCancellation = reason;
+        productionScheduleProduct.Cancelled = true;
+        context.ProductionScheduleProducts.Update(productionScheduleProduct);
+        var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.ProductionScheduleId == productionSchedule.Id &&  b.ProductId == product.Id);
+        if (bmr is not null)
+        {
+            context.BatchManufacturingRecords.Remove(bmr);
+        }
+        var bpr = await context.BatchPackagingRecords.FirstOrDefaultAsync(p => p.ProductionScheduleId == productionSchedule.Id && p.ProductId == product.Id);
+        if (bpr is not null)
+        {
+            context.BatchPackagingRecords.Remove(bpr);
+        }
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
@@ -1858,6 +2099,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             }).ToList()
         };
         await context.MaterialReturnNotes.AddAsync(materialReturnNote);
+
+        // var holdingMaterial = new HoldingMaterialTransfer
+        // {
+        //     MaterialId = 
+        //
+        // };
         await context.SaveChangesAsync();
         return Result.Success();
     }

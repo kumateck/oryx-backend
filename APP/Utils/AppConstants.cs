@@ -33,4 +33,9 @@ public static class AppConstants
     public const string ModelType = "ModelType";
     public const string IsAdmin = "IsAdmin";
     public const string UserId = "UserId";
+    
+    
+    //Module
+    public const string Module = "Module";
+    public const string SubModule = "SubModule";
 }

@@ -11,7 +11,7 @@ namespace APP.Repository;
 
 public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper mapper) : ILeaveEntitlementRepository
 {
-    public async Task<Result<Guid>> CreateLeaveEntitlement(LeaveEntitlementDto leaveEntitlementRequest, Guid userId)
+    public async Task<Result<Guid>> CreateLeaveEntitlement(LeaveEntitlementDto leaveEntitlementRequest)
     {
         if (leaveEntitlementRequest.Year < DateTime.UtcNow.Year)
         {
@@ -19,8 +19,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         }
 
         var employee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Id == leaveEntitlementRequest.EmployeeId
-            && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.Id == leaveEntitlementRequest.EmployeeId);
         
         if (employee is null)
         {
@@ -39,8 +38,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         }
         
         var leaveEntitlement = mapper.Map<LeaveEntitlement>(leaveEntitlementRequest);
-        leaveEntitlement.CreatedById = userId;
-        leaveEntitlement.CreatedAt = DateTime.UtcNow;
+
         await context.LeaveEntitlements.AddAsync(leaveEntitlement);
         await context.SaveChangesAsync();
         
@@ -77,7 +75,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         );
     }
 
-    public async Task<Result> UpdateLeaveEntitlement(Guid id, LeaveEntitlementDto leaveEntitlementDto, Guid userId)
+    public async Task<Result> UpdateLeaveEntitlement(Guid id, LeaveEntitlementDto leaveEntitlementDto)
     {
         var query = context.LeaveEntitlements.AsQueryable();
         var leaveEntitlement = await query
@@ -88,8 +86,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         }
         
         mapper.Map(leaveEntitlementDto, leaveEntitlement);
-        leaveEntitlement.LastUpdatedById = userId;
-        leaveEntitlement.UpdatedAt = DateTime.UtcNow;
+
         context.LeaveEntitlements.Update(leaveEntitlement);
         await context.SaveChangesAsync();
         return Result.Success();

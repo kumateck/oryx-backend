@@ -1,4 +1,5 @@
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Http;
@@ -28,3 +29,25 @@ public class SignatureResolver(IHttpContextAccessor request) : IValueResolver<Us
         return string.IsNullOrEmpty(source.Avatar) ? null : $"https://{request.HttpContext?.Request.Host}/api/v1/file/signature/{source.Signature}";
     }
 }
+
+/*public class QCSignatureResolver(IHttpContextAccessor request) : IValueResolver<AnalyticalTestRequest, AnalyticalTestRequestDto, string>
+{
+    public string Resolve(AnalyticalTestRequest source, AnalyticalTestRequestDto destination, string destMember,
+        ResolutionContext context)
+    {
+        return string.IsNullOrWhiteSpace(source.QcManagerSignature)
+            ? null
+            : $"https://{request.HttpContext?.Request.Host}/api/v1/file/signature/{source.QcManagerSignature}";
+    }
+}
+
+public class QASignatureResolver(IHttpContextAccessor request) : IValueResolver<AnalyticalTestRequest, AnalyticalTestRequestDto, string>
+{
+    public string Resolve(AnalyticalTestRequest source, AnalyticalTestRequestDto destination, string destMember,
+        ResolutionContext context)
+    {
+        return string.IsNullOrWhiteSpace(source.QaManagerSignature)
+            ? null
+            : $"https://{request.HttpContext?.Request.Host}/api/v1/file/signature/{source.QaManagerSignature}";
+    }
+}*/

@@ -444,6 +444,64 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.CreateFinishedGoodsTransferNote(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a paginated list of finished good transfer notes
+    /// </summary>
+    [HttpGet("finished-goods-transfer-note")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
+    public async Task<IResult> GetFinishedGoodsTransferNotes(int page = 1, int pageSize = 10, string searchQuery = null)
+    {
+        var result = await repository.GetFinishedGoodsTransferNote(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the details of a finished good transfer note
+    /// </summary>
+    [HttpGet("finished-goods-transfer-note/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinishedGoodsTransferNoteDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferNote([FromRoute] Guid id)
+    {
+        var result = await repository.GetFinishedGoodsTransferNote(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the details of a finished good transfer note by product Id
+    /// </summary>
+    [HttpGet("finished-goods-transfer-note/{productId:guid}/product")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferNoteByProduct([FromRoute] Guid productId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetFinishedGoodsTransferNoteByProduct(page, pageSize, searchQuery, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpPut("finished-goods-transfer-note/{id:guid}/approve")]
+    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, [FromBody] ApproveTransferNoteRequest quantityReceived)
+    {
+        var result = await repository.ApproveTransferNote(id, quantityReceived);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates the details of a transfer note.
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateFinishedGoodsTransferNote([FromRoute] Guid id, [FromBody] CreateFinishedGoodsTransferNoteRequest request)
+    {
+        var result = await repository.UpdateTransferNote(id,request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a paginated list of batch manufacturing records.
@@ -836,19 +894,20 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
 
     #region Material Return Note
 
-     /// <summary>
+    /// <summary>
     /// Returns unused materials before production begins.
     /// </summary>
     /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
     /// <param name="productId">The ID of the Product.</param>
+    /// <param name="reason">The reason for cancelling the production</param>
     /// <returns>Returns a success result if materials were returned successfully.</returns>
     [HttpPost("return-before-production")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> ReturnBeforeProduction([FromQuery] Guid productionScheduleId, [FromQuery] Guid productId)
+    public async Task<IResult> ReturnBeforeProduction([FromQuery] Guid productionScheduleId, [FromQuery] Guid productId, [FromQuery] string reason)
     {
-        var result = await repository.ReturnStockBeforeProductionBegins(productionScheduleId, productId);
+        var result = await repository.ReturnStockBeforeProductionBegins(productionScheduleId, productId, reason);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

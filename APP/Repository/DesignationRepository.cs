@@ -11,7 +11,7 @@ namespace APP.Repository;
 
 public class DesignationRepository(ApplicationDbContext context, IMapper mapper) : IDesignationRepository
 {
-    public async Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request)
     {
         var existingDesignation = await context.Designations.FirstOrDefaultAsync(d => d.Name == request.Name);
         if (existingDesignation is not null)
@@ -20,11 +20,9 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         }
         
         var designation = mapper.Map<Designation>(request);
-        designation.CreatedById = userId;
-        designation.CreatedAt = DateTime.UtcNow;
         
         var departments = await context.Departments
-            .Where(d => request.DepartmentIds.Contains(d.Id) && d.LastDeletedById == null).ToListAsync();
+            .Where(d => request.DepartmentIds.Contains(d.Id)).ToListAsync();
         
         designation.Departments = departments;
         
@@ -36,10 +34,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
 
     public async Task<Result<Paginateable<IEnumerable<DesignationDto>>>> GetDesignations(int page, int pageSize, string searchQuery)
     {
-        var query = context.Designations
-            .Where(d => d.LastDeletedById == null)
-            .Include(d => d.Departments)
-            .AsQueryable();
+        var query = context.Designations.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -56,7 +51,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<DesignationDto>> GetDesignation(Guid id)
     {
         var designation = await context.Designations.
-            FirstOrDefaultAsync(d => d.Id == id && d.LastDeletedById == null);
+            FirstOrDefaultAsync(d => d.Id == id);
         return designation is null ? 
             Error.NotFound("Designation.NotFound", "Designation not found") :
             Result.Success(mapper.Map<DesignationDto>(designation));
@@ -67,15 +62,13 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         return mapper.Map<List<DesignationDto>>(await context.Designations
             .AsSplitQuery()
             .Include(d => d.Departments)
-            .Where(d => d.Departments.Any(dd => dd.Id == departmentId && d.LastDeletedById == null))
+            .Where(d => d.Departments.Any(dd => dd.Id == departmentId))
             .ToListAsync());
     }
 
-    public async Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request, Guid userId)
+    public async Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request)
     {
-        var designation = await context.Designations.
-            Include(d => d.Departments).
-            FirstOrDefaultAsync(d => d.Id == id && d.LastDeletedById == null);
+        var designation = await context.Designations.FirstOrDefaultAsync(d => d.Id == id);
         if (designation is null)
         {
             return Error.NotFound("Designation.NotFound", "Designation not found");
@@ -84,7 +77,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         
         // Fetch the new Departments based on the request
         var departments = await context.Departments
-            .Where(d => request.DepartmentIds.Contains(d.Id) && d.LastDeletedById == null)
+            .Where(d => request.DepartmentIds.Contains(d.Id))
             .ToListAsync();
         
         if (departments.Count != request.DepartmentIds.Count)
@@ -95,9 +88,6 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         designation.Departments.Clear(); 
         designation.Departments = departments;
         
-        designation.LastUpdatedById = userId;
-        designation.UpdatedAt = DateTime.UtcNow;
-        
         context.Designations.Update(designation);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -106,14 +96,14 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result> DeleteDesignation(Guid id, Guid userId)
     {
         var designation = await context.Designations
-            .FirstOrDefaultAsync(d => d.Id == id && d.LastDeletedById == null);
+            .FirstOrDefaultAsync(d => d.Id == id);
         if (designation is null)
         {
             return Error.NotFound("Designation.NotFound", "Designation not found");
         }
         
         var employees = await context.Employees
-            .FirstOrDefaultAsync(e => e.DesignationId == id && e.LastDeletedById == null);
+            .FirstOrDefaultAsync(e => e.DesignationId == id);
 
         if (employees is not null)
         {

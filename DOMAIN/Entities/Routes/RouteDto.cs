@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.ProductAnalyticalRawData;
 using SHARED;
 
 namespace DOMAIN.Entities.Routes;
@@ -22,12 +23,15 @@ public class RouteResourceDto
 public class RouteResponsibleUserDto 
 {
     public CollectionItemDto User { get; set; }
-}
+    public ProductAnalyticalRawDataDto ProductAnalyticalRawData{ get; set; }
+    public OperationAction Action { get; set; }}
 
 
 public class RouteResponsibleRoleDto
 {
     public CollectionItemDto Role { get; set; }
+    public ProductAnalyticalRawDataDto ProductAnalyticalRawData{ get; set; }
+    public OperationAction Action { get; set; }
 }
 
 public class RouteWorkCenterDto

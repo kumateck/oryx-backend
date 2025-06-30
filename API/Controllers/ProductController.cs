@@ -153,10 +153,10 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     [HttpGet("{productId}/routes")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IResult> GetRoutes([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<RouteDto>))]
+    public async Task<IResult> GetRoutes(Guid productId)
     {
-        var result = await repository.GetRoutes(page, pageSize, searchQuery);
+        var result = await repository.GetRoutes(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -210,10 +210,10 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     [HttpGet("{productId}/packages")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IResult> GetProductPackages([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductPackageDto>))]
+    public async Task<IResult> GetProductPackages()
     {
-        var result = await repository.GetProductPackages(page, pageSize, searchQuery);
+        var result = await repository.GetProductPackages();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
