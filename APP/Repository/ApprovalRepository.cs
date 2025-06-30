@@ -11,13 +11,15 @@ using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.StaffRequisitions;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using SHARED;
 
 namespace APP.Repository;
-public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IMemoryCache cache) : IApprovalRepository 
+public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMemoryCache cache) : IApprovalRepository 
 { 
     public async Task<Result<Guid>> CreateApproval(CreateApprovalRequest request, Guid userId) 
     {
@@ -1622,7 +1624,14 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, IM
             }
         }
     }
-    
+
+    public async Task<Result> DelegateApproval(DelegateApproval approval)
+    {
+        var user = userManager.FindByIdAsync(approval.EmployeeId.ToString());
+
+        return user.Result == null ? Error.NotFound("User.Invalid", "User not found") : Result.Success();
+    }
+
     private async Task ProcessRequisitionEscalations(Requisition requisition, TimeSpan escalationDuration)
     {
         if (requisition is null || requisition.Approvals.Count == 0) return;
