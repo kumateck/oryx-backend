@@ -22,7 +22,7 @@ public class OvertimeRequestDto : BaseDto
     
     public Guid DepartmentId { get; set; }
     
-    public Department Department { get; set; }
+    public DepartmentDto Department { get; set; }
     
     public int TotalHours { get; set; }
 }
