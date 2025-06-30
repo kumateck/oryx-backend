@@ -167,9 +167,12 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
         foreach (var employee in group)
         {
             var shift = employee.ShiftAssignments.FirstOrDefault();
-            var shiftName = shift?.ShiftSchedules.ScheduleName.ToLowerInvariant();
+            var shiftStart = shift?.ShiftType?.StartTime;
 
-            if (string.IsNullOrWhiteSpace(shiftName))
+            if (string.IsNullOrWhiteSpace(shiftStart))
+                continue;
+
+            if (!TimeSpan.TryParse(shiftStart, out var startTime))
                 continue;
 
             var isCasual = employee.Type == EmployeeType.Casual;
@@ -179,20 +182,24 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
             else
                 summary.PermanentStaff++;
 
-            switch (shiftName)
+            // Shift classification with crossover logic
+            if (startTime >= TimeSpan.FromHours(5) && startTime < TimeSpan.FromHours(12))
             {
-                case "morning":
-                    if (isCasual) summary.CasualMorning++;
-                    else summary.PermanentMorning++;
-                    break;
-                case "afternoon":
-                    if (isCasual) summary.CasualAfternoon++;
-                    else summary.PermanentAfternoon++;
-                    break;
-                case "night":
-                    if (isCasual) summary.CasualNight++;
-                    else summary.PermanentNight++;
-                    break;
+                // Morning: 5 AM to 11:59 AM
+                if (isCasual) summary.CasualMorning++;
+                else summary.PermanentMorning++;
+            }
+            else if (startTime >= TimeSpan.FromHours(12) && startTime < TimeSpan.FromHours(17))
+            {
+                // Afternoon: 12 PM to 4:59 PM
+                if (isCasual) summary.CasualAfternoon++;
+                else summary.PermanentAfternoon++;
+            }
+            else
+            {
+                // Night: 5 PM to 4:59 AM (cross-day logic)
+                if (isCasual) summary.CasualNight++;
+                else summary.PermanentNight++;
             }
         }
 
