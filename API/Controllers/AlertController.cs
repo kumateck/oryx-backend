@@ -21,7 +21,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     public async Task<IResult> CreateAlert([FromBody] CreateAlertRequest request)
     {
         var result = await repo.CreateAlert(request);
-        return result.IsSuccess ? TypedResults.Ok(await repo.CreateAlert(request)) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
