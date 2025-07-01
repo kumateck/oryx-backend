@@ -14,7 +14,7 @@ namespace APP.Middlewares;
 public class ActivityLogMiddleware(RequestDelegate next)
 {
     private readonly string[] _excludedPaths = ["/auth", "/collections", "/details", "/pagination", "/favicon.ico"];
-    private readonly string[] _excludedMethods = ["OPTIONS"];
+    private readonly string[] _excludedMethods = ["OPTIONS", "CONNECT"];
     private readonly string[] _allowedGetPaths = ["toggle-disable"];
 
     public async Task Invoke(HttpContext context, IActivityLogRepository repo, IBackgroundWorkerService backgroundService)
