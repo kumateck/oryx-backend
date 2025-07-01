@@ -130,6 +130,8 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
 
 public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport(DateTime date)
 {
+    date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+
     var dailyRecords = await context.AttendanceRecords
         .Where(a => a.TimeStamp.Date == date.Date)
         .ToListAsync();
