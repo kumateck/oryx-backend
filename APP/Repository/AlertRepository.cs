@@ -25,11 +25,13 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
     
     public async Task<Result<AlertDto>> GetAlert(Guid alertId)
     {
-        return mapper.Map<AlertDto>(await context.Alerts
+        var alert = await context.Alerts
             .AsSplitQuery()
             .Include(a => a.Roles).ThenInclude(r => r.Role)
             .Include(a => a.Users).ThenInclude(u => u.User)
-            .FirstOrDefaultAsync(item => item.Id == alertId));
+            .FirstOrDefaultAsync(item => item.Id == alertId);
+        
+        return mapper.Map<AlertDto>(alert);
     }
 
     public async Task<Result<Paginateable<IEnumerable<AlertDto>>>> GetAlerts(int page, int pageSize, string searchQuery, bool withDisabled = false)

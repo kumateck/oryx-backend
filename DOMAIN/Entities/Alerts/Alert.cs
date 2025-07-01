@@ -63,3 +63,13 @@ public class AlertDto : BaseDto
     public List<UserDto> Users { get; set; } = [];
     public bool IsDisabled { get; set; }
 }
+
+public class AlertRoleDto : BaseDto
+{
+    public RoleDto Role { get; set; }
+}
+
+public class AlertUserDto : BaseDto
+{
+    public UserDto User { get; set; }
+}
