@@ -56,6 +56,19 @@ public class UserController(IUserRepository repo) : ControllerBase
         var response = await repo.GetUser(Guid.Parse(userId));
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
+    
+    [Authorize]
+    [HttpGet("role/{roleId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserWithRoleDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetUserByRole(Guid roleId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var response = await repo.GetUsersByRoleId(roleId);
+        return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
+    }
 
     
     [Authorize]
