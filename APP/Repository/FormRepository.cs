@@ -69,7 +69,9 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     {
         var form = await context.Forms
             .AsSplitQuery()
-            .Include(form => form.Reviewers).Include(form => form.Assignees).Include(form => form.Sections)
+            .Include(form => form.Sections)
+            .Include(form => form.Reviewers)
+            .Include(form => form.Assignees)
             .FirstOrDefaultAsync(f => f.Id == formId);
 
         if (form == null)
