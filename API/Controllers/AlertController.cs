@@ -63,7 +63,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repo.UpdateAlert(request, Guid.Parse(userId), alertId);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -76,6 +76,6 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     public async Task<IResult> ToggleDisable(Guid id)
     {
         var result = await repo.ToggleDisable(id);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
