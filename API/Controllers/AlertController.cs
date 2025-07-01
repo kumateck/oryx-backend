@@ -34,7 +34,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     public async Task<IResult> GetAlert(Guid alertId)
     {
         var result = await repo.GetAlert(alertId);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
