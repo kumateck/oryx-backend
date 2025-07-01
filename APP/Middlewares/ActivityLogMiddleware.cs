@@ -96,7 +96,7 @@ public class ActivityLogMiddleware(RequestDelegate next)
             var statusCode = context.Response.StatusCode;
             var executionTime = stopwatch.ElapsedMilliseconds;
 
-            var action = GetAction(request.Path, request.Method);
+            var action = GetAction(subModule, request.Method);
             var modelPath = GetModelFromPath(context.Request.Path);
 
             var log = new CreateActivityLog
@@ -176,5 +176,24 @@ public class ActivityLogMiddleware(RequestDelegate next)
 
     private static string ExtractSubModule(string path) => path.Split('/').Skip(2).FirstOrDefault() ?? "Unknown";
 
-    private static string GetAction(string path, string method) => $"{path} {method}";
+    private static string GetAction(string submodule, string method)
+    {
+        if (method.Equals("GET", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Retrieved {submodule}";
+        }
+
+        if (method.Equals("PUT", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Updated {submodule}";
+        }
+
+        if (method.Equals("DELETE", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"Deleted {submodule}";
+        }
+
+        return method.Equals("POST", StringComparison.OrdinalIgnoreCase) ? $"Created {submodule}" 
+            : $"{submodule} was interacted with {method}";
+    }
 }

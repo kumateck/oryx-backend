@@ -110,6 +110,15 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         if (user == null) return UserErrors.NotFound(userId);
         return mapper.Map<UserWithRoleDto>(user);
     }
+    
+    public async Task<Result<IEnumerable<UserWithRoleDto>>> GetUsersByRoleId(Guid roleId)
+    {
+        var role = await context.Roles.FirstOrDefaultAsync(u => u.Id == roleId);
+        if (role == null) return RoleErrors.NotFound(roleId);
+        var roleName = role.Name ?? "";
+        var usersInThisRole = await userManager.GetUsersInRoleAsync(roleName);
+        return mapper.Map<List<UserWithRoleDto>>(usersInThisRole);
+    }
 
     public async Task<Result> UpdateUser(UpdateUserRequest request, Guid id, Guid userId)
     {
