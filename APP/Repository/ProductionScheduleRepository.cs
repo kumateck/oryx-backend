@@ -168,14 +168,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await FreezeMaterialInProduction(productionScheduleId, productId,  userId);
         
         // Step 1: Build a dictionary of users and their associated actions
-        var userActionsMap = new Dictionary<Guid, (Guid? productArdId, OperationAction action)>();
+        var userActionsMap = new Dictionary<(Guid userId, int order), (Guid? productArdId, OperationAction action)>();
 
         // Add actions from RouteResponsibleUsers
         foreach (var route in product.Routes)
         {
             foreach (var ru in route.ResponsibleUsers)
             {
-                userActionsMap[ru.UserId] = (ru.ProductAnalyticalRawDataId, ru.Action);
+                userActionsMap[(ru.UserId, route.Order)] = (ru.ProductAnalyticalRawDataId, ru.Action);
             }
         }
 
@@ -188,14 +188,19 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 var usersInThisRole = await userManager.GetUsersInRoleAsync(roleName);
                 foreach (var user in usersInThisRole)
                 {
-                    userActionsMap[user.Id] = (rr.ProductAnalyticalRawDataId, rr.Action);
+                    if (userActionsMap.ContainsKey((userId, route.Order)))
+                        continue;
+                    userActionsMap[(user.Id, route.Order)] = (rr.ProductAnalyticalRawDataId, rr.Action);
                 }
             }
         }
 
         // Final user list
         var totalUsers = userActionsMap.Keys
-            .Select(uId => users.FirstOrDefault(u => u.Id == uId) ?? usersInRole.First(u => u.Id == uId))
+            .Select(k => k.userId)
+            .Distinct()
+            .Select(uId => users.FirstOrDefault(u => u.Id == uId) ?? usersInRole.FirstOrDefault(u => u.Id == uId))
+            .Where(u => u != null)
             .Distinct()
             .ToList();
         
@@ -221,12 +226,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 {
                     WorkCenterId = re.WorkCenterId
                 }).ToList(),
-                ResponsibleUsers = userActionsMap.Select(kvp => new ProductionActivityStepUser
-                {
-                    UserId = kvp.Key,
-                    ProductAnalyticalRawDataId = kvp.Value.productArdId,
-                    Action = kvp.Value.action   
-                }).ToList(),
+                ResponsibleUsers = userActionsMap
+                    .Where(kvp => kvp.Key.order == r.Order)
+                    .Select(kvp => new ProductionActivityStepUser
+                    {
+                        UserId = kvp.Key.userId,
+                        ProductAnalyticalRawDataId = kvp.Value.productArdId,
+                        Action = kvp.Value.action 
+                    }).ToList(),
             }).ToList(),
             ActivityLogs =
             [
