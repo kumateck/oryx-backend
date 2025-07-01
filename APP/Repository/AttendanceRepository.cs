@@ -146,9 +146,9 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
 
     var employees = await context.Employees
         .Include(e => e.Department)
-        .Include(e => e.ShiftAssignments.Where(sa => sa.ScheduleDate.Date == date.Date))
+        .Include(e => e.ShiftAssignments)
             .ThenInclude(sa => sa.ShiftCategory)
-        .Include(e => e.ShiftAssignments.Where(sa => sa.ScheduleDate.Date == date.Date))
+        .Include(e => e.ShiftAssignments)
             .ThenInclude(sa => sa.ShiftSchedules)
         .Where(e => employeeIds.Contains(e.StaffNumber))
         .ToListAsync();
