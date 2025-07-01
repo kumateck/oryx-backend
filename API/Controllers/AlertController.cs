@@ -46,7 +46,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     public async Task<IResult> GetAlerts([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] bool withDisabled = false)
     {
         var result = await repo.GetAlerts(page, pageSize, searchQuery, withDisabled);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
     }
     
     /// <summary>
