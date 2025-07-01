@@ -958,11 +958,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #endregion
 
-        #region Form
+        #region Form Filter
 
         modelBuilder.Entity<Form>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<FormSection>().HasQueryFilter(a => !a.Form.DeletedAt.HasValue);
-        modelBuilder.Entity<FormField>().HasQueryFilter(a => !a.FormSection.DeletedAt.HasValue);
+        modelBuilder.Entity<FormSection>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<FormField>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<FormAssignee>()
             .HasQueryFilter(a => !a.User.DeletedAt.HasValue && !a.Form.DeletedAt.HasValue);
         modelBuilder.Entity<FormReviewer>()
