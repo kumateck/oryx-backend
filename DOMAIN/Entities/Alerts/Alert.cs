@@ -62,6 +62,7 @@ public class AlertDto : BaseDto
     public List<RoleDto> Roles { get; set; } = [];
     public List<UserDto> Users { get; set; } = [];
     public bool IsDisabled { get; set; }
+    public bool IsConfigurable { get; set; }
 }
 
 public class AlertRoleDto : BaseDto
