@@ -322,7 +322,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         
     public async Task<Result> UpdateShiftSchedule(Guid id, CreateShiftScheduleRequest request)
     {
-        var shiftSchedule = await context.ShiftSchedules.FirstOrDefaultAsync(s => s.Id == id);
+        var shiftSchedule = await context.ShiftSchedules.Include(s => s.ShiftTypes).FirstOrDefaultAsync(s => s.Id == id);
         if (shiftSchedule is null)
         {
             return Error.NotFound("ShiftSchedule.NotFound", "Shift schedule is not found");
@@ -334,6 +334,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         {
             return Error.Validation("ShiftSchedule.InvalidShiftTypes", "One or more shift type IDs are invalid.");
         }
+        
         shiftSchedule.ShiftTypes.Clear();
         shiftSchedule.ShiftTypes.AddRange(shiftTypes);
         mapper.Map(request, shiftSchedule);

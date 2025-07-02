@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250702103943_UpdateSampleQuantity")]
-    partial class UpdateSampleQuantity
+    [Migration("20250702214118_AddSamplings")]
+    partial class AddSamplings
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

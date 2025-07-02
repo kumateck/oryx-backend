@@ -14,7 +14,7 @@ public class ShiftSchedule: BaseEntity
     
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public List<ShiftType> ShiftTypes { get; set; }
+    public List<ShiftType> ShiftTypes { get; set; } = [];
 
     public List<Employee> Employees { get; set; } = [];
     

@@ -5,31 +5,46 @@
 namespace INFRASTRUCTURE.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdateSampleQuantity : Migration
+    public partial class AddSamplings : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<decimal>(
-                name: "SampleQuantity",
-                table: "ProductSamplings",
-                type: "numeric",
-                nullable: false,
-                defaultValue: 0m,
-                oldClrType: typeof(string),
-                oldType: "text",
-                oldNullable: true);
+            // ProductSamplings: Convert SampleQuantity from text to numeric
+            migrationBuilder.Sql("""
+                ALTER TABLE "ProductSamplings"
+                ALTER COLUMN "SampleQuantity" TYPE numeric
+                USING "SampleQuantity"::numeric;
+            """);
 
-            migrationBuilder.AlterColumn<decimal>(
-                name: "SampleQuantity",
-                table: "MaterialSamplings",
-                type: "numeric",
-                nullable: false,
-                defaultValue: 0m,
-                oldClrType: typeof(string),
-                oldType: "text",
-                oldNullable: true);
+            migrationBuilder.Sql("""
+                ALTER TABLE "ProductSamplings"
+                ALTER COLUMN "SampleQuantity" SET NOT NULL;
+            """);
 
+            migrationBuilder.Sql("""
+                ALTER TABLE "ProductSamplings"
+                ALTER COLUMN "SampleQuantity" SET DEFAULT 0.0;
+            """);
+
+            // MaterialSamplings: Convert SampleQuantity from text to numeric
+            migrationBuilder.Sql("""
+                ALTER TABLE "MaterialSamplings"
+                ALTER COLUMN "SampleQuantity" TYPE numeric
+                USING "SampleQuantity"::numeric;
+            """);
+
+            migrationBuilder.Sql("""
+                ALTER TABLE "MaterialSamplings"
+                ALTER COLUMN "SampleQuantity" SET NOT NULL;
+            """);
+
+            migrationBuilder.Sql("""
+                ALTER TABLE "MaterialSamplings"
+                ALTER COLUMN "SampleQuantity" SET DEFAULT 0.0;
+            """);
+
+            // Add new decimal columns
             migrationBuilder.AddColumn<decimal>(
                 name: "SampledQuantity",
                 table: "MaterialBatches",
@@ -56,6 +71,7 @@ namespace INFRASTRUCTURE.Migrations
                 name: "SampledQuantity",
                 table: "BatchManufacturingRecords");
 
+            // Revert SampleQuantity to text type for ProductSamplings
             migrationBuilder.AlterColumn<string>(
                 name: "SampleQuantity",
                 table: "ProductSamplings",
@@ -64,6 +80,7 @@ namespace INFRASTRUCTURE.Migrations
                 oldClrType: typeof(decimal),
                 oldType: "numeric");
 
+            // Revert SampleQuantity to text type for MaterialSamplings
             migrationBuilder.AlterColumn<string>(
                 name: "SampleQuantity",
                 table: "MaterialSamplings",
