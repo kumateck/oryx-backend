@@ -729,6 +729,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #endregion
 
+        #region Alert Filters
+
+        modelBuilder.Entity<Alert>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
         #region Product Filters
 
         modelBuilder.Entity<Product>().HasQueryFilter(entity =>

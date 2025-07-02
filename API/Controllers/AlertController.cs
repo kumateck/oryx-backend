@@ -69,7 +69,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// <summary>
     /// Toggles the disabled status of an alert.
     /// </summary>
-    [HttpPatch("{id}/toggle-disable")]
+    [HttpPut("{id}/toggle-disable")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

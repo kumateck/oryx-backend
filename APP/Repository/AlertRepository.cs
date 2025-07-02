@@ -105,6 +105,20 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         }
         return Result.Success();
     }
+    
+    public async Task<Result> DeleteAlert(Guid id, Guid userId)
+    {
+        var alert = await context.Alerts.FirstOrDefaultAsync(item => item.Id == id);
+        if (alert != null)
+        {
+            if(!alert.IsConfigurable) return Error.Validation("Alert.IsConfigurable", "You cannot delete a non configurable alert");
+            alert.DeletedAt = DateTime.UtcNow;
+            alert.LastDeletedById = userId;
+            context.Alerts.Update(alert);
+            await context.SaveChangesAsync();
+        }
+        return Result.Success();
+    }
 
     public async Task ProcessAlert(string message, NotificationType notificationType, Guid? departmentId, List<User> assignedUsers = null)
     {
@@ -112,7 +126,9 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
             .AsSplitQuery()
             .Include(alert => alert.Roles).ThenInclude(alertRole => alertRole.Role)
             .Include(alert => alert.Users).ThenInclude(alertUser => alertUser.User)
-            .FirstOrDefaultAsync(item => item.NotificationType == notificationType);
+            .FirstOrDefaultAsync(item => item.NotificationType == notificationType && !item.IsDisabled);
+        
+        if (alert is null) return;
 
         List<User> users = [];
         var roles = alert.Roles;
