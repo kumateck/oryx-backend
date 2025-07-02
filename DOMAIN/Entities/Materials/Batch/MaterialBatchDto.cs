@@ -30,6 +30,7 @@ public class MaterialBatchDto
     public decimal TotalQuantity { get; set; }        
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity { get; set; }
+    public decimal SampledQuantity { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }

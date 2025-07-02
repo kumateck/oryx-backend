@@ -27,6 +27,11 @@ public class ProductSamplingRepository(ApplicationDbContext context, IMapper map
             return Error.Validation("ProductSampling", "Product Sampling already exists");
         }
         
+        var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == analyticalTestRequest.BatchManufacturingRecordId);
+        if (bmr == null) return Error.Validation("BatchManufacturingRecord", "BatchManufacturingRecord not found");
+
+        bmr.SampledQuantity = productSampling.SampleQuantity;
+        context.BatchManufacturingRecords.Update(bmr);
         var request = mapper.Map<ProductSampling>(productSampling);
         
         await context.ProductSamplings.AddAsync(request);

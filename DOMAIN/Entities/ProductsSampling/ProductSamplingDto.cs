@@ -7,7 +7,7 @@ public class ProductSamplingDto : BaseDto
 {
     public Guid AnalyticalTestRequestId { get; set; }
      
-    public string SampleQuantity {get; set;}
+    public decimal SampleQuantity {get; set;}
      
     public int ContainersSampled {get; set;}
     

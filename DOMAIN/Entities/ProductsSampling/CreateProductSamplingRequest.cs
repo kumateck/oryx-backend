@@ -8,7 +8,7 @@ public class CreateProductSamplingRequest
     
     [Required] public string ArNumber { get; set; }
     
-    [Required] public string SampleQuantity { get; set; }
+    [Required] public decimal SampleQuantity { get; set; }
     
     [Required] public int ContainersSampled  { get; set; }
     
