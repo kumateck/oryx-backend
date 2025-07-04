@@ -380,7 +380,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UploadProducts([FromForm] IFormFile file)
+    public async Task<IResult> UploadProducts(IFormFile file)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -400,7 +400,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UploadProductBom([FromForm] IFormFile file)
+    public async Task<IResult> UploadProductBom(IFormFile file)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -420,7 +420,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UploadProductPackages([FromForm] IFormFile file)
+    public async Task<IResult> UploadProductPackages(IFormFile file)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
