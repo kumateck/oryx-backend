@@ -30,6 +30,8 @@ public class EmployeeDto: WithAttachment
     
     public string BankAccountNumber { get; set; }
     
+    public EmployeeLevel? EmployeeLevel { get; set; }
+    
     public string SsnitNumber { get; set; }
     
     public string GhanaCardNumber { get; set; }
