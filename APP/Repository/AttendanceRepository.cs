@@ -26,7 +26,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
     using var package = new ExcelPackage(stream);
     var worksheet = package.Workbook.Worksheets.FirstOrDefault();
 
-    if (worksheet == null || worksheet.Dimension == null || worksheet.Dimension.End.Row < 2)
+    if (worksheet?.Dimension == null || worksheet.Dimension.End.Row < 2)
     {
         return Error.Validation("Attendance.Empty", "The uploaded Excel file is empty or does not contain any records.");
     }
@@ -49,8 +49,13 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
             return Error.Validation("Attendance.InvalidTimestamp", $"Invalid timestamp format at row {row}. Use dd/MM/yyyy HH:mm:ss.");
         }
         
+        if (localTime.Date != DateTime.UtcNow.Date)
+        {
+            return Error.Validation("Attendance.InvalidDate", $"The timestamp at row {row} is not for today. Only today's records are allowed.");
+        }
+        
         var timeStamp = localTime.ToUniversalTime();
-
+        
         if (!Enum.TryParse<WorkState>(workState, true, out var parsedWorkState))
         {
             return Error.Validation("Attendance.InvalidWorkState", $"Invalid work state '{workState}' at row {row}. Allowed values: Check In, Check Out.");
@@ -128,33 +133,26 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
             }).ToList();
     }
 
-public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport(DateTime date)
+public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport()
 {
-    date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+    var today = DateTime.UtcNow.Date;
 
     var dailyRecords = await context.AttendanceRecords
-        .Where(a => a.TimeStamp.Date == date.Date)
+        .Where(a => a.TimeStamp.Date == today && a.WorkState == WorkState.CheckIn)
         .ToListAsync();
 
     if (dailyRecords.Count == 0)
-        return Error.NotFound("Attendance.NotFound", $"No attendance records found for {date:yyyy-MM-dd}");
+        return Error.NotFound("Attendance.NotFound", $"No attendance records found for {today:dd-MM-yyyy}");
 
-    var employeeIds = dailyRecords
-        .Select(r => r.EmployeeId)
-        .Distinct()
-        .ToList();
+    var employeeIds = dailyRecords.Select(r => r.EmployeeId).Distinct().ToList();
 
     var employees = await context.Employees
         .Include(e => e.Department)
-        .Include(e => e.ShiftAssignments)
-            .ThenInclude(sa => sa.ShiftCategory)
-        .Include(e => e.ShiftAssignments)
-            .ThenInclude(sa => sa.ShiftSchedules)
         .Where(e => employeeIds.Contains(e.StaffNumber))
         .ToListAsync();
 
     var groupedByDepartment = employees
-        .GroupBy(e => e.Department.Name)
+        .GroupBy(e => e.Department?.Name ?? "Unassigned")
         .ToList();
 
     var report = new List<GeneralAttendanceReportDto>();
@@ -163,18 +161,24 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
     {
         var summary = new GeneralAttendanceReportDto
         {
-            DepartmentName = string.IsNullOrWhiteSpace(group.Key) ? "Unassigned" : group.Key
+            DepartmentName = group.Key
         };
 
         foreach (var employee in group)
         {
-            var shift = employee.ShiftAssignments.FirstOrDefault();
-            var shiftStart = shift?.ShiftType?.StartTime;
+            var shiftAssignment = employee.ShiftAssignments
+                .FirstOrDefault(sa => sa.ScheduleDate.Date == today);
 
-            if (string.IsNullOrWhiteSpace(shiftStart))
+            if (shiftAssignment?.ShiftType?.StartTime == null)
                 continue;
 
-            if (!TimeSpan.TryParse(shiftStart, out var startTime))
+            if (!TimeSpan.TryParse(shiftAssignment.ShiftType.StartTime, out var shiftStartTime))
+                continue;
+
+            var attendance = dailyRecords
+                .FirstOrDefault(a => a.EmployeeId == employee.StaffNumber);
+
+            if (attendance == null)
                 continue;
 
             var isCasual = employee.Type == EmployeeType.Casual;
@@ -184,22 +188,19 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
             else
                 summary.PermanentStaff++;
 
-            // Shift classification with crossover logic
-            if (startTime >= TimeSpan.FromHours(5) && startTime < TimeSpan.FromHours(12))
+            // Classify based on shift start 
+            if (shiftStartTime >= TimeSpan.FromHours(5) && shiftStartTime < TimeSpan.FromHours(12))
             {
-                // Morning: 5 AM to 11:59 AM
                 if (isCasual) summary.CasualMorning++;
                 else summary.PermanentMorning++;
             }
-            else if (startTime >= TimeSpan.FromHours(12) && startTime < TimeSpan.FromHours(17))
+            else if (shiftStartTime >= TimeSpan.FromHours(12) && shiftStartTime < TimeSpan.FromHours(17))
             {
-                // Afternoon: 12 PM to 4:59 PM
                 if (isCasual) summary.CasualAfternoon++;
                 else summary.PermanentAfternoon++;
             }
             else
             {
-                // Night: 5 PM to 4:59 AM (cross-day logic)
                 if (isCasual) summary.CasualNight++;
                 else summary.PermanentNight++;
             }
@@ -209,5 +210,5 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
     }
 
     return report;
-    }
+}
 }
