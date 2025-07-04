@@ -38,9 +38,9 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// </summary>
     [HttpGet("general-summary")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GeneralAttendanceReportDto))]
-    public async Task<IResult> GeneralDailySummary([FromQuery] DateTime date)
+    public async Task<IResult> GeneralDailySummary()
     {
-        var result = await repository.GeneralAttendanceReport(date);
+        var result = await repository.GeneralAttendanceReport();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
