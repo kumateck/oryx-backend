@@ -35,6 +35,8 @@ public class Employee : BaseEntity
 
     [StringLength(100)] public string StaffNumber { get; set; }
     
+    public EmployeeLevel? EmployeeLevel { get; set; }
+    
     
     [StringLength(100)] public string Email { get; set; }
     
@@ -98,6 +100,12 @@ public enum MaritalStatus
 {
     Single,
     Married
+}
+
+public enum EmployeeLevel {
+    JuniorStaff,
+    SeniorStaff,
+    SeniorManagement
 }
 
 
