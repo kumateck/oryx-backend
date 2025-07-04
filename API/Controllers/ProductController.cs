@@ -396,7 +396,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     /// <param name="file">The uploaded Excel file containing BOM data.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("upload/bom")]
+    [HttpPost("bom/upload")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -416,7 +416,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     /// <param name="file">The uploaded Excel file containing package data.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("upload/packages")]
+    [HttpPost("packages/upload")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
