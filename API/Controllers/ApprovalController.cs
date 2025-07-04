@@ -30,9 +30,9 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     [HttpPost("delegate")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(DelegateApprovalDto))]
-    public async Task<IResult> DelegateApproval([FromBody] DelegateApproval approval)
+    public IResult DelegateApproval([FromBody] DelegateApproval approval)
     {
-        var result = await repository.DelegateApproval(approval);
+        var result =  repository.DelegateApproval(approval);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

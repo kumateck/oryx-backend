@@ -30,8 +30,6 @@ public class EmployeeDto: WithAttachment
     
     public string BankAccountNumber { get; set; }
     
-    public EmployeeLevel? EmployeeLevel { get; set; }
-    
     public string SsnitNumber { get; set; }
     
     public string GhanaCardNumber { get; set; }
@@ -66,4 +64,8 @@ public class EmployeeDto: WithAttachment
     public ICollection<SiblingDto> Siblings { get; set; }
     public ICollection<EducationDto> EducationBackground { get; set; }
     public ICollection<EmploymentHistoryDto> EmploymentHistory { get; set; }
+    public EmployeeLevel? Level { get; set; }
+    public EmployeeStatus Status { get; set; }
+    public EmployeeActiveStatus? ActiveStatus { get; set; }
+    public EmployeeInactiveStatus? InactiveStatus { get; set; }
 }

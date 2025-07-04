@@ -107,6 +107,7 @@ public static class DependencyInjection
         services.AddScoped<IAlertRepository, AlertRepository>();
         services.AddScoped<IProductSamplingRepository, ProductSamplingRepository>();
         services.AddScoped<IMaterialSamplingRepository, MaterialSamplingRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
 
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();

@@ -27,4 +27,7 @@ public class CreateProductRequest
     public decimal FullBatchSize { get; set; }
     public Guid? BasePackingUomId { get; set; }
     public Guid? DepartmentId { get; set; }
+    public decimal Price { get; set; }
+    public Division Division { get; set; }
+    public int PackPerShipper { get; set; }
 }
