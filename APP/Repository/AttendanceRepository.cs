@@ -49,8 +49,13 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
             return Error.Validation("Attendance.InvalidTimestamp", $"Invalid timestamp format at row {row}. Use dd/MM/yyyy HH:mm:ss.");
         }
         
+        if (localTime.Date != DateTime.UtcNow.Date)
+        {
+            return Error.Validation("Attendance.InvalidDate", $"The timestamp at row {row} is not for today. Only today's records are allowed.");
+        }
+        
         var timeStamp = localTime.ToUniversalTime();
-
+        
         if (!Enum.TryParse<WorkState>(workState, true, out var parsedWorkState))
         {
             return Error.Validation("Attendance.InvalidWorkState", $"Invalid work state '{workState}' at row {row}. Allowed values: Check In, Check Out.");
