@@ -40,8 +40,16 @@ public class Product : BaseEntity
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = [];
     public List<ProductPackage> Packages { get; set; } = [];
     public List<Route> Routes { get; set; } = [];
+    public decimal Price { get; set; }
+    public Division Division { get; set; }
+    public int PackPerShipper { get; set; }
 }
 
+public enum Division
+{
+    BetaLactam = 0,
+    NonBetaLactam = 1,
+}
 public class ProductCategory : BaseEntity
 {
     [StringLength(255)] public string Name { get; set; }

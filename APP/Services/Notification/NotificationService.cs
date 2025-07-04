@@ -6,7 +6,7 @@ using MassTransit;
 
 namespace APP.Services.Notification;
 
-public class NotificationService(IEmailService emailService, IMessagingService smsService, IPublishEndpoint publishEndpoint) : INotificationService
+public class NotificationService(IEmailService emailService, /*IMessagingService smsService,*/ IPublishEndpoint publishEndpoint) : INotificationService
 {
     public async Task SendNotification(NotificationDto notification, List<AlertType> alertTypes)
     {
@@ -20,9 +20,6 @@ public class NotificationService(IEmailService emailService, IMessagingService s
                 
                 case AlertType.Email:
                     emailService.ProcessNotificationData(notification);
-                    break;
-                
-                case AlertType.Sms:
                     break;
             }
         }

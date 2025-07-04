@@ -211,9 +211,9 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [HttpGet("{productId}/packages")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductPackageDto>))]
-    public async Task<IResult> GetProductPackages()
+    public async Task<IResult> GetProductPackages(Guid productId)
     {
-        var result = await repository.GetProductPackages();
+        var result = await repository.GetProductPackages(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -369,5 +369,65 @@ public class ProductController(IProductRepository repository) : ControllerBase
 
         var result = await repository.DeleteEquipment(equipmentId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Imports products from an Excel file.
+    /// </summary>
+    /// <param name="file">The uploaded Excel file containing product data.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("upload")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadProducts([FromForm] IFormFile file)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportProductsFromExcel(file);
+        return result.IsSuccess
+            ? TypedResults.NoContent()
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Imports product bill of materials (BOM) from an Excel file.
+    /// </summary>
+    /// <param name="file">The uploaded Excel file containing BOM data.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("upload/bom")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadProductBom([FromForm] IFormFile file)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportProductBomFromExcel(file);
+        return result.IsSuccess
+            ? TypedResults.NoContent()
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Imports product packaging information from an Excel file.
+    /// </summary>
+    /// <param name="file">The uploaded Excel file containing package data.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("upload/packages")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadProductPackages([FromForm] IFormFile file)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportProductPackagesFromExcel(file);
+        return result.IsSuccess
+            ? TypedResults.NoContent()
+            : result.ToProblemDetails();
     }
 }

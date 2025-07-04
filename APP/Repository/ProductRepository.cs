@@ -2,12 +2,16 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Routes;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 using SHARED;
+using SHARED.Requests;
 
 namespace APP.Repository;
 
@@ -375,11 +379,12 @@ namespace APP.Repository;
         return Result.Success(productPackageDto);
     }
 
-    public async Task<Result<IEnumerable<ProductPackageDto>>> GetProductPackages()
+    public async Task<Result<IEnumerable<ProductPackageDto>>> GetProductPackages(Guid productId)
     {
         var query = await context.ProductPackages
-            .Include(p => p.Product)
+            .AsSplitQuery()
             .Include(p => p.Material)
+            .Where(p => p.ProductId == productId)
             .ToListAsync();
         
         return mapper.Map<List<ProductPackageDto>>(query);
@@ -568,6 +573,272 @@ namespace APP.Repository;
 
         context.Equipments.Update(equipment);
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> ImportProductsFromExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        var products = new List<Product>();
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
+
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            var header = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrEmpty(header))
+                headers[header] = col;
+        }
+
+        var requiredHeaders = new[]
+        {
+            "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "BASE QUANTITY",
+            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
+
+        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            var row1 = row;
+            var getCell = (string header) => worksheet.Cells[row1, headers[header]].Text.Trim();
+
+            var categoryName = getCell("CATEGORY").ToLower();
+            var baseUomName = getCell("BASE UOM").ToLower();
+            var basePackingUomName = getCell("BASE PACKING UOM").ToLower();
+            var equipmentName = getCell("EQUIPMENT").ToLower();
+            var departmentName = getCell("DEPARTMENT").ToLower();
+
+            var category = context.ProductCategories.FirstOrDefault(c => c.Name != null &&  c.Name.ToLower() == categoryName);
+            var baseUom = context.UnitOfMeasures.FirstOrDefault(u => u.Name != null && u.Name.ToLower() == baseUomName);
+            var basePackingUom = context.UnitOfMeasures.FirstOrDefault(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
+            var equipment = context.Equipments.FirstOrDefault(e => e.Name != null && e.Name.ToLower() == equipmentName);
+            var department = context.Departments.FirstOrDefault(d => d.Name != null & d.Name.ToLower() == departmentName);
+
+            var product = new Product
+            {
+                Name = getCell("PRODUCT NAME"),
+                Code = getCell("PRODUCT CODE"),
+                GenericName = getCell("GENERIC NAME"),
+                StorageCondition = getCell("STORAGE CONDITION"),
+                PackageStyle = getCell("PACK STYLE"),
+                FilledWeight = getCell("FILLED VOLUME"),
+                ShelfLife = getCell("SHELF LIFE"),
+                ActionUse = getCell("ACTION AND USE"),
+                Description = getCell("LABEL CLAIMS"),
+                FdaRegistrationNumber = "", // Not provided in headers
+                MasterFormulaNumber = "",   // Not provided in headers
+                PrimaryPackDescription = "",
+                SecondaryPackDescription = "",
+                TertiaryPackDescription = "",
+                CategoryId = category?.Id,
+                BaseUomId = baseUom?.Id,
+                BasePackingUomId = basePackingUom?.Id,
+                EquipmentId = equipment?.Id,
+                DepartmentId = department?.Id,
+                BaseQuantity = decimal.TryParse(getCell("BASE QUANTITY"), out var bq) ? bq : 0,
+                BasePackingQuantity = decimal.TryParse(getCell("BASE PACKING QUANTITY"), out var bpq) ? bpq : 0,
+                FullBatchSize = decimal.TryParse(getCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
+            };
+
+            products.Add(product);
+        }
+
+        products = products.DistinctBy(p => p.Code).ToList();
+        await context.Products.AddRangeAsync(products);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+    
+    public async Task<Result> ImportProductBomFromExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
+
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            var header = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrEmpty(header))
+                headers[header] = col;
+        }
+
+        var requiredHeaders = new[]
+        {
+            "PRODUCT NAME", "PRODUCT CODE", "ORDER", "MATERIAL TYPE",
+            "COMPONENT MATERIAL", "COMPONENT MATERIAL CODE", "QUANTITY", "UOM", "GRADE", "CAS NUMBER", "FUNCTION"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
+
+        var bomMap = new Dictionary<string, BillOfMaterial>(); // Key: productCode
+
+        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
+
+            var productCode = GetCell("PRODUCT CODE");
+            var materialCode = GetCell("COMPONENT MATERIAL CODE");
+            var uomName = GetCell("UOM");
+            var materialTypeName = GetCell("MATERIAL TYPE");
+
+            var product = context.Products.FirstOrDefault(p => p.Code == productCode);
+            if (product == null) continue;
+
+            var material = context.Materials.FirstOrDefault(m => m.Code == materialCode);
+            if (material == null) continue;
+
+            var uom = context.UnitOfMeasures.FirstOrDefault(u => u.Name.ToLower() == uomName.ToLower());
+            var materialType = context.MaterialTypes.FirstOrDefault(mt => mt.Name.ToLower() == materialTypeName.ToLower());
+
+            if (!bomMap.TryGetValue(productCode, out var billOfMaterial))
+            {
+                billOfMaterial = new BillOfMaterial
+                {
+                    ProductId = product.Id,
+                    Version = 1, // or dynamic version logic
+                    IsActive = true,
+                    Items = []
+                };
+                context.BillOfMaterials.Add(billOfMaterial);
+                bomMap[productCode] = billOfMaterial;
+
+                // Create a ProductBillOfMaterial entry
+                var productBom = new ProductBillOfMaterial
+                {
+                    ProductId = product.Id,
+                    BillOfMaterial = billOfMaterial,
+                    Quantity = decimal.TryParse(GetCell("QUANTITY"), out var quantity) ? quantity : 0,
+                    Version = 1,
+                    EffectiveDate = DateTime.UtcNow,
+                    IsActive = true
+                };
+                context.ProductBillOfMaterials.Add(productBom);
+            }
+
+            // Add item to the BOM
+            var item = new BillOfMaterialItem
+            {
+                MaterialId = material.Id,
+                MaterialTypeId = materialType?.Id,
+                Grade = GetCell("GRADE"),
+                CasNumber = GetCell("CAS NUMBER"),
+                Function = GetCell("FUNCTION"),
+                Order = int.TryParse(GetCell("ORDER"), out var order) ? order : 0,
+                IsSubstitutable = false,
+                BaseQuantity = decimal.TryParse(GetCell("QUANTITY"), out var baseQuantity) ? baseQuantity : 0,
+                BaseUoMId = uom?.Id,
+            };
+
+            billOfMaterial.Items.Add(item);
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> ImportProductPackagesFromExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
+
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            var header = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrEmpty(header))
+                headers[header] = col;
+        }
+
+        var requiredHeaders = new[]
+        {
+            "PRODUCT NAME", "PRODUCT CODE", "COMPONENT MATERIAL", "COMPONENT MATERIAL CODE",
+            "BASE QUANTITY", "DIRECT LINK MATERIAL", "DIRECT LINK MATERIAL CODE",
+            "UNIT CAPACITY", "PACKING EXCESS", "MATERIALS THICKNESS", "OTHER STANDARDS"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
+
+        var packages = new List<ProductPackage>();
+
+        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
+
+            var productCode = GetCell("PRODUCT CODE");
+            var componentMaterialCode = GetCell("COMPONENT MATERIAL CODE");
+            var directLinkMaterialCode = GetCell("DIRECT LINK MATERIAL CODE");
+
+            var product = context.Products.FirstOrDefault(p => p.Code == productCode);
+            if (product == null) continue;
+
+            var material = context.Materials.FirstOrDefault(m => m.Code == componentMaterialCode);
+            if (material == null) continue;
+
+            var directLinkMaterial = context.Materials.FirstOrDefault(m => m.Code == directLinkMaterialCode);
+
+            var productPackage = new ProductPackage
+            {
+                ProductId = product.Id,
+                MaterialId = material.Id,
+                DirectLinkMaterialId = directLinkMaterial?.Id,
+                BaseQuantity = decimal.TryParse(GetCell("BASE QUANTITY"), out var baseQty) ? baseQty : 0,
+                UnitCapacity = decimal.TryParse(GetCell("UNIT CAPACITY"), out var unitCap) ? unitCap : 0,
+                PackingExcessMargin = decimal.TryParse(GetCell("PACKING EXCESS"), out var excess) ? excess : 0,
+                MaterialThickness = GetCell("MATERIALS THICKNESS"),
+                OtherStandards = GetCell("OTHER STANDARDS"),
+            };
+
+            packages.Add(productPackage);
+        }
+
+        await context.ProductPackages.AddRangeAsync(packages);
+        await context.SaveChangesAsync();
+
         return Result.Success();
     }
 }

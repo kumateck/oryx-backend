@@ -785,7 +785,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var product = await context.Products
             .AsSplitQuery()
             .Include(product => product.Packages).ThenInclude(productPackage => productPackage.Material).ThenInclude(m => m.Batches)
-            .Include(product => product.Packages).ThenInclude(productPackage => productPackage.BaseUoM)
             .Include(product => product.Packages).ThenInclude(productPackage => productPackage.DirectLinkMaterial)
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == productId);
@@ -1493,7 +1492,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 .FirstOrDefaultAsync(s => s.Id == stockTransferId));
     }
     
-    public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetInBoundStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, 
+    public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetIncomingStockTransferRequestForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, 
         StockTransferStatus? status = null, Guid? toDepartmentId = null)
     {
 
@@ -1533,7 +1532,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
     
     
-    public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetOutBoundStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, 
+    public async Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetOutgoingStockTransferRequestForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null, 
         StockTransferStatus? status = null, Guid? fromDepartmentId = null)
     {
 

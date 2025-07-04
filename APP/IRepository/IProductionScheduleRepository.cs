@@ -67,9 +67,9 @@ public interface IProductionScheduleRepository
     Task<Result<Paginateable<IEnumerable<StockTransferDto>>>> GetStockTransfersForUserDepartment(
         Guid userId, int page, int pageSize, string searchQuery = null, StockTransferStatus? status = null);
     Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>>
-        GetInBoundStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null,
+        GetIncomingStockTransferRequestForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null,
             StockTransferStatus? status = null,  Guid? toDepartmentId = null);
-    Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetOutBoundStockTransferSourceForUserDepartment(
+    Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetOutgoingStockTransferRequestForUserDepartment(
         Guid userId, int page, int pageSize, string searchQuery = null,
         StockTransferStatus? status = null, Guid? fromDepartmentId = null);
     Task<Result<DepartmentStockTransferDto>> GetStockTransferSource(Guid stockTransferId);

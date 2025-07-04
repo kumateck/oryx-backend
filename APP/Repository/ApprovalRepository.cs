@@ -1625,7 +1625,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         }
     }
 
-    public async Task<Result> DelegateApproval(DelegateApproval approval)
+    public Result DelegateApproval(DelegateApproval approval)
     {
         var user = userManager.FindByIdAsync(approval.EmployeeId.ToString());
 

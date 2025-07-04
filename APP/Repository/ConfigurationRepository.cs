@@ -208,8 +208,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                return await context.FinishedGoodsTransferNotes
                    .IgnoreQueryFilters()
                    .CountAsync();
-               return 0;
-           
+
            case "ArNumber":
                return await context.BinCardInformation
                    .IgnoreQueryFilters()
