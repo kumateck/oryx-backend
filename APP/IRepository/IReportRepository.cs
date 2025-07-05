@@ -8,4 +8,6 @@ public interface IReportRepository
 {
     Task<Result<ProductionReportDto>> GetProductionReport(ReportFilter filter, Guid departmentId);
     Task<Result<List<MaterialDto>>> GetMaterialsBelowMinimumStockLevel(Guid departmentId);
+    
+    Task<Result<HumanResourceReportDto>> GetHumanResourceReport(ReportFilter filter);
 }

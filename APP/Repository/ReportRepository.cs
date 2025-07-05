@@ -1,7 +1,11 @@
 using APP.IRepository;
 using AutoMapper;
+using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Requisitions;
@@ -12,7 +16,8 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository) : IReportRepository
+public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository)
+    : IReportRepository
 {
     public async Task<Result<ProductionReportDto>> GetProductionReport(ReportFilter filter, Guid departmentId)
     {
@@ -59,21 +64,29 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         {
             NumberOfPurchaseRequisitions = await purchaseRequisitions.CountAsync(),
             NumberOfNewPurchaseRequisitions = await purchaseRequisitions.CountAsync(p => p.Status == RequestStatus.New),
-            NumberOfInProgressPurchaseRequisitions = await purchaseRequisitions.CountAsync(p => p.Status == RequestStatus.Pending),
+            NumberOfInProgressPurchaseRequisitions =
+                await purchaseRequisitions.CountAsync(p => p.Status == RequestStatus.Pending),
             NumberOfCompletedPurchaseRequisitions = purchaseOrderNumber,
-            
+
             NumberOfProductionSchedules = await productionSchedules.CountAsync(),
-            NumberOfNewProductionSchedules = await productionSchedules.CountAsync(p => p.Status == ProductionStatus.New),
-            NumberOfInProgressProductionSchedules = await productionSchedules.CountAsync(p => p.Status == ProductionStatus.InProgress),
-            NumberOfCompletedProductionSchedules = await productionSchedules.CountAsync(p => p.Status == ProductionStatus.Completed),
-            
+            NumberOfNewProductionSchedules =
+                await productionSchedules.CountAsync(p => p.Status == ProductionStatus.New),
+            NumberOfInProgressProductionSchedules =
+                await productionSchedules.CountAsync(p => p.Status == ProductionStatus.InProgress),
+            NumberOfCompletedProductionSchedules =
+                await productionSchedules.CountAsync(p => p.Status == ProductionStatus.Completed),
+
             NumberOfIncomingStockTransfers = await incomingStockTransfers.CountAsync(),
-            NumberOfIncomingPendingStockTransfers = await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.InProgress),
-            NumberOfIncomingCompletedStockTransfers = await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.Approved),
-            
+            NumberOfIncomingPendingStockTransfers =
+                await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.InProgress),
+            NumberOfIncomingCompletedStockTransfers =
+                await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.Approved),
+
             NumberOfOutgoingStockTransfers = await outGoingStockTransfers.CountAsync(),
-            NumberOfOutgoingPendingStockTransfers = await outGoingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.InProgress),
-            NumberOfOutgoingCompletedStockTransfers = await outGoingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.Approved),
+            NumberOfOutgoingPendingStockTransfers =
+                await outGoingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.InProgress),
+            NumberOfOutgoingCompletedStockTransfers =
+                await outGoingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.Approved),
         };
     }
 
@@ -118,4 +131,62 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         return mapper.Map<List<MaterialDto>>(materialsBelowMinStock);
     }
+
+    public async Task<Result<HumanResourceReportDto>> GetHumanResourceReport(ReportFilter filter)
+    {
+        var leaveRequests = context.LeaveRequests.AsQueryable();
+        var overtimeRequests = context.OvertimeRequests.AsQueryable();
+        var employees = context.Employees.AsQueryable();
+
+        if (filter.StartDate.HasValue)
+        {
+            leaveRequests = leaveRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            overtimeRequests = overtimeRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            leaveRequests = leaveRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            overtimeRequests = overtimeRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+        }
+
+        return new HumanResourceReportDto
+        {
+            NumberOfOvertimeRequests = overtimeRequests.Count(),
+            NumberOfApprovedOvertimeRequests =
+                await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Approved),
+            NumberOfPendingOvertimeRequests =
+                await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Pending),
+            NumberOfExpiredOvertimeRequests =
+                await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Expired),
+            NumberOfCasualEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Casual),
+            NumberOfPermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent),
+            NumberOfLeaveRequests = await leaveRequests.CountAsync(),
+            NumberOfPendingLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Pending),
+            NumberOfExpiredLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Expired),
+            NumberOfRejectedLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Rejected),
+            AttendanceStats = await GetAttendanceStatsAsync(filter.StartDate, filter.EndDate)
+        };
+
+    }
+    private async Task<AttendanceStatsDto> GetAttendanceStatsAsync(DateTime? startDate, DateTime? endDate)
+    {
+        var presentEmployees = await context.AttendanceRecords
+            .CountAsync(a => a.TimeStamp >= startDate && a.TimeStamp < endDate && a.WorkState == WorkState.CheckIn);
+
+        var totalEmployees = await context.Employees.ToListAsync();
+
+        var absentEmployees = totalEmployees.Count - presentEmployees;
+
+        var rate = totalEmployees.Count == 0 ? 0 : presentEmployees * 100 / totalEmployees.Count;
+
+        return new AttendanceStatsDto
+        {
+            NumberOfPresentEmployees = presentEmployees,
+            NumberOfAbsentEmployees = absentEmployees,
+            AttendanceRate = rate
+        };
+    }
 }
+    
+    
