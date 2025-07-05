@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250704203408_AddEmployeeAndProductChanges")]
+    partial class AddEmployeeAndProductChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1591,9 +1594,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<int?>("Level")
-                        .HasColumnType("integer");
-
                     b.Property<int>("MaritalStatus")
                         .HasColumnType("integer");
 
@@ -2576,61 +2576,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("MaterialBatchId");
 
                     b.ToTable("MaterialSamplings");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("EffectiveDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MaterialId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("ReviewDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("RevisionNumber")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SpecificationNumber")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SupersedesNumber")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialId");
-
-                    b.ToTable("MaterialSpecifications");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure", b =>
@@ -4056,46 +4001,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("StpId");
 
                     b.ToTable("ProductAnalyticalRawData");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductSpecifications.ProductSpecification", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("ProductSpecifications");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductStandardTestProcedures.ProductStandardTestProcedure", b =>
@@ -10327,68 +10232,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("MaterialBatch");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.OwnsMany("DOMAIN.Entities.MaterialSpecifications.TestSpecification", "TestSpecifications", b1 =>
-                        {
-                            b1.Property<Guid>("MaterialSpecificationId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<int>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("integer");
-
-                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
-
-                            b1.Property<int>("Reference")
-                                .HasColumnType("integer");
-
-                            b1.Property<string>("ReleaseSpecification")
-                                .HasColumnType("text");
-
-                            b1.Property<int>("SrNumber")
-                                .HasColumnType("integer");
-
-                            b1.Property<int>("TestName")
-                                .HasColumnType("integer");
-
-                            b1.HasKey("MaterialSpecificationId", "Id");
-
-                            b1.ToTable("TestSpecification");
-
-                            b1.WithOwner()
-                                .HasForeignKey("MaterialSpecificationId");
-                        });
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Material");
-
-                    b.Navigation("TestSpecifications");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -11320,35 +11163,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("ProductStandardTestProcedure");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductSpecifications.ProductSpecification", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductStandardTestProcedures.ProductStandardTestProcedure", b =>

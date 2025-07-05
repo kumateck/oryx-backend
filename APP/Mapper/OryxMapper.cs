@@ -641,7 +641,17 @@ public class OryxMapper : Profile
         #region Employee
 
         CreateMap<CreateEmployeeRequest, Employee>()
-            .ForMember(dest => dest.CreatedById, opt => opt.Ignore())
+            .ForMember(dest => dest.Mother, opt => opt.MapFrom(src => src.Mother))
+            .ForMember(dest => dest.Father, opt => opt.MapFrom(src => src.Father))
+            .ForMember(dest => dest.Spouse, opt => opt.MapFrom(src => src.Spouse))
+            .ForMember(dest => dest.EmergencyContact, opt => opt.MapFrom(src => src.EmergencyContact))
+            .ForMember(dest => dest.NextOfKin, opt => opt.MapFrom(src => src.NextOfKin))
+            .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.Children))
+            .ForMember(dest => dest.Siblings, opt => opt.MapFrom(src => src.Siblings))
+            .ForMember(dest => dest.EducationBackground, opt => opt.MapFrom(src => src.EducationBackground))
+            .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
+        
+        CreateMap<UpdateEmployeeRequest, Employee>()
             .ForMember(dest => dest.Mother, opt => opt.MapFrom(src => src.Mother))
             .ForMember(dest => dest.Father, opt => opt.MapFrom(src => src.Father))
             .ForMember(dest => dest.Spouse, opt => opt.MapFrom(src => src.Spouse))

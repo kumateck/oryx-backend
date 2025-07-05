@@ -23,8 +23,8 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var materialRepository = scope.ServiceProvider.GetRequiredService<IMaterialRepository>();
                 
-                var materialDepartments = context.MaterialDepartments.AsSplitQuery()
-                    .Include(materialDepartment => materialDepartment.Material).ToList();
+                var materialDepartments = await context.MaterialDepartments.AsSplitQuery()
+                    .Include(materialDepartment => materialDepartment.Material).ToListAsync(cancellationToken: stoppingToken);
 
                 List<MaterialDepartment> materialBelowMinimumStockLevel = [];
                 List<MaterialDepartment> materialAboveMaximumStockLevel = [];

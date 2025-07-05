@@ -2,6 +2,7 @@ using APP.Utils;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Routes;
+using Microsoft.AspNetCore.Http;
 using SHARED;
 
 namespace APP.IRepository;
@@ -21,7 +22,7 @@ public interface IProductRepository
     Task<Result> DeleteRoute(Guid routeId, Guid userId);
     Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId);
     Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId);
-    Task<Result<IEnumerable<ProductPackageDto>>> GetProductPackages();
+    Task<Result<IEnumerable<ProductPackageDto>>> GetProductPackages(Guid productId);
     Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId);
     Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId);
     Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId,
@@ -36,4 +37,7 @@ public interface IProductRepository
     Task<Result<List<EquipmentDto>>> GetEquipments();
     Task<Result> UpdateEquipment(CreateEquipmentRequest request, Guid equipmentId, Guid userId);
     Task<Result> DeleteEquipment(Guid equipmentId, Guid userId);
+    Task<Result> ImportProductsFromExcel(IFormFile file);
+    Task<Result> ImportProductBomFromExcel(IFormFile file);
+    Task<Result> ImportProductPackagesFromExcel(IFormFile file);
 }

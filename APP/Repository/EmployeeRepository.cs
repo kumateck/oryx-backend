@@ -363,7 +363,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         );
     }
 
-    public async Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request)
+    public async Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request)
     {
         var employee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == id);
@@ -391,7 +391,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
 
-        if (employee.Type == EmployeeType.Permanent && !employee.EmployeeLevel.HasValue)
+        if (employee.Type == EmployeeType.Permanent && !employee.Level.HasValue)
         {
             return Error.Validation("Employee.Level.Required", "Employee level is required for permanent employees");
         }

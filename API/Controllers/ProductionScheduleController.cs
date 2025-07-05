@@ -674,7 +674,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetInBoundStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, toDepartmentId);
+        var result = await repository.GetIncomingStockTransferRequestForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, toDepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -692,7 +692,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetOutBoundStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, fromDepartmentId);
+        var result = await repository.GetOutgoingStockTransferRequestForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, fromDepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

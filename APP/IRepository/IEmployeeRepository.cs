@@ -20,7 +20,7 @@ public interface IEmployeeRepository
    
    Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date);
    Task<Result<EmployeeDto>> GetEmployee(Guid id);
-   Task<Result> UpdateEmployee(Guid id, CreateEmployeeRequest request);
+   Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request);
    
    Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto);
    

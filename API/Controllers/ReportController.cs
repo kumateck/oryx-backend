@@ -1,0 +1,47 @@
+using APP.Extensions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using APP.IRepository;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Reports;
+
+namespace API.Controllers;
+
+[Route("api/v{version:apiVersion}/report")]
+[ApiController]
+public class ReportController(IReportRepository repository) : ControllerBase
+{
+    /// <summary>
+    /// Gets the production report for a specific department.
+    /// </summary>
+    /// <returns>Returns the production report.</returns>
+    [HttpGet("production")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionReportDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionReport([FromQuery] ReportFilter filter)
+    {
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (departmentId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetProductionReport(filter, Guid.Parse(departmentId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets a list of materials that are below minimum stock level for a specific department.
+    /// </summary>
+    /// <returns>Returns a list of materials below minimum stock level.</returns>
+    [HttpGet("production/materials-below-minimum")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialsBelowMinimumStockLevel([FromQuery] ReportFilter filter)
+    {
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (departmentId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetMaterialsBelowMinimumStockLevel(Guid.Parse(departmentId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+}

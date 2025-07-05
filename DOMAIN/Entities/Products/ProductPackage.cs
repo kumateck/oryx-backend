@@ -13,8 +13,6 @@ public class ProductPackage : BaseEntity
     [StringLength(255)] public string MaterialThickness { get; set; }
     [StringLength(255)] public string OtherStandards { get; set; }
     public decimal BaseQuantity { get; set; } 
-    public Guid? BaseUoMId { get; set; } 
-    public UnitOfMeasure BaseUoM { get; set; }
     public decimal UnitCapacity { get; set; } 
     public Guid? DirectLinkMaterialId { get; set; }
     public Material DirectLinkMaterial { get; set; }

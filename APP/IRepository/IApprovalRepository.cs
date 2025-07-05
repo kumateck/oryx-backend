@@ -26,5 +26,5 @@ public interface IApprovalRepository
      Task CreateInitialApprovalsAsync(string modelType, Guid modelId);
      Task ProcessApprovalEscalations();
      
-     Task<Result> DelegateApproval(DelegateApproval approval);
+     Result DelegateApproval(DelegateApproval approval);
 }
