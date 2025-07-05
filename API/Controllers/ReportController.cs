@@ -9,6 +9,7 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/report")]
 [ApiController]
+[Authorize]
 public class ReportController(IReportRepository repository) : ControllerBase
 {
     /// <summary>
@@ -16,7 +17,6 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns the production report.</returns>
     [HttpGet("production")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionReportDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductionReport([FromQuery] ReportFilter filter)
@@ -29,11 +29,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     /// <summary>
-    /// Gets a list of materials that are below minimum stock level for a specific department.
+    /// Gets a list of materials that are below the minimum stock level for a specific department.
     /// </summary>
-    /// <returns>Returns a list of materials below minimum stock level.</returns>
+    /// <returns>Returns a list of materials below the minimum stock level.</returns>
     [HttpGet("production/materials-below-minimum")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialsBelowMinimumStockLevel([FromQuery] ReportFilter filter)
@@ -42,6 +41,15 @@ public class ReportController(IReportRepository repository) : ControllerBase
         if (departmentId == null) return TypedResults.Unauthorized();
         
         var result = await repository.GetMaterialsBelowMinimumStockLevel(Guid.Parse(departmentId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("human-resource")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HumanResourceReportDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetHumanResourceReport([FromQuery] ReportFilter filter)
+    {
+        var result = await repository.GetHumanResourceReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
