@@ -3,6 +3,7 @@ using System;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250705153047_AddMaterialSpecs")]
+    partial class AddMaterialSpecs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1528,9 +1531,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int?>("ActiveStatus")
-                        .HasColumnType("integer");
-
                     b.Property<int>("AnnualLeaveDays")
                         .HasColumnType("integer");
 
@@ -1567,6 +1567,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int?>("EmployeeLevel")
+                        .HasColumnType("integer");
+
                     b.Property<string>("FirstName")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -1578,9 +1581,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(15)
                         .HasColumnType("character varying(15)");
 
-                    b.Property<int?>("InactiveStatus")
-                        .HasColumnType("integer");
-
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -1590,9 +1590,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
-
-                    b.Property<int?>("Level")
-                        .HasColumnType("integer");
 
                     b.Property<int>("MaritalStatus")
                         .HasColumnType("integer");
@@ -1632,15 +1629,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("StaffNumber")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("SuspensionEndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("SuspensionStartDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -4928,9 +4916,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<int>("Division")
-                        .HasColumnType("integer");
-
                     b.Property<Guid?>("EquipmentId")
                         .HasColumnType("uuid");
 
@@ -4963,15 +4948,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<int>("PackPerShipper")
-                        .HasColumnType("integer");
-
                     b.Property<string>("PackageStyle")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("numeric");
 
                     b.Property<string>("PrimaryPackDescription")
                         .HasMaxLength(1000000)
@@ -5126,6 +5105,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("BaseQuantity")
                         .HasColumnType("numeric");
 
+                    b.Property<Guid?>("BaseUoMId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5168,6 +5150,8 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BaseUoMId");
 
                     b.HasIndex("CreatedById");
 
@@ -11947,6 +11931,10 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Products.ProductPackage", b =>
                 {
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "BaseUoM")
+                        .WithMany()
+                        .HasForeignKey("BaseUoMId");
+
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -11974,6 +11962,8 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("BaseUoM");
 
                     b.Navigation("CreatedBy");
 

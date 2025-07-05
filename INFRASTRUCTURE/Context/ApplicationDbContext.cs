@@ -28,6 +28,7 @@ using DOMAIN.Entities.MaterialAnalyticalRawData;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
+using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
@@ -41,6 +42,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProductSpecifications;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProductStandardTestProcedures;
 using DOMAIN.Entities.PurchaseOrders;
@@ -107,6 +109,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialDepartment> MaterialDepartments { get; set; }
     public DbSet<HoldingMaterialTransfer> HoldingMaterialTransfers { get; set; }
     public DbSet<HoldingMaterialTransferBatch> HoldingMaterialTransferBatches { get; set; }
+    
+    public DbSet<MaterialSpecification> MaterialSpecifications { get; set; }
 
     
     #endregion
@@ -144,6 +148,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<ProductPackage> ProductPackages { get; set; }
     public DbSet<PackageType> PackageTypes { get; set; }
+    
+    public DbSet<ProductSpecification> ProductSpecifications { get; set; }
 
     #endregion
 
@@ -717,6 +723,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #endregion
         
+        
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
@@ -744,6 +751,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductSpecification>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
 
@@ -779,6 +787,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<MaterialReturnNotePartialReturn>()
             .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionExtraPacking>().HasQueryFilter(entity => !entity.Material.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialSpecification>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
 
