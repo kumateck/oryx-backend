@@ -33,6 +33,7 @@ using DOMAIN.Entities.MaterialAnalyticalRawData;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
+using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Persons;
@@ -47,6 +48,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProductSpecifications;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProductStandardTestProcedures;
 using DOMAIN.Entities.PurchaseOrders;
@@ -229,6 +231,9 @@ public class OryxMapper : Profile
         CreateMap<CreateProductPackageRequest, ProductPackage>();
         CreateMap<ProductPackage, ProductPackageDto>();
 
+        CreateMap<CreateProductSpecificationRequest, ProductSpecification>();
+        CreateMap<ProductSpecification, ProductSpecificationDto>();
+
         
         #endregion
 
@@ -318,6 +323,9 @@ public class OryxMapper : Profile
         
         CreateMap<HoldingMaterialTransfer, HoldingMaterialTransferDto>();
         CreateMap<HoldingMaterialTransferBatch, HoldingMaterialTransferBatchDto>();
+
+        CreateMap<CreateMaterialSpecificationRequest, MaterialSpecification>();
+        CreateMap<MaterialSpecification, MaterialSpecificationDto>();
         
         #endregion
 
