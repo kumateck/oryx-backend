@@ -43,7 +43,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetMaterialsBelowMinimumStockLevel(Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-
+    
+    /// <summary>
+    /// Gets the human resource report
+    /// </summary>
     [HttpGet("human-resource")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HumanResourceReportDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
