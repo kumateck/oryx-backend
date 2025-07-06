@@ -25,6 +25,9 @@ namespace APP.Repository;
          if (context.Products.IgnoreQueryFilters().Any(p => p.Code == request.Code))
              return Error.Validation("Product.Code","Product with code already exists");
          
+         if(request.Price < 0)
+             return Error.Validation("Product.Price","Product Price must be greater than 0");
+         
          var product = mapper.Map<Product>(request);
          product.CreatedById = userId;
          await context.Products.AddAsync(product); 
@@ -604,7 +607,7 @@ namespace APP.Repository;
         var requiredHeaders = new[]
         {
             "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "BASE QUANTITY",
-            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT"
+            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT", "DEPARTMENT CODE"
         };
 
         foreach (var header in requiredHeaders)
@@ -622,13 +625,13 @@ namespace APP.Repository;
             var baseUomName = getCell("BASE UOM").ToLower();
             var basePackingUomName = getCell("BASE PACKING UOM").ToLower();
             var equipmentName = getCell("EQUIPMENT").ToLower();
-            var departmentName = getCell("DEPARTMENT").ToLower();
+            var departmentCode = getCell("DEPARTMENT").ToLower();
 
             var category = context.ProductCategories.FirstOrDefault(c => c.Name != null &&  c.Name.ToLower() == categoryName);
             var baseUom = context.UnitOfMeasures.FirstOrDefault(u => u.Name != null && u.Name.ToLower() == baseUomName);
             var basePackingUom = context.UnitOfMeasures.FirstOrDefault(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
             var equipment = context.Equipments.FirstOrDefault(e => e.Name != null && e.Name.ToLower() == equipmentName);
-            var department = context.Departments.FirstOrDefault(d => d.Name != null & d.Name.ToLower() == departmentName);
+            var department = context.Departments.FirstOrDefault(d => d.Name != null & d.Code.ToLower() == departmentCode);
 
             var product = new Product
             {
