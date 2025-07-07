@@ -170,11 +170,15 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
     }
 
-    public async Task<Result<List<PermanentStaffGradeCountDto>>> GetPermanentStaffGradeReport()
+    public async Task<Result<List<PermanentStaffGradeCountDto>>> GetPermanentStaffGradeReport(Guid? departmentId)
     {
         var employees = context.Employees
-            .Where(e => e.Type == EmployeeType.Permanent)
-            .Include(e => e.Department);
+            .Include(e => e.Department)
+            .Where(e => e.Type == EmployeeType.Permanent);
+            
+        
+        if (departmentId.HasValue)
+            employees = employees.Where(e => e.DepartmentId == departmentId.Value);
 
         var grouped = await employees
             .GroupBy(e => e.Department.Name)
