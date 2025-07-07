@@ -26,7 +26,6 @@ public class AttendanceStatsDto
 
 public class PermanentStaffGradeCountDto
 {
-    public int No { get; set; }
     public string Department { get; set; }
     public int SeniorMgtMale { get; set; }
     public int SeniorMgtFemale { get; set; }
@@ -34,4 +33,21 @@ public class PermanentStaffGradeCountDto
     public int SeniorStaffFemale { get; set; }
     public int JuniorStaffMale { get; set; }
     public int JuniorStaffFemale { get; set; }
+}
+
+public class MovementReportDto
+{
+    public string DepartmentName { get; set; }
+
+    // Permanent
+    public int PermanentNew { get; set; }
+    public int PermanentTransfer { get; set; }
+    public int PermanentResignation { get; set; }
+    public int PermanentTermination { get; set; }
+    public int PermanentSDVP { get; set; }
+
+    // Casual
+    public int CasualResignation { get; set; }
+    public int CasualTermination { get; set; }
+    public int CasualSDVP { get; set; }
 }

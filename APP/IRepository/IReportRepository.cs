@@ -12,4 +12,6 @@ public interface IReportRepository
     Task<Result<HumanResourceReportDto>> GetHumanResourceReport(ReportFilter filter);
     
     Task<Result<List<PermanentStaffGradeCountDto>>> GetPermanentStaffGradeReport(Guid? departmentId);
+    
+    Task<Result<List<MovementReportDto>>> GetEmployeeMovementReport(MovementReportFilter filter);
 }

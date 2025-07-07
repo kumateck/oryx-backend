@@ -214,6 +214,64 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             AttendanceRate = rate
         };
     }
+    
+    public async Task<Result<List<MovementReportDto>>> GetEmployeeMovementReport(MovementReportFilter filter)
+    {
+        var start = filter.StartDate ?? DateTime.UtcNow.AddMonths(-1); 
+        var end = filter.EndDate ?? DateTime.UtcNow;
+
+        var query = context.Employees
+            .Include(e => e.Department)
+            .Where(e => e.DateEmployed >= start && e.DateEmployed <= end);
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        var employees = await query.ToListAsync();
+
+        var grouped = employees.GroupBy(e => e.Department?.Name ?? "Unassigned");
+
+        var result = new List<MovementReportDto>();
+
+        foreach (var group in grouped)
+        {
+            var dto = new MovementReportDto { DepartmentName = group.Key };
+
+            foreach (var emp in group)
+            {
+                var isCasual = emp.Type == EmployeeType.Casual;
+
+                if (emp.DateEmployed >= start && emp.DateEmployed <= end)
+                {
+                    if (!isCasual) dto.PermanentNew++;
+                }
+
+                if (emp.ExitDate >= start && emp.ExitDate <= end)
+                {
+                    switch (emp.ExitReason)
+                    {
+                        case ExitReason.Resignation:
+                            if (isCasual) dto.CasualResignation++;
+                            else dto.PermanentResignation++;
+                            break;
+                        case ExitReason.Termination:
+                            if (isCasual) dto.CasualTermination++;
+                            else dto.PermanentTermination++;
+                            break;
+                        case ExitReason.SDVP:
+                            if (isCasual) dto.CasualSDVP++;
+                            else dto.PermanentSDVP++;
+                            break;
+                        case ExitReason.Transfer:
+                            dto.PermanentTransfer++; // assuming transfers are only permanent
+                            break;
+                    }
+                }
+            }
+            result.Add(dto);
+        }
+        return result;
+    }
 }
     
     
