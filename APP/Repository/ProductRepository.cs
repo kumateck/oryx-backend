@@ -626,7 +626,7 @@ namespace APP.Repository;
             var basePackingUomName = getCell("BASE PACKING UOM").ToLower();
             var equipmentName = getCell("EQUIPMENT").ToLower();
             var departmentCode = getCell("DEPARTMENT").ToLower();
-            var productCode = getCell("PRODUCT_CODE").ToLower();
+            var productCode = getCell("PRODUCT CODE").ToLower();
             
             var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Code != null && p.Code.ToLower() == productCode);
             if (existingProduct is not null) continue;
