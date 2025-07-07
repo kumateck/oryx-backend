@@ -18,6 +18,14 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
     public async Task<Result<Guid>> CreateAlert(CreateAlertRequest request)
     {
         var alert = mapper.Map<Alert>(request);
+        alert.Roles.AddRange(request.RoleIds.Select(item => new AlertRole
+        {
+            RoleId = item,
+        }));
+        alert.Users.AddRange(request.UserIds.Select(item => new AlertUser
+        {
+            UserId = item,
+        }));
         await context.Alerts.AddAsync(alert);
         await context.SaveChangesAsync();
         return alert.Id;
