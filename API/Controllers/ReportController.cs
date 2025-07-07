@@ -59,11 +59,22 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves the report detailing the grade-wise count of permanent staff across departments.
     /// </summary>
-    [HttpGet]
+    [HttpGet("staff-report")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PermanentStaffGradeCountDto>))]
     public async Task<IResult> GetPermanentStaffGradeReport([FromQuery] Guid? departmentId)
     {
         var result = await repository.GetPermanentStaffGradeReport(departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the employee movement report based on the specified filter.
+    /// </summary>
+    [HttpGet("employee-movement")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MovementReportDto>))]
+    public async Task<IResult> GetEmployeeMovementReport([FromQuery] MovementReportFilter filter)
+    {
+        var result = await repository.GetEmployeeMovementReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
