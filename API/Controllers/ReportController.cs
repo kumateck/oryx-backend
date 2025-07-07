@@ -61,9 +61,9 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PermanentStaffGradeCountDto>))]
-    public async Task<IResult> GetPermanentStaffGradeReport()
+    public async Task<IResult> GetPermanentStaffGradeReport([FromQuery] Guid? departmentId)
     {
-        var result = await repository.GetPermanentStaffGradeReport();
+        var result = await repository.GetPermanentStaffGradeReport(departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
