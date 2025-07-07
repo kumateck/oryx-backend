@@ -10,6 +10,10 @@ public class ProductSpecificationDto : BaseDto
     public string SpecificationNumber { get; set; }
     public string RevisionNumber { get; set; }
     public string SupersedesNumber { get; set; }
+    public string Label { get; set; } 
+    public string Claim { get; set; } 
+    public string PackingStyle { get; set; }
+    public string ShelfLife { get; set; }
     public DateTime EffectiveDate { get; set; }
     public DateTime ReviewDate { get; set; }
     public List<TestSpecification> TestSpecifications { get; set; } = [];
