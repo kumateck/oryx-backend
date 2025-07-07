@@ -27,8 +27,6 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
             UserId = item,
         }));
         await context.Alerts.AddAsync(alert);
-        await context.AlertRoles.AddRangeAsync(alert.Roles);
-        await context.AlertUsers.AddRangeAsync(alert.Users);
         await context.SaveChangesAsync();
         return alert.Id;
     }
