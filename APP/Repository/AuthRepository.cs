@@ -49,7 +49,6 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
             {
                 Message = "test notification"
             });
-            emailService.SendMail("anthonygyan@gmail.com", "Test Email", "Test Email", []);
             return await jwtService.Authenticate(user, "web");
         }
         catch (Exception)
