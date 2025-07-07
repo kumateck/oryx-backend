@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
+using Microsoft.AspNetCore.Http;
 using SHARED;
 
 namespace APP.IRepository;
@@ -19,6 +20,5 @@ public interface IShiftScheduleRepository
 
     Task<Result> UpdateShiftAssignment(Guid id, UpdateShiftAssignment request);
     Task<Result> DeleteShiftSchedule(Guid id, Guid userId);
-    
-    
+   Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file);
 }

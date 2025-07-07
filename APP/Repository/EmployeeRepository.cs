@@ -373,6 +373,14 @@ public class EmployeeRepository(ApplicationDbContext context,
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
 
+        if (request.ActiveStatus is EmployeeActiveStatus.Suspension)
+        {
+            if (!request.SuspensionStartDate.HasValue || !request.SuspensionEndDate.HasValue)
+            {
+                return Error.Validation("Employee.Status", "Employee suspension requires start and end dates");
+            }
+        }
+
         mapper.Map(request, employee);
 
         context.Employees.Update(employee);
