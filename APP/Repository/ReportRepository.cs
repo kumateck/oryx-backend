@@ -169,6 +169,30 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         };
 
     }
+
+    public async Task<Result<List<PermanentStaffGradeCountDto>>> GetPermanentStaffGradeReport()
+    {
+        var employees = context.Employees
+            .Where(e => e.Type == EmployeeType.Permanent)
+            .Include(e => e.Department);
+
+        var grouped = await employees
+            .GroupBy(e => e.Department.Name)
+            .Select((g) => new PermanentStaffGradeCountDto
+            {
+                Department = g.Key,
+                SeniorMgtMale = g.Count(e => e.Level == EmployeeLevel.SeniorManagement && e.Gender == Gender.Male),
+                SeniorMgtFemale = g.Count(e => e.Level == EmployeeLevel.SeniorManagement && e.Gender == Gender.Female),
+                SeniorStaffMale = g.Count(e => e.Level == EmployeeLevel.SeniorStaff && e.Gender == Gender.Male),
+                SeniorStaffFemale = g.Count(e => e.Level == EmployeeLevel.SeniorStaff && e.Gender == Gender.Female),
+                JuniorStaffMale = g.Count(e => e.Level == EmployeeLevel.JuniorStaff && e.Gender == Gender.Male),
+                JuniorStaffFemale = g.Count(e => e.Level == EmployeeLevel.JuniorStaff && e.Gender == Gender.Female),
+            })
+            .ToListAsync();
+
+        return grouped;
+    }
+
     private async Task<AttendanceStatsDto> GetAttendanceStatsAsync(DateTime? startDate, DateTime? endDate)
     {
         var presentEmployees = await context.AttendanceRecords
