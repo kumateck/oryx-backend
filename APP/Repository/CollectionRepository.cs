@@ -8,6 +8,7 @@ using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.ShiftAssignments;
@@ -51,6 +52,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Department) => mapper.Map<List<CollectionItemDto>>(await context.Departments.OrderBy(c => c.Name).ToListAsync()),
             nameof(Charge) => mapper.Map<List<CollectionItemDto>>(await context.Charges.OrderBy(c => c.Name).ToListAsync()),
             nameof(ProductState) => mapper.Map<List<CollectionItemDto>>(await context.ProductStates.OrderBy(c => c.Name).ToListAsync()),
+            nameof(MarketType) => mapper.Map<List<CollectionItemDto>>(await context.MarketTypes.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -194,6 +196,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var productStates = await context.ProductStates.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(productStates);
                     break;
+                
+                case nameof(MarketType):
+                    var marketType = await context.MarketTypes.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(marketType);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -250,6 +257,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Charge),
             nameof(ProductState),
             nameof(FinishedGoodsTransferNote),
+            nameof(MarketType),
         };
     }
     
@@ -358,6 +366,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.ProductStates.AddAsync(productState);
                 await context.SaveChangesAsync();
                 return productState.Id;
+            
+            case nameof(MarketType):
+                var marketType = mapper.Map<MarketType>(request);
+                await context.MarketTypes.AddAsync(marketType);
+                await context.SaveChangesAsync();
+                return marketType.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -499,6 +513,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.ProductStates.Update(productState);
                 await context.SaveChangesAsync();
                 return productState.Id;
+            
+            case nameof(MarketType):
+                var marketType = await context.MarketTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, marketType);
+                context.MarketTypes.Update(marketType);
+                await context.SaveChangesAsync();
+                return marketType.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -526,6 +547,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ShipmentDiscrepancyType) => await context.ShipmentDiscrepancyTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Charge) => await context.Charges.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(ProductState) => await context.ProductStates.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(MarketType) => await context.MarketTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -693,6 +715,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 productState.DeletedAt = currentTime;
                 productState.LastDeletedById = userId;
                 context.ProductStates.Update(productState);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(MarketType):
+                var marketType = await context.MarketTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (marketType == null)
+                    return Error.Validation("Charge", "Not found");
+                marketType.DeletedAt = currentTime;
+                marketType.LastDeletedById = userId;
+                context.MarketTypes.Update(marketType);
                 await context.SaveChangesAsync();
                 return Result.Success();
             

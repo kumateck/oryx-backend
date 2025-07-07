@@ -129,4 +129,8 @@ public interface IProductionScheduleRepository
        string searchQuery, Guid productId);
    Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNoteByProduct(int page, int pageSize, 
        string searchQuery, Guid productId);
+   Task<Result<IEnumerable<ProductionScheduleReportDto>>> GetProductionScheduleSummaryReport(
+       ProductionScheduleReportFilter filter);
+   Task<Result<IEnumerable<ProductionScheduleDetailedReportDto>>> GetProductionScheduleDetailedReport(
+       ProductionScheduleReportFilter filter);
 }

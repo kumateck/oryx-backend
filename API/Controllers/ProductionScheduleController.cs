@@ -1078,4 +1078,38 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     #endregion
+
+    #region Report
+
+    /// <summary>
+    /// Retrieves a summary report of Production Schedules.
+    /// </summary>
+    /// <param name="filter">The filter criteria for the report.</param>
+    /// <returns>Returns a list of Production Schedule summary report DTOs.</returns>
+    [HttpGet("summary-report")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductionScheduleReportDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetProductionScheduleSummaryReport([FromQuery] ProductionScheduleReportFilter filter)
+    {
+        var result = await repository.GetProductionScheduleSummaryReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a detailed report of Production Schedules.
+    /// </summary>
+    /// <param name="filter">The filter criteria for the report.</param>
+    /// <returns>Returns a list of Production Schedule summary report DTOs.</returns>
+    [HttpGet("detailed-report")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductionScheduleDetailedReportDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetProductionScheduleDetailedReport([FromQuery] ProductionScheduleReportFilter filter)
+    {
+        var result = await repository.GetProductionScheduleDetailedReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    #endregion
 }

@@ -178,6 +178,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FinalPacking> FinalPackings { get; set; }
     public DbSet<FinalPackingMaterial> FinalPackingMaterials { get; set; }
     public DbSet<ProductionExtraPacking> ProductionExtraPackings { get; set; }
+    
+    public DbSet<MarketType> MarketTypes { get; set; }
 
 
     #endregion
@@ -691,6 +693,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         modelBuilder.Entity<Question>().Navigation(p => p.Options).AutoInclude();
         
+        #endregion
+
+        #region Production Schedule Entities
+
+        modelBuilder.Entity<ProductionScheduleProduct>().Navigation(p => p.MarketType).AutoInclude();
+
         #endregion
 
         #region Production Activity

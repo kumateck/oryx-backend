@@ -2410,4 +2410,102 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+
+    public async Task<Result<IEnumerable<ProductionScheduleReportDto>>> GetProductionScheduleSummaryReport(ProductionScheduleReportFilter filter)
+    {
+        var query = context.ProductionScheduleProducts
+            .AsSplitQuery()
+            .Include(p => p.Product)
+            .Include(p => p.ProductionSchedule)
+            .Where(p => !p.Cancelled)
+            .AsQueryable();
+
+        if (filter.StartDate.HasValue)
+        {
+            query = query.Where(p => p.ProductionSchedule.ScheduledStartTime.Date >= filter.StartDate.Value.Date);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            query = query.Where(p => p.ProductionSchedule.ScheduledEndTime.Date <= filter.EndDate.Value.Date);
+        }
+
+        if (filter.ProductId != Guid.Empty)
+        {
+            query = query.Where(p => p.ProductId == filter.ProductId);
+        }
+
+        if (filter.MarketTypeId.HasValue)
+        {
+            query = query.Where(p => p.MarketTypeId == filter.MarketTypeId);
+        }
+        
+        var productionSchedules = await query.ToListAsync();
+
+        var groupedData = productionSchedules
+            .Select(p => new ProductionScheduleReportDto
+            {
+                Product = mapper.Map<ProductListDto>(p.Product),
+                UnitPrice = p.Product.Price,
+                BatchSize =    productionSchedules.Sum(productScheduleProduct =>
+                    productScheduleProduct.BatchSize == BatchSize.Full ? 
+                    productScheduleProduct.Product.FullBatchSize :
+                    productScheduleProduct.Product.FullBatchSize / 2),
+                Batches = productionSchedules.Sum(productScheduleProduct => productScheduleProduct.BatchSize == BatchSize.Full ? 1m : 0.5m),
+                MarketType = mapper.Map<CollectionItemDto>(p.MarketType),
+                ActualQuantity = context.FinalPackings.FirstOrDefault(f =>
+                    f.ProductionScheduleId == p.ProductionScheduleId && f.ProductId == p.ProductId)?.TotalNumberOfBottles ?? 0m,
+            })
+            .ToList();
+
+        return groupedData;
+    }
+    
+    public async Task<Result<IEnumerable<ProductionScheduleDetailedReportDto>>> GetProductionScheduleDetailedReport(ProductionScheduleReportFilter filter)
+    {
+        var query = context.ProductionScheduleProducts
+            .AsSplitQuery()
+            .Include(p => p.Product)
+            .Include(p => p.ProductionSchedule)
+            .Include(p => p.MarketType)
+            .Where(p => !p.Cancelled)
+            .AsQueryable();
+
+        if (filter.StartDate.HasValue)
+        {
+            query = query.Where(p => p.ProductionSchedule.ScheduledStartTime.Date >= filter.StartDate.Value.Date);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            query = query.Where(p => p.ProductionSchedule.ScheduledEndTime.Date <= filter.EndDate.Value.Date);
+        }
+
+        if (filter.ProductId != Guid.Empty)
+        {
+            query = query.Where(p => p.ProductId == filter.ProductId);
+        }
+
+        var productionSchedules = await query.ToListAsync();
+
+        var report = productionSchedules.Select(p =>
+        {
+            var unitPrice = p.Product.Price;
+            var expectedQty = p.BatchSize == BatchSize.Full ? p.Product.FullBatchSize : p.Product.FullBatchSize / 2;
+            var actualQty = context.FinalPackings
+                .FirstOrDefault(f => f.ProductionScheduleId == p.ProductionScheduleId && f.ProductId == p.ProductId)
+                ?.TotalNumberOfBottles ?? 0m;
+
+            return new ProductionScheduleDetailedReportDto
+            {
+                BatchNumber = p.BatchNumber,
+                UnitPrice = unitPrice,
+                PackageStyle = p.Product.PackageStyle,
+                ExpectedQuantity = expectedQty,
+                ActualQuantity = actualQty,
+            };
+        }).ToList();
+
+        return report;
+    }
 }

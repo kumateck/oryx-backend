@@ -96,6 +96,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, DeliveryMode>();
         CreateMap<CreateItemRequest, Charge>();
         CreateMap<CreateItemRequest, ShiftCategory>();
+        CreateMap<CreateItemRequest, MarketType>();
         
         #endregion
         
@@ -151,6 +152,7 @@ public class OryxMapper : Profile
         CreateMap<Question, CollectionItemDto>();
         CreateMap<ShiftCategory, CollectionItemDto>();
         CreateMap<ProductState, CollectionItemDto>();
+        CreateMap<MarketType, CollectionItemDto>();
         
         #endregion
 

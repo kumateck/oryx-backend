@@ -607,7 +607,7 @@ namespace APP.Repository;
         var requiredHeaders = new[]
         {
             "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "BASE QUANTITY",
-            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT", "DEPARTMENT CODE"
+            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT",
         };
 
         foreach (var header in requiredHeaders)
@@ -626,17 +626,21 @@ namespace APP.Repository;
             var basePackingUomName = getCell("BASE PACKING UOM").ToLower();
             var equipmentName = getCell("EQUIPMENT").ToLower();
             var departmentCode = getCell("DEPARTMENT").ToLower();
+            var productCode = getCell("PRODUCT_CODE").ToLower();
+            
+            var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Code != null && p.Code.ToLower() == productCode);
+            if (existingProduct is not null) continue;
 
-            var category = context.ProductCategories.FirstOrDefault(c => c.Name != null &&  c.Name.ToLower() == categoryName);
-            var baseUom = context.UnitOfMeasures.FirstOrDefault(u => u.Name != null && u.Name.ToLower() == baseUomName);
-            var basePackingUom = context.UnitOfMeasures.FirstOrDefault(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
-            var equipment = context.Equipments.FirstOrDefault(e => e.Name != null && e.Name.ToLower() == equipmentName);
-            var department = context.Departments.FirstOrDefault(d => d.Name != null & d.Code.ToLower() == departmentCode);
-
+            var category = await context.ProductCategories.FirstOrDefaultAsync(c => c.Name != null &&  c.Name.ToLower() == categoryName);
+            var baseUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == baseUomName);
+            var basePackingUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
+            var equipment = await context.Equipments.FirstOrDefaultAsync(e => e.Name != null && e.Name.ToLower() == equipmentName);
+            var department = await context.Departments.FirstOrDefaultAsync(d => d.Name != null & d.Code.ToLower() == departmentCode);
+            
             var product = new Product
             {
                 Name = getCell("PRODUCT NAME"),
-                Code = getCell("PRODUCT CODE"),
+                Code = productCode,
                 GenericName = getCell("GENERIC NAME"),
                 StorageCondition = getCell("STORAGE CONDITION"),
                 PackageStyle = getCell("PACK STYLE"),
@@ -715,14 +719,14 @@ namespace APP.Repository;
             var uomName = GetCell("UOM");
             var materialTypeName = GetCell("MATERIAL TYPE");
 
-            var product = context.Products.FirstOrDefault(p => p.Code == productCode);
+            var product = await context.Products.FirstOrDefaultAsync(p => p.Code == productCode);
             if (product == null) continue;
 
             var material = context.Materials.FirstOrDefault(m => m.Code == materialCode);
             if (material == null) continue;
 
-            var uom = context.UnitOfMeasures.FirstOrDefault(u => u.Name.ToLower() == uomName.ToLower());
-            var materialType = context.MaterialTypes.FirstOrDefault(mt => mt.Name.ToLower() == materialTypeName.ToLower());
+            var uom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name.ToLower() == uomName.ToLower());
+            var materialType = await context.MaterialTypes.FirstOrDefaultAsync(mt => mt.Name.ToLower() == materialTypeName.ToLower());
 
             if (!bomMap.TryGetValue(productCode, out var billOfMaterial))
             {
@@ -816,13 +820,13 @@ namespace APP.Repository;
             var componentMaterialCode = GetCell("COMPONENT MATERIAL CODE");
             var directLinkMaterialCode = GetCell("DIRECT LINK MATERIAL CODE");
 
-            var product = context.Products.FirstOrDefault(p => p.Code == productCode);
+            var product = await context.Products.FirstOrDefaultAsync(p => p.Code == productCode);
             if (product == null) continue;
 
-            var material = context.Materials.FirstOrDefault(m => m.Code == componentMaterialCode);
+            var material = await context.Materials.FirstOrDefaultAsync(m => m.Code == componentMaterialCode);
             if (material == null) continue;
 
-            var directLinkMaterial = context.Materials.FirstOrDefault(m => m.Code == directLinkMaterialCode);
+            var directLinkMaterial = await context.Materials.FirstOrDefaultAsync(m => m.Code == directLinkMaterialCode);
 
             var productPackage = new ProductPackage
             {
