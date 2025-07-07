@@ -626,16 +626,16 @@ namespace APP.Repository;
             var basePackingUomName = getCell("BASE PACKING UOM").ToLower();
             var equipmentName = getCell("EQUIPMENT").ToLower();
             var departmentCode = getCell("DEPARTMENT").ToLower();
-            var productCode = getCell("PRODUCT CODE").ToLower();
+            var productCode = getCell("PRODUCT CODE");
             
-            var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Code != null && p.Code.ToLower() == productCode);
+            var existingProduct = await context.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code != null && p.Code == productCode);
             if (existingProduct is not null) continue;
 
             var category = await context.ProductCategories.FirstOrDefaultAsync(c => c.Name != null &&  c.Name.ToLower() == categoryName);
             var baseUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == baseUomName);
             var basePackingUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
             var equipment = await context.Equipments.FirstOrDefaultAsync(e => e.Name != null && e.Name.ToLower() == equipmentName);
-            var department = await context.Departments.FirstOrDefaultAsync(d => d.Name != null & d.Code.ToLower() == departmentCode);
+            var department = await context.Departments.FirstOrDefaultAsync(d => d.Name != null & d.Name.ToLower() == departmentCode);
             
             var product = new Product
             {
@@ -665,9 +665,19 @@ namespace APP.Repository;
 
             products.Add(product);
         }
+        
+        var existingCodes = await context.Products
+            .IgnoreQueryFilters()
+            .Where(p => products.Select(np => np.Code).Contains(p.Code))
+            .Select(p => p.Code)
+            .ToListAsync();
 
-        products = products.DistinctBy(p => p.Code).ToList();
-        await context.Products.AddRangeAsync(products);
+        var newProducts = products
+            .Where(p => !existingCodes.Contains(p.Code))
+            .DistinctBy(p => p.Code) 
+            .ToList();
+        
+        await context.Products.AddRangeAsync(newProducts);
         await context.SaveChangesAsync();
 
         return Result.Success();
@@ -719,7 +729,7 @@ namespace APP.Repository;
             var uomName = GetCell("UOM");
             var materialTypeName = GetCell("MATERIAL TYPE");
 
-            var product = await context.Products.FirstOrDefaultAsync(p => p.Code == productCode);
+            var product = await context.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code == productCode);
             if (product == null) continue;
 
             var material = context.Materials.FirstOrDefault(m => m.Code == materialCode);
@@ -820,7 +830,7 @@ namespace APP.Repository;
             var componentMaterialCode = GetCell("COMPONENT MATERIAL CODE");
             var directLinkMaterialCode = GetCell("DIRECT LINK MATERIAL CODE");
 
-            var product = await context.Products.FirstOrDefaultAsync(p => p.Code == productCode);
+            var product = await context.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code == productCode);
             if (product == null) continue;
 
             var material = await context.Materials.FirstOrDefaultAsync(m => m.Code == componentMaterialCode);
