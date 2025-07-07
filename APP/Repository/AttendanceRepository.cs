@@ -4,12 +4,13 @@ using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Employees;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OfficeOpenXml;
 using SHARED;
 
 namespace APP.Repository;
 
-public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRepository
+public class AttendanceRepository(ApplicationDbContext context, ILogger<AttendanceRepository> logger) : IAttendanceRepository
 {
 public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
 {
@@ -133,6 +134,93 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
             }).ToList();
     }
 
+// public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport()
+// {
+//     var today = DateTime.UtcNow.Date;
+//
+//     var dailyRecords = await context.AttendanceRecords
+//         .Where(a => a.TimeStamp.Date == today && a.WorkState == WorkState.CheckIn)
+//         .ToListAsync();
+//
+//     if (dailyRecords.Count == 0)
+//         return Error.NotFound("Attendance.NotFound", $"No attendance records found for {today:dd-MM-yyyy}");
+//
+//     var employeeIds = dailyRecords.Select(r => r.EmployeeId).Distinct().ToList();
+//
+//     var employees = await context.Employees
+//         .Include(e => e.Department)
+//         .Where(e => employeeIds.Contains(e.StaffNumber))
+//         .ToListAsync();
+//
+//     var groupedByDepartment = employees
+//         .GroupBy(e => e.Department?.Name ?? "Unassigned")
+//         .ToList();
+//
+//     var report = new List<GeneralAttendanceReportDto>();
+//
+//     foreach (var group in groupedByDepartment)
+//     {
+//         var summary = new GeneralAttendanceReportDto
+//         {
+//             DepartmentName = group.Key
+//         };
+//
+//         foreach (var employee in group)
+//         {
+//             var shiftAssignment = context.ShiftAssignments
+//                 .AsSplitQuery()
+//                 .Include(shiftAssignment => shiftAssignment.ShiftType)
+//                 .Include(s => s.ShiftSchedules)
+//                 .Include(assignment => assignment.Employee)
+//                 .FirstOrDefault(sa => sa.ShiftSchedules != null &&
+//                                       sa.ShiftSchedules.StartDate.Date <= today &&
+//                                       sa.ShiftSchedules.EndDate.Date >= today 
+//                                       && sa.EmployeeId == employee.Id);
+//
+//             if (shiftAssignment?.ShiftType.StartTime == null)
+//                 continue;
+//
+//             if (!TimeSpan.TryParse(shiftAssignment.ShiftType.StartTime, out var shiftStartTime))
+//                 continue;
+//
+//             var attendance = dailyRecords
+//                 .FirstOrDefault(a => a.EmployeeId == employee.StaffNumber);
+//
+//             if (attendance == null)
+//                 continue;
+//
+//             var isCasual = employee.Type == EmployeeType.Casual;
+//
+//             if (isCasual)
+//                 summary.CasualStaff++;
+//             else
+//                 summary.PermanentStaff++;
+//
+//             // Classify based on shift start 
+//             if (shiftStartTime >= TimeSpan.FromHours(5) && shiftStartTime < TimeSpan.FromHours(12))
+//             {
+//                 if (isCasual) summary.CasualMorning++;
+//                 else summary.PermanentMorning++;
+//             }
+//             else if (shiftStartTime >= TimeSpan.FromHours(12) && shiftStartTime < TimeSpan.FromHours(17))
+//             {
+//                 if (isCasual) summary.CasualAfternoon++;
+//                 else summary.PermanentAfternoon++;
+//             }
+//             else
+//             {
+//                 if (isCasual) summary.CasualNight++;
+//                 else summary.PermanentNight++;
+//             }
+//         }
+//
+//         report.Add(summary);
+//     }
+//
+//     return report;
+// }
+
+
 public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport()
 {
     var today = DateTime.UtcNow.Date;
@@ -142,7 +230,9 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
         .ToListAsync();
 
     if (dailyRecords.Count == 0)
+    {
         return Error.NotFound("Attendance.NotFound", $"No attendance records found for {today:dd-MM-yyyy}");
+    }
 
     var employeeIds = dailyRecords.Select(r => r.EmployeeId).Distinct().ToList();
 
@@ -171,22 +261,32 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
                 .Include(shiftAssignment => shiftAssignment.ShiftType)
                 .Include(s => s.ShiftSchedules)
                 .Include(assignment => assignment.Employee)
-                .FirstOrDefault(sa => sa.ShiftSchedules != null &&
-                                      sa.ShiftSchedules.StartDate.Date <= today &&
-                                      sa.ShiftSchedules.EndDate.Date >= today 
-                                      && sa.EmployeeId == employee.Id);
+                .FirstOrDefault(sa =>
+                    sa.ShiftSchedules != null &&
+                    sa.ShiftSchedules.StartDate.Date <= today &&
+                    sa.ShiftSchedules.EndDate.Date >= today &&
+                    sa.EmployeeId == employee.Id);
 
-            if (shiftAssignment?.ShiftType.StartTime == null)
+            if (shiftAssignment?.ShiftType?.StartTime == null)
+            {
                 continue;
+            }
 
-            if (!TimeSpan.TryParse(shiftAssignment.ShiftType.StartTime, out var shiftStartTime))
+            if (!DateTime.TryParseExact(shiftAssignment.ShiftType.StartTime, "hh:mm tt",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var parsedShiftStartTime))
+            {
                 continue;
+            }
+            
+            var shiftStartTime = parsedShiftStartTime.TimeOfDay;
 
-            var attendance = dailyRecords
-                .FirstOrDefault(a => a.EmployeeId == employee.StaffNumber);
+            var attendance = dailyRecords.FirstOrDefault(a => a.EmployeeId == employee.StaffNumber);
 
             if (attendance == null)
+            {
                 continue;
+            }
 
             var isCasual = employee.Type == EmployeeType.Casual;
 
@@ -195,7 +295,6 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
             else
                 summary.PermanentStaff++;
 
-            // Classify based on shift start 
             if (shiftStartTime >= TimeSpan.FromHours(5) && shiftStartTime < TimeSpan.FromHours(12))
             {
                 if (isCasual) summary.CasualMorning++;
@@ -212,7 +311,6 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
                 else summary.PermanentNight++;
             }
         }
-
         report.Add(summary);
     }
 
