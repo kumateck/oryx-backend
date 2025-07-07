@@ -23,3 +23,15 @@ public class AttendanceStatsDto
     public int NumberOfPresentEmployees { get; set; }
     public int AttendanceRate { get; set; }
 }
+
+public class PermanentStaffGradeCountDto
+{
+    public int No { get; set; }
+    public string Department { get; set; }
+    public int SeniorMgtMale { get; set; }
+    public int SeniorMgtFemale { get; set; }
+    public int SeniorStaffMale { get; set; }
+    public int SeniorStaffFemale { get; set; }
+    public int JuniorStaffMale { get; set; }
+    public int JuniorStaffFemale { get; set; }
+}

@@ -10,4 +10,6 @@ public interface IReportRepository
     Task<Result<List<MaterialDto>>> GetMaterialsBelowMinimumStockLevel(Guid departmentId);
     
     Task<Result<HumanResourceReportDto>> GetHumanResourceReport(ReportFilter filter);
+    
+    Task<Result<List<PermanentStaffGradeCountDto>>> GetPermanentStaffGradeReport();
 }

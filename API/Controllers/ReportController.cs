@@ -55,4 +55,15 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetHumanResourceReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Retrieves the report detailing the grade-wise count of permanent staff across departments.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PermanentStaffGradeCountDto>))]
+    public async Task<IResult> GetPermanentStaffGradeReport()
+    {
+        var result = await repository.GetPermanentStaffGradeReport();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
