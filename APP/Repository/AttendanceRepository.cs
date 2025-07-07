@@ -166,11 +166,14 @@ public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceRep
 
         foreach (var employee in group)
         {
-            var shiftAssignment = employee.ShiftAssignments
-                .FirstOrDefault(sa => 
-                    sa.ShiftSchedules != null &&
-                    sa.ShiftSchedules.StartDate.Date <= today &&
-                    sa.ShiftSchedules.EndDate.Date >= today);
+            var shiftAssignment = context.ShiftAssignments
+                .AsSplitQuery()
+                .Include(shiftAssignment => shiftAssignment.ShiftType)
+                .Include(assignment => assignment.Employee)
+                .FirstOrDefault(sa => sa.ShiftSchedules != null &&
+                                      sa.ShiftSchedules.StartDate.Date <= today &&
+                                      sa.ShiftSchedules.EndDate.Date >= today 
+                                      && sa.EmployeeId == employee.Id);
 
             if (shiftAssignment?.ShiftType?.StartTime == null)
                 continue;
