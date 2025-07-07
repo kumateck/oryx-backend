@@ -26,7 +26,7 @@ public class SignatureResolver(IHttpContextAccessor request) : IValueResolver<Us
 {
     public string Resolve(User source, UserDto destination, string destMember, ResolutionContext context)
     {
-        return string.IsNullOrEmpty(source.Avatar) ? null : $"https://{request.HttpContext?.Request.Host}/api/v1/file/signature/{source.Signature}";
+        return string.IsNullOrEmpty(source.Signature) ? null : $"https://{request.HttpContext?.Request.Host}/api/v1/file/signature/{source.Signature}";
     }
 }
 
