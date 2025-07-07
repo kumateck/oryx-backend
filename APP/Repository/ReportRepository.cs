@@ -175,7 +175,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var employees = context.Employees
             .Include(e => e.Department)
             .Where(e => e.Type == EmployeeType.Permanent);
-            
         
         if (departmentId.HasValue)
             employees = employees.Where(e => e.DepartmentId == departmentId.Value);
