@@ -179,7 +179,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         if (departmentId.HasValue)
             employees = employees.Where(e => e.DepartmentId == departmentId.Value);
 
-        var grouped = await employees
+        return await employees
             .GroupBy(e => e.Department.Name)
             .Select((g) => new PermanentStaffGradeCountDto
             {
@@ -189,11 +189,9 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 SeniorStaffMale = g.Count(e => e.Level == EmployeeLevel.SeniorStaff && e.Gender == Gender.Male),
                 SeniorStaffFemale = g.Count(e => e.Level == EmployeeLevel.SeniorStaff && e.Gender == Gender.Female),
                 JuniorStaffMale = g.Count(e => e.Level == EmployeeLevel.JuniorStaff && e.Gender == Gender.Male),
-                JuniorStaffFemale = g.Count(e => e.Level == EmployeeLevel.JuniorStaff && e.Gender == Gender.Female),
+                JuniorStaffFemale = g.Count(e => e.Level == EmployeeLevel.JuniorStaff && e.Gender == Gender.Female)
             })
             .ToListAsync();
-
-        return grouped;
     }
 
     private async Task<AttendanceStatsDto> GetAttendanceStatsAsync(DateTime? startDate, DateTime? endDate)
@@ -244,27 +242,30 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 if (emp.DateEmployed >= start && emp.DateEmployed <= end)
                 {
                     if (!isCasual) dto.PermanentNew++;
+                    else dto.CasualNew++;
                 }
 
                 if (emp.ExitDate >= start && emp.ExitDate <= end)
                 {
-                    switch (emp.ExitReason)
+                    switch (emp.InactiveStatus)
                     {
-                        case ExitReason.Resignation:
+                        case EmployeeInactiveStatus.Resignation:
                             if (isCasual) dto.CasualResignation++;
                             else dto.PermanentResignation++;
                             break;
-                        case ExitReason.Termination:
+                        case EmployeeInactiveStatus.Termination:
                             if (isCasual) dto.CasualTermination++;
                             else dto.PermanentTermination++;
                             break;
-                        case ExitReason.SDVP:
+                        case EmployeeInactiveStatus.SummaryDismissed:
                             if (isCasual) dto.CasualSDVP++;
                             else dto.PermanentSDVP++;
                             break;
-                        case ExitReason.Transfer:
+                        case EmployeeInactiveStatus.Transfer:
                             dto.PermanentTransfer++; // assuming transfers are only permanent
                             break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
                 }
             }

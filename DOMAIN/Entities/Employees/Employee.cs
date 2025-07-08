@@ -85,7 +85,6 @@ public class Employee : BaseEntity
     public EmployeeInactiveStatus? InactiveStatus { get; set; }
     public DateTime? SuspensionStartDate { get; set; }
     public DateTime? SuspensionEndDate { get; set; }
-    public ExitReason? ExitReason { get; set; }
     public DateTime? ExitDate { get; set; }
 }
 
@@ -136,16 +135,6 @@ public enum MaritalStatus
     Single,
     Married
 }
-
-public enum ExitReason
-{
-    Resignation,
-    Termination,
-    Transfer,
-    SDVP // Staff Death / Voluntary Permanent Leave
-}
-
-
 
 public enum Religion
 {

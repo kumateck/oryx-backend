@@ -1,5 +1,4 @@
 namespace DOMAIN.Entities.Reports;
-
 public class HumanResourceReportDto
 {
     public int NumberOfLeaveRequests { get; set; }
@@ -10,7 +9,7 @@ public class HumanResourceReportDto
     public int NumberOfPendingOvertimeRequests { get; set; }
     public int NumberOfApprovedOvertimeRequests { get; set; }
     public int NumberOfExpiredOvertimeRequests { get; set; }
-    public int TotalEmployees => NumberOfCasualEmployees + NumberOfPermanentEmployees;
+    public int TotalEmployees => NumberOfCasualEmployees + NumberOfPermanentEmployees; 
     public int NumberOfCasualEmployees { get; set; }
     public int NumberOfPermanentEmployees { get; set; }
     
@@ -33,13 +32,17 @@ public class PermanentStaffGradeCountDto
     public int SeniorStaffFemale { get; set; }
     public int JuniorStaffMale { get; set; }
     public int JuniorStaffFemale { get; set; }
+    public int TotalSeniorMgt => SeniorMgtMale + SeniorMgtFemale;
+    public int TotalSeniorStaff => SeniorStaffMale + SeniorStaffFemale;
+    public int TotalJuniorStaff => JuniorStaffMale + JuniorStaffFemale;
+    public int TotalStaff => TotalSeniorStaff + TotalJuniorStaff + TotalSeniorMgt;
 }
 
 public class MovementReportDto
 {
     public string DepartmentName { get; set; }
 
-    // Permanent
+    // Permanent 
     public int PermanentNew { get; set; }
     public int PermanentTransfer { get; set; }
     public int PermanentResignation { get; set; }
@@ -47,6 +50,7 @@ public class MovementReportDto
     public int PermanentSDVP { get; set; }
 
     // Casual
+    public int CasualNew { get; set; }
     public int CasualResignation { get; set; }
     public int CasualTermination { get; set; }
     public int CasualSDVP { get; set; }
