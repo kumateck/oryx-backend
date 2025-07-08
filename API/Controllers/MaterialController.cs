@@ -614,4 +614,16 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.MoveMaterialBatchToWarehouseFromHolding(holdingMaterialId, request,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
+    
+    [HttpPost("batches/import")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ImportMaterialBatchesFromCsv(IFormFile file)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportMaterialBatchesFromExcel(file, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

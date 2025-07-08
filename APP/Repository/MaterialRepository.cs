@@ -709,7 +709,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
                 MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
                 Quantity = movedBatch.Quantity,
-                UoM = await context.UnitOfMeasures.FindAsync(movedBatch.UomId),
+                UoMId = movedBatch.UomId,
                 Note = movedBatch.Note,
                 CreatedAt = DateTime.UtcNow
             };
@@ -1949,7 +1949,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
                 MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
                 Quantity = movedBatch.Quantity,
-                UoM = await context.UnitOfMeasures.FindAsync(movedBatch.UomId),
+                UoMId = movedBatch.UomId,
                 Note = movedBatch.Note,
                 CreatedAt = DateTime.UtcNow
             };
@@ -1971,6 +1971,130 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         holdingMaterial.Status = HoldingMaterialTransferStatus.Transferred;
         context.HoldingMaterialTransfers.Update(holdingMaterial);
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        var batches = new List<MaterialBatch>();
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
+
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            var header = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrWhiteSpace(header))
+                headers[header] = col;
+        }
+
+        var requiredHeaders = new[]
+        {
+            "Warehouse", "Warehouse Code", "Location", "Rack", "Shelf",
+            "Material Code", "Material Name", "Batch Number", "Waybill", "AR Number",
+            "Manufacturing Date", "Expiry Date", "Quantity", "UOM", "Retest Date"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
+
+        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            string GetCell(string h) => worksheet.Cells[row, headers[h]].Text.Trim();
+
+            var materialCode = GetCell("Material Code");
+            var uomName = GetCell("UOM");
+            var warehouseCode = GetCell("Warehouse Code");
+
+            var material = await context.Materials.FirstOrDefaultAsync(m => m.Code == materialCode);
+            if (material is null)
+                return Error.NotFound("Material.NotFound",$"Material with code '{materialCode}' not found (row {row})");
+
+            var uom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name == uomName);
+            if (uom is null)
+                return Error.NotFound("Uom.NotFound", $"UOM '{uomName}' not found (row {row})");
+            
+            var shelfName = GetCell("Shelf");
+            var rackName = GetCell("Rack");
+            var warehouseLocationName = GetCell("Location");
+            var warehouseCodeName = GetCell("Warehouse Code");
+
+            var shelf = await context.WarehouseLocationShelves
+                .Include(s => s.WarehouseLocationRack)
+                .ThenInclude(r => r.WarehouseLocation)
+                .ThenInclude(l => l.Warehouse)
+                .FirstOrDefaultAsync(s =>
+                    s.Name == shelfName &&
+                    s.WarehouseLocationRack.Name == rackName &&
+                    s.WarehouseLocationRack.WarehouseLocation.Name == warehouseLocationName &&
+                    s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name == warehouseCode);
+
+            if (shelf is null)
+                return Error.NotFound("Warehouse.Shelf",$"Shelf not found (row {row})");
+
+            var quantity = decimal.TryParse(GetCell("Quantity"), out var qty) ? qty : 0;
+
+            var batch = new MaterialBatch
+            {
+                MaterialId = material.Id,
+                BatchNumber = GetCell("Batch Number"),
+                TotalQuantity = quantity,
+                UoMId = uom.Id,
+                Status = BatchStatus.Received,
+                DateReceived = DateTime.UtcNow,
+                ManufacturingDate = DateTime.TryParse(GetCell("Manufacturing Date"), out var mfg) ? mfg : null,
+                ExpiryDate = DateTime.TryParse(GetCell("Expiry Date"), out var exp) ? exp : null,
+                RetestDate = DateTime.TryParse(GetCell("Retest Date"), out var retest) ? retest : null,
+                CreatedById = userId,
+                QuantityAssigned = 0,
+                QuantityPerContainer = quantity,
+                NumberOfContainers = 1,
+            };
+
+            var movement = new MassMaterialBatchMovement
+            {
+                Id = Guid.NewGuid(),
+                BatchId = batch.Id,
+                ToWarehouseId = shelf.WarehouseLocationRack.WarehouseLocation.WarehouseId,
+                Quantity = quantity,
+                MovedAt = DateTime.UtcNow,
+                MovedById = userId,
+                MovementType = MovementType.ToWarehouse
+            };
+
+            var shelfBatch = new ShelfMaterialBatch
+            {
+                Id = Guid.NewGuid(),
+                MaterialBatchId = batch.Id,
+                WarehouseLocationShelfId = shelf.Id,
+                Quantity = quantity,
+                UoMId = uom.Id,
+                Note = $"Waybill: {GetCell("Waybill")}, AR#: {GetCell("AR Number")}",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            batches.Add(batch);
+            await context.MassMaterialBatchMovements.AddAsync(movement);
+            await context.ShelfMaterialBatches.AddAsync(shelfBatch);
+        }
+
+        await context.MaterialBatches.AddRangeAsync(batches);
+        await context.SaveChangesAsync();
+
         return Result.Success();
     }
 }

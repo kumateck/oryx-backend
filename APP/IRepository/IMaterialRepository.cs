@@ -77,6 +77,7 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
         int page,
         int pageSize, string searchQuery, bool withProcessed, Guid? userId);
-    Task<Result> MoveMaterialBatchToWarehouseFromHolding(Guid holdingMaterialId,
+    Task<Result> MoveMaterialBatchToWarehouseFromHolding(Guid holdingMaterialId, 
         MoveShelfMaterialBatchRequest request, Guid userId);
+   Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId);
 }

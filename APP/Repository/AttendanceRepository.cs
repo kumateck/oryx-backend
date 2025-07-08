@@ -10,7 +10,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class AttendanceRepository(ApplicationDbContext context, ILogger<AttendanceRepository> logger) : IAttendanceRepository
+public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRepository
 {
 public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
 {
