@@ -16,10 +16,11 @@ using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using SHARED;
 
 namespace APP.Repository;
-public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMemoryCache cache) : IApprovalRepository 
+public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMemoryCache cache, ILogger<ApprovalRepository> logger) : IApprovalRepository 
 { 
     public async Task<Result<Guid>> CreateApproval(CreateApprovalRequest request, Guid userId) 
     {
@@ -1320,7 +1321,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task CreateInitialApprovalsAsync(string modelType, Guid modelId)
     {
         var approval = await context.Approvals.FirstOrDefaultAsync(a => a.ItemType == modelType);
-        if (approval == null) throw new Exception("Approval not found for {modelType}");
+        if (approval == null) 
+            logger.LogError($"Approval not found for {modelType}");
         
         var approvalStages = await context.Approvals
             .Where(s => s.ItemType == modelType)
