@@ -133,10 +133,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     context.ProductionActivitySteps.Update(activityStep);
                 }
             }
-            
+            await context.SaveChangesAsync();
             await approvalRepository.CreateInitialApprovalsAsync("PurchaseRequisition", requisition.Id);
         }
-        
         await context.SaveChangesAsync();
         return Result.Success();
     }
