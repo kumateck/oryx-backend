@@ -1337,6 +1337,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     if (requisition != null)
                     {
                         requisition.Status = RequestStatus.Pending;
+                        requisition.Approved = true;
                         context.Requisitions.Update(requisition);
                         await context.SaveChangesAsync();
                     }
@@ -1348,6 +1349,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     if (billingSheet != null)
                     {
                         billingSheet.Status = BillingSheetStatus.Pending;
+                        billingSheet.Approved = true;
                         context.BillingSheets.Update(billingSheet);
                         await context.SaveChangesAsync();
                     }
@@ -1359,6 +1361,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     if (purchaseOrder != null)
                     {
                         purchaseOrder.Status = PurchaseOrderStatus.Pending;
+                        purchaseOrder.Approved = true;
                         context.PurchaseOrders.Update(purchaseOrder);
                         await context.SaveChangesAsync();
                     }
@@ -1370,6 +1373,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     if (leaveRequest != null)
                     {
                         leaveRequest.LeaveStatus = LeaveStatus.Pending;
+                        leaveRequest.Approved = true;
                         context.LeaveRequests.Update(leaveRequest);
                         await context.SaveChangesAsync();
                     }
