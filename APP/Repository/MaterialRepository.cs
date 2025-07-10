@@ -2101,6 +2101,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(MaterialFilter filter)
     {
         var query = await context.MaterialBatches
+            .AsSplitQuery()
+            .Include(b => b.Material)
+            .Include(b => b.Checklist)
+            .Include(b => b.Grn)
             .Where(b => b.ExpiryDate <  DateTime.UtcNow)
             .ToListAsync();
 
