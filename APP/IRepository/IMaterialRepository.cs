@@ -80,4 +80,5 @@ public interface IMaterialRepository
     Task<Result> MoveMaterialBatchToWarehouseFromHolding(Guid holdingMaterialId, 
         MoveShelfMaterialBatchRequest request, Guid userId);
    Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId);
+  Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(MaterialFilter filter);
 }

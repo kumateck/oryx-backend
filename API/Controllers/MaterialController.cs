@@ -626,4 +626,17 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.ImportMaterialBatchesFromExcel(file, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a  list of material batches that have expired
+    /// </summary>
+    /// <returns>Returns a paginated list of material departments.</returns>
+    [HttpGet("batches/expired")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
+    public async Task<IResult> GetExpiredMaterialBatches([FromQuery] MaterialFilter filter)
+    {
+        var result = await repository.GetExpiredMaterialBatches(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

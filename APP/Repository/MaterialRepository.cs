@@ -2097,4 +2097,38 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return Result.Success();
     }
+
+    public async Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(MaterialFilter filter)
+    {
+        var query = await context.MaterialBatches
+            .Where(b => b.ExpiryDate <  DateTime.UtcNow)
+            .ToListAsync();
+
+      var batches = mapper.Map<List<MaterialBatchDto>>(query);
+
+      foreach (var batch in batches)
+      {
+          batch.Locations = GetCurrentLocations(batch);
+      }
+
+      if (filter.StartDate.HasValue)
+      {
+          batches = batches.Where(b => b.ExpiryDate >= filter.StartDate.Value).ToList();
+      }
+
+      if (filter.EndDate.HasValue)
+      {
+          batches = batches.Where(b => b.ExpiryDate < filter.EndDate.Value.AddDays(1)).ToList();
+      }
+
+      if (filter.WarehouseIds.Count != 0)
+      {
+
+          batches = batches.Where(b =>
+              b.Locations.Any(l => l.Location?.Id != null && filter.WarehouseIds.Contains(l.Location.Id.Value)))
+              .ToList();
+      }
+
+      return batches;
+    }
 }
