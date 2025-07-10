@@ -2102,6 +2102,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var query = await context.MaterialBatches
             .AsSplitQuery()
+            .Include(b => b.MassMovements)
             .Include(b => b.Material)
             .Include(b => b.Checklist)
             .Include(b => b.Grn)
