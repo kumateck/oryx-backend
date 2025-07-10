@@ -673,8 +673,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Designation, opt => opt.Ignore());
 
         CreateMap<Employee, EmployeeDto>()
-            .ForMember(dest => dest.Avatar, opt => opt.MapFrom<EmployeeAvatarResolver>())
-            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>()).ReverseMap();
+            .ForMember(dest => dest.Avatar, opt => opt.MapFrom<EmployeeAvatarResolver>());
 
         CreateMap<EmployeeUserDto, Employee>();
         

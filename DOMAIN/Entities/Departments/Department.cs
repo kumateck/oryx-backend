@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.Warehouses;
 

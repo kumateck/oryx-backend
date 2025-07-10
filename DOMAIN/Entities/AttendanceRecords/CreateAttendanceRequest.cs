@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.Base;
 using Microsoft.AspNetCore.Http;
 
 namespace DOMAIN.Entities.AttendanceRecords;

@@ -1,6 +1,5 @@
 using APP.IRepository;
 using APP.Services.Email;
-using APP.Services.Message;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.Notifications;

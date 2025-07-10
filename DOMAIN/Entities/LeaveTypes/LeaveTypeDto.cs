@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Designations;
 
 namespace DOMAIN.Entities.LeaveTypes;

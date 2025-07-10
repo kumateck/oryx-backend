@@ -4,7 +4,6 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
-using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;

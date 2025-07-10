@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace DOMAIN.Entities.Base;
 
 // public interface IOrganizationType

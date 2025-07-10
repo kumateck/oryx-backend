@@ -1,4 +1,3 @@
-using DOMAIN.Entities.Base;
 using SHARED;
 
 namespace DOMAIN.Entities.Products;

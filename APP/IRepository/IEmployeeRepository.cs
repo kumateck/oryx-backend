@@ -1,8 +1,8 @@
 using APP.Utils;
 using DOMAIN.Entities.Employees;
-using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Http;
 using SHARED;
+using SHARED.Requests;
 
 namespace APP.IRepository;
 
@@ -13,6 +13,8 @@ public interface IEmployeeRepository
    Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request);
    
    Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto);
+
+   Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId);
    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
       string searchQuery = null, string designation = null, string department = null);
    

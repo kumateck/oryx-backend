@@ -3,7 +3,6 @@ using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
-using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Warehouses;
 using SHARED;

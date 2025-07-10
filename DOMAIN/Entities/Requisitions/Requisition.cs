@@ -6,7 +6,6 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
-using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Requisitions;
