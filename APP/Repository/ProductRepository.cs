@@ -607,7 +607,7 @@ namespace APP.Repository;
         var requiredHeaders = new[]
         {
             "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "BASE QUANTITY",
-            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT",
+            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT", "LABEL CLAIMS"
         };
 
         foreach (var header in requiredHeaders)
@@ -647,7 +647,6 @@ namespace APP.Repository;
                 FilledWeight = getCell("FILLED VOLUME"),
                 ShelfLife = getCell("SHELF LIFE"),
                 ActionUse = getCell("ACTION AND USE"),
-                Description = getCell("LABEL CLAIMS"),
                 FdaRegistrationNumber = "", // Not provided in headers
                 MasterFormulaNumber = "",   // Not provided in headers
                 PrimaryPackDescription = "",
@@ -661,6 +660,7 @@ namespace APP.Repository;
                 BaseQuantity = decimal.TryParse(getCell("BASE QUANTITY"), out var bq) ? bq : 0,
                 BasePackingQuantity = decimal.TryParse(getCell("BASE PACKING QUANTITY"), out var bpq) ? bpq : 0,
                 FullBatchSize = decimal.TryParse(getCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
+                LabelClaim = getCell("LABEL CLAIMS"),
             };
 
             products.Add(product);

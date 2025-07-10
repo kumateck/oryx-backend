@@ -40,7 +40,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         var emailTemplate = await File.ReadAllTextAsync(templatePath);
         
         var tokenHandler = new JwtSecurityTokenHandler();
-        var jwtKey = configuration["JwtSettings:Key"];
+        var jwtKey = configuration["JwtSettings:Key"] ?? "";
         var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
       
         foreach (var employee in employeeDtos.EmailList)

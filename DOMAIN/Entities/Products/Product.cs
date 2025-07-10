@@ -23,6 +23,7 @@ public class Product : BaseEntity
     [StringLength(1000000)] public string PrimaryPackDescription { get; set; }
     [StringLength(1000000)] public string SecondaryPackDescription { get; set; }
     [StringLength(1000000)] public string TertiaryPackDescription { get; set; }
+    [StringLength(1000000)] public string LabelClaim { get; set; } 
     public Guid? CategoryId { get; set; }
     public ProductCategory Category { get; set; }
     public decimal BaseQuantity { get; set; } 
