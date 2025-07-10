@@ -1,6 +1,3 @@
-using DOMAIN.Entities.Departments;
-using DOMAIN.Entities.Designations;
-
 namespace DOMAIN.Entities.Employees;
 
 public class MinimalEmployeeInfoDto

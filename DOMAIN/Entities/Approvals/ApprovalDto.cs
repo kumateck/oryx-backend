@@ -1,4 +1,3 @@
-using DOMAIN.Entities.Requisitions;
 using SHARED;
 
 namespace DOMAIN.Entities.Approvals;

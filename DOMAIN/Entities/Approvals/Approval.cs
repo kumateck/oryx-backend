@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
-using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using SHARED;

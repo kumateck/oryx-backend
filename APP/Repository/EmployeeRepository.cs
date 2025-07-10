@@ -5,6 +5,7 @@ using System.Text;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Email;
+using APP.Services.Storage;
 using APP.Utils;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
@@ -19,13 +20,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using SHARED;
+using SHARED.Requests;
 
 
 namespace APP.Repository;
 
 public class EmployeeRepository(ApplicationDbContext context,
     ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper,
-    IConfiguration configuration, UserManager<User> userManager) : IEmployeeRepository
+    IConfiguration configuration, UserManager<User> userManager, IBlobStorageService blobStorage) : IEmployeeRepository
 {
 
     public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
@@ -99,6 +101,24 @@ public class EmployeeRepository(ApplicationDbContext context,
         }
 
         return Result.Success("Bulk onboarding completed.");
+    }
+    
+    public async Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId)
+    {
+        var avatar = request.File.ConvertFromBase64();
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId);
+        if (employee == null) return Error.NotFound("Employee.NotFound", "Employee Not Found");
+        var reference = $"{employeeId}.{avatar.FileName.Split(".").Last()}";
+
+        var result = await blobStorage.UploadBlobAsync("avatar", avatar, reference, employee.Avatar);
+        if (result.IsSuccess)
+        {
+            employee.Avatar = reference;
+            context.Employees.Update(employee);
+            await context.SaveChangesAsync();
+        }
+
+        return result;
     }
 
     public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)

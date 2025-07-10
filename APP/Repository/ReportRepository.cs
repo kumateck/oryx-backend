@@ -8,6 +8,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Reports;
+using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
@@ -132,7 +133,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         return mapper.Map<List<MaterialDto>>(materialsBelowMinStock);
     }
 
-    public async Task<Result<HumanResourceReportDto>> GetHumanResourceReport(ReportFilter filter)
+    public async Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(ReportFilter filter)
     {
         var leaveRequests = context.LeaveRequests.AsQueryable();
         var overtimeRequests = context.OvertimeRequests.AsQueryable();
@@ -150,7 +151,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             overtimeRequests = overtimeRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
         }
 
-        return new HumanResourceReportDto
+        return new HrDashboardDto
         {
             NumberOfOvertimeRequests = overtimeRequests.Count(),
             NumberOfApprovedOvertimeRequests =
@@ -170,18 +171,21 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
     }
 
-    public async Task<Result<List<PermanentStaffGradeCountDto>>> GetPermanentStaffGradeReport(Guid? departmentId)
+    public async Task<Result<PermanentStaffGradeReportDto>> GetPermanentStaffGradeReport(Guid? departmentId)
     {
+
         var employees = context.Employees
             .Include(e => e.Department)
             .Where(e => e.Type == EmployeeType.Permanent);
-        
-        if (departmentId.HasValue)
-            employees = employees.Where(e => e.DepartmentId == departmentId.Value);
 
-        return await employees
+        if (departmentId.HasValue)
+        {
+            employees = employees.Where(e => e.DepartmentId == departmentId.Value);
+        }
+
+        var groupedResults = await employees
             .GroupBy(e => e.Department.Name)
-            .Select((g) => new PermanentStaffGradeCountDto
+            .Select(g => new PermanentStaffGradeCountDto
             {
                 Department = g.Key,
                 SeniorMgtMale = g.Count(e => e.Level == EmployeeLevel.SeniorManagement && e.Gender == Gender.Male),
@@ -192,6 +196,19 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 JuniorStaffFemale = g.Count(e => e.Level == EmployeeLevel.JuniorStaff && e.Gender == Gender.Female)
             })
             .ToListAsync();
+
+        var total = new PermanentStaffGradeTotalDto
+        {
+            SeniorMgtMale = groupedResults.Sum(x => x.SeniorMgtMale),
+            SeniorMgtFemale = groupedResults.Sum(x => x.SeniorMgtFemale),
+            SeniorStaffMale = groupedResults.Sum(x => x.SeniorStaffMale),
+            SeniorStaffFemale = groupedResults.Sum(x => x.SeniorStaffFemale),
+            JuniorStaffMale = groupedResults.Sum(x => x.JuniorStaffMale),
+            JuniorStaffFemale = groupedResults.Sum(x => x.JuniorStaffFemale)
+        };
+
+        return new PermanentStaffGradeReportDto { Departments = groupedResults, Totals = total };
+        
     }
 
     private async Task<AttendanceStatsDto> GetAttendanceStatsAsync(DateTime? startDate, DateTime? endDate)
@@ -213,7 +230,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         };
     }
     
-    public async Task<Result<List<MovementReportDto>>> GetEmployeeMovementReport(MovementReportFilter filter)
+    public async Task<Result<List<EmployeeMovementReportDto>>> GetEmployeeMovementReport(MovementReportFilter filter)
     {
         var start = filter.StartDate ?? DateTime.UtcNow.AddMonths(-1); 
         var end = filter.EndDate ?? DateTime.UtcNow;
@@ -229,11 +246,11 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         var grouped = employees.GroupBy(e => e.Department?.Name ?? "Unassigned");
 
-        var result = new List<MovementReportDto>();
+        var result = new List<EmployeeMovementReportDto>();
 
         foreach (var group in grouped)
         {
-            var dto = new MovementReportDto { DepartmentName = group.Key };
+            var dto = new EmployeeMovementReportDto { DepartmentName = group.Key };
 
             foreach (var emp in group)
             {
@@ -272,6 +289,49 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             result.Add(dto);
         }
         return result;
+    }
+
+    public async Task<Result<StaffTotalReport>> GetStaffTotalReport(MovementReportFilter filter)
+    {
+
+        var employees = context.Employees
+            .Include(e => e.Department)
+            .Where(e => (e.Type == EmployeeType.Casual  || e.Type == EmployeeType.Permanent) && !e.InactiveStatus.HasValue);
+
+        if (filter.DepartmentId.HasValue)
+        {
+            employees = employees.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+        }
+
+        if (filter.StartDate.HasValue && filter.EndDate.HasValue)
+        {
+            employees = employees.Where(e =>
+                e.DateEmployed.Date >= filter.StartDate.Value.Date &&
+                e.DateEmployed.Date <= filter.EndDate.Value.Date);
+        }
+
+        var groupedResults = await employees
+            .GroupBy(e => e.Department.Name ?? "Unassigned")
+            .Select(g => new StaffTotalSummary
+            {
+                Department = g.Key,
+                TotalPermanentStaff = g.Count(e => e.Type == EmployeeType.Permanent),
+                TotalCasualStaff = g.Count(e => e.Type == EmployeeType.Casual)
+            })
+            .ToListAsync();
+
+        var total = new StaffGrandTotal
+        {
+            TotalPermanentStaff = groupedResults.Sum(x => x.TotalPermanentStaff),
+            TotalCasualStaff = groupedResults.Sum(x => x.TotalCasualStaff)
+        };
+        
+
+        return new StaffTotalReport
+        {
+            Departments = groupedResults,
+            Totals = total
+        };
     }
 }
     

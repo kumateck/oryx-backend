@@ -4,7 +4,6 @@ using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Employees;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using OfficeOpenXml;
 using SHARED;
 

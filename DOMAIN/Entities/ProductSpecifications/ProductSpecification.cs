@@ -1,6 +1,5 @@
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products;
 

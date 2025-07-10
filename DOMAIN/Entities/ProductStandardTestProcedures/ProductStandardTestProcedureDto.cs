@@ -1,6 +1,4 @@
 using DOMAIN.Entities.Attachments;
-using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Products;
 using SHARED;
 
 namespace DOMAIN.Entities.ProductStandardTestProcedures;

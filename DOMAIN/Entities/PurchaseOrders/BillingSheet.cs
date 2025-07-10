@@ -5,7 +5,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Shipments;
-using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
 

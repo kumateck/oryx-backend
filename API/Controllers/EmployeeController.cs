@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Employees;
 using Microsoft.AspNetCore.Authorization;
+using SHARED.Requests;
 
 namespace API.Controllers;
 [Route("api/v{version:apiVersion}/employee")]
@@ -47,6 +48,20 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     {
         var result = await repository.CreateEmployeeUser(employeeUserDto);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
+
+    /// <summary>
+    /// Uploads an avatar image for a specific employee by their unique identifier.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("avatar/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UploadAnImage([FromBody] UploadFileRequest request, [FromRoute] Guid id)
+    {
+        await repository.UploadAvatar(request, id);
+        return  TypedResults.NoContent();
     }
 
     /// <summary>
