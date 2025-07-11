@@ -4,7 +4,7 @@ public class StaffGenderRatioReport
 {
     public List<StaffGenderRatioCountDto> Departments { get; set; }
     public StaffGenderRatioTotalDto Totals { get; set; }
-        
+
 }
 
 public class StaffGenderRatioTotalDto
@@ -15,6 +15,8 @@ public class StaffGenderRatioTotalDto
     public int NumberOfCasualFemale { get; set; }
     public int TotalMales => NumberOfCasualMale + NumberOfPermanentMale;
     public int TotalFemales => NumberOfCasualFemale + NumberOfPermanentFemale;
+    
+    public int Total => TotalMales + TotalFemales;
     
 }
 

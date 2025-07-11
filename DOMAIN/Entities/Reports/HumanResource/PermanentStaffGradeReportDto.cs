@@ -17,6 +17,7 @@ public class PermanentStaffGradeTotalDto
 
     public int TotalMale => SeniorMgtMale + SeniorStaffMale + JuniorStaffMale;
     public int TotalFemale => SeniorMgtFemale + SeniorStaffFemale + JuniorStaffFemale;
+    public int Total => TotalMale + TotalFemale;
 }
 
 public class PermanentStaffGradeCountDto : PermanentStaffGradeTotalDto
