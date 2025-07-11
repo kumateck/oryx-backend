@@ -1132,7 +1132,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<List<BatchToSupply>>> GetFrozenBatchesForRequisitionItem(Guid materialId, Guid warehouseId, decimal requestedQuantity)
     {
         var result = new List<BatchToSupply>();
-        decimal remainingQuantityToFulfill = requestedQuantity;
+        var remainingQuantityToFulfill = requestedQuantity;
 
         // Fetch frozen batches in FIFO order
         var frozenBatches = await context.MaterialBatches
@@ -1157,12 +1157,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 continue;
             }
 
-            decimal availableQuantity = availableQuantityResult.Value;
+            var availableQuantity = availableQuantityResult.Value;
             if (availableQuantity <= 0)
                 continue; // Skip batches with no stock
 
             // Determine how much can be taken from this batch
-            decimal quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
+            var quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
 
             // Add batch to the result list
             var batchDto = mapper.Map<MaterialBatchDto>(batch);
@@ -1187,7 +1187,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
    public Result<List<BatchLocation>> BatchesNeededToBeConsumed(Guid materialId, Guid warehouseId, decimal quantity)
     {
         var result = new List<BatchLocation>();
-        decimal remainingQuantityToFulfill = quantity;
+        var remainingQuantityToFulfill = quantity;
 
         // Fetch batches sorted by expiry date (FIFO order)
         var batches =  context.MaterialBatches
@@ -1219,7 +1219,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     continue; // Skip batches with no remaining stock
 
                 // Determine how much could potentially be taken from this batch
-                decimal quantityToConsider = Math.Min(currentLocation.QuantityAtLocation, remainingQuantityToFulfill);
+                var quantityToConsider = Math.Min(currentLocation.QuantityAtLocation, remainingQuantityToFulfill);
 
                 // Add batch to the result list
                 result.Add(new BatchLocation
@@ -1244,7 +1244,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<List<BatchToSupply>>> BatchesToSupplyForGivenQuantity(Guid materialId, Guid warehouseId, decimal quantity)
     {
         var result = new List<BatchToSupply>();
-        decimal remainingQuantityToFulfill = quantity;
+        var remainingQuantityToFulfill = quantity;
 
         // Fetch batches in the given warehouse, sorted by expiry date (FIFO)
         var batches = await context.MaterialBatches
@@ -1271,13 +1271,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 continue;
             }
 
-            decimal availableQuantity = availableQuantityResult.Value;
+            var availableQuantity = availableQuantityResult.Value;
 
             if (availableQuantity <= 0)
                 continue; // Skip batches with no stock
 
             // Determine how much we can take from this batch
-            decimal quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
+            var quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
 
             // Map and add batch to the result list
             var batchDto = mapper.Map<MaterialBatchDto>(batch);
@@ -1376,7 +1376,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result> ConsumeMaterialAtLocation(Material material, Guid locationId, decimal quantity, Guid userId)
     {
         var materialBatchEvents = new List<MaterialBatchEvent>();
-        decimal remainingQuantityToConsume = quantity;
+        var remainingQuantityToConsume = quantity;
 
         foreach (var batch in material.Batches.OrderBy(b => b.ExpiryDate))
         {
@@ -1387,7 +1387,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 continue; // Skip batches with no remaining stock
 
             // Consume the minimum of what's available in the batch or the remaining needed quantity
-            decimal quantityToConsumeFromThisBatch = Math.Min(batch.RemainingQuantity, remainingQuantityToConsume);
+            var quantityToConsumeFromThisBatch = Math.Min(batch.RemainingQuantity, remainingQuantityToConsume);
 
             // Create a batch event for this consumption
             var materialBatchEvent = new MaterialBatchEvent
@@ -1488,7 +1488,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Read headers
         var headers = new Dictionary<string, int>();
-        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             headers[worksheet.Cells[1, col].Text.Trim()] = col;
         }
@@ -1502,7 +1502,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // Read data rows
-        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim().ToLower();
             var category = context.MaterialCategories.FirstOrDefault(m => m.Name != null && m.Name.ToLower() == categoryName);
@@ -1552,7 +1552,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Read headers
         var headers = new Dictionary<string, int>();
-        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             headers[worksheet.Cells[1, col].Text.Trim()] = col;
         }
@@ -1566,7 +1566,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // Read data rows
-        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim();
             var category = await context.MaterialCategories.FirstOrDefaultAsync(m => m.Name == categoryName);
@@ -1992,7 +1992,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return UploadErrors.WorksheetNotFound;
 
         var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             var header = worksheet.Cells[1, col].Text.Trim();
             if (!string.IsNullOrWhiteSpace(header))
@@ -2012,7 +2012,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 return UploadErrors.MissingRequiredHeader(header);
         }
 
-        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string h) => worksheet.Cells[row, headers[h]].Text.Trim();
 

@@ -17,4 +17,6 @@ public interface IReportRepository
     Task<Result<EmployeeMovementReportDto>> GetEmployeeMovementReport(MovementReportFilter filter);
     
     Task<Result<StaffTotalReport>> GetStaffTotalReport(MovementReportFilter filter);
+    
+    Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter);
 }

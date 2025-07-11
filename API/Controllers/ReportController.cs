@@ -89,4 +89,17 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetStaffTotalReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Retrieves the staff gender ratio report
+    /// </summary>
+    /// <param name="filter"></param>
+    /// <returns></returns>
+    [HttpGet("staff-gender-ratio-report")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffGenderRatioReport))]
+    public async Task<IResult> GetStaffGenderRatioReport([FromQuery] MovementReportFilter filter)
+    {
+        var result = await repository.GetStaffGenderRatioReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

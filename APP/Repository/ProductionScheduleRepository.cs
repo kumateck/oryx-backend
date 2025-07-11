@@ -286,7 +286,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             case ProductionStatus.InProgress:
                 activityStep.StartedAt = DateTime.UtcNow;
                 
-                bool isFirstStep = await context.ProductionActivitySteps
+                var isFirstStep = await context.ProductionActivitySteps
                     .Where(s => s.ProductionActivityId == activityStep.ProductionActivityId)
                     .OrderBy(s => s.Order)
                     .Select(s => s.Id)
@@ -353,7 +353,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 activityStep.CompletedAt = DateTime.UtcNow;
                 
 
-                bool isLastStep = await context.ProductionActivitySteps
+                var isLastStep = await context.ProductionActivitySteps
                     .Where(s => s.ProductionActivityId == activityStep.ProductionActivityId)
                     .OrderByDescending(s => s.Order)
                     .Select(s => s.Id)
@@ -1666,7 +1666,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 .FirstOrDefaultAsync(w =>
                     w.DepartmentId == stockTransferSource.ToDepartmentId && w.Type == WarehouseType.PackagedStorage);
 
-        decimal remainingQuantity = stockTransferSource.Quantity;
+        var remainingQuantity = stockTransferSource.Quantity;
         
         foreach (var batchRequest in batches)
         {
@@ -2298,7 +2298,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (toWarehouse is null)
             return Error.NotFound("Production.Warehouse", "Production.Warehouse not found");
         
-        decimal remainingQuantity = productionExtraPacking.Quantity;
+        var remainingQuantity = productionExtraPacking.Quantity;
         
         var distributedBatches = new List<MaterialBatch>();
 

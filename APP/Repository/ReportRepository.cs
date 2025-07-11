@@ -413,6 +413,74 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             Totals = total
         });
     }
+
+    public async Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
+    {
+
+        var query = context.Employees
+            .Include(e => e.Department)
+            .Where(e => e.Status == EmployeeStatus.Active); // hired before or during the period
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.StartDate.HasValue && filter.EndDate.HasValue)
+        {
+            query = query.Where(e =>e.DateEmployed.Date >= filter.StartDate.Value.Date &&
+                                     e.DateEmployed.Date <= filter.EndDate.Value.Date);
+        }
+
+        var employees = await query.ToListAsync();
+
+        var grouped = employees.GroupBy(e => e.Department?.Name ?? "Unassigned");
+
+        var departments = new List<StaffGenderRatioCountDto>();
+        var totals = new StaffGenderRatioTotalDto();
+
+        foreach (var group in grouped)
+        {
+            var dto = new StaffGenderRatioCountDto
+            {
+                Department = group.Key
+            };
+
+            foreach (var emp in group)
+            {
+                var isCasual = emp.Type == EmployeeType.Casual;
+                var isMale = emp.Gender == Gender.Male;
+                var isFemale = emp.Gender == Gender.Female;
+
+                if (isCasual && isMale) dto.NumberOfCasualMale++;
+                switch (isCasual)
+                {
+                    case true when isFemale:
+                        dto.NumberOfCasualFemale++;
+                        break;
+                    case false when isMale:
+                        dto.NumberOfPermanentMale++;
+                        break;
+                }
+
+                if (!isCasual && isFemale) dto.NumberOfPermanentFemale++;
+            }
+
+            // Add to totals
+            totals.NumberOfCasualMale += dto.NumberOfCasualMale;
+            totals.NumberOfCasualFemale += dto.NumberOfCasualFemale;
+            totals.NumberOfPermanentMale += dto.NumberOfPermanentMale;
+            totals.NumberOfPermanentFemale += dto.NumberOfPermanentFemale;
+
+            departments.Add(dto);
+        }
+
+        var result = new StaffGenderRatioReport
+        {
+            Departments = departments,
+            Totals = totals
+        };
+
+        return Result.Success(result);
+    }
 }
     
     

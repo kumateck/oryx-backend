@@ -334,7 +334,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             return UploadErrors.WorksheetNotFound;
 
         var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             var header = worksheet.Cells[1, col].Text.Trim();
             if (!string.IsNullOrWhiteSpace(header))
@@ -355,7 +355,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
         var assignments = new List<ShiftAssignment>();
 
-        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
 

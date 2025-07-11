@@ -317,7 +317,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
         
         // ✅ Check if all items in the requisition are completed
-        bool allItemsCompleted = stockRequisition.Items.All(i => i.Status == RequestStatus.Completed);
+        var allItemsCompleted = stockRequisition.Items.All(i => i.Status == RequestStatus.Completed);
     
         if (allItemsCompleted)
         {
@@ -335,7 +335,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 .Include(r => r.Items)
                 .ToListAsync();
 
-            bool allRequisitionItemsCompleted = relatedRequisitions
+            var allRequisitionItemsCompleted = relatedRequisitions
                 .SelectMany(r => r.Items)
                 .All(i => i.Status == RequestStatus.Completed);
 
