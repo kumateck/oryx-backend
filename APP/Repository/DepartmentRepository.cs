@@ -135,6 +135,22 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
         {
             return Error.NotFound("Department.NotFound", "Department not found");
         }
+
+        if (request.ParentDepartmentId.HasValue)
+        {
+            var childrenOfExistingDepartment = await context.Departments
+                .Where(d => d.ParentDepartmentId == existingDepartment.Id)
+                .ToListAsync();
+
+            if (childrenOfExistingDepartment.Count != 0)
+            {
+                if (childrenOfExistingDepartment.Select(b => b.Id).Contains(request.ParentDepartmentId.Value))
+                {
+                    return Error.Validation("Department.Children", 
+                        $"Department {request.ParentDepartmentId} is a child of department {existingDepartment.Id}");
+                }
+            }
+        }
         
         context.Warehouses.RemoveRange(existingDepartment.Warehouses);
         mapper.Map(request, existingDepartment);
