@@ -12,6 +12,7 @@ using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
@@ -230,14 +231,21 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         };
     }
     
-    public async Task<Result<List<EmployeeMovementReportDto>>> GetEmployeeMovementReport(MovementReportFilter filter)
+    public async Task<Result<EmployeeMovementReportDto>> GetEmployeeMovementReport(MovementReportFilter filter)
     {
         var start = filter.StartDate ?? DateTime.UtcNow.AddMonths(-1); 
         var end = filter.EndDate ?? DateTime.UtcNow;
 
+        // Get employees who were either hired or left during the period
         var query = context.Employees
             .Include(e => e.Department)
-            .Where(e => e.DateEmployed >= start && e.DateEmployed <= end);
+            .Where(e => 
+                (e.DateEmployed >= start && e.DateEmployed <= end) || 
+                (e.Status == EmployeeStatus.Inactive && 
+                 e.ExitDate.HasValue && 
+                 e.ExitDate >= start && 
+                 e.ExitDate <= end) 
+            );
 
         if (filter.DepartmentId.HasValue)
             query = query.Where(e => e.DepartmentId == filter.DepartmentId.Value);
@@ -246,49 +254,121 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         var grouped = employees.GroupBy(e => e.Department?.Name ?? "Unassigned");
 
-        var result = new List<EmployeeMovementReportDto>();
+        var departments = new List<EmployeeMovementCountDto>();
+        var totals = new EmployeeMovementGrandTotalDto();
 
         foreach (var group in grouped)
         {
-            var dto = new EmployeeMovementReportDto { DepartmentName = group.Key };
+            var dto = new EmployeeMovementCountDto { DepartmentName = group.Key };
 
             foreach (var emp in group)
             {
                 var isCasual = emp.Type == EmployeeType.Casual;
 
+                // Count new hires during the period
                 if (emp.DateEmployed >= start && emp.DateEmployed <= end)
                 {
-                    if (!isCasual) dto.PermanentNew++;
-                    else dto.CasualNew++;
+                    if (isCasual)
+                    {
+                        dto.CasualNew++;
+                        totals.CasualNew++;
+                    }
+                    else
+                    {
+                        dto.PermanentNew++;
+                        totals.PermanentNew++;
+                    }
                 }
 
-                if (emp.ExitDate >= start && emp.ExitDate <= end)
+                // Count exits during the period (only for inactive employees)
+                if (emp.Status == EmployeeStatus.Inactive && 
+                    emp.ExitDate.HasValue && 
+                    emp.ExitDate >= start && 
+                    emp.ExitDate <= end && 
+                    emp.InactiveStatus.HasValue)
                 {
-                    switch (emp.InactiveStatus)
+                    switch (emp.InactiveStatus.Value)
                     {
                         case EmployeeInactiveStatus.Resignation:
-                            if (isCasual) dto.CasualResignation++;
-                            else dto.PermanentResignation++;
+                            if (isCasual)
+                            {
+                                dto.CasualResignation++;
+                                totals.CasualResignation++;
+                            }
+                            else
+                            {
+                                dto.PermanentResignation++;
+                                totals.PermanentResignation++;
+                            }
                             break;
+                            
                         case EmployeeInactiveStatus.Termination:
-                            if (isCasual) dto.CasualTermination++;
-                            else dto.PermanentTermination++;
+                        case EmployeeInactiveStatus.Deceased:
+                            if (isCasual)
+                            {
+                                dto.CasualTermination++;
+                                totals.CasualTermination++;
+                            }
+                            else
+                            {
+                                dto.PermanentTermination++;
+                                totals.PermanentTermination++;
+                            }
                             break;
+                            
                         case EmployeeInactiveStatus.SummaryDismissed:
-                            if (isCasual) dto.CasualSDVP++;
-                            else dto.PermanentSDVP++;
+                            if (isCasual)
+                            {
+                                dto.CasualSDVP++;
+                                totals.CasualSDVP++;
+                            }
+                            else
+                            {
+                                dto.PermanentSDVP++;
+                                totals.PermanentSDVP++;
+                            }
                             break;
+                            
                         case EmployeeInactiveStatus.Transfer:
-                            dto.PermanentTransfer++; // assuming transfers are only permanent
+                            // Transfers are typically permanent employees
+                            if (!isCasual)
+                            {
+                                dto.PermanentTransfer++;
+                                totals.PermanentTransfer++;
+                            }
                             break;
+                            
+                        case EmployeeInactiveStatus.VacatedPost:
+                            // These might need separate handling depending on your business rules
+                            // For now, treating them as terminations
+                            if (isCasual)
+                            {
+                                dto.CasualSDVP++;
+                                totals.CasualSDVP++;
+                            }
+                            else
+                            {
+                                dto.PermanentSDVP++;
+                                totals.PermanentSDVP++;
+                            }
+                            break;
+                            
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
                 }
             }
-            result.Add(dto);
+            
+            departments.Add(dto);
         }
-        return result;
+
+        var result = new EmployeeMovementReportDto
+        {
+            Departments = departments,
+            Totals = totals
+        };
+
+        return Result.Success(result);
     }
 
     public async Task<Result<StaffTotalReport>> GetStaffTotalReport(MovementReportFilter filter)
@@ -327,11 +407,11 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         };
         
 
-        return new StaffTotalReport
+        return Result.Success(new StaffTotalReport
         {
             Departments = groupedResults,
             Totals = total
-        };
+        });
     }
 }
     
