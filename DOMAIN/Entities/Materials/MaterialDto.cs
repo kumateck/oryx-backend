@@ -45,3 +45,10 @@ public class MaterialDepartmentWithWarehouseStockDto : MaterialDepartmentDto
     public decimal WarehouseStock { get; set; }
     public decimal PendingStockTransferQuantity { get; set; }
 }
+
+public class MaterialWithStockDto
+{
+    public MaterialDto Material { get; set; }
+    public decimal StockQuantity { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+}

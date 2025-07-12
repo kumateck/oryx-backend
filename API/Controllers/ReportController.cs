@@ -32,7 +32,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Gets a list of materials that are below the minimum stock level for a specific department.
     /// </summary>
     [HttpGet("production/materials-below-minimum")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialWithStockDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialsBelowMinimumStockLevel()
     {

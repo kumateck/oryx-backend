@@ -93,7 +93,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     }
 
 
-    public async Task<Result<List<MaterialDto>>> GetMaterialsBelowMinimumStockLevel(Guid departmentId)
+    public async Task<Result<List<MaterialWithStockDto>>> GetMaterialsBelowMinimumStockLevel(Guid departmentId)
     {
         var materialDepartments = await context.MaterialDepartments
             .AsSplitQuery()
@@ -112,7 +112,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         if (rawWarehouse == null || packageWarehouse == null)
             return Error.Failure("Department.Warehouse", "One or more required warehouses not found.");
 
-        List<Material> materialsBelowMinStock = [];
+        List<MaterialWithStockDto> materialsBelowMinStock = [];
 
         foreach (var materialDepartment in materialDepartments)
         {
@@ -127,12 +127,18 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
             if (stock < materialDepartment.MinimumStockLevel)
             {
-                materialsBelowMinStock.Add(material);
+                materialsBelowMinStock.Add(new MaterialWithStockDto
+                {
+                    Material = mapper.Map<MaterialDto>(material),
+                    StockQuantity = stock,
+                    UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment.UoM)
+                });
             }
         }
 
-        return mapper.Map<List<MaterialDto>>(materialsBelowMinStock);
+        return materialsBelowMinStock;
     }
+
 
     public async Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(ReportFilter filter)
     {

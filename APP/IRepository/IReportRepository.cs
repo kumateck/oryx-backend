@@ -8,7 +8,7 @@ namespace APP.IRepository;
 public interface IReportRepository
 {
     Task<Result<ProductionReportDto>> GetProductionReport(ReportFilter filter, Guid departmentId);
-    Task<Result<List<MaterialDto>>> GetMaterialsBelowMinimumStockLevel(Guid departmentId);
+    Task<Result<List<MaterialWithStockDto>>> GetMaterialsBelowMinimumStockLevel(Guid departmentId);
     Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(ReportFilter filter);
     Task<Result<PermanentStaffGradeReportDto>> GetPermanentStaffGradeReport(Guid? departmentId);
     Task<Result<List<EmployeeMovementReportDto>>> GetEmployeeMovementReport(MovementReportFilter filter);
