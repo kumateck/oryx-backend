@@ -223,7 +223,8 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         await context.NotificationReads.AddAsync(new NotificationRead
         {
             NotificationId = notification.Id,
-            UserId = userId
+            UserId = userId,
+            ReadAt = DateTime.UtcNow
         });
         
         await context.SaveChangesAsync();
