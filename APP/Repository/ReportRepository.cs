@@ -5,11 +5,13 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -63,7 +65,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         return new ProductionReportDto
         {
-            NumberOfPurchaseRequisitions = await purchaseRequisitions.CountAsync(),
+            NumberOfPurchaseRequisitions = await purchaseRequisitions.CountAsync(p => p.DepartmentId == departmentId),
             NumberOfNewPurchaseRequisitions = await purchaseRequisitions.CountAsync(p => p.Status == RequestStatus.New),
             NumberOfInProgressPurchaseRequisitions =
                 await purchaseRequisitions.CountAsync(p => p.Status == RequestStatus.Pending),
@@ -333,6 +335,115 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             Totals = total
         };
     }
+
+    public async Task<Result<WarehouseReportDto>> GetWarehouseReport(ReportFilter filter, Guid departmentId)
+    {
+        var stockRequisitions = context.Requisitions
+            .Where(r => r.RequisitionType == RequisitionType.Stock && r.DepartmentId == departmentId)
+            .AsQueryable();
+        
+        var incomingStockTransfers = context.StockTransferSources
+            .Where(s => s.FromDepartmentId == departmentId)
+            .AsQueryable();
+
+        var shipments = context.ShipmentDocuments
+            .AsSplitQuery()
+            .Include(s => s.ShipmentInvoice)
+            .ThenInclude(si => si.Items)
+            .Where(s =>
+                s.ShipmentInvoice.Items.Any(item =>
+                    context.PurchaseOrders
+                        .Where(po => po.Id == item.PurchaseOrderId)
+                        .Select(po => po.SourceRequisitionId)
+                        .Join(
+                            context.SourceRequisitions.Include(sr => sr.Items),
+                            poSrcId => poSrcId,
+                            sr => sr.Id,
+                            (poSrcId, sr) => sr.Items.Select(i => i.RequisitionId)
+                        )
+                        .SelectMany(ids => ids)
+                        .Join(
+                            context.Requisitions,
+                            reqId => reqId,
+                            r => r.Id,
+                            (reqId, r) => r.DepartmentId
+                        )
+                        .Distinct()
+                        .Contains(departmentId)
+                )
+            )
+            .AsQueryable();
+        
+        
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            stockRequisitions = stockRequisitions.Where(r => r.CreatedAt >= start);
+            incomingStockTransfers = incomingStockTransfers.Where(s => s.CreatedAt >= start);
+            shipments = shipments.Where(s => s.CreatedAt >= start);
+        }
+
+        
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            stockRequisitions = stockRequisitions.Where(r => r.CreatedAt < end);
+            incomingStockTransfers = incomingStockTransfers.Where(r => r.CreatedAt < end);
+            shipments = shipments.Where(r => r.CreatedAt < end);
+        }
+        
+        return new WarehouseReportDto
+        {
+            NumberOfStockRequisitions = await stockRequisitions.CountAsync(),
+            NumberOfNewStockRequisitions = await stockRequisitions.CountAsync(s => s.Status == RequestStatus.New),
+            NumberOfInProgressStockRequisitions =  await stockRequisitions.CountAsync(s => s.Status == RequestStatus.Pending),
+            NumberOfCompletedStockRequisitions =  await stockRequisitions.CountAsync(s => s.Status == RequestStatus.Completed),
+            NumberOfIncomingStockTransfers = await incomingStockTransfers.CountAsync(),
+            NumberOfIncomingPendingStockTransfers = await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.InProgress),
+            NumberOfIncomingCompletedStockTransfers = await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.Issued),
+            NumberOfShipments =  await shipments.CountAsync(),
+            NumberOfInTransitShipments = await shipments.CountAsync(s => s.Status == ShipmentStatus.InTransit),
+            NumberOfArrivedShipments = await shipments.CountAsync(s => s.Status == ShipmentStatus.Arrived),
+            NumberOfClearedShipments = await shipments.CountAsync(s => s.Status == ShipmentStatus.Cleared),
+        };
+    }
+    
+    public async Task<Result<List<MaterialBatchReservedQuantityReportDto>>> GetReservedMaterialBatchesForDepartment(ReportFilter filter, Guid departmentId)
+    {
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
+        if(department is null) return Error.NotFound("Department", "Department not found.");
+        
+        var materialBatchReserved = context.MaterialBatchReservedQuantities
+            .AsSplitQuery()
+            .Include(m => m.MaterialBatch).ThenInclude(b => b.Material)
+            .Include(m => m.Warehouse)
+            .Where(m => m.Warehouse.DepartmentId == departmentId)
+            .AsQueryable();
+        
+        if (filter.MaterialKind.HasValue)
+        {
+            materialBatchReserved = materialBatchReserved
+                .Where(m => m.MaterialBatch.Material.Kind == filter.MaterialKind);
+        }
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            materialBatchReserved = materialBatchReserved.Where(r => r.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            materialBatchReserved = materialBatchReserved.Where(r => r.CreatedAt < end);
+        }
+
+        return await materialBatchReserved.Select(item => new MaterialBatchReservedQuantityReportDto
+        {
+            Warehouse = mapper.Map<CollectionItemDto>(item.Warehouse),
+            Material = mapper.Map<CollectionItemDto>(item.MaterialBatch.Material),
+            UoM = mapper.Map<UnitOfMeasureDto>(item.UoM),
+            Quantity = item.Quantity
+        }).ToListAsync();
+    }   
 }
-    
-    
