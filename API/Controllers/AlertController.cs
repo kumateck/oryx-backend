@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Alerts;
+using DOMAIN.Entities.Notifications;
 
 namespace API.Controllers;
 
@@ -93,5 +94,37 @@ public class AlertController(IAlertRepository repo) : ControllerBase
         
         var result = await repo.DeleteAlert(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Marks a specific notification as read for the given user.
+    /// </summary>
+    [HttpPut("{id}/mark-as-read")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MarkNotificationAsRead(Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repo.MarkNotificationAsRead(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves notifications for the current user, optionally filtering by unread status.
+    /// </summary>
+    [HttpGet("notifications")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<NotificationDto>))]
+    public async Task<IResult> GetNotificationsForUser([FromQuery] bool unreadOnly = false)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repo.GetNotificationsForUser(Guid.Parse(userId), unreadOnly);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

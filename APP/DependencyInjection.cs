@@ -5,7 +5,7 @@ using APP.Repository;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Message;
-using APP.Services.Notification;
+using APP.Services.NotificationService;
 using APP.Services.Pdf;
 using APP.Services.Storage;
 using APP.Services.Token;
@@ -40,9 +40,7 @@ public static class DependencyInjection
         services.AddMassTransit(configure =>
         {
             configure.SetKebabCaseEndpointNameFormatter();
-
-            //configure.AddConsumer<LocationFilterConsumer>();
-    
+            
             configure.UsingRabbitMq((context, cfg) =>
             {
                 cfg.Host(rabbitHost ?? throw new ArgumentException("Invalid rabbit host name"), h =>
@@ -53,7 +51,6 @@ public static class DependencyInjection
         
                 cfg.ReceiveEndpoint("push_notification_queue", e =>
                 {
-                    //e.ConfigureConsumer<LocationFilterConsumer>(context);
                     e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
                     e.UseMessageRetry(r =>
                     {
