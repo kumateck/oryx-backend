@@ -445,4 +445,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             Quantity = item.Quantity
         }).ToListAsync();
     }   
+    
+    //     public async Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
+
 }

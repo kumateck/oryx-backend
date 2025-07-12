@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Reports;
+using DOMAIN.Entities.Reports.HumanResource;
 
 namespace API.Controllers;
 
@@ -72,48 +73,48 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    // /// <summary>
-    // /// Gets the human resource report
-    // /// </summary>
-    // [HttpGet("human-resource")]
-    // [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HrDashboardDto))]
-    // [ProducesResponseType(StatusCodes.Status404NotFound)]
-    // public async Task<IResult> GetHumanResourceReport([FromQuery] ReportFilter filter)
-    // {
-    //     var result = await repository.GetHumanResourceDashboardReport(filter);
-    //     return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    // }
+    /// <summary>
+    /// Gets the human resource report
+    /// </summary>
+    [HttpGet("human-resource")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HrDashboardDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetHumanResourceReport([FromQuery] ReportFilter filter)
+    {
+        var result = await repository.GetHumanResourceDashboardReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
-    // /// <summary>
-    // /// Retrieves the report detailing the grade-wise count of permanent staff across departments.
-    // /// </summary>
-    // [HttpGet("staff-report")]
-    // [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PermanentStaffGradeReportDto))]
-    // public async Task<IResult> GetPermanentStaffGradeReport([FromQuery] Guid? departmentId)
-    // {
-    //     var result = await repository.GetPermanentStaffGradeReport(departmentId);
-    //     return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    // }
+    /// <summary>
+    /// Retrieves the report detailing the grade-wise count of permanent staff across departments.
+    /// </summary>
+    [HttpGet("staff-report")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PermanentStaffGradeReportDto))]
+    public async Task<IResult> GetPermanentStaffGradeReport([FromQuery] Guid? departmentId)
+    {
+        var result = await repository.GetPermanentStaffGradeReport(departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
-    // /// <summary>
-    // /// Retrieves the employee movement report based on the specified filter.
-    // /// </summary>
-    // [HttpGet("employee-movement")]
-    // [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeMovementReportDto>))]
-    // public async Task<IResult> GetEmployeeMovementReport([FromQuery] MovementReportFilter filter)
-    // {
-    //     var result = await repository.GetEmployeeMovementReport(filter);
-    //     return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    // }
+    /// <summary>
+    /// Retrieves the employee movement report based on the specified filter.
+    /// </summary>
+    [HttpGet("employee-movement")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeMovementReportDto>))]
+    public async Task<IResult> GetEmployeeMovementReport([FromQuery] MovementReportFilter filter)
+    {
+        var result = await repository.GetEmployeeMovementReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
-    // /// <summary>
-    // /// Retrieves the staff total report based on the specified filter.
-    // /// </summary>
-    // [HttpGet("staff-total-report")]
-    // [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffTotalReport))]
-    // public async Task<IResult> GetStaffTotalReport([FromQuery] MovementReportFilter filter)
-    // {
-    //     var result = await repository.GetStaffTotalReport(filter);
-    //     return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    // }
+    /// <summary>
+    /// Retrieves the staff total report based on the specified filter.
+    /// </summary>
+    [HttpGet("staff-total-report")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffTotalReport))]
+    public async Task<IResult> GetStaffTotalReport([FromQuery] MovementReportFilter filter)
+    {
+        var result = await repository.GetStaffTotalReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

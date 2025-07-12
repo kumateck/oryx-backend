@@ -14,7 +14,10 @@ public class StaffGrandTotal
     public int TotalStaff => TotalPermanentStaff + TotalCasualStaff;
 }
 
-public class StaffTotalSummary : StaffGrandTotal
+public class StaffTotalSummary
 {
+    public int TotalPermanentStaff { get; set; }
+    public int TotalCasualStaff { get; set; }
+    public int TotalStaff => TotalPermanentStaff + TotalCasualStaff;
     public string Department { get; set; }
 }
