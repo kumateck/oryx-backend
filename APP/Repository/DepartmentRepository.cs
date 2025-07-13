@@ -93,6 +93,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
         var department = await context.Departments
             .AsSplitQuery()
             .Include(d => d.Warehouses)
+            .Include(d => d.ParentDepartment)
             .FirstOrDefaultAsync(d => d.Id == departmentId);
 
         return department is null
@@ -105,6 +106,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
         var query = context.Departments
             .AsSplitQuery()
             .Include(d => d.Warehouses)
+            .Include(d => d.ParentDepartment)
             .AsQueryable();
         
         if (type.HasValue)
