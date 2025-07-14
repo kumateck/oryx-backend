@@ -17,6 +17,8 @@ public class Department
     public Guid? LastUpdatedById { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid? LastDeletedById { get; set; }
+    public Guid? ParentDepartmentId { get; set; }
+    public Department ParentDepartment { get; set; }
     public List<Warehouse> Warehouses { get; set; } = [];
     
     public ICollection<Designation> Designations { get; set; } = new List<Designation>();

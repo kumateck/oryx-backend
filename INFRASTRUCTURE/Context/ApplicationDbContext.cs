@@ -30,6 +30,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Permissions;
@@ -494,6 +495,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Sample Materials 
     
     public DbSet<MaterialSampling> MaterialSamplings { get; set; }
+    #endregion
+
+    #region Notification
+
+    public DbSet<Notification> Notifications { get; set; }
+    public DbSet<NotificationRead> NotificationReads { get; set; }
+
+
     #endregion
     
     // #region TenantFilter

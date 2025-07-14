@@ -16,7 +16,6 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Gets the production report for a specific department.
     /// </summary>
-    /// <returns>Returns the production report.</returns>
     [HttpGet("production")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionReportDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -32,11 +31,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Gets a list of materials that are below the minimum stock level for a specific department.
     /// </summary>
-    /// <returns>Returns a list of materials below the minimum stock level.</returns>
     [HttpGet("production/materials-below-minimum")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialWithStockDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialsBelowMinimumStockLevel([FromQuery] ReportFilter filter)
+    public async Task<IResult> GetMaterialsBelowMinimumStockLevel()
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (departmentId == null) return TypedResults.Unauthorized();
@@ -44,7 +42,37 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetMaterialsBelowMinimumStockLevel(Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
+    /// <summary>
+    /// Gets the warehouse report for a specific department.
+    /// </summary>
+    [HttpGet("warehouse")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseReportDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetWarehouseReport([FromQuery] ReportFilter filter)
+    {
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (departmentId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetWarehouseReport(filter, Guid.Parse(departmentId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets reserved material batches for a specific department.
+    /// </summary>
+    [HttpGet("reserved-material-batches")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchReservedQuantityReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetReservedMaterialBatches([FromQuery] ReportFilter filter)
+    {
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (departmentId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetReservedMaterialBatchesForDepartment(filter, Guid.Parse(departmentId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Gets the human resource report
     /// </summary>

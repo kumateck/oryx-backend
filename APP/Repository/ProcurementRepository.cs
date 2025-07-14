@@ -1915,5 +1915,26 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
         return requisition.Department;
     }
+
+    public async Task<List<Guid>> GetDepartmentIdsFromPurchaseOrder(Guid purchaseOrderId)
+    {
+        var purchaseOrder = await context.PurchaseOrders
+            .FirstOrDefaultAsync(p => p.Id == purchaseOrderId);
+        if (purchaseOrder is null) return [];
+        
+        var sourceRequisition = await context.SourceRequisitions
+            .AsSplitQuery()
+            .Include(s => s.Items)
+            .FirstOrDefaultAsync(s => s.Id == purchaseOrder.SourceRequisitionId);
+        if (sourceRequisition is null) return [];
+        
+        
+        var requisitionIds = sourceRequisition.Items.Select(i => i.RequisitionId).Distinct().ToList();
+        
+        return await context.Requisitions.Where(r => requisitionIds.Contains(r.Id))
+            .Select(r => r.DepartmentId)
+            .Distinct()
+            .ToListAsync();
+    }
 }
 

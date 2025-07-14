@@ -16,4 +16,6 @@ public interface IAlertRepository
     Task<Result> ToggleDisable(Guid id);
     Task<Result> DeleteAlert(Guid id, Guid userId);
     Task ProcessAlert(string message, NotificationType type, Guid? departmentId = null, List<User> assignedUsers = null);
+    Task<Result> MarkNotificationAsRead(Guid id, Guid userId);
+   Task<Result<List<NotificationDto>>> GetNotificationsForUser(Guid userId, bool unreadOnly);
 }

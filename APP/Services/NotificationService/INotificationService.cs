@@ -1,7 +1,7 @@
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.Notifications;
 
-namespace APP.Services.Notification;
+namespace APP.Services.NotificationService;
 
 public interface INotificationService
 {

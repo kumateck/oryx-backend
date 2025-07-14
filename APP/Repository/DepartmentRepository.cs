@@ -93,6 +93,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
         var department = await context.Departments
             .AsSplitQuery()
             .Include(d => d.Warehouses)
+            .Include(d => d.ParentDepartment)
             .FirstOrDefaultAsync(d => d.Id == departmentId);
 
         return department is null
@@ -105,6 +106,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
         var query = context.Departments
             .AsSplitQuery()
             .Include(d => d.Warehouses)
+            .Include(d => d.ParentDepartment)
             .AsQueryable();
         
         if (type.HasValue)
@@ -134,6 +136,22 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
         if (existingDepartment is null)
         {
             return Error.NotFound("Department.NotFound", "Department not found");
+        }
+
+        if (request.ParentDepartmentId.HasValue)
+        {
+            var childrenOfExistingDepartment = await context.Departments
+                .Where(d => d.ParentDepartmentId == existingDepartment.Id)
+                .ToListAsync();
+
+            if (childrenOfExistingDepartment.Count != 0)
+            {
+                if (childrenOfExistingDepartment.Select(b => b.Id).Contains(request.ParentDepartmentId.Value))
+                {
+                    return Error.Validation("Department.Children", 
+                        $"Department {request.ParentDepartmentId} is a child of department {existingDepartment.Id}");
+                }
+            }
         }
         
         context.Warehouses.RemoveRange(existingDepartment.Warehouses);

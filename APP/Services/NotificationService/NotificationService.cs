@@ -3,11 +3,12 @@ using APP.Services.Email;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.Notifications;
+using INFRASTRUCTURE.Context;
 using MassTransit;
 
-namespace APP.Services.Notification;
+namespace APP.Services.NotificationService;
 
-public class NotificationService(IEmailService emailService, /*IMessagingService smsService,*/ IPublishEndpoint publishEndpoint, IActivityLogRepository logRepository) : INotificationService
+public class NotificationService(IEmailService emailService, IPublishEndpoint publishEndpoint, IActivityLogRepository logRepository, ApplicationDbContext context) : INotificationService
 {
     public async Task SendNotification(NotificationDto notification, List<AlertType> alertTypes)
     {
@@ -17,6 +18,16 @@ public class NotificationService(IEmailService emailService, /*IMessagingService
             {
                 case AlertType.InApp:
                     await publishEndpoint.Publish(notification);
+                    await context.Notifications.AddAsync(new Notification
+                    {
+                        Id = notification.Id,
+                        Message = notification.Message,
+                        Recipients = notification.Recipients.Select(i => i.Id).ToList(),
+                        Type = notification.Type,
+                        AlertType = AlertType.InApp,
+                        SentAt = DateTime.UtcNow
+                    });
+                    await context.SaveChangesAsync();
                     foreach (var recipient in notification.Recipients)
                     { 
                         await logRepository.RecordActivityAsync(new CreateActivityLog
@@ -33,6 +44,16 @@ public class NotificationService(IEmailService emailService, /*IMessagingService
                 
                 case AlertType.Email:
                     emailService.ProcessNotificationData(notification);
+                    await context.Notifications.AddAsync(new Notification
+                    {
+                        Id = notification.Id,
+                        Message = notification.Message,
+                        Recipients = notification.Recipients.Select(i => i.Id).ToList(),
+                        Type = notification.Type,
+                        AlertType = AlertType.Email,
+                        SentAt = DateTime.UtcNow
+                    });
+                    await context.SaveChangesAsync();
                     foreach (var recipient in notification.Recipients)
                     { 
                         await logRepository.RecordActivityAsync(new CreateActivityLog

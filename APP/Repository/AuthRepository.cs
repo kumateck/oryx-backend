@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
 using APP.Services.Email;
+using AutoMapper;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Users;
@@ -15,7 +16,7 @@ using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
 namespace APP.Repository;
 
-public class AuthRepository(IEmailService emailService,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IPublishEndpoint publishEndpoint /*, IEmailService emailService*/) 
+public class AuthRepository(IEmailService emailService,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IPublishEndpoint publishEndpoint , IMapper mapper) 
     : IAuthRepository
 {
     public async Task<Result<LoginResponse>> Login(LoginRequest request)
@@ -47,7 +48,9 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
         {
             await publishEndpoint.Publish(new NotificationDto
             {
-                Message = "test notification"
+                Id = Guid.NewGuid(),
+                Message = "test notification",
+                Recipients =  mapper.Map<List<UserDto>>(await context.Users.Take(2).ToListAsync())
             });
             return await jwtService.Authenticate(user, "web");
         }
