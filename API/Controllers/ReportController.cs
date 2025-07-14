@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.HumanResource;
+using DOMAIN.Entities.Warehouses;
 
 namespace API.Controllers;
 
@@ -128,6 +130,36 @@ public class ReportController(IReportRepository repository) : ControllerBase
     public async Task<IResult> GetStaffGenderRatioReport([FromQuery] MovementReportFilter filter)
     {
         var result = await repository.GetStaffGenderRatioReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets a list of materials ready for checklist for a specific user.
+    /// </summary>
+    [HttpGet("materials-ready-for-checklist")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<DistributedRequisitionMaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialsReadyForChecklist([FromQuery] ReportFilter filter)
+    {
+        var userId = (string)HttpContext.Items["User"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetMaterialsReadyForChecklist(filter, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets a list of materials ready for assignment for a specific department.
+    /// </summary>
+    [HttpGet("materials-ready-for-assignment")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialsReadyForAssignment([FromQuery] ReportFilter filter)
+    {
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (departmentId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetMaterialsReadyForAssignment(filter, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

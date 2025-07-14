@@ -159,4 +159,9 @@ public class MaterialBatchReservedQuantityDto : BaseDto
     public decimal Quantity { get; set; }
 }
 
+public class MaterialBatchWithUoMDto : MaterialBatchDto
+{
+    public UnitOfMeasureDto UoM { get; set; }
+}
+
 
