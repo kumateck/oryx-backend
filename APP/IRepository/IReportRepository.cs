@@ -11,6 +11,12 @@ public interface IReportRepository
     Task<Result<List<MaterialWithStockDto>>> GetMaterialsBelowMinimumStockLevel(Guid departmentId);
     Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(ReportFilter filter);
     Task<Result<PermanentStaffGradeReportDto>> GetPermanentStaffGradeReport(Guid? departmentId);
+    
+    Task<Result<EmployeeMovementReportDto>> GetEmployeeMovementReport(MovementReportFilter filter);
+    
+    Task<Result<StaffTotalReport>> GetStaffTotalReport(MovementReportFilter filter);
+    
+    Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter);
     Task<Result<List<EmployeeMovementReportDto>>> GetEmployeeMovementReport(MovementReportFilter filter);
     Task<Result<StaffTotalReport>> GetStaffTotalReport(MovementReportFilter filter);
     Task<Result<WarehouseReportDto>> GetWarehouseReport(ReportFilter filter, Guid departmentId);

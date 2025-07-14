@@ -236,7 +236,7 @@ public class OryxMapper : Profile
         CreateMap<CreateProductSpecificationRequest, ProductSpecification>();
         CreateMap<ProductSpecification, ProductSpecificationDto>()
             .ForMember(dest => dest.PackingStyle, opt => opt.MapFrom(src => src.Product.PackageStyle))
-            .ForMember(dest => dest.LabelClaim, opt => opt.MapFrom(src => src.Product.Description))
+            .ForMember(dest => dest.LabelClaim, opt => opt.MapFrom(src => src.Product.LabelClaim))
             .ForMember(dest => dest.ShelfLife, opt => opt.MapFrom(src => src.Product.ShelfLife));
 
         

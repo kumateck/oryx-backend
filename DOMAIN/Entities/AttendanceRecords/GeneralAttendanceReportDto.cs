@@ -1,3 +1,5 @@
+using DOMAIN.Entities.Employees;
+
 namespace DOMAIN.Entities.AttendanceRecords;
 
 public class GeneralAttendanceReportDto
@@ -22,4 +24,17 @@ public class GeneralAttendanceReportDto
     
     public int CasualNight { get; set; }
     
+    public AbsencesDto Absences { get; set; }
+    
+    public SuspensionsDto Suspensions { get; set; }
+}
+
+public class AbsencesDto
+{
+    public List<MinimalEmployeeInfoDto> AbsentEmployees { get; set; }
+}
+
+public class SuspensionsDto
+{
+    public List<MinimalEmployeeInfoDto> SuspendedEmployees { get; set; }
 }

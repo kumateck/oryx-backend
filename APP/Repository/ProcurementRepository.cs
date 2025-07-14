@@ -340,7 +340,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
 
-        int latestRevisionNumber = existingOrder.RevisedPurchaseOrders.Count != 0
+        var latestRevisionNumber = existingOrder.RevisedPurchaseOrders.Count != 0
             ? existingOrder.RevisedPurchaseOrders.Max(r => r.RevisionNumber) + 1
             : 1;
 
@@ -1674,7 +1674,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 context.RequisitionItems.Update(requisitionItem);
 
                 // Determine the correct warehouse for this department
-                Warehouse departmentWarehouse = requisitionItem.Material.Kind == MaterialKind.Raw ? await context.Warehouses
+                var departmentWarehouse = requisitionItem.Material.Kind == MaterialKind.Raw ? await context.Warehouses
                     .IgnoreQueryFilters()
                     .Include(warehouse => warehouse.ArrivalLocation)
                     .FirstOrDefaultAsync(w => w.DepartmentId == item.Department.Id && w.Type == WarehouseType.RawMaterialStorage) : 

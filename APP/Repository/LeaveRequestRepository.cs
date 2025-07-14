@@ -42,8 +42,8 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         if (existingRequest is not null)
             return Error.Validation("Request.Exists", "A request already exists for this period.");
 
-        int paidDays = 0;
-        int unpaidDays = 0;
+        var paidDays = 0;
+        var unpaidDays = 0;
         
         switch (request.RequestCategory)
         {

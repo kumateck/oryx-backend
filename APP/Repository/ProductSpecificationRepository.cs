@@ -25,6 +25,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         var query = context.ProductSpecifications
             .IgnoreQueryFilters()
             .Include(ps => ps.Product)
+            .Include(ps => ps.CreatedBy)
             .AsQueryable();
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductSpecificationDto>);
@@ -36,6 +37,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         var productSpec = await context.ProductSpecifications
                 .IgnoreQueryFilters()
                 .Include(ps => ps.Product)
+                .Include(ps => ps.CreatedBy)
                 .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")

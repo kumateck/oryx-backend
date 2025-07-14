@@ -24,6 +24,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     {
         var query = context.MaterialSpecifications
             .Include(ms => ms.Material)
+            .Include(ms => ms.CreatedBy)
             .Where(ms => ms.Material.Kind == materialKind)
             .AsQueryable();
 
@@ -35,6 +36,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     {
         var materialSpec = await context.MaterialSpecifications
             .Include(ms => ms.Material)
+            .Include(ms => ms.CreatedBy)
             .FirstOrDefaultAsync(ps => ps.Id == id);
         return materialSpec is null ? 
             Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")

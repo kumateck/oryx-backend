@@ -597,7 +597,7 @@ namespace APP.Repository;
             return UploadErrors.WorksheetNotFound;
 
         var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             var header = worksheet.Cells[1, col].Text.Trim();
             if (!string.IsNullOrEmpty(header))
@@ -616,7 +616,7 @@ namespace APP.Repository;
                 return UploadErrors.MissingRequiredHeader(header);
         }
 
-        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             var row1 = row;
             var getCell = (string header) => worksheet.Cells[row1, headers[header]].Text.Trim();
@@ -699,7 +699,7 @@ namespace APP.Repository;
             return UploadErrors.WorksheetNotFound;
 
         var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             var header = worksheet.Cells[1, col].Text.Trim();
             if (!string.IsNullOrEmpty(header))
@@ -720,7 +720,7 @@ namespace APP.Repository;
 
         var bomMap = new Dictionary<string, BillOfMaterial>(); // Key: productCode
 
-        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
 
@@ -800,7 +800,7 @@ namespace APP.Repository;
             return UploadErrors.WorksheetNotFound;
 
         var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             var header = worksheet.Cells[1, col].Text.Trim();
             if (!string.IsNullOrEmpty(header))
@@ -822,7 +822,7 @@ namespace APP.Repository;
 
         var packages = new List<ProductPackage>();
 
-        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
 

@@ -380,7 +380,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
 
     public async Task<Result<Guid>> UpdateItem(CreateItemRequest request, Guid itemId, string itemType, Guid userId)
     {
-        bool nameExists = await CheckIfNameExists(itemType, request.Name, itemId);
+        var nameExists = await CheckIfNameExists(itemType, request.Name, itemId);
         if (nameExists)
         {
             return Error.Validation("Name", "An item with this name already exists.");

@@ -2,6 +2,7 @@ using System.Globalization;
 using APP.IRepository;
 using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.LeaveRequests;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
@@ -220,99 +221,131 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
 // }
 
 
-public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport()
-{
-    var today = DateTime.UtcNow.Date;
-
-    var dailyRecords = await context.AttendanceRecords
-        .Where(a => a.TimeStamp.Date == today && a.WorkState == WorkState.CheckIn)
-        .ToListAsync();
-
-    if (dailyRecords.Count == 0)
+    public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport()
     {
-        return Error.NotFound("Attendance.NotFound", $"No attendance records found for {today:dd-MM-yyyy}");
-    }
+        var today = DateTime.UtcNow.Date;
 
-    var employeeIds = dailyRecords.Select(r => r.EmployeeId).Distinct().ToList();
+        var dailyRecords = await context.AttendanceRecords
+            .Where(a => a.TimeStamp.Date == today && a.WorkState == WorkState.CheckIn)
+            .ToListAsync();
 
-    var employees = await context.Employees
-        .Include(e => e.Department)
-        .Where(e => employeeIds.Contains(e.StaffNumber))
-        .ToListAsync();
+        var allEmployees = await context.Employees
+            .Include(e => e.Department)
+            .ToListAsync();
 
-    var groupedByDepartment = employees
-        .GroupBy(e => e.Department?.Name ?? "Unassigned")
-        .ToList();
+        var employeeDbIds = allEmployees.Select(e => e.Id).ToList();
 
-    var report = new List<GeneralAttendanceReportDto>();
+        var shiftAssignments = await context.ShiftAssignments
+            .Include(sa => sa.ShiftType)
+            .Include(sa => sa.ShiftSchedules)
+            .Where(sa =>
+                sa.ShiftSchedules != null &&
+                sa.ShiftSchedules.StartDate.Date <= today &&
+                sa.ShiftSchedules.EndDate.Date >= today &&
+                employeeDbIds.Contains(sa.EmployeeId))
+            .ToListAsync();
 
-    foreach (var group in groupedByDepartment)
-    {
-        var summary = new GeneralAttendanceReportDto
+        var shiftAssignmentMap = shiftAssignments
+            .GroupBy(sa => sa.EmployeeId)
+            .ToDictionary(g => g.Key, g => g.FirstOrDefault());
+
+        // Approved absences
+        var approvedAbsences = await context.LeaveRequests
+            .Where(a =>
+                a.RequestCategory == RequestCategory.AbsenceRequest && 
+                a.Approved && a.StartDate.Date <= today &&
+                a.EndDate.Date >= today)
+            .Select(a => a.EmployeeId)
+            .ToListAsync();
+
+        // Active suspensions
+        var suspendedEmployees = await context.Employees
+            .Where(s =>
+                s.ActiveStatus == EmployeeActiveStatus.Suspension &&
+                s.SuspensionStartDate.Value.Date <= today &&
+                s.SuspensionEndDate.Value.Date >= today)
+            .Select(s => s.Id)
+            .ToListAsync();
+
+        var attendanceMap = dailyRecords.ToDictionary(r => r.EmployeeId);
+
+        var groupedByDepartment = allEmployees
+            .GroupBy(e => e.Department?.Name ?? "Unassigned")
+            .ToList();
+
+        var report = new List<GeneralAttendanceReportDto>();
+
+        foreach (var group in groupedByDepartment)
         {
-            DepartmentName = group.Key
-        };
-
-        foreach (var employee in group)
-        {
-            var shiftAssignment = context.ShiftAssignments
-                .AsSplitQuery()
-                .Include(shiftAssignment => shiftAssignment.ShiftType)
-                .Include(s => s.ShiftSchedules)
-                .Include(assignment => assignment.Employee)
-                .FirstOrDefault(sa =>
-                    sa.ShiftSchedules != null &&
-                    sa.ShiftSchedules.StartDate.Date <= today &&
-                    sa.ShiftSchedules.EndDate.Date >= today &&
-                    sa.EmployeeId == employee.Id);
-
-            if (shiftAssignment?.ShiftType?.StartTime == null)
+            var summary = new GeneralAttendanceReportDto
             {
-                continue;
+                DepartmentName = group.Key,
+                Absences = new AbsencesDto { AbsentEmployees = [] },
+                Suspensions = new SuspensionsDto { SuspendedEmployees = [] }
+            };
+
+            foreach (var employee in group)
+            {
+                var isCasual = employee.Type == EmployeeType.Casual;
+
+                // If checked in today
+                if (attendanceMap.ContainsKey(employee.StaffNumber))
+                {
+                    if (!shiftAssignmentMap.TryGetValue(employee.Id, out var shiftAssignment) ||
+                        shiftAssignment?.ShiftType?.StartTime == null)
+                        continue;
+
+                    if (!DateTime.TryParseExact(shiftAssignment.ShiftType.StartTime, "hh:mm tt",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None, out var parsedShiftStartTime))
+                        continue;
+
+                    var shiftStartTime = parsedShiftStartTime.TimeOfDay;
+
+                    if (isCasual) summary.CasualStaff++;
+                    else summary.PermanentStaff++;
+
+                    if (shiftStartTime >= TimeSpan.FromHours(5) && shiftStartTime < TimeSpan.FromHours(12))
+                    {
+                        if (isCasual) summary.CasualMorning++;
+                        else summary.PermanentMorning++;
+                    }
+                    else if (shiftStartTime >= TimeSpan.FromHours(12) && shiftStartTime < TimeSpan.FromHours(17))
+                    {
+                        if (isCasual) summary.CasualAfternoon++;
+                        else summary.PermanentAfternoon++;
+                    }
+                    else
+                    {
+                        if (isCasual) summary.CasualNight++;
+                        else summary.PermanentNight++;
+                    }
+                }
+                else if (suspendedEmployees.Contains(employee.Id))
+                {
+                    summary.Suspensions.SuspendedEmployees.Add(new MinimalEmployeeInfoDto
+                    {
+                        EmployeeId = employee.Id,
+                        StaffNumber = employee.StaffNumber,
+                        FirstName = employee.FirstName,
+                        LastName = employee.LastName
+                    });
+                }
+                else if (approvedAbsences.Contains(employee.Id))
+                {
+                    summary.Absences.AbsentEmployees.Add(new MinimalEmployeeInfoDto
+                    {
+                        EmployeeId = employee.Id,
+                        StaffNumber = employee.StaffNumber,
+                        FirstName = employee.FirstName,
+                        LastName = employee.LastName
+                    });
+                }
             }
 
-            if (!DateTime.TryParseExact(shiftAssignment.ShiftType.StartTime, "hh:mm tt",
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None, out var parsedShiftStartTime))
-            {
-                continue;
-            }
-            
-            var shiftStartTime = parsedShiftStartTime.TimeOfDay;
-
-            var attendance = dailyRecords.FirstOrDefault(a => a.EmployeeId == employee.StaffNumber);
-
-            if (attendance == null)
-            {
-                continue;
-            }
-
-            var isCasual = employee.Type == EmployeeType.Casual;
-
-            if (isCasual)
-                summary.CasualStaff++;
-            else
-                summary.PermanentStaff++;
-
-            if (shiftStartTime >= TimeSpan.FromHours(5) && shiftStartTime < TimeSpan.FromHours(12))
-            {
-                if (isCasual) summary.CasualMorning++;
-                else summary.PermanentMorning++;
-            }
-            else if (shiftStartTime >= TimeSpan.FromHours(12) && shiftStartTime < TimeSpan.FromHours(17))
-            {
-                if (isCasual) summary.CasualAfternoon++;
-                else summary.PermanentAfternoon++;
-            }
-            else
-            {
-                if (isCasual) summary.CasualNight++;
-                else summary.PermanentNight++;
-            }
+            report.Add(summary);
         }
-        report.Add(summary);
-    }
 
-    return report;
-}
+        return Result.Success(report);
+    }
 }
