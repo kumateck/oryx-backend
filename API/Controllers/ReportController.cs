@@ -123,7 +123,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// </summary>
     /// <param name="filter"></param>
     /// <returns></returns>
-    [HttpGet("staff-gender-ratio-report")]
+    [HttpGet("staff-gender-ratio-report")]  
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffGenderRatioReport))]
     public async Task<IResult> GetStaffGenderRatioReport([FromQuery] MovementReportFilter filter)
     {
