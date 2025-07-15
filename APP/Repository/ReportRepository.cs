@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using AutoMapper;
 using DOMAIN.Entities.AttendanceRecords;
@@ -16,7 +15,6 @@ using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 

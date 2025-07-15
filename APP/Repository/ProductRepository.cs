@@ -607,7 +607,7 @@ namespace APP.Repository;
         var requiredHeaders = new[]
         {
             "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "BASE QUANTITY",
-            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT", "LABEL CLAIMS"
+            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT CODE", "LABEL CLAIMS"
         };
 
         foreach (var header in requiredHeaders)
@@ -625,7 +625,7 @@ namespace APP.Repository;
             var baseUomName = getCell("BASE UOM").ToLower();
             var basePackingUomName = getCell("BASE PACKING UOM").ToLower();
             var equipmentName = getCell("EQUIPMENT").ToLower();
-            var departmentCode = getCell("DEPARTMENT").ToLower();
+            var departmentCode = getCell("DEPARTMENT CODE").ToLower();
             var productCode = getCell("PRODUCT CODE");
             
             var existingProduct = await context.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code != null && p.Code == productCode);

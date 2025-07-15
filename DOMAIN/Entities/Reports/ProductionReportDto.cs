@@ -1,6 +1,4 @@
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.Products;
 using SHARED;
 
 namespace DOMAIN.Entities.Reports;
@@ -44,4 +42,9 @@ public class MaterialBatchReservedQuantityReportDto
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
+}
+
+public class LogisticsReportDto
+{
+    
 }
