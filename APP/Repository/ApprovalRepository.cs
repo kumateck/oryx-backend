@@ -1335,11 +1335,20 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             switch (modelType)
             {
                 case "RawStockRequisition" or "PackageStockRequisition" or "PurchaseRequisition" or "Requisition":
-                    var requisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == modelId);
+                    var requisition = await context.Requisitions
+                        .AsSplitQuery()
+                        .Include(r => r.Items).FirstOrDefaultAsync(r => r.Id == modelId);
                     if (requisition != null)
                     {
                         requisition.Status = RequestStatus.Pending;
                         requisition.Approved = true;
+                        if (requisition.RequisitionType == RequisitionType.Purchase)
+                        {
+                            foreach (var item in requisition.Items)
+                            {
+                                item.Status = RequestStatus.Pending;
+                            }
+                        }
                         context.Requisitions.Update(requisition);
                         await context.SaveChangesAsync();
                     }
