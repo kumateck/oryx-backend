@@ -625,7 +625,7 @@ namespace APP.Repository;
             var baseUomName = getCell("BASE UOM").ToLower();
             var basePackingUomName = getCell("BASE PACKING UOM").ToLower();
             var equipmentName = getCell("EQUIPMENT").ToLower();
-            var departmentCode = getCell("DEPARTMENT CODE").ToLower();
+            var departmentCode = getCell("DEPARTMENT CODE");
             var productCode = getCell("PRODUCT CODE");
             
             var existingProduct = await context.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code != null && p.Code == productCode);
@@ -635,7 +635,7 @@ namespace APP.Repository;
             var baseUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == baseUomName);
             var basePackingUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
             var equipment = await context.Equipments.FirstOrDefaultAsync(e => e.Name != null && e.Name.ToLower() == equipmentName);
-            var department = await context.Departments.FirstOrDefaultAsync(d => d.Name != null & d.Name.ToLower() == departmentCode);
+            var department = await context.Departments.FirstOrDefaultAsync(d => d.Code == departmentCode);
             
             var product = new Product
             {
