@@ -198,6 +198,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             newUser.FirstName = employee.FirstName;
             newUser.LastName = employee.LastName;
             newUser.DepartmentId = employee.DepartmentId;
+            newUser.Avatar = employee.Avatar;
 
             await userManager.CreateAsync(newUser);
             await context.SaveChangesAsync();
