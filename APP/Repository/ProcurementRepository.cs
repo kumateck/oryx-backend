@@ -291,6 +291,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status, SupplierType? type)
     {
         var query = context.PurchaseOrders
+            .AsSplitQuery()
             .Include(po => po.Supplier)
             .Include(po=>po.TermsOfPayment)
             .Include(po=>po.DeliveryMode)
@@ -329,6 +330,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions)
     {
         var existingOrder = await context.PurchaseOrders
+            .AsSplitQuery()
             .Include(p => p.SourceRequisition)
                 .ThenInclude(sr => sr.Items)       
             .Include(po => po.RevisedPurchaseOrders)
