@@ -1210,6 +1210,23 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> MarkShipmentInvoiceAsPaid(Guid shipmentInvoiceId, DateTime? paidAt, Guid userId)
+    {
+        var existingShipmentInvoice = await context.ShipmentInvoices
+            .Include(si => si.Items)
+            .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
+        if (existingShipmentInvoice is null)
+        {
+            return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
+        }
+
+        existingShipmentInvoice.PaidAt = paidAt ?? DateTime.UtcNow;
+        existingShipmentInvoice.LastUpdatedById = userId;
+        context.ShipmentInvoices.Update(existingShipmentInvoice);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
     public async Task<Result> UpdateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid shipmentDiscrepancyId, Guid userId)
     {

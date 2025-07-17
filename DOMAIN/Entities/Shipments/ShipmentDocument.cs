@@ -45,6 +45,7 @@ public class ShipmentInvoice : BaseEntity
     public decimal TotalCost { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
+    public DateTime? PaidAt { get; set; }
 }
 
 public class ShipmentInvoiceItem : BaseEntity

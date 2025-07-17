@@ -681,4 +681,9 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         
         return mapper.Map<List<MaterialBatchDto>>(await query.ToListAsync());
     }
+
+    public async Task<Result<LogisticsReportDto>> GetLogisticsReport(ReportFilter filter, Guid departmentId)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -46,5 +46,18 @@ public class MaterialBatchReservedQuantityReportDto
 
 public class LogisticsReportDto
 {
-    
+    public int NumberOfInvoices { get; set; }
+    public int NumberOfPaidInvoices { get; set; }
+    public int NumberOfUnpaidInvoices { get; set; }
+    public int NumberOfShipments { get; set; }
+    public int NumberOfInTransitShipments { get; set; }
+    public int NumberOfArrivedShipments { get; set; }
+    public int NumberOfClearedShipments { get; set; }
+    public int NumberOfBillingSheets { get; set; }
+    public int NumberOfPendingBillingSheets { get; set; }
+    public int NumberOfPaidBillingSheets { get; set; }
+    public int NumberOfWaybills { get; set; }
+    public int NumberOfNewWaybills { get; set; }
+    public int NumberOfInTransitWaybills { get; set; }
+    public int NumberOfArrivedWaybills { get; set; }
 }

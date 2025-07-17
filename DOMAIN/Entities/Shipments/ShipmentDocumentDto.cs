@@ -26,6 +26,7 @@ public class ShipmentInvoiceDto : BaseDto
     public bool IsAttached { get; set; }
     public decimal TotalCost { get; set; }
     public CurrencyDto Currency { get; set; }
+    public DateTime? PaidAt { get; set; }
 }
 
 public class ShipmentInvoiceItemDto : BaseDto
