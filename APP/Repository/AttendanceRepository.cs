@@ -12,88 +12,88 @@ namespace APP.Repository;
 
 public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRepository
 {
-public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
-{
-    if (Path.GetExtension(request.Attendance.FileName) != ".xlsx" && Path.GetExtension(request.Attendance.FileName) != ".xls")
+    public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
     {
-        return Error.Validation("Attendance.InvalidFileType", "Invalid file type. Only .xlsx or .xls files are allowed.");
+        if (Path.GetExtension(request.Attendance.FileName) != ".xlsx" && Path.GetExtension(request.Attendance.FileName) != ".xls")
+        {
+            return Error.Validation("Attendance.InvalidFileType", "Invalid file type. Only .xlsx or .xls files are allowed.");
+        }
+
+        using var stream = new MemoryStream();
+        await request.Attendance.CopyToAsync(stream);
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+        if (worksheet?.Dimension == null || worksheet.Dimension.End.Row < 2)
+        {
+            return Error.Validation("Attendance.Empty", "The uploaded Excel file is empty or does not contain any records.");
+        }
+
+        var attendanceRecords = new List<AttendanceRecords>();
+
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            var empId = worksheet.Cells[row, 1].Text?.Trim();
+            var timestampStr = worksheet.Cells[row, 3].Text?.Trim();
+            var workState = worksheet.Cells[row, 4].Text?.Trim().Replace(" ", "");
+
+            if (string.IsNullOrWhiteSpace(empId) || string.IsNullOrWhiteSpace(timestampStr) || string.IsNullOrWhiteSpace(workState))
+            {
+                return Error.Validation("Attendance.MissingFields", $"Missing required fields at row {row}.");
+            }
+
+            if (!DateTime.TryParseExact(timestampStr, "dd/MM/yyyy HH:mm:ss", null, DateTimeStyles.AssumeLocal, out var localTime))
+            {
+                return Error.Validation("Attendance.InvalidTimestamp", $"Invalid timestamp format at row {row}. Use dd/MM/yyyy HH:mm:ss.");
+            }
+            
+            if (localTime.Date != DateTime.UtcNow.Date)
+            {
+                return Error.Validation("Attendance.InvalidDate", $"The timestamp at row {row} is not for today. Only today's records are allowed.");
+            }
+            
+            var timeStamp = localTime.ToUniversalTime();
+            
+            if (!Enum.TryParse<WorkState>(workState, true, out var parsedWorkState))
+            {
+                return Error.Validation("Attendance.InvalidWorkState", $"Invalid work state '{workState}' at row {row}. Allowed values: Check In, Check Out.");
+            }
+
+            var existingAttendance = await context.AttendanceRecords
+                .FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp);
+
+            if (existingAttendance != null)
+            {
+                return Error.Validation("Attendance.Duplicate", $"Duplicate record found at row {row}.");
+            }
+
+            var employeeExists = await context.Employees.AnyAsync(e => e.StaffNumber == empId);
+            if (!employeeExists)
+            {
+                return Error.Validation("Attendance.InvalidEmployee", $"Employee with staff number '{empId}' not found.");
+            }
+
+            attendanceRecords.Add(new AttendanceRecords
+            {
+                EmployeeId = empId,
+                TimeStamp = timeStamp,
+                WorkState = parsedWorkState
+            });
+        }
+
+        if (attendanceRecords.Count == 0)
+        {
+            return Error.Validation("Attendance.NoValidRecords", "No valid attendance records were found in the uploaded file.");
+        }
+
+        await context.AttendanceRecords.AddRangeAsync(attendanceRecords);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
     }
-
-    using var stream = new MemoryStream();
-    await request.Attendance.CopyToAsync(stream);
-
-    ExcelPackage.License.SetNonCommercialPersonal("Oryx");
-
-    using var package = new ExcelPackage(stream);
-    var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-
-    if (worksheet?.Dimension == null || worksheet.Dimension.End.Row < 2)
-    {
-        return Error.Validation("Attendance.Empty", "The uploaded Excel file is empty or does not contain any records.");
-    }
-
-    var attendanceRecords = new List<AttendanceRecords>();
-
-    for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
-    {
-        var empId = worksheet.Cells[row, 1].Text?.Trim();
-        var timestampStr = worksheet.Cells[row, 3].Text?.Trim();
-        var workState = worksheet.Cells[row, 4].Text?.Trim().Replace(" ", "");
-
-        if (string.IsNullOrWhiteSpace(empId) || string.IsNullOrWhiteSpace(timestampStr) || string.IsNullOrWhiteSpace(workState))
-        {
-            return Error.Validation("Attendance.MissingFields", $"Missing required fields at row {row}.");
-        }
-
-        if (!DateTime.TryParseExact(timestampStr, "dd/MM/yyyy HH:mm:ss", null, DateTimeStyles.AssumeLocal, out var localTime))
-        {
-            return Error.Validation("Attendance.InvalidTimestamp", $"Invalid timestamp format at row {row}. Use dd/MM/yyyy HH:mm:ss.");
-        }
-        
-        if (localTime.Date != DateTime.UtcNow.Date)
-        {
-            return Error.Validation("Attendance.InvalidDate", $"The timestamp at row {row} is not for today. Only today's records are allowed.");
-        }
-        
-        var timeStamp = localTime.ToUniversalTime();
-        
-        if (!Enum.TryParse<WorkState>(workState, true, out var parsedWorkState))
-        {
-            return Error.Validation("Attendance.InvalidWorkState", $"Invalid work state '{workState}' at row {row}. Allowed values: Check In, Check Out.");
-        }
-
-        var existingAttendance = await context.AttendanceRecords
-            .FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp);
-
-        if (existingAttendance != null)
-        {
-            return Error.Validation("Attendance.Duplicate", $"Duplicate record found at row {row}.");
-        }
-
-        var employeeExists = await context.Employees.AnyAsync(e => e.StaffNumber == empId);
-        if (!employeeExists)
-        {
-            return Error.Validation("Attendance.InvalidEmployee", $"Employee with staff number '{empId}' not found.");
-        }
-
-        attendanceRecords.Add(new AttendanceRecords
-        {
-            EmployeeId = empId,
-            TimeStamp = timeStamp,
-            WorkState = parsedWorkState
-        });
-    }
-
-    if (attendanceRecords.Count == 0)
-    {
-        return Error.Validation("Attendance.NoValidRecords", "No valid attendance records were found in the uploaded file.");
-    }
-
-    await context.AttendanceRecords.AddRangeAsync(attendanceRecords);
-    await context.SaveChangesAsync();
-
-    return Result.Success();
-}
 
     public async Task<Result<List<AttendanceRecordDepartmentDto>>> DepartmentDailySummaryAttendance(string departmentName, DateTime date)
     {
@@ -374,6 +374,11 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
         }
 
         return Result.Success(report);
+    }
+
+    public async Task<Result> ExportAttendanceSummary()
+    {
+        throw new NotImplementedException();
     }
 
     private async Task<SickLeaveDto> EmployeesOnSickLeave(DateTime today)
