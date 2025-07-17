@@ -9,13 +9,13 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
 {
     public void SendMail(string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
-        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "admin@kumateck.com";
+        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "emailapikey";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
         
         try
         {
             // Configure SMTP client
-            var smtpClient = new SmtpClient("smtp.zoho.com")
+            var smtpClient = new SmtpClient("smtp.zeptomail.com")
             {
                 Port = 587,
                 Credentials = new NetworkCredential(username, password),

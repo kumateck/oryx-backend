@@ -19,6 +19,7 @@ public class Material : BaseEntity
     public MaterialKind Kind { get; set; }
     public BatchKind Status { get; set; }
     public decimal TotalStock => Batches.Sum(b => b.RemainingQuantity);
+    public List<MaterialDepartment> Departments { get; set; } = [];
 }
 
 public class MaterialDepartment : BaseEntity

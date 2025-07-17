@@ -291,6 +291,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status, SupplierType? type)
     {
         var query = context.PurchaseOrders
+            .AsSplitQuery()
             .Include(po => po.Supplier)
             .Include(po=>po.TermsOfPayment)
             .Include(po=>po.DeliveryMode)
@@ -329,6 +330,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions)
     {
         var existingOrder = await context.PurchaseOrders
+            .AsSplitQuery()
             .Include(p => p.SourceRequisition)
                 .ThenInclude(sr => sr.Items)       
             .Include(po => po.RevisedPurchaseOrders)
@@ -1204,6 +1206,23 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         mapper.Map(request, existingShipmentInvoice);
         existingShipmentInvoice.LastUpdatedById = userId;
 
+        context.ShipmentInvoices.Update(existingShipmentInvoice);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> MarkShipmentInvoiceAsPaid(Guid shipmentInvoiceId, DateTime? paidAt, Guid userId)
+    {
+        var existingShipmentInvoice = await context.ShipmentInvoices
+            .Include(si => si.Items)
+            .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
+        if (existingShipmentInvoice is null)
+        {
+            return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
+        }
+
+        existingShipmentInvoice.PaidAt = paidAt ?? DateTime.UtcNow;
+        existingShipmentInvoice.LastUpdatedById = userId;
         context.ShipmentInvoices.Update(existingShipmentInvoice);
         await context.SaveChangesAsync();
         return Result.Success();

@@ -44,8 +44,7 @@ public interface IMaterialRepository
     Task<Result> ConsumeMaterialAtLocation(Material material, Guid locationId, decimal quantity,
         Guid userId);
     Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId); 
-    Task<Result> ImportMaterialsFromExcel(IFormFile file, MaterialKind kind); 
-    Task<Result> ImportMaterialsFromExcel(string filePath, MaterialKind kind);
+    Task<Result> ImportMaterialsFromExcel(IFormFile file, MaterialKind kind);
     Result<List<BatchLocation>> BatchesNeededToBeConsumed(Guid materialId, Guid warehouseId, decimal quantity);
     Task<Result> UpdateBatchStatus(UpdateBatchStatusRequest request, Guid userId);
     Task<Result> MoveMaterialBatchV2(MoveShelfMaterialBatchRequest request, Guid userId);
