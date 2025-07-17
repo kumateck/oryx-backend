@@ -11,4 +11,6 @@ public interface IAttendanceRepository
     
     Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport();
     
+    Task<Result> ExportAttendanceSummary();
+    
 }

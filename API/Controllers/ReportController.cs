@@ -179,4 +179,12 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetMaterialsReadyForAssignment(filter, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    [HttpGet("qa-dashboard")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QaDashboardDto))]
+    public async Task<IResult> GetQaDashboard([FromQuery] ReportFilter filter)
+    {
+        var result = await repository.GetQaDashboardReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
