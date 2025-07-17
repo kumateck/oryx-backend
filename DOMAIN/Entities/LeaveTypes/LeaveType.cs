@@ -6,7 +6,7 @@ namespace DOMAIN.Entities.LeaveTypes;
 public class LeaveType : BaseEntity
 {
     public string Name { get; set; }
-    public bool IsPaid { get; set; }
+    public bool IsPaid { get; set; } 
     public bool DeductFromBalance {get; set;}
     public int? DeductionLimit { get; set; }
     

@@ -19,6 +19,10 @@ public interface IReportRepository
     Task<Result<StaffTotalReport>> GetStaffTotalReport(MovementReportFilter filter);
     
     Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter);
+    
+    Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport(MovementReportFilter filter);
+    
+    Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(MovementReportFilter filter);
 
     Task<Result<WarehouseReportDto>> GetWarehouseReport(ReportFilter filter, Guid departmentId);
     Task<Result<List<MaterialBatchReservedQuantityReportDto>>> GetReservedMaterialBatchesForDepartment(

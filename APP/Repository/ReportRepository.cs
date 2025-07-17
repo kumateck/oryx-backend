@@ -16,11 +16,12 @@ using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SHARED;
 
 namespace APP.Repository;
 
-public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository)
+public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository, ILogger<ReportRepository> logger)
     : IReportRepository
 {
     public async Task<Result<ProductionReportDto>> GetProductionReport(ReportFilter filter, Guid departmentId)
@@ -488,6 +489,80 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         };
 
         return Result.Success(result);
+    }
+
+public async Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport(MovementReportFilter filter)
+{
+    logger.LogInformation("Generating Staff Leave Summary Report with filter: {@Filter}", filter);
+
+    var start = filter.StartDate?.Date ?? new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    var end = filter.EndDate?.Date ?? DateTime.UtcNow.Date;
+    var today = DateTime.UtcNow.Date;
+
+    logger.LogInformation("Date range resolved: {Start} - {End}", start, end);
+
+    var employeesQuery = context.Employees
+        .Include(e => e.Department)
+        .Where(e => e.Status == EmployeeStatus.Active);
+
+    if (filter.DepartmentId.HasValue)
+    {
+        employeesQuery = employeesQuery.Where(e => e.DepartmentId == filter.DepartmentId);
+        logger.LogInformation("Filtering by department: {DepartmentId}", filter.DepartmentId);
+    }
+
+    var employees = await employeesQuery.ToListAsync();
+    logger.LogInformation("Fetched {EmployeeCount} active employees", employees.Count);
+
+    var employeeIds = employees.Select(e => e.Id).ToList();
+
+    var leaveRequests = await context.LeaveRequests
+        .Where(l =>
+            employeeIds.Contains(l.EmployeeId) &&
+            l.Approved &&
+            l.RequestCategory == RequestCategory.LeaveRequest &&
+            l.StartDate <= end &&
+            l.EndDate >= start)
+        .ToListAsync();
+
+    logger.LogInformation("Fetched {LeaveRequestCount} approved leave requests in date range", leaveRequests.Count);
+
+    var grouped = employees.GroupBy(e => e.Department?.Name ?? "Unassigned");
+
+    var report = new StaffLeaveSummaryReportDto();
+
+    foreach (var group in grouped)
+    {
+        var departmentName = group.Key ?? "Unassigned";
+        var count = group.Count(e => e.DateEmployed.AddMonths(12) <= today);
+        var totalEntitlement = group.Sum(e => e.AnnualLeaveDays);
+        var deptEmployeeIds = group.Select(e => e.Id).ToList();
+
+        var daysUsed = leaveRequests
+            .Where(r => deptEmployeeIds.Contains(r.EmployeeId))
+            .Sum(r => (r.PaidDays ?? 0) + (r.UnpaidDays ?? 0));
+
+        logger.LogInformation("Dept: {Dept}, DueForLeave: {Count}, TotalLeave: {Entitlement}, DaysUsed: {Used}",
+            departmentName, count, totalEntitlement, daysUsed);
+
+        var dto = new StaffLeaveSummaryDto
+        {
+            DepartmentName = departmentName,
+            StaffDueForLeave = count,
+            TotalLeaveEntitlement = totalEntitlement,
+            DaysUsed = daysUsed
+        };
+
+        report.Departments.Add(dto);
+        
+    }
+
+    return Result.Success(report);
+}
+
+    public async Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(MovementReportFilter filter)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<Result<WarehouseReportDto>> GetWarehouseReport(ReportFilter filter, Guid departmentId)

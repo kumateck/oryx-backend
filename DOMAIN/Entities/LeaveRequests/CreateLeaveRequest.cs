@@ -14,5 +14,7 @@ public class CreateLeaveRequest
     
     [Phone] public string ContactPersonNumber { get; set; }
     
+    public string Destination { get; set; }
+    
     public string Justification { get; set; }
 }
