@@ -130,4 +130,20 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetStaffGenderRatioReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    [HttpGet("staff-leave-report")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffLeaveSummaryReportDto))]
+    public async Task<IResult> GetStaffLeaveSummaryReport([FromQuery] MovementReportFilter filter)
+    {
+        var result = await repository.GetStaffLeaveSummaryReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    [HttpGet("staff-turnover-report")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffTurnoverReportDto))]
+    public async Task<IResult> GetStaffTurnoverReport([FromQuery] MovementReportFilter filter)
+    {
+        var result = await repository.GetStaffTurnoverReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

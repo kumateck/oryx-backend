@@ -54,7 +54,8 @@ public enum RequestCategory
 {
     LeaveRequest,
     AbsenceRequest,
-    ExitPassRequest
+    ExitPassRequest,
+    OfficialDuty
 }
 
 public enum LeaveStatus

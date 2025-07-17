@@ -220,7 +220,6 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
 //     return report;
 // }
 
-
     public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport()
     {
         var today = DateTime.UtcNow.Date;
@@ -236,6 +235,7 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
         var employeeDbIds = allEmployees.Select(e => e.Id).ToList();
 
         var shiftAssignments = await context.ShiftAssignments
+            .AsSplitQuery()
             .Include(sa => sa.ShiftType)
             .Include(sa => sa.ShiftSchedules)
             .Where(sa =>
@@ -249,23 +249,38 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
             .GroupBy(sa => sa.EmployeeId)
             .ToDictionary(g => g.Key, g => g.FirstOrDefault());
 
-        // Approved absences
         var approvedAbsences = await context.LeaveRequests
             .Where(a =>
-                a.RequestCategory == RequestCategory.AbsenceRequest && 
-                a.Approved && a.StartDate.Date <= today &&
+                a.RequestCategory == RequestCategory.AbsenceRequest &&
+                a.Approved &&
+                a.StartDate.Date <= today &&
                 a.EndDate.Date >= today)
             .Select(a => a.EmployeeId)
             .ToListAsync();
 
-        // Active suspensions
         var suspendedEmployees = await context.Employees
             .Where(s =>
                 s.ActiveStatus == EmployeeActiveStatus.Suspension &&
+                s.SuspensionStartDate.HasValue &&
+                s.SuspensionEndDate.HasValue &&
                 s.SuspensionStartDate.Value.Date <= today &&
                 s.SuspensionEndDate.Value.Date >= today)
             .Select(s => s.Id)
             .ToListAsync();
+
+        // Get sick and maternity leave data once
+        var sickLeave = await EmployeesOnSickLeave(today);
+        var maternityLeave = await EmployeesOnMaternityLeave(today);
+
+        var sickLeaveMap = sickLeave.LeaveEmployees
+            .SelectMany(g => g.Employees)
+            .GroupBy(e => e.Department ?? "Unassigned")
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var maternityLeaveMap = maternityLeave.MaternityLeaveEmployees
+            .SelectMany(g => g.Employees)
+            .GroupBy(e => e.Department ?? "Unassigned")
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         var attendanceMap = dailyRecords.ToDictionary(r => r.EmployeeId);
 
@@ -281,14 +296,26 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
             {
                 DepartmentName = group.Key,
                 Absences = new AbsencesDto { AbsentEmployees = [] },
-                Suspensions = new SuspensionsDto { SuspendedEmployees = [] }
+                Suspensions = new SuspensionsDto { SuspendedEmployees = [] },
+                SickLeaves = new SickLeaveDto
+                {
+                    LeaveEmployees = 
+                        sickLeave.LeaveEmployees
+                        .Where(g => g.Employees.Any(e => e.Department == group.Key))
+                        .ToList()
+                },
+                MaternityLeaves = new MaternityLeaveDto
+                {
+                    MaternityLeaveEmployees = maternityLeave.MaternityLeaveEmployees
+                        .Where(g => g.Employees.Any(e => e.Department == group.Key))
+                        .ToList()
+                }
             };
 
             foreach (var employee in group)
             {
                 var isCasual = employee.Type == EmployeeType.Casual;
 
-                // If checked in today
                 if (attendanceMap.ContainsKey(employee.StaffNumber))
                 {
                     if (!shiftAssignmentMap.TryGetValue(employee.Id, out var shiftAssignment) ||
@@ -347,5 +374,94 @@ public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
         }
 
         return Result.Success(report);
+    }
+
+    private async Task<SickLeaveDto> EmployeesOnSickLeave(DateTime today)
+    {
+        var sickLeaveTypeId = await context.LeaveTypes
+            .Where(t => t.Name == "Sick Leave")
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
+
+        var employees = await context.LeaveRequests
+            .Where(l => l.LeaveTypeId == sickLeaveTypeId &&
+                        l.Approved &&
+                        l.StartDate <= today &&
+                        l.EndDate >= today)
+            .Include(l => l.Employee)
+            .ThenInclude(e => e.Department)
+            .Include(l => l.Employee.Designation)
+            .Select(l => new MinimalEmployeeInfoDto
+            {
+                EmployeeId = l.Employee.Id,
+                FirstName = l.Employee.FirstName,
+                LastName = l.Employee.LastName,
+                StaffNumber = l.Employee.StaffNumber,
+                Level = l.Employee.Level,
+                Type = l.Employee.Type.ToString(),
+                Department = l.Employee.Department != null ? l.Employee.Department.Name : "Unassigned",
+                Designation = l.Employee.Designation != null ? l.Employee.Designation.Name : "Unassigned"
+            })
+            .ToListAsync();
+
+        var grouped = employees
+            .GroupBy(e => e.Type)
+            .Select(g => new GroupedLeaveDto
+            {
+                Type = g.Key,
+                Employees = g.ToList()
+            })
+            .ToList();
+
+        return new SickLeaveDto
+        {
+            LeaveEmployees = grouped
+        };
+    }
+
+    private async Task<MaternityLeaveDto> EmployeesOnMaternityLeave(DateTime today)
+    {
+        var maternityLeaveTypeId = await context.LeaveTypes
+            .Where(t => t.Name == "Maternity Leave")
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
+
+        var employees = await context.LeaveRequests
+            .Where(l => l.LeaveTypeId == maternityLeaveTypeId &&
+                        l.Approved &&
+                        l.StartDate <= today &&
+                        l.EndDate >= today)
+            
+            .Include(l => l.Employee)
+            .ThenInclude(e => e.Department)
+            .Include(l => l.Employee.Designation)
+            .Select(l => new MinimalEmployeeInfoDto
+            {
+                EmployeeId = l.Employee.Id,
+                FirstName = l.Employee.FirstName,
+                LastName = l.Employee.LastName,
+                StaffNumber = l.Employee.StaffNumber,
+                Level = l.Employee.Level,
+                Type = l.Employee.Type.ToString(),
+                Department = l.Employee.Department != null ? l.Employee.Department.Name : "Unassigned",
+                Designation = l.Employee.Designation != null ? l.Employee.Designation.Name : "Unassigned"
+            })
+            .Distinct()
+            .ToListAsync();
+        
+        var grouped = employees
+            .GroupBy(e => e.Type)
+            .Select(g => new GroupedLeaveDto
+            {
+                Type = g.Key,
+                Employees = g.ToList()
+            })
+            .ToList();
+
+        return new MaternityLeaveDto
+        {
+            MaternityLeaveEmployees = grouped
+        };
+        
     }
 }

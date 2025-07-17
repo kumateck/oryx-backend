@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Services.Background;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Notifications;
 using INFRASTRUCTURE.Context;
@@ -33,7 +34,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         if (leaveType is null)
             return Error.NotFound("LeaveType.NotFound", "Leave type not found.");
 
-        // Check if a request already exists for same period
+        // Check if a request already exists for the same period
         var existingRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l => l.EmployeeId == request.EmployeeId &&
                                       l.StartDate == request.StartDate &&
@@ -89,7 +90,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                 paidDays = 0;
                 unpaidDays = (int)totalDays;
                 break;
-            case RequestCategory.ExitPassRequest:
+            case  RequestCategory.ExitPassRequest:
             {
                 if (request.StartDate != request.EndDate)
                 {
@@ -132,6 +133,27 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
                 break;
             }
+            
+            case RequestCategory.OfficialDuty:
+            {
+                if (existingEmployee.Type != EmployeeType.Permanent)
+                {
+                    return Error.Validation("OfficialDuty.InvalidEmployeeType", "Only permanent staff can request official duty.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Justification))
+                {
+                    request.Justification = "";
+                }
+                
+                if (string.IsNullOrWhiteSpace(request.Destination))
+                {
+                    return Error.Validation("OfficialDuty.MissingDestination", "Destination is required for official duty.");
+                }
+
+                break;
+            }
+                
         }
 
         var entity = mapper.Map<LeaveRequest>(request);

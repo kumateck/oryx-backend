@@ -27,6 +27,10 @@ public class GeneralAttendanceReportDto
     public AbsencesDto Absences { get; set; }
     
     public SuspensionsDto Suspensions { get; set; }
+    
+    public SickLeaveDto SickLeaves {get; set;}
+    
+    public MaternityLeaveDto MaternityLeaves {get; set;}
 }
 
 public class AbsencesDto
@@ -37,4 +41,20 @@ public class AbsencesDto
 public class SuspensionsDto
 {
     public List<MinimalEmployeeInfoDto> SuspendedEmployees { get; set; }
+}
+
+public class GroupedLeaveDto
+{
+    public string Type { get; set; } 
+    public List<MinimalEmployeeInfoDto> Employees { get; set; }
+}
+
+public class SickLeaveDto
+{
+    public List<GroupedLeaveDto> LeaveEmployees { get; set; }
+}
+
+public class MaternityLeaveDto
+{
+    public List<GroupedLeaveDto> MaternityLeaveEmployees { get; set; }
 }
