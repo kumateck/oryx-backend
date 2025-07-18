@@ -187,4 +187,12 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetQaDashboardReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    [HttpGet("qc-dashboard")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QaDashboardDto))]
+    public async Task<IResult> GetQcDashboard([FromQuery] ReportFilter filter)
+    {
+        var result = await repository.GetQcDashboardReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
