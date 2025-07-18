@@ -9,6 +9,7 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
@@ -212,6 +213,12 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                return await context.BinCardInformation
                    .IgnoreQueryFilters()
                    .Where(m => m.ArNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(ProductionOrder):
+               return await context.ProductionOrders
+                   .IgnoreQueryFilters()
+                   .Where(po => po.ProductionOrderCode.StartsWith(prefix))
                    .CountAsync();
                
            default:
