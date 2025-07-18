@@ -42,6 +42,7 @@ using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductAnalyticalRawData;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -897,6 +898,12 @@ public class OryxMapper : Profile
         CreateMap<CreateCustomerRequest, Customer>();
         CreateMap<Customer, CustomerDto>();
         
+        #endregion
+        
+        #region Production Orders
+        CreateMap<CreateProductionOrderRequest, ProductionOrder>();
+        CreateMap<ProductionOrder, ProductionOrderDto>();
+
         #endregion
     }
 }
