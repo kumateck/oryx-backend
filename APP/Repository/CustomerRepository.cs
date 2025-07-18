@@ -27,7 +27,9 @@ public class CustomerRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result<Paginateable<IEnumerable<CustomerDto>>>> GetCustomers(int page, int pageSize, string searchQuery)
     {
-        var query = context.Customers.AsQueryable();
+        var query = context.Customers
+            .Include(c => c.CreatedBy)
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -39,7 +41,9 @@ public class CustomerRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result<CustomerDto>> GetCustomer(Guid customerId)
     {
-        var customer = await context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
+        var customer = await context.Customers
+            .Include(c => c.CreatedBy)
+            .FirstOrDefaultAsync(c => c.Id == customerId);
         return customer is null ? 
             Error.NotFound("Customer.NotFound", "Customer not found") : 
             mapper.Map<CustomerDto>(customer);
@@ -50,7 +54,7 @@ public class CustomerRepository(ApplicationDbContext context, IMapper mapper) : 
         var customer  = await context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
         if (customer == null) return Error.NotFound("Customer.NotFound", "Customer not found");
         
-        customer = mapper.Map<Customer>(request);
+        mapper.Map(request, customer);
         context.Customers.Update(customer);
         
         await context.SaveChangesAsync();

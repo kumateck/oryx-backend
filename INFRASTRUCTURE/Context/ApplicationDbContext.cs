@@ -1174,6 +1174,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<StaffRequisition>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
+
+        #region Customers
+
+        modelBuilder.Entity<Customer>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
     }
 
     private void ConfigureRelationships(ModelBuilder modelBuilder)
