@@ -22,7 +22,7 @@ public interface IReportRepository
     
     Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport(MovementReportFilter filter);
     
-    Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(MovementReportFilter filter);
+    Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(ReportFilter filter);
     
     Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter);
 

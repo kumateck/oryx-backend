@@ -493,78 +493,129 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         return Result.Success(result);
     }
 
-public async Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport(MovementReportFilter filter)
-{
-    logger.LogInformation("Generating Staff Leave Summary Report with filter: {@Filter}", filter);
-
-    var start = filter.StartDate?.Date ?? new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-    var end = filter.EndDate?.Date ?? DateTime.UtcNow.Date;
-    var today = DateTime.UtcNow.Date;
-
-    logger.LogInformation("Date range resolved: {Start} - {End}", start, end);
-
-    var employeesQuery = context.Employees
-        .Include(e => e.Department)
-        .Where(e => e.Status == EmployeeStatus.Active);
-
-    if (filter.DepartmentId.HasValue)
+    public async Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport(MovementReportFilter filter)
     {
-        employeesQuery = employeesQuery.Where(e => e.DepartmentId == filter.DepartmentId);
-        logger.LogInformation("Filtering by department: {DepartmentId}", filter.DepartmentId);
-    }
+        logger.LogInformation("Generating Staff Leave Summary Report with filter: {@Filter}", filter);
 
-    var employees = await employeesQuery.ToListAsync();
-    logger.LogInformation("Fetched {EmployeeCount} active employees", employees.Count);
+        var start = filter.StartDate?.Date ?? new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var end = filter.EndDate?.Date ?? DateTime.UtcNow.Date;
+        var today = DateTime.UtcNow.Date;
 
-    var employeeIds = employees.Select(e => e.Id).ToList();
+        logger.LogInformation("Date range resolved: {Start} - {End}", start, end);
 
-    var leaveRequests = await context.LeaveRequests
-        .Where(l =>
-            employeeIds.Contains(l.EmployeeId) &&
-            l.Approved &&
-            l.RequestCategory == RequestCategory.LeaveRequest &&
-            l.StartDate <= end &&
-            l.EndDate >= start)
-        .ToListAsync();
+        var employeesQuery = context.Employees
+            .Include(e => e.Department)
+            .Where(e => e.Status == EmployeeStatus.Active);
 
-    logger.LogInformation("Fetched {LeaveRequestCount} approved leave requests in date range", leaveRequests.Count);
-
-    var grouped = employees.GroupBy(e => e.Department?.Name ?? "Unassigned");
-
-    var report = new StaffLeaveSummaryReportDto();
-
-    foreach (var group in grouped)
-    {
-        var departmentName = group.Key ?? "Unassigned";
-        var count = group.Count(e => e.DateEmployed.AddMonths(12) <= today);
-        var totalEntitlement = group.Sum(e => e.AnnualLeaveDays);
-        var deptEmployeeIds = group.Select(e => e.Id).ToList();
-
-        var daysUsed = leaveRequests
-            .Where(r => deptEmployeeIds.Contains(r.EmployeeId))
-            .Sum(r => (r.PaidDays ?? 0) + (r.UnpaidDays ?? 0));
-
-        logger.LogInformation("Dept: {Dept}, DueForLeave: {Count}, TotalLeave: {Entitlement}, DaysUsed: {Used}",
-            departmentName, count, totalEntitlement, daysUsed);
-
-        var dto = new StaffLeaveSummaryDto
+        if (filter.DepartmentId.HasValue)
         {
-            DepartmentName = departmentName,
-            StaffDueForLeave = count,
-            TotalLeaveEntitlement = totalEntitlement,
-            DaysUsed = daysUsed
-        };
+            employeesQuery = employeesQuery.Where(e => e.DepartmentId == filter.DepartmentId);
+            logger.LogInformation("Filtering by department: {DepartmentId}", filter.DepartmentId);
+        }
 
-        report.Departments.Add(dto);
-        
+        var employees = await employeesQuery.ToListAsync();
+        logger.LogInformation("Fetched {EmployeeCount} active employees", employees.Count);
+
+        var employeeIds = employees.Select(e => e.Id).ToList();
+
+        var leaveRequests = await context.LeaveRequests
+            .Where(l =>
+                employeeIds.Contains(l.EmployeeId) &&
+                l.Approved &&
+                l.RequestCategory == RequestCategory.LeaveRequest &&
+                l.StartDate <= end &&
+                l.EndDate >= start)
+            .ToListAsync();
+
+        logger.LogInformation("Fetched {LeaveRequestCount} approved leave requests in date range", leaveRequests.Count);
+
+        var grouped = employees.GroupBy(e => e.Department?.Name ?? "Unassigned");
+
+        var report = new StaffLeaveSummaryReportDto();
+
+        foreach (var group in grouped)
+        {
+            var departmentName = group.Key ?? "Unassigned";
+            var count = group.Count(e => e.DateEmployed.AddMonths(12) <= today);
+            var totalEntitlement = group.Sum(e => e.AnnualLeaveDays);
+            var deptEmployeeIds = group.Select(e => e.Id).ToList();
+
+            var daysUsed = leaveRequests
+                .Where(r => deptEmployeeIds.Contains(r.EmployeeId))
+                .Sum(r => (r.PaidDays ?? 0) + (r.UnpaidDays ?? 0));
+
+            logger.LogInformation("Dept: {Dept}, DueForLeave: {Count}, TotalLeave: {Entitlement}, DaysUsed: {Used}",
+                departmentName, count, totalEntitlement, daysUsed);
+
+            var dto = new StaffLeaveSummaryDto
+            {
+                DepartmentName = departmentName,
+                StaffDueForLeave = count,
+                TotalLeaveEntitlement = totalEntitlement,
+                DaysUsed = daysUsed
+            };
+
+            report.Departments.Add(dto);
+            
+        }
+
+        return Result.Success(report);
     }
 
-    return Result.Success(report);
-}
 
-    public async Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(MovementReportFilter filter)
+
+    public async Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(ReportFilter filter)
     {
-        throw new NotImplementedException();
+        var currentYear = DateTime.UtcNow.Year;
+        
+        var startYear = filter.StartDate?.Year ?? currentYear;
+        var endYear = filter.EndDate?.Year ?? currentYear;
+
+        filter.StartDate = new DateTime(startYear, 1, 1);
+        filter.EndDate = new DateTime(endYear, 12, 31);
+        
+        var leavers = await context.Employees
+            .Where(e => e.ExitDate.HasValue &&
+                        e.ExitDate.Value.Year == filter.StartDate.Value.Year)
+            .ToListAsync();
+        
+        var startCount = await context.Employees
+            .Where(e => e.DateEmployed <= filter.StartDate.Value &&
+                        (!e.ExitDate.HasValue || e.ExitDate >= filter.EndDate.Value))
+            .CountAsync();
+
+        var endCount = await context.Employees
+            .Where(e => e.DateEmployed <= filter.EndDate.Value &&
+                        (!e.ExitDate.HasValue || e.ExitDate >= filter.EndDate.Value))
+            .CountAsync();
+
+        var averageEmployees = (startCount + endCount) / 2.0;
+        var turnoverRate = averageEmployees == 0 ? 0 : (leavers.Count / averageEmployees) * 100.0;
+        
+        var exitedEmployees = await context.Employees
+            .Include(e => e.Department)
+            .Where(e => e.ExitDate.HasValue && e.ExitDate.Value.Year == filter.EndDate.Value.Year)
+            .ToListAsync();
+
+        var departmentSummaries = exitedEmployees
+            .GroupBy(e => e.Department?.Name ?? "Unassigned")
+            .Select(group => new StaffTurnoverCountDto
+            {
+                DepartmentName = group.Key,
+                ExitReasons = group
+                    .GroupBy(e => e.InactiveStatus?.ToString() ?? "Unknown")
+                    .ToDictionary(g => g.Key, g => g.Count())
+            })
+            .ToList();
+
+        var grandTotal = departmentSummaries.Sum(d => d.TotalLeavers);
+
+        return new StaffTurnoverReportDto
+        {
+            TurnoverRate = Math.Round(turnoverRate, 2),
+            GrandTotalLeavers = grandTotal,
+            DepartmentSummaries = departmentSummaries
+        };
     }
 
     public async Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter)
