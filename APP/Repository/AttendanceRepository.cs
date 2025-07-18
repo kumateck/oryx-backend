@@ -1,5 +1,7 @@
 using System.Globalization;
+using System.Text;
 using APP.IRepository;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
@@ -249,6 +251,22 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             .GroupBy(sa => sa.EmployeeId)
             .ToDictionary(g => g.Key, g => g.FirstOrDefault());
 
+        var approvedLeaves = await context.LeaveRequests
+            .Where(l =>
+                l.Approved &&
+                l.RequestCategory != RequestCategory.OfficialDuty &&
+                l.LeaveType.Name != "Maternity Leave" &&
+                l.LeaveType.Name != "Sick Leave" &&
+                l.StartDate <= today &&
+                l.EndDate >= today)
+            .Include(l => l.Employee)
+            .ThenInclude(e => e.Department)
+            .ToListAsync();
+        
+        var approvedLeaveCounts = approvedLeaves
+            .GroupBy(l => l.Employee.Department?.Name ?? "Unassigned")
+            .ToDictionary(g => g.Key, g => g.Count());
+
         var approvedAbsences = await context.LeaveRequests
             .Where(a =>
                 a.RequestCategory == RequestCategory.AbsenceRequest &&
@@ -267,23 +285,36 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 s.SuspensionEndDate.Value.Date >= today)
             .Select(s => s.Id)
             .ToListAsync();
+        
+        var sickLeaves = await context.LeaveRequests
+            .Where(l =>
+                l.Approved &&
+                l.LeaveType.Name == "Sick Leave" &&
+                l.StartDate <= today &&
+                l.EndDate >= today)
+            .Include(l => l.Employee)
+            .ThenInclude(e => e.Department)
+            .ToListAsync();
 
-        // Get sick and maternity leave data once
-        var sickLeave = await EmployeesOnSickLeave(today);
-        var maternityLeave = await EmployeesOnMaternityLeave(today);
+        var sickLeaveCounts = sickLeaves
+            .GroupBy(l => l.Employee.Department?.Name ?? "Unassigned")
+            .ToDictionary(g => g.Key, g => g.Count());
 
-        var sickLeaveMap = sickLeave.LeaveEmployees
-            .SelectMany(g => g.Employees)
-            .GroupBy(e => e.Department ?? "Unassigned")
-            .ToDictionary(g => g.Key, g => g.ToList());
+        var maternityLeaves = await context.LeaveRequests
+            .Where(l =>
+                l.Approved &&
+                l.LeaveType.Name == "Maternity Leave" &&
+                l.StartDate <= today &&
+                l.EndDate >= today)
+            .Include(l => l.Employee)
+            .ThenInclude(e => e.Department)
+            .ToListAsync();
 
-        var maternityLeaveMap = maternityLeave.MaternityLeaveEmployees
-            .SelectMany(g => g.Employees)
-            .GroupBy(e => e.Department ?? "Unassigned")
-            .ToDictionary(g => g.Key, g => g.ToList());
+        var maternityLeaveCounts = maternityLeaves
+            .GroupBy(l => l.Employee.Department?.Name ?? "Unassigned")
+            .ToDictionary(g => g.Key, g => g.Count());
 
         var attendanceMap = dailyRecords.ToDictionary(r => r.EmployeeId);
-
         var groupedByDepartment = allEmployees
             .GroupBy(e => e.Department?.Name ?? "Unassigned")
             .ToList();
@@ -292,24 +323,16 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
 
         foreach (var group in groupedByDepartment)
         {
+            var departmentName = group.Key;
+
             var summary = new GeneralAttendanceReportDto
             {
-                DepartmentName = group.Key,
-                Absences = new AbsencesDto { AbsentEmployees = [] },
-                Suspensions = new SuspensionsDto { SuspendedEmployees = [] },
-                SickLeaves = new SickLeaveDto
-                {
-                    LeaveEmployees = 
-                        sickLeave.LeaveEmployees
-                        .Where(g => g.Employees.Any(e => e.Department == group.Key))
-                        .ToList()
-                },
-                MaternityLeaves = new MaternityLeaveDto
-                {
-                    MaternityLeaveEmployees = maternityLeave.MaternityLeaveEmployees
-                        .Where(g => g.Employees.Any(e => e.Department == group.Key))
-                        .ToList()
-                }
+                DepartmentName = departmentName,
+                ApprovedLeaves = approvedLeaveCounts.GetValueOrDefault(departmentName, 0),
+                Absences = 0,
+                Suspensions = 0,
+                SickLeaves = sickLeaveCounts.GetValueOrDefault(departmentName, 0),
+                MaternityLeaves = maternityLeaveCounts.GetValueOrDefault(departmentName, 0)
             };
 
             foreach (var employee in group)
@@ -350,23 +373,11 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 }
                 else if (suspendedEmployees.Contains(employee.Id))
                 {
-                    summary.Suspensions.SuspendedEmployees.Add(new MinimalEmployeeInfoDto
-                    {
-                        EmployeeId = employee.Id,
-                        StaffNumber = employee.StaffNumber,
-                        FirstName = employee.FirstName,
-                        LastName = employee.LastName
-                    });
+                    summary.Suspensions++;
                 }
                 else if (approvedAbsences.Contains(employee.Id))
                 {
-                    summary.Absences.AbsentEmployees.Add(new MinimalEmployeeInfoDto
-                    {
-                        EmployeeId = employee.Id,
-                        StaffNumber = employee.StaffNumber,
-                        FirstName = employee.FirstName,
-                        LastName = employee.LastName
-                    });
+                    summary.Absences++;
                 }
             }
 
@@ -375,98 +386,122 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
 
         return Result.Success(report);
     }
+    
 
-    public async Task<Result> ExportAttendanceSummary()
+    public async Task<Result<FileExportResult>> ExportAttendanceSummary(FileFormat format)
     {
-        throw new NotImplementedException();
+        var attendanceResult = await GeneralAttendanceReport();
+        if (!attendanceResult.IsSuccess)
+            return Error.Failure("Export.Failed", "Failed to generate attendance report.");
+        var report = attendanceResult.Value;
+
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        if (format.FileType == "csv")
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Department,Permanent,Casual,Morning(P),Afternoon(P),Night(P),Morning(C),Afternoon(C),Night(C),Absent,Suspended,Sick,Maternity,Leave");
+
+            foreach (var item in report)
+            {
+                sb.AppendLine($"{item.DepartmentName},{item.PermanentStaff},{item.CasualStaff}," +
+                              $"{item.PermanentMorning},{item.PermanentAfternoon},{item.PermanentNight}," +
+                              $"{item.CasualMorning},{item.CasualAfternoon},{item.CasualNight}," +
+                              $"{item.Absences}," +
+                              $"{item.Suspensions}," +
+                              $"{item.SickLeaves}," +
+                              $"{item.MaternityLeaves}," +
+                              $"{item.ApprovedLeaves}");
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+            return Result.Success(new FileExportResult
+            {
+                FileBytes = bytes,
+                ContentType = "text/csv",
+                FileName = $"AttendanceSummary_{timestamp}.csv"
+            });
+        }
+        
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Attendance Summary");
+
+        worksheet.Cells[1, 1].Value = "Department";
+        worksheet.Cells[1, 2].Value = "Permanent Staff";
+        worksheet.Cells[1, 3].Value = "Casual Staff";
+        worksheet.Cells[1, 4].Value = "Morning Shift (P)";
+        worksheet.Cells[1, 5].Value = "Afternoon Shift (P)";
+        worksheet.Cells[1, 6].Value = "Night Shift (P)";
+        worksheet.Cells[1, 7].Value = "Morning Shift (C)";
+        worksheet.Cells[1, 8].Value = "Afternoon Shift (C)";
+        worksheet.Cells[1, 9].Value = "Night Shift (C)";
+        worksheet.Cells[1, 10].Value = "Absent Count";
+        worksheet.Cells[1, 11].Value = "Suspended Count";
+        worksheet.Cells[1, 12].Value = "Sick Leave Count";
+        worksheet.Cells[1, 13].Value = "Maternity Leave Count";
+        worksheet.Cells[1, 14].Value = "Approved Leave Count";
+
+        var row = 2;
+
+        foreach (var item in report)
+        {
+            worksheet.Cells[row, 1].Value = item.DepartmentName;
+            worksheet.Cells[row, 2].Value = item.PermanentStaff;
+            worksheet.Cells[row, 3].Value = item.CasualStaff;
+            worksheet.Cells[row, 4].Value = item.PermanentMorning;
+            worksheet.Cells[row, 5].Value = item.PermanentAfternoon;
+            worksheet.Cells[row, 6].Value = item.PermanentNight;
+            worksheet.Cells[row, 7].Value = item.CasualMorning;
+            worksheet.Cells[row, 8].Value = item.CasualAfternoon;
+            worksheet.Cells[row, 9].Value = item.CasualNight;
+            worksheet.Cells[row, 10].Value = item.Absences;
+            worksheet.Cells[row, 11].Value = item.Suspensions;
+            worksheet.Cells[row, 12].Value = item.SickLeaves;
+            worksheet.Cells[row, 13].Value = item.MaternityLeaves;
+            worksheet.Cells[row, 14].Value = item.ApprovedLeaves;
+            row++;
+        }
+
+        worksheet.Cells.AutoFitColumns();
+
+        return Result.Success(new FileExportResult
+        {
+            FileBytes = await package.GetAsByteArrayAsync(),
+            ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            FileName = $"AttendanceSummary_{timestamp}.xlsx"
+        });
     }
 
-    private async Task<SickLeaveDto> EmployeesOnSickLeave(DateTime today)
+    private async Task<int> EmployeesOnSickLeave(DateTime today)
     {
         var sickLeaveTypeId = await context.LeaveTypes
             .Where(t => t.Name == "Sick Leave")
             .Select(t => t.Id)
             .FirstOrDefaultAsync();
 
-        var employees = await context.LeaveRequests
+        return await context.LeaveRequests
             .Where(l => l.LeaveTypeId == sickLeaveTypeId &&
                         l.Approved &&
                         l.StartDate <= today &&
                         l.EndDate >= today)
-            .Include(l => l.Employee)
-            .ThenInclude(e => e.Department)
-            .Include(l => l.Employee.Designation)
-            .Select(l => new MinimalEmployeeInfoDto
-            {
-                EmployeeId = l.Employee.Id,
-                FirstName = l.Employee.FirstName,
-                LastName = l.Employee.LastName,
-                StaffNumber = l.Employee.StaffNumber,
-                Level = l.Employee.Level,
-                Type = l.Employee.Type.ToString(),
-                Department = l.Employee.Department != null ? l.Employee.Department.Name : "Unassigned",
-                Designation = l.Employee.Designation != null ? l.Employee.Designation.Name : "Unassigned"
-            })
-            .ToListAsync();
-
-        var grouped = employees
-            .GroupBy(e => e.Type)
-            .Select(g => new GroupedLeaveDto
-            {
-                Type = g.Key,
-                Employees = g.ToList()
-            })
-            .ToList();
-
-        return new SickLeaveDto
-        {
-            LeaveEmployees = grouped
-        };
+            .CountAsync();
     }
 
-    private async Task<MaternityLeaveDto> EmployeesOnMaternityLeave(DateTime today)
+    private async Task<int> NumberOfApprovedLeaves(DateTime today)
     {
-        var maternityLeaveTypeId = await context.LeaveTypes
-            .Where(t => t.Name == "Maternity Leave")
+        var leaveType = await context.LeaveTypes
+            .Where(t => t.Name != "Maternity Leave" 
+                        && t.Name != "Sick Leave")
             .Select(t => t.Id)
             .FirstOrDefaultAsync();
 
-        var employees = await context.LeaveRequests
-            .Where(l => l.LeaveTypeId == maternityLeaveTypeId &&
-                        l.Approved &&
+        return await context.LeaveRequests
+            .Where(l => l.LeaveTypeId == leaveType
+                        && l.RequestCategory != RequestCategory.OfficialDuty
+                        && l.Approved &&
                         l.StartDate <= today &&
                         l.EndDate >= today)
-            
-            .Include(l => l.Employee)
-            .ThenInclude(e => e.Department)
-            .Include(l => l.Employee.Designation)
-            .Select(l => new MinimalEmployeeInfoDto
-            {
-                EmployeeId = l.Employee.Id,
-                FirstName = l.Employee.FirstName,
-                LastName = l.Employee.LastName,
-                StaffNumber = l.Employee.StaffNumber,
-                Level = l.Employee.Level,
-                Type = l.Employee.Type.ToString(),
-                Department = l.Employee.Department != null ? l.Employee.Department.Name : "Unassigned",
-                Designation = l.Employee.Designation != null ? l.Employee.Designation.Name : "Unassigned"
-            })
-            .Distinct()
-            .ToListAsync();
-        
-        var grouped = employees
-            .GroupBy(e => e.Type)
-            .Select(g => new GroupedLeaveDto
-            {
-                Type = g.Key,
-                Employees = g.ToList()
-            })
-            .ToList();
-
-        return new MaternityLeaveDto
-        {
-            MaternityLeaveEmployees = grouped
-        };
-        
+            .CountAsync();
     }
 }
