@@ -158,6 +158,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             return RequisitionErrors.NotFound(requisitionId);
         }
+        
+        var result = mapper.Map<RequisitionDto>(requisition);
+
+        // If the requisition type is a purchase, return early
+        if (requisition.RequisitionType == RequisitionType.Purchase) return result;
 
         var user = await context.Users
             .Include(u => u.Department).ThenInclude(u => u.Warehouses)
@@ -165,7 +170,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         if (user?.Department is null)
         {
-            return UserErrors.NotFound(userId);
+            return Error.Validation("User.Department", "This user is not assigned to any department.");
         }
 
         // Find user's raw material & packing warehouses
@@ -176,11 +181,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
         if (packingWarehouse is null)
             return Error.NotFound("User.Warehouse", "No packing material warehouse is associated with current user");
-
-        var result = mapper.Map<RequisitionDto>(requisition);
-
-        // If the requisition type is a purchase, return early
-        if (requisition.RequisitionType == RequisitionType.Purchase) return result;
 
         foreach (var item in result.Items)
         {
