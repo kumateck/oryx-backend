@@ -38,6 +38,7 @@ using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductAnalyticalRawData;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -340,6 +341,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionActivityStepResource> ProductionActivityStepResources { get; set; }
     public DbSet<ProductionActivityStepWorkCenter> ProductionActivityStepWorkCenters { get; set; }
     public DbSet<ProductionActivityLog> ProductionActivityLogs { get; set; }
+    
+    public DbSet<ProductionOrder> ProductionOrders { get; set; }
     
     #endregion
 
@@ -1178,6 +1181,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Customers
 
         modelBuilder.Entity<Customer>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+        
+        #region Production Orders
+
+        modelBuilder.Entity<ProductionOrder>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }
