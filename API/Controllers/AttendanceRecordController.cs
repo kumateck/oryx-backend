@@ -43,4 +43,14 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
         var result = await repository.GeneralAttendanceReport();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Exports attendance summary as a CSV or Excel file (excel by default)
+    /// </summary>
+    [HttpGet("export")]
+    public async Task<IResult> ExportAttendanceSummary([FromQuery] FileFormat format)
+    {
+        var result = await repository.ExportAttendanceSummary(format);
+        return result.IsSuccess ? TypedResults.File(result.Value.FileBytes, result.Value.ContentType, result.Value.FileName) : result.ToProblemDetails();
+    }
 }

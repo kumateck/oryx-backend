@@ -1,4 +1,3 @@
-using DOMAIN.Entities.Employees;
 
 namespace DOMAIN.Entities.AttendanceRecords;
 
@@ -24,37 +23,14 @@ public class GeneralAttendanceReportDto
     
     public int CasualNight { get; set; }
     
-    public AbsencesDto Absences { get; set; }
+    public int ApprovedLeaves { get; set; }
     
-    public SuspensionsDto Suspensions { get; set; }
+    public int Absences { get; set; }
     
-    public SickLeaveDto SickLeaves {get; set;}
+    public int Suspensions { get; set; }
     
-    public MaternityLeaveDto MaternityLeaves {get; set;}
-}
-
-public class AbsencesDto
-{
-    public List<MinimalEmployeeInfoDto> AbsentEmployees { get; set; }
-}
-
-public class SuspensionsDto
-{
-    public List<MinimalEmployeeInfoDto> SuspendedEmployees { get; set; }
-}
-
-public class GroupedLeaveDto
-{
-    public string Type { get; set; } 
-    public List<MinimalEmployeeInfoDto> Employees { get; set; }
-}
-
-public class SickLeaveDto
-{
-    public List<GroupedLeaveDto> LeaveEmployees { get; set; }
-}
-
-public class MaternityLeaveDto
-{
-    public List<GroupedLeaveDto> MaternityLeaveEmployees { get; set; }
+    public int SickLeaves {get; set;}
+    
+    public int MaternityLeaves {get; set;}
+    
 }

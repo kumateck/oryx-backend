@@ -642,7 +642,7 @@ public async Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport
                                         + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected),
             NumberOfManufacturers = await approvedManufacturers.CountAsync(),
             NumberOfNewManufacturers = await approvedManufacturers.CountAsync(),
-            NumberOfExpiredManufacturers = await approvedManufacturers.CountAsync(am => am.ValidityDate.Value.Date < DateTime.UtcNow),
+            NumberOfExpiredManufacturers = await approvedManufacturers.CountAsync(am =>am.ValidityDate.HasValue && am.ValidityDate.Value < DateTime.UtcNow),
             NumberOfProducts = await products.CountAsync(),
             NumberOfPackingMaterials = await materials.CountAsync(m => m.Kind == MaterialKind.Package),
             NumberOfRawMaterials = await materials.CountAsync(m => m.Kind == MaterialKind.Raw)
