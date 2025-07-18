@@ -15,6 +15,7 @@ using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
+using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
 using DOMAIN.Entities.Designations;
@@ -889,6 +890,13 @@ public class OryxMapper : Profile
         CreateMap<CreateMaterialSamplingRequest, MaterialSampling>();
         CreateMap<MaterialSampling, MaterialSamplingDto>().ForMember(dest => dest.GrnDto, opt => opt.MapFrom(src => src.Grn));
 
+        #endregion
+
+        #region Customers
+
+        CreateMap<CreateCustomerRequest, Customer>();
+        CreateMap<Customer, CustomerDto>();
+        
         #endregion
     }
 }

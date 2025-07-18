@@ -493,78 +493,129 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         return Result.Success(result);
     }
 
-public async Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport(MovementReportFilter filter)
-{
-    logger.LogInformation("Generating Staff Leave Summary Report with filter: {@Filter}", filter);
-
-    var start = filter.StartDate?.Date ?? new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-    var end = filter.EndDate?.Date ?? DateTime.UtcNow.Date;
-    var today = DateTime.UtcNow.Date;
-
-    logger.LogInformation("Date range resolved: {Start} - {End}", start, end);
-
-    var employeesQuery = context.Employees
-        .Include(e => e.Department)
-        .Where(e => e.Status == EmployeeStatus.Active);
-
-    if (filter.DepartmentId.HasValue)
+    public async Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport(MovementReportFilter filter)
     {
-        employeesQuery = employeesQuery.Where(e => e.DepartmentId == filter.DepartmentId);
-        logger.LogInformation("Filtering by department: {DepartmentId}", filter.DepartmentId);
-    }
+        logger.LogInformation("Generating Staff Leave Summary Report with filter: {@Filter}", filter);
 
-    var employees = await employeesQuery.ToListAsync();
-    logger.LogInformation("Fetched {EmployeeCount} active employees", employees.Count);
+        var start = filter.StartDate?.Date ?? new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var end = filter.EndDate?.Date ?? DateTime.UtcNow.Date;
+        var today = DateTime.UtcNow.Date;
 
-    var employeeIds = employees.Select(e => e.Id).ToList();
+        logger.LogInformation("Date range resolved: {Start} - {End}", start, end);
 
-    var leaveRequests = await context.LeaveRequests
-        .Where(l =>
-            employeeIds.Contains(l.EmployeeId) &&
-            l.Approved &&
-            l.RequestCategory == RequestCategory.LeaveRequest &&
-            l.StartDate <= end &&
-            l.EndDate >= start)
-        .ToListAsync();
+        var employeesQuery = context.Employees
+            .Include(e => e.Department)
+            .Where(e => e.Status == EmployeeStatus.Active);
 
-    logger.LogInformation("Fetched {LeaveRequestCount} approved leave requests in date range", leaveRequests.Count);
-
-    var grouped = employees.GroupBy(e => e.Department?.Name ?? "Unassigned");
-
-    var report = new StaffLeaveSummaryReportDto();
-
-    foreach (var group in grouped)
-    {
-        var departmentName = group.Key ?? "Unassigned";
-        var count = group.Count(e => e.DateEmployed.AddMonths(12) <= today);
-        var totalEntitlement = group.Sum(e => e.AnnualLeaveDays);
-        var deptEmployeeIds = group.Select(e => e.Id).ToList();
-
-        var daysUsed = leaveRequests
-            .Where(r => deptEmployeeIds.Contains(r.EmployeeId))
-            .Sum(r => (r.PaidDays ?? 0) + (r.UnpaidDays ?? 0));
-
-        logger.LogInformation("Dept: {Dept}, DueForLeave: {Count}, TotalLeave: {Entitlement}, DaysUsed: {Used}",
-            departmentName, count, totalEntitlement, daysUsed);
-
-        var dto = new StaffLeaveSummaryDto
+        if (filter.DepartmentId.HasValue)
         {
-            DepartmentName = departmentName,
-            StaffDueForLeave = count,
-            TotalLeaveEntitlement = totalEntitlement,
-            DaysUsed = daysUsed
-        };
+            employeesQuery = employeesQuery.Where(e => e.DepartmentId == filter.DepartmentId);
+            logger.LogInformation("Filtering by department: {DepartmentId}", filter.DepartmentId);
+        }
 
-        report.Departments.Add(dto);
-        
+        var employees = await employeesQuery.ToListAsync();
+        logger.LogInformation("Fetched {EmployeeCount} active employees", employees.Count);
+
+        var employeeIds = employees.Select(e => e.Id).ToList();
+
+        var leaveRequests = await context.LeaveRequests
+            .Where(l =>
+                employeeIds.Contains(l.EmployeeId) &&
+                l.Approved &&
+                l.RequestCategory == RequestCategory.LeaveRequest &&
+                l.StartDate <= end &&
+                l.EndDate >= start)
+            .ToListAsync();
+
+        logger.LogInformation("Fetched {LeaveRequestCount} approved leave requests in date range", leaveRequests.Count);
+
+        var grouped = employees.GroupBy(e => e.Department?.Name ?? "Unassigned");
+
+        var report = new StaffLeaveSummaryReportDto();
+
+        foreach (var group in grouped)
+        {
+            var departmentName = group.Key ?? "Unassigned";
+            var count = group.Count(e => e.DateEmployed.AddMonths(12) <= today);
+            var totalEntitlement = group.Sum(e => e.AnnualLeaveDays);
+            var deptEmployeeIds = group.Select(e => e.Id).ToList();
+
+            var daysUsed = leaveRequests
+                .Where(r => deptEmployeeIds.Contains(r.EmployeeId))
+                .Sum(r => (r.PaidDays ?? 0) + (r.UnpaidDays ?? 0));
+
+            logger.LogInformation("Dept: {Dept}, DueForLeave: {Count}, TotalLeave: {Entitlement}, DaysUsed: {Used}",
+                departmentName, count, totalEntitlement, daysUsed);
+
+            var dto = new StaffLeaveSummaryDto
+            {
+                DepartmentName = departmentName,
+                StaffDueForLeave = count,
+                TotalLeaveEntitlement = totalEntitlement,
+                DaysUsed = daysUsed
+            };
+
+            report.Departments.Add(dto);
+            
+        }
+
+        return Result.Success(report);
     }
 
-    return Result.Success(report);
-}
 
-    public async Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(MovementReportFilter filter)
+
+    public async Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(ReportFilter filter)
     {
-        throw new NotImplementedException();
+        var currentYear = DateTime.UtcNow.Year;
+        
+        var startYear = filter.StartDate?.Year ?? currentYear;
+        var endYear = filter.EndDate?.Year ?? currentYear;
+
+        filter.StartDate = new DateTime(startYear, 1, 1);
+        filter.EndDate = new DateTime(endYear, 12, 31);
+        
+        var leavers = await context.Employees
+            .Where(e => e.ExitDate.HasValue &&
+                        e.ExitDate.Value.Year == filter.StartDate.Value.Year)
+            .ToListAsync();
+        
+        var startCount = await context.Employees
+            .Where(e => e.DateEmployed <= filter.StartDate.Value &&
+                        (!e.ExitDate.HasValue || e.ExitDate >= filter.EndDate.Value))
+            .CountAsync();
+
+        var endCount = await context.Employees
+            .Where(e => e.DateEmployed <= filter.EndDate.Value &&
+                        (!e.ExitDate.HasValue || e.ExitDate >= filter.EndDate.Value))
+            .CountAsync();
+
+        var averageEmployees = (startCount + endCount) / 2.0;
+        var turnoverRate = averageEmployees == 0 ? 0 : (leavers.Count / averageEmployees) * 100.0;
+        
+        var exitedEmployees = await context.Employees
+            .Include(e => e.Department)
+            .Where(e => e.ExitDate.HasValue && e.ExitDate.Value.Year == filter.EndDate.Value.Year)
+            .ToListAsync();
+
+        var departmentSummaries = exitedEmployees
+            .GroupBy(e => e.Department?.Name ?? "Unassigned")
+            .Select(group => new StaffTurnoverCountDto
+            {
+                DepartmentName = group.Key,
+                ExitReasons = group
+                    .GroupBy(e => e.InactiveStatus?.ToString() ?? "Unknown")
+                    .ToDictionary(g => g.Key, g => g.Count())
+            })
+            .ToList();
+
+        var grandTotal = departmentSummaries.Sum(d => d.TotalLeavers);
+
+        return new StaffTurnoverReportDto
+        {
+            TurnoverRate = Math.Round(turnoverRate, 2),
+            GrandTotalLeavers = grandTotal,
+            DepartmentSummaries = departmentSummaries
+        };
     }
 
     public async Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter)
@@ -648,6 +699,81 @@ public async Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport
             NumberOfRawMaterials = await materials.CountAsync(m => m.Kind == MaterialKind.Raw)
         };
 
+    }
+
+    public async Task<Result<QcDashboardDto>> GetQcDashboardReport(ReportFilter filter)
+    {
+        var materialStp = context.MaterialStandardTestProcedures.AsQueryable();
+        var productStp = context.ProductStandardTestProcedures.AsQueryable();
+        
+        var materialAnalyticalRawData = context.MaterialAnalyticalRawData.AsQueryable();
+        var productAnalyticalRawData = context.ProductAnalyticalRawData.AsQueryable();
+
+        var rawMaterialBatchTest = context.MaterialBatches.AsQueryable();
+        var approvals = context.Approvals.AsQueryable();
+        var billingSheetApprovals = context.BillingSheetApprovals.AsQueryable();
+        var leaveRequestApprovals = context.LeaveRequestApprovals.AsQueryable();
+        var purchaseOrderApprovals = context.PurchaseOrderApprovals.AsQueryable();
+        var requisitionApprovals = context.RequisitionApprovals.AsQueryable();
+        var responseApprovals = context.ResponseApprovals.AsQueryable();
+        var staffRequisitionApprovals = context.StaffRequisitionApprovals.AsQueryable();
+        
+        if (filter.StartDate.HasValue)
+        {
+            materialStp = materialStp.Where(ms => ms.CreatedAt >= filter.StartDate);
+            productStp = productStp.Where(ms => ms.CreatedAt >= filter.StartDate);
+            approvals = approvals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            responseApprovals = responseApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            purchaseOrderApprovals =  purchaseOrderApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            approvals = approvals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            materialStp = materialStp.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            productStp = productStp.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            productAnalyticalRawData = productAnalyticalRawData.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            rawMaterialBatchTest = rawMaterialBatchTest.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            responseApprovals = responseApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            purchaseOrderApprovals = purchaseOrderApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+        }
+        
+        return new QcDashboardDto
+        {
+            NumberOfStpRawMaterials = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Raw),
+            NumberOfStpProducts = await productStp.CountAsync(),
+            NumberOfAnalyticalRawData = await materialAnalyticalRawData.CountAsync() + await productAnalyticalRawData.CountAsync(),
+            NumberOfBatchTestCountRawMaterials = rawMaterialBatchTest.Count(rm => rm.Material.Kind == MaterialKind.Raw),
+            NumberOfBatchTestPendingRawMaterials = 
+                await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Received), //check this
+            NumberOfBatchTestApprovedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Approved),
+            NumberOfBatchTestRejectedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Rejected),
+            NumberOfApprovals = await approvals.CountAsync(),
+            NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+                                       + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+                                    + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+                                       + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
+                                    + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+                                       + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
+                                    + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending),
+            
+            NumberOfRejectedApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+                                        + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+                                        + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+                                        + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+                                        + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+                                        + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+                                        + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+        };
     }
 
     public async Task<Result<WarehouseReportDto>> GetWarehouseReport(ReportFilter filter, Guid departmentId)

@@ -14,6 +14,7 @@ using DOMAIN.Entities.Children;
 using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
+using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EmployeeHistories;
@@ -504,6 +505,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
 
     #endregion
+
+    #region Customers
+
+    public  DbSet<Customer> Customers { get; set; }
+
+    #endregion
+    
+    
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
@@ -1163,6 +1172,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Staff Requisitions
 
         modelBuilder.Entity<StaffRequisition>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Customers
+
+        modelBuilder.Entity<Customer>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }

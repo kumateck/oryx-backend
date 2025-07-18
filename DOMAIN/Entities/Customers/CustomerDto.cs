@@ -2,7 +2,7 @@ using DOMAIN.Entities.Base;
 
 namespace DOMAIN.Entities.Customers;
 
-public class Customer : BaseEntity
+public class CustomerDto : BaseDto
 {
     public string Name { get; set; }
     
