@@ -1241,10 +1241,15 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         
         await context.ShipmentInvoices
             .Where(s => shipmentIds.Contains(s.Id))
-            .ExecuteUpdateAsync(setters =>
-                setters
+            .ExecuteUpdateAsync(setters => setters
                     .SetProperty(p => p.PaidAt, paidAt)
                     .SetProperty(p => p.LastUpdatedById, userId));
+        
+        await context.BillingSheets
+            .Where(b => shipmentIds.Contains(b.InvoiceId))
+            .ExecuteUpdateAsync(setters=> setters
+                .SetProperty(p => p.LastUpdatedById, userId)
+                .SetProperty(p  => p.Status, BillingSheetStatus.Paid));
         
         return Result.Success();
     }
