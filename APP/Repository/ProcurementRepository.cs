@@ -1228,6 +1228,27 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
+    public async Task<Result> MarkMultipleShipmentInvoicesAsPaid(List<Guid> shipmentIds, DateTime? paidAt, Guid userId)
+    {
+        paidAt ??= DateTime.UtcNow;
+        
+        shipmentIds ??= [];
+
+        if (shipmentIds.Count == 0)
+        {
+            return Error.NotFound("ShipmentId.Empty", "No shipments ids were provided.");
+        }
+        
+        await context.ShipmentInvoices
+            .Where(s => shipmentIds.Contains(s.Id))
+            .ExecuteUpdateAsync(setters =>
+                setters
+                    .SetProperty(p => p.PaidAt, paidAt)
+                    .SetProperty(p => p.LastUpdatedById, userId));
+        
+        return Result.Success();
+    }
+
     public async Task<Result> UpdateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid shipmentDiscrepancyId, Guid userId)
     {
         var existingShipmentDiscrepancy = await context.ShipmentDiscrepancies

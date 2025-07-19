@@ -931,6 +931,23 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.MarkShipmentInvoiceAsPaid(shipmentInvoiceId, paidAt,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Marks a shipment invoice as paid and the time it was paid
+    /// </summary>
+    [HttpPut("shipment-invoice/paid/multiple")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MarkMultipleShipmentInvoicesAsPaid([FromQuery] DateTime? paidAt, [FromBody] List<Guid> shipmentInvoiceIds)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.MarkMultipleShipmentInvoicesAsPaid(shipmentInvoiceIds, paidAt, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Deletes a specific shipment invoice by its ID.
