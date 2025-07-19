@@ -34,4 +34,5 @@ public interface IReportRepository
     Task<Result<IEnumerable<DistributedRequisitionMaterialDto>>> GetMaterialsReadyForChecklist(ReportFilter filter, Guid userId);
     Task<Result<List<MaterialBatchDto>>> GetMaterialsReadyForAssignment(ReportFilter filter,
         Guid departmentId);
+    Task<Result<LogisticsReportDto>> GetLogisticsReport(ReportFilter filter);
 }

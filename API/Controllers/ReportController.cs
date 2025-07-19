@@ -59,6 +59,21 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetWarehouseReport(filter, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Gets the logistics reporting dashboard
+    /// </summary>
+    [HttpGet("logistics")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseReportDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetLogisticsReport([FromQuery] ReportFilter filter)
+    {
+        //var departmentId = (string)HttpContext.Items["Department"];
+        //if (departmentId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetLogisticsReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Gets reserved material batches for a specific department.

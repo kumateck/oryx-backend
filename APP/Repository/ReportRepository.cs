@@ -10,6 +10,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Requisitions;
@@ -841,10 +842,10 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             NumberOfIncomingStockTransfers = await incomingStockTransfers.CountAsync(),
             NumberOfIncomingPendingStockTransfers = await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.InProgress),
             NumberOfIncomingCompletedStockTransfers = await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.Issued),
-            NumberOfShipments =  await shipments.CountAsync(),
-            NumberOfInTransitShipments = await shipments.CountAsync(s => s.Status == ShipmentStatus.InTransit),
-            NumberOfArrivedShipments = await shipments.CountAsync(s => s.Status == ShipmentStatus.Arrived),
-            NumberOfClearedShipments = await shipments.CountAsync(s => s.Status == ShipmentStatus.Cleared),
+            NumberOfShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment),
+            NumberOfInTransitShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment && s.Status == ShipmentStatus.InTransit),
+            NumberOfArrivedShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment && s.Status == ShipmentStatus.Arrived),
+            NumberOfClearedShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment && s.Status == ShipmentStatus.Cleared),
         };
     }
     
@@ -968,8 +969,52 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         return mapper.Map<List<MaterialBatchDto>>(await query.ToListAsync());
     }
 
-    public async Task<Result<LogisticsReportDto>> GetLogisticsReport(ReportFilter filter, Guid departmentId)
+    public async Task<Result<LogisticsReportDto>> GetLogisticsReport(ReportFilter filter)
     {
-        throw new NotImplementedException();
+        var shipmentInvoices = context.ShipmentInvoices.AsQueryable();
+        
+        var shipments = context.ShipmentDocuments.AsQueryable();
+        
+        var billingSheets = context.BillingSheets
+            .AsSplitQuery()
+            .Include(s => s.Invoice)
+            .AsQueryable();
+        
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            shipmentInvoices = shipmentInvoices.Where(r => r.CreatedAt >= start);
+            shipments = shipments.Where(r => r.CreatedAt >= start);
+            billingSheets = billingSheets.Where(r => r.CreatedAt >= start);
+
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            shipmentInvoices = shipmentInvoices.Where(r => r.CreatedAt < end);
+            shipments = shipments.Where(r => r.CreatedAt < end);
+            billingSheets = billingSheets.Where(r => r.CreatedAt < end);
+        }
+
+        return new LogisticsReportDto
+        {
+            NumberOfInvoices = await shipmentInvoices.CountAsync(),
+            NumberOfPaidInvoices = await shipmentInvoices.CountAsync(s => s.PaidAt.HasValue),
+            NumberOfUnpaidInvoices = await shipmentInvoices.CountAsync(s => !s.PaidAt.HasValue),
+            NumberOfShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment),
+            NumberOfNewShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment && s.Status == ShipmentStatus.New),
+            NumberOfInTransitShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment && s.Status == ShipmentStatus.InTransit),
+            NumberOfArrivedShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment && s.Status == ShipmentStatus.Arrived),
+            NumberOfClearedShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment && s.Status == ShipmentStatus.Cleared),
+            NumberOfBillingSheets = await billingSheets.CountAsync(),
+            NumberOfPaidBillingSheets = await billingSheets.CountAsync(b => b.Status == BillingSheetStatus.Paid || b.Invoice.PaidAt.HasValue),
+            NumberOfPendingBillingSheets = await billingSheets.CountAsync(b => b.Status == BillingSheetStatus.Pending),
+            NumberOfWaybills = await shipments.CountAsync(s => s.Type == DocType.Waybill),
+            NumberOfNewWaybills = await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.New),
+            NumberOfInTransitWaybills = await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.InTransit),
+            NumberOfArrivedWaybills = await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.Arrived),
+            NumberOfClearedWaybills =  await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.Cleared),
+        };
     }
 }
