@@ -27,6 +27,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
+using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -99,6 +100,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, Charge>();
         CreateMap<CreateItemRequest, ShiftCategory>();
         CreateMap<CreateItemRequest, MarketType>();
+        CreateMap<CreateItemRequest, Instrument>();
         
         #endregion
         
@@ -155,6 +157,7 @@ public class OryxMapper : Profile
         CreateMap<ShiftCategory, CollectionItemDto>();
         CreateMap<ProductState, CollectionItemDto>();
         CreateMap<MarketType, CollectionItemDto>();
+        CreateMap<Instrument, CollectionItemDto>();
         
         #endregion
 

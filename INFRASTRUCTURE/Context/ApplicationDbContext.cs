@@ -22,6 +22,7 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
+using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -512,6 +513,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Customers
 
     public  DbSet<Customer> Customers { get; set; }
+
+    #endregion
+
+    #region Instrument
+
+    public DbSet<Instrument> Instruments { get; set; }
 
     #endregion
     
@@ -1187,6 +1194,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Production Orders
 
         modelBuilder.Entity<ProductionOrder>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Instruments
+
+        modelBuilder.Entity<Instrument>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Work Center
+
+        modelBuilder.Entity<WorkCenter>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }

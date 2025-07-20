@@ -19,6 +19,8 @@ public class FormSectionDto : BaseDto
     public CollectionItemDto Form { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
+    public CollectionItemDto Instrument { get; set; }
+    public int Order { get; set; }
     public List<FormFieldDto> Fields { get; set; } = [];
 }
 

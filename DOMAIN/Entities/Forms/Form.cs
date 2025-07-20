@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
@@ -22,6 +23,9 @@ public class FormSection : BaseEntity
     public Form Form { get; set; }
     [StringLength(255)] public string Name { get; set; }
     [StringLength(1000)] public string Description { get; set; }
+    public Guid? InstrumentId { get; set; }
+    public Instrument Instrument { get; set; }
+    public int Order { get; set; }
     public List<FormField> Fields { get; set; }
 }
 

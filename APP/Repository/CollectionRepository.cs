@@ -6,6 +6,7 @@ using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
@@ -53,6 +54,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Charge) => mapper.Map<List<CollectionItemDto>>(await context.Charges.OrderBy(c => c.Name).ToListAsync()),
             nameof(ProductState) => mapper.Map<List<CollectionItemDto>>(await context.ProductStates.OrderBy(c => c.Name).ToListAsync()),
             nameof(MarketType) => mapper.Map<List<CollectionItemDto>>(await context.MarketTypes.OrderBy(c => c.Name).ToListAsync()),
+            nameof(Instrument) => mapper.Map<List<CollectionItemDto>>(await context.Instruments.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -201,6 +203,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var marketType = await context.MarketTypes.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(marketType);
                     break;
+                
+                case nameof(Instrument):
+                    var instrument = await context.Instruments.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(instrument);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -258,6 +265,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ProductState),
             nameof(FinishedGoodsTransferNote),
             nameof(MarketType),
+            nameof(Instrument),
         };
     }
     
@@ -372,6 +380,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.MarketTypes.AddAsync(marketType);
                 await context.SaveChangesAsync();
                 return marketType.Id;
+            
+            case nameof(Instrument):
+                var instrument = mapper.Map<Instrument>(request);
+                await context.Instruments.AddAsync(instrument);
+                await context.SaveChangesAsync();
+                return instrument.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -520,6 +534,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.MarketTypes.Update(marketType);
                 await context.SaveChangesAsync();
                 return marketType.Id;
+            
+            case nameof(Instrument):
+                var instrument = await context.Instruments.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, instrument);
+                context.Instruments.Update(instrument);
+                await context.SaveChangesAsync();
+                return instrument.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -548,6 +569,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Charge) => await context.Charges.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(ProductState) => await context.ProductStates.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(MarketType) => await context.MarketTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(Instrument) => await context.Instruments.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -725,6 +747,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 marketType.DeletedAt = currentTime;
                 marketType.LastDeletedById = userId;
                 context.MarketTypes.Update(marketType);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(Instrument):
+                var instrument = await context.Instruments.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (instrument == null)
+                    return Error.Validation("Charge", "Not found");
+                instrument.DeletedAt = currentTime;
+                instrument.LastDeletedById = userId;
+                context.Instruments.Update(instrument);
                 await context.SaveChangesAsync();
                 return Result.Success();
             
