@@ -175,6 +175,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
             Message = message,
             Recipients = mapper.Map<List<UserDto>>(users),
             Type = notificationType,
+            SentAt = DateTime.UtcNow,
         };
         await notificationService.SendNotification(notification, alert.AlertTypes);
     }
