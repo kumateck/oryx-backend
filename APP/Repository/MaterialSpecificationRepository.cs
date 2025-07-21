@@ -13,6 +13,11 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
 {
     public async Task<Result<Guid>> CreateMaterialSpecification(CreateMaterialSpecificationRequest request)
     {
+        var isLinked = await context.Materials.AnyAsync(m => m.Id == request.MaterialId);
+        if (isLinked)
+        {
+            return Error.Conflict("MaterialSpecification.AlreadyLinked", "Material specification already linked");
+        }
         var materialSpec = mapper.Map<MaterialSpecification>(request);
         await context.MaterialSpecifications.AddAsync(materialSpec);
         

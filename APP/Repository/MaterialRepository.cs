@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Departments;
@@ -2135,5 +2136,20 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
       }
 
       return batches;
+    }
+
+    public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec()
+    {
+        
+        var linkedMaterialIds = await context.MaterialSpecifications
+            .Select(ms => ms.MaterialId)
+            .ToListAsync();
+
+        var materials = await context.Materials
+            .Where(m => !linkedMaterialIds.Contains(m.Id))
+            .ToListAsync();
+
+        return Result.Success(mapper.Map<List<MaterialDto>>(materials));
+        
     }
 }
