@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.UniformityOfWeights;
 
 namespace DOMAIN.Entities.MaterialAnalyticalRawData;
 
@@ -17,4 +18,6 @@ public class MaterialAnalyticalRawData : BaseEntity
     public MaterialStandardTestProcedure MaterialStandardTestProcedure { get; set; }
     public Guid FormId { get; set; }
     public Form Form { get; set; }
+    public Guid? UniformityOfWeightId { get; set; }
+    public UniformityOfWeight UniformityOfWeight { get; set; }
 }

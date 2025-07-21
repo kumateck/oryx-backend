@@ -59,6 +59,7 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
+using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.WorkOrders;
@@ -519,6 +520,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Instrument
 
     public DbSet<Instrument> Instruments { get; set; }
+
+    #endregion
+
+    #region Uniformity Of Weight
+
+    public DbSet<UniformityOfWeight> UniformityOfWeights { get; set; }
+    public DbSet<UniformityOfWeightResponse> UniformityOfWeightResponses { get; set; }
 
     #endregion
     

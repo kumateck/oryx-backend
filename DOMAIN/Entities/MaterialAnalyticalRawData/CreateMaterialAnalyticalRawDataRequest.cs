@@ -12,5 +12,5 @@ public class CreateMaterialAnalyticalRawDataRequest
     
     [Required] public Guid FormId { get; set; }
     public Guid? MaterialBatchId { get; set; }
-
+    public Guid? UniformityOfWeightId { get; set; }
 }
