@@ -639,4 +639,13 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetExpiredMaterialBatches(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    [HttpGet("material-specs/not-linked")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    public async Task<IResult> GetMaterialsNotLinkedToSpec()
+    {
+        var result = await repository.GetMaterialsNotLinkedToSpec();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
