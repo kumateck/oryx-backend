@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.UniformityOfWeights;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -112,5 +113,93 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     {
         var result = await repository.StartTestForMaterialBatch(materialBatchId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+     /// <summary>
+    /// Creates a uniformity of weight record.
+    /// </summary>
+    [HttpPost("uniformity-of-weight")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> Create([FromBody] CreateUniformityOfWeight request)
+    {
+        var result = await repository.CreateUniformityOfWeight(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of uniformity of weight records.
+    /// </summary>
+    [HttpGet("uniformity-of-weight")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UniformityOfWeightDto>>))]
+    public async Task<IResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetUniformityOfWeights(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific uniformity of weight by ID.
+    /// </summary>
+    [HttpGet("uniformity-of-weight/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UniformityOfWeightDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetById([FromRoute] Guid id)
+    {
+        var result = await repository.GetUniformityOfWeight(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a uniformity of weight record.
+    /// </summary>
+    [HttpPut("uniformity-of-weight/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> Update([FromRoute] Guid id, [FromBody] CreateUniformityOfWeight request)
+    {
+        var result = await repository.UpdateUniformityOfWeight(id, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a uniformity of weight record.
+    /// </summary>
+    [HttpDelete("uniformity-of-weight/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> Delete([FromRoute] Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteUniformityOfWeight(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Submits a uniformity of weight response.
+    /// </summary>
+    [HttpPost("uniformity-of-weight/response")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> SubmitResponse([FromBody] CreateUniformityOfWeightResponse request)
+    {
+        var result = await repository.SubmitUniformityOfWeightResponse(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+
+    /// <summary>
+    /// Gets all uniformity of weight responses by material batch ID.
+    /// </summary>
+    [HttpGet("uniformity-of-weight/{uniformityOfWeightId:guid}/{materialBatchId:guid}/response")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UniformityOfWeightResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetResponsesByMaterialBatchId([FromRoute] Guid uniformityOfWeightId, [FromRoute] Guid materialBatchId)
+    {
+        var result = await repository.GetResponsesByMaterialBatchId(uniformityOfWeightId, materialBatchId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

@@ -67,6 +67,7 @@ using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.StaffRequisitions;
+using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
 using DOMAIN.Entities.Warehouses;
@@ -908,6 +909,16 @@ public class OryxMapper : Profile
         #region Production Orders
         CreateMap<CreateProductionOrderRequest, ProductionOrder>();
         CreateMap<ProductionOrder, ProductionOrderDto>();
+
+        #endregion
+
+        #region Uniformity Of Weight
+
+        CreateMap<CreateUniformityOfWeight, UniformityOfWeight>();
+        CreateMap<UniformityOfWeight, UniformityOfWeightDto>();
+
+        CreateMap<CreateUniformityOfWeightResponse, UniformityOfWeightResponse>();
+        CreateMap<UniformityOfWeightResponse, UniformityOfWeightResponseDto>();
 
         #endregion
     }

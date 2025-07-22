@@ -5,6 +5,7 @@ using AutoMapper;
 using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.UniformityOfWeights;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -167,5 +168,97 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         context.MaterialBatches.Update(materialBatch);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+    
+    public async Task<Result<Guid>> CreateUniformityOfWeight(CreateUniformityOfWeight request)
+    {
+        var entity = mapper.Map<UniformityOfWeight>(request);
+        await context.UniformityOfWeights.AddAsync(entity);
+        await context.SaveChangesAsync();
+        return entity.Id;
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<UniformityOfWeightDto>>>> GetUniformityOfWeights(int page, int pageSize, string searchQuery)
+    {
+        var query = context.UniformityOfWeights
+            .AsSplitQuery()
+            .Include(u => u.DisintegrationInstrument)
+            .Include(u => u.HardnessInstrument)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, u => u.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            entity => mapper.Map<UniformityOfWeightDto>(entity, opts =>
+                opts.Items[AppConstants.ModelType] = nameof(UniformityOfWeight)));
+    }
+
+    public async Task<Result<UniformityOfWeightDto>> GetUniformityOfWeight(Guid id)
+    {
+        var entity = await context.UniformityOfWeights
+            .Include(u => u.DisintegrationInstrument)
+            .Include(u => u.HardnessInstrument)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        return entity is null
+            ? Error.NotFound("UniformityOfWeight.NotFound", "Entry not found")
+            : mapper.Map<UniformityOfWeightDto>(entity, opts =>
+                opts.Items[AppConstants.ModelType] = nameof(UniformityOfWeight));
+    }
+
+    public async Task<Result> UpdateUniformityOfWeight(Guid id, CreateUniformityOfWeight request)
+    {
+        var entity = await context.UniformityOfWeights.FirstOrDefaultAsync(u => u.Id == id);
+        if (entity is null)
+        {
+            return Error.NotFound("UniformityOfWeight.NotFound", "Entry not found");
+        }
+
+        mapper.Map(request, entity);
+        context.UniformityOfWeights.Update(entity);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteUniformityOfWeight(Guid id, Guid userId)
+    {
+        var entity = await context.UniformityOfWeights.FirstOrDefaultAsync(u => u.Id == id);
+        if (entity is null)
+        {
+            return Error.NotFound("UniformityOfWeight.NotFound", "Entry not found");
+        }
+
+        entity.DeletedAt = DateTime.UtcNow;
+        entity.LastDeletedById = userId;
+        context.UniformityOfWeights.Update(entity);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result<Guid>> SubmitUniformityOfWeightResponse(CreateUniformityOfWeightResponse request)
+    {
+        var entity = mapper.Map<UniformityOfWeightResponse>(request);
+        await context.UniformityOfWeightResponses.AddAsync(entity);
+        await context.SaveChangesAsync();
+        return entity.Id;
+    }
+
+    public async Task<Result<IEnumerable<UniformityOfWeightResponseDto>>> GetResponsesByMaterialBatchId(Guid uniformityOfWeightId, Guid materialBatchId)
+    {
+        var responses = await context.UniformityOfWeightResponses
+            .AsSplitQuery()
+            .Include(r => r.UniformityOfWeight)
+            .Include(r => r.MaterialBatch)
+            .Where(r => r.UniformityOfWeightId == uniformityOfWeightId
+                        && r.MaterialBatchId == materialBatchId)
+            .ToListAsync();
+
+        return mapper.Map<List<UniformityOfWeightResponseDto>>(responses);
     }
 }
