@@ -2138,7 +2138,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
       return batches;
     }
 
-    public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec()
+    public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind)
     {
         
         var linkedMaterialIds = await context.MaterialSpecifications
@@ -2146,7 +2146,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ToListAsync();
 
         var materials = await context.Materials
-            .Where(m => !linkedMaterialIds.Contains(m.Id))
+            .Where(m => !linkedMaterialIds.Contains(m.Id) && m.Kind == kind)
             .ToListAsync();
 
         return Result.Success(mapper.Map<List<MaterialDto>>(materials));

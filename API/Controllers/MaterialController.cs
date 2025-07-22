@@ -643,9 +643,9 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [HttpGet("material-specs/not-linked")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
-    public async Task<IResult> GetMaterialsNotLinkedToSpec()
+    public async Task<IResult> GetMaterialsNotLinkedToSpec([FromQuery] MaterialKind materialKind = 0)
     {
-        var result = await repository.GetMaterialsNotLinkedToSpec();
+        var result = await repository.GetMaterialsNotLinkedToSpec(materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
