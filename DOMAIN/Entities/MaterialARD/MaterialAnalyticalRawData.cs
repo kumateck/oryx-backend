@@ -3,7 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 
-namespace DOMAIN.Entities.MaterialAnalyticalRawData;
+namespace DOMAIN.Entities.MaterialARD;
 
 public class MaterialAnalyticalRawData : BaseEntity
 {

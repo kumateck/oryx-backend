@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DOMAIN.Entities.MaterialAnalyticalRawData;
+namespace DOMAIN.Entities.MaterialARD;
 
 public class CreateMaterialAnalyticalRawDataRequest
 {

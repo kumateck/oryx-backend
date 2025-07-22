@@ -2,7 +2,7 @@ using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using SHARED;
 
-namespace DOMAIN.Entities.MaterialAnalyticalRawData;
+namespace DOMAIN.Entities.MaterialARD;
 
 public class MaterialAnalyticalRawDataDto : WithAttachment
 {
