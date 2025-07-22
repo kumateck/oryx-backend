@@ -21,25 +21,26 @@ public class MaterialSpecification : BaseEntity
 public class TestSpecification 
 {
     public int SrNumber { get; set; }
-    public TestType TestName { get; set; }
+    public string TestName { get; set; }
     public string ReleaseSpecification { get; set; }
     public MaterialSpecificationReference Reference { get; set; }
     
 }
 
-//TODO: verify if these are the only options
 public enum MaterialSpecificationReference
 {
-    InHouse,
-    BP
+    BP,
+    USP,
+    PhInt, 
+    InHouse
 }
 
-public enum TestType
-{
-    WeightOf20Tablets,
-    UniformityOfWeight,
-    DisintegrationTime,
-    Friability,
-    Dissolution,
-    Assay
-}
+// public enum TestType
+// {
+//     WeightOf20Tablets,
+//     UniformityOfWeight,
+//     DisintegrationTime,
+//     Friability,
+//     Dissolution,
+//     Assay
+// }
