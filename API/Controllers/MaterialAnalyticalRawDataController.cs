@@ -1,7 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
-using DOMAIN.Entities.MaterialAnalyticalRawData;
+using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.UniformityOfWeights;
 using Microsoft.AspNetCore.Authorization;

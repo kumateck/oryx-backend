@@ -2,7 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
-using DOMAIN.Entities.MaterialAnalyticalRawData;
+using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.UniformityOfWeights;

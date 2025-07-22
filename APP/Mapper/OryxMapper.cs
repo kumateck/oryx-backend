@@ -31,7 +31,7 @@ using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
-using DOMAIN.Entities.MaterialAnalyticalRawData;
+using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
@@ -336,7 +336,9 @@ public class OryxMapper : Profile
         CreateMap<HoldingMaterialTransferBatch, HoldingMaterialTransferBatchDto>();
 
         CreateMap<CreateMaterialSpecificationRequest, MaterialSpecification>();
-        CreateMap<MaterialSpecification, MaterialSpecificationDto>();
+        CreateMap<MaterialSpecification, MaterialSpecificationDto>()
+            .ForMember(dest => dest.SpecificationNumber, opts => opts.MapFrom(src => src.MaterialAnalyticalRawData.SpecNumber))
+            .ForMember(dest => dest.TestSpecifications, opts => opts.MapFrom(src => src.Form.Sections));
         
         #endregion
 

@@ -4,7 +4,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.UniformityOfWeights;
 
-namespace DOMAIN.Entities.MaterialAnalyticalRawData;
+namespace DOMAIN.Entities.MaterialARD;
 
 public class MaterialAnalyticalRawData : BaseEntity
 {

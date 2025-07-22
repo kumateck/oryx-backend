@@ -3,7 +3,7 @@ using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.UniformityOfWeights;
 using SHARED;
 
-namespace DOMAIN.Entities.MaterialAnalyticalRawData;
+namespace DOMAIN.Entities.MaterialARD;
 
 public class MaterialAnalyticalRawDataDto : WithAttachment
 {

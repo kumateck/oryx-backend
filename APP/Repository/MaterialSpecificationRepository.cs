@@ -18,7 +18,10 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         {
             return Error.Conflict("MaterialSpecification.AlreadyLinked", "Material specification already linked");
         }
+        
+        var materialArd = await context.MaterialAnalyticalRawData.FirstOrDefaultAsync(md => md.MaterialStandardTestProcedure.MaterialId  == request.MaterialId);
         var materialSpec = mapper.Map<MaterialSpecification>(request);
+        materialSpec.MaterialAnalyticalRawDataId = materialArd.Id;
         await context.MaterialSpecifications.AddAsync(materialSpec);
         
         await context.SaveChangesAsync();
