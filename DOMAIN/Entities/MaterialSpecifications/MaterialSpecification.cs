@@ -29,7 +29,7 @@ public class MaterialSpecification : BaseEntity
 public class TestSpecification 
 {
     public int SrNumber { get; set; }
-    public string TestName { get; set; }
+    public string Name { get; set; }
     public string ReleaseSpecification { get; set; }
     public MaterialSpecificationReference Reference { get; set; }
     
