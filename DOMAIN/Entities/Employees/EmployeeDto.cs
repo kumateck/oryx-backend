@@ -7,6 +7,7 @@ using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Siblings;
+using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Employees;
 
@@ -53,6 +54,10 @@ public class EmployeeDto: WithAttachment
     public DesignationDto Designation { get; set; }
     
     public DepartmentDto Department { get; set; }
+    
+    public Guid? ReportingManagerId { get; set; }
+    
+    public UserDto ReportingManager { get; set; }
 
     public PersonDto Mother { get; set; }
     public PersonDto Father { get; set; }
