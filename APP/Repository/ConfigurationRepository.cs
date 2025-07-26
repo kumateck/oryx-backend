@@ -16,6 +16,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Services;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.WorkOrders;
 using INFRASTRUCTURE.Context;
@@ -219,6 +220,12 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                return await context.ProductionOrders
                    .IgnoreQueryFilters()
                    .Where(po => po.ProductionOrderCode.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Service):
+               return await context.Services
+                   .IgnoreQueryFilters()
+                   .Where(s => s.Code.StartsWith(prefix))
                    .CountAsync();
                
            default:

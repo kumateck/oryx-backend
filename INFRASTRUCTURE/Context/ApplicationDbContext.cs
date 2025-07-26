@@ -53,6 +53,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Services;
 using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
@@ -527,6 +528,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<UniformityOfWeight> UniformityOfWeights { get; set; }
     public DbSet<UniformityOfWeightResponse> UniformityOfWeightResponses { get; set; }
+
+    #endregion
+
+    #region Services
+
+    public DbSet<Service> Services { get; set; }
 
     #endregion
     
@@ -1214,6 +1221,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Work Center
 
         modelBuilder.Entity<WorkCenter>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Services
+
+        modelBuilder.Entity<Service>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }

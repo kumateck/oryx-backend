@@ -348,7 +348,7 @@ public class EmployeeRepository(ApplicationDbContext context,
     }
     
     public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
-        string searchQuery, string designation, string department)
+        string searchQuery, string designation, string department, EmployeeStatus? activeStatus)
     {
         var query = context.Employees
             .Include(e => e.Department)
@@ -374,6 +374,11 @@ public class EmployeeRepository(ApplicationDbContext context,
         if (!string.IsNullOrWhiteSpace(department))
         {
             query = query.WhereSearch(department, q => q.Department.Name);
+        }
+
+        if (activeStatus.HasValue)
+        {
+            query = query.Where(e => e.Status == activeStatus);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
