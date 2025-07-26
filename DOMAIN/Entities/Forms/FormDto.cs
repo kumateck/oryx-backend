@@ -8,6 +8,7 @@ namespace DOMAIN.Entities.Forms;
 public class FormDto : BaseDto
 {
     public string Name { get; set; }
+    public FormType Type { get; set; }
     public List<FormSectionDto> Sections { get; set; } = [];
     public List<FormResponseDto> Responses { get; set; } = [];
     public List<FormAssigneeDto> Assignees { get; set; } = [];

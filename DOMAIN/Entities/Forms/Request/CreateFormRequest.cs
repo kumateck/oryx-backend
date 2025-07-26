@@ -8,6 +8,7 @@ public class CreateFormRequest
     public List<CreateFormSectionRequest> Sections { get; set; } = [];
     public List<CreateFormAssigneeRequest> Assignees { get; set; } = [];
     public List<CreateFormReviewerRequest> Reviewers { get; set; } = [];
+    public FormType Type { get; set; }
 }
 
 public class CreateFormSectionRequest

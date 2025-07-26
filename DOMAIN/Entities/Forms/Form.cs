@@ -11,10 +11,17 @@ namespace DOMAIN.Entities.Forms;
 public class Form : BaseEntity
 {
     [StringLength(255)] public string Name { get; set; }
+    public FormType Type { get; set; }
     public List<FormSection> Sections { get; set; } = [];
     public List<FormResponse> Responses { get; set; } = [];
     public List<FormAssignee> Assignees { get; set; } = [];
     public List<FormReviewer> Reviewers { get; set; } = [];
+}
+
+public enum FormType
+{
+    Default,
+    Specification
 }
 
 public class FormSection : BaseEntity
