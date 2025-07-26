@@ -1,5 +1,4 @@
 using DOMAIN.Entities.Attachments;
-using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Services;

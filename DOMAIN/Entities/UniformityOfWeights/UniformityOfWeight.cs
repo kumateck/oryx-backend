@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.Products.Production;
 using SHARED;
 
 namespace DOMAIN.Entities.UniformityOfWeights;

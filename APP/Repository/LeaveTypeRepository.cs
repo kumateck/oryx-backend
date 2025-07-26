@@ -121,6 +121,14 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.NotFound("LeaveType.NotFound", "LeaveType not found");
         }
+        
+        var leaveRequest = await context.LeaveRequests
+            .Where(l => l.LeaveTypeId == id &&l.EndDate <= DateTime.UtcNow).ToListAsync();
+        if (leaveRequest.Count > 0)
+        {
+            return Error.Validation("LeaveType.CannotDelete", "LeaveType cannot be deleted because it is currently in use.");
+        }
+        
         leaveType.DeletedAt = DateTime.UtcNow;
         leaveType.LastDeletedById = userId;
        

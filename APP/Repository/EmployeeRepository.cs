@@ -12,7 +12,6 @@ using AutoMapper.QueryableExtensions;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
-using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;

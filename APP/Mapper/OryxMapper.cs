@@ -337,10 +337,8 @@ public class OryxMapper : Profile
         CreateMap<HoldingMaterialTransferBatch, HoldingMaterialTransferBatchDto>();
 
         CreateMap<CreateMaterialSpecificationRequest, MaterialSpecification>();
-        CreateMap<MaterialSpecification, MaterialSpecificationDto>()
-            .ForMember(dest => dest.SpecificationNumber, opts => opts.MapFrom(src => src.MaterialAnalyticalRawData.SpecNumber))
-            .ForMember(dest => dest.TestSpecifications, opts => opts.MapFrom(src => src.Form.Sections));
-        
+        CreateMap<MaterialSpecification, MaterialSpecificationDto>();
+            
         #endregion
 
         #region Requisition
@@ -685,11 +683,12 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Avatar, opt => opt.MapFrom<EmployeeAvatarResolver>());
 
         CreateMap<EmployeeUserDto, Employee>();
-        
+
         CreateMap<Employee, User>()
             .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName))
             .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
-            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email));
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Email));
 
         CreateMap<Employee, MinimalEmployeeInfoDto>()
             .ForMember(dest => dest.EmployeeId, opt => opt.MapFrom(src => src.Id))

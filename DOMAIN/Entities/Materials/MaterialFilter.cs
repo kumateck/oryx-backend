@@ -1,5 +1,3 @@
-using SHARED;
-
 namespace DOMAIN.Entities.Materials;
 
 public class MaterialFilter 

@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using APP.IRepository;
-using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;

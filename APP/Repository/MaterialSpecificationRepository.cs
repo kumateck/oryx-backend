@@ -13,15 +13,13 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
 {
     public async Task<Result<Guid>> CreateMaterialSpecification(CreateMaterialSpecificationRequest request)
     {
-        var isLinked = await context.Materials.AnyAsync(m => m.Id == request.MaterialId);
+        var isLinked = await context.MaterialSpecifications.AnyAsync(m => m.Id == request.MaterialId);
         if (isLinked)
         {
             return Error.Conflict("MaterialSpecification.AlreadyLinked", "Material specification already linked");
         }
         
-        var materialArd = await context.MaterialAnalyticalRawData.FirstOrDefaultAsync(md => md.MaterialStandardTestProcedure.MaterialId  == request.MaterialId);
         var materialSpec = mapper.Map<MaterialSpecification>(request);
-        materialSpec.MaterialAnalyticalRawDataId = materialArd.Id;
         await context.MaterialSpecifications.AddAsync(materialSpec);
         
         await context.SaveChangesAsync();
