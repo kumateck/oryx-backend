@@ -60,6 +60,7 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Services;
 using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
@@ -919,6 +920,15 @@ public class OryxMapper : Profile
 
         CreateMap<CreateUniformityOfWeightResponse, UniformityOfWeightResponse>();
         CreateMap<UniformityOfWeightResponse, UniformityOfWeightResponseDto>();
+
+        #endregion
+
+        #region Services
+
+        CreateMap<CreateServiceRequest, Service>();
+        CreateMap<Service, ServiceDto>()
+            .ForMember(dest => dest.ServiceId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         #endregion
     }

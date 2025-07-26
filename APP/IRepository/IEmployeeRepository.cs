@@ -16,7 +16,7 @@ public interface IEmployeeRepository
 
    Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId);
    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
-      string searchQuery = null, string designation = null, string department = null);
+      string searchQuery = null, string designation = null, string department = null, EmployeeStatus? status = EmployeeStatus.Active);
    
    Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId);
    
