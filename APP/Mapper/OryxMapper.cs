@@ -926,7 +926,6 @@ public class OryxMapper : Profile
 
         CreateMap<CreateServiceRequest, Service>();
         CreateMap<Service, ServiceDto>()
-            .ForMember(dest => dest.ServiceId, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         #endregion

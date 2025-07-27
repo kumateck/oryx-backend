@@ -199,9 +199,8 @@ public class EmployeeRepository(ApplicationDbContext context,
 
             var newUser = mapper.Map<User>(employee);
             newUser.Email = newUser.UserName = employee.Email;
-            newUser.CreatedAt = DateTime.UtcNow;
 
-            var createResult = await userManager.CreateAsync(newUser);
+            var createResult = await userManager.CreateAsync(newUser, password:"password");
             if (!createResult.Succeeded)
             {
                 var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
@@ -234,7 +233,7 @@ public class EmployeeRepository(ApplicationDbContext context,
                 UserId = newUser.Id,
                 Token = token,
                 KeyName = key,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow
             });
 
             var verificationLink = $"{partialUrl}/reset-password?key={key}";
