@@ -150,7 +150,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     public async Task<IResult> ChangeEmployeeType([FromRoute] Guid id, [FromQuery] EmployeeType employeeType)
     {
         var result = await repository.ChangeEmployeeType(id, employeeType);
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
