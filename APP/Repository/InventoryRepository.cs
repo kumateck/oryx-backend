@@ -17,6 +17,9 @@ public class InventoryRepository(ApplicationDbContext context, IMapper mapper) :
         var inventory = await context.Inventories.FirstOrDefaultAsync(i => i.MaterialName == request.MaterialName);
         if (inventory != null) return Error.Validation("Inventory.Exists", "Inventory already exists");
         
+        var uomId = await context.UnitOfMeasures.AnyAsync(u => u.Id == request.UnitOfMeasureId);
+        if (!uomId) return Error.NotFound("UnitOfMeasure.NotFound", "Unit of measure not found");
+        
         inventory = mapper.Map<Inventory>(request);
         await context.Inventories.AddAsync(inventory);
         await context.SaveChangesAsync();
