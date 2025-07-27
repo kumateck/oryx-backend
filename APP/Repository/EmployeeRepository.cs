@@ -200,7 +200,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             var newUser = mapper.Map<User>(employee);
             newUser.Email = newUser.UserName = employee.Email;
 
-            var createResult = await userManager.CreateAsync(newUser, password:"password123@$");
+            var createResult = await userManager.CreateAsync(newUser, password:"Pass123$1");
             if (!createResult.Succeeded)
             {
                 var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
