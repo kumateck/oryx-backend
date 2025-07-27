@@ -235,6 +235,8 @@ public class EmployeeRepository(ApplicationDbContext context,
                 KeyName = key,
                 CreatedAt = DateTime.UtcNow
             });
+            
+            await context.SaveChangesAsync();
 
             var verificationLink = $"{partialUrl}/reset-password?key={key}";
             var emailBody = emailTemplate
