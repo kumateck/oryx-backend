@@ -163,7 +163,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> ChangeEmployeeType([FromRoute] Guid id, [FromQuery] UpdateEmployeeStatus status)
+    public async Task<IResult> ChangeEmployeeType([FromRoute] Guid id, [FromBody] UpdateEmployeeStatus status)
     {
         var result = await repository.UpdateEmployeeStatus(id, status);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
