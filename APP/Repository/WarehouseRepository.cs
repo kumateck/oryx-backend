@@ -109,6 +109,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         {
             return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
         }
+        
+        
 
         warehouse.DeletedAt = DateTime.UtcNow;
         warehouse.LastDeletedById = userId;
@@ -127,6 +129,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         {
             return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
         }
+        
+        var existingLocation = await context.WarehouseLocations.AnyAsync(w => w.WarehouseId == warehouseId
+                                                                              && w.FloorName == request.FloorName && w.Name == request.Name);
+        
+        if (existingLocation) return Error.Conflict("WarehouseLocation.AlreadyExists", "Warehouse location already exists");
 
         var location = mapper.Map<WarehouseLocation>(request);
         location.WarehouseId = warehouseId;
