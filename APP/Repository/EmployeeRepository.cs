@@ -200,7 +200,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             var newUser = mapper.Map<User>(employee);
             newUser.Email = newUser.UserName = employee.Email;
 
-            var createResult = await userManager.CreateAsync(newUser, password:"password");
+            var createResult = await userManager.CreateAsync(newUser, password:"password123@$");
             if (!createResult.Succeeded)
             {
                 var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
@@ -442,6 +442,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         employee.DepartmentId = employeeDto.DepartmentId;
         employee.DesignationId = employeeDto.DesignationId;
         employee.AnnualLeaveDays = designation.MaximumLeaveDays;
+        employee.Status = EmployeeStatus.Active;
 
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
