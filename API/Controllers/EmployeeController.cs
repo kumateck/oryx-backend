@@ -138,6 +138,22 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Changes the employee type 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="employeeType"></param>
+    /// <returns></returns>
+    [HttpPut("{id:guid}/change-type")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ChangeEmployeeType([FromRoute] Guid id, [FromBody] EmployeeType employeeType)
+    {
+        var result = await repository.ChangeEmployeeType(id, employeeType);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Deletes a specific employee by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]

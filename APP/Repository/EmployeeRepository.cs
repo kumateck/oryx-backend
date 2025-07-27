@@ -12,7 +12,6 @@ using AutoMapper.QueryableExtensions;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
-using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
@@ -156,75 +155,77 @@ public class EmployeeRepository(ApplicationDbContext context,
 
     public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
     {
-        var employee = await context.Employees.Include(e => e.Department)
+        var employee = await context.Employees
+            .Include(e => e.Department)
             .FirstOrDefaultAsync(e => e.Id == employeeUserDto.EmployeeId);
 
-        if (employee == null)
+        if (employee is null)
             return Error.NotFound("Employee.NotFound", "Employee not found");
 
         var existingUser = await context.Users
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.Email == employee.Email);
 
-        if (existingUser is not null && !existingUser.DeletedAt.HasValue)
-            return Error.Conflict("User.Exists", "User already exists");
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId);
+        
+        if (role is null) return Error.NotFound("Role.NotFound", "Role not found");
 
+        if (existingUser is not null && !existingUser.DeletedAt.HasValue)
+        {
+            return Error.Conflict("User.Exists", "A user with this email already exists.");
+        }
+
+        // Restore soft-deleted user
         if (existingUser?.DeletedAt != null)
         {
             existingUser.DeletedAt = null;
             existingUser.LastDeletedById = null;
             context.Users.Update(existingUser);
 
-            var roles = await userManager.GetRolesAsync(existingUser);
-            await userManager.RemoveFromRolesAsync(existingUser, roles);
-
-            var newRole = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId && r.DeletedAt == null);
-            if (newRole is null) return RoleErrors.NotFound(employeeUserDto.RoleId);
-
-            if (string.IsNullOrEmpty(newRole.Name)) return RoleErrors.InvalidRoleName(newRole.Name);
-
-            await userManager.AddToRoleAsync(existingUser, newRole.Name);
+            var existingRoles = await userManager.GetRolesAsync(existingUser);
+            await userManager.RemoveFromRolesAsync(existingUser, existingRoles);
+            await userManager.AddToRoleAsync(existingUser, role.DisplayName);
             await context.SaveChangesAsync();
-            return Result.Success();
+
+            logger.LogInformation("Restored deleted user {UserId} and assigned role {Role}", existingUser.Id, role);
+            return Result.Success(existingUser.Id);
         }
 
+        // Create new user
         await using var transaction = await context.Database.BeginTransactionAsync();
-
         try
         {
+            logger.LogInformation("Creating new user for email: {Email}", employee.Email);
+
             var newUser = mapper.Map<User>(employee);
-            newUser.Email = employee.Email;
-            newUser.UserName = employee.Email;
-            newUser.FirstName = employee.FirstName;
-            newUser.LastName = employee.LastName;
-            newUser.DepartmentId = employee.DepartmentId;
-            newUser.Avatar = employee.Avatar;
+            newUser.Email = newUser.UserName = employee.Email;
 
-            await userManager.CreateAsync(newUser);
-            await context.SaveChangesAsync();
-
-            var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId && r.DeletedAt == null);
-
-            if (role == null)
+            var createResult = await userManager.CreateAsync(newUser, password:"password");
+            if (!createResult.Succeeded)
             {
-                return Error.NotFound("Role.NotFound", "Role not found");
+                var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                logger.LogError("Failed to create user {Email}: {Errors}", newUser.Email, errors);
+                return Error.Failure("User.CreationFailed", errors);
             }
-            
-            await userManager.AddToRoleAsync(newUser, role.Name ?? "");
-            await context.SaveChangesAsync();
 
+            await userManager.AddToRoleAsync(newUser, role.DisplayName);
+            logger.LogInformation("Assigned role {Role} to user {UserId}", role, newUser.Id);
+
+            await context.SaveChangesAsync();
             await transaction.CommitAsync();
-            
+            logger.LogInformation("User {UserId} successfully created and saved", newUser.Id);
+
+            // Password setup email
             const string templatePath = "wwwroot/email/PasswordSetup.html";
             if (!File.Exists(templatePath))
-                throw new FileNotFoundException("Email template not found", templatePath);
+            {
+                logger.LogError("Password setup email template not found at: {Path}", templatePath);
+                return Error.Failure("Template.Missing", "Email template not found.");
+            }
 
             var emailTemplate = await File.ReadAllTextAsync(templatePath);
-            
             var key = Guid.NewGuid().ToString();
-            
-            var partialUrl = Environment.GetEnvironmentVariable("CLIENT_BASE_URL");
-            
+            var partialUrl = Environment.GetEnvironmentVariable("ClientBaseUrl");
             var token = await userManager.GeneratePasswordResetTokenAsync(newUser);
 
             await context.PasswordResets.AddAsync(new PasswordReset
@@ -232,35 +233,33 @@ public class EmployeeRepository(ApplicationDbContext context,
                 UserId = newUser.Id,
                 Token = token,
                 KeyName = key,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow
             });
 
             var verificationLink = $"{partialUrl}/reset-password?key={key}";
-
             var emailBody = emailTemplate
                 .Replace("{Name}", $"{employee.FirstName} {employee.LastName}")
                 .Replace("{Email}", employee.Email)
                 .Replace("{VerificationLink}", verificationLink);
 
+            // Retry logic for email
             const int maxRetries = 3;
-            var attempts = 0;
             var sent = false;
-
-            while (attempts < maxRetries && !sent)
+            for (int attempt = 1; attempt <= maxRetries && !sent; attempt++)
             {
                 try
                 {
                     emailService.SendMail(newUser.Email, "Password Setup", emailBody, []);
-                    logger.LogInformation($"Password setup email sent to {newUser.Email}");
                     sent = true;
+                    logger.LogInformation("Password setup email sent to {Email}", newUser.Email);
                 }
                 catch (Exception ex)
                 {
-                    attempts++;
-                    logger.LogWarning($"Failed attempt {attempts} for {newUser.Email}: {ex.Message}");
-
-                    if (attempts == maxRetries)
-                        logger.LogError($"Giving up on {newUser.Email} after {maxRetries} attempts.");
+                    logger.LogWarning("Attempt {Attempt}: Failed to send email to {Email}: {Message}", attempt, newUser.Email, ex.Message);
+                    if (attempt == maxRetries)
+                    {
+                        logger.LogError("Giving up after {MaxAttempts} attempts to send email to {Email}", maxRetries, newUser.Email);
+                    }
                 }
             }
 
@@ -269,8 +268,8 @@ public class EmployeeRepository(ApplicationDbContext context,
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            logger.LogError(ex, "Failed to create user and assign role.");
-            return Result.Failure(Error.Failure("User.CreationFailed", "An error occurred while creating the user."));
+            logger.LogError(ex, "Failed to create employee user");
+            return Error.Failure("User.CreationFailed", "An unexpected error occurred while creating the user.");
         }
     }
 
@@ -482,6 +481,17 @@ public class EmployeeRepository(ApplicationDbContext context,
             }
         }
 
+        return Result.Success();
+    }
+
+    public async Task<Result> ChangeEmployeeType(Guid id, EmployeeType employeeType)
+    {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
+        if (employee == null) return Error.NotFound("Employee.NotFound", "Employee not found");
+        
+        employee.Type = employeeType;
+        context.Employees.Update(employee);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
