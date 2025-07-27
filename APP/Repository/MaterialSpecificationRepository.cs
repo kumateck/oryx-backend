@@ -18,6 +18,11 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         {
             return Error.Conflict("MaterialSpecification.AlreadyLinked", "Material specification already linked");
         }
+
+        if (request.DueDate < DateTime.UtcNow)
+        {
+            return Error.Validation("MaterialSpecification.DueDate", "Due date must be greater than current date");
+        }
         
         var materialSpec = mapper.Map<MaterialSpecification>(request);
         await context.MaterialSpecifications.AddAsync(materialSpec);

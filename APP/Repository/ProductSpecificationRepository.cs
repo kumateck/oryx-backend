@@ -13,11 +13,16 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
 {
     public async Task<Result<Guid>> CreateProductSpecification(CreateProductSpecificationRequest request)
     {
-       var productSpec = mapper.Map<ProductSpecification>(request);
-       await context.AddAsync(productSpec);
+        if (request.DueDate < DateTime.UtcNow)
+        {
+            return Error.Validation("MaterialSpecification.DueDate", "Due date must be greater than current date");
+        }
+        
+        var productSpec = mapper.Map<ProductSpecification>(request);
+        await context.AddAsync(productSpec);
        
-       await context.SaveChangesAsync();
-       return productSpec.Id;
+        await context.SaveChangesAsync();
+        return productSpec.Id;
     }
 
     public async Task<Result<Paginateable<IEnumerable<ProductSpecificationDto>>>> GetProductSpecifications(int page, int pageSize, string searchQuery)
