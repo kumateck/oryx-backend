@@ -484,6 +484,17 @@ public class EmployeeRepository(ApplicationDbContext context,
         return Result.Success();
     }
 
+    public async Task<Result> ChangeEmployeeType(Guid id, EmployeeType employeeType)
+    {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
+        if (employee == null) return Error.NotFound("Employee.NotFound", "Employee not found");
+        
+        employee.Type = employeeType;
+        context.Employees.Update(employee);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> DeleteEmployee(Guid id, Guid userId)
     {
         var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
