@@ -23,6 +23,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
+using DOMAIN.Entities.Inventory;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -536,7 +537,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Service> Services { get; set; }
 
     #endregion
-    
+
+    #region Inventory
+
+    public DbSet<Inventory> Inventories { get; set; }
+
+    #endregion
     
     
     // #region TenantFilter
@@ -1227,6 +1233,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Services
 
         modelBuilder.Entity<Service>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+        
+        #region Inventories
+
+        modelBuilder.Entity<Inventory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }

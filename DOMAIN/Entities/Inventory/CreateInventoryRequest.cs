@@ -1,16 +1,21 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace DOMAIN.Entities.Inventory;
 
 public class CreateInventoryRequest
 {
+    [Required, MinLength(3, ErrorMessage = "Name cannot be less than 3 characters")]
     public string MaterialName { get; set; }
-    public string Code { get; set; }
-    public InventoryType Classification { get; set; }
+    [Required] public string Code { get; set; }
+    [Required(ErrorMessage = "Classification is required")] public InventoryType Classification { get; set; }
     public string Type { get; set; }
-    public Guid UnitOfMeasureId { get; set; }
+    [Required(ErrorMessage = "Unit of measure is required")] public Guid UnitOfMeasureId { get; set; }
+    public bool HasBatchNumber { get; set; }
+    public Guid MaterialBatchId { get; set; }
     public string Remarks { get; set; }
     public ReorderRules ReorderRule { get; set; }
     public decimal InitialStockQuantity { get; set; }
-    public Guid DepartmentId { get; set; }
-    public bool IsActive { get; set; }
+    [Required(ErrorMessage = "Department is required")] public Guid DepartmentId { get; set; }
+    [Required(ErrorMessage = "Status is required")] public bool IsActive { get; set; }
     public string Description { get; set; }
 }

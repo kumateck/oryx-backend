@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Materials.Batch;
 
 namespace DOMAIN.Entities.Inventory;
 
@@ -11,6 +12,9 @@ public class Inventory : BaseEntity
     public string Type { get; set; }
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasure UnitOfMeasure { get; set; }
+    public bool HasBatchNumber { get; set; }
+    public Guid MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
     public string Remarks { get; set; }
     public ReorderRules ReorderRule { get; set; }
     public decimal InitialStockQuantity { get; set; }
