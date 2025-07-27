@@ -281,6 +281,36 @@ public class FormController(IFormRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Gets form response by batch manufacturing record ID.
+    /// </summary>
+    /// <param name="materialSpecificationId">The ID of the material spec.</param>
+    /// <returns>Returns the form response.</returns>
+    [HttpGet("responses/material-specification/{materialSpecificationId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FormResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormResponseByMaterialSpec(Guid materialSpecificationId)
+    {
+        var result = await repository.GetFormResponseByMaterialSpecification(materialSpecificationId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets form response by batch manufacturing record ID.
+    /// </summary>
+    /// <param name="productSpecificationId">The ID of the product spec</param>
+    /// <returns>Returns the form response.</returns>
+    [HttpGet("responses/product-specification/{productSpecificationId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FormResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormResponseByProductSpecification(Guid productSpecificationId)
+    {
+        var result = await repository.GetFormResponseByProductSpecification(productSpecificationId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     
     /// <summary>
     /// Gets form with response by material batch ID.
@@ -309,6 +339,36 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> GetFormWithResponseByBmr(Guid batchManufacturingRecordId)
     {
         var result = await repository.GetFormWithResponseByBmr(batchManufacturingRecordId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets form with response by material batch ID.
+    /// </summary>
+    /// <param name="materialSpecificationId">The ID of the material spec.</param>
+    /// <returns>Returns the form response.</returns>
+    [HttpGet("with-responses/material-specification/{materialSpecificationId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormWithResponseByMaterialSpec(Guid materialSpecificationId)
+    {
+        var result = await repository.GetFormWithResponseByMaterialSpecification(materialSpecificationId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets form with response by material batch ID.
+    /// </summary>
+    /// <param name="productSpecificationId">The ID of the material batch.</param>
+    /// <returns>Returns the form response.</returns>
+    [HttpGet("with-responses/product-specification/{productSpecificationId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormWithResponseByProductSpec(Guid productSpecificationId)
+    {
+        var result = await repository.GetFormWithResponseByProductSpecification(productSpecificationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

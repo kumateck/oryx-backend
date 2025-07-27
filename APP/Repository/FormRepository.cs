@@ -121,6 +121,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             FormId = request.FormId,
             MaterialBatchId = request.MaterialBatchId,
             BatchManufacturingRecordId = request.BatchManufacturingRecordId,
+            MaterialSpecificationId = request.MaterialSpecificationId,
+            ProductSpecificationId = request.ProductSpecificationId,
             FormResponses = [],
             CreatedById = userId
         };
@@ -291,6 +293,46 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
     }
     
+    public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(Guid materialSpecificationId)
+    {
+        var form = await context.Forms
+            .AsSplitQuery()
+            .Include(f => f.Sections)
+            .ThenInclude(s => s.Fields)
+            .ThenInclude(fld => fld.Question)
+            .ThenInclude(q => q.Options)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.CreatedBy)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.FormField)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.Response)
+            .ThenInclude(res => res.CheckedBy)
+            .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.MaterialSpecificationId == materialSpecificationId));
+
+        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+    }
+    
+    public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByProductSpecification(Guid productSpecificationId)
+    {
+        var form = await context.Forms
+            .AsSplitQuery()
+            .Include(f => f.Sections)
+            .ThenInclude(s => s.Fields)
+            .ThenInclude(fld => fld.Question)
+            .ThenInclude(q => q.Options)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.CreatedBy)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.FormField)
+            .Include(f => f.Responses)
+            .ThenInclude(r => r.Response)
+            .ThenInclude(res => res.CheckedBy)
+            .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.ProductSpecificationId == productSpecificationId));
+
+        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+    }
+    
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId)
     {
         var formResponse = await context.FormResponses
@@ -322,6 +364,40 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         return mapper.Map<List<FormResponseDto>>(formResponse, opt => opt.Items[AppConstants.ModelType]  = typeof(FormResponse));
     }
+    
+    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(Guid materialSpecificationId)
+    {
+        var formResponse = await context.FormResponses
+            .AsSplitQuery()
+            .Include(fr => fr.CreatedBy)
+            .Include(fr => fr.Response)
+            .ThenInclude(fr => fr.CheckedBy)
+            .Include(r => r.FormField)
+            .ThenInclude(r => r.Question)
+            .ThenInclude(r => r.Options)
+            .Where(fr => fr.Response.MaterialSpecificationId == materialSpecificationId)
+            .ToListAsync();
+
+        return mapper.Map<List<FormResponseDto>>(formResponse, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+    }
+    
+    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(Guid productSpecificationId)
+    {
+        var formResponse = await context.FormResponses
+            .AsSplitQuery()
+            .Include(fr => fr.CreatedBy)
+            .Include(fr => fr.Response)
+            .ThenInclude(fr => fr.CheckedBy)
+            .Include(r => r.FormField)
+            .ThenInclude(r => r.Question)
+            .ThenInclude(r => r.Options)
+            .Where(fr => fr.Response.ProductSpecificationId == productSpecificationId)
+            .ToListAsync();
+
+        return mapper.Map<List<FormResponseDto>>(formResponse, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+    }
+    
+    
 
 
     public async Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId)

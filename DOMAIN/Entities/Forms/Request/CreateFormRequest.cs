@@ -35,6 +35,8 @@ public class CreateResponseRequest
     public Guid FormId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public Guid? MaterialBatchId { get; set; }
+    public Guid? MaterialSpecificationId { get; set; }
+    public Guid? ProductSpecificationId { get; set; }
     public List<CreateFormResponseRequest> FormResponses { get; set; } = [];
 }
 

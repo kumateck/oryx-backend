@@ -128,6 +128,7 @@ public static class DependencyInjection
         services.AddHostedService<LeaveExpiryService>();
         services.AddHostedService<ServiceExpiryService>();
         services.AddHostedService<MaterialStockService>();
+        services.AddHostedService<EmployeeSuspensionService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)
