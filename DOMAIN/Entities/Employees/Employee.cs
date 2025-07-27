@@ -80,7 +80,7 @@ public class Employee : BaseEntity
     
     public DateTime DateEmployed { get; set; }
     public EmployeeLevel? Level { get; set; }
-    public EmployeeStatus Status { get; set; }
+    public EmployeeStatus Status { get; set; } = EmployeeStatus.Inactive;
     public EmployeeActiveStatus? ActiveStatus { get; set; }
     public EmployeeInactiveStatus? InactiveStatus { get; set; }
     public DateTime? SuspensionStartDate { get; set; }
