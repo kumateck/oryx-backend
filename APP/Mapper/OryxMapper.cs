@@ -694,6 +694,8 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.EmployeeId, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.Designation, opt => opt.MapFrom(src => src.Designation.Name))
             .ForMember(dest => dest.Department, opt => opt.MapFrom(src => src.Department.Name));
+
+        CreateMap<UpdateEmployeeStatus, Employee>();
         #endregion
 
         #region Children

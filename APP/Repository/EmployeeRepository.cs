@@ -416,6 +416,18 @@ public class EmployeeRepository(ApplicationDbContext context,
         return Result.Success();
     }
 
+    public async Task<Result> UpdateEmployeeStatus(Guid employeeId, UpdateEmployeeStatus status)
+    {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId);
+        if  (employee == null)  return Error.NotFound("Employee.NotFound", "Employee not found");
+        
+        mapper.Map(status, employee);
+        
+        context.Employees.Update(employee);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto)
     {
         var employee = await context.Employees
