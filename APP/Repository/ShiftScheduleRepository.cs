@@ -318,8 +318,18 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
    
-   public async Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file)
+   public async Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file, Guid departmentId, Guid shiftId)
     {
+        
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
+        if (department is null) return Error.NotFound("Department.NotFound", "Department not found.");
+        
+        var shiftSchedule = await context.ShiftSchedules.FirstOrDefaultAsync(s => s.Id == shiftId);
+        if (shiftSchedule is null) return Error.NotFound("ShiftSchedule.NotFound", "Shift schedule not found.");
+        
+        var startDate = shiftSchedule.StartDate.Date;
+        var endDate = shiftSchedule.EndDate.Date;
+        
         if (file == null || file.Length == 0)
             return UploadErrors.EmptyFile;
 
@@ -343,8 +353,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
         var requiredHeaders = new[]
         {
-            "STAFF ID", "CATEGORY", "SHIFT DATES (START)", "SHIFT DATES (END)",
-            "SHIFT TYPE", "SCHEDULE NAME", "DEPARTMENT"
+            "STAFF ID", "CATEGORY", "SHIFT TYPE", "DEPARTMENT"
         };
 
         foreach (var header in requiredHeaders)
@@ -363,12 +372,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
             var shiftCategoryName = GetCell("CATEGORY");
             var shiftTypeName = GetCell("SHIFT TYPE");
-            var scheduleName = GetCell("SCHEDULE NAME");
-            var departmentName = GetCell("DEPARTMENT");
-
-            if (!DateTime.TryParse(GetCell("SHIFT DATES (START)"), out var startDate)) continue;
-            if (!DateTime.TryParse(GetCell("SHIFT DATES (END)"), out var endDate)) continue;
-
+            
             var employee = await context.Employees.FirstOrDefaultAsync(e => e.StaffNumber == staffIdStr);
             if (employee == null) continue;
 
@@ -377,22 +381,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
             var shiftType = await context.ShiftTypes.FirstOrDefaultAsync(t => t.ShiftName == shiftTypeName);
             if (shiftType == null) continue;
-
-            var department = await context.Departments.FirstOrDefaultAsync(d => d.Name == departmentName);
-            if (department == null) continue;
-
-            var shiftSchedule = await context.ShiftSchedules
-                .Include(s => s.ShiftTypes)
-                .FirstOrDefaultAsync(s =>
-                    s.ScheduleName == scheduleName &&
-                    s.DepartmentId == department.Id &&
-                    s.StartDate.Date == startDate.Date &&
-                    s.EndDate.Date == endDate.Date);
-
-            if (shiftSchedule == null)
-            {
-                continue;
-            }
+            
 
             // Conflict & leave check
             var hasLeave = await context.LeaveRequests.AnyAsync(l =>

@@ -120,17 +120,20 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
         var result = await repository.DeleteShiftSchedule(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Imports shift assignments from an Excel file.
     /// </summary>
     /// <param name="file">The Excel file containing the shift assignments.</param>
+    /// <param name="departmentId">The department the shift assignment is for</param>
+    /// <param name="shiftId">The shift schedule</param>
     [HttpPost("assign/import")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> ImportShiftAssignmentsFromExcel(IFormFile file)
+    public async Task<IResult> ImportShiftAssignmentsFromExcel(IFormFile file,  [FromQuery] Guid departmentId,
+        [FromQuery] Guid shiftId)
     {
-        var result = await repository.ImportShiftAssignmentsFromExcel(file);
+        var result = await repository.ImportShiftAssignmentsFromExcel(file, departmentId, shiftId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

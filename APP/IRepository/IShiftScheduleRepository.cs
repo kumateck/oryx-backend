@@ -20,5 +20,5 @@ public interface IShiftScheduleRepository
 
     Task<Result> UpdateShiftAssignment(Guid id, UpdateShiftAssignment request);
     Task<Result> DeleteShiftSchedule(Guid id, Guid userId);
-   Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file);
+    Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file, Guid departmentId, Guid shiftId);
 }
