@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Inventory;
+using DOMAIN.Entities.Materials;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -22,12 +23,18 @@ public class InventoryRepository(ApplicationDbContext context, IMapper mapper) :
         return inventory.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<InventoryDto>>>> GetInventories(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<InventoryDto>>>> GetInventories(int page, int pageSize,
+        string searchQuery, MaterialKind? materialKind)
     {
         var query = context.Inventories.Include(i => i.Department).AsQueryable();
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, i => i.Department.Name, i => i.MaterialName);
+        }
+
+        if (materialKind.HasValue)
+        {
+            query = query.Where(i => i.MaterialBatch.Material.Kind == materialKind.Value);
         }
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<InventoryDto>);
     }

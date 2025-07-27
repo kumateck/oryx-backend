@@ -46,8 +46,9 @@ public class ServiceRepository(ApplicationDbContext context, IMapper mapper) : I
             query = query.Where(s => s.EndDate <= endDate.Value);
         }
 
-
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ServiceDto>);
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
+            entity => mapper.Map<ServiceDto>(entity, opts =>
+            opts.Items[AppConstants.ModelType] = nameof(Service)));
     }
 
     public async Task<Result<ServiceDto>> GetService(Guid id)
