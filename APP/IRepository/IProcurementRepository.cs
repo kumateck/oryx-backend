@@ -99,7 +99,7 @@ public interface IProcurementRepository
     Task<Result> UpdateShipmentStatus(Guid shipmentId, ShipmentStatus status, Guid userId);
 
     Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize,
-        string searchQuery, bool excludeCompletedDistribution);
+        string searchQuery);
     Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId);

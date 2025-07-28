@@ -1453,7 +1453,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
     
-    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize, string searchQuery, bool excludeCompletedDistribution)
+    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize, string searchQuery)
     {
         var query = context.ShipmentDocuments
             .Include(shipmentDoc => shipmentDoc.ShipmentInvoice)
@@ -1464,17 +1464,12 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(items=>items.Material)
             .Include(shipmentDoc => shipmentDoc.ShipmentInvoice)
             .ThenInclude(shipmenInvoice => shipmenInvoice.Supplier)
-            .Where(sd => sd.Status == ShipmentStatus.Arrived)
+            .Where(sd => sd.Status == ShipmentStatus.Arrived && !sd.CompletedDistributionAt.HasValue)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, bs => bs.Code);
-        }
-
-        if (excludeCompletedDistribution)
-        {
-            query = query.Where(q => q.CompletedDistributionAt.HasValue);
         }
         
         
