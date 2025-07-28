@@ -1391,6 +1391,64 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return result;
     }
     
+    /*public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsyncV2(Guid supplierId)
+    {
+        // Fetch all relevant Purchase Orders
+        var supplierPurchaseOrders = await context.PurchaseOrders
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+                .ThenInclude(poi => poi.Material) // Include Material to access MaterialId for linking
+            .Where(po => po.SupplierId == supplierId)
+            .ToListAsync();
+
+        // Get all Purchase Order Item IDs that have been linked to any ShipmentInvoiceItem
+        var linkedPurchaseOrderItemIds = await context.ShipmentInvoiceItems
+            .Where(sii => supplierPurchaseOrders.SelectMany(po => po.Items).Select(poi => poi.Id).Contains(sii.PurchaseOrderId)) // Assuming ShipmentInvoiceItem links to PurchaseOrderItem.Id, if not, adjust here.
+            .Select(sii => sii.PurchaseOrderId)
+            .Distinct()
+            .ToListAsync();
+
+        // Get all ShipmentInvoiceItems related to the supplier's purchase orders to calculate received quantities
+        var allRelatedShipmentInvoiceItems = await context.ShipmentInvoiceItems
+            .Where(sii => supplierPurchaseOrders.Select(po => po.Id).Contains(sii.PurchaseOrderId))
+            .ToListAsync();
+
+        // Identify not linked purchase orders
+        var notLinkedPurchaseOrders = supplierPurchaseOrders
+            .Where(po => allRelatedShipmentInvoiceItems.All(sii => sii.PurchaseOrderId != po.Id))
+            .ToList();
+
+        // Identify partially used purchase orders
+        var partiallyUsedPurchaseOrders = supplierPurchaseOrders
+            .Where(po => po.Items.Any(poi => allRelatedShipmentInvoiceItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) && // At least one item used
+                         po.Items.Any(poi => !allRelatedShipmentInvoiceItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId))) // At least one item NOT used
+            .ToList();
+
+        var resultPurchaseOrders = notLinkedPurchaseOrders
+            .Concat(partiallyUsedPurchaseOrders)
+            .DistinctBy(po => po.Id) // Use DistinctBy to ensure unique Purchase Orders
+            .ToList();
+
+        var result = mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
+
+        // Populate ReceivedQuantity for each PurchaseOrderItemDto
+        foreach (var poDto in result)
+        {
+            foreach (var itemDto in poDto.Items)
+            {
+                // Sum the ReceivedQuantity from all ShipmentInvoiceItems matching the PurchaseOrder and Material
+                itemDto.ExpectedQuantity = allRelatedShipmentInvoiceItems
+                    .Where(sii => sii.PurchaseOrderId == poDto.Id && sii.MaterialId == itemDto.Material.Id)
+                    .Sum(sii => sii.ReceivedQuantity);
+
+                if (itemDto.Material?.Id != null)
+                    itemDto.Manufacturers = (await GetSupplierManufacturersByMaterial(itemDto.Material.Id.Value, poDto.Supplier.Id)).Value;
+            }
+        }
+
+        return result;
+    }*/
+    
     public async Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds)
     {
         if (purchaseOrderIds == null || purchaseOrderIds.Count == 0)
