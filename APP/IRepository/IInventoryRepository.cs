@@ -1,5 +1,5 @@
 using APP.Utils;
-using DOMAIN.Entities.Inventory;
+using DOMAIN.Entities.Inventories;
 using SHARED;
 
 namespace APP.IRepository;
