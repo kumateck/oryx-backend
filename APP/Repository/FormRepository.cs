@@ -73,8 +73,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     public async Task<Result<Paginateable<IEnumerable<FormSectionDto>>>> GetFormSections(FormFilter filter)
     {
         var query = context.FormSections
-            .AsSplitQuery()
-            .OrderByDescending(f => f.CreatedAt)
+            .GroupBy(f => new { f.Name, f.InstrumentId })
+            .Select(g => g.OrderByDescending(f => f.CreatedAt).First())
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(filter.SearchQuery))
