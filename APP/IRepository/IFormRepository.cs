@@ -10,6 +10,7 @@ public interface IFormRepository
     Task<Result<Guid>> CreateForm(CreateFormRequest request);
     Task<Result<FormDto>> GetForm(Guid formId);
     Task<Result<Paginateable<IEnumerable<FormDto>>>> GetForms(FormFilter filter);
+    Task<Result<Paginateable<IEnumerable<FormSectionDto>>>> GetFormSections(FormFilter filter);
     Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId);
     //Task<Result> ResetForm(Guid formId, Guid userId);
     Task<Result> DeleteForm(Guid formId, Guid userId);

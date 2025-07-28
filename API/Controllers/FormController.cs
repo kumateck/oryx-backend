@@ -58,6 +58,20 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetForms(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a paginated list of forms.
+    /// </summary>
+    /// <param name="filter">The FormFilter object for filtering form sections.</param>
+    /// <returns>Returns a paginated list of forms.</returns>
+    [HttpGet("section")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FormSectionDto>>))]
+    public async Task<IResult> GetFormSection([FromQuery] FormFilter filter)
+    {
+        var result = await repository.GetFormSections(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates a specific form by its ID.
