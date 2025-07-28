@@ -28,7 +28,7 @@ using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
-using DOMAIN.Entities.Inventory;
+using DOMAIN.Entities.Inventories;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -932,6 +932,13 @@ public class OryxMapper : Profile
         CreateMap<CreateServiceRequest, Service>();
         CreateMap<Service, ServiceDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+
+        #endregion
+
+        #region Suppliers
+
+        CreateMap<CreateSupplierRequest, Supplier>();
+        CreateMap<Supplier, SupplierDto>();
 
         #endregion
     }

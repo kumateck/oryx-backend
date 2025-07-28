@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250728132012_AddServiceProvider")]
+    partial class AddServiceProvider
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -7628,6 +7631,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("ServiceProviderId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -7641,6 +7647,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ServiceProviderId");
 
                     b.ToTable("Services");
                 });
@@ -9375,21 +9383,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("usertokens", (string)null);
-                });
-
-            modelBuilder.Entity("ServiceServiceProvider", b =>
-                {
-                    b.Property<Guid>("ServiceProvidersId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ServicesId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("ServiceProvidersId", "ServicesId");
-
-                    b.HasIndex("ServicesId");
-
-                    b.ToTable("ServiceServiceProvider");
                 });
 
             modelBuilder.Entity("ShiftScheduleShiftType", b =>
@@ -14301,6 +14294,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.ServiceProviders.ServiceProvider", null)
+                        .WithMany("Services")
+                        .HasForeignKey("ServiceProviderId");
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("LastDeletedBy");
@@ -15286,21 +15283,6 @@ namespace INFRASTRUCTURE.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ServiceServiceProvider", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.ServiceProviders.ServiceProvider", null)
-                        .WithMany()
-                        .HasForeignKey("ServiceProvidersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Services.Service", null)
-                        .WithMany()
-                        .HasForeignKey("ServicesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("ShiftScheduleShiftType", b =>
                 {
                     b.HasOne("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", null)
@@ -15527,6 +15509,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ResponsibleUsers");
 
                     b.Navigation("WorkCenters");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ServiceProviders.ServiceProvider", b =>
+                {
+                    b.Navigation("Services");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", b =>

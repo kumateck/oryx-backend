@@ -1,7 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
-using DOMAIN.Entities.Inventory;
+using DOMAIN.Entities.Inventories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

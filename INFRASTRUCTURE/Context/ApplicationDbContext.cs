@@ -23,7 +23,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
-using DOMAIN.Entities.Inventory;
+using DOMAIN.Entities.Inventories;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -70,6 +70,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SHARED.Services.Identity;
 using Configuration = DOMAIN.Entities.Configurations.Configuration;
+using ServiceProvider = DOMAIN.Entities.ServiceProviders.ServiceProvider;
 
 namespace INFRASTRUCTURE.Context;
 
@@ -535,6 +536,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Services
 
     public DbSet<Service> Services { get; set; }
+    public DbSet<ServiceProvider> ServiceProviders { get; set; }
 
     #endregion
 
@@ -1234,6 +1236,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Services
 
         modelBuilder.Entity<Service>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<ServiceProvider>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
         
