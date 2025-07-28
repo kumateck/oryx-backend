@@ -1,20 +1,18 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
-using DOMAIN.Entities.Materials.Batch;
 
 namespace DOMAIN.Entities.Inventory;
 
 public class Inventory : BaseEntity
 {
     public string MaterialName { get; set; }
-    public string Code { get; set; }
-    public InventoryType Classification { get; set; }
-    public string Type { get; set; }
+    public string Code { get; set; } 
+    public InventoryClassification Classification { get; set; }
+    public Guid InventoryTypeId { get; set; }
+    public InventoryType InventoryType { get; set; }
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasure UnitOfMeasure { get; set; }
-    public bool HasBatchNumber { get; set; }
-    public Guid MaterialBatchId { get; set; }
-    public MaterialBatch MaterialBatch { get; set; }
+    public bool HasBatch { get; set; }
     public string Remarks { get; set; }
     public ReorderRules ReorderRule { get; set; }
     public decimal InitialStockQuantity { get; set; }
@@ -25,7 +23,12 @@ public class Inventory : BaseEntity
 
 }
 
-public enum InventoryType
+public class InventoryType : BaseEntity
+{
+    public string Name { get; set; }
+}
+
+public enum InventoryClassification
 {
     Recoverable,
     NonRecoverable

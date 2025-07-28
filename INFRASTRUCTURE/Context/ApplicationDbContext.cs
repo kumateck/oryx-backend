@@ -541,6 +541,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Inventory
 
     public DbSet<Inventory> Inventories { get; set; }
+    public DbSet<InventoryType> InventoryTypes { get; set; }
 
     #endregion
     

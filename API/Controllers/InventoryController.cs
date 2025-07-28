@@ -2,7 +2,6 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Inventory;
-using DOMAIN.Entities.Materials;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -33,9 +32,9 @@ public class InventoryController(IInventoryRepository repository) : ControllerBa
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<InventoryDto>>))]
     public async Task<IResult> GetInventories([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null, [FromQuery] MaterialKind? materialKind = 0)
+        [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetInventories(page, pageSize, searchQuery, materialKind);
+        var result = await repository.GetInventories(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

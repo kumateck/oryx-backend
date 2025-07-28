@@ -3,7 +3,6 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Inventory;
-using DOMAIN.Entities.Materials;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -14,11 +13,14 @@ public class InventoryRepository(ApplicationDbContext context, IMapper mapper) :
 {
     public async Task<Result<Guid>> CreateInventory(CreateInventoryRequest request)
     {
-        var inventory = await context.Inventories.FirstOrDefaultAsync(i => i.MaterialName == request.MaterialName);
-        if (inventory != null) return Error.Validation("Inventory.Exists", "Inventory already exists");
+        var inventory = await context.Inventories.FirstOrDefaultAsync(i => i.Code == request.Code || i.DepartmentId == request.DepartmentId);
+        if (inventory != null) return Error.Validation("Inventory.Exists", "Inventory already exists for this department");
         
         var uomId = await context.UnitOfMeasures.AnyAsync(u => u.Id == request.UnitOfMeasureId);
         if (!uomId) return Error.NotFound("UnitOfMeasure.NotFound", "Unit of measure not found");
+        
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
+        if (department == null) return Error.NotFound("Department.Invalid", "Invalid department");
         
         inventory = mapper.Map<Inventory>(request);
         await context.Inventories.AddAsync(inventory);
@@ -27,7 +29,7 @@ public class InventoryRepository(ApplicationDbContext context, IMapper mapper) :
     }
 
     public async Task<Result<Paginateable<IEnumerable<InventoryDto>>>> GetInventories(int page, int pageSize,
-        string searchQuery, MaterialKind? materialKind)
+        string searchQuery)
     {
         var query = context.Inventories.Include(i => i.Department).AsQueryable();
         if (!string.IsNullOrEmpty(searchQuery))
@@ -35,10 +37,6 @@ public class InventoryRepository(ApplicationDbContext context, IMapper mapper) :
             query = query.WhereSearch(searchQuery, i => i.Department.Name, i => i.MaterialName);
         }
 
-        if (materialKind.HasValue)
-        {
-            query = query.Where(i => i.MaterialBatch.Material.Kind == materialKind.Value);
-        }
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<InventoryDto>);
     }
 
@@ -68,6 +66,7 @@ public class InventoryRepository(ApplicationDbContext context, IMapper mapper) :
         
         inventory.DeletedAt = DateTime.UtcNow;
         inventory.LastDeletedById = userId;
+        inventory.IsActive = false;
         
         context.Inventories.Update(inventory);
         await context.SaveChangesAsync();
