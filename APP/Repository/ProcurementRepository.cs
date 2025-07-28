@@ -1385,7 +1385,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     .Where(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == item.Material.Id)
                     .SumAsync(sii => sii.ReceivedQuantity);
 
-                item.ExpectedQuantity = receivedQty;
+                item.ReceivedQuantity = receivedQty;
             }
         }
         return result;
@@ -1437,7 +1437,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             foreach (var itemDto in poDto.Items)
             {
                 // Sum the ReceivedQuantity from all ShipmentInvoiceItems matching the PurchaseOrder and Material
-                itemDto.ExpectedQuantity = allRelatedShipmentInvoiceItems
+                itemDto.ReceivedQuantity = allRelatedShipmentInvoiceItems
                     .Where(sii => sii.PurchaseOrderId == poDto.Id && sii.MaterialId == itemDto.Material.Id)
                     .Sum(sii => sii.ReceivedQuantity);
 
