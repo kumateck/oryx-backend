@@ -1453,7 +1453,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
     
-    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize, string searchQuery, bool excludeCompletedDistribution)
     {
         var query = context.ShipmentDocuments
             .Include(shipmentDoc => shipmentDoc.ShipmentInvoice)
@@ -1471,6 +1471,12 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             query = query.WhereSearch(searchQuery, bs => bs.Code);
         }
+
+        if (excludeCompletedDistribution)
+        {
+            query = query.Where(q => q.CompletedDistributionAt.HasValue);
+        }
+        
         
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
         var shipmentDocuments = await paginatedResult.Data.ToListAsync();
