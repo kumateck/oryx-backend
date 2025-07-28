@@ -112,7 +112,6 @@ public static class DependencyInjection
         services.AddScoped<IServiceRepository, ServiceRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IServiceProviderRepository, ServiceProviderRepository>();
-        
 
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();

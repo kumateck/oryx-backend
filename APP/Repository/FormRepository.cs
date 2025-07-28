@@ -69,6 +69,25 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             mapper.Map<FormDto>
         );
     }
+    
+    public async Task<Result<Paginateable<IEnumerable<FormSectionDto>>>> GetFormSections(FormFilter filter)
+    {
+        var query = context.FormSections
+            .GroupBy(f => new { f.Name, f.InstrumentId })
+            .Select(g => g.OrderByDescending(f => f.CreatedAt).First())
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(filter.SearchQuery))
+        {
+            query = query.WhereSearch(filter.SearchQuery, f => f.Name, f => f.CreatedBy.FirstName, f => f.CreatedBy.LastName);
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            filter,
+            mapper.Map<FormSectionDto>
+        );
+    }
 
     public async Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId)
     {
