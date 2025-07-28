@@ -1,5 +1,4 @@
 using DOMAIN.Entities.Employees;
-using DOMAIN.Entities.StaffRequisitions;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

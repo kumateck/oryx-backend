@@ -28,6 +28,7 @@ using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
+using DOMAIN.Entities.Inventory;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -101,6 +102,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, DeliveryMode>();
         CreateMap<CreateItemRequest, Charge>();
         CreateMap<CreateItemRequest, ShiftCategory>();
+        CreateMap<CreateItemRequest, InventoryType>();
         CreateMap<CreateItemRequest, MarketType>();
         CreateMap<CreateItemRequest, Instrument>();
         
@@ -157,6 +159,7 @@ public class OryxMapper : Profile
         CreateMap<Charge, CollectionItemDto>();
         CreateMap<Question, CollectionItemDto>();
         CreateMap<ShiftCategory, CollectionItemDto>();
+        CreateMap<InventoryType, CollectionItemDto>();
         CreateMap<ProductState, CollectionItemDto>();
         CreateMap<MarketType, CollectionItemDto>();
         CreateMap<Instrument, CollectionItemDto>();
