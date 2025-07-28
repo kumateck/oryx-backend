@@ -295,7 +295,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    /// <summary>
+    /*/// <summary>
     /// Gets form response by batch manufacturing record ID.
     /// </summary>
     /// <param name="materialSpecificationId">The ID of the material spec.</param>
@@ -323,7 +323,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     {
         var result = await repository.GetFormResponseByProductSpecification(productSpecificationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
+    }*/
     
     
     /// <summary>
@@ -356,7 +356,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    /// <summary>
+    /*/// <summary>
     /// Gets form with response by material batch ID.
     /// </summary>
     /// <param name="materialSpecificationId">The ID of the material spec.</param>
@@ -384,5 +384,5 @@ public class FormController(IFormRepository repository) : ControllerBase
     {
         var result = await repository.GetFormWithResponseByProductSpecification(productSpecificationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
+    }*/
 }

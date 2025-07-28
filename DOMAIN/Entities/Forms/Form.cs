@@ -61,10 +61,6 @@ public class Response : BaseEntity, IRequireApproval
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
-    public Guid? MaterialSpecificationId { get; set; }
-    public MaterialSpecification MaterialSpecification { get; set; }
-    public Guid? ProductSpecificationId { get; set; }
-    public ProductSpecification ProductSpecification { get; set; }
     public List<FormResponse> FormResponses { get; set; } = [];
     public List<ResponseApproval> Approvals { get; set; } = [];
     public Guid? CheckedById { get; set; }

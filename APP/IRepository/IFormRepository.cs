@@ -26,15 +26,15 @@ public interface IFormRepository
    Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId);
    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId);
    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(Guid batchManufacturingRecordId);
-   Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(
-       Guid materialSpecificationId);
-  Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByProductSpecification(
-       Guid productSpecificationId);
+  //  Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(
+  //      Guid materialSpecificationId);
+  // Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByProductSpecification(
+  //      Guid productSpecificationId);
    Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(Guid materialBatchId);
    Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByBmr(Guid batchManufacturingRecordId);
-   Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(
-       Guid materialSpecificationId);
-   Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(
-       Guid productSpecificationId);
+   // Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(
+   //     Guid materialSpecificationId);
+   // Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(
+   //     Guid productSpecificationId);
    Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid userId);
 }

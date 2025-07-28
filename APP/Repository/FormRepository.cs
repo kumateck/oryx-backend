@@ -140,8 +140,6 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             FormId = request.FormId,
             MaterialBatchId = request.MaterialBatchId,
             BatchManufacturingRecordId = request.BatchManufacturingRecordId,
-            MaterialSpecificationId = request.MaterialSpecificationId,
-            ProductSpecificationId = request.ProductSpecificationId,
             FormResponses = [],
             CreatedById = userId
         };
@@ -198,6 +196,24 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 bmr.Status = BatchManufacturingStatus.TestTaken;
                 context.BatchManufacturingRecords.Update(bmr);
             }
+        }
+
+        if (request.MaterialSpecificationId.HasValue)
+        {
+            var materialSpecification = await context.MaterialSpecifications.FirstOrDefaultAsync(s => s.Id == request.MaterialSpecificationId);
+            if(materialSpecification is null) return Error.NotFound("MaterialSpecification.NotFound", "Material specification not found");
+            
+            materialSpecification.ResponseId = newResponse.Id;
+            context.MaterialSpecifications.Update(materialSpecification);
+        }
+
+        if (request.ProductSpecificationId.HasValue)
+        {
+            var productSpecification = await context.ProductSpecifications.FirstOrDefaultAsync(s => s.Id == request.ProductSpecificationId);
+            if (productSpecification is null) return Error.NotFound("ProductSpecification.NotFound", "Product specification not found");
+            
+            productSpecification.ResponseId = newResponse.Id;
+            context.ProductSpecifications.Update(productSpecification);
         }
         
         await context.SaveChangesAsync();
@@ -312,7 +328,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
     }
     
-    public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(Guid materialSpecificationId)
+    /*public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(Guid materialSpecificationId)
     {
         var form = await context.Forms
             .AsSplitQuery()
@@ -350,7 +366,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.ProductSpecificationId == productSpecificationId));
 
         return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
-    }
+    }*/
     
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId)
     {
@@ -384,7 +400,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<List<FormResponseDto>>(formResponse, opt => opt.Items[AppConstants.ModelType]  = typeof(FormResponse));
     }
     
-    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(Guid materialSpecificationId)
+    /*public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(Guid materialSpecificationId)
     {
         var formResponse = await context.FormResponses
             .AsSplitQuery()
@@ -414,7 +430,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .ToListAsync();
 
         return mapper.Map<List<FormResponseDto>>(formResponse, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
-    }
+    }*/
     
     
 

@@ -34,9 +34,11 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     public async Task<Result<Paginateable<IEnumerable<MaterialSpecificationDto>>>> GetMaterialSpecifications(int page, int pageSize, string searchQuery, MaterialKind materialKind)
     {
         var query = context.MaterialSpecifications
+            .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
             .Include(ms => ms.CreatedBy)
+            .Include(ms => ms.Response)
             .Where(ms => ms.Material.Kind == materialKind)
             .AsQueryable();
 
@@ -47,10 +49,13 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecification(Guid id)
     {
         var materialSpec = await context.MaterialSpecifications
+            .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
             .Include(ms => ms.CreatedBy)
+            .Include(ms => ms.Response).ThenInclude(rr => rr.FormResponses)
             .FirstOrDefaultAsync(ps => ps.Id == id);
+        
         return materialSpec is null ? 
             Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
             : mapper.Map<MaterialSpecificationDto>(materialSpec);

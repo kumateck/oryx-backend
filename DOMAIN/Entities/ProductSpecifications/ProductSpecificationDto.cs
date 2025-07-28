@@ -13,7 +13,6 @@ public class ProductSpecificationDto : BaseDto
     public string SupersedesNumber { get; set; }
     public string LabelClaim { get; set; } 
     public string PackingStyle { get; set; }
-    public Guid FormId { get; set; }
     public FormDto Form { get; set; } 
     public DateTime DueDate {get;set;}
     public string Description {get;set;}
@@ -26,4 +25,5 @@ public class ProductSpecificationDto : BaseDto
     public TestStage TestStage { get; set; }
     public Guid ProductId { get; set; }
     public ProductDto Product { get; set; }
+    public ResponseDto Response { get; set; }
 }
