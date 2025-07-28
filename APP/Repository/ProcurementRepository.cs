@@ -1380,6 +1380,12 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             {
                 if (item.Material?.Id != null)
                     item.Manufacturers = (await GetSupplierManufacturersByMaterial(item.Material.Id.Value, po.Supplier.Id)).Value;
+                
+                var receivedQty = await context.ShipmentInvoiceItems
+                    .Where(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == item.Material.Id)
+                    .SumAsync(sii => sii.ReceivedQuantity);
+
+                item.ExpectedQuantity = receivedQty;
             }
         }
         return result;

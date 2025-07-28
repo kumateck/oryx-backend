@@ -122,4 +122,5 @@ public class PurchaseOrderItemDto
     public List<SupplierManufacturerDto> Manufacturers { get; set; } = [];
     public decimal Cost => Price * Quantity;
     public bool CanReassignSupplier { get; set; }
+    public decimal ExpectedQuantity { get; set; }
 }
