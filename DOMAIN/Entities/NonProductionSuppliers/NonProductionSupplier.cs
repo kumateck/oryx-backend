@@ -3,9 +3,9 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Inventories;
 
-namespace DOMAIN.Entities.Suppliers;
+namespace DOMAIN.Entities.NonProductionSuppliers;
 
-public class Supplier : BaseEntity
+public class NonProductionSupplier : BaseEntity
 {
     public string Name { get; set; }
     public string Address { get; set; }
