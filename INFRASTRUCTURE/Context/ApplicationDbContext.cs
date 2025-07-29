@@ -33,6 +33,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.NonProductionSuppliers;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
@@ -544,6 +545,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Inventory> Inventories { get; set; }
     public DbSet<InventoryType> InventoryTypes { get; set; }
+
+    #endregion
+    #region Non Production Suppliers
+
+    public DbSet<NonProductionSupplier> NonProductionSuppliers { get; set; }
 
     #endregion
     

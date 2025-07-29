@@ -4184,7 +4184,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("ManufacturerMaterials");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.Supplier", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -4252,10 +4252,10 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Suppliers");
+                    b.ToTable("NonProductionSuppliers");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.SupplierManufacturer", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Procurement.NonProductionSuppliers.SupplierManufacturer", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -10037,7 +10037,7 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("ShipmentInvoiceId");
 
-                    b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
+                    b.HasOne("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId");
 
@@ -12067,7 +12067,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Material");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.Supplier", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Countries.Country", "Country")
                         .WithMany()
@@ -12100,7 +12100,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.SupplierManufacturer", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Procurement.NonProductionSuppliers.SupplierManufacturer", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
@@ -12124,7 +12124,7 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("MaterialId");
 
-                    b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
+                    b.HasOne("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", "Supplier")
                         .WithMany("AssociatedManufacturers")
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -13382,7 +13382,7 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
+                    b.HasOne("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId");
 
@@ -13460,7 +13460,7 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
+                    b.HasOne("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -13886,7 +13886,7 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
+                    b.HasOne("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -13966,7 +13966,7 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
+                    b.HasOne("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -14578,7 +14578,7 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
+                    b.HasOne("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId");
 
@@ -15426,7 +15426,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Materials");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.Supplier", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Procurement.NonProductionSuppliers.Supplier", b =>
                 {
                     b.Navigation("AssociatedManufacturers");
                 });
