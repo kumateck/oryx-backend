@@ -1,5 +1,6 @@
 using System.Text;
 using APP.Extensions;
+using APP.Utils;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 
@@ -133,13 +134,17 @@ public static class PdfTemplate
         
         foreach (var item in quotation.Items)
         {
-            content.AppendLine($@"
-                      <tr>
-                        <td>{item.Material.Name}</td>
-                        <td>{Math.Round(item.Quantity, 2)}</td>
-                        <td>{item.UoM.Name}</td>
-                      </tr>");
+          var symbol = item.UoM?.Symbol ?? "";
+          var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
+
+          content.AppendLine($@"
+            <tr>
+              <td>{item.Material.Name}</td>
+              <td>{scaledValue}</td>
+              <td>{scaledSymbol}</td>
+            </tr>");
         }
+
 
         content.AppendLine($@"
                     </tbody>
@@ -283,14 +288,17 @@ public static class PdfTemplate
 
 
         foreach (var item in purchaseOrder.Items)
-        {
-            content.AppendLine($@"
-                          <tr>
-                            <td>{item.Material.Name}</td>
-                            <td>{Math.Round(item.Quantity, 2)}</td>
-                            <td>{item.UoM.Name}</td>
-                            <td>{item.Price}</td>
-                          </tr>");
+        { 
+          var symbol = item.UoM?.Symbol ?? "";
+          var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
+
+          content.AppendLine($@"
+              <tr>
+                <td>{item.Material.Name}</td>
+                <td>{scaledValue}</td>
+                <td>{scaledSymbol}</td>
+                <td>{item.Price:C}</td>
+              </tr>");
         }
         content.AppendLine($@"
                       </tbody>
@@ -433,14 +441,17 @@ public static class PdfTemplate
 
       foreach (var item in purchaseOrder.Items)
       {
+        var symbol = item.UoM?.Symbol ?? "";
+        var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
+
         content.AppendLine($@"
-          <tr>
-          <td>{item.Material.Name}</td>
-          <td>{item.UoM.Name}</td>
-          <td>{Math.Round(item.Quantity, 2)}</td>
-          <td>{purchaseOrder.Supplier?.Currency?.Symbol}{item.Price}</td>
-          <td>{purchaseOrder.Supplier?.Currency?.Symbol}{Math.Round(item.Price * item.Quantity, 2)}</td>
-          </tr>");
+            <tr>
+              <td>{item.Material.Name}</td>
+              <td>{scaledSymbol}</td>
+              <td>{scaledValue}</td>
+              <td>{purchaseOrder.Supplier?.Currency?.Symbol}{item.Price}</td>
+              <td>{purchaseOrder.Supplier?.Currency?.Symbol}{Math.Round(item.Price * item.Quantity, 2)}</td>
+            </tr>");
       }
       
       content.AppendLine($@"

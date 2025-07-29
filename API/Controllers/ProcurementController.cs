@@ -821,9 +821,9 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [HttpGet("shipment-document/arrived")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShipmentDocumentDto>>))]
-    public async Task<IResult> GetArrivedShipments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetArrivedShipments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] bool excludeCompletedDistribution = true)
     {
-        var result = await repository.GetArrivedShipments(page, pageSize, searchQuery);
+        var result = await repository.GetArrivedShipments(page, pageSize, searchQuery, excludeCompletedDistribution);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
