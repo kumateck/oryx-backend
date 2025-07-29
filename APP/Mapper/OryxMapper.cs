@@ -62,6 +62,7 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.ServiceProviders;
 using DOMAIN.Entities.Services;
 using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
@@ -933,6 +934,13 @@ public class OryxMapper : Profile
         CreateMap<CreateServiceRequest, Service>();
         CreateMap<Service, ServiceDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+
+        #endregion
+
+        #region Service Providers
+
+        CreateMap<CreateServiceProviderRequest, ServiceProvider>();
+        CreateMap<ServiceProvider, ServiceProviderDto>();
 
         #endregion
 
