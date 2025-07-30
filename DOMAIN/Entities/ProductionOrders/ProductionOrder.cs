@@ -11,9 +11,7 @@ public class ProductionOrder : BaseEntity
     public string ProductionOrderCode { get; set; }
     public Guid CustomerId { get; set; }
     public Customer Customer { get; set; }
-    public List<ProductionOrderProducts> ProductionOrderProducts { get; set; } = [];
-    public decimal TotalValue { get; set; }
-    
+    public List<ProductionOrderProducts> Products { get; set; } = [];
 }
 
 [Owned]
