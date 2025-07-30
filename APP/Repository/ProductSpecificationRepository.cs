@@ -29,6 +29,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
     {
         var query = context.ProductSpecifications
             .IgnoreQueryFilters()
+            .Include(ps => ps.Form)
             .Include(ps => ps.Product)
             .Include(ps => ps.CreatedBy)
             .AsQueryable();
@@ -42,6 +43,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         var productSpec = await context.ProductSpecifications
                 .IgnoreQueryFilters()
                 .Include(ps => ps.Product)
+                .Include(ps => ps.Form)
                 .Include(ps => ps.CreatedBy)
                 .FirstOrDefaultAsync(ps => ps.Id == id);
 
