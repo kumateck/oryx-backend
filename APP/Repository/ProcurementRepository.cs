@@ -696,6 +696,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result<Guid>> CreateBillingSheet(CreateBillingSheetRequest request, Guid userId)
     {
+        if (await context.BillingSheets.AnyAsync(s => s.InvoiceId == request.InvoiceId))
+        {
+            return  Error.Validation("BillingSheet.Duplicate", "A billing sheet for this invoice already exists.");
+        }
+        
         var billingSheet = mapper.Map<BillingSheet>(request);
         billingSheet.CreatedById = userId;
         await context.BillingSheets.AddAsync(billingSheet);

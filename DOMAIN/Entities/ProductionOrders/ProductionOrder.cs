@@ -2,6 +2,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Products;
 using Microsoft.EntityFrameworkCore;
+using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
 
@@ -25,4 +26,14 @@ public class ProductionOrderProducts
     public decimal TotalVolume => TotalOrderQuantity * VolumePerPiece;
     public decimal TotalBatches => TotalVolume / Product.FullBatchSize;
     public decimal TotalValue => TotalOrderQuantity * Product.Price;
+}
+
+public class ProductionOrderProductsDto
+{
+    public CollectionItemDto Product { get; set; }
+    public int TotalOrderQuantity { get; set; }
+    public decimal VolumePerPiece { get; set; }
+    public decimal TotalVolume { get; set; }
+    public decimal TotalBatches { get; set; }
+    public decimal TotalValue { get; set; }
 }

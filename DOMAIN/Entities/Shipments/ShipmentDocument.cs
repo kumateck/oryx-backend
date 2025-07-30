@@ -24,10 +24,11 @@ public class ShipmentDocument : BaseEntity
 
 public enum ShipmentStatus
 {
-    New,
-    InTransit,
-    Cleared,
-    Arrived
+    New = 0,
+    InTransit = 1,
+    AtPort = 2,
+    Cleared = 3,
+    Arrived = 4
 }
 
 public enum DocType
