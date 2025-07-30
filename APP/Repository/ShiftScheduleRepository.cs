@@ -353,7 +353,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
 
         var requiredHeaders = new[]
         {
-            "STAFF ID", "CATEGORY", "SHIFT TYPE", "DEPARTMENT"
+            "STAFF ID", "CATEGORY", "SHIFT TYPE"
         };
 
         foreach (var header in requiredHeaders)
