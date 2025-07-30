@@ -1,6 +1,7 @@
 using APP.IRepository;
 using APP.Services.Storage;
 using DOMAIN.Entities.Attachments;
+using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.PurchaseOrders;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
@@ -104,6 +105,16 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                     context.PurchaseOrders.Update(purchaseOrder);
                 }
             }
+
+            // if (modelType == nameof(Invoice))
+            // {
+            //     var invoice = await context.Invoices.FirstOrDefaultAsync(item => item.Id == modelId && item.Status != InvoiceStatus.Completed);
+            //     if (invoice is not null)
+            //     {
+            //         invoice.Status = InvoiceStatus.Completed;
+            //         context.Invoices.Update(invoice);
+            //     }
+            // }
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
