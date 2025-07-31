@@ -18,12 +18,12 @@ public class NonProductionSupplierRepository(ApplicationDbContext context, IMapp
         if (existingSupplier != null)
             return Error.Validation("NonProductionSupplier.Exists", "Non Production Supplier already exists");
 
-        var validInventoryIds = await context.Inventories
-            .Where(s => request.InventoryIds.Contains(s.Id))
+        var validInventoryIds = await context.Items
+            .Where(s => request.ItemIds.Contains(s.Id))
             .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.InventoryIds.Except(validInventoryIds).ToList();
+        var missingIds = request.ItemIds.Except(validInventoryIds).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Inventory.NotFound", $"Some inventory not found: {string.Join(", ", missingIds)}");
 
@@ -55,12 +55,12 @@ public class NonProductionSupplierRepository(ApplicationDbContext context, IMapp
         if (supplier == null)
             return Error.NotFound("NonProductionSupplier.NotFound", "Non Production Supplier not found");
         
-        var validInventoryIds = await context.Inventories
-            .Where(s => request.InventoryIds.Contains(s.Id))
+        var validInventoryIds = await context.Items
+            .Where(s => request.ItemIds.Contains(s.Id))
             .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.InventoryIds.Except(validInventoryIds).ToList();
+        var missingIds = request.ItemIds.Except(validInventoryIds).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Inventory.NotFound", $"Some inventory not found: {string.Join(", ", missingIds)}");
         

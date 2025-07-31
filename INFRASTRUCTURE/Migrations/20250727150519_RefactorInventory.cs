@@ -13,19 +13,19 @@ namespace INFRASTRUCTURE.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_Inventories_MaterialBatches_MaterialBatchId",
-                table: "Inventories");
+                table: "Items");
 
             migrationBuilder.DropIndex(
                 name: "IX_Inventories_MaterialBatchId",
-                table: "Inventories");
+                table: "Items");
 
             migrationBuilder.DropColumn(
                 name: "MaterialBatchId",
-                table: "Inventories");
+                table: "Items");
 
             migrationBuilder.RenameColumn(
                 name: "HasBatchNumber",
-                table: "Inventories",
+                table: "Items",
                 newName: "HasBatch");
         }
 
@@ -34,24 +34,24 @@ namespace INFRASTRUCTURE.Migrations
         {
             migrationBuilder.RenameColumn(
                 name: "HasBatch",
-                table: "Inventories",
+                table: "Items",
                 newName: "HasBatchNumber");
 
             migrationBuilder.AddColumn<Guid>(
                 name: "MaterialBatchId",
-                table: "Inventories",
+                table: "Items",
                 type: "uuid",
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
 
             migrationBuilder.CreateIndex(
                 name: "IX_Inventories_MaterialBatchId",
-                table: "Inventories",
+                table: "Items",
                 column: "MaterialBatchId");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Inventories_MaterialBatches_MaterialBatchId",
-                table: "Inventories",
+                table: "Items",
                 column: "MaterialBatchId",
                 principalTable: "MaterialBatches",
                 principalColumn: "Id",

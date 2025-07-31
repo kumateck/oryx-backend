@@ -23,7 +23,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
-using DOMAIN.Entities.Inventories;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -541,10 +541,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
-    #region Inventory
+    #region Items
 
-    public DbSet<Inventory> Inventories { get; set; }
-    public DbSet<InventoryType> InventoryTypes { get; set; }
+    public DbSet<Item> Items { get; set; }
+    public DbSet<ItemType> InventoryTypes { get; set; }
 
     #endregion
     #region Non Production Suppliers
@@ -1246,9 +1246,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #endregion
         
-        #region Inventories
+        #region Items
 
-        modelBuilder.Entity<Inventory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<Item>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }

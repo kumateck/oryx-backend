@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DOMAIN.Entities.Inventories;
+namespace DOMAIN.Entities.Items;
 
 public class CreateInventoryRequest
 {

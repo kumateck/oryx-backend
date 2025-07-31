@@ -6,7 +6,7 @@ using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Grns;
-using DOMAIN.Entities.Inventories;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
@@ -229,8 +229,8 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .Where(s => s.Code.StartsWith(prefix))
                    .CountAsync();
            
-           case nameof(Inventory):
-               return await context.Inventories
+           case nameof(Item):
+               return await context.Items
                    .IgnoreQueryFilters()
                    .Where(s => s.Code.StartsWith(prefix))
                    .CountAsync();
