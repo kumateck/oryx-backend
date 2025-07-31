@@ -24,6 +24,7 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -51,6 +52,7 @@ using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductSpecifications;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProductStandardTestProcedures;
+using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
@@ -547,9 +549,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ItemType> InventoryTypes { get; set; }
 
     #endregion
+    
     #region Non Production Suppliers
 
     public DbSet<NonProductionSupplier> NonProductionSuppliers { get; set; }
+
+    #endregion
+
+    #region Proforma Invoice
+
+    public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
+    public DbSet<ProformaInvoiceProduct>  ProformaInvoiceProducts { get; set; }
+
+    #endregion
+
+    #region Invoice
+
+    public DbSet<Invoice> Invoices { get; set; }
 
     #endregion
     

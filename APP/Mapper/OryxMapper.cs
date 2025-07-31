@@ -29,6 +29,7 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -56,6 +57,7 @@ using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductSpecifications;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProductStandardTestProcedures;
+using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Requisitions;
@@ -918,7 +920,9 @@ public class OryxMapper : Profile
         
         #region Production Orders
         CreateMap<CreateProductionOrderRequest, ProductionOrder>();
+        CreateMap<CreateProductionOrderProduct, ProductionOrderProducts>();
         CreateMap<ProductionOrder, ProductionOrderDto>();
+        CreateMap<ProductionOrderProducts, ProductionOrderProductsDto>();
 
         #endregion
 
@@ -951,6 +955,22 @@ public class OryxMapper : Profile
 
         CreateMap<CreateNonProductionSupplierRequest, NonProductionSupplier>();
         CreateMap<NonProductionSupplier, NonProductionSupplierDto>();
+
+        #endregion
+
+        #region ProformaInvoice
+
+        CreateMap<CreateProformaInvoice, ProformaInvoice>();
+        CreateMap<CreateProformaInvoiceProduct, ProformaInvoiceProduct>();
+        CreateMap<ProformaInvoice, ProformaInvoiceDto>();
+        CreateMap<ProformaInvoiceProduct, ProformaInvoiceProductDto>();
+
+        #endregion
+
+        #region Invoice
+
+        CreateMap<CreateInvoice, Invoice>();
+        CreateMap<Invoice, InvoiceDto>();
 
         #endregion
     }

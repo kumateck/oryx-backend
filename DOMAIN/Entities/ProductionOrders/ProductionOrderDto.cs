@@ -8,6 +8,6 @@ public class ProductionOrderDto : BaseDto
     public string ProductionOrderCode { get; set; }
     public Guid CustomerId { get; set; }
     public CustomerDto Customer { get; set; }
-    public List<ProductionOrderProducts> ProductionOrderProducts { get; set; }
+    public List<ProductionOrderProductsDto> Products { get; set; } = [];
     public decimal TotalValue { get; set; }
 }
