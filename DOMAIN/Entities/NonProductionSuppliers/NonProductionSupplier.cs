@@ -1,7 +1,7 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
-using DOMAIN.Entities.Inventories;
+using DOMAIN.Entities.Items;
 
 namespace DOMAIN.Entities.NonProductionSuppliers;
 
@@ -15,5 +15,5 @@ public class NonProductionSupplier : BaseEntity
     public Country Country { get; set; }
     public Guid CurrencyId { get; set; }
     public Currency Currency { get; set; }
-    public List<Inventory> Inventory { get; set; }
+    public List<Item> Items { get; set; }
 }

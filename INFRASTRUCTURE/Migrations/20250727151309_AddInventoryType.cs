@@ -13,11 +13,11 @@ namespace INFRASTRUCTURE.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "Type",
-                table: "Inventories");
+                table: "Items");
 
             migrationBuilder.AddColumn<Guid>(
                 name: "InventoryTypeId",
-                table: "Inventories",
+                table: "Items",
                 type: "uuid",
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
@@ -57,7 +57,7 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_Inventories_InventoryTypeId",
-                table: "Inventories",
+                table: "Items",
                 column: "InventoryTypeId");
 
             migrationBuilder.CreateIndex(
@@ -77,7 +77,7 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Inventories_InventoryTypes_InventoryTypeId",
-                table: "Inventories",
+                table: "Items",
                 column: "InventoryTypeId",
                 principalTable: "InventoryTypes",
                 principalColumn: "Id",
@@ -89,22 +89,22 @@ namespace INFRASTRUCTURE.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_Inventories_InventoryTypes_InventoryTypeId",
-                table: "Inventories");
+                table: "Items");
 
             migrationBuilder.DropTable(
                 name: "InventoryTypes");
 
             migrationBuilder.DropIndex(
                 name: "IX_Inventories_InventoryTypeId",
-                table: "Inventories");
+                table: "Items");
 
             migrationBuilder.DropColumn(
                 name: "InventoryTypeId",
-                table: "Inventories");
+                table: "Items");
 
             migrationBuilder.AddColumn<string>(
                 name: "Type",
-                table: "Inventories",
+                table: "Items",
                 type: "text",
                 nullable: true);
         }

@@ -28,7 +28,7 @@ using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
-using DOMAIN.Entities.Inventories;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
@@ -106,7 +106,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, DeliveryMode>();
         CreateMap<CreateItemRequest, Charge>();
         CreateMap<CreateItemRequest, ShiftCategory>();
-        CreateMap<CreateItemRequest, InventoryType>();
+        CreateMap<CreateItemRequest, ItemType>();
         CreateMap<CreateItemRequest, MarketType>();
         CreateMap<CreateItemRequest, Instrument>();
         
@@ -163,7 +163,7 @@ public class OryxMapper : Profile
         CreateMap<Charge, CollectionItemDto>();
         CreateMap<Question, CollectionItemDto>();
         CreateMap<ShiftCategory, CollectionItemDto>();
-        CreateMap<InventoryType, CollectionItemDto>();
+        CreateMap<ItemType, CollectionItemDto>();
         CreateMap<ProductState, CollectionItemDto>();
         CreateMap<MarketType, CollectionItemDto>();
         CreateMap<Instrument, CollectionItemDto>();
@@ -813,6 +813,9 @@ public class OryxMapper : Profile
 
         CreateMap<CreateDesignationRequest, Designation>();
         CreateMap<Designation, DesignationDto>();
+        CreateMap<Designation, DesignationDepartmentDto>()
+            .ForMember(dest => dest.ReportingManagerId,
+                opt => opt.MapFrom(src => src.Departments));
         #endregion
         
         #region Leave Entitlements
