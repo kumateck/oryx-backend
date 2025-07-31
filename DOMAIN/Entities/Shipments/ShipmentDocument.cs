@@ -26,9 +26,9 @@ public enum ShipmentStatus
 {
     New = 0,
     InTransit = 1,
-    AtPort = 2,
-    Cleared = 3,
-    Arrived = 4
+    Cleared = 2,
+    Arrived = 3,
+    AtPort = 4,
 }
 
 public enum DocType
