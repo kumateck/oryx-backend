@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices.JavaScript;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Background;
@@ -1857,14 +1858,24 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 item.Distributed = true;
             }
         }
+        
+        context.ShipmentInvoiceItems.UpdateRange(invoiceItems);
+        await context.SaveChangesAsync();
 
         // If all items in the shipment invoice are distributed, mark the shipment as complete
-        var allItemsDistributed = shipmentDocument.ShipmentInvoice.Items.All(i => i.Distributed);
+        var shipmentInvoice = await context.ShipmentInvoices
+            .Include(si => si.Items)
+            .FirstOrDefaultAsync(si => si.Id == shipmentDocument.ShipmentInvoiceId);
+        
+        if(shipmentInvoice is null) return Error.NotFound("ShipmentInvoice.NotFound", "ShipmentInvoice not found.");
+
+        bool allItemsDistributed = shipmentInvoice.Items.All(i => i.Distributed);
+        
         if (allItemsDistributed)
         {
             shipmentDocument.CompletedDistributionAt = DateTime.UtcNow;
         }
-
+        context.ShipmentDocuments.Update(shipmentDocument);
         await context.SaveChangesAsync();
         return Result.Success();
     }
