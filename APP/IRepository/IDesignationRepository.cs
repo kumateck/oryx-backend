@@ -12,7 +12,7 @@ public interface IDesignationRepository
     
     Task<Result<DesignationDto>> GetDesignation(Guid id);
     
-    Task<Result<List<DesignationDto>>> GetDesignationByDepartment(Guid departmentId);
+    Task<Result<List<DesignationWithEmployeesDto>>> GetDesignationByDepartment(Guid departmentId);
     
     Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request);
     

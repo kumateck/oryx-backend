@@ -416,7 +416,6 @@ public class EmployeeRepository(ApplicationDbContext context,
             employee.DepartmentId = user.DepartmentId;
             employee.Department = user.Department;
         }
-        
 
         mapper.Map(request, employee);
 
