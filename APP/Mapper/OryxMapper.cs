@@ -813,9 +813,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateDesignationRequest, Designation>();
         CreateMap<Designation, DesignationDto>();
-        CreateMap<Designation, DesignationDepartmentDto>()
-            .ForMember(dest => dest.ReportingManagerId,
-                opt => opt.MapFrom(src => src.Departments));
+;
         #endregion
         
         #region Leave Entitlements
