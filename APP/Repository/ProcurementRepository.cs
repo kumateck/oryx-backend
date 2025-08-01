@@ -909,7 +909,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .AsSplitQuery()
             .Include(s => s.ShipmentInvoice)
             .ThenInclude(s => s.Items)
-            .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Shipment);
+            .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
     
         return shipmentDocument is null
             ? Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found")
