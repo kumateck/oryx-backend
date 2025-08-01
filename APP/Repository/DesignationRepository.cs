@@ -82,10 +82,13 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
                     Id = e.Id,
                     FullName = $"{e.FirstName} {e.LastName}",
                     Email = e.Email,
-                    ReportingManagerId = e.ReportingManagerId,
-                    ReportingManagerName = e.ReportingManager != null
-                        ? $"{e.ReportingManager.FirstName} {e.ReportingManager.LastName}"
-                        : null
+                    Manager = new ManagerDto
+                    {
+                        ReportingManagerId = e.ReportingManagerId,
+                        ReportingManagerName = e.ReportingManager != null
+                            ? $"{e.ReportingManager.FirstName} {e.ReportingManager.LastName}"
+                            : null
+                    }
                 }).ToList();
 
             return new DesignationWithEmployeesDto
