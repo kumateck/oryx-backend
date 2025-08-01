@@ -30,6 +30,13 @@ public class EmployeeWithManagerDto
     public Guid Id { get; set; }
     public string FullName { get; set; }
     public string Email { get; set; }
+    
+    public ManagerDto Manager { get; set; }
+
+}
+
+public class ManagerDto
+{
     public Guid? ReportingManagerId { get; set; }
     public string? ReportingManagerName { get; set; }
 }
