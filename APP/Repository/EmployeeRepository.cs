@@ -288,6 +288,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         return Result.Success(employeeDtos); 
     }
+    
 
     public async Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date)
     {
@@ -406,6 +407,14 @@ public class EmployeeRepository(ApplicationDbContext context,
             {
                 return Error.Validation("Employee.Status", "Employee suspension requires start and end dates");
             }
+        }
+        
+        // ensuring consistency with employee users
+        var user = await userManager.FindByEmailAsync(employee.Email);
+        if (user != null)
+        {
+            employee.DepartmentId = user.DepartmentId;
+            employee.Department = user.Department;
         }
 
         mapper.Map(request, employee);

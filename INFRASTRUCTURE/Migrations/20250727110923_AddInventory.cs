@@ -73,7 +73,7 @@ namespace INFRASTRUCTURE.Migrations
                 defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
 
             migrationBuilder.CreateTable(
-                name: "Inventories",
+                name: "Items",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -147,32 +147,32 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_Inventories_CreatedById",
-                table: "Inventories",
+                table: "Items",
                 column: "CreatedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Inventories_DepartmentId",
-                table: "Inventories",
+                table: "Items",
                 column: "DepartmentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Inventories_LastDeletedById",
-                table: "Inventories",
+                table: "Items",
                 column: "LastDeletedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Inventories_LastUpdatedById",
-                table: "Inventories",
+                table: "Items",
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Inventories_MaterialBatchId",
-                table: "Inventories",
+                table: "Items",
                 column: "MaterialBatchId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Inventories_UnitOfMeasureId",
-                table: "Inventories",
+                table: "Items",
                 column: "UnitOfMeasureId");
 
             migrationBuilder.AddForeignKey(
@@ -216,7 +216,7 @@ namespace INFRASTRUCTURE.Migrations
                 table: "ProductSpecifications");
 
             migrationBuilder.DropTable(
-                name: "Inventories");
+                name: "Items");
 
             migrationBuilder.DropIndex(
                 name: "IX_ProductSpecifications_FormId",
