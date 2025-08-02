@@ -5,22 +5,24 @@ namespace DOMAIN.Entities.Items;
 
 public class Item : BaseEntity
 {
-    public string MaterialName { get; set; }
+    public string Name { get; set; }
     public string Code { get; set; } 
     public InventoryClassification Classification { get; set; }
-    public Guid InventoryTypeId { get; set; }
-    public ItemType ItemType { get; set; }
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasure UnitOfMeasure { get; set; }
     public bool HasBatch { get; set; }
-    public string Remarks { get; set; }
     public ReorderRules ReorderRule { get; set; }
-    public decimal InitialStockQuantity { get; set; }
-    public Guid DepartmentId { get; set; }
-    public Department Department { get; set; }
+    public Store Store { get; set; }
     public bool IsActive { get; set; }
     public string Description { get; set; }
 
+}
+
+public enum Store
+{
+    IT,
+    General,
+    EquipmentStore
 }
 
 public class ItemType : BaseEntity

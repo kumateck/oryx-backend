@@ -12,9 +12,9 @@ namespace APP.Repository;
 
 public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IItemRepository
 {
-    public async Task<Result<Guid>> CreateItem(CreateItemRequest request)
+    public async Task<Result<Guid>> CreateItem(CreateItemsRequest request)
     {
-        var item = await context.Items.FirstOrDefaultAsync(i => i.Code == request.Name);
+        var item = await context.Items.FirstOrDefaultAsync(i => i.Code == request.Code);
         if (item != null) return Error.Validation("Item.Exists", "Item already exists for this department");
         
         item = mapper.Map<Item>(request);
@@ -26,45 +26,51 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
     public async Task<Result<Paginateable<IEnumerable<ItemDto>>>> GetItems(int page, int pageSize,
         string searchQuery)
     {
-        var query = context.Items.Include(i => i.Department).AsQueryable();
+        var query = context.Items.Where(i => i.IsActive).AsQueryable();
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, i => i.Department.Name, i => i.MaterialName);
+            query = query.WhereSearch(searchQuery, i => i.Name,
+                i => i.Code);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ItemDto>);
+        return await PaginationHelper.GetPaginatedResultAsync(query,
+            page,
+            pageSize,
+            entity => mapper.Map<ItemDto>(entity, opts =>
+            opts.Items[AppConstants.ModelType] = nameof(Item)));
     }
 
     public async Task<Result<ItemDto>> GetItem(Guid id)
     {
-        var inventory = await context.Items.FirstOrDefaultAsync(i => i.Id == id);
-        return inventory is null ? 
-            Error.NotFound("Inventory.NotFound", "Inventory not found") :
-            mapper.Map<ItemDto>(inventory);
+        var item = await context.Items.FirstOrDefaultAsync(i => i.Id == id);
+        return item is null ? 
+            Error.NotFound("Item.NotFound", "Item not found") :
+            mapper.Map<ItemDto>(item,
+                opts => opts.Items[AppConstants.ModelType] = nameof(Item));
     }
     
 
-    public async Task<Result> UpdateItem(Guid id, CreateItemRequest request)
+    public async Task<Result> UpdateItem(Guid id, CreateItemsRequest request)
     {
-        var inventory = await context.Items.FirstOrDefaultAsync(i => i.Id == id);
-        if (inventory == null) return Error.NotFound("Inventory.NotFound", "Inventory not found");
+        var item = await context.Items.FirstOrDefaultAsync(i => i.Id == id);
+        if (item == null) return Error.NotFound("Item.NotFound", "Item not found");
         
-        mapper.Map(request, inventory);
-        context.Items.Update(inventory);
+        mapper.Map(request, item);
+        context.Items.Update(item);
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
     public async Task<Result> DeleteItem(Guid id, Guid userId)
     {
-        var inventory = await context.Items.FirstOrDefaultAsync(i => i.Id == id);
-        if (inventory == null) return Error.NotFound("Inventory.NotFound", "Inventory not found");
+        var item = await context.Items.FirstOrDefaultAsync(i => i.Id == id);
+        if (item == null) return Error.NotFound("Item.NotFound", "Item not found");
         
-        inventory.DeletedAt = DateTime.UtcNow;
-        inventory.LastDeletedById = userId;
-        inventory.IsActive = false;
+        item.DeletedAt = DateTime.UtcNow;
+        item.LastDeletedById = userId;
+        item.IsActive = false;
         
-        context.Items.Update(inventory);
+        context.Items.Update(item);
         await context.SaveChangesAsync();
         return Result.Success();
     }
