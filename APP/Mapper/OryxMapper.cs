@@ -956,6 +956,14 @@ public class OryxMapper : Profile
 
         #endregion
 
+        #region Items
+
+        CreateMap<CreateItemsRequest, Item>();
+        CreateMap<Item, ItemDto>()
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+
+        #endregion
+
         #region ProformaInvoice
 
         CreateMap<CreateProformaInvoice, ProformaInvoice>();
@@ -971,5 +979,7 @@ public class OryxMapper : Profile
         CreateMap<Invoice, InvoiceDto>();
 
         #endregion
+        
+        
     }
 }
