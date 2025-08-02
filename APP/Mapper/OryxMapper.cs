@@ -39,7 +39,6 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
-using DOMAIN.Entities.NonProductionSuppliers;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
@@ -76,6 +75,7 @@ using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
+using DOMAIN.Entities.Vendors;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
 using DOMAIN.Entities.WorkOrders;
@@ -949,10 +949,10 @@ public class OryxMapper : Profile
 
         #endregion
 
-        #region NonProductionSuppliers
+        #region Vendors
 
-        CreateMap<CreateNonProductionSupplierRequest, NonProductionSupplier>();
-        CreateMap<NonProductionSupplier, NonProductionSupplierDto>();
+        CreateMap<CreateVendorRequest, Vendor>();
+        CreateMap<Vendor, VendorDto>();
 
         #endregion
 

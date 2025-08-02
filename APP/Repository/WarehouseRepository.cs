@@ -403,6 +403,14 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         {
             return Error.NotFound("WarehouseLocationRack.NotFound", "Warehouse location rack not found");
         }
+        
+        var existingShelf = await context.WarehouseLocationShelves
+            .FirstOrDefaultAsync(s => s.Name == request.Name 
+                                      && s.WarehouseLocationRackId == warehouseLocationRackId);
+        if (existingShelf != null)
+        {
+            return Error.Conflict("WarehouseLocationShelf.AlreadyExists", "Warehouse location shelf already exists");       
+        }
 
         var shelf = mapper.Map<WarehouseLocationShelf>(request);
         shelf.WarehouseLocationRackId = warehouseLocationRackId;

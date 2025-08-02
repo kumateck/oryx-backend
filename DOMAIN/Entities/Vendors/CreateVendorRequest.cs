@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DOMAIN.Entities.NonProductionSuppliers;
+namespace DOMAIN.Entities.Vendors;
 
-public class CreateNonProductionSupplierRequest
+public class CreateVendorRequest
 {
     [Required, MinLength(3, ErrorMessage="Name should be at least 3 characters")]
     public string Name { get; set; }
