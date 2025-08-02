@@ -10,27 +10,17 @@ public class AnalyticalTestRequest : BaseEntity
 {
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
-    
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
-    
     public Guid ProductionScheduleId { get; set; }
     public ProductionSchedule ProductionSchedule { get; set; }
     
     public DateTime ManufacturingDate { get; set; }
-    
     public DateTime ExpiryDate { get; set; }
-
     public string ReleasedAt { get; set; } = "Quality Control";
-    
     public string Filled { get; set;}
-    
     public string SampledQuantity { get; set; }
-    
     public DateTime ReleaseDate { get; set; }
-    //public string QcManagerSignature { get; set; }
-    //public string QaManagerSignature { get; set; }
-    
     public TestStage Stage { get; set; }
     public Guid StateId { get; set; }
     public ProductState State { get; set; }
