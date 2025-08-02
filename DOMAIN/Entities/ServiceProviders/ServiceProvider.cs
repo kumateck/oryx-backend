@@ -15,5 +15,5 @@ public class ServiceProvider : BaseEntity
     public Country Country { get; set; }
     public Guid CurrencyId { get; set; }
     public Currency Currency { get; set; }
-    public List<Service> Services { get; set; }
+    public List<Service> Services { get; set; } = [];
 }

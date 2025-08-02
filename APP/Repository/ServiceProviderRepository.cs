@@ -35,13 +35,23 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
     }
     public async Task<Result<Paginateable<IEnumerable<ServiceProviderDto>>>> GetServiceProviders(int page, int pageSize, string searchQuery)
     {
-        var query = context.ServiceProviders.AsQueryable();
+        var query = context.ServiceProviders
+            .AsSplitQuery()
+            .Include(s => s.Country)
+            .Include(s => s.Currency)
+            .Include(s => s.Services)
+            .AsQueryable();
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ServiceProviderDto>);
     }
 
     public async Task<Result<ServiceProviderDto>> GetServiceProvider(Guid id)
     {
-        var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp => sp.Id == id);
+        var serviceProvider = await context.ServiceProviders
+            .AsSplitQuery()
+            .Include(s => s.Country)
+            .Include(s => s.Currency)
+            .Include(s => s.Services)
+            .FirstOrDefaultAsync(sp => sp.Id == id);
         return serviceProvider is null ? 
             Error.NotFound("ServiceProvider.NotFound", "Service Provider not found") : 
             mapper.Map<ServiceProviderDto>(serviceProvider);
