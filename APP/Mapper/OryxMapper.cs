@@ -814,7 +814,6 @@ public class OryxMapper : Profile
 
         CreateMap<CreateDesignationRequest, Designation>();
         CreateMap<Designation, DesignationDto>();
-;
         #endregion
         
         #region Leave Entitlements
