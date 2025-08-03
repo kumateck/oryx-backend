@@ -34,7 +34,6 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
-using DOMAIN.Entities.NonProductionSuppliers;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
@@ -66,6 +65,7 @@ using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Vendors;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.WorkOrders;
 using Microsoft.AspNetCore.Identity;
@@ -546,13 +546,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Items
 
     public DbSet<Item> Items { get; set; }
-    public DbSet<ItemType> InventoryTypes { get; set; }
 
     #endregion
     
-    #region Non Production Suppliers
-
-    public DbSet<NonProductionSupplier> NonProductionSuppliers { get; set; }
+    #region Vendors
+    public DbSet<Vendor> Vendors { get; set; }
 
     #endregion
 
@@ -1265,6 +1263,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Items
 
         modelBuilder.Entity<Item>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region  Vendors
+
+        modelBuilder.Entity<Vendor>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }

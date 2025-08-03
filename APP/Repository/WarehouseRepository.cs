@@ -260,6 +260,14 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         {
             return Error.NotFound("WarehouseLocation.NotFound", "Warehouse location not found");
         }
+        
+        var existingWarehouseLocationRacks = await context.WarehouseLocationRacks
+            .FirstOrDefaultAsync(lr => lr.Name == request.Name && lr.WarehouseLocationId == warehouseLocationId);
+
+        if (existingWarehouseLocationRacks != null)
+        {
+            return Error.Conflict("WarehouseLocationRack.AlreadyExists", "Warehouse location rack already exists");        
+        }
 
         var rack = mapper.Map<WarehouseLocationRack>(request);
         rack.WarehouseLocationId = warehouseLocationId;
@@ -402,6 +410,14 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         if (rack == null)
         {
             return Error.NotFound("WarehouseLocationRack.NotFound", "Warehouse location rack not found");
+        }
+        
+        var existingShelf = await context.WarehouseLocationShelves
+            .FirstOrDefaultAsync(s => s.Name == request.Name 
+                                      && s.WarehouseLocationRackId == warehouseLocationRackId);
+        if (existingShelf != null)
+        {
+            return Error.Conflict("WarehouseLocationShelf.AlreadyExists", "Warehouse location shelf already exists");       
         }
 
         var shelf = mapper.Map<WarehouseLocationShelf>(request);
