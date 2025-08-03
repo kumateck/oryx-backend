@@ -14,4 +14,5 @@ public class CreateAnalyticalTestRequest
     public Status Status { get; set; }
     public string Filled { get; set;}
     public Guid StateId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
 }

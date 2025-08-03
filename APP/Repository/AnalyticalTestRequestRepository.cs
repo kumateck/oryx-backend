@@ -21,9 +21,14 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
        return test.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery, Status? status)
     {
-        var query = context.AnalyticalTestRequests.AsQueryable();
+        var query = context.AnalyticalTestRequests
+            .AsSplitQuery()
+            .Include(s => s.Product)
+            .Include(s => s.ProductionSchedule)
+            .Include(s => s.ProductionActivityStep)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -31,13 +36,23 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
                 q => q.ReleasedAt,
                 q => q.SampledQuantity);
         }
+
+        if (status.HasValue)
+        {
+            query = query.Where(s => s.Status == status.Value);
+        }
         
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<AnalyticalTestRequestDto>);
     }
 
     public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequest(Guid id)
     {
-        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
+        var test = await context.AnalyticalTestRequests
+            .AsSplitQuery()
+            .Include(s => s.Product)
+            .Include(s => s.ProductionSchedule)
+            .Include(s => s.ProductionActivityStep)
+            .FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
     }
 
