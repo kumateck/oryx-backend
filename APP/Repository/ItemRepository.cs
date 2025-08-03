@@ -32,6 +32,14 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
             query = query.WhereSearch(searchQuery, i => i.Name,
                 i => i.Code);
         }
+        
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            if (Enum.TryParse<Store>(searchQuery, true, out var store))
+            {
+                query = query.Where(q => q.Store == store);
+            }
+        }
 
         return await PaginationHelper.GetPaginatedResultAsync(query,
             page,
