@@ -56,7 +56,6 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ProductState) => mapper.Map<List<CollectionItemDto>>(await context.ProductStates.OrderBy(c => c.Name).ToListAsync()),
             nameof(MarketType) => mapper.Map<List<CollectionItemDto>>(await context.MarketTypes.OrderBy(c => c.Name).ToListAsync()),
             nameof(Instrument) => mapper.Map<List<CollectionItemDto>>(await context.Instruments.OrderBy(c => c.Name).ToListAsync()),
-            nameof(ItemType) => mapper.Map<List<CollectionItemDto>>(await context.InventoryTypes.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -210,11 +209,6 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var instrument = await context.Instruments.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(instrument);
                     break; 
-                
-                case nameof(ItemType):
-                    var inventoryType = await context.InventoryTypes.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(inventoryType);
-                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -272,8 +266,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ProductState),
             nameof(FinishedGoodsTransferNote),
             nameof(MarketType),
-            nameof(Instrument),
-            nameof(ItemType)
+            nameof(Instrument)
         };
     }
     
@@ -394,12 +387,6 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.Instruments.AddAsync(instrument);
                 await context.SaveChangesAsync();
                 return instrument.Id;
-            
-            case nameof(ItemType):
-                var inventoryType = mapper.Map<ItemType>(request);
-                await context.InventoryTypes.AddAsync(inventoryType);
-                await context.SaveChangesAsync();
-                return inventoryType.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -555,13 +542,6 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Instruments.Update(instrument);
                 await context.SaveChangesAsync();
                 return instrument.Id;
-            
-            case nameof(ItemType):
-                var inventoryType = await context.InventoryTypes.FirstOrDefaultAsync(p => p.Id == itemId);
-                mapper.Map(request, inventoryType);
-                context.InventoryTypes.Update(inventoryType);
-                await context.SaveChangesAsync();
-                return inventoryType.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -591,7 +571,6 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ProductState) => await context.ProductStates.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(MarketType) => await context.MarketTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Instrument) => await context.Instruments.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(ItemType) => await context.InventoryTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -781,16 +760,6 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Instruments.Update(instrument);
                 await context.SaveChangesAsync();
                 return Result.Success();  
-            
-            case nameof(ItemType):
-                var inventoryType = await context.InventoryTypes.FirstOrDefaultAsync(p => p.Id == itemId);
-                if (inventoryType == null)
-                    return Error.Validation("ItemType", "Not found");
-                inventoryType.DeletedAt = currentTime;
-                inventoryType.LastDeletedById = userId;
-                context.InventoryTypes.Update(inventoryType);
-                await context.SaveChangesAsync();
-                return Result.Success();
             
             default:
                 return Error.Validation("Item", "Invalid item type");

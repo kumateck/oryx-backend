@@ -546,7 +546,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Items
 
     public DbSet<Item> Items { get; set; }
-    public DbSet<ItemType> InventoryTypes { get; set; }
 
     #endregion
     
