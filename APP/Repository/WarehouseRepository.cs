@@ -260,6 +260,14 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         {
             return Error.NotFound("WarehouseLocation.NotFound", "Warehouse location not found");
         }
+        
+        var existingWarehouseLocationRacks = await context.WarehouseLocationRacks
+            .FirstOrDefaultAsync(lr => lr.Name == request.Name && lr.WarehouseLocationId == warehouseLocationId);
+
+        if (existingWarehouseLocationRacks != null)
+        {
+            return Error.Conflict("WarehouseLocationRack.AlreadyExists", "Warehouse location rack already exists");        
+        }
 
         var rack = mapper.Map<WarehouseLocationRack>(request);
         rack.WarehouseLocationId = warehouseLocationId;
