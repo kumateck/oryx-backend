@@ -6,7 +6,6 @@ using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Grns;
-using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
@@ -229,11 +228,6 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .Where(s => s.Code.StartsWith(prefix))
                    .CountAsync();
            
-           case nameof(Item):
-               return await context.Items
-                   .IgnoreQueryFilters()
-                   .Where(s => s.Code.StartsWith(prefix))
-                   .CountAsync();
                
            default:
                return Error.Validation("ModelType", "Invalid model type sent");

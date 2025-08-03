@@ -11,7 +11,9 @@ public class Item : BaseEntity
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasure UnitOfMeasure { get; set; }
     public bool HasBatch { get; set; }
-    public ReorderRules ReorderRule { get; set; }
+    public int MinimumLevel { get; set; }
+    public int MaximumLevel { get; set; }
+    public int ReorderLevel { get; set; }
     public Store Store { get; set; }
     public bool IsActive { get; set; }
     public string Description { get; set; }
@@ -25,20 +27,8 @@ public enum Store
     EquipmentStore
 }
 
-public class ItemType : BaseEntity
-{
-    public string Name { get; set; }
-}
-
 public enum InventoryClassification
 {
     Recoverable,
     NonRecoverable
-}
-
-public enum ReorderRules
-{
-    Minimum,
-    Reorder,
-    Maximum
 }

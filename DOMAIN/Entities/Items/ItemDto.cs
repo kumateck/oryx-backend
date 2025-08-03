@@ -13,7 +13,9 @@ public class ItemDto : WithAttachment
     public UnitOfMeasureDto UnitOfMeasure { get; set; }
     public bool HasBatch { get; set; }
     public Store Store { get; set; }
-    public ReorderRules ReorderRule { get; set; }
+    public int MinimumLevel { get; set; }
+    public int MaximumLevel { get; set; }
+    public int ReorderLevel { get; set; }
     public bool IsActive { get; set; }
     public string Description { get; set; }
 }
