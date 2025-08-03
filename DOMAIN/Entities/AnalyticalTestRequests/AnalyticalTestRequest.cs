@@ -14,7 +14,8 @@ public class AnalyticalTestRequest : BaseEntity
     public Product Product { get; set; }
     public Guid ProductionScheduleId { get; set; }
     public ProductionSchedule ProductionSchedule { get; set; }
-    
+    public Guid? ProductionActivityStepId { get; set; }
+    public ProductionActivityStep ProductionActivityStep { get; set; }
     public DateTime ManufacturingDate { get; set; }
     public DateTime ExpiryDate { get; set; }
     public string ReleasedAt { get; set; } = "Quality Control";

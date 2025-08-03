@@ -8,7 +8,7 @@ public class CreateSourceInventoryRequisition
     public List<CreateSourceInventoryRequisitionItem> Items { get; set; } = [];
 }
 
-public enum PurchaseRequisitionSource
+public enum InventoryRequisitionSource
 {
     TrustedVendor,
     OpenMarket
@@ -18,7 +18,7 @@ public class CreateSourceInventoryRequisitionItem
     public Guid ItemId { get; set; }
     public Guid UoMId { get; set; }
     public decimal Quantity { get; set; }
-    public PurchaseRequisitionSource Source { get; set; }
+    public InventoryRequisitionSource Source { get; set; }
     public List<CreateSourceInventoryRequisitionItemVendor> Vendors { get; set; } = [];
 }
 

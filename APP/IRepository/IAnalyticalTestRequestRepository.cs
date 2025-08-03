@@ -8,7 +8,7 @@ public interface IAnalyticalTestRequestRepository
 {
     Task<Result<Guid>> CreateAnalyticalTestRequest(CreateAnalyticalTestRequest request);
     
-    Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery, Status? status);
     
     Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequest(Guid id);
     

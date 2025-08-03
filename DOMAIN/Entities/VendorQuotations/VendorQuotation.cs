@@ -14,3 +14,8 @@ public class VendorQuotationResponseDto
 {
     
 }
+
+public class VendorPriceComparison
+{
+    
+}

@@ -6,7 +6,6 @@ using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.Memos;
-using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.VendorQuotations;
 using INFRASTRUCTURE.Context;
@@ -108,21 +107,21 @@ public class InventoryProcurementRepository(
         if (requisition is null)
             return RequisitionErrors.NotFound(request.InventoryPurchaseRequisitionId);
 
-        var supplierGroupedItems = request.Items
+        var vendorGroupedItems = request.Items
             .SelectMany(item => item.Vendors.Select(vendor => new { item, vendor }))
             .GroupBy(x => x.vendor.VendorId);
 
-        foreach (var supplierGroup in supplierGroupedItems)
+        foreach (var vendorGroup in vendorGroupedItems)
         {
-            var supplierId = supplierGroup.Key;
+            var vendorId = vendorGroup.Key;
 
             var existingSourceRequisition = await context.SourceInventoryRequisitions
                 .Include(sr => sr.Items)
-                .FirstOrDefaultAsync(sr => sr.VendorId == supplierId && sr.SentQuotationRequestAt == null);
+                .FirstOrDefaultAsync(sr => sr.VendorId == vendorId && sr.SentQuotationRequestAt == null);
 
             if (existingSourceRequisition is not null)
             {
-                foreach (var groupItem in supplierGroup)
+                foreach (var groupItem in vendorGroup)
                 {
                     existingSourceRequisition.Items.Add(new SourceInventoryRequisitionItem
                     {
@@ -135,18 +134,18 @@ public class InventoryProcurementRepository(
             }
             else
             {
-                var requisitionForSupplier = new SourceInventoryRequisition
+                var requisitionForVendor = new SourceInventoryRequisition
                 {
                     InventoryPurchaseRequisitionId = request.InventoryPurchaseRequisitionId,
-                    VendorId = supplierId,
-                    Items = supplierGroup.Select(x => new SourceInventoryRequisitionItem
+                    VendorId = vendorId,
+                    Items = vendorGroup.Select(x => new SourceInventoryRequisitionItem
                     {
                         ItemId = x.item.ItemId,
                         UoMId = x.item.UoMId,
                         Quantity = x.item.Quantity,
                     }).ToList(),
                 };
-                await context.SourceInventoryRequisitions.AddAsync(requisitionForSupplier);
+                await context.SourceInventoryRequisitions.AddAsync(requisitionForVendor);
             }
         }
         await context.SaveChangesAsync();
@@ -188,31 +187,31 @@ public class InventoryProcurementRepository(
         );
     }
 
-    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType)
+    public async Task<Result<List<VendorPriceComparison>>> GetPriceComparisonOfMaterial(InventoryRequisitionSource source)
     {
-        if (supplierType == SupplierType.TrustedVendor)
+        if (source == InventoryRequisitionSource.TrustedVendor)
         {
-            var quotations = await context.SupplierQuotationItems
+            var quotations = await context.VendorQuotationItems
                 .Include(s => s.Material)
                 .Include(s => s.UoM)
-                .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
-                .Where(s => s.QuotedPrice != null && s.Status == SupplierQuotationItemStatus.NotProcessed)
+                .Include(s => s.VendorQuotation).ThenInclude(s => s.Vendor)
+                .Where(s => s.QuotedPrice != null && s.Status == VendorQuotationItemStatus.NotProcessed)
                 .ToListAsync();
 
-            return Result<List<SupplierPriceComparison>>.Success(quotations.GroupBy(s => new { s.Material, s.UoM })
-                .Select(item => new SupplierPriceComparison
+            return quotations.GroupBy(s => new { s.Material, s.UoM })
+                .Select(item => new VendorPriceComparison
                 {
                     Material = mapper.Map<CollectionItemDto>(item.Key.Material),
                     UoM = mapper.Map<UnitOfMeasureDto>(item.Key.UoM),
                     Quantity = item.Select(s => s.Quantity).First(),
-                    SupplierPrices = item.Select(s => new SupplierPrice
+                    VendorPrices = item.Select(s => new VendorPrice
                     {
-                        Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                        Vendor = mapper.Map<CollectionItemDto>(s.VendorQuotation.Vendor),
                         Price = s.QuotedPrice.GetValueOrDefault()
                     }).ToList()
-                }).ToList());
+                }).ToList();
         }
-        else if (supplierType == SupplierType.OpenMarket)
+        else if (source == InventoryRequisitionSource.OpenMarket)
         {
             var openMarketQuotes = await context.MarketRequisitionVendors
                 .Include(mrv => mrv.MarketRequisition).ThenInclude(mr => mr.Item)
@@ -220,21 +219,21 @@ public class InventoryProcurementRepository(
                 .Where(mrv => !mrv.Complete)
                 .ToListAsync();
 
-            return Result<List<SupplierPriceComparison>>.Success(openMarketQuotes.GroupBy(mrv => new { mrv.MarketRequisition.Item, mrv.MarketRequisition.UoM })
-                .Select(itemGroup => new SupplierPriceComparison
+            return openMarketQuotes.GroupBy(mrv => new { mrv.MarketRequisition.Item, mrv.MarketRequisition.UoM })
+                .Select(itemGroup => new VendorPriceComparison
                 {
                     Material = mapper.Map<CollectionItemDto>(itemGroup.Key.Item),
                     UoM = mapper.Map<UnitOfMeasureDto>(itemGroup.Key.UoM),
                     Quantity = itemGroup.First().MarketRequisition.Quantity,
-                    SupplierPrices = itemGroup.Select(mrv => new SupplierPrice
+                    VendorPrices = itemGroup.Select(mrv => new VendorPrice
                     {
-                        Supplier = new CollectionItemDto { Name = mrv.VendorName },
+                        Vendor = new CollectionItemDto { Name = mrv.VendorName },
                         Price = mrv.PricePerUnit
                     }).ToList()
-                }).ToList());
+                }).ToList();
         }
 
-        return Result<List<SupplierPriceComparison>>.Success(new List<SupplierPriceComparison>());
+        return new List<VendorPriceComparison>();
     }
 
 
@@ -295,24 +294,24 @@ public class InventoryProcurementRepository(
 
             foreach (var itemRequest in memoRequest.Items)
             {
-                var supplierQuotationItem = await context.SupplierQuotationItems
-                    .Include(sqi => sqi.SupplierQuotation)
-                    .FirstOrDefaultAsync(sqi => sqi.Id == itemRequest.SupplierQuotationItemId);
+                var vendorQuotationItem = await context.VendorQuotationItems
+                    .Include(sqi => sqi.VendorQuotation)
+                    .FirstOrDefaultAsync(sqi => sqi.Id == itemRequest.VendorQuotationItemId);
 
-                if (supplierQuotationItem is null)
-                    return Error.Validation("SupplierQuotationItem", $"Supplier quotation item with ID {itemRequest.SupplierQuotationItemId} not found.");
+                if (vendorQuotationItem is null)
+                    return Error.Validation("VendorQuotationItem", $"Vendor quotation item with ID {itemRequest.VendorQuotationItemId} not found.");
 
                 memo.Items.Add(new MemoItem
                 {
-                    VendorId = supplierQuotationItem.SupplierQuotation.SupplierId,
-                    ItemId = supplierQuotationItem.MaterialId,
-                    UoMId = supplierQuotationItem.UoMId,
-                    Quantity = supplierQuotationItem.Quantity,
-                    PricePerUnit = supplierQuotationItem.QuotedPrice.GetValueOrDefault()
+                    VendorId = vendorQuotationItem.VendorQuotation.VendorId,
+                    ItemId = vendorQuotationItem.MaterialId,
+                    UoMId = vendorQuotationItem.UoMId,
+                    Quantity = vendorQuotationItem.Quantity,
+                    PricePerUnit = vendorQuotationItem.QuotedPrice.GetValueOrDefault()
                 });
 
-                supplierQuotationItem.Status = SupplierQuotationItemStatus.Processed;
-                context.SupplierQuotationItems.Update(supplierQuotationItem);
+                vendorQuotationItem.Status = VendorQuotationItemStatus.Processed;
+                context.VendorQuotationItems.Update(vendorQuotationItem);
             }
             await context.Memos.AddAsync(memo);
         }
@@ -322,21 +321,21 @@ public class InventoryProcurementRepository(
 
     // --- Trusted Vendor Specific ---
 
-    public async Task<Result> SendQuotationToSupplier(Guid supplierId)
+    public async Task<Result> SendQuotationToVendor(Guid vendorId)
     {
         var sourceRequisition = await context.SourceInventoryRequisitions
-            .Include(sr => sr.Supplier)
+            .Include(sr => sr.Vendor)
             .Include(sr => sr.Items).ThenInclude(item => item.Item)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
-            .FirstOrDefaultAsync(s => s.SupplierId == supplierId && !s.SentQuotationRequestAt.HasValue);
+            .FirstOrDefaultAsync(s => s.VendorId == vendorId && !s.SentQuotationRequestAt.HasValue);
 
         if (sourceRequisition is null || !sourceRequisition.Items.Any())
         {
-            return Error.Validation("Supplier.Quotation", "No unsent items found for the specified supplier.");
+            return Error.Validation("Vendor.Quotation", "No unsent items found for the specified vendor.");
         }
 
-        var supplierQuotationDto = mapper.Map<SupplierQuotationRequest>(sourceRequisition);
-        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.QuotationRequestTemplate(supplierQuotationDto));
+        var vendorQuotationDto = mapper.Map<VendorQuotationRequest>(sourceRequisition);
+        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.QuotationRequestTemplate(vendorQuotationDto));
         var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>
         {
             (fileContent, "Quotation Request from Entrance.pdf", "application/pdf")
@@ -344,22 +343,22 @@ public class InventoryProcurementRepository(
 
         try
         {
-            emailService.SendMail(sourceRequisition.Supplier.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
+            emailService.SendMail(sourceRequisition.Vendor.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
         }
         catch (Exception e)
         {
             // Log the exception
-            return Error.Validation("Supplier.Quotation", "Failed to send email: " + e.Message);
+            return Error.Validation("Vendor.Quotation", "Failed to send email: " + e.Message);
         }
 
         sourceRequisition.SentQuotationRequestAt = DateTime.UtcNow;
         context.SourceInventoryRequisitions.Update(sourceRequisition);
         
-        var supplierQuotation = new VendorQuotation
+        var vendorQuotation = new VendorQuotation
         {
-            VendorId = sourceRequisition.SupplierId,
+            VendorId = sourceRequisition.VendorId,
             SourceRequisitionId = sourceRequisition.Id,
-            Items = sourceRequisition.Items.Select(i => new SupplierQuotationItem
+            Items = sourceRequisition.Items.Select(i => new VendorQuotationItem
             {
                 MaterialId = i.ItemId,
                 UoMId = i.UoMId,
@@ -367,70 +366,70 @@ public class InventoryProcurementRepository(
             }).ToList()
         };
 
-        await context.SupplierQuotations.AddAsync(supplierQuotation);
+        await context.VendorQuotations.AddAsync(vendorQuotation);
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetVendorQuotations(int page, int pageSize, SupplierType supplierType, bool received)
+    public async Task<Result<Paginateable<IEnumerable<VendorQuotationDto>>>> GetVendorQuotations(int page, int pageSize, VendorType vendorType, bool received)
     {
         var query = context.VendorQuotations
             .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Items).ThenInclude(s => s.UoM)
-            .Include(s => s.Supplier)
-            .Where(s => s.Supplier.Type == supplierType)
+            .Include(s => s.Vendor)
+            .Where(s => s.Vendor.Type == vendorType)
             .AsQueryable();
 
         query = received ? query.Where(s => s.ReceivedQuotation) : query.Where(s => !s.ReceivedQuotation);
 
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<SupplierQuotationDto>);
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<VendorQuotationDto>);
     }
 
-    public async Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse, Guid supplierQuotationId)
+    public async Task<Result> ReceiveQuotationFromVendor(List<VendorQuotationResponseDto> vendorQuotationResponse, Guid vendorQuotationId)
     {
-        var supplierQuotation = await context.VendorQuotations
+        var vendorQuotation = await context.VendorQuotations
             .Include(s => s.Items)
-            .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
+            .FirstOrDefaultAsync(s => s.Id == vendorQuotationId);
 
-        if (supplierQuotation == null)
+        if (vendorQuotation == null)
         {
-            return RequisitionErrors.NotFound(supplierQuotationId);
+            return RequisitionErrors.NotFound(vendorQuotationId);
         }
 
-        if (supplierQuotation.Items.Count == 0)
+        if (vendorQuotation.Items.Count == 0)
         {
-            return Error.Validation("Supplier.Quotation", "No items found for this quotation.");
+            return Error.Validation("Vendor.Quotation", "No items found for this quotation.");
         }
 
-        foreach (var item in supplierQuotation.Items)
+        foreach (var item in vendorQuotation.Items)
         {
-            var response = supplierQuotationResponse.FirstOrDefault(s => s.Id == item.Id);
+            var response = vendorQuotationResponse.FirstOrDefault(s => s.Id == item.Id);
             if (response != null)
             {
                 item.QuotedPrice = response.Price;
             }
         }
         
-        supplierQuotation.ReceivedQuotation = true;
-        context.VendorQuotations.Update(supplierQuotation);
-        context.VendorQuotationItems.UpdateRange(supplierQuotation.Items);
+        vendorQuotation.ReceivedQuotation = true;
+        context.VendorQuotations.Update(vendorQuotation);
+        context.VendorQuotationItems.UpdateRange(vendorQuotation.Items);
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
-    public async Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId)
+    public async Task<Result<VendorQuotationDto>> GetVendorQuotation(Guid vendorQuotationId)
     {
-        var quotation = await context.SupplierQuotations
+        var quotation = await context.VendorQuotations
             .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Items).ThenInclude(s => s.UoM)
-            .Include(s => s.Supplier)
-            .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
+            .Include(s => s.Vendor)
+            .FirstOrDefaultAsync(s => s.Id == vendorQuotationId);
 
         if (quotation == null)
         {
-            return RequisitionErrors.NotFound(supplierQuotationId);
+            return RequisitionErrors.NotFound(vendorQuotationId);
         }
-        return Result<SupplierQuotationDto>.Success(mapper.Map<SupplierQuotationDto>(quotation));
+        return mapper.Map<VendorQuotationDto>(quotation);
     }
 
     // --- Open Market Specific ---

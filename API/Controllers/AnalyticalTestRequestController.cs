@@ -30,9 +30,9 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<AnalyticalTestRequestDto>>))]
-    public async Task<IResult> GetAnalyticalTestRequests([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetAnalyticalTestRequests([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] Status? status = null)
     {
-        var result = await repository.GetAnalyticalTestRequests(page, pageSize, searchQuery);
+        var result = await repository.GetAnalyticalTestRequests(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
