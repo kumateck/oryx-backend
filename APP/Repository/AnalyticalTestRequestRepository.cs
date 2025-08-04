@@ -21,7 +21,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
        return test.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery, Status? status)
+    public async Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery, AnalyticalTestStatus? status)
     {
         var query = context.AnalyticalTestRequests
             .AsSplitQuery()

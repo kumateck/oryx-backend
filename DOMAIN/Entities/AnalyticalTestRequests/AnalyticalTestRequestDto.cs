@@ -25,5 +25,5 @@ public class AnalyticalTestRequestDto : BaseDto
     
     public CollectionItemDto State { get; set; }
     
-    public Status Status { get; set; }
+    public AnalyticalTestStatus Status { get; set; }
 }

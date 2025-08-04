@@ -20,8 +20,8 @@ public class VendorQuotation : BaseEntity
 public class VendorQuotationDto : BaseDto
 {
     public VendorDto Vendor { get; set; } 
-    public SourceInventoryRequisition SourceInventoryRequisition { get; set; }
-    public List<VendorQuotationItem> Items { get; set; } = [];
+    public SourceInventoryRequisitionDto SourceInventoryRequisition { get; set; }
+    public List<VendorQuotationItemDto> Items { get; set; } = [];
     public bool ReceivedQuotation { get; set; }
 }
 
