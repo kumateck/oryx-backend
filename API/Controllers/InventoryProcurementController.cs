@@ -10,7 +10,7 @@ using SHARED;
 
 namespace API.Controllers;
 
-[Route("api/v{version:apiVersion}/procurement/inventory")]
+[Route("api/v{version:apiVersion}/procurement/-inventory")]
 [ApiController]
 public class InventoryProcurementController(IInventoryProcurementRepository repository) : ControllerBase
 {
