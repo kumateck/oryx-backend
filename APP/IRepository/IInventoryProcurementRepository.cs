@@ -1,9 +1,7 @@
-/*using APP.Utils;
+using APP.Utils;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.Memos;
-using DOMAIN.Entities.Procurement.Suppliers;
-using DOMAIN.Entities.Requisitions;
-using DOMAIN.Entities.Requisitions.Request;
+using DOMAIN.Entities.VendorQuotations;
 using SHARED;
 
 namespace APP.IRepository;
@@ -21,17 +19,17 @@ public interface IInventoryProcurementRepository
     Task<Result> CreateSourceRequisition(CreateSourceInventoryRequisition request, Guid userId);
     Task<Result> CreateMarketRequisition(CreateMarketRequisition request, Guid userId);
     Task<Result<Paginateable<IEnumerable<MarketRequisitionDto>>>> GetMarketRequisitions(int page, int pageSize);
-    Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType);
+    Task<Result<List<VendorPriceComparison>>> GetPriceComparisonOfItem(InventoryRequisitionSource source);
 
     // Memo Creation Logic
     Task<Result> ProcessOpenMarketMemo(List<ProcessMemo> memos, Guid userId);
     Task<Result> ProcessTrustedVendorQuotationAndCreateMemo(List<ProcessMemo> memos, Guid userId);
 
     // Trusted Vendor Specific
-    Task<Result> SendQuotationToSupplier(Guid supplierId);
-    Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, int pageSize, SupplierType supplierType, bool received);
-    Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse, Guid supplierQuotationId);
-    Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId);
+    Task<Result> SendQuotationToVendor(Guid vendorId);
+    Task<Result<Paginateable<IEnumerable<VendorQuotationDto>>>> GetVendorQuotations(int page, int pageSize, bool received);
+    Task<Result> ReceiveQuotationFromVendor(List<VendorQuotationResponseDto> vendorQuotationResponse, Guid vendorQuotationId);
+    Task<Result<VendorQuotationDto>> GetVendorQuotation(Guid vendorQuotationId);
 
     // Open Market Specific
     Task<Result<Paginateable<IEnumerable<MarketRequisitionVendorDto>>>> GetMarketRequisitionVendors(int page, int pageSize, bool complete);
@@ -40,4 +38,4 @@ public interface IInventoryProcurementRepository
     
     // Helper methods
     Task<string> GenerateMemoCode();
-}*/
+}

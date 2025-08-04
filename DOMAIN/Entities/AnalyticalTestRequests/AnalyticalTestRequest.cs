@@ -14,7 +14,8 @@ public class AnalyticalTestRequest : BaseEntity
     public Product Product { get; set; }
     public Guid ProductionScheduleId { get; set; }
     public ProductionSchedule ProductionSchedule { get; set; }
-    
+    public Guid? ProductionActivityStepId { get; set; }
+    public ProductionActivityStep ProductionActivityStep { get; set; }
     public DateTime ManufacturingDate { get; set; }
     public DateTime ExpiryDate { get; set; }
     public string ReleasedAt { get; set; } = "Quality Control";
@@ -24,7 +25,7 @@ public class AnalyticalTestRequest : BaseEntity
     public TestStage Stage { get; set; }
     public Guid StateId { get; set; }
     public ProductState State { get; set; }
-    public Status Status { get; set; }
+    public AnalyticalTestStatus Status { get; set; }
 }
 
 public class ProductState : BaseEntity
@@ -38,7 +39,7 @@ public enum TestStage
      Finished
 }
 
-public enum Status
+public enum AnalyticalTestStatus
 {
     New,
     Sampled,

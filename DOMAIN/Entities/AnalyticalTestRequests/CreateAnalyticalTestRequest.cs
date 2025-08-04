@@ -11,7 +11,8 @@ public class CreateAnalyticalTestRequest
     public string ReleasedAt { get; set; }
     public DateTime ReleaseDate { get; set; }
     public TestStage Stage { get; set; }
-    public Status Status { get; set; }
+    public AnalyticalTestStatus Status { get; set; }
     public string Filled { get; set;}
     public Guid StateId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
 }

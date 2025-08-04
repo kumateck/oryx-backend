@@ -30,6 +30,7 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
@@ -76,6 +77,7 @@ using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
+using DOMAIN.Entities.VendorQuotations;
 using DOMAIN.Entities.Vendors;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
@@ -167,6 +169,11 @@ public class OryxMapper : Profile
         CreateMap<ProductState, CollectionItemDto>();
         CreateMap<MarketType, CollectionItemDto>();
         CreateMap<Instrument, CollectionItemDto>();
+        CreateMap<InventoryPurchaseRequisition, CollectionItemDto>();
+        CreateMap<MarketRequisition, CollectionItemDto>();
+        CreateMap<InventoryRequisitionSource, CollectionItemDto>();
+        CreateMap<Vendor, CollectionItemDto>();
+        CreateMap<Item, CollectionItemDto>();
         
         #endregion
 
@@ -985,6 +992,35 @@ public class OryxMapper : Profile
         CreateMap<ItemStockRequisition, ItemStockRequisitionDto>();
 
         #endregion
+
+        #region Inventory Procurement
+
+        CreateMap<CreateInventoryPurchaseRequisition, InventoryPurchaseRequisition>();
+        CreateMap<CreateInventoryPurchaseRequisitionItem, InventoryPurchaseRequisitionItem>();
+
+        CreateMap<InventoryPurchaseRequisition, InventoryPurchaseRequisitionDto>();
+        CreateMap<InventoryPurchaseRequisitionItem, InventoryPurchaseRequisitionItemDto>();
+
+
+        CreateMap<CreateMarketRequisition, MarketRequisition>();
+        CreateMap<MarketRequisition, MarketRequisitionDto>();
+
+        CreateMap<SourceInventoryRequisition, SourceInventoryRequisitionDto>();
+        CreateMap<CreateSourceInventoryRequisitionItem, SourceInventoryRequisitionItemDto>();
+        CreateMap<SourceInventoryRequisition, VendorQuotationRequest>();
+
+        CreateMap<CreateMarketRequisitionVendor, MarketRequisitionVendor>();
+        CreateMap<VendorQuotation, VendorQuotationDto>();
+        CreateMap<VendorQuotationItem, VendorQuotationItemDto>();
+
+        CreateMap<MarketRequisitionVendor, MarketRequisitionVendorDto>();
+
+
+
+
+        #endregion
+
+
 
     }
 }

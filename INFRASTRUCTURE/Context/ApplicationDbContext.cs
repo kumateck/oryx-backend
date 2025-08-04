@@ -26,6 +26,7 @@ using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.ItemStockRequisitions;
+using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -35,6 +36,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
@@ -66,6 +68,7 @@ using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.VendorQuotations;
 using DOMAIN.Entities.Vendors;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.WorkOrders;
@@ -572,6 +575,25 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<ItemStockRequisition> ItemStockRequisitions { get; set; }
 
+    #endregion
+
+    #region Inventory Procurement
+
+    public DbSet<InventoryPurchaseRequisition> InventoryPurchaseRequisitions { get; set; }
+    public DbSet<InventoryPurchaseRequisitionItem> InventoryPurchaseRequisitionItems { get; set; }
+    
+    public DbSet<SourceInventoryRequisition> SourceInventoryRequisitions { get; set; }
+    
+    public DbSet<MarketRequisition>  MarketRequisitions { get; set; }
+    
+    public DbSet<VendorQuotation>  VendorQuotations { get; set; }
+    
+    public DbSet<VendorQuotationItem>   VendorQuotationItems { get; set; }
+    
+    public DbSet<MarketRequisitionVendor>  MarketRequisitionVendors { get; set; }
+    
+    public DbSet<Memo> Memos { get; set; }
+    
     #endregion
     
     
@@ -1282,6 +1304,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Item Stock Requisitions
 
         modelBuilder.Entity<ItemStockRequisition>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Inventory Procurement
+
+        modelBuilder.Entity<InventoryPurchaseRequisition>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }

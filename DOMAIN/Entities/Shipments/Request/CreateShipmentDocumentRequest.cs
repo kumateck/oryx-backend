@@ -38,7 +38,7 @@ public class CreateShipmentInvoiceItem
 public class CreateShipmentDiscrepancy
 {
     public Guid ShipmentDocumentId { get; set; }
-    public List<ShipmentDiscrepancyItem> Items { get; set; } = [];
+    public List<CreateShipmentDiscrepancyItem> Items { get; set; } = [];
 }
 
 public class CreateShipmentDiscrepancyItem

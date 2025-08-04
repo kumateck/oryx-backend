@@ -30,7 +30,7 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
         
         var itemStockReq = mapper.Map<ItemStockRequisition>(request);
-        await context.AddAsync(itemStockReq);
+        await context.ItemStockRequisitions.AddAsync(itemStockReq);
         await context.SaveChangesAsync();
         return itemStockReq.Id;
 
