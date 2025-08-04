@@ -25,5 +25,8 @@ public class CreateItemsRequest
     [Required(ErrorMessage = "Status is required")] 
     public bool IsActive { get; set; }
     
+    public string Category { get; set; }
+
+    
     public string Description { get; set; }
 }
