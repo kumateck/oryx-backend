@@ -15,4 +15,5 @@ public interface IAnalyticalTestRequestRepository
     Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request);
     
     Task<Result> DeleteAnalyticalTestRequest(Guid id, Guid userId);
+    Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequestByActivityStep(Guid activityStepId);
 }
