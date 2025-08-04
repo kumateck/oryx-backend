@@ -25,7 +25,7 @@ public class AnalyticalTestRequest : BaseEntity
     public TestStage Stage { get; set; }
     public Guid StateId { get; set; }
     public ProductState State { get; set; }
-    public Status Status { get; set; }
+    public AnalyticalTestStatus Status { get; set; }
 }
 
 public class ProductState : BaseEntity
@@ -39,7 +39,7 @@ public enum TestStage
      Finished
 }
 
-public enum Status
+public enum AnalyticalTestStatus
 {
     New,
     Sampled,

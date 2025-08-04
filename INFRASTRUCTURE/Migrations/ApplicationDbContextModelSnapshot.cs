@@ -75,7 +75,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Alerts");
+                    b.ToTable("Alerts", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Alerts.AlertRole", b =>
@@ -96,7 +96,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AlertRoles");
+                    b.ToTable("AlertRoles", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Alerts.AlertUser", b =>
@@ -117,7 +117,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AlertUsers");
+                    b.ToTable("AlertUsers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.AnalyticalTestRequest", b =>
@@ -201,7 +201,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("StateId");
 
-                    b.ToTable("AnalyticalTestRequests");
+                    b.ToTable("AnalyticalTestRequests", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.ProductState", b =>
@@ -240,7 +240,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ProductStates");
+                    b.ToTable("ProductStates", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>
@@ -282,7 +282,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Approvals");
+                    b.ToTable("Approvals", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.ApprovalActionLog", b =>
@@ -311,7 +311,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ApprovalActionLogs");
+                    b.ToTable("ApprovalActionLogs", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Approvals.ApprovalStage", b =>
@@ -343,7 +343,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ApprovalStages");
+                    b.ToTable("ApprovalStages", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Attachments.Attachment", b =>
@@ -393,7 +393,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Attachments");
+                    b.ToTable("Attachments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.AttendanceRecords.AttendanceRecords", b =>
@@ -437,7 +437,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("AttendanceRecords");
+                    b.ToTable("AttendanceRecords", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Auth.PasswordReset", b =>
@@ -485,7 +485,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PasswordResets");
+                    b.ToTable("PasswordResets", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Auth.RefreshToken", b =>
@@ -530,7 +530,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Base.DeliveryMode", b =>
@@ -573,7 +573,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("DeliveryModes");
+                    b.ToTable("DeliveryModes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Base.Operation", b =>
@@ -622,7 +622,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Operations");
+                    b.ToTable("Operations", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Base.PackageStyle", b =>
@@ -665,7 +665,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("PackageStyles");
+                    b.ToTable("PackageStyles", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Base.Resource", b =>
@@ -711,7 +711,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Resources");
+                    b.ToTable("Resources", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Base.TermsOfPayment", b =>
@@ -754,7 +754,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("TermsOfPayments");
+                    b.ToTable("TermsOfPayments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Base.UnitOfMeasure", b =>
@@ -807,7 +807,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("UnitOfMeasures");
+                    b.ToTable("UnitOfMeasures", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Base.WorkCenter", b =>
@@ -850,7 +850,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("WorkCenters");
+                    b.ToTable("WorkCenters", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.BillOfMaterials.BillOfMaterial", b =>
@@ -896,7 +896,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("BillOfMaterials");
+                    b.ToTable("BillOfMaterials", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.BillOfMaterials.BillOfMaterialItem", b =>
@@ -972,7 +972,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialTypeId");
 
-                    b.ToTable("BillOfMaterialItems");
+                    b.ToTable("BillOfMaterialItems", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.BinCards.BinCardInformation", b =>
@@ -1043,7 +1043,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("BinCardInformation");
+                    b.ToTable("BinCardInformation", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.BinCards.ProductBinCardInformation", b =>
@@ -1109,7 +1109,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("ProductBinCardInformation");
+                    b.ToTable("ProductBinCardInformation", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Charges.Charge", b =>
@@ -1165,7 +1165,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Charges");
+                    b.ToTable("Charges", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Checklists.Checklist", b =>
@@ -1240,7 +1240,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("Checklists");
+                    b.ToTable("Checklists", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.CompanyWorkingDays.CompanyWorkingDays", b =>
@@ -1289,7 +1289,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("CompanyWorkingDays");
+                    b.ToTable("CompanyWorkingDays", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Configurations.Configuration", b =>
@@ -1341,7 +1341,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Configurations");
+                    b.ToTable("Configurations", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Countries.Country", b =>
@@ -1388,7 +1388,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Countries");
+                    b.ToTable("Countries", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Currencies.Currency", b =>
@@ -1435,7 +1435,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Currencies");
+                    b.ToTable("Currencies", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Customers.Customer", b =>
@@ -1482,7 +1482,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Departments.Department", b =>
@@ -1531,7 +1531,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ParentDepartmentId");
 
-                    b.ToTable("Departments");
+                    b.ToTable("Departments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Designations.Designation", b =>
@@ -1577,7 +1577,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Designations");
+                    b.ToTable("Designations", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Employees.Employee", b =>
@@ -1727,7 +1727,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ShiftScheduleId");
 
-                    b.ToTable("Employees");
+                    b.ToTable("Employees", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Form", b =>
@@ -1769,7 +1769,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Forms");
+                    b.ToTable("Forms", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.FormAssignee", b =>
@@ -1790,7 +1790,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("FormAssignees");
+                    b.ToTable("FormAssignees", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.FormField", b =>
@@ -1855,7 +1855,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ReviewerId");
 
-                    b.ToTable("FormFields");
+                    b.ToTable("FormFields", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.FormResponse", b =>
@@ -1909,7 +1909,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ResponseId");
 
-                    b.ToTable("FormResponses");
+                    b.ToTable("FormResponses", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.FormReviewer", b =>
@@ -1930,7 +1930,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("FormReviewers");
+                    b.ToTable("FormReviewers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.FormSection", b =>
@@ -1986,7 +1986,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("FormSections");
+                    b.ToTable("FormSections", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Question", b =>
@@ -2042,7 +2042,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Questions");
+                    b.ToTable("Questions", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.QuestionOption", b =>
@@ -2086,7 +2086,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("QuestionOptions");
+                    b.ToTable("QuestionOptions", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Response", b =>
@@ -2147,7 +2147,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialBatchId");
 
-                    b.ToTable("Responses");
+                    b.ToTable("Responses", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.ResponseApproval", b =>
@@ -2208,7 +2208,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ResponseApprovals");
+                    b.ToTable("ResponseApprovals", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Grns.Grn", b =>
@@ -2262,7 +2262,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Grns");
+                    b.ToTable("Grns", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Holidays.Holiday", b =>
@@ -2306,7 +2306,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Holidays");
+                    b.ToTable("Holidays", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Instruments.Instrument", b =>
@@ -2349,7 +2349,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Instruments");
+                    b.ToTable("Instruments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Invoices.Invoice", b =>
@@ -2395,7 +2395,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProformaInvoiceId");
 
-                    b.ToTable("Invoices");
+                    b.ToTable("Invoices", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Item", b =>
@@ -2470,7 +2470,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.ToTable("Items");
+                    b.ToTable("Items", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", b =>
@@ -2519,7 +2519,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("InventoryPurchaseRequisitions");
+                    b.ToTable("InventoryPurchaseRequisitions", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisitionItem", b =>
@@ -2575,7 +2575,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("InventoryPurchaseRequisitionItems");
+                    b.ToTable("InventoryPurchaseRequisitionItems", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.MarketRequisition", b =>
@@ -2628,7 +2628,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("MarketRequisitions");
+                    b.ToTable("MarketRequisitions", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.MarketRequisitionVendor", b =>
@@ -2702,7 +2702,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("TermsOfPaymentId");
 
-                    b.ToTable("MarketRequisitionVendors");
+                    b.ToTable("MarketRequisitionVendors", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.SourceInventoryRequisition", b =>
@@ -2754,7 +2754,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.ToTable("SourceInventoryRequisitions");
+                    b.ToTable("SourceInventoryRequisitions", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.SourceInventoryRequisitionItem", b =>
@@ -2810,7 +2810,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("SourceInventoryRequisitionItem");
+                    b.ToTable("SourceInventoryRequisitionItem", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.LeaveEntitlements.LeaveEntitlement", b =>
@@ -2854,7 +2854,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("LeaveEntitlements");
+                    b.ToTable("LeaveEntitlements", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.LeaveRequests.LeaveRequest", b =>
@@ -2935,7 +2935,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LeaveTypeId");
 
-                    b.ToTable("LeaveRequests");
+                    b.ToTable("LeaveRequests", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.LeaveRequests.LeaveRequestApproval", b =>
@@ -2996,7 +2996,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("LeaveRequestApprovals");
+                    b.ToTable("LeaveRequestApprovals", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.LeaveTypes.LeaveType", b =>
@@ -3049,7 +3049,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("LeaveTypes");
+                    b.ToTable("LeaveTypes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.MaterialARD.MaterialAnalyticalRawData", b =>
@@ -3105,7 +3105,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UniformityOfWeightId");
 
-                    b.ToTable("MaterialAnalyticalRawData");
+                    b.ToTable("MaterialAnalyticalRawData", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.MaterialSampling.MaterialSampling", b =>
@@ -3159,7 +3159,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialBatchId");
 
-                    b.ToTable("MaterialSamplings");
+                    b.ToTable("MaterialSamplings", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", b =>
@@ -3235,7 +3235,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("MaterialSpecifications");
+                    b.ToTable("MaterialSpecifications", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure", b =>
@@ -3281,7 +3281,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialId");
 
-                    b.ToTable("MaterialStandardTestProcedures");
+                    b.ToTable("MaterialStandardTestProcedures", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", b =>
@@ -3362,7 +3362,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("FinishedGoodsTransferNotes");
+                    b.ToTable("FinishedGoodsTransferNotes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchEvent", b =>
@@ -3421,7 +3421,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("FinishedProductBatchEvents");
+                    b.ToTable("FinishedProductBatchEvents", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchMovement", b =>
@@ -3485,7 +3485,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ToWarehouseId");
 
-                    b.ToTable("FinishedProductBatchMovements");
+                    b.ToTable("FinishedProductBatchMovements", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MassMaterialBatchMovement", b =>
@@ -3549,7 +3549,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ToWarehouseId");
 
-                    b.ToTable("MassMaterialBatchMovements");
+                    b.ToTable("MassMaterialBatchMovements", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MaterialBatch", b =>
@@ -3666,7 +3666,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WarehouseArrivalLocationId");
 
-                    b.ToTable("MaterialBatches");
+                    b.ToTable("MaterialBatches", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MaterialBatchEvent", b =>
@@ -3725,7 +3725,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("MaterialBatchEvents");
+                    b.ToTable("MaterialBatchEvents", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MaterialBatchReservedQuantity", b =>
@@ -3788,7 +3788,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WarehouseId");
 
-                    b.ToTable("MaterialBatchReservedQuantities");
+                    b.ToTable("MaterialBatchReservedQuantities", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.Sr", b =>
@@ -3840,7 +3840,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("Srs");
+                    b.ToTable("Srs", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.HoldingMaterialTransfer", b =>
@@ -3887,7 +3887,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("StockTransferId");
 
-                    b.ToTable("HoldingMaterialTransfers");
+                    b.ToTable("HoldingMaterialTransfers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.HoldingMaterialTransferBatch", b =>
@@ -3926,7 +3926,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("HoldingMaterialTransferBatches");
+                    b.ToTable("HoldingMaterialTransferBatches", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Material", b =>
@@ -3992,7 +3992,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialCategoryId");
 
-                    b.ToTable("Materials");
+                    b.ToTable("Materials", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialCategory", b =>
@@ -4038,7 +4038,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("MaterialCategories");
+                    b.ToTable("MaterialCategories", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialDepartment", b =>
@@ -4097,7 +4097,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("MaterialDepartments");
+                    b.ToTable("MaterialDepartments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialReturnNote", b =>
@@ -4152,7 +4152,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductionScheduleId");
 
-                    b.ToTable("MaterialReturnNotes");
+                    b.ToTable("MaterialReturnNotes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialReturnNoteFullReturn", b =>
@@ -4178,7 +4178,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialReturnNoteId");
 
-                    b.ToTable("MaterialReturnNoteFullReturns");
+                    b.ToTable("MaterialReturnNoteFullReturns", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialReturnNotePartialReturn", b =>
@@ -4212,7 +4212,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("MaterialReturnNotePartialReturns");
+                    b.ToTable("MaterialReturnNotePartialReturns", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialType", b =>
@@ -4255,7 +4255,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("MaterialTypes");
+                    b.ToTable("MaterialTypes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Memos.Memo", b =>
@@ -4293,7 +4293,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Memos");
+                    b.ToTable("Memos", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Memos.MemoItem", b =>
@@ -4362,7 +4362,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("VendorQuotationItemId");
 
-                    b.ToTable("MemoItem");
+                    b.ToTable("MemoItem", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Notifications.Notification", b =>
@@ -4389,7 +4389,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Notifications.NotificationRead", b =>
@@ -4413,7 +4413,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("NotificationReads");
+                    b.ToTable("NotificationReads", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Organizations.Organization", b =>
@@ -4454,7 +4454,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Organizations");
+                    b.ToTable("Organizations", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.OvertimeRequests.OvertimeRequest", b =>
@@ -4512,7 +4512,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("OvertimeRequests");
+                    b.ToTable("OvertimeRequests", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Permissions.PermissionType", b =>
@@ -4534,7 +4534,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PermissionTypes");
+                    b.ToTable("PermissionTypes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Procurement.Manufacturers.Manufacturer", b =>
@@ -4592,7 +4592,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Manufacturers");
+                    b.ToTable("Manufacturers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Procurement.Manufacturers.ManufacturerMaterial", b =>
@@ -4637,7 +4637,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialId");
 
-                    b.ToTable("ManufacturerMaterials");
+                    b.ToTable("ManufacturerMaterials", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.Supplier", b =>
@@ -4708,7 +4708,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Suppliers");
+                    b.ToTable("Suppliers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.SupplierManufacturer", b =>
@@ -4764,7 +4764,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("SupplierManufacturers");
+                    b.ToTable("SupplierManufacturers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductAnalyticalRawData.ProductAnalyticalRawData", b =>
@@ -4818,7 +4818,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("StpId");
 
-                    b.ToTable("ProductAnalyticalRawData");
+                    b.ToTable("ProductAnalyticalRawData", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductSpecifications.ProductSpecification", b =>
@@ -4906,7 +4906,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProductSpecifications");
+                    b.ToTable("ProductSpecifications", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductStandardTestProcedures.ProductStandardTestProcedure", b =>
@@ -4949,7 +4949,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductStandardTestProcedures");
+                    b.ToTable("ProductStandardTestProcedures", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionOrders.ProductionOrder", b =>
@@ -4992,7 +4992,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ProductionOrders");
+                    b.ToTable("ProductionOrders", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.MarketType", b =>
@@ -5031,7 +5031,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("MarketTypes");
+                    b.ToTable("MarketTypes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.MasterProductionSchedule", b =>
@@ -5083,7 +5083,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("MasterProductionSchedule");
+                    b.ToTable("MasterProductionSchedule", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.Packing.FinalPacking", b =>
@@ -5175,7 +5175,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductionScheduleId");
 
-                    b.ToTable("FinalPackings");
+                    b.ToTable("FinalPackings", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.Packing.FinalPackingMaterial", b =>
@@ -5247,7 +5247,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialId");
 
-                    b.ToTable("FinalPackingMaterials");
+                    b.ToTable("FinalPackingMaterials", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionExtraPacking", b =>
@@ -5316,7 +5316,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("ProductionExtraPackings");
+                    b.ToTable("ProductionExtraPackings", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>
@@ -5368,7 +5368,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ProductionSchedules");
+                    b.ToTable("ProductionSchedules", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionScheduleItem", b =>
@@ -5421,7 +5421,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UomId");
 
-                    b.ToTable("ProductionScheduleItems");
+                    b.ToTable("ProductionScheduleItems", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", b =>
@@ -5464,7 +5464,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductionScheduleId");
 
-                    b.ToTable("ProductionScheduleProducts");
+                    b.ToTable("ProductionScheduleProducts", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.StockTransfers.StockTransfer", b =>
@@ -5535,7 +5535,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("StockTransfers");
+                    b.ToTable("StockTransfers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.StockTransfers.StockTransferSource", b =>
@@ -5607,7 +5607,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ToDepartmentId");
 
-                    b.ToTable("StockTransferSources");
+                    b.ToTable("StockTransferSources", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Equipments.Equipment", b =>
@@ -5672,7 +5672,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("Equipments");
+                    b.ToTable("Equipments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.FinishedProduct", b =>
@@ -5735,7 +5735,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("FinishedProducts");
+                    b.ToTable("FinishedProducts", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.PackageType", b =>
@@ -5778,7 +5778,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("PackageTypes");
+                    b.ToTable("PackageTypes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Product", b =>
@@ -5916,7 +5916,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.ProductBillOfMaterial", b =>
@@ -5973,7 +5973,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductBillOfMaterials");
+                    b.ToTable("ProductBillOfMaterials", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.ProductCategory", b =>
@@ -6016,7 +6016,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ProductCategories");
+                    b.ToTable("ProductCategories", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.ProductPackage", b =>
@@ -6083,7 +6083,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductPackages");
+                    b.ToTable("ProductPackages", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", b =>
@@ -6157,7 +6157,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductionScheduleId");
 
-                    b.ToTable("BatchManufacturingRecords");
+                    b.ToTable("BatchManufacturingRecords", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.BatchPackagingRecord", b =>
@@ -6225,7 +6225,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductionScheduleId");
 
-                    b.ToTable("BatchPackagingRecords");
+                    b.ToTable("BatchPackagingRecords", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivity", b =>
@@ -6283,7 +6283,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductionScheduleId");
 
-                    b.ToTable("ProductionActivities");
+                    b.ToTable("ProductionActivities", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivityLog", b =>
@@ -6335,7 +6335,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProductionActivityLogs");
+                    b.ToTable("ProductionActivityLogs", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivityStep", b =>
@@ -6397,7 +6397,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WorkflowId");
 
-                    b.ToTable("ProductionActivitySteps");
+                    b.ToTable("ProductionActivitySteps", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivityStepResource", b =>
@@ -6442,7 +6442,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ResourceId");
 
-                    b.ToTable("ProductionActivityStepResources");
+                    b.ToTable("ProductionActivityStepResources", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivityStepUser", b =>
@@ -6495,7 +6495,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProductionActivityStepUsers");
+                    b.ToTable("ProductionActivityStepUsers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivityStepWorkCenter", b =>
@@ -6540,7 +6540,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WorkCenterId");
 
-                    b.ToTable("ProductionActivityStepWorkCenters");
+                    b.ToTable("ProductionActivityStepWorkCenters", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductsSampling.ProductSampling", b =>
@@ -6592,7 +6592,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ProductSamplings");
+                    b.ToTable("ProductSamplings", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProformaInvoices.ProformaInvoice", b =>
@@ -6632,7 +6632,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductionOrderId");
 
-                    b.ToTable("ProformaInvoices");
+                    b.ToTable("ProformaInvoices", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProformaInvoices.ProformaInvoiceProduct", b =>
@@ -6680,7 +6680,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProformaInvoiceId");
 
-                    b.ToTable("ProformaInvoiceProducts");
+                    b.ToTable("ProformaInvoiceProducts", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BatchItem", b =>
@@ -6732,7 +6732,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("PurchaseOrderInvoiceId");
 
-                    b.ToTable("BatchItem");
+                    b.ToTable("BatchItem", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheet", b =>
@@ -6821,7 +6821,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("BillingSheets");
+                    b.ToTable("BillingSheets", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheetApproval", b =>
@@ -6882,7 +6882,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("BillingSheetApprovals");
+                    b.ToTable("BillingSheetApprovals", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrder", b =>
@@ -6985,7 +6985,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("TermsOfPaymentId");
 
-                    b.ToTable("PurchaseOrders");
+                    b.ToTable("PurchaseOrders", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderApproval", b =>
@@ -7046,7 +7046,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PurchaseOrderApprovals");
+                    b.ToTable("PurchaseOrderApprovals", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderCharge", b =>
@@ -7098,7 +7098,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("PurchaseOrderInvoiceId");
 
-                    b.ToTable("PurchaseOrderCharge");
+                    b.ToTable("PurchaseOrderCharge", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderInvoice", b =>
@@ -7142,7 +7142,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("PurchaseOrderId");
 
-                    b.ToTable("PurchaseOrderInvoices");
+                    b.ToTable("PurchaseOrderInvoices", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.PurchaseOrderItem", b =>
@@ -7203,7 +7203,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("PurchaseOrderItems");
+                    b.ToTable("PurchaseOrderItems", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.RevisedPurchaseOrder", b =>
@@ -7272,7 +7272,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("RevisedPurchaseOrder");
+                    b.ToTable("RevisedPurchaseOrder", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.RevisedPurchaseOrderItem", b =>
@@ -7333,7 +7333,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("RevisedPurchaseOrderItem");
+                    b.ToTable("RevisedPurchaseOrderItem", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
@@ -7413,7 +7413,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("RequestedById");
 
-                    b.ToTable("Requisitions");
+                    b.ToTable("Requisitions", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.RequisitionApproval", b =>
@@ -7474,7 +7474,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RequisitionApprovals");
+                    b.ToTable("RequisitionApprovals", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.RequisitionItem", b =>
@@ -7533,7 +7533,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("RequisitionItems");
+                    b.ToTable("RequisitionItems", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.SourceRequisition", b =>
@@ -7580,7 +7580,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("SourceRequisitions");
+                    b.ToTable("SourceRequisitions", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.SourceRequisitionItem", b =>
@@ -7639,7 +7639,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("SourceRequisitionItems");
+                    b.ToTable("SourceRequisitionItems", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.SupplierQuotation", b =>
@@ -7687,7 +7687,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("SupplierQuotations");
+                    b.ToTable("SupplierQuotations", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.SupplierQuotationItem", b =>
@@ -7749,7 +7749,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("SupplierQuotationItems");
+                    b.ToTable("SupplierQuotationItems", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Roles.Role", b =>
@@ -7825,7 +7825,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("RoleDepartments");
+                    b.ToTable("RoleDepartments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Routes.Route", b =>
@@ -7882,7 +7882,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WorkflowId");
 
-                    b.ToTable("Routes");
+                    b.ToTable("Routes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Routes.RouteResource", b =>
@@ -7927,7 +7927,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("RouteId");
 
-                    b.ToTable("RouteResources");
+                    b.ToTable("RouteResources", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Routes.RouteResponsibleRole", b =>
@@ -7980,7 +7980,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("RouteId");
 
-                    b.ToTable("RouteResponsibleRoles");
+                    b.ToTable("RouteResponsibleRoles", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Routes.RouteResponsibleUser", b =>
@@ -8033,7 +8033,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RouteResponsibleUsers");
+                    b.ToTable("RouteResponsibleUsers", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Routes.RouteWorkCenter", b =>
@@ -8078,7 +8078,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WorkCenterId");
 
-                    b.ToTable("RouteWorkCenters");
+                    b.ToTable("RouteWorkCenters", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ServiceProviders.ServiceProvider", b =>
@@ -8135,7 +8135,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ServiceProviders");
+                    b.ToTable("ServiceProviders", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Services.Service", b =>
@@ -8188,7 +8188,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Services");
+                    b.ToTable("Services", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ShiftAssignments.ShiftAssignment", b =>
@@ -8246,7 +8246,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ShiftTypeId");
 
-                    b.ToTable("ShiftAssignments");
+                    b.ToTable("ShiftAssignments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ShiftAssignments.ShiftCategory", b =>
@@ -8284,7 +8284,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ShiftCategories");
+                    b.ToTable("ShiftCategories", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ShiftSchedules.ShiftSchedule", b =>
@@ -8339,7 +8339,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ShiftSchedules");
+                    b.ToTable("ShiftSchedules", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ShiftTypes.ShiftType", b =>
@@ -8389,7 +8389,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ShiftTypes");
+                    b.ToTable("ShiftTypes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentDiscrepancy", b =>
@@ -8429,7 +8429,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ShipmentDocumentId");
 
-                    b.ToTable("ShipmentDiscrepancies");
+                    b.ToTable("ShipmentDiscrepancies", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentDiscrepancyItem", b =>
@@ -8494,7 +8494,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("ShipmentDiscrepancyItem");
+                    b.ToTable("ShipmentDiscrepancyItem", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentDiscrepancyType", b =>
@@ -8537,7 +8537,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("ShipmentDiscrepancyTypes");
+                    b.ToTable("ShipmentDiscrepancyTypes", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentDocument", b =>
@@ -8599,7 +8599,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ShipmentInvoiceId");
 
-                    b.ToTable("ShipmentDocuments");
+                    b.ToTable("ShipmentDocuments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentInvoice", b =>
@@ -8654,7 +8654,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("ShipmentInvoices");
+                    b.ToTable("ShipmentInvoices", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Shipments.ShipmentInvoiceItem", b =>
@@ -8735,7 +8735,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UoMId");
 
-                    b.ToTable("ShipmentInvoiceItems");
+                    b.ToTable("ShipmentInvoiceItems", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Sites.Site", b =>
@@ -8778,7 +8778,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Sites");
+                    b.ToTable("Sites", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.StaffRequisitions.StaffRequisition", b =>
@@ -8853,7 +8853,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("StaffRequisitions");
+                    b.ToTable("StaffRequisitions", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.StaffRequisitions.StaffRequisitionApproval", b =>
@@ -8914,7 +8914,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("StaffRequisitionApprovals");
+                    b.ToTable("StaffRequisitionApprovals", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.UniformityOfWeights.UniformityOfWeight", b =>
@@ -8991,7 +8991,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("UniformityOfWeights");
+                    b.ToTable("UniformityOfWeights", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.UniformityOfWeights.UniformityOfWeightResponse", b =>
@@ -9057,7 +9057,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UniformityOfWeightId");
 
-                    b.ToTable("UniformityOfWeightResponses");
+                    b.ToTable("UniformityOfWeightResponses", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Users.User", b =>
@@ -9219,7 +9219,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.ToTable("VendorQuotations");
+                    b.ToTable("VendorQuotations", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.VendorQuotations.VendorQuotationItem", b =>
@@ -9293,7 +9293,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("VendorQuotationId");
 
-                    b.ToTable("VendorQuotationItems");
+                    b.ToTable("VendorQuotationItems", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Vendors.Vendor", b =>
@@ -9350,7 +9350,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Vendors");
+                    b.ToTable("Vendors", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedFinishedProduct", b =>
@@ -9422,7 +9422,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WarehouseArrivalLocationId");
 
-                    b.ToTable("DistributedFinishedProducts");
+                    b.ToTable("DistributedFinishedProducts", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedRequisitionMaterial", b =>
@@ -9500,7 +9500,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WarehouseArrivalLocationId");
 
-                    b.ToTable("DistributedRequisitionMaterials");
+                    b.ToTable("DistributedRequisitionMaterials", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.MaterialItemDistribution", b =>
@@ -9524,7 +9524,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ShipmentInvoiceItemId");
 
-                    b.ToTable("MaterialItemDistributions");
+                    b.ToTable("MaterialItemDistributions", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.ShelfMaterialBatch", b =>
@@ -9581,7 +9581,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WarehouseLocationShelfId");
 
-                    b.ToTable("ShelfMaterialBatches");
+                    b.ToTable("ShelfMaterialBatches", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.Warehouse", b =>
@@ -9632,7 +9632,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Warehouses");
+                    b.ToTable("Warehouses", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.WarehouseArrivalLocation", b =>
@@ -9685,7 +9685,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("WarehouseId")
                         .IsUnique();
 
-                    b.ToTable("WarehouseArrivalLocations");
+                    b.ToTable("WarehouseArrivalLocations", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.WarehouseLocation", b =>
@@ -9737,7 +9737,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WarehouseId");
 
-                    b.ToTable("WarehouseLocations");
+                    b.ToTable("WarehouseLocations", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.WarehouseLocationRack", b =>
@@ -9785,7 +9785,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WarehouseLocationId");
 
-                    b.ToTable("WarehouseLocationRacks");
+                    b.ToTable("WarehouseLocationRacks", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.WarehouseLocationShelf", b =>
@@ -9837,7 +9837,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WarehouseLocationRackId");
 
-                    b.ToTable("WarehouseLocationShelves");
+                    b.ToTable("WarehouseLocationShelves", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.WorkOrders.ProductionStep", b =>
@@ -9901,7 +9901,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("WorkOrderId");
 
-                    b.ToTable("ProductionSteps");
+                    b.ToTable("ProductionSteps", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.WorkOrders.WorkOrder", b =>
@@ -9966,7 +9966,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductionScheduleId");
 
-                    b.ToTable("WorkOrders");
+                    b.ToTable("WorkOrders", (string)null);
                 });
 
             modelBuilder.Entity("DepartmentDesignation", b =>
@@ -9981,7 +9981,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("DesignationsId");
 
-                    b.ToTable("DepartmentDesignation");
+                    b.ToTable("DepartmentDesignation", (string)null);
                 });
 
             modelBuilder.Entity("DesignationLeaveType", b =>
@@ -9996,7 +9996,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LeaveTypesId");
 
-                    b.ToTable("DesignationLeaveType");
+                    b.ToTable("DesignationLeaveType", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -10114,7 +10114,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ServicesId");
 
-                    b.ToTable("ServiceServiceProvider");
+                    b.ToTable("ServiceServiceProvider", (string)null);
                 });
 
             modelBuilder.Entity("ShiftScheduleShiftType", b =>
@@ -10129,7 +10129,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ShiftTypesId");
 
-                    b.ToTable("ShiftScheduleShiftType");
+                    b.ToTable("ShiftScheduleShiftType", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Alerts.Alert", b =>
@@ -10981,7 +10981,7 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.HasIndex("EmployeeId");
 
-                            b1.ToTable("Children");
+                            b1.ToTable("Children", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("EmployeeId");
@@ -11018,7 +11018,36 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.HasIndex("EmployeeId");
 
-                            b1.ToTable("Education");
+                            b1.ToTable("Education", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("EmployeeId");
+                        });
+
+                    b.OwnsOne("DOMAIN.Entities.EmergencyContacts.EmergencyContact", "EmergencyContact", b1 =>
+                        {
+                            b1.Property<Guid>("EmployeeId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("ContactNumber")
+                                .HasMaxLength(15)
+                                .HasColumnType("character varying(15)");
+
+                            b1.Property<string>("FullName")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
+
+                            b1.Property<string>("Relationship")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)");
+
+                            b1.Property<string>("ResidentialAddress")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)");
+
+                            b1.HasKey("EmployeeId");
+
+                            b1.ToTable("Employees", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("EmployeeId");
@@ -11051,36 +11080,7 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.HasIndex("EmployeeId");
 
-                            b1.ToTable("EmploymentHistories");
-
-                            b1.WithOwner()
-                                .HasForeignKey("EmployeeId");
-                        });
-
-                    b.OwnsOne("DOMAIN.Entities.EmergencyContacts.EmergencyContact", "EmergencyContact", b1 =>
-                        {
-                            b1.Property<Guid>("EmployeeId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("ContactNumber")
-                                .HasMaxLength(15)
-                                .HasColumnType("character varying(15)");
-
-                            b1.Property<string>("FullName")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
-
-                            b1.Property<string>("Relationship")
-                                .HasMaxLength(20)
-                                .HasColumnType("character varying(20)");
-
-                            b1.Property<string>("ResidentialAddress")
-                                .HasMaxLength(50)
-                                .HasColumnType("character varying(50)");
-
-                            b1.HasKey("EmployeeId");
-
-                            b1.ToTable("Employees");
+                            b1.ToTable("EmploymentHistories", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("EmployeeId");
@@ -11108,7 +11108,7 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.HasKey("EmployeeId");
 
-                            b1.ToTable("Employees");
+                            b1.ToTable("Employees", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("EmployeeId");
@@ -11136,7 +11136,7 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.HasKey("EmployeeId");
 
-                            b1.ToTable("Employees");
+                            b1.ToTable("Employees", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("EmployeeId");
@@ -11165,35 +11165,7 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.HasKey("EmployeeId");
 
-                            b1.ToTable("Employees");
-
-                            b1.WithOwner()
-                                .HasForeignKey("EmployeeId");
-                        });
-
-                    b.OwnsOne("DOMAIN.Entities.Persons.Person", "Spouse", b1 =>
-                        {
-                            b1.Property<Guid>("EmployeeId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("FullName")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
-
-                            b1.Property<int>("LifeStatus")
-                                .HasColumnType("integer");
-
-                            b1.Property<string>("Occupation")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
-
-                            b1.Property<string>("PhoneNumber")
-                                .HasMaxLength(15)
-                                .HasColumnType("character varying(15)");
-
-                            b1.HasKey("EmployeeId");
-
-                            b1.ToTable("Employees");
+                            b1.ToTable("Employees", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("EmployeeId");
@@ -11222,7 +11194,35 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.HasKey("EmployeeId", "Id");
 
-                            b1.ToTable("Sibling");
+                            b1.ToTable("Sibling", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("EmployeeId");
+                        });
+
+                    b.OwnsOne("DOMAIN.Entities.Persons.Person", "Spouse", b1 =>
+                        {
+                            b1.Property<Guid>("EmployeeId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("FullName")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
+
+                            b1.Property<int>("LifeStatus")
+                                .HasColumnType("integer");
+
+                            b1.Property<string>("Occupation")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
+
+                            b1.Property<string>("PhoneNumber")
+                                .HasMaxLength(15)
+                                .HasColumnType("character varying(15)");
+
+                            b1.HasKey("EmployeeId");
+
+                            b1.ToTable("Employees", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("EmployeeId");
@@ -13331,7 +13331,7 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.HasIndex("ProductId");
 
-                            b1.ToTable("ProductionOrderProducts");
+                            b1.ToTable("ProductionOrderProducts", (string)null);
 
                             b1.HasOne("DOMAIN.Entities.Products.Product", "Product")
                                 .WithMany()

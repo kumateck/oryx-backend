@@ -4,12 +4,11 @@ using AutoMapper;
 using DOMAIN.Entities.ProductSpecifications;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using SHARED;
 
 namespace APP.Repository;
 
-public class ProductSpecificationRepository(ApplicationDbContext context, IMapper mapper, ILogger<ProductSpecificationRepository> logger) : IProductSpecificationRepository
+public class ProductSpecificationRepository(ApplicationDbContext context, IMapper mapper) : IProductSpecificationRepository
 {
     public async Task<Result<Guid>> CreateProductSpecification(CreateProductSpecificationRequest request)
     {

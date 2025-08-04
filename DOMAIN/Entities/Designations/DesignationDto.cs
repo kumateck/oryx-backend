@@ -38,5 +38,5 @@ public class EmployeeWithManagerDto
 public class ManagerDto
 {
     public Guid? ReportingManagerId { get; set; }
-    public string? ReportingManagerName { get; set; }
+    public string ReportingManagerName { get; set; }
 }
