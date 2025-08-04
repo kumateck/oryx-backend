@@ -90,4 +90,11 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         
         return Result.Success();
     }
+
+    public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequestByActivityStep(Guid activityStepId)
+    {
+        var analyticalTest = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.ProductionActivityStepId == activityStepId);
+        if (analyticalTest is null) return Error.NotFound("ATR.NotFound", "Analytical test request not found");
+        return mapper.Map<AnalyticalTestRequestDto>(analyticalTest);
+    }
 }

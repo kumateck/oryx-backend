@@ -75,4 +75,16 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
         var result = await repository.DeleteAnalyticalTestRequest(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves the details of an analytical test request by its activity step ID
+    /// </summary>
+    [HttpGet("activity-step/{activityStepId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AnalyticalTestRequestDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetAnalyticalTestRequestByActivityStep([FromRoute] Guid activityStepId)
+    {
+        var result = await repository.GetAnalyticalTestRequestByActivityStep(activityStepId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
