@@ -19,7 +19,7 @@ public interface IInventoryProcurementRepository
     Task<Result> CreateSourceRequisition(CreateSourceInventoryRequisition request, Guid userId);
     Task<Result> CreateMarketRequisition(CreateMarketRequisition request, Guid userId);
     Task<Result<Paginateable<IEnumerable<MarketRequisitionDto>>>> GetMarketRequisitions(int page, int pageSize);
-    Task<Result<List<VendorPriceComparison>>> GetPriceComparisonOfMaterial(InventoryRequisitionSource source);
+    Task<Result<List<VendorPriceComparison>>> GetPriceComparisonOfItem(InventoryRequisitionSource source);
 
     // Memo Creation Logic
     Task<Result> ProcessOpenMarketMemo(List<ProcessMemo> memos, Guid userId);
