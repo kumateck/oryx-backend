@@ -15,6 +15,13 @@ public class VendorDto : BaseDto
     public CountryDto Country { get; set; }
     public Guid CurrencyId { get; set; }
     public CurrencyDto Currency { get; set; }
-    public List<ItemDto> Item { get; set; }
+    public List<VendorItemDto> Item { get; set; }
 
+}
+
+public class VendorItemDto : BaseDto
+{
+    public string Name { get; set; }
+    public string Code { get; set; }
+    public string Description { get; set; }
 }
