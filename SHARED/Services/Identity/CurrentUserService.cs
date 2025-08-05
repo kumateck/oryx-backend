@@ -21,6 +21,7 @@ public class CurrentUserService : ICurrentUserService
             var jwtSecret = config["JwtSettings:Key"];
             var principal = ValidateToken(token, jwtSecret);
             var tokenEnv = principal.FindFirst("environment")?.Value;
+            var departmentType = principal.FindFirst("departmentType")?.Value;
 
             if (environment != tokenEnv)
             {
@@ -34,6 +35,8 @@ public class CurrentUserService : ICurrentUserService
             var departmentIdString = principal.FindFirst("department")?.Value;
             if (Guid.TryParse(departmentIdString, out var departmentId))
                 DepartmentId = departmentId;
+            
+            DepartmentType = departmentType;
         }
     }
 
@@ -63,4 +66,5 @@ public class CurrentUserService : ICurrentUserService
     public Guid? UserId { get; }
 
     public Guid? DepartmentId { get; }
+    public string DepartmentType { get; }
 }

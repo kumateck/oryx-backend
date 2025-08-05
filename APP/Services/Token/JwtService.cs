@@ -69,6 +69,8 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
         
         var roles = await userManager.GetRolesAsync(user);
         
+        var mainRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == roles.FirstOrDefault());
+        
         var claims = new List<Claim> 
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()), 
@@ -76,7 +78,8 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
             new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"), 
             new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
             new("department", user.DepartmentId?.ToString() ?? ""),
-            new("environment",  Environment.GetEnvironmentVariable("Environment") ?? "dev")
+            new("environment",  Environment.GetEnvironmentVariable("Environment") ?? "dev"),
+            new("departmentType", mainRole.Type.ToString())
         }; 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
         
