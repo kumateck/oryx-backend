@@ -25,9 +25,12 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         var query = context.AnalyticalTestRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(s => s.Product)
             .Include(s => s.ProductionSchedule)
             .Include(s => s.ProductionActivityStep)
+            .Include(s => s.BatchManufacturingRecord)
+            .Include(s => s.CreatedBy)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -49,9 +52,12 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         var test = await context.AnalyticalTestRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(s => s.Product)
             .Include(s => s.ProductionSchedule)
             .Include(s => s.ProductionActivityStep)
+            .Include(s => s.BatchManufacturingRecord)
+            .Include(s => s.CreatedBy)
             .FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
     }
@@ -94,6 +100,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequestByActivityStep(Guid activityStepId)
     {
         var analyticalTest = await context.AnalyticalTestRequests
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(atr => atr.ProductionActivityStepId == activityStepId);
         if (analyticalTest is null) return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         return mapper.Map<AnalyticalTestRequestDto>(analyticalTest);
