@@ -6,7 +6,7 @@ namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class AnalyticalTestRequestDto : BaseDto
 {
-    public CollectionItemDto BatchManufacturingRecord { get; set; }
+    public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public CollectionItemDto Product { get; set; }
     public CollectionItemDto ProductionSchedule { get; set; }
     public ProductionActivityStepDto ProductionActivityStep { get; set; }
