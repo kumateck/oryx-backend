@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using Microsoft.AspNetCore.Identity;
+using SHARED;
 
 namespace DOMAIN.Entities.Roles;
 

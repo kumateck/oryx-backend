@@ -74,6 +74,7 @@ using DOMAIN.Entities.WorkOrders;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using SHARED;
 using SHARED.Services.Identity;
 using Configuration = DOMAIN.Entities.Configurations.Configuration;
 using ServiceProvider = DOMAIN.Entities.ServiceProviders.ServiceProvider;
@@ -652,6 +653,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
+    public bool ShouldNotFilterProducts => currentUserService.DepartmentType == DepartmentType.NonProduction.ToString();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply configurations from the assembly
@@ -847,7 +850,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Product Filters
 
         modelBuilder.Entity<Product>().HasQueryFilter(entity =>
-            !entity.DeletedAt.HasValue && entity.DepartmentId == currentUserService.DepartmentId);
+            ShouldNotFilterProducts || 
+            (!entity.DeletedAt.HasValue && entity.DepartmentId == currentUserService.DepartmentId)
+        );
         modelBuilder.Entity<ProductPackage>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
@@ -1005,7 +1010,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Warehouse Filters
 
         modelBuilder.Entity<Warehouse>()
-            .HasQueryFilter(a => a.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue);
+            .HasQueryFilter(a =>
+                ShouldNotFilterProducts ||
+                (a.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
 
         modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a =>
             !a.DeletedAt.HasValue && a.Warehouse != null && !a.Warehouse.DeletedAt.HasValue);
@@ -1025,7 +1032,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region DistributedRequisitionMaterial Filters
 
         modelBuilder.Entity<DistributedRequisitionMaterial>().HasQueryFilter(a =>
-            a.RequisitionItem.Requisition.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue);
+            ShouldNotFilterProducts ||
+            (a.RequisitionItem.Requisition.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
+        
         modelBuilder.Entity<Checklist>().HasQueryFilter(a => a.DistributedRequisitionMaterial != null);
 
         #endregion

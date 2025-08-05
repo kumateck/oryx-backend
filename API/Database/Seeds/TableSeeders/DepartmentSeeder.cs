@@ -3,6 +3,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
+using SHARED;
 
 namespace API.Database.Seeds.TableSeeders;
 

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Departments;
+using SHARED;
 
 namespace DOMAIN.Entities.Roles;
 

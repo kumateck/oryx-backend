@@ -5,6 +5,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SHARED;
 
 namespace API.Controllers;
 
