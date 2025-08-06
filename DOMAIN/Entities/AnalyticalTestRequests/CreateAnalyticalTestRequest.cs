@@ -15,4 +15,6 @@ public class CreateAnalyticalTestRequest
     public string Filled { get; set;}
     public Guid StateId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
+    public int NumberOfContainers { get; set; }
+    public DateTime? SampledAt { get; set; }
 }

@@ -56,11 +56,12 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(s => s.ProductionActivityStep)
             .Include(s => s.BatchManufacturingRecord)
             .Include(s => s.CreatedBy)
+            .Include(s => s.SampledBy)
             .FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
     }
 
-    public async Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request)
+    public async Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request, Guid userId)
     {
         var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
 
@@ -70,7 +71,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         }
         
         mapper.Map(request, test);
-        
+        test.SampledById = userId;
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
         
