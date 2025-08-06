@@ -20,9 +20,11 @@ public class AnalyticalTestRequest : BaseEntity
     public DateTime ManufacturingDate { get; set; }
     public DateTime ExpiryDate { get; set; }
     public string ReleasedAt { get; set; } = "Quality Control";
+    public Guid? ReleasedById { get; set; }
+    public User ReleasedBy { get; set; }
     public string Filled { get; set;}
     public string SampledQuantity { get; set; }
-    public DateTime ReleaseDate { get; set; }
+    public DateTime? ReleaseDate { get; set; }
     public TestStage Stage { get; set; }
     public Guid StateId { get; set; }
     public ProductState State { get; set; }

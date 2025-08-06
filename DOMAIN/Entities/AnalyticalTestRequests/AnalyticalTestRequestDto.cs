@@ -30,5 +30,6 @@ public class AnalyticalTestRequestDto : BaseDto
     public AnalyticalTestStatus Status { get; set; }
     public int NumberOfContainers { get; set; }
     public UserDto SampledBy { get; set; }
+    public UserDto ReleasedBy { get; set; }
     public DateTime? SampledAt { get; set; }
 }
