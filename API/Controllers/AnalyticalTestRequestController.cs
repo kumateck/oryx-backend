@@ -57,6 +57,19 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateAnalyticalTestRequest([FromRoute] Guid id, [FromBody] CreateAnalyticalTestRequest request)
     {
+        var result = await repository.UpdateAnalyticalTestRequest(id, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Updates the status of an analytical test request by its ID.
+    /// </summary>
+    [HttpPut("status/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(AnalyticalTestRequestDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateAnalyticalTestRequest([FromRoute] Guid id, [FromBody] UpdateAnalyticalTestRequest request)
+    {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
