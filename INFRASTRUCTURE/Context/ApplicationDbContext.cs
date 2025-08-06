@@ -555,6 +555,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     #region Vendors
     public DbSet<Vendor> Vendors { get; set; }
+    public DbSet<VendorItem> VendorItems { get; set; }
 
     #endregion
 
