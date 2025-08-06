@@ -585,7 +585,10 @@ public class InventoryProcurementRepository(
     
     public async Task<Result> MarkMemoItemAsPaid(Guid memoItemId, DateTime? purchasedAt = null)
     {
-        var memoItem = await context.MemoItems.FirstOrDefaultAsync(m => m.Id == memoItemId);
+        var memoItem = await context.MemoItems
+            .AsSplitQuery()
+            .Include(memoItem => memoItem.Memo)
+            .FirstOrDefaultAsync(m => m.Id == memoItemId);
 
         if (memoItem == null)
             return Error.NotFound("Memo", "Memo item not found.");
@@ -594,6 +597,17 @@ public class InventoryProcurementRepository(
             return Error.Validation("Memo", "Memo item is already marked as paid.");
 
         memoItem.PurchasedAt = purchasedAt ?? DateTime.UtcNow;
+        context.MemoItems.Update(memoItem);
+        
+        var allItemsPaid = await context.MemoItems
+            .Where(mi => mi.MemoId == memoItem.MemoId)
+            .AllAsync(mi => mi.PurchasedAt.HasValue || mi.Id == memoItemId);
+
+        if (allItemsPaid && !memoItem.Memo.Paid)
+        {
+            memoItem.Memo.Paid = true;
+        }
+        
         context.MemoItems.Update(memoItem);
         await context.SaveChangesAsync();
         return Result.Success();
