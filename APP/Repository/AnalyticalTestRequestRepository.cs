@@ -61,7 +61,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
     }
 
-    public async Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request, Guid userId)
+    public async Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request)
     {
         var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
 
@@ -71,10 +71,29 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         }
         
         mapper.Map(request, test);
-        test.SampledById = userId;
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
         
+        return Result.Success();
+    }
+    
+    public async Task<Result> UpdateAnalyticalTestRequest(Guid id, UpdateAnalyticalTestRequest request, Guid userId)
+    {
+        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
+
+        if (test is null)
+        {
+            return Error.NotFound("ATR.NotFound", "Analytical test request not found");
+        }
+        
+        test.ReleasedAt = request.ReleasedAt;
+        test.SampledAt = request.SampledAt;
+        test.NumberOfContainers = request.NumberOfContainers;
+        test.ReleaseDate = request.ReleaseDate;
+        test.Status = request.Status;
+        test.SampledById = userId;
+        context.AnalyticalTestRequests.Update(test);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
