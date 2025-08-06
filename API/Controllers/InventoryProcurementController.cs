@@ -6,7 +6,6 @@ using DOMAIN.Entities.Items.Requisitions;
 using APP.Utils;
 using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.VendorQuotations;
-using SHARED;
 
 namespace API.Controllers;
 
@@ -90,9 +89,9 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>))]
-    public async Task<IResult> GetInventoryPurchaseRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchQuery = null)
+    public async Task<IResult> GetInventoryPurchaseRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetInventoryPurchaseRequisitions(page, pageSize, searchQuery ?? string.Empty);
+        var result = await repository.GetInventoryPurchaseRequisitions(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -181,7 +180,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> ProcessOpenMarketMemo([FromBody] List<ProcessMemo> memos)
+    public async Task<IResult> ProcessOpenMarketMemo([FromBody] List<CreateMemoItem> memos)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -199,12 +198,12 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> ProcessTrustedVendorQuotationAndCreateMemo([FromBody] List<ProcessMemo> memos)
+    public async Task<IResult> ProcessTrustedVendorQuotationAndCreateMemo([FromBody] List<CreateMemoItem> memos)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.ProcessTrustedVendorQuotationAndCreateMemo(memos, Guid.Parse(userId));
+        var result = await repository.ProcessTrustedVendorMemo(memos, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -326,6 +325,42 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
+    #endregion
+
+    #region Memos
+
+    /// <summary>
+    /// Retrieves a paginated list of memos with their details.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Optional search query to filter by memo code.</param>
+    /// <returns>Returns a paginated list of memos.</returns>
+    [HttpGet("memo")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MemoDto>>))]
+    public async Task<IResult> GetMemos([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetMemos(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a specific memo by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the memo.</param>
+    /// <returns>Returns the memo details if found.</returns>
+    [HttpGet("memo/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MemoDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMemo(Guid id)
+    {
+        var result = await repository.GetMemo(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+
     #endregion
 
 
