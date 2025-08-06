@@ -588,6 +588,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<Memo> Memos { get; set; }
     
+    public DbSet<MemoItem> MemoItems { get; set; }
+
+    
     #endregion
     
     

@@ -37,6 +37,7 @@ public interface IInventoryProcurementRepository
     Task<Result> ConfirmMarketRequisitionVendor(Guid marketRequisitionVendorId);
    Task<Result<Paginateable<IEnumerable<MemoDto>>>> GetMemos(int page, int pageSize,
         string searchQuery = null);
+   Task<Result> MarkMemoItemAsPaid(Guid memoItemId, DateTime? purchasedAt = null);
   Task<Result<MemoDto>> GetMemo(Guid id);
     
     // Helper methods
