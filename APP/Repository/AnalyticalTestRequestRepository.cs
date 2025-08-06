@@ -91,6 +91,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         test.NumberOfContainers = request.NumberOfContainers;
         test.Status = request.Status;
         test.SampledById = userId;
+        test.SampledQuantity = request.SampledQuantity;
 
         if (request.ReleaseDate.HasValue)
         {

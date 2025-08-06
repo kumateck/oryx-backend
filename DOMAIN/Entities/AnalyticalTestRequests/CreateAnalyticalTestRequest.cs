@@ -23,6 +23,7 @@ public class UpdateAnalyticalTestRequest
 {
     public AnalyticalTestStatus Status { get; set; }
     public int NumberOfContainers { get; set; }
+    public string SampledQuantity { get; set; }
     public DateTime? ReleaseDate { get; set; }
     public DateTime? SampledAt { get; set; }
 }
