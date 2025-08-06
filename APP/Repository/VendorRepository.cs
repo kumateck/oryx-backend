@@ -28,6 +28,11 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
 
         var vendor = mapper.Map<Vendor>(request);
+        vendor.Items = request.ItemIds.Select(item => new VendorItem
+        {
+            VendorId = vendor.Id,
+            ItemId = item,
+        }).ToList();
         await context.AddAsync(vendor);
         await context.SaveChangesAsync();
         return vendor.Id;
@@ -35,7 +40,11 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
 
     public async Task<Result<Paginateable<IEnumerable<VendorDto>>>> GetVendors(int page, int pageSize, string searchQuery)
     {
-        var query = context.Vendors.AsQueryable();
+        var query = context.Vendors
+            .AsSplitQuery()
+            .Include(v => v.Items)
+            .ThenInclude(v => v.Item)
+            .AsQueryable();
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
             mapper.Map<VendorDto>);
@@ -43,7 +52,12 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
 
     public async Task<Result<VendorDto>> GetVendor(Guid id)
     {
-        var supplier = await context.Vendors.FirstOrDefaultAsync(nps => nps.Id == id);
+        var supplier = await context.Vendors
+            .AsSplitQuery()
+            .Include(v => v.Items)
+            .ThenInclude(v => v.Item)
+            .FirstOrDefaultAsync(nps => nps.Id == id);
+        
         return supplier is null
             ? Error.NotFound("Vendor.NotFound", "Vendor not found")
             : mapper.Map<VendorDto>(supplier);
