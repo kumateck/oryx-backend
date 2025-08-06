@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices.JavaScript;
+using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Email;
 using APP.Services.Pdf;
@@ -255,7 +257,7 @@ public class InventoryProcurementRepository(
 
     // --- Memo Creation Logic ---
 
-    public async Task<Result> ProcessOpenMarketMemo(List<ProcessMemo> memos, Guid userId)
+    public async Task<Result> ProcessOpenMarketMemo(List<CreateMemoItem> memos, Guid userId)
     {
         foreach (var memoRequest in memos)
         {
@@ -265,7 +267,7 @@ public class InventoryProcurementRepository(
                 Items = []
             };
 
-            foreach (var itemRequest in memoRequest.Items)
+            foreach (var itemRequest in memos)
             {
 
                 if (itemRequest.MarketRequisitionVendorId.HasValue)
@@ -326,17 +328,17 @@ public class InventoryProcurementRepository(
         return Result.Success();
     }
 
-    public async Task<Result> ProcessTrustedVendorQuotationAndCreateMemo(List<ProcessMemo> memos, Guid userId)
+    public async Task<Result> ProcessTrustedVendorMemo(List<CreateMemoItem> memos, Guid userId)
     {
         foreach (var memoRequest in memos)
         {
             var memo = new Memo
             {
                 Code = await GenerateMemoCode(),
-                Items = new List<MemoItem>()
+                Items = []
             };
 
-            foreach (var itemRequest in memoRequest.Items)
+            foreach (var itemRequest in memos)
             {
                 var vendorQuotationItem = await context.VendorQuotationItems
                     .FirstOrDefaultAsync(sqi => sqi.Id == itemRequest.VendorQuotationItemId);
@@ -528,6 +530,59 @@ public class InventoryProcurementRepository(
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result<MemoDto>> GetMemo(Guid id)
+    {
+        var memo = await context.Memos
+            .AsSplitQuery()
+            .Include(m => m.Items)
+            .ThenInclude(mi => mi.Item)
+            .Include(m => m.Items)
+            .ThenInclude(mi => mi.UoM)
+            .Include(m => m.Items)
+            .ThenInclude(mi => mi.VendorQuotationItem)
+            .ThenInclude(vqi => vqi.VendorQuotation)
+            .Include(m => m.Items)
+            .ThenInclude(mi => mi.MarketRequisitionVendor)
+            .ThenInclude(mrv => mrv.MarketRequisition)
+            .FirstOrDefaultAsync(m => m.Id == id);
+
+        if (memo == null)
+            return Error.NotFound("Memo","Memo not found");
+
+        return mapper.Map<MemoDto>(memo);
+    }
+
+    
+    public async Task<Result<Paginateable<IEnumerable<MemoDto>>>> GetMemos(int page, int pageSize, string searchQuery = null)
+    {
+        var query = context.Memos
+            .AsSplitQuery()
+            .Include(m => m.Items)
+            .ThenInclude(mi => mi.Item)
+            .Include(m => m.Items)
+            .ThenInclude(mi => mi.UoM)
+            .Include(m => m.Items)
+            .ThenInclude(mi => mi.VendorQuotationItem)
+            .ThenInclude(vqi => vqi.VendorQuotation)
+            .Include(m => m.Items)
+            .ThenInclude(mi => mi.MarketRequisitionVendor)
+            .ThenInclude(mrv => mrv.MarketRequisition)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, m => m.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query.OrderByDescending(m => m.CreatedAt),
+            page,
+            pageSize,
+            mapper.Map<MemoDto>
+        );
+    }
+
 
     // --- Helper methods ---
     public async Task<string> GenerateMemoCode()
