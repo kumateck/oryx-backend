@@ -423,7 +423,7 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             }
         }
 
-        if (!assignments.Any())
+        if (assignments.Count == 0)
             return Error.Validation("No.Assignments", "No valid assignments could be made due to conflicts or missing data.");
 
         await context.ShiftAssignments.AddRangeAsync(assignments);
