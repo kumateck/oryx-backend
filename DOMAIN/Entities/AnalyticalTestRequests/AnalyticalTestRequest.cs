@@ -3,6 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.AnalyticalTestRequests;
 
@@ -25,6 +26,10 @@ public class AnalyticalTestRequest : BaseEntity
     public TestStage Stage { get; set; }
     public Guid StateId { get; set; }
     public ProductState State { get; set; }
+    public int NumberOfContainers { get; set; }
+    public Guid? SampledById { get; set; }
+    public User SampledBy { get; set; }
+    public DateTime? SampledAt { get; set; }
     public AnalyticalTestStatus Status { get; set; }
 }
 

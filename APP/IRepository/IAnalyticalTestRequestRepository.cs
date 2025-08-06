@@ -12,7 +12,7 @@ public interface IAnalyticalTestRequestRepository
     
     Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequest(Guid id);
     
-    Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request);
+    Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request, Guid userId);
     
     Task<Result> DeleteAnalyticalTestRequest(Guid id, Guid userId);
     Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequestByActivityStep(Guid activityStepId);

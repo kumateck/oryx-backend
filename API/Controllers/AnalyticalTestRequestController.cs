@@ -57,7 +57,10 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateAnalyticalTestRequest([FromRoute] Guid id, [FromBody] CreateAnalyticalTestRequest request)
     {
-        var result = await repository.UpdateAnalyticalTestRequest(id, request);
+        var userId = (string) HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.UpdateAnalyticalTestRequest(id, request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
