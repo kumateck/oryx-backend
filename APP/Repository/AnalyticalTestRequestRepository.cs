@@ -28,12 +28,14 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(s => s.Product)
             .Include(s => s.ProductionSchedule)
             .Include(s => s.ProductionActivityStep)
+            .Include(s => s.BatchManufacturingRecord)
+            .Include(s => s.CreatedBy)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery,
-                q => q.ReleasedAt,
+                q => q.Filled,
                 q => q.SampledQuantity);
         }
 
@@ -52,6 +54,10 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(s => s.Product)
             .Include(s => s.ProductionSchedule)
             .Include(s => s.ProductionActivityStep)
+            .Include(s => s.BatchManufacturingRecord)
+            .Include(s => s.CreatedBy)
+            .Include(s => s.SampledBy)
+            .Include(s => s.ReleasedBy)
             .FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
     }
@@ -66,10 +72,34 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         }
         
         mapper.Map(request, test);
-        
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
         
+        return Result.Success();
+    }
+    
+    public async Task<Result> UpdateAnalyticalTestRequest(Guid id, UpdateAnalyticalTestRequest request, Guid userId)
+    {
+        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
+
+        if (test is null)
+        {
+            return Error.NotFound("ATR.NotFound", "Analytical test request not found");
+        }
+        
+        test.SampledAt = request.SampledAt;
+        test.NumberOfContainers = request.NumberOfContainers;
+        test.Status = request.Status;
+        test.SampledById = userId;
+        test.SampledQuantity = request.SampledQuantity;
+
+        if (request.ReleaseDate.HasValue)
+        {
+            test.ReleaseDate = request.ReleaseDate;
+            test.ReleasedById = userId;
+        }
+        context.AnalyticalTestRequests.Update(test);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
@@ -89,5 +119,13 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         await context.SaveChangesAsync();
         
         return Result.Success();
+    }
+
+    public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequestByActivityStep(Guid activityStepId)
+    {
+        var analyticalTest = await context.AnalyticalTestRequests
+            .FirstOrDefaultAsync(atr => atr.ProductionActivityStepId == activityStepId);
+        if (analyticalTest is null) return Error.NotFound("ATR.NotFound", "Analytical test request not found");
+        return mapper.Map<AnalyticalTestRequestDto>(analyticalTest);
     }
 }

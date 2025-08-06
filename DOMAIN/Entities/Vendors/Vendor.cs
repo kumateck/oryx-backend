@@ -15,13 +15,15 @@ public class Vendor : BaseEntity
     public Country Country { get; set; }
     public Guid CurrencyId { get; set; }
     public Currency Currency { get; set; }
-    public List<VendorItem> Items { get; set; }
+    public List<VendorItem> Items { get; set; } = [];
 }
 
 public class VendorItem : BaseEntity
 {
     public Guid VendorId { get; set; }
     public Vendor Vendor { get; set; }
+    
     public Guid ItemId { get; set; }
+
     public Item Item { get; set; }
 }

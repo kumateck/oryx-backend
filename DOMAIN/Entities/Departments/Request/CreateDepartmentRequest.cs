@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Warehouses.Request;
+using SHARED;
 
 namespace DOMAIN.Entities.Departments.Request;
 

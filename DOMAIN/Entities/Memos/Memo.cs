@@ -18,12 +18,14 @@ public class CreateMemoItem
 public class Memo : BaseEntity
 {
     public string Code { get; set; }
+    public bool Paid { get; set; }
     public List<MemoItem> Items { get; set; } = [];
 }
 
 public class MemoDto : BaseDto
 {
     public string Code { get; set; }
+    public bool Paid { get; set; }
     public List<MemoItemDto> Items { get; set; } = [];
     public decimal TotalValue => Items.Sum(i => i.ItemValue);
 }

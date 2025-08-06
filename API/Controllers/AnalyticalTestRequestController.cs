@@ -60,6 +60,22 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
         var result = await repository.UpdateAnalyticalTestRequest(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates the status of an analytical test request by its ID.
+    /// </summary>
+    [HttpPut("status/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(AnalyticalTestRequestDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateAnalyticalTestRequest([FromRoute] Guid id, [FromBody] UpdateAnalyticalTestRequest request)
+    {
+        var userId = (string) HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.UpdateAnalyticalTestRequest(id, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Deletes an analytical test request.
@@ -74,5 +90,17 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
         
         var result = await repository.DeleteAnalyticalTestRequest(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the details of an analytical test request by its activity step ID
+    /// </summary>
+    [HttpGet("activity-step/{activityStepId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AnalyticalTestRequestDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetAnalyticalTestRequestByActivityStep([FromRoute] Guid activityStepId)
+    {
+        var result = await repository.GetAnalyticalTestRequestByActivityStep(activityStepId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

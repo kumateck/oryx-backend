@@ -22,8 +22,8 @@ public interface IInventoryProcurementRepository
     Task<Result<List<VendorPriceComparison>>> GetPriceComparisonOfItem(InventoryRequisitionSource source);
 
     // Memo Creation Logic
-    Task<Result> ProcessOpenMarketMemo(List<ProcessMemo> memos, Guid userId);
-    Task<Result> ProcessTrustedVendorQuotationAndCreateMemo(List<ProcessMemo> memos, Guid userId);
+    Task<Result> ProcessOpenMarketMemo(List<CreateMemoItem> memos, Guid userId);
+    Task<Result> ProcessTrustedVendorMemo(List<CreateMemoItem> memos, Guid userId);
 
     // Trusted Vendor Specific
     Task<Result> SendQuotationToVendor(Guid vendorId);
@@ -35,6 +35,10 @@ public interface IInventoryProcurementRepository
     Task<Result<Paginateable<IEnumerable<MarketRequisitionVendorDto>>>> GetMarketRequisitionVendors(int page, int pageSize, bool complete);
     Task<Result> CreateMarketRequisitionVendor(CreateMarketRequisitionVendor request);
     Task<Result> ConfirmMarketRequisitionVendor(Guid marketRequisitionVendorId);
+   Task<Result<Paginateable<IEnumerable<MemoDto>>>> GetMemos(int page, int pageSize,
+        string searchQuery = null);
+   Task<Result> MarkMemoItemAsPaid(Guid memoItemId, DateTime? purchasedAt = null);
+  Task<Result<MemoDto>> GetMemo(Guid id);
     
     // Helper methods
     Task<string> GenerateMemoCode();

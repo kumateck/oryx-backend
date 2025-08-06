@@ -3,6 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.AnalyticalTestRequests;
 
@@ -19,12 +20,18 @@ public class AnalyticalTestRequest : BaseEntity
     public DateTime ManufacturingDate { get; set; }
     public DateTime ExpiryDate { get; set; }
     public string ReleasedAt { get; set; } = "Quality Control";
+    public Guid? ReleasedById { get; set; }
+    public User ReleasedBy { get; set; }
     public string Filled { get; set;}
     public string SampledQuantity { get; set; }
-    public DateTime ReleaseDate { get; set; }
+    public DateTime? ReleaseDate { get; set; }
     public TestStage Stage { get; set; }
     public Guid StateId { get; set; }
     public ProductState State { get; set; }
+    public int NumberOfContainers { get; set; }
+    public Guid? SampledById { get; set; }
+    public User SampledBy { get; set; }
+    public DateTime? SampledAt { get; set; }
     public AnalyticalTestStatus Status { get; set; }
 }
 

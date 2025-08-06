@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250806004238_AddPaidBoolToMemo")]
+    partial class AddPaidBoolToMemo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,9 +156,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime>("ManufacturingDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("NumberOfContainers")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
@@ -165,20 +165,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("ProductionScheduleId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ReleaseDate")
+                    b.Property<DateTime>("ReleaseDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ReleasedAt")
                         .HasColumnType("text");
-
-                    b.Property<Guid?>("ReleasedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("SampledAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("SampledById")
-                        .HasColumnType("uuid");
 
                     b.Property<string>("SampledQuantity")
                         .HasColumnType("text");
@@ -210,10 +201,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("ProductionActivityStepId");
 
                     b.HasIndex("ProductionScheduleId");
-
-                    b.HasIndex("ReleasedById");
-
-                    b.HasIndex("SampledById");
 
                     b.HasIndex("StateId");
 
@@ -2471,6 +2458,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("VendorId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
@@ -2480,6 +2470,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("UnitOfMeasureId");
+
+                    b.HasIndex("VendorId");
 
                     b.ToTable("Items");
                 });
@@ -9367,51 +9359,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("Vendors");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Vendors.VendorItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ItemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("VendorId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("ItemId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("VendorId");
-
-                    b.ToTable("VendorItems");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedFinishedProduct", b =>
                 {
                     b.Property<Guid>("Id")
@@ -10278,14 +10225,6 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReleasedBy")
-                        .WithMany()
-                        .HasForeignKey("ReleasedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "SampledBy")
-                        .WithMany()
-                        .HasForeignKey("SampledById");
-
                     b.HasOne("DOMAIN.Entities.AnalyticalTestRequests.ProductState", "State")
                         .WithMany()
                         .HasForeignKey("StateId")
@@ -10305,10 +10244,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ProductionActivityStep");
 
                     b.Navigation("ProductionSchedule");
-
-                    b.Navigation("ReleasedBy");
-
-                    b.Navigation("SampledBy");
 
                     b.Navigation("State");
                 });
@@ -11759,6 +11694,10 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("UnitOfMeasureId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Vendors.Vendor", null)
+                        .WithMany("Items")
+                        .HasForeignKey("VendorId");
 
                     b.Navigation("CreatedBy");
 
@@ -16121,43 +16060,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Vendors.VendorItem", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Vendors.Vendor", "Vendor")
-                        .WithMany("Items")
-                        .HasForeignKey("VendorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Item");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Vendor");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedFinishedProduct", b =>

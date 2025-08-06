@@ -11,7 +11,7 @@ public class Notification
     public List<Guid> Recipients { get; set; } = [];
     public NotificationType Type { get; set; }
     public AlertType AlertType { get; set; }
-    public DateTime SentAt { get; set; }
+    public DateTime SentAt { get; set; } = DateTime.UtcNow;
 }
 
 public class NotificationRead

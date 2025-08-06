@@ -1,14 +1,16 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Users;
 using SHARED;
 
 namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class AnalyticalTestRequestDto : BaseDto
 {
-    public CollectionItemDto BatchManufacturingRecord { get; set; }
+    public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public CollectionItemDto Product { get; set; }
     public CollectionItemDto ProductionSchedule { get; set; }
-    public CollectionItemDto ProductionActivityStep { get; set; }
+    public ProductionActivityStepDto ProductionActivityStep { get; set; }
     public DateTime ManufacturingDate { get; set; }
     
     public DateTime ExpiryDate { get; set; }
@@ -26,4 +28,8 @@ public class AnalyticalTestRequestDto : BaseDto
     public CollectionItemDto State { get; set; }
     
     public AnalyticalTestStatus Status { get; set; }
+    public int NumberOfContainers { get; set; }
+    public UserDto SampledBy { get; set; }
+    public UserDto ReleasedBy { get; set; }
+    public DateTime? SampledAt { get; set; }
 }
