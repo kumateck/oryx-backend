@@ -582,6 +582,22 @@ public class InventoryProcurementRepository(
             mapper.Map<MemoDto>
         );
     }
+    
+    public async Task<Result> MarkMemoItemAsPaid(Guid memoItemId, DateTime? purchasedAt = null)
+    {
+        var memoItem = await context.MemoItems.FirstOrDefaultAsync(m => m.Id == memoItemId);
+
+        if (memoItem == null)
+            return Error.NotFound("Memo", "Memo item not found.");
+
+        if (memoItem.PurchasedAt.HasValue)
+            return Error.Validation("Memo", "Memo item is already marked as paid.");
+
+        memoItem.PurchasedAt = purchasedAt ?? DateTime.UtcNow;
+        context.MemoItems.Update(memoItem);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
 
     // --- Helper methods ---

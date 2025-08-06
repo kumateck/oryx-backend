@@ -360,6 +360,22 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Marks a memo item as paid.
+    /// </summary>
+    /// <param name="id">The ID of the memo item.</param>
+    /// <returns>200 OK if successful, 404 or 400 otherwise.</returns>
+    [HttpPost("memo-item/{id}/mark-paid")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> MarkMemoItemAsPaid(Guid id)
+    {
+        var result = await repository.MarkMemoItemAsPaid(id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
 
     #endregion
 
