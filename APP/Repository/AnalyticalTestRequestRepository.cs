@@ -35,7 +35,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery,
-                q => q.ReleasedAt,
+                q => q.Filled,
                 q => q.SampledQuantity);
         }
 
@@ -57,6 +57,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(s => s.BatchManufacturingRecord)
             .Include(s => s.CreatedBy)
             .Include(s => s.SampledBy)
+            .Include(s => s.ReleasedBy)
             .FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
     }
@@ -86,12 +87,16 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         }
         
-        test.ReleasedAt = request.ReleasedAt;
         test.SampledAt = request.SampledAt;
         test.NumberOfContainers = request.NumberOfContainers;
-        test.ReleaseDate = request.ReleaseDate;
         test.Status = request.Status;
         test.SampledById = userId;
+
+        if (request.ReleaseDate.HasValue)
+        {
+            test.ReleaseDate = request.ReleaseDate;
+            test.ReleasedById = userId;
+        }
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
         return Result.Success();
