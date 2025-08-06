@@ -31,6 +31,7 @@ using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.Items.Requisitions;
+using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -988,6 +989,13 @@ public class OryxMapper : Profile
 
         #endregion
 
+        #region Item Stock Requisitions
+
+        CreateMap<CreateItemStockRequisitionRequest, ItemStockRequisition>();
+        CreateMap<ItemStockRequisition, ItemStockRequisitionDto>();
+
+        #endregion
+
         #region Inventory Procurement
 
         CreateMap<CreateInventoryPurchaseRequisition, InventoryPurchaseRequisition>();
@@ -1014,6 +1022,7 @@ public class OryxMapper : Profile
 
 
         #endregion
+
 
 
     }

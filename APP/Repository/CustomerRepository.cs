@@ -13,12 +13,14 @@ public class CustomerRepository(ApplicationDbContext context, IMapper mapper) : 
 {
     public async Task<Result<Guid>> CreateCustomer(CreateCustomerRequest request)
     {
-        var customer = await context.Customers.FirstOrDefaultAsync(c => c.Name == request.Name);
+        var existingCustomer = await context.Customers
+            .AnyAsync(c => c.Name == request.Name || c.Email == request.Email
+            || c.Phone == request.Phone);
         
-        if (customer != null) return Error.Validation("Customer.Exists", "Customer already exists");
+        if (existingCustomer) return Error.Validation("Customer.Exists", "Customer already exists");
         
-        customer = mapper.Map<Customer>(request);
-        context.Customers.Add(customer);
+        var customer = mapper.Map<Customer>(request);
+        await context.Customers.AddAsync(customer);
         
         await context.SaveChangesAsync();
         return customer.Id;

@@ -19,11 +19,11 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
             return Error.Validation("Vendor.Exists", "Vendor already exists");
 
         var validInventoryIds = await context.Items
-            .Where(s => request.ItemIds.Contains(s.Id))
+            .Where(s => request.VendorItemIds.Contains(s.Id))
             .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.ItemIds.Except(validInventoryIds).ToList();
+        var missingIds = request.VendorItemIds.Except(validInventoryIds).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
 
@@ -70,11 +70,11 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
             return Error.NotFound("Vendor.NotFound", "Vendor not found");
         
         var validInventoryIds = await context.Items
-            .Where(s => request.ItemIds.Contains(s.Id))
+            .Where(s => request.VendorItemIds.Contains(s.Id))
             .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.ItemIds.Except(validInventoryIds).ToList();
+        var missingIds = request.VendorItemIds.Except(validInventoryIds).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
         

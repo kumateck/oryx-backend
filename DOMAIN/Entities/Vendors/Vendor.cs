@@ -22,6 +22,8 @@ public class VendorItem : BaseEntity
 {
     public Guid VendorId { get; set; }
     public Vendor Vendor { get; set; }
-    public Guid ItemId { get; set; }    
+    
+    public Guid ItemId { get; set; }
+
     public Item Item { get; set; }
 }
