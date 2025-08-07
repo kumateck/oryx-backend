@@ -58,6 +58,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(s => s.CreatedBy)
             .Include(s => s.SampledBy)
             .Include(s => s.ReleasedBy)
+            .Include(s => s.AcknowledgedBy)
             .FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
     }
@@ -86,18 +87,29 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         {
             return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         }
-        
-        test.SampledAt = request.SampledAt;
-        test.NumberOfContainers = request.NumberOfContainers;
-        test.Status = request.Status;
-        test.SampledById = userId;
-        test.SampledQuantity = request.SampledQuantity;
 
-        if (request.ReleaseDate.HasValue)
+        if (request.Status == AnalyticalTestStatus.Acknowledged)
+        {
+            test.AcknowledgedAt = DateTime.UtcNow;
+            test.Status = request.Status;
+            test.AcknowledgedById = userId;
+        }
+        
+        else if (request.Status == AnalyticalTestStatus.Sampled)
+        {
+            test.SampledAt = request.SampledAt;
+            test.NumberOfContainers = request.NumberOfContainers;
+            test.Status = request.Status;
+            test.SampledById = userId;
+            test.SampledQuantity = request.SampledQuantity;
+        }
+        
+        else if (request.Status == AnalyticalTestStatus.Released)
         {
             test.ReleaseDate = request.ReleaseDate;
             test.ReleasedById = userId;
         }
+        
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
         return Result.Success();

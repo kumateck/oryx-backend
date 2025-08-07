@@ -9,17 +9,10 @@ namespace DOMAIN.Entities.ItemStockRequisitions;
 
 public class ItemStockRequisitionDto : BaseDto
 {
-    public string Code { get; set; }
+    public string Number { get; set; }
     public DateTime RequisitionDate { get; set; }
-    
-    [ForeignKey(nameof(User))]
-    public Guid RequestedById { get; set; }
     public UserDto RequestedBy { get; set; }
-    
-    public Guid DepartmentId { get; set; }
     public DepartmentDto Department { get; set; }
-    
     public string Justification { get; set; }
-    public List<ItemDto> Items { get; set; }
     public LeaveStatus Status { get; set; }
 }

@@ -15,7 +15,7 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
     public async Task<Result<Guid>> CreateItemStockRequisition(CreateItemStockRequisitionRequest request)
     {
         var existingItemStockReq =
-            await context.ItemStockRequisitions.FirstOrDefaultAsync(nps => nps.RequisitionNo == request.RequisitionNo);
+            await context.ItemStockRequisitions.FirstOrDefaultAsync(nps => nps.Number == request.Number);
 
         if (existingItemStockReq != null)
             return Error.Validation("Vendor.Exists", "Vendor already exists");
@@ -42,7 +42,7 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.RequisitionNo,
+            query = query.WhereSearch(searchQuery, q => q.Number,
                 q => q.Department.Name);
         }
 

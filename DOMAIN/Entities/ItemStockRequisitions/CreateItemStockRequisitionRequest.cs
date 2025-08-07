@@ -4,7 +4,7 @@ namespace DOMAIN.Entities.ItemStockRequisitions;
 
 public class CreateItemStockRequisitionRequest
 {
-    public string RequisitionNo { get; set; }
+    public string Number { get; set; }
     [Required] public DateTime RequisitionDate { get; set; }
     
     [Required] public Guid RequestedById { get; set; }

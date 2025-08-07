@@ -31,6 +31,9 @@ public class AnalyticalTestRequest : BaseEntity
     public int NumberOfContainers { get; set; }
     public Guid? SampledById { get; set; }
     public User SampledBy { get; set; }
+    public Guid? AcknowledgedById { get; set; }
+    public User AcknowledgedBy { get; set; }
+    public DateTime? AcknowledgedAt { get; set; }
     public DateTime? SampledAt { get; set; }
     public AnalyticalTestStatus Status { get; set; }
 }
@@ -50,7 +53,9 @@ public enum AnalyticalTestStatus
 {
     New,
     Sampled,
+    Testing,
     Acknowledged,
+    Released,
 }
 
 public enum State
