@@ -19,11 +19,11 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
             return Error.Validation("Vendor.Exists", "Vendor already exists");
 
         var validInventoryIds = await context.Items
-            .Where(s => request.VendorItemIds.Contains(s.Id))
+            .Where(s => request.ItemIds.Contains(s.Id))
             .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.VendorItemIds.Except(validInventoryIds).ToList();
+        var missingIds = request.ItemIds.Except(validInventoryIds).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
 
@@ -65,21 +65,33 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
 
     public async Task<Result> UpdateVendor(Guid id, CreateVendorRequest request)
     {
-        var supplier = await context.Vendors.FirstOrDefaultAsync(nps => nps.Id == id);
-        if (supplier == null)
+        var vendor = await context.Vendors
+            .AsSplitQuery()
+            .Include(vendor => vendor.Items)
+            .FirstOrDefaultAsync(nps => nps.Id == id);
+        if (vendor == null)
             return Error.NotFound("Vendor.NotFound", "Vendor not found");
         
         var validInventoryIds = await context.Items
-            .Where(s => request.VendorItemIds.Contains(s.Id))
+            .Where(s => request.ItemIds.Contains(s.Id))
             .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.VendorItemIds.Except(validInventoryIds).ToList();
+        var missingIds = request.ItemIds.Except(validInventoryIds).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
         
-        mapper.Map(request, supplier);
-        context.Vendors.Update(supplier);
+        context.VendorItems.RemoveRange(vendor.Items);
+        
+        mapper.Map(request, vendor);
+        
+        vendor.Items = request.ItemIds.Select(item => new VendorItem
+        {
+            VendorId = vendor.Id,
+            ItemId = item,
+        }).ToList();
+        
+        context.Vendors.Update(vendor);
         await context.SaveChangesAsync();
         return Result.Success();
 

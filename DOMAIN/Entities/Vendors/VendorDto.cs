@@ -16,7 +16,7 @@ public class VendorDto : BaseDto
     public Guid CurrencyId { get; set; }
     public CurrencyDto Currency { get; set; }
 
-    public List<VendorItemDto> Item { get; set; }
+    public List<VendorItemDto> Items { get; set; } = [];
 
 }
 

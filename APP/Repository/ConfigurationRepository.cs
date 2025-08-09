@@ -233,7 +233,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            case nameof(ItemStockRequisition):
                return await context.ItemStockRequisitions
                    .IgnoreQueryFilters()
-                   .Where(s => s.RequisitionNo.StartsWith(prefix))
+                   .Where(s => s.Number.StartsWith(prefix))
                    .CountAsync();
            
            case nameof(Item):
