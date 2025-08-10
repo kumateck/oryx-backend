@@ -32,10 +32,10 @@ public class ItemController(IItemRepository repository) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemDto>>))]
-    public async Task<IResult> GetItems([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetItems([FromQuery] Store store, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetItems(page, pageSize, searchQuery);
+        var result = await repository.GetItems(page, pageSize, searchQuery, store);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
