@@ -563,19 +563,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
-    #region Proforma Invoice
-
-    public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
-    public DbSet<ProformaInvoiceProduct>  ProformaInvoiceProducts { get; set; }
-
-    #endregion
-
-    #region Invoice
-
-    public DbSet<Invoice> Invoices { get; set; }
-
-    #endregion
-
     #region Item Stock Requisitions
 
     public DbSet<ItemStockRequisition> ItemStockRequisitions { get; set; }
