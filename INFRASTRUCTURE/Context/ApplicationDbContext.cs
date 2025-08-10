@@ -25,6 +25,8 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemInventoryTransactions;
+using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
@@ -572,6 +574,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
+    #region Item Stock Requisitions
+
+    public DbSet<ItemStockRequisition> ItemStockRequisitions { get; set; }
+
+    #endregion
+
     #region Inventory Procurement
 
     public DbSet<InventoryPurchaseRequisition> InventoryPurchaseRequisitions { get; set; }
@@ -593,7 +601,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     
     #endregion
-    
+
+    #region Item Inventory Transaction
+
+    public DbSet<ItemInventoryTransaction> ItemInventoryTransactions { get; set; }
+
+    #endregion
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
@@ -1304,6 +1317,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region  Vendors
 
         modelBuilder.Entity<Vendor>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Item Stock Requisitions
+
+        modelBuilder.Entity<ItemStockRequisition>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
 
