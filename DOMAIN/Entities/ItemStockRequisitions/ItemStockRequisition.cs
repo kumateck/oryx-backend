@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Users;
 
@@ -18,5 +19,11 @@ public class ItemStockRequisition : BaseEntity
     public Department Department { get; set; }
     
     [StringLength(100000)]public string Justification { get; set; }
+   
+    public List<Item> Items { get; set; }
+    
+    public int QuantityRequested { get; set; }
     public LeaveStatus Status { get; set; } = LeaveStatus.Pending;
+    
+    public ICollection<ItemStockRequisitionItem> RequisitionItems { get; set; } = new List<ItemStockRequisitionItem>();
 }

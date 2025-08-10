@@ -15,6 +15,7 @@ using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.DamagedStocks;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EmployeeHistories;
@@ -599,14 +600,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<MemoItem> MemoItems { get; set; }
 
+    public DbSet<ItemInventoryTransaction> ItemInventoryTransactions { get; set; }
     
     #endregion
 
-    #region Item Inventory Transaction
+    #region Damaged Stocks
 
-    public DbSet<ItemInventoryTransaction> ItemInventoryTransactions { get; set; }
+    public DbSet<DamagedStock> DamagedStocks { get; set; }
 
     #endregion
+    
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
@@ -1372,6 +1375,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // modelBuilder.Entity<Question>().OwnsOne(f => f.Formula);
         //
         // #endregion
-
+        
     }
 }

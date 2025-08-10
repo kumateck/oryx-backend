@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Items;
 
 namespace DOMAIN.Entities.ItemStockRequisitions;
 
@@ -14,5 +15,5 @@ public class CreateItemStockRequisitionRequest
     public string Justification { get; set; }
     
     [Required, MinLength(1, ErrorMessage = "At least one item must be selected")]
-    public List<Guid> ItemIds { get; set; }
+    public List<StockItemsList> StockItems { get; set; }
 }

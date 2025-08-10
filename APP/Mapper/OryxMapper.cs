@@ -991,9 +991,13 @@ public class OryxMapper : Profile
         #endregion
 
         #region Item Stock Requisitions
-
-        CreateMap<CreateItemStockRequisitionRequest, ItemStockRequisition>();
+        
         CreateMap<ItemStockRequisition, ItemStockRequisitionDto>();
+        CreateMap<CreateItemStockRequisitionRequest, ItemStockRequisition>();
+        
+        CreateMap<StockItemsList, ItemStockRequisitionItem>()
+            .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.ItemId))
+            .ForMember(dest => dest.QuantityRequested, opt => opt.MapFrom(src => src.QuantityRequested));
 
         #endregion
 
