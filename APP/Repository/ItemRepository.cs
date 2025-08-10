@@ -24,9 +24,9 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
     }
 
     public async Task<Result<Paginateable<IEnumerable<ItemDto>>>> GetItems(int page, int pageSize,
-        string searchQuery)
+        string searchQuery, Store store)
     {
-        var query = context.Items.Where(i => i.IsActive).AsQueryable();
+        var query = context.Items.Where(i => i.IsActive && i.Store == store).AsQueryable();
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, i => i.Name,
@@ -35,12 +35,12 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
         
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            if (Enum.TryParse<Store>(searchQuery, true, out var store))
+            if (Enum.TryParse<Store>(searchQuery, true, out var itemStore))
             {
-                query = query.Where(q => q.Store == store);
+                query = query.Where(q => q.Store == itemStore);
             }
         }
-
+        
         return await PaginationHelper.GetPaginatedResultAsync(query,
             page,
             pageSize,
