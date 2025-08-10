@@ -30,6 +30,7 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemInventoryTransactions;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.LeaveEntitlements;
@@ -1023,7 +1024,12 @@ public class OryxMapper : Profile
 
         #endregion
 
+        #region Item Inventory Transactions
 
+        CreateMap<CreateItemInventoryTransactionRequest, ItemInventoryTransaction>();
+        CreateMap<ItemInventoryTransaction, ItemInventoryTransactionDto>();
+
+        #endregion
 
     }
 }

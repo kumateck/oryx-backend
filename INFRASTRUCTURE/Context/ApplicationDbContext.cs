@@ -25,6 +25,7 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemInventoryTransactions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.LeaveEntitlements;
@@ -600,7 +601,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     
     #endregion
-    
+
+    #region Item Inventory Transaction
+
+    public DbSet<ItemInventoryTransaction> ItemInventoryTransactions { get; set; }
+
+    #endregion
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
