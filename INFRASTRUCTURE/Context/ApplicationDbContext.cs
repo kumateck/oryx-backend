@@ -15,6 +15,7 @@ using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.DamagedStocks;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EmployeeHistories;
@@ -23,8 +24,10 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
+using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemInventoryTransactions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.LeaveEntitlements;
@@ -560,19 +563,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
 
-    #region Proforma Invoice
-
-    public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
-    public DbSet<ProformaInvoiceProduct>  ProformaInvoiceProducts { get; set; }
-
-    #endregion
-
-    #region Invoice
-
-    public DbSet<Invoice> Invoices { get; set; }
-
-    #endregion
-
     #region Item Stock Requisitions
 
     public DbSet<ItemStockRequisition> ItemStockRequisitions { get; set; }
@@ -598,7 +588,27 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<MemoItem> MemoItems { get; set; }
 
+    public DbSet<ItemInventoryTransaction> ItemInventoryTransactions { get; set; }
     
+    #endregion
+
+    #region Damaged Stocks
+
+    public DbSet<DamagedStock> DamagedStocks { get; set; }
+
+    #endregion
+
+    #region Proforma Invoice
+
+    public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
+    public DbSet<ProformaInvoiceProduct>  ProformaInvoiceProducts { get; set; }
+
+    #endregion
+
+    #region Invoice
+
+    public DbSet<Invoice> Invoices { get; set; }
+
     #endregion
     
     
@@ -1366,6 +1376,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // modelBuilder.Entity<Question>().OwnsOne(f => f.Formula);
         //
         // #endregion
-
+        
     }
 }

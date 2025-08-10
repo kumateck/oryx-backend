@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250805092122_AddItemStockRequisition")]
+    partial class AddItemStockRequisition
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -75,7 +78,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("Alerts", (string)null);
+                    b.ToTable("Alerts");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Alerts.AlertRole", b =>
@@ -2425,9 +2428,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("QuantityRequested")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("RequestedById")
                         .HasColumnType("uuid");
 
@@ -2534,30 +2534,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("UnitOfMeasureId");
 
                     b.ToTable("Items");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Items.ItemStockRequisitionItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ItemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ItemStockRequisitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("QuantityRequested")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ItemId");
-
-                    b.HasIndex("ItemStockRequisitionId");
-
-                    b.ToTable("ItemStockRequisitionItem");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", b =>
@@ -11871,25 +11847,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("UnitOfMeasure");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Items.ItemStockRequisitionItem", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
-                        .WithMany("ItemRequisitions")
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.ItemStockRequisitions.ItemStockRequisition", "ItemStockRequisition")
-                        .WithMany("RequisitionItems")
-                        .HasForeignKey("ItemStockRequisitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Item");
-
-                    b.Navigation("ItemStockRequisition");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -16833,13 +16790,6 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.ItemStockRequisitions.ItemStockRequisition", b =>
                 {
                     b.Navigation("Items");
-
-                    b.Navigation("RequisitionItems");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Items.Item", b =>
-                {
-                    b.Navigation("ItemRequisitions");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", b =>
