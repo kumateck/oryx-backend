@@ -24,6 +24,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
+using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.ItemInventoryTransactions;
@@ -607,6 +608,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Damaged Stocks
 
     public DbSet<DamagedStock> DamagedStocks { get; set; }
+
+    #endregion
+
+    #region Proforma Invoice
+
+    public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
+    public DbSet<ProformaInvoiceProduct>  ProformaInvoiceProducts { get; set; }
+
+    #endregion
+
+    #region Invoice
+
+    public DbSet<Invoice> Invoices { get; set; }
 
     #endregion
     
