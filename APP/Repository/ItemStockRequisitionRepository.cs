@@ -18,22 +18,34 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
             await context.ItemStockRequisitions.FirstOrDefaultAsync(nps => nps.Number == request.Number);
 
         if (existingItemStockReq != null)
-            return Error.Validation("Vendor.Exists", "Vendor already exists");
+            return Error.Validation("ItemStockRequisition.Exists", "Item Stock Requisition already exists");
         
-        var validInventoryIds = await context.Items
-            .Where(s => request.ItemIds.Contains(s.Id))
+        var validStockItems = await context.Items
+            .Where(s => request.StockItems.Select(si => si.ItemId).Contains(s.Id))
             .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.ItemIds.Except(validInventoryIds).ToList();
+        var missingIds = request.StockItems.Select(s => s.ItemId).Except(validStockItems).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
         
+        var invalidQuantities = request.StockItems
+            .Where(i => i.QuantityRequested <= 0)
+            .Select(i => i.ItemId)
+            .ToList();
+
+        if (invalidQuantities.Count != 0)
+        {
+            return Error.Validation(
+                "Items.InvalidQuantity",
+                $"Quantity requested must be greater than zero for items: {string.Join(", ", invalidQuantities)}"
+            );
+        }
+
         var itemStockReq = mapper.Map<ItemStockRequisition>(request);
         await context.ItemStockRequisitions.AddAsync(itemStockReq);
         await context.SaveChangesAsync();
         return itemStockReq.Id;
-
     }
 
     public async Task<Result<Paginateable<IEnumerable<ItemStockRequisitionDto>>>> GetItemStockRequisitions(int page, int pageSize, string searchQuery)
@@ -72,15 +84,27 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
         var itemStockReq = await context.ItemStockRequisitions.FirstOrDefaultAsync(isr => isr.Id == id);
         if (itemStockReq == null) return Error.NotFound("ItemStockRequisition.NotFound", "Item stock requisition not found");
 
-        var validItemIds = await context.Items
-            .Where(s => request.ItemIds.Contains(s.Id))
+        var validStockItems = await context.Items
+            .Where(s => request.StockItems.Select(si => si.ItemId).Contains(s.Id))
             .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.ItemIds.Except(validItemIds).ToList();
+        var missingIds = request.StockItems.Select(s => s.ItemId).Except(validStockItems).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
+        
+        var invalidQuantities = request.StockItems
+            .Where(i => i.QuantityRequested <= 0)
+            .Select(i => i.ItemId)
+            .ToList();
 
+        if (invalidQuantities.Count != 0)
+        {
+            return Error.Validation(
+                "Items.InvalidQuantity",
+                $"Quantity requested must be greater than zero for items: {string.Join(", ", invalidQuantities)}"
+            );
+        }
         
         mapper.Map(request, itemStockReq);
         context.ItemStockRequisitions.Update(itemStockReq);
