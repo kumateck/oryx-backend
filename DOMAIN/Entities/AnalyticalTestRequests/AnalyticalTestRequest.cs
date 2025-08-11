@@ -51,11 +51,11 @@ public enum TestStage
 
 public enum AnalyticalTestStatus
 {
-    New,
-    Sampled,
-    Testing,
-    Acknowledged,
-    Released,
+    New = 0,
+    Sampled = 1,
+    Testing = 2,
+    Acknowledged = 3,
+    Released = 4,
 }
 
 public enum State

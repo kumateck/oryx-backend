@@ -98,7 +98,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         
         else if (request.Status == AnalyticalTestStatus.Sampled)
         {
-            test.SampledAt = request.SampledAt;
+            test.SampledAt = DateTime.UtcNow;
             test.NumberOfContainers = request.NumberOfContainers;
             test.Status = request.Status;
             test.SampledById = userId;
@@ -107,7 +107,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         
         else if (request.Status == AnalyticalTestStatus.Released)
         {
-            test.ReleaseDate = request.ReleaseDate;
+            test.ReleaseDate = DateTime.UtcNow;
             test.ReleasedById = userId;
             var activityStep = await context.ProductionActivitySteps
                 .FirstOrDefaultAsync(p => p.Id == test.ProductionActivityStepId);
