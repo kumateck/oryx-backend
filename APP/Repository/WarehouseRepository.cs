@@ -302,6 +302,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     {
         var query = context.WarehouseLocationRacks
             .Include(r => r.WarehouseLocation)
+            .ThenInclude(r => r.Warehouse)
             .Include(r=>r.Shelves)
             .ThenInclude(s=>s.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
