@@ -30,7 +30,6 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
-using DOMAIN.Entities.ItemInventoryTransactions;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.LeaveEntitlements;
@@ -993,7 +992,8 @@ public class OryxMapper : Profile
         #region Item Stock Requisitions
         
         CreateMap<ItemStockRequisition, ItemStockRequisitionDto>();
-        CreateMap<CreateItemStockRequisitionRequest, ItemStockRequisition>();
+        CreateMap<CreateItemStockRequisitionRequest, ItemStockRequisition>()
+            .ForMember(dest => dest.RequisitionItems, opt => opt.Ignore());
         
         CreateMap<StockItemsList, ItemStockRequisitionItem>()
             .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.ItemId))
@@ -1023,17 +1023,6 @@ public class OryxMapper : Profile
 
         CreateMap<MarketRequisitionVendor, MarketRequisitionVendorDto>();
 
-
-
-
         #endregion
-
-        #region Item Inventory Transactions
-
-        CreateMap<CreateItemInventoryTransactionRequest, ItemInventoryTransaction>();
-        CreateMap<ItemInventoryTransaction, ItemInventoryTransactionDto>();
-
-        #endregion
-
     }
 }
