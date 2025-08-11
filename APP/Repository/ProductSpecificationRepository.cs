@@ -31,6 +31,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Include(ps => ps.Form)
             .Include(ps => ps.Product)
             .Include(ps => ps.CreatedBy)
+            .Where(ps => !ps.DeletedAt.HasValue)
             .AsQueryable();
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductSpecificationDto>);
