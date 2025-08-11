@@ -16,6 +16,11 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
     {
         var item = await context.Items.FirstOrDefaultAsync(i => i.Code == request.Code);
         if (item != null) return Error.Validation("Item.Exists", "Item already exists for this department");
+
+        if (request.HasBatchNumber && string.IsNullOrEmpty(request.BatchNumber))
+        {
+            return Error.Validation("Item.InvalidBatchNumber", "Batch number is required");
+        }
         
         item = mapper.Map<Item>(request);
         await context.Items.AddAsync(item);

@@ -12,6 +12,7 @@ public class ItemDto : WithAttachment
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasureDto UnitOfMeasure { get; set; }
     public bool HasBatch { get; set; }
+    public string BatchNumber { get; set; }
     public Store Store { get; set; }
     public int MinimumLevel { get; set; }
     public int MaximumLevel { get; set; }
