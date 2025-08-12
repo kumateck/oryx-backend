@@ -40,7 +40,8 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
                 query = query.Where(q => q.Item.Store == damagedStore);
             }
         }
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<DamagedStockDto>);
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,  entity => mapper.Map<DamagedStockDto>(entity, opts =>
+            opts.Items[AppConstants.ModelType] = nameof(DamagedStockDto)));
     }
 
     public async Task<Result<DamagedStockDto>> GetDamagedStock(Guid id)
@@ -48,7 +49,8 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
         var stocks = await context.DamagedStocks.FirstOrDefaultAsync(ds => ds.Id == id);
         return stocks is null ? 
             Error.NotFound("DamagedStock.NotFound", "Damaged stock not found") : 
-            mapper.Map<DamagedStockDto>(stocks);
+            mapper.Map<DamagedStockDto>(stocks, 
+                opts => { opts.Items[AppConstants.ModelType] = nameof(DamagedStock);});
         
     }
 

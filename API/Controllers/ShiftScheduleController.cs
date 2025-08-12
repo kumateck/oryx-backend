@@ -128,6 +128,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     /// <param name="departmentId">The department the shift assignment is for</param>
     /// <param name="shiftId">The shift schedule</param>
     [HttpPost("assign/import")]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ImportShiftAssignmentsFromExcel(IFormFile file,  [FromQuery] Guid departmentId,
