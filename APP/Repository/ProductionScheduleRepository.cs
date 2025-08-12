@@ -53,6 +53,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         // Fetch the production schedule with related data
         var productionSchedule = await context.ProductionSchedules
+            .AsSplitQuery()
             .Include(s => s.Products).ThenInclude(s => s.Product)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
@@ -75,6 +76,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page, int pageSize, string searchQuery) 
     { 
         var query = context.ProductionSchedules
+            .AsSplitQuery()
             .Include(s => s.Products).ThenInclude(s => s.Product)
             .AsQueryable();
         
