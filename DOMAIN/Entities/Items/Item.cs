@@ -15,13 +15,10 @@ public class Item : BaseEntity
     public int MinimumLevel { get; set; }
     public int MaximumLevel { get; set; }
     public int ReorderLevel { get; set; }
-    
     public string Category { get; set; }
     public Store Store { get; set; }
     public bool IsActive { get; set; }
     public string Description { get; set; }
-    public ICollection<ItemStockRequisitionItem> ItemRequisitions { get; set; } = new List<ItemStockRequisitionItem>();
-
 }
 
 public enum Store

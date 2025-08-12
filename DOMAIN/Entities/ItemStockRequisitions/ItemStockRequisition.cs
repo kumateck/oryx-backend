@@ -19,8 +19,6 @@ public class ItemStockRequisition : BaseEntity
     public Department Department { get; set; }
     
     [StringLength(100000)]public string Justification { get; set; }
-   
-    public List<Item> Items { get; set; }
     
     public int QuantityRequested { get; set; }
     public LeaveStatus Status { get; set; } = LeaveStatus.Pending;
