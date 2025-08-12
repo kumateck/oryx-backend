@@ -53,8 +53,8 @@ public enum AnalyticalTestStatus
 {
     New = 0,
     Sampled = 1,
-    Testing = 2,
-    Acknowledged = 3,
+    Acknowledged = 2,
+    Testing = 3,
     Released = 4,
 }
 
