@@ -1379,19 +1379,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //
         // modelBuilder.Entity<Question>().OwnsOne(f => f.Formula);
         //
-        // #endregion
-
-        modelBuilder.Entity<ItemStockRequisitionItem>()
-            .HasKey(x => x.Id);
-
-        modelBuilder.Entity<ItemStockRequisitionItem>()
-            .HasOne(x => x.Item)
-            .WithMany(x => x.ItemRequisitions)
-            .HasForeignKey(x => x.ItemId);
-
-        modelBuilder.Entity<ItemStockRequisitionItem>()
-            .HasOne(x => x.ItemStockRequisition)
-            .WithMany(x => x.RequisitionItems)
-            .HasForeignKey(x => x.ItemStockRequisitionId);
+   
     }
 }
