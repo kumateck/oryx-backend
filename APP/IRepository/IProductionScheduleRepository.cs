@@ -98,6 +98,7 @@ public interface IProductionScheduleRepository
     Task<Result<Paginateable<IEnumerable<FinalPackingDto>>>> GetFinalPackings(int page, int pageSize, string searchQuery);
     Task<Result> UpdateFinalPacking(CreateFinalPacking request, Guid finalPackingId);
     Task<Result> DeleteFinalPacking(Guid finalPackingId, Guid userId);
+    Task<Result<RequisitionDto>> GetStockRequisitionForRaw(Guid productionScheduleId, Guid productId);
     Task<Result<RequisitionDto>> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId);
     Task<Result<ProductionScheduleProductDto>> GetProductDetailsInProductionSchedule(
         Guid productionScheduleId, Guid productId);

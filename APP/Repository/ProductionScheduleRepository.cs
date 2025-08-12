@@ -1953,6 +1953,24 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
     
+    public async Task<Result<RequisitionDto>> GetStockRequisitionForRaw(Guid productionScheduleId, Guid productId)
+    {
+        var requisition = await context.Requisitions
+            .AsSplitQuery()
+            .Include(r => r.Items)
+            .ThenInclude(i => i.Material)
+            .Include(r => r.RequestedBy)
+            .Include(r => r.Approvals).ThenInclude(a => a.User)
+            .Include(r => r.Approvals).ThenInclude(a => a.Role)
+            .Where(r => r.ProductionScheduleId == productionScheduleId 
+                        && r.ProductId == productId 
+                        && r.Code.EndsWith("-raw") // Ensure the code ends in "raw"
+                        && r.RequisitionType == RequisitionType.Stock) // Ensure it's a stock requisition
+            .FirstOrDefaultAsync();
+
+        return mapper.Map<RequisitionDto>(requisition);
+    }
+    
     public async Task<Result<RequisitionDto>> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId)
     {
         var requisition = await context.Requisitions
@@ -2118,7 +2136,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<MaterialReturnNoteDto>>>> GetMaterialReturnNotes(int page, int pageSize,
         string searchQuery)
     {
-        var query = context.MaterialReturnNotes.AsQueryable();
+        var query = context.MaterialReturnNotes
+            .AsSplitQuery()
+            .Include(m => m.Product)
+            .Include(m => m.ProductionSchedule)
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -2136,6 +2158,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<MaterialReturnNoteDto>> GetMaterialReturnNoteById(Guid materialReturnNoteId)
     {
         return mapper.Map<MaterialReturnNoteDto>(await context.MaterialReturnNotes
+            .AsSplitQuery()
+            .Include(m => m.Product)
+            .Include(m => m.ProductionSchedule)
             .Include(m => m.FullReturns)
             .ThenInclude(mf => mf.MaterialBatchReservedQuantity)
             .Include(m => m.FullReturns)
