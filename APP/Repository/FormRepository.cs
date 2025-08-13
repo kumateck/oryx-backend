@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Materials;
@@ -197,6 +198,18 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 bmr.Status = BatchManufacturingStatus.TestTaken;
                 context.BatchManufacturingRecords.Update(bmr);
             }
+        }
+
+        if (request.ProductionActivityStepId.HasValue)
+        {
+            var step = await context.ProductionActivitySteps.FirstOrDefaultAsync(s => s.Id == request.ProductionActivityStepId);
+            if(step is null) return Error.NotFound("ProductionActivityStep", $"ProductionActivityStep not found {request.ProductionActivityStepId}");
+            
+            var atr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(a => a.ProductionActivityStepId == request.ProductionActivityStepId);
+            if(atr is null) return Error.NotFound("ATR", $"ATR not found {request.ProductionActivityStepId}");
+            
+            atr.Status = AnalyticalTestStatus.TestTaken;
+            context.AnalyticalTestRequests.Update(atr);
         }
 
         if (request.MaterialSpecificationId.HasValue)

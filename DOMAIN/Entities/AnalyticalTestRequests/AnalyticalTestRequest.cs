@@ -58,7 +58,8 @@ public enum AnalyticalTestStatus
     Sampled = 1,
     Acknowledged = 2,
     Testing = 3,
-    Released = 4,
+    TestTaken = 4,
+    Released = 5,
 }
 
 public enum State
