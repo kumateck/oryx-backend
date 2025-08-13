@@ -22,7 +22,9 @@ public class ProductionOrderProducts
     public int TotalOrderQuantity { get; set; }
     public decimal VolumePerPiece { get; set; }
     public decimal TotalVolume => TotalOrderQuantity * VolumePerPiece;
-    public decimal TotalBatches => TotalVolume / Product.FullBatchSize;
+    public decimal TotalBatches =>  Product?.FullBatchSize > 0 
+        ? TotalVolume / Product.FullBatchSize 
+        : 0;
     public decimal TotalValue => TotalOrderQuantity * Product.Price;
 }
 
