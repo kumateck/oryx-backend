@@ -59,6 +59,19 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
         var result = await repository.GetShiftSchedule(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Returns a shift schedule by its department ID.
+    /// </summary>
+    [HttpGet("department/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShiftScheduleDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShiftScheduleByDepartment([FromRoute] Guid id)
+    {
+        var result = await repository.GetShiftScheduleByDepartment(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
+    }
+
 
     /// <summary>
     /// Returns the schedule for a specified date range
