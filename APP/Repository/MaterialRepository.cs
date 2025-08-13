@@ -1387,16 +1387,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.SaveChangesAsync();
     }
 
-    public async Task<List<MaterialBatchReservedQuantity>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, Guid productionScheduleId, Guid productId)
+    public async Task<List<MaterialBatchReservedQuantityDto>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, Guid productionScheduleId, Guid productId)
     {
         return 
-            await context.MaterialBatchReservedQuantities
+            mapper.Map<List<MaterialBatchReservedQuantityDto>>(await context.MaterialBatchReservedQuantities
                 .AsSplitQuery()
                 .Include(r => r.MaterialBatch)
                 .ThenInclude(b => b.Material)
                 .Where(r => r.MaterialBatch.MaterialId == materialId && 
                             r.WarehouseId == warehouseId && r.ProductionScheduleId == productionScheduleId && r.ProductId == productId)
-                .ToListAsync();
+                .ToListAsync());
     }
 
     

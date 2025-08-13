@@ -258,20 +258,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             
             foreach (var batch in batchesToConsume)
             {
-                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m => m.Id == batch.MaterialBatchId);
+                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m => m.Id == batch.MaterialBatch.Id);
                 if (materialBatch is null) continue;
                 
                 materialBatch.QuantityAssigned = 0;
                 context.MaterialBatches.Update(materialBatch);
 
                 var shelfMaterialBatches = await context.ShelfMaterialBatches
-                    .Where(sb => sb.MaterialBatchId == batch.MaterialBatchId)
+                    .Where(sb => sb.MaterialBatchId == batch.MaterialBatch.Id)
                     .ToListAsync();
                 context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
 
                 var movement = new MassMaterialBatchMovement
                 {
-                    BatchId = batch.MaterialBatchId,
+                    BatchId = batch.MaterialBatch.Id,
                     FromWarehouseId = appropriateWarehouse.Id,
                     ToWarehouseId = productionWarehouse.Id,
                     Quantity = batch.Quantity,
@@ -283,7 +283,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
                 var batchEvent = new MaterialBatchEvent
                 {
-                    BatchId =  batch.MaterialBatchId,
+                    BatchId =  batch.MaterialBatch.Id,
                     Type = EventType.Moved,
                     Quantity =batch.Quantity,
                     UserId = userId
