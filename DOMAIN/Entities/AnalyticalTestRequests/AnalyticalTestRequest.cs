@@ -36,6 +36,9 @@ public class AnalyticalTestRequest : BaseEntity
     public DateTime? AcknowledgedAt { get; set; }
     public DateTime? SampledAt { get; set; }
     public AnalyticalTestStatus Status { get; set; }
+    public Guid? TestedById { get; set; }
+    public User TestedBy { get; set; }
+    public DateTime? TestedAt { get; set; }
 }
 
 public class ProductState : BaseEntity

@@ -907,8 +907,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FinishedProductBatchMovement>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);
         modelBuilder.Entity<FinishedProductBatchEvent>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialReturnNote>().HasQueryFilter(entity => !entity.Product.DeletedAt.HasValue);
-        modelBuilder.Entity<MaterialReturnNoteFullReturn>()
-            .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
+        // modelBuilder.Entity<MaterialReturnNoteFullReturn>()
+        //     .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialReturnNotePartialReturn>()
             .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionExtraPacking>().HasQueryFilter(entity => !entity.Material.DeletedAt.HasValue);

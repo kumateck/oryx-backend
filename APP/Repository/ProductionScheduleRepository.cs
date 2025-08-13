@@ -330,10 +330,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
                                     foreach (var batch in batchesToConsume)
                                     {
-                                        await materialRepository.ConsumeMaterialAtLocation(batch.MaterialBatchId, productionWarehouse.Id, batch.Quantity, userId);
+                                        await materialRepository.ConsumeMaterialAtLocation(batch.MaterialBatch.Id, productionWarehouse.Id, batch.Quantity, userId);
                                     }
                                     
-                                    context.MaterialBatchReservedQuantities.RemoveRange(batchesToConsume);
+                                    var batchesToRemove = await context.MaterialBatchReservedQuantities
+                                        .Where(b => batchesToConsume.Select(bc => bc.Id).Contains(b.Id))
+                                        .ToListAsync();
+                                    
+                                    context.MaterialBatchReservedQuantities.RemoveRange(batchesToRemove);
                                     await context.SaveChangesAsync();
                                 }
                             }
@@ -2009,10 +2013,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null) return ProductErrors.NotFound(productId);
         
-        var productionSchedule = await context.ProductionSchedules.FirstOrDefaultAsync(p => p.Id == productionScheduleId);
+        var productionSchedule = await context.ProductionSchedules
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == productionScheduleId);
         if (productionSchedule is null) return ProductErrors.NotFound(productionScheduleId);
         
-        var productionScheduleProduct = await context.ProductionScheduleProducts.FirstOrDefaultAsync(p => p.ProductionScheduleId == productionSchedule.Id && p.ProductId == product.Id);
+        var productionScheduleProduct = await context.ProductionScheduleProducts
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.ProductionScheduleId == productionSchedule.Id && p.ProductId == product.Id);
         if (productionScheduleProduct is null) return ProductErrors.NotFound(productionScheduleId);
         
         var productionWarehouse = await context.Warehouses
@@ -2055,15 +2063,33 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                     BatchNumber = (await context.BatchManufacturingRecords
                         .FirstOrDefaultAsync(b => b.ProductId == productId &&
                                                   b.ProductionScheduleId == productionScheduleId))?.BatchNumber,
-                    FullReturns = batchesToConsume.Select(b => new MaterialReturnNoteFullReturn
-                    {
-                        MaterialBatchReservedQuantityId = b.Id,
-                        DestinationWarehouseId = b.MaterialBatch?.Material?.Kind == MaterialKind.Raw ? rawStorageWarehouse.Id : packedStorageWarehouse.Id
-                    }).ToList()
                 };
-                    
+                
+                var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == item.MaterialId);
+                
+                if(material is  null) return Error.NotFound("material", "material not found");
+
+                var fullReturns = batchesToConsume.Select(b => new MaterialReturnNoteFullReturn
+                {
+                    MaterialBatchReservedQuantityId = b.Id,
+                    DestinationWarehouseId = material.Kind == MaterialKind.Raw
+                        ? rawStorageWarehouse.Id
+                        : packedStorageWarehouse.Id
+                }).ToList();
+                
+                var batchesToRemove = await context.MaterialBatchReservedQuantities
+                    .Where(b => batchesToConsume.Select(bc => bc.Id).Contains(b.Id))
+                    .ToListAsync();
+                
                 await context.MaterialReturnNotes.AddAsync(materialReturnNote);
-                context.MaterialBatchReservedQuantities.RemoveRange(batchesToConsume);
+                await context.SaveChangesAsync();
+                foreach (var fullReturn in fullReturns)
+                {
+                    fullReturn.MaterialReturnNoteId = materialReturnNote.Id;
+                }
+                await context.MaterialReturnNoteFullReturns.AddRangeAsync(fullReturns);
+                await context.SaveChangesAsync();
+                context.MaterialBatchReservedQuantities.RemoveRange(batchesToRemove);
             }
         }
         
@@ -2115,22 +2141,24 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             BatchNumber = (await context.BatchManufacturingRecords
                 .FirstOrDefaultAsync(b => b.ProductId == productId &&
                                           b.ProductionScheduleId == productionScheduleId))?.BatchNumber,
-            PartialReturns = returns.Select(r => new MaterialReturnNotePartialReturn
-            {
-                MaterialId = r.MaterialId,
-                UoMId = r.UoMId,
-                Quantity = r.Quantity,
-                DestinationWarehouseId = context.Materials.FirstOrDefault(m => m.Id == r.MaterialId)?.Kind == MaterialKind.Raw ?
-                        rawStorageWarehouse.Id : packedStorageWarehouse.Id,
-            }).ToList()
         };
         await context.MaterialReturnNotes.AddAsync(materialReturnNote);
-
-        // var holdingMaterial = new HoldingMaterialTransfer
-        // {
-        //     MaterialId = 
-        //
-        // };
+        await context.SaveChangesAsync();
+        var partialReturns = returns.Select(r => new MaterialReturnNotePartialReturn
+        {
+            MaterialId = r.MaterialId,
+            UoMId = r.UoMId,
+            Quantity = r.Quantity,
+            DestinationWarehouseId =
+                context.Materials.FirstOrDefault(m => m.Id == r.MaterialId)?.Kind == MaterialKind.Raw
+                    ? rawStorageWarehouse.Id
+                    : packedStorageWarehouse.Id,
+        }).ToList();
+        foreach (var partial in partialReturns)
+        {
+            partial.MaterialReturnNoteId = materialReturnNote.Id;
+        }
+        await context.MaterialReturnNotePartialReturns.AddRangeAsync(partialReturns);
         await context.SaveChangesAsync();
         return Result.Success();
     }

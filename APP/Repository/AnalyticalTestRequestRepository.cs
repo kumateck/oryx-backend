@@ -60,6 +60,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(s => s.SampledBy)
             .Include(s => s.ReleasedBy)
             .Include(s => s.AcknowledgedBy)
+            .Include(s => s.TestedBy)
             .FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
     }
@@ -116,6 +117,13 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
                 activityStep.Status = ProductionStatus.Completed;
                 context.ProductionActivitySteps.Update(activityStep);
             }
+        }
+        
+        else if (request.Status == AnalyticalTestStatus.Testing)
+        {
+            test.Status = request.Status;
+            test.TestedById = userId;
+            test.TestedAt = DateTime.UtcNow;
         }
         
         context.AnalyticalTestRequests.Update(test);
