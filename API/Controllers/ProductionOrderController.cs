@@ -27,7 +27,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> CreateProductionOrder([FromBody] CreateProductionOrderRequest request)
     {
         var result = await repository.CreateProductionOrder(request);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> GetProductionOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetProductionOrders(page, pageSize, searchQuery);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
@@ -50,7 +50,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> GetProductionOrder([FromRoute] Guid id)
     {
         var result = await repository.GetProductionOrder(id);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
@@ -78,7 +78,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.DeleteProductionOrder(id, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     // ----------------------------
@@ -94,7 +94,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> CreateProformaInvoice([FromBody] CreateProformaInvoice request)
     {
         var result = await repository.CreateProformaInvoice(request);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> GetProformaInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetProformaInvoices(page, pageSize, searchQuery);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -117,7 +117,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> GetProformaInvoice([FromRoute] Guid id)
     {
         var result = await repository.GetProformaInvoice(id);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -145,7 +145,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteProformaInvoice(id, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
     /// <summary>
@@ -157,7 +157,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> CreateInvoice([FromBody] CreateInvoice request)
     {
         var result = await repository.CreateInvoice(request);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -168,7 +168,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> GetInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetInvoices(page, pageSize, searchQuery);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -180,7 +180,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> GetInvoice([FromRoute] Guid id)
     {
         var result = await repository.GetInvoice(id);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -208,6 +208,6 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteInvoice(id, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
