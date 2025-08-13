@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
@@ -45,7 +46,7 @@ public class ProductionScheduleProduct
     [StringLength(100)] public string BatchNumber { get; set; }
     public BatchSize BatchSize { get; set; }
     public Guid? MarketTypeId { get; set; }
-    public MarketType MarketType { get; set; }
+    public Customer MarketType { get; set; }
     public decimal Quantity { get; set; }
     public bool Cancelled { get; set; }
     [StringLength(20000)] public string ReasonForCancellation { get; set; }
