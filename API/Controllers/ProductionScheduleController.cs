@@ -880,6 +880,22 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleId">The Production Schedule ID.</param>
     /// <param name="productId">The Product ID.</param>
     /// <returns>Returns the Stock Requisition for Packaging.</returns>
+    [HttpGet("stock-requisition/raw/{productionScheduleId}/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStockRequisitionForRaw(Guid productionScheduleId, Guid productId)
+    {
+        var result = await repository.GetStockRequisitionForRaw(productionScheduleId, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a Stock Requisition for Packaging based on Production Schedule and Product ID.
+    /// </summary>
+    /// <param name="productionScheduleId">The Production Schedule ID.</param>
+    /// <param name="productId">The Product ID.</param>
+    /// <returns>Returns the Stock Requisition for Packaging.</returns>
     [HttpGet("stock-requisition/package/{productionScheduleId}/{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]

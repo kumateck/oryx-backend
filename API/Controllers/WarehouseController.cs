@@ -695,7 +695,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// </summary>
     [HttpGet("grns")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnListDto>>))]
     public async Task<IResult> GetGrns([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, MaterialKind? kind = null)
     {
         var result = await repository.GetGrns(page, pageSize, searchQuery,kind);

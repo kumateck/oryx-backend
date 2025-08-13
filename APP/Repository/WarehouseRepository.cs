@@ -818,27 +818,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             : mapper.Map<GrnDto>(grn);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<GrnDto>>>> GetGrns(int page, int pageSize, string searchQuery, MaterialKind? kind)
+    public async Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(int page, int pageSize, string searchQuery, MaterialKind? kind)
     {
         var query = context.Grns
             .AsSplitQuery()
             .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.Manufacturer)
-            .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.Supplier)
-            .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.ShipmentInvoice)
-            .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.Material)
-            .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.DistributedRequisitionMaterial)
-            .Include(c => c.MaterialBatches)
-            .ThenInclude(cl => cl.Material)
             .AsQueryable();
 
         if (kind.HasValue)
@@ -855,7 +839,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             query,
             page,
             pageSize,
-            mapper.Map<GrnDto>
+            mapper.Map<GrnListDto>
         );
     }
     

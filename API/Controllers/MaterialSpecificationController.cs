@@ -57,7 +57,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialSpecificationByMaterialId([FromRoute] Guid id)
     {
-        var result = await repository.GetMaterialSpecificationByMaterialId(id);
+        var result = await repository.GetMaterialSpecificationByMaterial(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

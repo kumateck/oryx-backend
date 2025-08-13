@@ -36,6 +36,9 @@ public class AnalyticalTestRequest : BaseEntity
     public DateTime? AcknowledgedAt { get; set; }
     public DateTime? SampledAt { get; set; }
     public AnalyticalTestStatus Status { get; set; }
+    public Guid? TestedById { get; set; }
+    public User TestedBy { get; set; }
+    public DateTime? TestedAt { get; set; }
 }
 
 public class ProductState : BaseEntity
@@ -53,9 +56,10 @@ public enum AnalyticalTestStatus
 {
     New = 0,
     Sampled = 1,
-    Testing = 2,
-    Acknowledged = 3,
-    Released = 4,
+    Acknowledged = 2,
+    Testing = 3,
+    TestTaken = 4,
+    Released = 5,
 }
 
 public enum State
