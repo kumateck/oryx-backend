@@ -252,7 +252,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// </summary>
     /// <param name="batchManufacturingRecordId">The ID of the batch manufacturing.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("generate-certificate/product/{materialBatchId}")]
+    [HttpPost("generate-certificate/product/{batchManufacturingRecordId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
