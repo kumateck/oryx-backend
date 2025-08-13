@@ -25,13 +25,14 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var query = context.ProductionOrders
             .AsSplitQuery()
+            .Include(p => p.Customer)
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.ProductionOrderCode);
+            query = query.WhereSearch(searchQuery, q => q.Code);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionOrderDto>);
@@ -43,6 +44,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .AsSplitQuery()
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
+            .Include(p => p.Customer)
             .FirstOrDefaultAsync(po => po.Id == id);
         return productionOrder is null ? 
             Error.NotFound("ProductionOrder.NotFound", "Production Order not found") 
@@ -111,7 +113,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.ProductionOrder.ProductionOrderCode);
+            query = query.WhereSearch(searchQuery, q => q.ProductionOrder.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProformaInvoiceDto>);

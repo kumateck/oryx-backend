@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Products;
@@ -8,7 +9,7 @@ namespace DOMAIN.Entities.ProductionOrders;
 
 public class ProductionOrder : BaseEntity
 {
-    public string ProductionOrderCode { get; set; }
+    [StringLength(1000)] public string Code { get; set; }
     public Guid CustomerId { get; set; }
     public Customer Customer { get; set; }
     public List<ProductionOrderProducts> Products { get; set; } = [];
