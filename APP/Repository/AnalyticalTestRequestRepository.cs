@@ -106,6 +106,13 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             test.SampledQuantity = request.SampledQuantity;
         }
         
+        else if (request.Status == AnalyticalTestStatus.Testing)
+        {
+            test.Status = request.Status;
+            test.TestedById = userId;
+            test.TestedAt = DateTime.UtcNow;
+        }
+        
         else if (request.Status == AnalyticalTestStatus.Released)
         {
             test.ReleaseDate = DateTime.UtcNow;
@@ -117,13 +124,6 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
                 activityStep.Status = ProductionStatus.Completed;
                 context.ProductionActivitySteps.Update(activityStep);
             }
-        }
-        
-        else if (request.Status == AnalyticalTestStatus.Testing)
-        {
-            test.Status = request.Status;
-            test.TestedById = userId;
-            test.TestedAt = DateTime.UtcNow;
         }
         
         context.AnalyticalTestRequests.Update(test);

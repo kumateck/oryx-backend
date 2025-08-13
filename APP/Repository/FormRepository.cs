@@ -140,6 +140,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             FormId = request.FormId,
             MaterialBatchId = request.MaterialBatchId,
             BatchManufacturingRecordId = request.BatchManufacturingRecordId,
+            ProductionActivityStepId = request.ProductionActivityStepId,
             FormResponses = [],
             CreatedById = userId
         };
