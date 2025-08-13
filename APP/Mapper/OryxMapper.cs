@@ -571,6 +571,7 @@ public class OryxMapper : Profile
         #region Grn
         CreateMap<CreateGrnRequest, Grn>();
         CreateMap<Grn, GrnDto>();
+        CreateMap<Grn, GrnListDto>();
         #endregion
         
 

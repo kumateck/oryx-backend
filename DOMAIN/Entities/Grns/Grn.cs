@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
+using SHARED;
 
 namespace DOMAIN.Entities.Grns;
 
@@ -30,6 +31,17 @@ public class CreateGrnRequest
     public List<Guid> MaterialBatchIds { get; set; }
 }
 
+
+public class GrnListDto
+{
+    public Guid Id { get; set; }
+    public DateTime CreatedAt { get; set; }
+    [StringLength(10000)]public string CarrierName { get; set; }
+    [StringLength(10000)]public string VehicleNumber { get; set; }
+    [StringLength(10000)]public string Remarks { get; set; }
+    [StringLength(10000)]public string GrnNumber { get; set; }
+    public List<CollectionItemDto> MaterialBatches { get; set; } = [];
+}
 public class GrnDto
 {
     public Guid Id { get; set; }
