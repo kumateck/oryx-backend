@@ -4,7 +4,7 @@ namespace DOMAIN.Entities.ProductionOrders;
 
 public class CreateProductionOrderRequest
 {
-    public string ProductionOrderCode { get; set; }
+    public string Code { get; set; }
     
     [Required] public Guid CustomerId { get; set; }
 

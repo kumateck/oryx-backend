@@ -221,7 +221,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            case nameof(ProductionOrder):
                return await context.ProductionOrders
                    .IgnoreQueryFilters()
-                   .Where(po => po.ProductionOrderCode.StartsWith(prefix))
+                   .Where(po => po.Code.StartsWith(prefix))
                    .CountAsync();
            
            case nameof(Service):
