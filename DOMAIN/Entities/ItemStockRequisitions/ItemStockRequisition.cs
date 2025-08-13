@@ -16,9 +16,9 @@ public class ItemStockRequisition : BaseEntity
     public User RequestedBy { get; set; }
     
     public Guid DepartmentId { get; set; }
-    public Department Department { get; set; }
+    public Department Department { get; set; } 
     
-    [StringLength(100000)]public string Justification { get; set; }
+    [StringLength(100000)] public string Justification { get; set; }
     
     public int QuantityRequested { get; set; }
     public LeaveStatus Status { get; set; } = LeaveStatus.Pending;
