@@ -48,6 +48,18 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
         var result = await repository.GetProductSpecification(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves the details of a product specification by its ID.
+    /// </summary>
+    [HttpGet("product/{productId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSpecificationDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductSpecificationByProduct([FromRoute] Guid productId)
+    {
+        var result = await repository.GetProductSpecificationByProduct(productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates a product specific by its ID.
