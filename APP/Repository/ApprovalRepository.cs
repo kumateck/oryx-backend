@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.LeaveRequests;
@@ -690,6 +691,22 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         if(bmr is null) return Error.NotFound("Response.BmrNotFound", $"Response bmr in {response.MaterialBatchId} not found.");
                         bmr.Status = BatchManufacturingStatus.Approved;
                         context.BatchManufacturingRecords.Update(bmr);
+                    }
+
+                    if (response.ProductionActivityStepId.HasValue)
+                    {
+                        var productionActivityStep = await context.ProductionActivitySteps.FirstOrDefaultAsync(p => p.Id == response.ProductionActivityStepId);
+                        if(productionActivityStep is null) return Error.NotFound("Response.ProductionActivityStepNotFound", $"ProductionActivityStep not found.");
+                        var atr = await context.AnalyticalTestRequests
+                            .FirstOrDefaultAsync(a => a.ProductionActivityStepId == response.ProductionActivityStepId);
+                        if(atr is null) return Error.NotFound("Response.Atr", $"Response {response.ProductionActivityStepId} not found.");
+                        
+                        productionActivityStep.CompletedAt = DateTime.UtcNow;
+                        productionActivityStep.Status = ProductionStatus.Completed;
+                        atr.ReleaseDate = DateTime.UtcNow;
+                        atr.ReleasedById = userId;
+                        context.ProductionActivitySteps.Update(productionActivityStep);
+                        context.AnalyticalTestRequests.Update(atr);
                     }
                 }
                 await context.SaveChangesAsync();
