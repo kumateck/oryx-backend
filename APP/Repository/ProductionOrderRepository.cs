@@ -23,7 +23,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(int page, int pageSize, string searchQuery)
     {
-        var query = context.ProductionOrders.AsQueryable();
+        var query = context.ProductionOrders
+            .AsSplitQuery()
+            .Include(p => p.Products)
+            .ThenInclude(p => p.Product)
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -35,15 +39,26 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result<ProductionOrderDto>> GetProductionOrder(Guid id)
     {
-        var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(po => po.Id == id);
+        var productionOrder = await context.ProductionOrders
+            .AsSplitQuery()
+            .Include(p => p.Products)
+            .ThenInclude(p => p.Product)
+            .FirstOrDefaultAsync(po => po.Id == id);
         return productionOrder is null ? 
             Error.NotFound("ProductionOrder.NotFound", "Production Order not found") 
             : mapper.Map<ProductionOrderDto>(productionOrder);
     }
 
-    public async Task<Result> UpdateProductionOrder(Guid id, CreateProductionOrderRequest missing_name)
+    public async Task<Result> UpdateProductionOrder(Guid id, CreateProductionOrderRequest request)
     {
-        throw new NotImplementedException();
+        var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(p => p.Id == id);
+        if(productionOrder is null) return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
+
+        productionOrder.Products = mapper.Map<List<ProductionOrderProducts>>(request.Products);
+        mapper.Map(request, productionOrder);
+        context.ProductionOrders.Update(productionOrder);
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 
     public async Task<Result> DeleteProductionOrder(Guid id, Guid userId)
