@@ -10,9 +10,9 @@ public class LeaveRequest : BaseEntity, IRequireApproval
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     
-    public string ContactPerson { get; set; }
+    public string ContactPerson { get; set; } = string.Empty;
     
-    public string ContactPersonNumber { get; set; }
+    public string ContactPersonNumber { get; set; } = string.Empty;
 
     public string Justification { get; set; }
     
@@ -29,7 +29,7 @@ public class LeaveRequest : BaseEntity, IRequireApproval
     
     public Employee Employee { get; set; }
     
-    public Guid LeaveTypeId { get; set; }
+    public Guid? LeaveTypeId { get; set; }
     public LeaveType LeaveType { get; set; }
 
     public List<LeaveRequestApproval> Approvals { get; set; } = [];

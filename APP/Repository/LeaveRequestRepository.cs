@@ -58,7 +58,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             {
                 if (leaveType.DeductFromBalance)
                 {
-                    var balanceDeducted = 0;
+                    int balanceDeducted;
                     if (leaveType.DeductionLimit > 0)
                     {
                         paidDays = (int)Math.Min(totalDays, leaveType.DeductionLimit ?? 0);
@@ -66,17 +66,15 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
                         balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, remaining);
                         unpaidDays = remaining - balanceDeducted;
-
-                        existingEmployee.AnnualLeaveDays -= balanceDeducted;
                     }
                     else
                     {
                         balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, (int)totalDays);
                         paidDays = balanceDeducted;
                         unpaidDays = (int)totalDays - balanceDeducted;
-
-                        existingEmployee.AnnualLeaveDays -= balanceDeducted;
                     }
+
+                    existingEmployee.AnnualLeaveDays -= balanceDeducted;
                 }
                 else
                 {
