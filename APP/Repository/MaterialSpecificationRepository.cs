@@ -61,7 +61,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             : mapper.Map<MaterialSpecificationDto>(materialSpec);
     }
 
-    public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterialId(Guid materialId)
+    public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(Guid materialId)
     {
         var materialSpec = await context.MaterialSpecifications
             .AsSplitQuery()
