@@ -823,21 +823,6 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         var query = context.Grns
             .AsSplitQuery()
             .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.Manufacturer)
-            .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.Supplier)
-            .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.ShipmentInvoice)
-            .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.Material)
-            .Include(c => c.MaterialBatches)
-            .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.DistributedRequisitionMaterial)
-            .Include(c => c.MaterialBatches)
             .ThenInclude(cl => cl.Material)
             .AsQueryable();
 
