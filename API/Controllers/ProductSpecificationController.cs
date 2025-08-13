@@ -50,14 +50,14 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     }
     
     /// <summary>
-    /// Retrieves the details of a product specification by its product ID.
+    /// Retrieves the details of a product specification by its ID.
     /// </summary>
-    [HttpGet("product/{id:guid}")]
+    [HttpGet("product/{productId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSpecificationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProductSpecificationByProductId([FromRoute] Guid id)
+    public async Task<IResult> GetProductSpecificationByProduct([FromRoute] Guid productId)
     {
-        var result = await repository.GetProductSpecificationByProductId(id);
+        var result = await repository.GetProductSpecificationByProduct(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

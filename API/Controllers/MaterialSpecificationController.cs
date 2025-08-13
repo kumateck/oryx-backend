@@ -50,16 +50,17 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     }
     
     /// <summary>
-    /// Retrieves the details of a material specification by its material ID.
+    /// Retrieves the details of a material specification by material ID
     /// </summary>
-    [HttpGet("material/{id:guid}")]
+    [HttpGet("material{materialId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialSpecificationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialSpecificationByMaterialId([FromRoute] Guid id)
+    public async Task<IResult> GetMaterialSpecificationByMaterial([FromRoute] Guid materialId)
     {
-        var result = await repository.GetMaterialSpecificationByMaterialId(id);
+        var result = await repository.GetMaterialSpecificationByMaterial(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
 
     /// <summary>
     /// Updates a material specific by its ID.
