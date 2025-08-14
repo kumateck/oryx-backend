@@ -124,7 +124,7 @@ public class WarehouseLocationShelf : BaseEntity
     [StringLength(255)] public string Code { get; set; }
     [StringLength(255)] public string Name { get; set; }
     [StringLength(1000)] public string Description { get; set; }
-    public List<ShelfMaterialBatch> MaterialBatches { get; set; } = new();
+    public List<ShelfMaterialBatch> MaterialBatches { get; set; } = [];
     public List<ShelfMaterialBatch> GetMaterialBatches() => MaterialBatches;
 }
 
