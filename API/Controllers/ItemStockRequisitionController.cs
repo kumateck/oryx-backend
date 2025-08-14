@@ -78,4 +78,30 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
         var result = await repository.DeleteItemStockRequisition(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Issues a stock against an item stock requisition
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost("{stockRequisitionId:guid}/issue-stock-against-requisition")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(IssueItemStockRequisitionDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> IssueStockAgainstRequisition([FromRoute] Guid stockRequisitionId, [FromBody] IssueStockAgainstRequisitionRequest request)
+    {
+        var result = await repository.IssueStockRequisition(stockRequisitionId, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Issues an outstanding for a partial item stock requisition
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost("{stockRequisitionId:guid}/partial-issue-stock-against-requisition")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(IssueItemStockRequisitionDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> IssueStockAgainstRequisitionPartial([FromRoute] Guid stockRequisitionId, [FromBody] IssueStockAgainstRequisitionRequest request)
+    {
+        var result = await repository.IssuePartialStockRequisition(stockRequisitionId, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

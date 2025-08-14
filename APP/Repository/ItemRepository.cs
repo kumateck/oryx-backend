@@ -2,7 +2,6 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
-using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Items;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;

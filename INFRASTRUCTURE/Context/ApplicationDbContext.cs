@@ -577,6 +577,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Item Stock Requisitions
 
     public DbSet<ItemStockRequisition> ItemStockRequisitions { get; set; }
+    public DbSet<ItemStockRequisitionItem> ItemStockRequisitionItems { get; set; }
+    public DbSet<IssueItemStockRequisition> IssueItemStockRequisitions { get; set; }
+    
 
     #endregion
 

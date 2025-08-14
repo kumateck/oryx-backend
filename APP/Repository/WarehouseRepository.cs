@@ -283,14 +283,13 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     {
         var rack = await context.WarehouseLocationRacks
             .Include(r => r.WarehouseLocation)
-            .Include(r=>r.Shelves)
-            .ThenInclude(s=>s.MaterialBatches)
-            .ThenInclude(smb=>smb.MaterialBatch)
-            .ThenInclude(mb=>mb.Checklist)
-            .Include(r=>r.Shelves)
-            .ThenInclude(s=>s.MaterialBatches)
-            .ThenInclude(smb=>smb.MaterialBatch)
-            .ThenInclude(mb=>mb.Material)
+            .Include(r => r.Shelves)
+            .ThenInclude(s => s.MaterialBatches)
+            .ThenInclude(smb => smb.MaterialBatch)
+            .ThenInclude(mb => mb.Material)
+            .Include(r => r.Shelves)
+            .ThenInclude(s => s.MaterialBatches)
+            .ThenInclude(smb => smb.MaterialBatch.Checklist)
             .FirstOrDefaultAsync(r => r.Id == rackId);
 
         return rack is null
