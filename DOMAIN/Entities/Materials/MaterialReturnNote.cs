@@ -53,6 +53,7 @@ public class MaterialReturnNoteDto : BaseDto
     public MaterialReturnStatus Status { get; set; }
     public List<MaterialReturnNoteFullReturnDto> FullReturns { get; set; } = [];
     public List<MaterialReturnNotePartialReturnDto> PartialReturns { get; set; } = [];
+    public bool IsFullReturn => FullReturns.Count > 0;
 }
 
 public class MaterialReturnNoteFullReturnDto
