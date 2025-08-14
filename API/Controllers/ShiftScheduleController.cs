@@ -64,7 +64,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     /// Returns a shift schedule by its department ID.
     /// </summary>
     [HttpGet("department/{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShiftScheduleDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShiftScheduleDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShiftScheduleByDepartment([FromRoute] Guid id)
     {
