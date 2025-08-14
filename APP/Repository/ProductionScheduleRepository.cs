@@ -734,7 +734,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         // Fetch stock levels for each material ID individually
         foreach (var materialId in activeBoM.BillOfMaterial.Items.Select(item => item.MaterialId).Distinct())
         {
-            var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockLevel = await materialRepository.GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
             stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
         
@@ -852,7 +852,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         foreach (var materialId in product.Packages.Select(item => item.MaterialId).Distinct())
         {
-            var stockLevel = await materialRepository.GetMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockLevel = await materialRepository.GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
             stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
         
@@ -2409,7 +2409,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 ArNumber = "N/A",
                 QuantityReceived = 0,
                 QuantityIssued = batchRequest.Quantity,
-                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(batch.MaterialId, fromWarehouse.Id)).Value,
+                BalanceQuantity = (await materialRepository.GetMassMaterialStockInWarehouse(batch.MaterialId, fromWarehouse.Id)).Value,
                 UoMId = batch.UoMId,
                 ProductId = productionExtraPacking.ProductId,
                 CreatedAt = DateTime.UtcNow,
@@ -2426,7 +2426,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 ArNumber = "N/A",
                 QuantityReceived = batchRequest.Quantity,
                 QuantityIssued = 0,
-                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(batch.MaterialId, toWarehouse.Id)).Value,
+                BalanceQuantity = (await materialRepository.GetMassMaterialStockInWarehouse(batch.MaterialId, toWarehouse.Id)).Value,
                 UoMId = batch.UoMId,
                 ProductId =  productionExtraPacking.ProductId,
                 CreatedAt = DateTime.UtcNow,

@@ -883,7 +883,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         foreach (var warehouse in warehouses)
         {
-            var stockResult = await GetMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
             if (stockResult.IsSuccess && stockResult.Value > 0)
             {
                 stockByWarehouse.Add(new MaterialStockByWarehouseDto
@@ -926,7 +926,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             
             decimal totalStock = 0;
             
-            var stockResult = await GetMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
             if (stockResult.IsSuccess)
             {
                 totalStock = stockResult.Value;
@@ -960,7 +960,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             foreach (var warehouseId in warehouseIds)
             {
-                var stockResult = await GetMaterialStockInWarehouse(materialId, warehouseId);
+                var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouseId);
                 if (stockResult.IsSuccess)
                 {
                     totalStock += stockResult.Value;
@@ -980,7 +980,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return stockByDepartment;
     }
     
-    public async Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
+    /*public async Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {
         // Sum of quantities moved to this location (incoming batches)
         var batchesInLocation = await context.MassMaterialBatchMovements
@@ -1012,7 +1012,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
 
         return Math.Max(totalQuantityInLocation, 0);
-    }
+    }*/
     
     public async Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
     {
@@ -1085,25 +1085,34 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         // Sum of quantities moved to this location (incoming batches)
         var batchesInLocation = await context.MassMaterialBatchMovements
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.ToWarehouse)
-            .Where(m => m.Batch.MaterialId == materialId
+            .Where(m => m.Batch.Status == BatchStatus.Available &&
+                m.Batch.MaterialId == materialId
                         && m.ToWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of quantities moved out of this location (outgoing batches)
         var batchesMovedOut = await context.MassMaterialBatchMovements
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.FromWarehouse)
-            .Where(m => m.Batch.MaterialId == materialId
+            .Where(m => m.Batch.Status == BatchStatus.Available &&
+                        m.Batch.MaterialId == materialId
                         && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of the consumed quantities at this location for the given material
         var batchesConsumedAtLocation = await context.MaterialBatchEvents
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.ConsumptionWarehouse)
-            .Where(e => e.Batch.MaterialId == materialId
+            .Where(e => e.Batch.Status == BatchStatus.Available &&
+                        e.Batch.MaterialId == materialId
                         && e.ConsumptionWarehouse != null 
                         && e.ConsumptionWarehouseId == warehouseId
                         && e.Type == EventType.Consumed)
@@ -1757,7 +1766,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var warehouse = await context.Warehouses.FirstOrDefaultAsync(w =>
                 w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
             if (warehouse == null) continue;
-            var warehouseStockResult = await GetMaterialStockInWarehouse(result.Id, warehouse.Id);
+            var warehouseStockResult = await GetMassMaterialStockInWarehouse(result.Id, warehouse.Id);
             if(warehouseStockResult.IsFailure) continue;
             result.WarehouseStock = warehouseStockResult.Value;
         }
@@ -1810,9 +1819,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var warehouseType = result.Material.Kind == MaterialKind.Raw
                 ? WarehouseType.RawMaterialStorage
                 : WarehouseType.PackagedStorage;
-            var warehouse = await context.Warehouses.FirstOrDefaultAsync(w =>
-                w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
-            if (warehouse == null) continue;
+            var warehouse = await context.Warehouses
+                .FirstOrDefaultAsync(w => w.Type == warehouseType);
+            if (warehouse == null) return Error.NotFound("Warehouse", "Warehouse not found");
             var warehouseStockResult = await GetMassMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
             if(warehouseStockResult.IsFailure) continue;
             result.WarehouseStock = warehouseStockResult.Value;
