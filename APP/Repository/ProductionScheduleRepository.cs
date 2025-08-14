@@ -2003,6 +2003,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         Guid productionScheduleId, Guid productId)
     {
         var product = await context.ProductionScheduleProducts
+            .AsSplitQuery()
+            .Include(p => p.Product)
             .Where(p => p.ProductionScheduleId == productionScheduleId && p.ProductId == productId)
             .Select(p => mapper.Map<ProductionScheduleProductDto>(p))
             .FirstOrDefaultAsync();
