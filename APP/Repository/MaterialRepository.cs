@@ -328,7 +328,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         foreach (var m in paginatedResult.Data)
         {
-            var totalAvailableQuantity = await GetShelfMaterialStockInWarehouse(m.Id, warehouse.Id);
+            var totalAvailableQuantity = await GetMassMaterialStockInWarehouse(m.Id, warehouse.Id);
             if(totalAvailableQuantity.IsFailure) return totalAvailableQuantity.Errors;
 
             var unitOfMeasure = await GetUnitOfMeasureForMaterialDepartment(m.Id, userId);
@@ -1506,7 +1506,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // For each warehouse ID, retrieve the stock and warehouse info
         foreach (var warehouseId in warehouseIds.Where(warehouseId => warehouseId.HasValue))
         {
-            var stockResult = await GetShelfMaterialStockInWarehouse(materialId, warehouseId.Value);
+            var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouseId.Value);
             if (!stockResult.IsSuccess) continue;
 
             // Get warehouse details (you can map this from your Warehouse entity)

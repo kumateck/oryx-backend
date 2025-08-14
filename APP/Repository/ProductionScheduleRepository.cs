@@ -1507,6 +1507,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransferSources
+            .AsSplitQuery()
             .Include(s => s.FromDepartment)
             .Include(s => s.ToDepartment)
             .Include(st => st.StockTransfer).ThenInclude(st => st.Material)
@@ -2047,8 +2048,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         {
             foreach (var item in stockRequisition.Items)
             {
-                Debug.Assert(stockRequisition.ProductionScheduleId != null, "stockRequisition.ProductionScheduleId != null");
-                Debug.Assert(stockRequisition.ProductId != null, "stockRequisition.ProductId != null");
+                Debug.Assert(stockRequisition.ProductionScheduleId != null);
+                Debug.Assert(stockRequisition.ProductId != null);
                 var batchesToConsume =
                     await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
                         item.MaterialId,
