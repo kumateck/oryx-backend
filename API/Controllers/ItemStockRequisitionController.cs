@@ -83,12 +83,12 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Issues a stock against an item stock requisition
     /// </summary>
     /// <returns></returns>
-    [HttpPost("{id:guid}/issue-stock-against-requisition")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssueItemStockRequisitionDto))]
+    [HttpPost("{stockRequisitionId:guid}/issue-stock-against-requisition")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(IssueItemStockRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> IssueStockAgainstRequisition([FromRoute] Guid id, [FromBody] IssueStockAgainstRequisitionRequest request)
+    public async Task<IResult> IssueStockAgainstRequisition([FromRoute] Guid stockRequisitionId, [FromBody] IssueStockAgainstRequisitionRequest request)
     {
-        var result = await repository.IssueStockRequisition(id, request);
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        var result = await repository.IssueStockRequisition(stockRequisitionId, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
