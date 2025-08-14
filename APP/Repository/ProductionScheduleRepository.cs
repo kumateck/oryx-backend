@@ -555,13 +555,16 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         // Fetch production activities with only necessary data
         var productionActivities = await context.ProductionActivities
             .AsSplitQuery()
-            .Include(pa => pa.ProductionSchedule).ThenInclude(productionSchedule => productionSchedule.Products)
+            .Include(pa => pa.ProductionSchedule)
+            .ThenInclude(productionSchedule => productionSchedule.Products)
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps)
                 .ThenInclude(s => s.Operation) 
             .Include(pa => pa.Steps)
                 .ThenInclude(s => s.ResponsibleUsers) 
             .AsNoTracking()
+            .Where(pa => pa.ProductionSchedule.Products
+                .Any(ps => ps.ProductId == pa.ProductId && !ps.Cancelled))
             .ToListAsync();
 
         // Process CurrentStep in memory
