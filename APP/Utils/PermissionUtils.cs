@@ -12,90 +12,119 @@ public static class PermissionModules
     public const string Warehouse = "Warehouse";
     public const string Production = "Production";
     public const string Settings = "Settings";
+    public const string QualityControl = "Quality Control";
+    public const string QualityAssurance = "Quality Assurance";
+    public const string Inventory = "Inventory";
+    public const string Crm = "CRM";
 }
 
-// Note: PermissionSubmodules class seems less directly used by the desired structure,
-// The structured text provides more specific submodule groupings.
- public static class PermissionSubmodules
- {
-        // Procurement
-        public const string Manufacturers = "Manufacturers";
-        public const string Vendors = "Vendors";
-        public const string PurchaseRequisition = "Purchase Requisition";
-        public const string QuotationsRequest = "Quotations Request";
-        public const string QuotationsResponses = "Quotations Responses";
-        public const string PriceComparison = "Price Comparison";
-        public const string AwardedQuotations = "Awarded Quotations";
-        public const string ProformaResponses = "Proforma Responses";
-        public const string PurchaseOrders = "Purchase Orders";
-        public const string MaterialDistribution = "Material Distribution";
+public static class PermissionSubmodules
+{
+    // Procurement
+    public const string Manufacturers = "Manufacturers";
+    public const string Vendors = "Vendors";
+    public const string PurchaseRequisition = "Purchase Requisition";
+    public const string QuotationsRequest = "Quotations Request";
+    public const string QuotationsResponses = "Quotations Responses";
+    public const string PriceComparison = "Price Comparison";
+    public const string AwardedQuotations = "Awarded Quotations";
+    public const string ProformaResponses = "Proforma Responses";
+    public const string PurchaseOrders = "Purchase Orders";
+    public const string MaterialDistribution = "Material Distribution";
 
-        // Logistics
-        public const string ShipmentInvoice = "Shipment Invoice";
-        public const string ShipmentDocument = "Shipment Document";
-        public const string BillingSheet = "Billing Sheet";
-        public const string Waybill = "Waybill";
+    // Logistics
+    public const string ShipmentInvoice = "Shipment Invoice";
+    public const string ShipmentDocument = "Shipment Document";
+    public const string BillingSheet = "Billing Sheet";
+    public const string Waybill = "Waybill";
 
-        // Human Resources
-        public const string EmployeeManagement = "Employee Management";
-        public const string UserManagement = "User Management";
-        public const string DesignationManagement = "Designation Management";
-        public const string RolesPermissionsManagement = "Roles & Permissions Management";
-        public const string LeaveManagement = "Leave Management";
+    // Human Resources
+    public const string EmployeeManagement = "Employee Management";
+    public const string UserManagement = "User Management";
+    public const string DesignationManagement = "Designation Management";
+    public const string RolesPermissionsManagement = "Roles & Permissions Management";
+    public const string LeaveManagement = "Leave Management";
 
-        // Warehouse
-        public const string ReceivingArea = "Receiving Area";
-        public const string QuarantineAreaGRN = "Quarantine Area / GRN";
-        public const string Departments = "Departments";
-        public const string Warehouses = "Warehouses";
-        public const string Locations = "Locations";
-        public const string Racks = "Racks";
-        public const string Shelves = "Shelves";
-        public const string Materials = "Materials";
-        public const string ApprovedMaterials = "Approved Materials";
-        public const string RejectedMaterials = "Rejected Materials";
-        public const string StockRequisitions = "Stock Requisitions";
-        public const string StockTransferIssues = "Stock Transfer Issues";
-        public const string LocationChartRecord = "Location Chart Record";
+    // Warehouse
+    public const string ReceivingArea = "Receiving Area";
+    public const string QuarantineAreaGrn = "Quarantine Area / GRN";
+    public const string Departments = "Departments";
+    public const string Warehouses = "Warehouses";
+    public const string Locations = "Locations";
+    public const string Racks = "Racks";
+    public const string Shelves = "Shelves";
+    public const string Materials = "Materials";
+    public const string ApprovedMaterials = "Approved Materials";
+    public const string RejectedMaterials = "Rejected Materials";
+    public const string StockRequisitions = "Stock Requisitions";
+    public const string StockTransferIssues = "Stock Transfer Issues";
+    public const string LocationChartRecord = "Location Chart Record";
 
-        // Production
-        public const string RawMaterialRequisitions = "Raw Material Requisitions"; // Under REQUISITIONS group
-        public const string PackageMaterialRequisitions = "Package Material Requisitions"; // Under REQUISITIONS group
-        public const string Planning = "Planning";
-        public const string StockTransferRequests = "Stock Transfer Requests";
-        public const string ProductSchedule = "Product Schedule";
+    // Production
+    public const string RawMaterialRequisitions = "Raw Material Requisitions"; // Under REQUISITIONS group
+    public const string PackageMaterialRequisitions = "Package Material Requisitions"; // Under REQUISITIONS group
+    public const string Planning = "Planning";
+    public const string StockTransferRequests = "Stock Transfer Requests";
+    public const string ProductSchedule = "Product Schedule";
 
-         // Settings
-        public const string SystemSettings = "System Settings";
-        public const string UserSettings = "User Settings";
-        public const string AuditTrail = "Audit Trail";
-        // Settings -> Configurations (Sub-Group)
-        public const string Categories = "Categories"; // Group under Configurations
-        public const string ProductCategory = "Product Category"; // Child of Categories
-        public const string RawCategory = "Raw Category"; // Child of Categories
-        public const string PackageCategory = "Package Category"; // Child of Categories
-        public const string Procedures = "Procedures"; // Group under Configurations
-        public const string Resource = "Resource"; // Child of Procedures
-        public const string Operation = "Operation"; // Child of Procedures
-        public const string WorkCenter = "Work Center"; // Child of Procedures
-        public const string Products = "Products"; // Group under Configurations
-        public const string MaterialType = "Material Type"; // Child of Products
-        public const string UnitOfMeasure = "Unit of Measure";
-        public const string Address = "Address"; // Group under Configurations
-        public const string Country = "Country"; // Child of Address
-        public const string Container = "Container"; // Group under Configurations
-        public const string PackStyle = "Pack Style"; // Child of Container
-        public const string BillingSheetCharge = "Billing Sheet Charge";
-        public const string TermsOfPayment = "Terms of Payment";
-        public const string DeliveryMode = "Delivery Mode";
-        public const string CodeSettings = "Code Settings";
-        public const string Approvals = "Approvals";
-        public const string AlertsNotifications = "Alerts & Notifications";
-        public const string Equipment = "Equipment";
-        public const string WorkFlowForms = "Work Flow Forms"; // Group under Configurations
-        public const string Questions = "Questions"; // Child of WorkFlowForms
-        public const string Templates = "Templates"; // Child of WorkFlowForms
- }
+    // Settings
+    public const string SystemSettings = "System Settings";
+    public const string UserSettings = "User Settings";
+    public const string AuditTrail = "Audit Trail";
+    // Settings -> Configurations (Sub-Group)
+    public const string Categories = "Categories"; // Group under Configurations
+    public const string ProductCategory = "Product Category"; // Child of Categories
+    public const string RawCategory = "Raw Category"; // Child of Categories
+    public const string PackageCategory = "Package Category"; // Child of Categories
+    public const string Procedures = "Procedures"; // Group under Configurations
+    public const string Resource = "Resource"; // Child of Procedures
+    public const string Operation = "Operation"; // Child of Procedures
+    public const string WorkCenter = "Work Center"; // Child of Procedures
+    public const string Products = "Products"; // Group under Configurations
+    public const string MaterialType = "Material Type"; // Child of Products
+    public const string UnitOfMeasure = "Unit of Measure";
+    public const string Address = "Address"; // Group under Configurations
+    public const string Country = "Country"; // Child of Address
+    public const string Container = "Container"; // Group under Configurations
+    public const string PackStyle = "Pack Style"; // Child of Container
+    public const string BillingSheetCharge = "Billing Sheet Charge";
+    public const string TermsOfPayment = "Terms of Payment";
+    public const string DeliveryMode = "Delivery Mode";
+    public const string CodeSettings = "Code Settings";
+    public const string Approvals = "Approvals";
+    public const string AlertsNotifications = "Alerts & Notifications";
+    public const string Equipment = "Equipment";
+    public const string WorkFlowForms = "Work Flow Forms"; // Group under Configurations
+    public const string Questions = "Questions"; // Child of WorkFlowForms
+    public const string Templates = "Templates"; // Child of WorkFlowForms
+
+    // Quality Control
+    public const string MaterialStp = "Material STP";
+    public const string ProductStp = "Product STP";
+    public const string MaterialArd = "Material ARD";
+    public const string ProductArd = "Product ARD";
+    public const string GoodsReceiptNote = "Goods Receipt Note";
+    public const string MaterialSpecification = "Material Specification";
+    public const string ProductSpecification = "Product Specification";
+
+    // Quality Assurance
+    public const string IssueBmr = "Issue BMR";
+    public const string BmrBprRequest = "BMR/BPR Request";
+    public const string AnalyticalTestRequests = "Analytical Test Requests";
+    public const string PendingApprovals = "Pending Approvals";
+
+    // Inventory
+    public const string VendorManagement = "Vendor Management";
+    public const string PurchaseRequisitionInventory = "Purchase Requisition";
+    public const string StockRequisition = "Stock Requisition";
+
+    // CRM
+    public const string CustomerManagement = "Customer Management";
+    public const string ProductionOrders = "Production Orders";
+    public const string ProformaInvoice = "Proforma Invoice";
+    public const string Invoice = "Invoice";
+    public const string WaybillCrm = "Waybill";
+}
 
 
 public static class PermissionKeys
@@ -369,6 +398,79 @@ public static class PermissionKeys
     public const string CanCreateNewTemplates = "CanCreateNewTemplates";
     public const string CanEditTemplates = "CanEditTemplates";
     public const string CanDeleteTemplates = "CanDeleteTemplates";
+
+    // Quality Control
+    public const string CanViewMaterialSTPs = "CanViewMaterialSTPs";
+    public const string CanCreateMaterialSTP = "CanCreateMaterialSTP";
+    public const string CanEditMaterialSTP = "CanEditMaterialSTP";
+    public const string CanDeleteMaterialSTP = "CanDeleteMaterialSTP";
+    public const string CanViewProductSTPs = "CanViewProductSTPs";
+    public const string CanCreateProductSTP = "CanCreateProductSTP";
+    public const string CanEditProductSTP = "CanEditProductSTP";
+    public const string CanDeleteProductSTP = "CanDeleteProductSTP";
+    public const string CanViewMaterialARDs = "CanViewMaterialARDs";
+    public const string CanCreateMaterialARD = "CanCreateMaterialARD";
+    public const string CanEditMaterialARD = "CanEditMaterialARD";
+    public const string CanDeleteMaterialARD = "CanDeleteMaterialARD";
+    public const string CanViewProductARDs = "CanViewProductARDs";
+    public const string CanCreateProductARD = "CanCreateProductARD";
+    public const string CanEditProductARD = "CanEditProductARD";
+    public const string CanDeleteProductARD = "CanDeleteProductARD";
+    public const string CanViewGoodsReceiptNotes = "CanViewGoodsReceiptNotes";
+    public const string CanTakeSample = "CanTakeSample";
+    public const string CanStartTest = "CanStartTest";
+    public const string CanViewMaterialSpecifications = "CanViewMaterialSpecifications";
+    public const string CanCreateMaterialSpecification = "CanCreateMaterialSpecification";
+    public const string CanEditMaterialSpecification = "CanEditMaterialSpecification";
+    public const string CanDeleteMaterialSpecification = "CanDeleteMaterialSpecification";
+    public const string CanViewProductSpecifications = "CanViewProductSpecifications";
+    public const string CanCreateProductSpecification = "CanCreateProductSpecification";
+    public const string CanEditProductSpecification = "CanEditProductSpecification";
+    public const string CanDeleteProductSpecification = "CanDeleteProductSpecification";
+
+    // Quality Assurance
+    public const string CanViewIssuedBmRs = "CanViewIssuedBMRs";
+    public const string CanIssueBmr = "CanIssueBMR";
+    public const string CanViewBmrbprRequests = "CanViewBMRBPRRequests";
+    public const string CanCreateBmrbprRequest = "CanCreateBMRBPRRequest";
+    public const string CanApproveOrRejectBmrbprRequest = "CanApproveOrRejectBMRBPRRequest";
+    public const string CanViewAnalyticalTestRequests = "CanViewAnalyticalTestRequests";
+    public const string CanCreateAnalyticalTestRequest = "CanCreateAnalyticalTestRequest";
+    public const string CanTakeSamples = "CanTakeSamples";
+    public const string CanStartTestAnalytical = "CanStartTestAnalytical";
+    public const string CanViewPendingApprovals = "CanViewPendingApprovals";
+
+    // Inventory
+    public const string CanViewVendorsInventory = "CanViewVendorsInventory";
+    public const string CanCreateVendorInventory = "CanCreateVendorInventory";
+    public const string CanEditVendorInventory = "CanEditVendorInventory";
+    public const string CanDeleteVendorInventory = "CanDeleteVendorInventory";
+    public const string CanViewPurchaseRequisitionsInventory = "CanViewPurchaseRequisitionsInventory";
+    public const string CanCreatePurchaseRequisitionInventory = "CanCreatePurchaseRequisitionInventory";
+    public const string CanEditPurchaseRequisitionInventory = "CanEditPurchaseRequisitionInventory";
+    public const string CanDeletePurchaseRequisitionInventory = "CanDeletePurchaseRequisitionInventory";
+    public const string CanViewStockRequisitionsInventory = "CanViewStockRequisitionsInventory";
+    public const string CanCreateStockRequisitionInventory = "CanCreateStockRequisitionInventory";
+    public const string CanIssueOrRejectStockRequisitions = "CanIssueOrRejectStockRequisitions";
+
+    // CRM
+    public const string CanViewCustomers = "CanViewCustomers";
+    public const string CanCreateCustomer = "CanCreateCustomer";
+    public const string CanEditCustomer = "CanEditCustomer";
+    public const string CanDeleteCustomer = "CanDeleteCustomer";
+    public const string CanViewOrder = "CanViewOrder";
+    public const string CanCreateOrders = "CanCreateOrders";
+    public const string CanEditOrders = "CanEditOrders";
+    public const string CanDeleteOrders = "CanDeleteOrders";
+    public const string CanViewProformaInvoice = "CanViewProformaInvoice";
+    public const string CanCreateProformaInvoice = "CanCreateProformaInvoice";
+    public const string CanEditProformaInvoice = "CanEditProformaInvoice";
+    public const string CanCancelProformaInvoice = "CanCancelProformaInvoice";
+    public const string CanViewInvoice = "CanViewInvoice";
+    public const string CanCreateInvoice = "CanCreateInvoice";
+    public const string CanCancelInvoice = "CanCancelInvoice";
+    public const string CanViewWaybillCrm = "CanViewWaybillCRM";
+    public const string CanCreateWaybillCrm = "CanCreateWaybillCRM";
 }
 
 public static class PermissionUtils
@@ -410,253 +512,324 @@ public static class PermissionUtils
             new(PermissionModules.Procurement, PermissionSubmodules.MaterialDistribution, PermissionKeys.CanDistributeMaterials, "Can Distribute materials", CreateDescription("Distribute materials")),
 
             // Logistics
-            new(PermissionModules.Logistics, "Shipment Invoice", PermissionKeys.CanCreateShipmentInvoice, "Can Create shipment invoice", CreateDescription("Create shipment invoice")),
-            new(PermissionModules.Logistics, "Shipment Invoice", PermissionKeys.CanViewShipmentInvoice, "Can View shipment invoice", CreateDescription("View shipment invoice")),
-            new(PermissionModules.Logistics, "Shipment Invoice", PermissionKeys.CanEditShipmentInvoice, "Can Edit shipment invoice", CreateDescription("Edit shipment invoice")),
-            new(PermissionModules.Logistics, "Shipment Invoice", PermissionKeys.CanDeleteShipmentInvoice, "Can Delete shipment invoice", CreateDescription("Delete shipment invoice")),
+            new(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice, PermissionKeys.CanCreateShipmentInvoice, "Can Create shipment invoice", CreateDescription("Create shipment invoice")),
+            new(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice, PermissionKeys.CanViewShipmentInvoice, "Can View shipment invoice", CreateDescription("View shipment invoice")),
+            new(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice, PermissionKeys.CanEditShipmentInvoice, "Can Edit shipment invoice", CreateDescription("Edit shipment invoice")),
+            new(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice, PermissionKeys.CanDeleteShipmentInvoice, "Can Delete shipment invoice", CreateDescription("Delete shipment invoice")),
 
-            new(PermissionModules.Logistics, "Shipment Document", PermissionKeys.CanCreateShipmentDocument, "Can Create Shipment document", CreateDescription("Create Shipment document")),
-            new(PermissionModules.Logistics, "Shipment Document", PermissionKeys.CanViewShipmentDocument, "Can View Shipment document", CreateDescription("View Shipment document")),
-            new(PermissionModules.Logistics, "Shipment Document", PermissionKeys.CanEditShipmentDocument, "Can Edit Shipment Document", CreateDescription("Edit Shipment Document")),
-            new(PermissionModules.Logistics, "Shipment Document", PermissionKeys.CanDeleteShipmentDocument, "Can Delete Shipment document", CreateDescription("Delete Shipment document")),
-            new(PermissionModules.Logistics, "Shipment Document", PermissionKeys.CanChangeShipmentDocumentStatus, "Change Shipment Document status", CreateDescription("Change Shipment Document status")),
+            new(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanCreateShipmentDocument, "Can Create Shipment document", CreateDescription("Create Shipment document")),
+            new(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanViewShipmentDocument, "Can View Shipment document", CreateDescription("View Shipment document")),
+            new(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanEditShipmentDocument, "Can Edit Shipment Document", CreateDescription("Edit Shipment Document")),
+            new(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanDeleteShipmentDocument, "Can Delete Shipment document", CreateDescription("Delete Shipment document")),
+            new(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanChangeShipmentDocumentStatus, "Change Shipment Document status", CreateDescription("Change Shipment Document status")),
 
-            new(PermissionModules.Logistics, "Billing Sheet", PermissionKeys.CanCreateBillingSheet, "Can Create billing sheet", CreateDescription("Create billing sheet")),
-            new(PermissionModules.Logistics, "Billing Sheet", PermissionKeys.CanViewBillingSheet, "Can View billing sheet", CreateDescription("View billing sheet")),
-            new(PermissionModules.Logistics, "Billing Sheet", PermissionKeys.CanEditBillingSheet, "Can Edit billing sheet", CreateDescription("Edit billing sheet")),
-            new(PermissionModules.Logistics, "Billing Sheet", PermissionKeys.CanDeleteBillingSheet, "Can Delete billing sheet", CreateDescription("Delete billing sheet")),
+            new(PermissionModules.Logistics, PermissionSubmodules.BillingSheet, PermissionKeys.CanCreateBillingSheet, "Can Create billing sheet", CreateDescription("Create billing sheet")),
+            new(PermissionModules.Logistics, PermissionSubmodules.BillingSheet, PermissionKeys.CanViewBillingSheet, "Can View billing sheet", CreateDescription("View billing sheet")),
+            new(PermissionModules.Logistics, PermissionSubmodules.BillingSheet, PermissionKeys.CanEditBillingSheet, "Can Edit billing sheet", CreateDescription("Edit billing sheet")),
+            new(PermissionModules.Logistics, PermissionSubmodules.BillingSheet, PermissionKeys.CanDeleteBillingSheet, "Can Delete billing sheet", CreateDescription("Delete billing sheet")),
 
-            new(PermissionModules.Logistics, "Waybill", PermissionKeys.CanCreateWaybill, "Can Create waybill", CreateDescription("Create waybill")),
-            new(PermissionModules.Logistics, "Waybill", PermissionKeys.CanViewWaybill, "Can View waybill", CreateDescription("View waybill")),
-            new(PermissionModules.Logistics, "Waybill", PermissionKeys.CanEditWaybill, "Can Edit waybill", CreateDescription("Edit waybill")),
-            new(PermissionModules.Logistics, "Waybill", PermissionKeys.CanDeleteWaybill, "Can Delete waybill", CreateDescription("Delete waybill")),
-            new(PermissionModules.Logistics, "Waybill", PermissionKeys.CanChangeWaybillStatus, "Change Waybill status", CreateDescription("Change Waybill status")),
+            new(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanCreateWaybill, "Can Create waybill", CreateDescription("Create waybill")),
+            new(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanViewWaybill, "Can View waybill", CreateDescription("View waybill")),
+            new(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanEditWaybill, "Can Edit waybill", CreateDescription("Edit waybill")),
+            new(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanDeleteWaybill, "Can Delete waybill", CreateDescription("Delete waybill")),
+            new(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanChangeWaybillStatus, "Change Waybill status", CreateDescription("Change Waybill status")),
 
             // Human Resources
-            new(PermissionModules.HumanResources, "Employee Management", PermissionKeys.CanViewEmployee, "Can View Employee", CreateDescription("View Employee")),
-            new(PermissionModules.HumanResources, "Employee Management", PermissionKeys.CanRegisterEmployee, "Can Register Employee", CreateDescription("Register Employee")),
-            new(PermissionModules.HumanResources, "Employee Management", PermissionKeys.CanUpdateEmployeeDetails, "Can Update Employee Details", CreateDescription("Update Employee Details")),
-            new(PermissionModules.HumanResources, "Employee Management", PermissionKeys.CanDeleteEmployee, "Can Delete Employee", CreateDescription("Delete Employee")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanViewEmployee, "Can View Employee", CreateDescription("View Employee")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanRegisterEmployee, "Can Register Employee", CreateDescription("Register Employee")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanUpdateEmployeeDetails, "Can Update Employee Details", CreateDescription("Update Employee Details")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanDeleteEmployee, "Can Delete Employee", CreateDescription("Delete Employee")),
 
-            new(PermissionModules.HumanResources, "User Management", PermissionKeys.CanViewUser, "Can View User", CreateDescription("View User")),
-            new(PermissionModules.HumanResources, "User Management", PermissionKeys.CanCreateUser, "Can Create User", CreateDescription("Create User")),
-            new(PermissionModules.HumanResources, "User Management", PermissionKeys.CanUpdateUserDetails, "Can Update User Details", CreateDescription("Update User Details")),
-            new(PermissionModules.HumanResources, "User Management", PermissionKeys.CanDeleteUser, "Can Delete User", CreateDescription("Delete User")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.UserManagement, PermissionKeys.CanViewUser, "Can View User", CreateDescription("View User")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.UserManagement, PermissionKeys.CanCreateUser, "Can Create User", CreateDescription("Create User")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.UserManagement, PermissionKeys.CanUpdateUserDetails, "Can Update User Details", CreateDescription("Update User Details")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.UserManagement, PermissionKeys.CanDeleteUser, "Can Delete User", CreateDescription("Delete User")),
 
-            new(PermissionModules.HumanResources, "Designation Management", PermissionKeys.CanViewDesignation, "Can View Designation", CreateDescription("View Designation")),
-            new(PermissionModules.HumanResources, "Designation Management", PermissionKeys.CanCreateDesignation, "Can Create Designation", CreateDescription("Create Designation")),
-            new(PermissionModules.HumanResources, "Designation Management", PermissionKeys.CanEditDesignation, "Can Edit Designation", CreateDescription("Edit Designation")),
-            new(PermissionModules.HumanResources, "Designation Management", PermissionKeys.CanDeleteDesignation, "Can Delete Designation", CreateDescription("Delete Designation")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.DesignationManagement, PermissionKeys.CanViewDesignation, "Can View Designation", CreateDescription("View Designation")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.DesignationManagement, PermissionKeys.CanCreateDesignation, "Can Create Designation", CreateDescription("Create Designation")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.DesignationManagement, PermissionKeys.CanEditDesignation, "Can Edit Designation", CreateDescription("Edit Designation")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.DesignationManagement, PermissionKeys.CanDeleteDesignation, "Can Delete Designation", CreateDescription("Delete Designation")),
 
-            new(PermissionModules.HumanResources, "Roles & Permissions Management", PermissionKeys.CanViewRoles, "Can View Roles", CreateDescription("View Roles")),
-            new(PermissionModules.HumanResources, "Roles & Permissions Management", PermissionKeys.CanCreateRoleAndAssignPermissions, "Can Create Role & Assign Permissions", CreateDescription("Create Role & Assign Permissions")),
-            new(PermissionModules.HumanResources, "Roles & Permissions Management", PermissionKeys.CanEditRoleWithItsPermissions, "Can Edit Role With Its Permissions", CreateDescription("Edit Role With Its Permissions")),
-            new(PermissionModules.HumanResources, "Roles & Permissions Management", PermissionKeys.CanDeleteRole, "Can Delete A Role", CreateDescription("Delete A Role")), // Note slight name variation
+            new(PermissionModules.HumanResources, PermissionSubmodules.RolesPermissionsManagement, PermissionKeys.CanViewRoles, "Can View Roles", CreateDescription("View Roles")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.RolesPermissionsManagement, PermissionKeys.CanCreateRoleAndAssignPermissions, "Can Create Role and assign permissions", CreateDescription("Create Role and assign permissions")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.RolesPermissionsManagement, PermissionKeys.CanEditRoleWithItsPermissions, "Can Edit Role with its permissions", CreateDescription("Edit Role with its permissions")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.RolesPermissionsManagement, PermissionKeys.CanDeleteRole, "Can Delete Role", CreateDescription("Delete Role")),
 
-            new(PermissionModules.HumanResources, "Leave Management", PermissionKeys.CanViewLeaveRequests, "Can View Leave Requests", CreateDescription("View Leave Requests")),
-            new(PermissionModules.HumanResources, "Leave Management", PermissionKeys.CanCreateLeaveRequest, "Can Create Leave Request", CreateDescription("Create Leave Request")),
-            new(PermissionModules.HumanResources, "Leave Management", PermissionKeys.CanEditLeaveRequest, "Can Edit Leave Request", CreateDescription("Edit Leave Request")),
-            new(PermissionModules.HumanResources, "Leave Management", PermissionKeys.CanDeleteOrCancelLeaveRequest, "Can Delete/Cancel Leave Request", CreateDescription("Delete/Cancel Leave Request")),
-            new(PermissionModules.HumanResources, "Leave Management", PermissionKeys.CanApproveOrRejectLeaveRequest, "Can Approve/Reject Leave Request", CreateDescription("Approve/Reject Leave Request")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.LeaveManagement, PermissionKeys.CanViewLeaveRequests, "Can View Leave requests", CreateDescription("View Leave requests")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.LeaveManagement, PermissionKeys.CanCreateLeaveRequest, "Can Create Leave request", CreateDescription("Create Leave request")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.LeaveManagement, PermissionKeys.CanEditLeaveRequest, "Can Edit Leave request", CreateDescription("Edit Leave request")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.LeaveManagement, PermissionKeys.CanDeleteOrCancelLeaveRequest, "Can Delete or cancel Leave request", CreateDescription("Delete or cancel Leave request")),
+            new(PermissionModules.HumanResources, PermissionSubmodules.LeaveManagement, PermissionKeys.CanApproveOrRejectLeaveRequest, "Can Approve or reject Leave request", CreateDescription("Approve or reject Leave request")),
 
-            // Warehouse
-            new(PermissionModules.Warehouse, "Receiving Area", PermissionKeys.CanViewReceivedRawMaterialsItems, "Can View Received Raw Materials Items", CreateDescription("View Received Raw Materials Items")),
-            new(PermissionModules.Warehouse, "Receiving Area", PermissionKeys.CanViewReceivedPackagingMaterialsItems, "Can View Received Packaging Materials Items", CreateDescription("View Received Packaging Materials Items")),
-            new(PermissionModules.Warehouse, "Receiving Area", PermissionKeys.CanCreateChecklistForIncomingRawMaterialsGoods, "Can Create Checklist for Incoming Raw Materials Goods", CreateDescription("Create Checklist for Incoming Raw Materials Goods")),
-            new(PermissionModules.Warehouse, "Receiving Area", PermissionKeys.CanCreateChecklistForIncomingPackagingMaterialsGoods, "Can Create Checklist for Incoming Packaging Materials Goods", CreateDescription("Create Checklist for Incoming Packaging Materials Goods")),
-            new(PermissionModules.Warehouse, "Receiving Area", PermissionKeys.CanCreateGrnForRawMaterialsChecklistedItems, "Can Create GRN for Raw Materials Checklisted items", CreateDescription("Create GRN for Raw Materials Checklisted items")),
-            new(PermissionModules.Warehouse, "Receiving Area", PermissionKeys.CanCreateGrnForPackagingMaterialsChecklistedItems, "Can Create GRN for Packaging Materials Checklisted items", CreateDescription("Create GRN for Packaging Materials Checklisted items")),
+            // Warehouse (Receiving + Quarantine + Master)
+            new(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanViewReceivedRawMaterialsItems, "Can View received raw materials items", CreateDescription("View received raw materials items")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanViewReceivedPackagingMaterialsItems, "Can View received packaging materials items", CreateDescription("View received packaging materials items")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateChecklistForIncomingRawMaterialsGoods, "Can Create checklist for incoming raw materials goods", CreateDescription("Create checklist for incoming raw materials goods")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateChecklistForIncomingPackagingMaterialsGoods, "Can Create checklist for incoming packaging materials goods", CreateDescription("Create checklist for incoming packaging materials goods")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateGrnForRawMaterialsChecklistedItems, "Can Create GRN for raw materials checklisted items", CreateDescription("Create GRN for raw materials checklisted items")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateGrnForPackagingMaterialsChecklistedItems, "Can Create GRN for packaging materials checklisted items", CreateDescription("Create GRN for packaging materials checklisted items")),
 
-            new(PermissionModules.Warehouse, "Quarantine Area / GRN", PermissionKeys.CanViewQuarantineRawMaterialsRecords, "Can View Quarantine Raw Materials Records", CreateDescription("View Quarantine Raw Materials Records")),
-            new(PermissionModules.Warehouse, "Quarantine Area / GRN", PermissionKeys.CanViewQuarantinePackagingMaterialsRecords, "Can View Quarantine Packaging Materials Records", CreateDescription("View Quarantine Packaging Materials Records")),
-            new(PermissionModules.Warehouse, "Quarantine Area / GRN", PermissionKeys.CanAssignRawMaterialsStockToStorageLocations, "Can Assign Raw Materials Stock to Storage locations", CreateDescription("Assign Raw Materials Stock to Storage locations")),
-            new(PermissionModules.Warehouse, "Quarantine Area / GRN", PermissionKeys.CanAssignPackagingMaterialsStockToStorageLocations, "Can Assign Packaging Materials Stock to Storage locations", CreateDescription("Assign Packaging Materials Stock to Storage locations")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewQuarantineRawMaterialsRecords, "Can View quarantine raw materials records", CreateDescription("View quarantine raw materials records")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewQuarantinePackagingMaterialsRecords, "Can View quarantine packaging materials records", CreateDescription("View quarantine packaging materials records")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanAssignRawMaterialsStockToStorageLocations, "Can Assign raw materials stock to storage locations", CreateDescription("Assign raw materials stock to storage locations")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanAssignPackagingMaterialsStockToStorageLocations, "Can Assign packaging materials stock to storage locations", CreateDescription("Assign packaging materials stock to storage locations")),
 
-            new(PermissionModules.Warehouse, "Departments", PermissionKeys.CanViewDepartments, "Can View Departments", CreateDescription("View Departments")),
-            new(PermissionModules.Warehouse, "Departments", PermissionKeys.CanCreateNewDepartment, "Can Create New Department", CreateDescription("Create New Department")),
-            new(PermissionModules.Warehouse, "Departments", PermissionKeys.CanEditDepartment, "Can Edit Department", CreateDescription("Edit Department")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Departments, PermissionKeys.CanViewDepartments, "Can View departments", CreateDescription("View departments")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Departments, PermissionKeys.CanCreateNewDepartment, "Can Create new department", CreateDescription("Create new department")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Departments, PermissionKeys.CanEditDepartment, "Can Edit department", CreateDescription("Edit department")),
 
-            new(PermissionModules.Warehouse, "Warehouses", PermissionKeys.CanViewWarehouses, "Can View Warehouses", CreateDescription("View Warehouses")),
-            new(PermissionModules.Warehouse, "Warehouses", PermissionKeys.CanAddWarehouse, "Can Add Warehouse", CreateDescription("Add Warehouse")),
-            new(PermissionModules.Warehouse, "Warehouses", PermissionKeys.CanEditWarehouse, "Can Edit Warehouse", CreateDescription("Edit Warehouse")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Warehouses, PermissionKeys.CanViewWarehouses, "Can View warehouses", CreateDescription("View warehouses")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Warehouses, PermissionKeys.CanAddWarehouse, "Can Add warehouse", CreateDescription("Add warehouse")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Warehouses, PermissionKeys.CanEditWarehouse, "Can Edit warehouse", CreateDescription("Edit warehouse")),
 
-            new(PermissionModules.Warehouse, "Locations", PermissionKeys.CanViewLocations, "Can View Locations", CreateDescription("View Locations")),
-            new(PermissionModules.Warehouse, "Locations", PermissionKeys.CanAddNewLocation, "Can Add New Location", CreateDescription("Add New Location")),
-            new(PermissionModules.Warehouse, "Locations", PermissionKeys.CanEditLocation, "Can Edit Location", CreateDescription("Edit Location")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Locations, PermissionKeys.CanViewLocations, "Can View locations", CreateDescription("View locations")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Locations, PermissionKeys.CanAddNewLocation, "Can Add new location", CreateDescription("Add new location")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Locations, PermissionKeys.CanEditLocation, "Can Edit location", CreateDescription("Edit location")),
 
-            new(PermissionModules.Warehouse, "Racks", PermissionKeys.CanViewRacks, "Can View Racks", CreateDescription("View Racks")),
-            new(PermissionModules.Warehouse, "Racks", PermissionKeys.CanAddNewRack, "Can Add New Rack", CreateDescription("Add New Rack")),
-            new(PermissionModules.Warehouse, "Racks", PermissionKeys.CanEditRack, "Can Edit Rack", CreateDescription("Edit Rack")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Racks, PermissionKeys.CanViewRacks, "Can View racks", CreateDescription("View racks")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Racks, PermissionKeys.CanAddNewRack, "Can Add new rack", CreateDescription("Add new rack")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Racks, PermissionKeys.CanEditRack, "Can Edit rack", CreateDescription("Edit rack")),
 
-            new(PermissionModules.Warehouse, "Shelves", PermissionKeys.CanViewShelves, "Can View Shelves", CreateDescription("View Shelves")), // Corrected based on key name
-            new(PermissionModules.Warehouse, "Shelves", PermissionKeys.CanAddNewShelf, "Can Add New Shelf", CreateDescription("Add New Shelf")), // Corrected based on key name
-            new(PermissionModules.Warehouse, "Shelves", PermissionKeys.CanEditShelf, "Can Edit Shelf", CreateDescription("Edit Shelf")), // Corrected based on key name
+            new(PermissionModules.Warehouse, PermissionSubmodules.Shelves, PermissionKeys.CanViewShelves, "Can View shelves", CreateDescription("View shelves")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Shelves, PermissionKeys.CanAddNewShelf, "Can Add new shelf", CreateDescription("Add new shelf")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Shelves, PermissionKeys.CanEditShelf, "Can Edit shelf", CreateDescription("Edit shelf")),
 
-            new(PermissionModules.Warehouse, "Materials", PermissionKeys.CanViewRawMaterials, "Can View Raw Materials", CreateDescription("View Raw Materials")),
-            new(PermissionModules.Warehouse, "Materials", PermissionKeys.CanViewPackagingMaterials, "Can View Packaging Materials", CreateDescription("View Packaging Materials")),
-            new(PermissionModules.Warehouse, "Materials", PermissionKeys.CanCreateNewRawMaterials, "Can Create New Raw Materials", CreateDescription("Create New Raw Materials")),
-            new(PermissionModules.Warehouse, "Materials", PermissionKeys.CanCreateNewPackagingMaterials, "Can Create New Packaging Materials", CreateDescription("Create New Packaging Materials")),
-            new(PermissionModules.Warehouse, "Materials", PermissionKeys.CanEditRawMaterials, "Can Edit Raw Materials", CreateDescription("Edit Raw Materials")),
-            new(PermissionModules.Warehouse, "Materials", PermissionKeys.CanEditPackagingMaterials, "Can Edit Packaging Materials", CreateDescription("Edit Packaging Materials")),
-            new(PermissionModules.Warehouse, "Materials", PermissionKeys.CanDeleteRawMaterials, "Can Delete Raw Materials", CreateDescription("Delete Raw Materials")),
-            new(PermissionModules.Warehouse, "Materials", PermissionKeys.CanDeletePackagingMaterials, "Can Delete Packaging Materials", CreateDescription("Delete Packaging Materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanViewRawMaterials, "Can View raw materials", CreateDescription("View raw materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanViewPackagingMaterials, "Can View packaging materials", CreateDescription("View packaging materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanCreateNewRawMaterials, "Can Create new raw materials", CreateDescription("Create new raw materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanCreateNewPackagingMaterials, "Can Create new packaging materials", CreateDescription("Create new packaging materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanEditRawMaterials, "Can Edit raw materials", CreateDescription("Edit raw materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanEditPackagingMaterials, "Can Edit packaging materials", CreateDescription("Edit packaging materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanDeleteRawMaterials, "Can Delete raw materials", CreateDescription("Delete raw materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanDeletePackagingMaterials, "Can Delete packaging materials", CreateDescription("Delete packaging materials")),
 
-            new(PermissionModules.Warehouse, "Approved Materials", PermissionKeys.CanViewApprovedRawMaterials, "Can View Approved Raw Materials", CreateDescription("View Approved Raw Materials")),
-            new(PermissionModules.Warehouse, "Approved Materials", PermissionKeys.CanViewApprovedPackagingMaterials, "Can View Approved Packaging Materials", CreateDescription("View Approved Packaging Materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewApprovedRawMaterials, "Can View approved raw materials", CreateDescription("View approved raw materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewApprovedPackagingMaterials, "Can View approved packaging materials", CreateDescription("View approved packaging materials")),
 
-            new(PermissionModules.Warehouse, "Rejected Materials", PermissionKeys.CanViewRejectedRawMaterials, "Can View Rejected Raw Materials", CreateDescription("View Rejected Raw Materials")),
-            new(PermissionModules.Warehouse, "Rejected Materials", PermissionKeys.CanViewRejectedPackagingMaterials, "Can View Rejected Packaging Materials", CreateDescription("View Rejected Packaging Materials")), // Used correct key
+            new(PermissionModules.Warehouse, PermissionSubmodules.RejectedMaterials, PermissionKeys.CanViewRejectedRawMaterials, "Can View rejected raw materials", CreateDescription("View rejected raw materials")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.RejectedMaterials, PermissionKeys.CanViewRejectedPackagingMaterials, "Can View rejected packaging materials", CreateDescription("View rejected packaging materials")), // Corrected typo from text
 
-            new(PermissionModules.Warehouse, "Stock Requisitions", PermissionKeys.CanViewRawMaterialRequisitions, "Can View Raw Material Requisitions", CreateDescription("View Raw Material Requisitions")),
-            new(PermissionModules.Warehouse, "Stock Requisitions", PermissionKeys.CanViewPackagingMaterialRequisitions, "Can View Packaging Material Requisitions", CreateDescription("View Packaging Material Requisitions")),
-            new(PermissionModules.Warehouse, "Stock Requisitions", PermissionKeys.CanIssueRawMaterialRequisitions, "Can Issue Raw Material Requisitions", CreateDescription("Issue Raw Material Requisitions")),
-            new(PermissionModules.Warehouse, "Stock Requisitions", PermissionKeys.CanIssuePackagingMaterialRequisitions, "Can Issue Packaging Material Requisitions", CreateDescription("Issue Packaging Material Requisitions")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.StockRequisitions, PermissionKeys.CanViewRawMaterialRequisitions, "Can View raw material requisitions", CreateDescription("View raw material requisitions")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.StockRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions, "Can View packaging material requisitions", CreateDescription("View packaging material requisitions")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.StockRequisitions, PermissionKeys.CanIssueRawMaterialRequisitions, "Can Issue raw material requisitions", CreateDescription("Issue raw material requisitions")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.StockRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions, "Can Issue packaging material requisitions", CreateDescription("Issue packaging material requisitions")),
 
-            new(PermissionModules.Warehouse, "Stock Transfer Issues", PermissionKeys.CanViewRawMaterialTransferList, "Can View Raw Material Transfer List", CreateDescription("View Raw Material Transfer List")),
-            new(PermissionModules.Warehouse, "Stock Transfer Issues", PermissionKeys.CanViewPackagingMaterialTransferList, "Can View Packaging Material Transfer List", CreateDescription("View Packaging Material Transfer List")),
-            new(PermissionModules.Warehouse, "Stock Transfer Issues", PermissionKeys.CanIssueRawMaterialStockTransfers, "Can Issue Raw Material Stock Transfers", CreateDescription("Issue Raw Material Stock Transfers")),
-            new(PermissionModules.Warehouse, "Stock Transfer Issues", PermissionKeys.CanIssuePackagingMaterialStockTransfers, "Can Issue Packaging Material Stock Transfers", CreateDescription("Issue Packaging Material Stock Transfers")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanViewRawMaterialTransferList, "Can View raw material transfer list", CreateDescription("View raw material transfer list")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanViewPackagingMaterialTransferList, "Can View packaging material transfer list", CreateDescription("View packaging material transfer list")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanIssueRawMaterialStockTransfers, "Can Issue raw material stock transfers", CreateDescription("Issue raw material stock transfers")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanIssuePackagingMaterialStockTransfers, "Can Issue packaging material stock transfers", CreateDescription("Issue packaging material stock transfers")),
 
-            new(PermissionModules.Warehouse, "Location Chart Record", PermissionKeys.CanViewRawMaterialLocationChartList, "Can View Raw Material Location Chart List", CreateDescription("View Raw Material Location Chart List")),
-            new(PermissionModules.Warehouse, "Location Chart Record", PermissionKeys.CanViewPackagingMaterialLocationChartList, "Can View Packaging Material Location Chart List", CreateDescription("View Packaging Material Location Chart List")),
-            new(PermissionModules.Warehouse, "Location Chart Record", PermissionKeys.CanReassignRawMaterialStock, "Can Reassign Raw Material Stock", CreateDescription("Reassign Raw Material Stock")),
-            new(PermissionModules.Warehouse, "Location Chart Record", PermissionKeys.CanReassignPackagingMaterialStock, "Can Reassign Packaging Material Stock", CreateDescription("Reassign Packaging Material Stock")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.LocationChartRecord, PermissionKeys.CanViewRawMaterialLocationChartList, "Can View raw material location chart list", CreateDescription("View raw material location chart list")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.LocationChartRecord, PermissionKeys.CanViewPackagingMaterialLocationChartList, "Can View packaging material location chart list", CreateDescription("View packaging material location chart list")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.LocationChartRecord, PermissionKeys.CanReassignRawMaterialStock, "Can Reassign raw material stock", CreateDescription("Reassign raw material stock")),
+            new(PermissionModules.Warehouse, PermissionSubmodules.LocationChartRecord, PermissionKeys.CanReassignPackagingMaterialStock, "Can Reassign packaging material stock", CreateDescription("Reassign packaging material stock")),
 
             // Production
-            // Grouping the creation keys under 'Requisitions' as per text structure, though they are broad production actions.
-            new(PermissionModules.Production, "Requisitions", PermissionKeys.CanCreateRawMaterialPurchaseRequisition, "Can Create Raw Material Purchase Requisition", CreateDescription("Create Raw Material Purchase Requisition")),
-            new(PermissionModules.Production, "Requisitions", PermissionKeys.CanCreatePackagingMaterialPurchaseRequisition, "Can Create Packaging Material Purchase Requisition", CreateDescription("Create Packaging Material Purchase Requisition")),
-            new(PermissionModules.Production, "Requisitions", PermissionKeys.CanCreateRawMaterialStockRequisition, "Can Create Raw Material Stock Requisition", CreateDescription("Create Raw Material Stock Requisition")),
-            new(PermissionModules.Production, "Requisitions", PermissionKeys.CanCreatePackagingMaterialStockRequisition, "Can Create Packaging Material Stock Requisition", CreateDescription("Create Packaging Material Stock Requisition")),
-            new(PermissionModules.Production, "Requisitions", PermissionKeys.CanCreateRawMaterialStockTransfer, "Can Create Raw Material Stock Transfer", CreateDescription("Create Raw Material Stock Transfer")),
-            new(PermissionModules.Production, "Requisitions", PermissionKeys.CanCreatePackagingMaterialStockTransfer, "Can Create Packaging Material Stock Transfer", CreateDescription("Create Packaging Material Stock Transfer")),
+            new(PermissionModules.Production, PermissionSubmodules.RawMaterialRequisitions, PermissionKeys.CanCreateRawMaterialPurchaseRequisition, "Can Create raw material purchase requisition", CreateDescription("Create raw material purchase requisition")),
+            new(PermissionModules.Production, PermissionSubmodules.PackageMaterialRequisitions, PermissionKeys.CanCreatePackagingMaterialPurchaseRequisition, "Can Create packaging material purchase requisition", CreateDescription("Create packaging material purchase requisition")),
+            new(PermissionModules.Production, PermissionSubmodules.RawMaterialRequisitions, PermissionKeys.CanCreateRawMaterialStockRequisition, "Can Create raw material stock requisition", CreateDescription("Create raw material stock requisition")),
+            new(PermissionModules.Production, PermissionSubmodules.PackageMaterialRequisitions, PermissionKeys.CanCreatePackagingMaterialStockRequisition, "Can Create packaging material stock requisition", CreateDescription("Create packaging material stock requisition")),
+            new(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanCreateRawMaterialStockTransfer, "Can Create raw material stock transfer", CreateDescription("Create raw material stock transfer")),
+            new(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanCreatePackagingMaterialStockTransfer, "Can Create packaging material stock transfer", CreateDescription("Create packaging material stock transfer")),
 
-            // These were listed under REQUISITIONS->Raw Material Requisitions in the text, reusing the Warehouse view key here.
-            new(PermissionModules.Production, "Requisitions", PermissionKeys.CanViewRawMaterialRequisitions, "Can View Raw Material Requisitions", CreateDescription("View Raw Material Requisitions")),
-            // These were listed under REQUISITIONS->Package Material Requisitions in the text, reusing the Warehouse view key here.
-            new(PermissionModules.Production, "Requisitions", PermissionKeys.CanViewPackagingMaterialRequisitions, "Can View Package Material Requisitions", CreateDescription("View Package Material Requisitions")),
+            new(PermissionModules.Production, PermissionSubmodules.Planning, PermissionKeys.CanViewPlannedProducts, "Can View planned products", CreateDescription("View planned products")),
+            new(PermissionModules.Production, PermissionSubmodules.Planning, PermissionKeys.CanCreateNewProductionPlan, "Can Create new production plan", CreateDescription("Create new production plan")),
+            new(PermissionModules.Production, PermissionSubmodules.Planning, PermissionKeys.CanEditProductionPlan, "Can Edit production plan", CreateDescription("Edit production plan")),
 
+            new(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanViewStockTransferRequests, "Can View stock transfer requests", CreateDescription("View stock transfer requests")),
+            new(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanApproveOrRejectStockTransferRequest, "Can Approve or reject stock transfer request", CreateDescription("Approve or reject stock transfer request")),
 
-            new(PermissionModules.Production, "Planning", PermissionKeys.CanViewPlannedProducts, "Can View Planned Products", CreateDescription("View Planned Products")),
-            new(PermissionModules.Production, "Planning", PermissionKeys.CanCreateNewProductionPlan, "Can Create New Production Plan", CreateDescription("Create New Production Plan")),
-            new(PermissionModules.Production, "Planning", PermissionKeys.CanEditProductionPlan, "Can Edit Production Plan", CreateDescription("Edit Production Plan")),
+            new(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanViewProductSchedules, "Can View product schedules", CreateDescription("View product schedules")),
+            new(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanCreateProductSchedule, "Can Create product schedule", CreateDescription("Create product schedule")),
+            new(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanUpdateProductSchedule, "Can Update product schedule", CreateDescription("Update product schedule")),
 
-            new(PermissionModules.Production, "Stock Transfer Requests", PermissionKeys.CanViewStockTransferRequests, "Can View Stock Transfer Requests", CreateDescription("View Stock Transfer Requests")),
-            new(PermissionModules.Production, "Stock Transfer Requests", PermissionKeys.CanApproveOrRejectStockTransferRequest, "Can Approve or Reject Stock Transfer Request", CreateDescription("Approve or Reject Stock Transfer Request")),
+            // Settings: Audit, Configs, and System
+            new(PermissionModules.Settings, PermissionSubmodules.SystemSettings, PermissionKeys.CanViewSystemSettings, "Can View system settings", CreateDescription("View system settings")),
+            new(PermissionModules.Settings, PermissionSubmodules.UserSettings, PermissionKeys.CanViewUserSettings, "Can View user settings", CreateDescription("View user settings")),
+            new(PermissionModules.Settings, PermissionSubmodules.AuditTrail, PermissionKeys.CanViewAuditLogs, "Can View audit logs", CreateDescription("View audit logs")),
+            new(PermissionModules.Settings, PermissionSubmodules.AuditTrail, PermissionKeys.CanExportAuditLogs, "Can Export audit logs", CreateDescription("Export audit logs")),
 
-            new(PermissionModules.Production, "Product Schedule", PermissionKeys.CanViewProductSchedules, "Can View Product Schedules", CreateDescription("View Product Schedules")),
-            new(PermissionModules.Production, "Product Schedule", PermissionKeys.CanCreateProductSchedule, "Can Create Product Schedule", CreateDescription("Create Product Schedule")),
-            new(PermissionModules.Production, "Product Schedule", PermissionKeys.CanUpdateProductSchedule, "Can Update Product Schedule", CreateDescription("Update Product Schedule")),
+            // Categories - Product Category
+            new(PermissionModules.Settings, PermissionSubmodules.ProductCategory, PermissionKeys.CanViewProductCategories, "Can View product categories", CreateDescription("View product categories")),
+            new(PermissionModules.Settings, PermissionSubmodules.ProductCategory, PermissionKeys.CanCreateNewProductCategory, "Can Create new product category", CreateDescription("Create new product category")),
+            new(PermissionModules.Settings, PermissionSubmodules.ProductCategory, PermissionKeys.CanEditProductCategory, "Can Edit product category", CreateDescription("Edit product category")),
+            new(PermissionModules.Settings, PermissionSubmodules.ProductCategory, PermissionKeys.CanDeleteProductCategory, "Can Delete product category", CreateDescription("Delete product category")),
 
-            // Settings
-            new(PermissionModules.Settings, "System Settings", PermissionKeys.CanViewSystemSettings, "Can View System Settings", CreateDescription("View System Settings")),
-            new(PermissionModules.Settings, "User Settings", PermissionKeys.CanViewUserSettings, "Can View User Settings", CreateDescription("View User Settings")),
-            new(PermissionModules.Settings, "Audit Trail", PermissionKeys.CanViewAuditLogs, "Can View Audit Logs", CreateDescription("View Audit Logs")),
-            new(PermissionModules.Settings, "Audit Trail", PermissionKeys.CanExportAuditLogs, "Can Export Audit Logs", CreateDescription("Export Audit Logs")),
+            // Categories - Raw Category
+            new(PermissionModules.Settings, PermissionSubmodules.RawCategory, PermissionKeys.CanViewRawCategories, "Can View raw categories", CreateDescription("View raw categories")),
+            new(PermissionModules.Settings, PermissionSubmodules.RawCategory, PermissionKeys.CanCreateNewRawCategory, "Can Create new raw category", CreateDescription("Create new raw category")),
+            new(PermissionModules.Settings, PermissionSubmodules.RawCategory, PermissionKeys.CanEditRawCategory, "Can Edit raw category", CreateDescription("Edit raw category")),
+            new(PermissionModules.Settings, PermissionSubmodules.RawCategory, PermissionKeys.CanDeleteRawCategory, "Can Delete raw category", CreateDescription("Delete raw category")),
 
-            // Settings - Configurations - Categories
-            new(PermissionModules.Settings, "Product Category", PermissionKeys.CanViewProductCategories, "Can View Product Categories", CreateDescription("View Product Categories")),
-            new(PermissionModules.Settings, "Product Category", PermissionKeys.CanCreateNewProductCategory, "Can Create New Product Category", CreateDescription("Create New Product Category")),
-            new(PermissionModules.Settings, "Product Category", PermissionKeys.CanEditProductCategory, "Can Edit Product Category", CreateDescription("Edit Product Category")),
-            new(PermissionModules.Settings, "Product Category", PermissionKeys.CanDeleteProductCategory, "Can Delete Product Category", CreateDescription("Delete Product Category")),
+            // Categories - Package Category
+            new(PermissionModules.Settings, PermissionSubmodules.PackageCategory, PermissionKeys.CanViewPackageCategories, "Can View package categories", CreateDescription("View package categories")),
+            new(PermissionModules.Settings, PermissionSubmodules.PackageCategory, PermissionKeys.CanCreateNewPackageCategory, "Can Create new package category", CreateDescription("Create new package category")),
+            new(PermissionModules.Settings, PermissionSubmodules.PackageCategory, PermissionKeys.CanEditPackageCategory, "Can Edit package category", CreateDescription("Edit package category")),
+            new(PermissionModules.Settings, PermissionSubmodules.PackageCategory, PermissionKeys.CanDeletePackageCategory, "Can Delete package category", CreateDescription("Delete package category")),
 
-            new(PermissionModules.Settings, "Raw Category", PermissionKeys.CanViewRawCategories, "Can View Raw Categories", CreateDescription("View Raw Categories")),
-            new(PermissionModules.Settings, "Raw Category", PermissionKeys.CanCreateNewRawCategory, "Can Create New Raw Category", CreateDescription("Create New Raw Category")),
-            new(PermissionModules.Settings, "Raw Category", PermissionKeys.CanEditRawCategory, "Can Edit Raw Category", CreateDescription("Edit Raw Category")),
-            new(PermissionModules.Settings, "Raw Category", PermissionKeys.CanDeleteRawCategory, "Can Delete Raw Category", CreateDescription("Delete Raw Category")),
+            // Procedures - Resource
+            new(PermissionModules.Settings, PermissionSubmodules.Resource, PermissionKeys.CanViewResources, "Can View resources", CreateDescription("View resources")),
+            new(PermissionModules.Settings, PermissionSubmodules.Resource, PermissionKeys.CanCreateNewResource, "Can Create new resource", CreateDescription("Create new resource")),
+            new(PermissionModules.Settings, PermissionSubmodules.Resource, PermissionKeys.CanEditResource, "Can Edit resource", CreateDescription("Edit resource")),
+            new(PermissionModules.Settings, PermissionSubmodules.Resource, PermissionKeys.CanDeleteResource, "Can Delete resource", CreateDescription("Delete resource")),
 
-            new(PermissionModules.Settings, "Package Category", PermissionKeys.CanViewPackageCategories, "Can View Package Categories", CreateDescription("View Package Categories")),
-            new(PermissionModules.Settings, "Package Category", PermissionKeys.CanCreateNewPackageCategory, "Can Create New Package Category", CreateDescription("Create New Package Category")),
-            new(PermissionModules.Settings, "Package Category", PermissionKeys.CanEditPackageCategory, "Can Edit Package Category", CreateDescription("Edit Package Category")),
-            new(PermissionModules.Settings, "Package Category", PermissionKeys.CanDeletePackageCategory, "Can Delete Package Category", CreateDescription("Delete Package Category")),
+            // Procedures - Operation
+            new(PermissionModules.Settings, PermissionSubmodules.Operation, PermissionKeys.CanViewOperations, "Can View operations", CreateDescription("View operations")),
+            new(PermissionModules.Settings, PermissionSubmodules.Operation, PermissionKeys.CanCreateNewOperation, "Can Create new operation", CreateDescription("Create new operation")),
+            new(PermissionModules.Settings, PermissionSubmodules.Operation, PermissionKeys.CanEditOperation, "Can Edit operation", CreateDescription("Edit operation")),
+            new(PermissionModules.Settings, PermissionSubmodules.Operation, PermissionKeys.CanDeleteOperation, "Can Delete operation", CreateDescription("Delete operation")),
 
-            // Settings - Configurations - Procedures
-            new(PermissionModules.Settings, "Resource", PermissionKeys.CanViewResources, "Can View Resources", CreateDescription("View Resources")),
-            new(PermissionModules.Settings, "Resource", PermissionKeys.CanCreateNewResource, "Can Create New Resource", CreateDescription("Create New Resource")),
-            new(PermissionModules.Settings, "Resource", PermissionKeys.CanEditResource, "Can Edit Resource", CreateDescription("Edit Resource")),
-            new(PermissionModules.Settings, "Resource", PermissionKeys.CanDeleteResource, "Can Delete Resource", CreateDescription("Delete Resource")),
+            // Procedures - Work Center
+            new(PermissionModules.Settings, PermissionSubmodules.WorkCenter, PermissionKeys.CanViewWorkCenters, "Can View work centers", CreateDescription("View work centers")),
+            new(PermissionModules.Settings, PermissionSubmodules.WorkCenter, PermissionKeys.CanCreateNewWorkCenter, "Can Create new work center", CreateDescription("Create new work center")),
+            new(PermissionModules.Settings, PermissionSubmodules.WorkCenter, PermissionKeys.CanEditWorkCenter, "Can Edit work center", CreateDescription("Edit work center")),
+            new(PermissionModules.Settings, PermissionSubmodules.WorkCenter, PermissionKeys.CanDeleteWorkCenter, "Can Delete work center", CreateDescription("Delete work center")),
 
-            new(PermissionModules.Settings, "Operation", PermissionKeys.CanViewOperations, "Can View Operations", CreateDescription("View Operations")),
-            new(PermissionModules.Settings, "Operation", PermissionKeys.CanCreateNewOperation, "Can Create New Operation", CreateDescription("Create New Operation")),
-            new(PermissionModules.Settings, "Operation", PermissionKeys.CanEditOperation, "Can Edit Operation", CreateDescription("Edit Operation")),
-            new(PermissionModules.Settings, "Operation", PermissionKeys.CanDeleteOperation, "Can Delete Operation", CreateDescription("Delete Operation")),
+            // Products - Material Type
+            new(PermissionModules.Settings, PermissionSubmodules.MaterialType, PermissionKeys.CanViewMaterialTypes, "Can View material types", CreateDescription("View material types")),
+            new(PermissionModules.Settings, PermissionSubmodules.MaterialType, PermissionKeys.CanCreateNewMaterialType, "Can Create new material type", CreateDescription("Create new material type")),
+            new(PermissionModules.Settings, PermissionSubmodules.MaterialType, PermissionKeys.CanEditMaterialType, "Can Edit material type", CreateDescription("Edit material type")),
+            new(PermissionModules.Settings, PermissionSubmodules.MaterialType, PermissionKeys.CanDeleteMaterialType, "Can Delete material type", CreateDescription("Delete material type")),
 
-            new(PermissionModules.Settings, "Work Center", PermissionKeys.CanViewWorkCenters, "Can View Work Centers", CreateDescription("View Work Centers")),
-            new(PermissionModules.Settings, "Work Center", PermissionKeys.CanCreateNewWorkCenter, "Can Create New Work Center", CreateDescription("Create New Work Center")),
-            new(PermissionModules.Settings, "Work Center", PermissionKeys.CanEditWorkCenter, "Can Edit Work Center", CreateDescription("Edit Work Center")),
-            new(PermissionModules.Settings, "Work Center", PermissionKeys.CanDeleteWorkCenter, "Can Delete Work Center", CreateDescription("Delete Work Center")),
+            // Products - Unit of Measure
+            new(PermissionModules.Settings, PermissionSubmodules.UnitOfMeasure, PermissionKeys.CanViewUnitOfMeasure, "Can View unit of measure", CreateDescription("View unit of measure")),
 
-            // Settings - Configurations - Products
-            new(PermissionModules.Settings, "Material Type", PermissionKeys.CanViewMaterialTypes, "Can View Material Types", CreateDescription("View Material Types")),
-            new(PermissionModules.Settings, "Material Type", PermissionKeys.CanCreateNewMaterialType, "Can Create New Material Type", CreateDescription("Create New Material Type")),
-            new(PermissionModules.Settings, "Material Type", PermissionKeys.CanEditMaterialType, "Can Edit Material Type", CreateDescription("Edit Material Type")),
-            new(PermissionModules.Settings, "Material Type", PermissionKeys.CanDeleteMaterialType, "Can Delete Material Type", CreateDescription("Delete Material Type")),
+            // Address - Country
+            new(PermissionModules.Settings, PermissionSubmodules.Country, PermissionKeys.CanViewCountries, "Can View countries", CreateDescription("View countries")),
 
-            new(PermissionModules.Settings, "Unit of Measure", PermissionKeys.CanViewUnitOfMeasure, "Can View Unit of Measure", CreateDescription("View Unit of Measure")),
+            // Container - Pack Style
+            new(PermissionModules.Settings, PermissionSubmodules.PackStyle, PermissionKeys.CanViewPackStyles, "Can View pack styles", CreateDescription("View pack styles")),
+            new(PermissionModules.Settings, PermissionSubmodules.PackStyle, PermissionKeys.CanCreateNewPackStyle, "Can Create new pack style", CreateDescription("Create new pack style")),
+            new(PermissionModules.Settings, PermissionSubmodules.PackStyle, PermissionKeys.CanEditPackStyle, "Can Edit pack style", CreateDescription("Edit pack style")),
+            new(PermissionModules.Settings, PermissionSubmodules.PackStyle, PermissionKeys.CanDeletePackStyle, "Can Delete pack style", CreateDescription("Delete pack style")),
 
-            // Settings - Configurations - Address
-            new(PermissionModules.Settings, "Country", PermissionKeys.CanViewCountries, "Can View Countries", CreateDescription("View Countries")),
+            // Billing Sheet Charges
+            new(PermissionModules.Settings, PermissionSubmodules.BillingSheetCharge, PermissionKeys.CanViewBillingCharges, "Can View billing charges", CreateDescription("View billing charges")),
+            new(PermissionModules.Settings, PermissionSubmodules.BillingSheetCharge, PermissionKeys.CanCreateNewBillingSheetCharge, "Can Create new billing sheet charge", CreateDescription("Create new billing sheet charge")),
+            new(PermissionModules.Settings, PermissionSubmodules.BillingSheetCharge, PermissionKeys.CanEditBillingSheetCharge, "Can Edit billing sheet charge", CreateDescription("Edit billing sheet charge")),
+            new(PermissionModules.Settings, PermissionSubmodules.BillingSheetCharge, PermissionKeys.CanDeleteBillingSheetCharge, "Can Delete billing sheet charge", CreateDescription("Delete billing sheet charge")),
 
-            // Settings - Configurations - Container
-            new(PermissionModules.Settings, "Pack Style", PermissionKeys.CanViewPackStyles, "Can View Pack Styles", CreateDescription("View Pack Styles")),
-            new(PermissionModules.Settings, "Pack Style", PermissionKeys.CanCreateNewPackStyle, "Can Create New Pack Style", CreateDescription("Create New Pack Style")),
-            new(PermissionModules.Settings, "Pack Style", PermissionKeys.CanEditPackStyle, "Can Edit Pack Style", CreateDescription("Edit Pack Style")),
-            new(PermissionModules.Settings, "Pack Style", PermissionKeys.CanDeletePackStyle, "Can Delete Pack Style", CreateDescription("Delete Pack Style")),
+            // Terms of Payment
+            new(PermissionModules.Settings, PermissionSubmodules.TermsOfPayment, PermissionKeys.CanViewPaymentTerms, "Can View payment terms", CreateDescription("View payment terms")),
+            new(PermissionModules.Settings, PermissionSubmodules.TermsOfPayment, PermissionKeys.CanCreateNewPaymentTerm, "Can Create new payment term", CreateDescription("Create new payment term")),
+            new(PermissionModules.Settings, PermissionSubmodules.TermsOfPayment, PermissionKeys.CanEditPaymentTerm, "Can Edit payment term", CreateDescription("Edit payment term")),
+            new(PermissionModules.Settings, PermissionSubmodules.TermsOfPayment, PermissionKeys.CanDeletePaymentTerm, "Can Delete payment term", CreateDescription("Delete payment term")),
 
-            // Settings - Configurations - Billing Sheet Charge
-            new(PermissionModules.Settings, "Billing Sheet Charge", PermissionKeys.CanViewBillingCharges, "Can View Billing Charges", CreateDescription("View Billing Charges")),
-            new(PermissionModules.Settings, "Billing Sheet Charge", PermissionKeys.CanCreateNewBillingSheetCharge, "Can Create New Billing Sheet Charge", CreateDescription("Create New Billing Sheet Charge")),
-            new(PermissionModules.Settings, "Billing Sheet Charge", PermissionKeys.CanEditBillingSheetCharge, "Can Edit Billing Sheet Charge", CreateDescription("Edit Billing Sheet Charge")),
-            new(PermissionModules.Settings, "Billing Sheet Charge", PermissionKeys.CanDeleteBillingSheetCharge, "Can Delete Billing Sheet Charge", CreateDescription("Delete Billing Sheet Charge")),
+            // Delivery Mode
+            new(PermissionModules.Settings, PermissionSubmodules.DeliveryMode, PermissionKeys.CanViewDeliveryModes, "Can View delivery modes", CreateDescription("View delivery modes")),
+            new(PermissionModules.Settings, PermissionSubmodules.DeliveryMode, PermissionKeys.CanCreateNewDeliveryMode, "Can Create new delivery mode", CreateDescription("Create new delivery mode")),
+            new(PermissionModules.Settings, PermissionSubmodules.DeliveryMode, PermissionKeys.CanEditDeliveryMode, "Can Edit delivery mode", CreateDescription("Edit delivery mode")),
+            new(PermissionModules.Settings, PermissionSubmodules.DeliveryMode, PermissionKeys.CanDeleteDeliveryMode, "Can Delete delivery mode", CreateDescription("Delete delivery mode")),
 
-            // Settings - Configurations - Terms of Payment
-            new(PermissionModules.Settings, "Terms of Payment", PermissionKeys.CanViewPaymentTerms, "Can View Payment Terms", CreateDescription("View Payment Terms")),
-            new(PermissionModules.Settings, "Terms of Payment", PermissionKeys.CanCreateNewPaymentTerm, "Can Create New Payment Term", CreateDescription("Create New Payment Term")),
-            new(PermissionModules.Settings, "Terms of Payment", PermissionKeys.CanEditPaymentTerm, "Can Edit Payment Term", CreateDescription("Edit Payment Term")),
-            new(PermissionModules.Settings, "Terms of Payment", PermissionKeys.CanDeletePaymentTerm, "Can Delete Payment Term", CreateDescription("Delete Payment Term")),
+            // Code Settings
+            new(PermissionModules.Settings, PermissionSubmodules.CodeSettings, PermissionKeys.CanViewCodeSettings, "Can View code settings", CreateDescription("View code settings")),
+            new(PermissionModules.Settings, PermissionSubmodules.CodeSettings, PermissionKeys.CanAddNewCodes, "Can Add new codes", CreateDescription("Add new codes")),
+            new(PermissionModules.Settings, PermissionSubmodules.CodeSettings, PermissionKeys.CanEditCodeSettings, "Can Edit code settings", CreateDescription("Edit code settings")),
+            new(PermissionModules.Settings, PermissionSubmodules.CodeSettings, PermissionKeys.CanDeleteCodeSettings, "Can Delete code settings", CreateDescription("Delete code settings")),
 
-            // Settings - Configurations - Delivery Mode
-            new(PermissionModules.Settings, "Delivery Mode", PermissionKeys.CanViewDeliveryModes, "Can View Delivery Modes", CreateDescription("View Delivery Modes")),
-            new(PermissionModules.Settings, "Delivery Mode", PermissionKeys.CanCreateNewDeliveryMode, "Can Create New Delivery Mode", CreateDescription("Create New Delivery Mode")),
-            new(PermissionModules.Settings, "Delivery Mode", PermissionKeys.CanEditDeliveryMode, "Can Edit Delivery Mode", CreateDescription("Edit Delivery Mode")),
-            new(PermissionModules.Settings, "Delivery Mode", PermissionKeys.CanDeleteDeliveryMode, "Can Delete Delivery Mode", CreateDescription("Delete Delivery Mode")),
+            // Approvals
+            new(PermissionModules.Settings, PermissionSubmodules.Approvals, PermissionKeys.CanViewApproval, "Can View approval", CreateDescription("View approval")),
+            new(PermissionModules.Settings, PermissionSubmodules.Approvals, PermissionKeys.CanCreateOrConfigureNewApproval, "Can Create or configure new approval", CreateDescription("Create or configure new approval")),
+            new(PermissionModules.Settings, PermissionSubmodules.Approvals, PermissionKeys.CanEditApprovalWorkflow, "Can Edit approval workflow", CreateDescription("Edit approval workflow")),
+            new(PermissionModules.Settings, PermissionSubmodules.Approvals, PermissionKeys.CanDeleteOrDisableApprovals, "Can Delete or disable approvals", CreateDescription("Delete or disable approvals")),
 
-            // Settings - Configurations - Code Settings
-            new(PermissionModules.Settings, "Code Settings", PermissionKeys.CanViewCodeSettings, "Can View Code Settings", CreateDescription("View Code Settings")),
-            new(PermissionModules.Settings, "Code Settings", PermissionKeys.CanAddNewCodes, "Can Add New Codes", CreateDescription("Add New Codes")),
-            new(PermissionModules.Settings, "Code Settings", PermissionKeys.CanEditCodeSettings, "Can Edit Code Settings", CreateDescription("Edit Code Settings")),
-            new(PermissionModules.Settings, "Code Settings", PermissionKeys.CanDeleteCodeSettings, "Can Delete Code Settings", CreateDescription("Delete Code Settings")),
+            // Alerts & Notifications
+            new(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanViewAlerts, "Can View alerts", CreateDescription("View alerts")),
+            new(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanCreateNewAlerts, "Can Create new alerts", CreateDescription("Create new alerts")),
+            new(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanEditAlerts, "Can Edit alerts", CreateDescription("Edit alerts")),
+            new(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanEnableOrDisableAlerts, "Can Enable or disable alerts", CreateDescription("Enable or disable alerts")),
+            new(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanDeleteAlerts, "Can Delete alerts", CreateDescription("Delete alerts")),
 
-            // Settings - Configurations - Approvals
-            new(PermissionModules.Settings, "Approvals", PermissionKeys.CanViewApproval, "Can View Approval", CreateDescription("View Approval")),
-            new(PermissionModules.Settings, "Approvals", PermissionKeys.CanCreateOrConfigureNewApproval, "Can Create/Configure New Approval", CreateDescription("Create/Configure New Approval")),
-            new(PermissionModules.Settings, "Approvals", PermissionKeys.CanEditApprovalWorkflow, "Can Edit Approval Workflow", CreateDescription("Edit Approval Workflow")),
-            new(PermissionModules.Settings, "Approvals", PermissionKeys.CanDeleteOrDisableApprovals, "Can Delete/Disable Approvals", CreateDescription("Delete/Disable Approvals")),
+            // Equipment
+            new(PermissionModules.Settings, PermissionSubmodules.Equipment, PermissionKeys.CanViewEquipments, "Can View equipments", CreateDescription("View equipments")),
+            new(PermissionModules.Settings, PermissionSubmodules.Equipment, PermissionKeys.CanAddNewEquipment, "Can Add new equipment", CreateDescription("Add new equipment")),
+            new(PermissionModules.Settings, PermissionSubmodules.Equipment, PermissionKeys.CanEditEquipmentDetails, "Can Edit equipment details", CreateDescription("Edit equipment details")),
+            new(PermissionModules.Settings, PermissionSubmodules.Equipment, PermissionKeys.CanDeleteEquipment, "Can Delete equipment", CreateDescription("Delete equipment")),
 
-            // Settings - Configurations - Alerts & Notifications
-            new(PermissionModules.Settings, "Alerts & Notifications", PermissionKeys.CanViewAlerts, "Can View Alerts", CreateDescription("View Alerts")),
-            new(PermissionModules.Settings, "Alerts & Notifications", PermissionKeys.CanCreateNewAlerts, "Can Create New Alerts", CreateDescription("Create New Alerts")),
-            new(PermissionModules.Settings, "Alerts & Notifications", PermissionKeys.CanEditAlerts, "Can Edit Alerts", CreateDescription("Edit Alerts")),
-            new(PermissionModules.Settings, "Alerts & Notifications", PermissionKeys.CanEnableOrDisableAlerts, "Can Enable/Disable Alerts", CreateDescription("Enable/Disable Alerts")),
-            new(PermissionModules.Settings, "Alerts & Notifications", PermissionKeys.CanDeleteAlerts, "Can Delete Alerts", CreateDescription("Delete Alerts")),
+            // Work Flow Forms - Questions
+            new(PermissionModules.Settings, PermissionSubmodules.Questions, PermissionKeys.CanViewQuestions, "Can View questions", CreateDescription("View questions")),
+            new(PermissionModules.Settings, PermissionSubmodules.Questions, PermissionKeys.CanCreateNewQuestions, "Can Create new questions", CreateDescription("Create new questions")),
+            new(PermissionModules.Settings, PermissionSubmodules.Questions, PermissionKeys.CanEditQuestions, "Can Edit questions", CreateDescription("Edit questions")),
+            new(PermissionModules.Settings, PermissionSubmodules.Questions, PermissionKeys.CanDeleteQuestions, "Can Delete questions", CreateDescription("Delete questions")),
 
-            // Settings - Configurations - Equipment
-            new(PermissionModules.Settings, "Equipment", PermissionKeys.CanViewEquipments, "Can View Equipments", CreateDescription("View Equipments")),
-            new(PermissionModules.Settings, "Equipment", PermissionKeys.CanAddNewEquipment, "Can Add New Equipment", CreateDescription("Add New Equipment")),
-            new(PermissionModules.Settings, "Equipment", PermissionKeys.CanEditEquipmentDetails, "Can Edit Equipment Details", CreateDescription("Edit Equipment Details")),
-            new(PermissionModules.Settings, "Equipment", PermissionKeys.CanDeleteEquipment, "Can Delete Equipment", CreateDescription("Delete Equipment")),
+            // Work Flow Forms - Templates
+            new(PermissionModules.Settings, PermissionSubmodules.Templates, PermissionKeys.CanViewTemplates, "Can View templates", CreateDescription("View templates")),
+            new(PermissionModules.Settings, PermissionSubmodules.Templates, PermissionKeys.CanCreateNewTemplates, "Can Create new templates", CreateDescription("Create new templates")),
+            new(PermissionModules.Settings, PermissionSubmodules.Templates, PermissionKeys.CanEditTemplates, "Can Edit templates", CreateDescription("Edit templates")),
+            new(PermissionModules.Settings, PermissionSubmodules.Templates, PermissionKeys.CanDeleteTemplates, "Can Delete templates", CreateDescription("Delete templates")),
 
-            // Settings - Configurations - Work Flow Forms
-            new(PermissionModules.Settings, "Work Flow Forms - Questions", PermissionKeys.CanViewQuestions, "Can View Questions", CreateDescription("View Questions")),
-            new(PermissionModules.Settings, "Work Flow Forms - Questions", PermissionKeys.CanCreateNewQuestions, "Can Create New Questions", CreateDescription("Create New Questions")),
-            new(PermissionModules.Settings, "Work Flow Forms - Questions", PermissionKeys.CanEditQuestions, "Can Edit Questions", CreateDescription("Edit Questions")),
-            new(PermissionModules.Settings, "Work Flow Forms - Questions", PermissionKeys.CanDeleteQuestions, "Can Delete Questions", CreateDescription("Delete Questions")),
+            // Quality Control
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanViewMaterialSTPs, "Can View Material STPs", CreateDescription("View Material STPs")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanCreateMaterialSTP, "Can Create Material STP", CreateDescription("Create Material STP")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanEditMaterialSTP, "Can Edit Material STP", CreateDescription("Edit Material STP")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanDeleteMaterialSTP, "Can Delete Material STP", CreateDescription("Delete Material STP")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanViewProductSTPs, "Can View Product STPs", CreateDescription("View Product STPs")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanCreateProductSTP, "Can Create Product STP", CreateDescription("Create Product STP")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanEditProductSTP, "Can Edit Product STP", CreateDescription("Edit Product STP")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanDeleteProductSTP, "Can Delete Product STP", CreateDescription("Delete Product STP")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanViewMaterialARDs, "Can View Material ARDs", CreateDescription("View Material ARDs")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanCreateMaterialARD, "Can Create Material ARD", CreateDescription("Create Material ARD")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanEditMaterialARD, "Can Edit Material ARD", CreateDescription("Edit Material ARD")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanDeleteMaterialARD, "Can Delete Material ARD", CreateDescription("Delete Material ARD")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductArd, PermissionKeys.CanViewProductARDs, "Can View Product ARDs", CreateDescription("View Product ARDs")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductArd, PermissionKeys.CanCreateProductARD, "Can Create Product ARD", CreateDescription("Create Product ARD")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductArd, PermissionKeys.CanEditProductARD, "Can Edit Product ARD", CreateDescription("Edit Product ARD")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductArd, PermissionKeys.CanDeleteProductARD, "Can Delete Product ARD", CreateDescription("Delete Product ARD")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanViewGoodsReceiptNotes, "Can View Goods Receipt Notes", CreateDescription("View Goods Receipt Notes")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanTakeSample, "Can Take Sample", CreateDescription("Take Sample")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanStartTest, "Can Start Test", CreateDescription("Start Test")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewMaterialSpecifications, "Can View Material Specifications", CreateDescription("View Material Specifications")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanCreateMaterialSpecification, "Can Create Material Specification", CreateDescription("Create Material Specification")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanEditMaterialSpecification, "Can Edit Material Specification", CreateDescription("Edit Material Specification")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanDeleteMaterialSpecification, "Can Delete Material Specification", CreateDescription("Delete Material Specification")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanViewProductSpecifications, "Can View Product Specifications", CreateDescription("View Product Specifications")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanCreateProductSpecification, "Can Create Product Specification", CreateDescription("Create Product Specification")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductSpecification, "Can Edit Product Specification", CreateDescription("Edit Product Specification")),
+            new(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanDeleteProductSpecification, "Can Delete Product Specification", CreateDescription("Delete Product Specification")),
 
-            new(PermissionModules.Settings, "Work Flow Forms - Templates", PermissionKeys.CanViewTemplates, "Can View Templates", CreateDescription("View Templates")),
-            new(PermissionModules.Settings, "Work Flow Forms - Templates", PermissionKeys.CanCreateNewTemplates, "Can Create New Templates", CreateDescription("Create New Templates")),
-            new(PermissionModules.Settings, "Work Flow Forms - Templates", PermissionKeys.CanEditTemplates, "Can Edit Templates", CreateDescription("Edit Templates")),
-            new(PermissionModules.Settings, "Work Flow Forms - Templates", PermissionKeys.CanDeleteTemplates, "Can Delete Templates", CreateDescription("Delete Templates")),
+            // Quality Assurance
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.IssueBmr, PermissionKeys.CanViewIssuedBmRs, "Can View Issued BMRs", CreateDescription("View Issued BMRs")),
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.IssueBmr, PermissionKeys.CanIssueBmr, "Can Issue BMR", CreateDescription("Issue BMR")),
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.BmrBprRequest, PermissionKeys.CanViewBmrbprRequests, "Can View BMR/BPR Requests", CreateDescription("View BMR/BPR Requests")),
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.BmrBprRequest, PermissionKeys.CanCreateBmrbprRequest, "Can Create BMR/BPR Request", CreateDescription("Create BMR/BPR Request")),
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.BmrBprRequest, PermissionKeys.CanApproveOrRejectBmrbprRequest, "Can Approve or Reject BMR/BPR Request", CreateDescription("Approve or Reject BMR/BPR Request")),
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanViewAnalyticalTestRequests, "Can View Analytical Test Requests", CreateDescription("View Analytical Test Requests")),
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanCreateAnalyticalTestRequest, "Can Create Analytical Test Request", CreateDescription("Create Analytical Test Request")),
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanTakeSamples, "Can Take Samples", CreateDescription("Take Samples")),
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanStartTestAnalytical, "Can Start Test", CreateDescription("Start Test")),
+            new(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanViewPendingApprovals, "Can View Pending Approvals", CreateDescription("View Pending Approvals")),
 
+            // Inventory
+            new(PermissionModules.Inventory, PermissionSubmodules.VendorManagement, PermissionKeys.CanViewVendorsInventory, "Can View Vendors", CreateDescription("View Vendors")),
+            new(PermissionModules.Inventory, PermissionSubmodules.VendorManagement, PermissionKeys.CanCreateVendorInventory, "Can Create Vendor", CreateDescription("Create Vendor")),
+            new(PermissionModules.Inventory, PermissionSubmodules.VendorManagement, PermissionKeys.CanEditVendorInventory, "Can Edit Vendor", CreateDescription("Edit Vendor")),
+            new(PermissionModules.Inventory, PermissionSubmodules.VendorManagement, PermissionKeys.CanDeleteVendorInventory, "Can Delete Vendor", CreateDescription("Delete Vendor")),
+            new(PermissionModules.Inventory, PermissionSubmodules.PurchaseRequisitionInventory, PermissionKeys.CanViewPurchaseRequisitionsInventory, "Can View Purchase Requisitions", CreateDescription("View Purchase Requisitions")),
+            new(PermissionModules.Inventory, PermissionSubmodules.PurchaseRequisitionInventory, PermissionKeys.CanCreatePurchaseRequisitionInventory, "Can Create Purchase Requisition", CreateDescription("Create Purchase Requisition")),
+            new(PermissionModules.Inventory, PermissionSubmodules.PurchaseRequisitionInventory, PermissionKeys.CanEditPurchaseRequisitionInventory, "Can Edit Purchase Requisition", CreateDescription("Edit Purchase Requisition")),
+            new(PermissionModules.Inventory, PermissionSubmodules.PurchaseRequisitionInventory, PermissionKeys.CanDeletePurchaseRequisitionInventory, "Can Delete Purchase Requisition", CreateDescription("Delete Purchase Requisition")),
+            new(PermissionModules.Inventory, PermissionSubmodules.StockRequisition, PermissionKeys.CanViewStockRequisitionsInventory, "Can View Stock Requisitions", CreateDescription("View Stock Requisitions")),
+            new(PermissionModules.Inventory, PermissionSubmodules.StockRequisition, PermissionKeys.CanCreateStockRequisitionInventory, "Can Create Stock Requisition", CreateDescription("Create Stock Requisition")),
+            new(PermissionModules.Inventory, PermissionSubmodules.StockRequisition, PermissionKeys.CanIssueOrRejectStockRequisitions, "Can Issue or reject Stock Requisitions", CreateDescription("Issue or reject Stock Requisitions")),
+
+            // CRM
+            new(PermissionModules.Crm, PermissionSubmodules.CustomerManagement, PermissionKeys.CanViewCustomers, "Can View Customers", CreateDescription("View Customers")),
+            new(PermissionModules.Crm, PermissionSubmodules.CustomerManagement, PermissionKeys.CanCreateCustomer, "Can Create Customer", CreateDescription("Create Customer")),
+            new(PermissionModules.Crm, PermissionSubmodules.CustomerManagement, PermissionKeys.CanEditCustomer, "Can Edit Customer", CreateDescription("Edit Customer")),
+            new(PermissionModules.Crm, PermissionSubmodules.CustomerManagement, PermissionKeys.CanDeleteCustomer, "Can Delete Customer", CreateDescription("Delete Customer")),
+            new(PermissionModules.Crm, PermissionSubmodules.ProductionOrders, PermissionKeys.CanViewOrder, "Can View Order", CreateDescription("View Order")),
+            new(PermissionModules.Crm, PermissionSubmodules.ProductionOrders, PermissionKeys.CanCreateOrders, "Can Create Orders", CreateDescription("Create Orders")),
+            new(PermissionModules.Crm, PermissionSubmodules.ProductionOrders, PermissionKeys.CanEditOrders, "Can Edit Orders", CreateDescription("Edit Orders")),
+            new(PermissionModules.Crm, PermissionSubmodules.ProductionOrders, PermissionKeys.CanDeleteOrders, "Can Delete Orders", CreateDescription("Delete Orders")),
+            new(PermissionModules.Crm, PermissionSubmodules.ProformaInvoice, PermissionKeys.CanViewProformaInvoice, "Can View Proforma Invoice", CreateDescription("View Proforma Invoice")),
+            new(PermissionModules.Crm, PermissionSubmodules.ProformaInvoice, PermissionKeys.CanCreateProformaInvoice, "Can Create Proforma Invoice", CreateDescription("Create Proforma Invoice")),
+            new(PermissionModules.Crm, PermissionSubmodules.ProformaInvoice, PermissionKeys.CanEditProformaInvoice, "Can Edit Proforma Invoice", CreateDescription("Edit Proforma Invoice")),
+            new(PermissionModules.Crm, PermissionSubmodules.ProformaInvoice, PermissionKeys.CanCancelProformaInvoice, "Can Cancel Proforma Invoice", CreateDescription("Cancel Proforma Invoice")),
+            new(PermissionModules.Crm, PermissionSubmodules.Invoice, PermissionKeys.CanViewInvoice, "Can View Invoice", CreateDescription("View Invoice")),
+            new(PermissionModules.Crm, PermissionSubmodules.Invoice, PermissionKeys.CanCreateInvoice, "Can Create Invoice", CreateDescription("Create Invoice")),
+            new(PermissionModules.Crm, PermissionSubmodules.Invoice, PermissionKeys.CanCancelInvoice, "Can Cancel Invoice", CreateDescription("Cancel Invoice")),
+            new(PermissionModules.Crm, PermissionSubmodules.WaybillCrm, PermissionKeys.CanViewWaybillCrm, "Can View Waybill", CreateDescription("View Waybill")),
+            new(PermissionModules.Crm, PermissionSubmodules.WaybillCrm, PermissionKeys.CanCreateWaybillCrm, "Can Create Waybill", CreateDescription("Create Waybill")),
         };
     }
 }

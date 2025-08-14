@@ -125,7 +125,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             var material = materialDepartment.Material;
             var warehouseId = material.Kind == MaterialKind.Raw ? rawWarehouse.Id : packageWarehouse.Id;
 
-            var stockResult = await materialRepository.GetMaterialStockInWarehouse(material.Id, warehouseId);
+            var stockResult = await materialRepository.GetMassMaterialStockInWarehouse(material.Id, warehouseId);
 
             if (stockResult.IsFailure) continue;
 
