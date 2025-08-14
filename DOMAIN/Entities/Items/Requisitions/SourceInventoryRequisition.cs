@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Vendors;
-using SHARED;
 
 namespace DOMAIN.Entities.Items.Requisitions;
 

@@ -1,6 +1,5 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Departments;
 
 namespace DOMAIN.Entities.Items;
 
@@ -19,4 +18,5 @@ public class ItemDto : WithAttachment
     public int ReorderLevel { get; set; }
     public bool IsActive { get; set; }
     public string Description { get; set; }
+    public int AvailableQuantity { get; set; }
 }

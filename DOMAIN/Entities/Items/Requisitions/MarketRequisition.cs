@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
-using SHARED;
 
 namespace DOMAIN.Entities.Items.Requisitions;
 

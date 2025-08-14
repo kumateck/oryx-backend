@@ -578,6 +578,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<ItemStockRequisition> ItemStockRequisitions { get; set; }
     public DbSet<ItemStockRequisitionItem> ItemStockRequisitionItems { get; set; }
+    public DbSet<IssueItemStockRequisition> IssueItemStockRequisitions { get; set; }
+    
 
     #endregion
 

@@ -4,7 +4,6 @@ using APP.Utils;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
-using DOMAIN.Entities.VendorQuotations;
 
 namespace APP.Services.Pdf;
 

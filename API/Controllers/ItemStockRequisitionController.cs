@@ -78,4 +78,17 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
         var result = await repository.DeleteItemStockRequisition(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Issues a stock against an item stock requisition
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost("{id:guid}/issue-stock-against-requisition")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssueItemStockRequisitionDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> IssueStockAgainstRequisition([FromRoute] Guid id, [FromBody] IssueStockAgainstRequisitionRequest request)
+    {
+        var result = await repository.IssueStockRequisition(id, request);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
 }

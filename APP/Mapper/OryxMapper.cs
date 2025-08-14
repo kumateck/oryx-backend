@@ -1001,6 +1001,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.ItemId))
             .ForMember(dest => dest.QuantityRequested, opt => opt.MapFrom(src => src.QuantityRequested));
 
+        CreateMap<IssueItemStockRequisition, IssueItemStockRequisitionDto>();
         #endregion
 
         #region Inventory Procurement
