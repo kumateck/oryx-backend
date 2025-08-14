@@ -2170,6 +2170,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(m => m.Product)
             .Include(m => m.ProductionSchedule)
+            .Include(m => m.FullReturns)
+            .Include(m => m.PartialReturns)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
