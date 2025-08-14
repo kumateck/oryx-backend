@@ -555,13 +555,16 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         // Fetch production activities with only necessary data
         var productionActivities = await context.ProductionActivities
             .AsSplitQuery()
-            .Include(pa => pa.ProductionSchedule).ThenInclude(productionSchedule => productionSchedule.Products)
+            .Include(pa => pa.ProductionSchedule)
+            .ThenInclude(productionSchedule => productionSchedule.Products)
             .Include(pa => pa.Product)
             .Include(pa => pa.Steps)
                 .ThenInclude(s => s.Operation) 
             .Include(pa => pa.Steps)
                 .ThenInclude(s => s.ResponsibleUsers) 
             .AsNoTracking()
+            .Where(pa => pa.ProductionSchedule.Products
+                .Any(ps => ps.ProductId == pa.ProductId && !ps.Cancelled))
             .ToListAsync();
 
         // Process CurrentStep in memory
@@ -1507,6 +1510,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransferSources
+            .AsSplitQuery()
             .Include(s => s.FromDepartment)
             .Include(s => s.ToDepartment)
             .Include(st => st.StockTransfer).ThenInclude(st => st.Material)
@@ -2047,8 +2051,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         {
             foreach (var item in stockRequisition.Items)
             {
-                Debug.Assert(stockRequisition.ProductionScheduleId != null, "stockRequisition.ProductionScheduleId != null");
-                Debug.Assert(stockRequisition.ProductId != null, "stockRequisition.ProductId != null");
+                Debug.Assert(stockRequisition.ProductionScheduleId != null);
+                Debug.Assert(stockRequisition.ProductId != null);
                 var batchesToConsume =
                     await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
                         item.MaterialId,
@@ -2170,6 +2174,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(m => m.Product)
             .Include(m => m.ProductionSchedule)
+            .Include(m => m.FullReturns)
+            .Include(m => m.PartialReturns)
+            .ThenInclude(m => m.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

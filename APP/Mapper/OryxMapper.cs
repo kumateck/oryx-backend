@@ -171,9 +171,9 @@ public class OryxMapper : Profile
         CreateMap<Instrument, CollectionItemDto>();
         CreateMap<InventoryPurchaseRequisition, CollectionItemDto>();
         CreateMap<MarketRequisition, CollectionItemDto>();
-        CreateMap<InventoryRequisitionSource, CollectionItemDto>();
         CreateMap<Vendor, CollectionItemDto>();
         CreateMap<Item, CollectionItemDto>();
+        CreateMap<Customer, CollectionItemDto>();
         
         #endregion
 

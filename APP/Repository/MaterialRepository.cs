@@ -314,22 +314,34 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             pageSize,
             mapper.Map<MaterialDto>);
 
-        var materialIds = paginatedResult.Data.Select(m => m.Id).ToList();
+        //var materialIds = paginatedResult.Data.Select(m => m.Id).ToList();
 
         //gets only those assigned to shelf locations
-        var totalAvailableQuantities = await context.ShelfMaterialBatches
-            .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-            .Where(smb => materialIds.Contains(smb.MaterialBatch.MaterialId) && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id && smb.MaterialBatch.Status == BatchStatus.Available)
-            .GroupBy(smb => smb.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(smb => smb.Quantity), UnitOfMeasure = g.FirstOrDefault(h => h.MaterialBatch.MaterialId == g.Key).MaterialBatch.UoM })
-            .ToListAsync();
+        // var totalAvailableQuantities = await context.ShelfMaterialBatches
+        //     .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
+        //     .Where(smb => materialIds.Contains(smb.MaterialBatch.MaterialId) && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id && smb.MaterialBatch.Status == BatchStatus.Available)
+        //     .GroupBy(smb => smb.MaterialBatch.MaterialId)
+        //     .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(smb => smb.Quantity), UnitOfMeasure = g.FirstOrDefault(h => h.MaterialBatch.MaterialId == g.Key).MaterialBatch.UoM })
+        //     .ToListAsync();
         
-        var materialDetails = paginatedResult.Data.Select(m => new MaterialDetailsDto
+        var materialDetails = new List<MaterialDetailsDto>();
+
+        foreach (var m in paginatedResult.Data)
         {
-            Material = m,
-            UnitOfMeasure = mapper.Map<UnitOfMeasureDto>(totalAvailableQuantities.FirstOrDefault(q => q.MaterialId == m.Id)?.UnitOfMeasure),
-            TotalAvailableQuantity = totalAvailableQuantities.FirstOrDefault(q => q.MaterialId == m.Id)?.TotalQuantity ?? 0
-        }).ToList();
+            var totalAvailableQuantity = await GetMassMaterialStockInWarehouse(m.Id, warehouse.Id);
+            if(totalAvailableQuantity.IsFailure) return totalAvailableQuantity.Errors;
+
+            var unitOfMeasure = await GetUnitOfMeasureForMaterialDepartment(m.Id, userId);
+            if(unitOfMeasure.IsFailure) return unitOfMeasure.Errors;
+            
+            materialDetails.Add(new MaterialDetailsDto
+            {
+                Material = m,
+                UnitOfMeasure = unitOfMeasure.Value,
+                //TotalAvailableQuantity = totalAvailableQuantities.FirstOrDefault(q => q.MaterialId == m.Id)?.TotalQuantity ?? 0
+                TotalAvailableQuantity = totalAvailableQuantity.Value,
+            });
+        }
 
         var result = new Paginateable<IEnumerable<MaterialDetailsDto>>
         {
@@ -1102,6 +1114,24 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return Math.Max(totalQuantityInLocation, 0);
     }
+    
+    public async Task<Result<decimal>> GetShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
+    {
+        // Sum of all quantities for shelves in the given warehouse for the given material
+        var totalQuantity = await context.ShelfMaterialBatches
+            .AsSplitQuery()
+            .Include(s => s.MaterialBatch)
+            .Include(s => s.WarehouseLocationShelf)
+            .ThenInclude(wls => wls.WarehouseLocationRack)
+            .ThenInclude(w => w.WarehouseLocation)
+            .ThenInclude(wl => wl.Warehouse)
+            .Where(s => s.MaterialBatch.MaterialId == materialId &&
+                        s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId)
+            .SumAsync(s => s.Quantity);
+
+        return Math.Max(totalQuantity, 0);
+    }
+
     
     public async Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {

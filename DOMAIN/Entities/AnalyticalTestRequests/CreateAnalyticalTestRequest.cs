@@ -21,6 +21,7 @@ public class CreateAnalyticalTestRequest
 
 public class UpdateAnalyticalTestRequest
 {
+    public string ArNumber { get; set; }
     public AnalyticalTestStatus Status { get; set; }
     public int NumberOfContainers { get; set; }
     public string SampledQuantity { get; set; }

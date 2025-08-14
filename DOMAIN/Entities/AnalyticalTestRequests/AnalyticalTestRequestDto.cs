@@ -14,12 +14,9 @@ public class AnalyticalTestRequestDto : BaseDto
     public DateTime ManufacturingDate { get; set; }
     
     public DateTime ExpiryDate { get; set; }
-    
-    public string ReleasedAt { get; set; }
-    
     public string Filled { get; set; }
     
-    public DateTime ReleaseDate { get; set; }
+    public DateTime? ReleasedAt { get; set; }
     
     public string SampledQuantity { get; set; }
     
@@ -34,4 +31,5 @@ public class AnalyticalTestRequestDto : BaseDto
     public DateTime? SampledAt { get; set; }
     public UserDto AcknowledgedBy { get; set; }
     public DateTime? AcknowledgedAt { get; set; }
+    public string ArNumber { get; set; }
 }

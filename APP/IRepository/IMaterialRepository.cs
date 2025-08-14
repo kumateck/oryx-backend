@@ -36,6 +36,7 @@ public interface IMaterialRepository
     Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<List<DepartmentDto>>> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity);
     Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
+    Task<Result<decimal>> GetShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<List<MaterialBatchDto>>> GetFrozenMaterialBatchesInWarehouse(Guid materialId,
         Guid warehouseId);
