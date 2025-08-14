@@ -228,4 +228,77 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+   public async Task<Result> IssuePartialStockRequisition(Guid requisitionId, IssueStockAgainstRequisitionRequest request)
+    {
+        var requisition = await context.ItemStockRequisitions
+            .Include(r => r.RequisitionItems)
+            .ThenInclude(i => i.Item)
+            .FirstOrDefaultAsync(r => r.Id == requisitionId && r.Status.Equals(IssueItemStockRequisitionStatus.Partial));
+
+        if (requisition == null)
+            return Error.NotFound("Requisition.NotFound", "Requisition not found.");
+        
+        var issuedSoFar = await context.IssueItemStockRequisitions
+            .Where(iss => requisition.RequisitionItems.Select(x => x.Id).Contains(iss.ItemStockRequisitionId))
+            .GroupBy(iss => iss.ItemStockRequisitionId)
+            .ToDictionaryAsync(g => g.Key, g => g.Sum(x => x.QuantityIssued));
+        
+        foreach (var item in requisition.RequisitionItems)
+        {
+            if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var qtyNowIssued) || qtyNowIssued <= 0)
+                continue;
+
+            var alreadyIssued = issuedSoFar.GetValueOrDefault(item.Id, 0);
+            var qtyOutstanding = item.QuantityRequested - alreadyIssued;
+
+            if (qtyNowIssued > qtyOutstanding)
+                return Error.Validation("Quantity.OverIssue", $"Cannot issue more than outstanding for item {item.Id}.");
+
+            if (qtyNowIssued > item.Item.AvailableQuantity)
+                return Error.Validation("Stock.Insufficient", $"Not enough stock for item {item.ItemId}.");
+        }
+        
+
+        foreach (var item in requisition.RequisitionItems)
+        {
+            if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var qtyNowIssued) || qtyNowIssued <= 0)
+                continue;
+
+            // Deduct stock
+            item.Item.AvailableQuantity -= qtyNowIssued;
+
+            // Either update the existing record or insert a new one
+            var existingIssue = await context.IssueItemStockRequisitions
+                .FirstOrDefaultAsync(x => x.ItemStockRequisitionId == item.Id);
+
+            if (existingIssue != null)
+            {
+                existingIssue.QuantityIssued += qtyNowIssued;
+            }
+            else
+            {
+                context.IssueItemStockRequisitions.Add(new IssueItemStockRequisition
+                {
+                    Id = Guid.NewGuid(),
+                    ItemStockRequisitionId = item.Id,
+                    QuantityIssued = qtyNowIssued
+                });
+            }
+        }
+        
+        var fullyIssued = requisition.RequisitionItems.All(i =>
+        {
+            var alreadyIssued = issuedSoFar.GetValueOrDefault(i.Id, 0);
+            return alreadyIssued + request.QuantitiesToIssue.GetValueOrDefault(i.Id, 0) >= i.QuantityRequested;
+        });
+
+        requisition.Status = fullyIssued
+            ? IssueItemStockRequisitionStatus.Completed
+            : IssueItemStockRequisitionStatus.Partial;
+
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 }
