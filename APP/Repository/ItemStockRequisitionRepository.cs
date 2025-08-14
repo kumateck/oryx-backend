@@ -4,7 +4,6 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
-using DOMAIN.Entities.LeaveRequests;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -72,7 +71,7 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            if (Enum.TryParse<LeaveStatus>(searchQuery, true, out var status))
+            if (Enum.TryParse<IssueItemStockRequisitionStatus>(searchQuery, true, out var status))
             {
                 query = query.Where(q => q.Status == status);
             }
@@ -162,6 +161,70 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
         itemStockReq.LastDeletedById = userId;
         
         context.ItemStockRequisitions.Update(itemStockReq);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> IssueStockRequisition(Guid id, IssueStockAgainstRequisitionRequest request)
+    {
+        var requisition = await context.ItemStockRequisitions
+            .Include(r => r.RequisitionItems)
+            .ThenInclude(i => i.Item)
+            .FirstOrDefaultAsync(r => r.Id == id);
+
+        if (requisition == null)
+            return Error.NotFound("Requisition.NotFound", "Requisition not found.");
+
+        // Get total quantities already issued per requisition item
+        var issuedSoFar = await context.IssueItemStockRequisitions
+            .Where(iss => requisition.RequisitionItems.Select(x => x.Id).Contains(iss.ItemStockRequisitionId))
+            .GroupBy(iss => iss.ItemStockRequisitionId)
+            .ToDictionaryAsync(g => g.Key, g => g.Sum(x => x.QuantityIssued));
+
+        foreach (var item in requisition.RequisitionItems)
+        {
+            if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var issueQty))
+                continue;
+
+            if (issueQty < 0)
+                return Error.Validation("Quantity.Invalid", $"Issued quantity for item {item.Id} cannot be negative.");
+
+            var alreadyIssued = issuedSoFar.GetValueOrDefault(item.Id, 0);
+            var remainingToIssue = item.QuantityRequested - alreadyIssued;
+
+            if (issueQty > remainingToIssue)
+                return Error.Validation("Quantity.OverIssue", $"Cannot issue more than remaining quantity for item {item.Id}.");
+
+            if (issueQty > item.Item.AvailableQuantity)
+                return Error.Validation("Stock.Insufficient", $"Not enough stock for material {item.ItemId}.");
+        }
+        
+        foreach (var item in requisition.RequisitionItems)
+        {
+            if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var issueQty) || issueQty <= 0)
+                continue;
+
+            context.IssueItemStockRequisitions.Add(new IssueItemStockRequisition
+            {
+                Id = Guid.NewGuid(),
+                ItemStockRequisitionId = item.ItemStockRequisitionId, 
+                QuantityIssued = issueQty
+            });
+
+            item.Item.AvailableQuantity -= issueQty;
+        }
+
+        // Determine status
+        var fullyIssued = requisition.RequisitionItems.All(i =>
+        {
+            var alreadyIssued = issuedSoFar.GetValueOrDefault(i.Id, 0);
+            return alreadyIssued + request.QuantitiesToIssue.GetValueOrDefault(i.Id, 0) >= i.QuantityRequested;
+        });
+
+        requisition.Status = fullyIssued
+            ? IssueItemStockRequisitionStatus.Completed
+            : IssueItemStockRequisitionStatus.Partial;
+
         await context.SaveChangesAsync();
         return Result.Success();
     }

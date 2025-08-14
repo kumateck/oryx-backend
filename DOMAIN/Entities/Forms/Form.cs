@@ -3,9 +3,7 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products.Production;
-using DOMAIN.Entities.ProductSpecifications;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Forms;

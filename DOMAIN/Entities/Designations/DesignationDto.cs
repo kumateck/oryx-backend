@@ -1,7 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
-using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Designations;
 

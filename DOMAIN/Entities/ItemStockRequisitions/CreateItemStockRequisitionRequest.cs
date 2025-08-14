@@ -17,3 +17,8 @@ public class CreateItemStockRequisitionRequest
     [Required, MinLength(1, ErrorMessage = "At least one item must be selected")]
     public List<StockItems> StockItems { get; set; }
 }
+
+public class IssueStockAgainstRequisitionRequest
+{
+    public Dictionary<Guid, int> QuantitiesToIssue { get; set; }
+}
