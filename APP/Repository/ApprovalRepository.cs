@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
@@ -703,8 +704,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                         productionActivityStep.CompletedAt = DateTime.UtcNow;
                         productionActivityStep.Status = ProductionStatus.Completed;
-                        atr.ReleaseDate = DateTime.UtcNow;
+                        atr.ReleasedAt = DateTime.UtcNow;
                         atr.ReleasedById = userId;
+                        atr.Status = AnalyticalTestStatus.Released;
                         context.ProductionActivitySteps.Update(productionActivityStep);
                         context.AnalyticalTestRequests.Update(atr);
                     }

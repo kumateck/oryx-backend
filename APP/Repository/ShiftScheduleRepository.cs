@@ -111,15 +111,15 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             Result.Success(mapper.Map<ShiftScheduleDto>(shiftSchedule));
     }
 
-    public async Task<Result<ShiftScheduleDto>> GetShiftScheduleByDepartment(Guid departmentId)
+    public async Task<Result<List<ShiftScheduleDto>>> GetShiftScheduleByDepartment(Guid departmentId)
     {
         var shiftSchedule = await context.ShiftSchedules
             .Include(schedule => schedule.Department)
-            .Include(schedule => schedule.ShiftTypes).FirstOrDefaultAsync(s => s.DepartmentId == departmentId);
+            .Include(schedule => schedule.ShiftTypes)
+            .Where(s => s.DepartmentId == departmentId)
+            .ToListAsync();
         
-        return shiftSchedule is null ? 
-            Error.NotFound("ShiftSchedule.NotFound", "Shift schedule is not found") : 
-            Result.Success(mapper.Map<ShiftScheduleDto>(shiftSchedule));
+        return mapper.Map<List<ShiftScheduleDto>>(shiftSchedule);
     }
 
     public async Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleRangeView(Guid shiftScheduleId, DateTime startDate, DateTime endDate)

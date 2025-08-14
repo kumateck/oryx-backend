@@ -23,5 +23,5 @@ public class ItemStockRequisition : BaseEntity
     public int QuantityRequested { get; set; }
     public LeaveStatus Status { get; set; } = LeaveStatus.Pending;
     
-    public ICollection<ItemStockRequisitionItem> RequisitionItems { get; set; } = new List<ItemStockRequisitionItem>();
+    public ICollection<ItemStockRequisitionItem> RequisitionItems { get; set; } = [];
 }
