@@ -2172,6 +2172,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(m => m.ProductionSchedule)
             .Include(m => m.FullReturns)
             .Include(m => m.PartialReturns)
+            .ThenInclude(m => m.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
