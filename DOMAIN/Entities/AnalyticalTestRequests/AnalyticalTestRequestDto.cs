@@ -31,4 +31,5 @@ public class AnalyticalTestRequestDto : BaseDto
     public DateTime? SampledAt { get; set; }
     public UserDto AcknowledgedBy { get; set; }
     public DateTime? AcknowledgedAt { get; set; }
+    public string ArNumber { get; set; }
 }
