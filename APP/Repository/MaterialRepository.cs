@@ -1813,7 +1813,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var warehouse = await context.Warehouses.FirstOrDefaultAsync(w =>
                 w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
             if (warehouse == null) continue;
-            var warehouseStockResult = await GetMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
+            var warehouseStockResult = await GetMassMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
             if(warehouseStockResult.IsFailure) continue;
             result.WarehouseStock = warehouseStockResult.Value;
             result.PendingStockTransferQuantity = await context.StockTransferSources
