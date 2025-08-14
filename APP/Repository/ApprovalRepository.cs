@@ -265,6 +265,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 stageToApprovePo.Status = ApprovalStatus.Approved;
                 stageToApprovePo.ApprovalTime = DateTime.UtcNow;
                 stageToApprovePo.Comments = comments;
+                stageToApprovePo.ApprovedById = userId;
 
                 // Optionally mark purchase order as fully approved
                 var allRequiredPoApproved = purchaseOrder.Approvals
@@ -360,6 +361,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 stageToApproveBs.Status = ApprovalStatus.Approved;
                 stageToApproveBs.ApprovalTime = DateTime.UtcNow;
                 stageToApproveBs.Comments = comments;
+                stageToApproveBs.ApprovedById = userId;
 
                 // Optionally mark billing sheet as fully approved
                 var allRequiredBsApproved = billingSheet.Approvals
@@ -457,6 +459,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 stageToApproveSr.Status = ApprovalStatus.Approved;
                 stageToApproveSr.ApprovalTime = DateTime.UtcNow;
                 stageToApproveSr.Comments = comments;
+                stageToApproveSr.ApprovedById = userId;
                 
                 // Optionally mark staff requisition as fully approved
                 var allRequiredSrApproved = staffRequisition.Approvals
@@ -650,6 +653,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 stageToApproveRe.Status = ApprovalStatus.Approved;
                 stageToApproveRe.ApprovalTime = DateTime.UtcNow;
                 stageToApproveRe.Comments = comments;
+                stageToApproveRe.ApprovedById = userId;
                 
                 // Optionally mark a leave request as fully approved
                 var allRequiredReApproved = response.Approvals
