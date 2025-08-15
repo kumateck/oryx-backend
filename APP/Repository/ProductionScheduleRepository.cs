@@ -1189,6 +1189,32 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
        
     }
 
+    public async Task<Result<Paginateable<IEnumerable<ProductDto>>>> GetApprovedProducts(
+        int page, 
+        int pageSize, 
+        string searchQuery)
+    {
+        var productsQuery = context.FinishedGoodsTransferNotes
+            .Include(tn => tn.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Where(p => p.IsApproved)
+            .Select(tn => tn.BatchManufacturingRecord.Product)
+            .Distinct();
+        
+        
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            productsQuery = productsQuery.Where(p => p.Name.Contains(searchQuery));
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            productsQuery,
+            page,
+            pageSize,
+            mapper.Map<ProductDto>
+        );
+    }
+
 
     public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
