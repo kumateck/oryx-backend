@@ -1051,7 +1051,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         if (user is null)
             return UserErrors.NotFound(userId);
 
-        var warehouses = await context.Warehouses.Where(w => w.DepartmentId == user.DepartmentId).ToListAsync();
+        var warehouses = await context.Warehouses.Where(w => w.DepartmentId == user.DepartmentId)
+            .ToListAsync();
 
         var finishedGoodsWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.FinishedGoodsStorage);
 
@@ -1059,6 +1060,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             return Error.NotFound("Warehouse.FinishedGoods", "This user has no finished goods configured for his department");
         
         var query = context.DistributedFinishedProducts
+            .AsSplitQuery()
+            .Include(drm => drm.BatchManufacturingRecord)
             .Include(drm => drm.Product)
             .AsQueryable();
 
