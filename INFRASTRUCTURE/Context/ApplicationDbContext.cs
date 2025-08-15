@@ -58,6 +58,7 @@ using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProductStandardTestProcedures;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.RecoverableItemsReports;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
@@ -613,7 +614,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DamagedStocksLog> DamagedStocksLogs { get; set; }
 
     #endregion
-    
+
+    #region Recoverable Items Report
+
+    public DbSet<RecoverableItemReport> RecoverableItemReports { get; set; }
+
+    #endregion
     
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
