@@ -10,6 +10,7 @@ using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using SHARED.Requests;
@@ -1092,6 +1093,19 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.ApproveProductionExtraPacking(productionExtraPackingId, batches, Guid.Parse(userIdStr));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of approved products
+    /// </summary>
+    [HttpGet("approved-products")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetApprovedProducts([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetApprovedProducts(page,pageSize,searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     #endregion
 
@@ -1128,4 +1142,6 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     #endregion
+    
+    
 }

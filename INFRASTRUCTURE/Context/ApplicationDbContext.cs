@@ -608,8 +608,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #endregion
 
     #region Damaged Stocks
-
     public DbSet<DamagedStock> DamagedStocks { get; set; }
+    public DbSet<DamagedStockBatch> DamagedStockBatch { get; set; }
 
     #endregion
     
