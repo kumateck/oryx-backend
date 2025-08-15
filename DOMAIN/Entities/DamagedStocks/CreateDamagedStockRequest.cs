@@ -8,4 +8,6 @@ public class CreateDamagedStockRequest
     [Required] public DamageStatus DamageStatus {get; set;}
     [Required] public int QuantityDamaged {get; set;}
     public string Remarks {get; set;}
+
+    public List<DamagedStockBatch> Batches { get; set; } = [];
 }

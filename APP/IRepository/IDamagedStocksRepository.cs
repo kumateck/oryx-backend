@@ -6,9 +6,9 @@ namespace APP.IRepository;
 
 public interface IDamagedStocksRepository
 {
-    Task<Result<Guid>> CreateDamagedStocks(CreateDamagedStockRequest request);
+    Task<Result<Guid>> CreateDamagedStocks(CreateDamagedStockRequest request, Guid userId);
     Task<Result<Paginateable<IEnumerable<DamagedStockDto>>>> GetDamagedStocks(int page, int pageSize, string searchQuery);
     Task<Result<DamagedStockDto>> GetDamagedStock(Guid id);
-    Task<Result> UpdateDamagedStocks(Guid id, CreateDamagedStockRequest request);
+    Task<Result> UpdateDamagedStocks(Guid id, CreateDamagedStockRequest request, Guid userId);
     Task<Result> DeleteDamagedStocks(Guid id, Guid userId);
 }
