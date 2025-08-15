@@ -20,7 +20,9 @@ public class DamagedStocksController(IDamagedStocksRepository repository) : Cont
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateDamagedStocks([FromBody] CreateDamagedStockRequest request)
     {
-        var result = await repository.CreateDamagedStocks(request);
+        var userId = (string) HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        var result = await repository.CreateDamagedStocks(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -57,7 +59,9 @@ public class DamagedStocksController(IDamagedStocksRepository repository) : Cont
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateDamagedStock([FromRoute] Guid id, [FromBody] CreateDamagedStockRequest request)
     {
-        var result = await repository.UpdateDamagedStocks(id, request);
+        var userId = (string) HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        var result = await repository.UpdateDamagedStocks(id, request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
