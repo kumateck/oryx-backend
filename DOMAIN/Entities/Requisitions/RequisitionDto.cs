@@ -1,10 +1,7 @@
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Roles;
-using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 

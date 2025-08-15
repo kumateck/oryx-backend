@@ -1231,7 +1231,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
 
             // Add batch to the result list
-            var batchDto = mapper.Map<MaterialBatchDto>(batch);
+            var batchDto = mapper.Map<MaterialBatchListDto>(batch);
             result.Add(new BatchToSupply
             {
                 Batch = batchDto,
@@ -1314,15 +1314,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Fetch batches in the given warehouse, sorted by expiry date (FIFO)
         var batches = await context.MaterialBatches
-            .Where(b => b.MaterialId == materialId &&
-                        b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)) // Only include batches in the specified warehouse
-            .OrderBy(b => b.ExpiryDate) // FIFO order
+            .AsSplitQuery()
             .Include(b => b.MassMovements)
             .ThenInclude(m => m.ToWarehouse)
             .Include(b => b.MassMovements)
             .ThenInclude(m => m.FromWarehouse)
             .Include(b => b.UoM)
-            .AsSplitQuery()
+            .Where(b => b.MaterialId == materialId &&
+                        b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)) // Only include batches in the specified warehouse
+            .OrderBy(b => b.ExpiryDate) // FIFO order
             .ToListAsync();
 
         foreach (var batch in batches)
@@ -1346,7 +1346,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
 
             // Map and add batch to the result list
-            var batchDto = mapper.Map<MaterialBatchDto>(batch);
+            var batchDto = mapper.Map<MaterialBatchListDto>(batch);
             result.Add(new BatchToSupply
             {
                 Batch = batchDto,
