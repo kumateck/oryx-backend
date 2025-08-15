@@ -159,6 +159,10 @@ public class FinishedGoodsTransferNote:BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public bool IsApproved { get; set; }
     public decimal TotalQuantity { get; set; }
+
+    public decimal QuantityReceived { get; set; } = 0;
+    
+    public string Notes { get; set; }
     [StringLength(1000)] public string QarNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
@@ -175,6 +179,8 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public PackageStyleDto PackageStyle { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal TotalQuantity { get; set; }
+    public decimal QuantityReceived { get; set; }
+    public string Notes { get; set; }
     public string QarNumber { get; set; }
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public ProductionActivityStepDto ProductionActivityStep { get; set; }
