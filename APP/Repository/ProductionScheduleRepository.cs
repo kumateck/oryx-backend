@@ -2048,6 +2048,18 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(r => r.Items)
             .Where(r => r.ProductId == productId && r.ProductionScheduleId == productionScheduleId).ToListAsync();
+        
+        var materialReturnNote = new MaterialReturnNote
+        {
+            ProductId = productId,
+            ProductionScheduleId = productionScheduleId,
+            ReturnDate = DateTime.UtcNow,
+            BatchNumber = (await context.BatchManufacturingRecords
+                .FirstOrDefaultAsync(b => b.ProductId == productId &&
+                                          b.ProductionScheduleId == productionScheduleId))?.BatchNumber,
+        };
+        await context.MaterialReturnNotes.AddAsync(materialReturnNote);
+        await context.SaveChangesAsync();
             
         foreach (var stockRequisition in stockRequisitions)
         {
@@ -2060,16 +2072,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                         item.MaterialId,
                         productionWarehouse.Id, stockRequisition.ProductionScheduleId.Value,
                         stockRequisition.ProductId.Value);
-
-                var materialReturnNote = new MaterialReturnNote
-                {
-                    ProductId = productId,
-                    ProductionScheduleId = productionScheduleId,
-                    ReturnDate = DateTime.UtcNow,
-                    BatchNumber = (await context.BatchManufacturingRecords
-                        .FirstOrDefaultAsync(b => b.ProductId == productId &&
-                                                  b.ProductionScheduleId == productionScheduleId))?.BatchNumber,
-                };
                 
                 var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == item.MaterialId);
                 
@@ -2077,6 +2079,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
                 var fullReturns = batchesToConsume.Select(b => new MaterialReturnNoteFullReturn
                 {
+                    MaterialReturnNoteId = materialReturnNote.Id,
                     MaterialBatchReservedQuantityId = b.Id,
                     DestinationWarehouseId = material.Kind == MaterialKind.Raw
                         ? rawStorageWarehouse.Id
@@ -2087,12 +2090,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                     .Where(b => batchesToConsume.Select(bc => bc.Id).Contains(b.Id))
                     .ToListAsync();
                 
-                await context.MaterialReturnNotes.AddAsync(materialReturnNote);
-                await context.SaveChangesAsync();
-                foreach (var fullReturn in fullReturns)
-                {
-                    fullReturn.MaterialReturnNoteId = materialReturnNote.Id;
-                }
                 await context.MaterialReturnNoteFullReturns.AddRangeAsync(fullReturns);
                 await context.SaveChangesAsync();
                 context.MaterialBatchReservedQuantities.RemoveRange(batchesToRemove);
