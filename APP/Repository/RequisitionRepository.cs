@@ -149,8 +149,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(r => r.ProductionSchedule)
             .Include(r => r.Product)
             .Include(r => r.RequestedBy)
-            .Include(r => r.Approvals).ThenInclude(r => r.User)
-            .Include(r => r.Approvals).ThenInclude(r => r.Role)
             .Include(r => r.Items).ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
