@@ -117,6 +117,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryProcurementRepository, InventoryProcurementRepository>();
         services.AddScoped<IItemInventoryTransactionRepository, ItemInventoryTransactionRepository>();
         services.AddScoped<IDamagedStocksRepository, DamagedStocksRepository>();
+        services.AddScoped<IRecoverableItemReportRepository, RecoverableItemReportRepository>();
         
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();
