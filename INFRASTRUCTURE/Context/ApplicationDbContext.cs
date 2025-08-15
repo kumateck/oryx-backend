@@ -610,6 +610,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Damaged Stocks
     public DbSet<DamagedStock> DamagedStocks { get; set; }
     public DbSet<DamagedStockBatch> DamagedStockBatch { get; set; }
+    public DbSet<DamagedStocksLog> DamagedStocksLogs { get; set; }
 
     #endregion
     
