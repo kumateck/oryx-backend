@@ -1166,7 +1166,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (transferNote == null) return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
         
         transferNote.IsApproved = true;
-        transferNote.TotalQuantity = request.QuantityReceived;
+        transferNote.QuantityReceived = request.QuantityReceived;
         
         context.FinishedGoodsTransferNotes.Update(transferNote);
         await context.SaveChangesAsync();

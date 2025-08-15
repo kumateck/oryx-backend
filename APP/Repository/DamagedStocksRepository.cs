@@ -16,11 +16,15 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
     {
         var item = await context.Items.FirstOrDefaultAsync(i => i.Id == request.ItemId);
         if (item == null) return Error.NotFound("Item.Invalid", "Invalid item");
-        
-        
-       var stock = mapper.Map<DamagedStock>(request);
+
+        item.AvailableQuantity -= request.QuantityDamaged;
+
+        context.Items.Update(item);
+        await context.SaveChangesAsync();
+
+        var stock = mapper.Map<DamagedStock>(request);
        
-       await context.AddAsync(stock);
+       await context.DamagedStocks.AddAsync(stock);
        await context.SaveChangesAsync();
        return stock.Id;
     }
