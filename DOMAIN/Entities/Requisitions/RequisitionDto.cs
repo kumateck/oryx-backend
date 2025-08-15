@@ -24,7 +24,7 @@ public class RequisitionDto
     public DateTime? ExpectedDelivery { get; set; }
     public DateTime CreatedAt { get; set; }
     public CollectionItemDto ProductionSchedule { get; set; }
-    public ProductDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public string Comments { get; set; }
 }
 
