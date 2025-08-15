@@ -26,6 +26,7 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemInventoryTransactions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.LeaveEntitlements;
@@ -575,7 +576,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #endregion
 
     #region Item Stock Requisitions
-
+    
+    public DbSet<ItemInventoryTransaction> ItemInventoryTransactions { get; set; }
     public DbSet<ItemStockRequisition> ItemStockRequisitions { get; set; }
     public DbSet<ItemStockRequisitionItem> ItemStockRequisitionItems { get; set; }
     public DbSet<IssueItemStockRequisition> IssueItemStockRequisitions { get; set; }
