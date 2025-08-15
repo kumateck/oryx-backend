@@ -12,7 +12,6 @@ public class Item : BaseEntity
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasure UnitOfMeasure { get; set; }
     public bool HasBatch { get; set; }
-    public string BatchNumber { get; set; }
     public int MinimumLevel { get; set; }
     public int MaximumLevel { get; set; }
     public int ReorderLevel { get; set; }
