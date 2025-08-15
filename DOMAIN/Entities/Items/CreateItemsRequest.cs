@@ -17,7 +17,6 @@ public class CreateItemsRequest
     public Guid UnitOfMeasureId { get; set; }
     
     public bool HasBatchNumber { get; set; }
-    public string BatchNumber { get; set; }
 
     public int MinimumLevel { get; set; }
     public int MaximumLevel { get; set; }
