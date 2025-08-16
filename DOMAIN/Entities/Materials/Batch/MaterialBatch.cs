@@ -207,7 +207,7 @@ public class ApprovedProductDto
 {
     public ProductListDto Product { get; set; }
     public decimal TotalQuantity { get; set; }
-    public decimal TotalQuantityPerPack { get; set; }
+    public decimal QuantityPerPack { get; set; }
     public decimal TotalLoose { get; set; }
 }
 

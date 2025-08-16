@@ -1067,7 +1067,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
 
     public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
-        bool onlyApproved,
+        bool? onlyApproved,
         int page,
         int pageSize,
         string searchQuery = null)
@@ -1086,11 +1086,19 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             query = query.WhereSearch(searchQuery, b => b.QarNumber);
         }
 
-        if (onlyApproved)
+        if (onlyApproved.HasValue)
         {
-            query = query.Where(q => q.IsApproved);
+            if (onlyApproved.Value)
+            {
+                query = query.Where(q => q.IsApproved);
+            }
+            else
+            {
+                query = query.Where(q => !q.IsApproved);
+
+            }
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
@@ -1215,7 +1223,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             {
                 Product = mapper.Map<ProductListDto>(item.Key),
                 TotalQuantity = item.Sum(p => p.QuantityReceived),
-                TotalQuantityPerPack = item.Sum(p => p.QuantityPerPack),
+                QuantityPerPack = item.Select(p => p.QuantityPerPack).First(),
                 TotalLoose = item.Sum(p => p.Loose),
             }).ToList();
     }
