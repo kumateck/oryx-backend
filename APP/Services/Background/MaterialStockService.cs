@@ -42,9 +42,9 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
                         .FirstOrDefaultAsync(w => w.DepartmentId == departmentId && w.Type == WarehouseType.PackagedStorage, cancellationToken: stoppingToken);
 
                     var stockInWarehouseResult = materialDepartment.Material.Kind == MaterialKind.Raw
-                        ? await materialRepository.GetMassMaterialStockInWarehouse(materialDepartment.MaterialId,
+                        ? await materialRepository.GetMaterialStockInWarehouse(materialDepartment.MaterialId,
                             rawWarehouse.Id)
-                        : await materialRepository.GetMassMaterialStockInWarehouse(materialDepartment.MaterialId,
+                        : await materialRepository.GetMaterialStockInWarehouse(materialDepartment.MaterialId,
                             packageMaterialWarehouse.Id);
 
                     if (stockInWarehouseResult.IsFailure) continue;
