@@ -91,7 +91,8 @@ public interface IProductionScheduleRepository
     Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request);
     
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
-    Task<Result<Paginateable<IEnumerable<ProductDto>>>> GetApprovedProducts(int page, int pageSize, string searchQuery);
+    Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts();
+    Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId);
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);
     Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId);
@@ -123,7 +124,10 @@ public interface IProductionScheduleRepository
    Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId);
    Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
        List<BatchTransferRequest> batches, Guid userId);
-   Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(int page, int pageSize,
+   Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
+       bool onlyApproved,
+       int page, 
+       int pageSize,
        string searchQuery = null);
    Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(
        int page, int pageSize,

@@ -451,9 +451,13 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("finished-goods-transfer-note")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
-    public async Task<IResult> GetFinishedGoodsTransferNotes(int page = 1, int pageSize = 10, string searchQuery = null)
+    public async Task<IResult> GetFinishedGoodsTransferNotes(
+        bool onlyApproved = false,
+        int page = 1,
+        int pageSize = 10,
+        string searchQuery = null)
     {
-        var result = await repository.GetFinishedGoodsTransferNote(page, pageSize, searchQuery);
+        var result = await repository.GetFinishedGoodsTransferNote(onlyApproved, page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -1099,11 +1103,28 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("approved-products")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ApprovedProductDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetApprovedProducts([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetApprovedProducts([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] bool? includePending = null)
     {
-        var result = await repository.GetApprovedProducts(page,pageSize,searchQuery);
+        var result = await repository.GetApprovedProducts();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Retrieves detaails of an approved product
+    /// </summary>
+    [HttpGet("approved-products/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ApprovedProductDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetApprovedProductDetails([FromRoute] Guid productId)
+    {
+        var result = await repository.GetApprovedProductDetails(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
