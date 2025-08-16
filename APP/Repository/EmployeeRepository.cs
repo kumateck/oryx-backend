@@ -349,8 +349,9 @@ public class EmployeeRepository(ApplicationDbContext context,
                 opts => { opts.Items[AppConstants.ModelType] = nameof(Employee);});
     }
     
-    public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
-        string searchQuery, string designation, string department, EmployeeStatus? activeStatus)
+    public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(EmployeeStatus? activeStatus,
+        int page, int pageSize,
+        string searchQuery = null, string designation = null, string department = null)
     {
         var query = context.Employees
             .Include(e => e.Department)
