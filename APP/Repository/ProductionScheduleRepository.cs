@@ -1066,7 +1066,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(int page, int pageSize,
+    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
+        bool onlyApproved,
+        int page,
+        int pageSize,
         string searchQuery = null)
     {
         var query = context.FinishedGoodsTransferNotes
@@ -1081,6 +1084,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, b => b.QarNumber);
+        }
+
+        if (onlyApproved)
+        {
+            query = query.Where(q => q.IsApproved);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -1167,11 +1175,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         transferNote.IsApproved = true;
         transferNote.QuantityReceived = request.QuantityReceived;
+        transferNote.Notes = request.Notes;
+        transferNote.Loose = request.Loose;
         
         context.FinishedGoodsTransferNotes.Update(transferNote);
         await context.SaveChangesAsync();
         return Result.Success();
-
     }
 
     public async Task<Result> UpdateTransferNote(Guid id,  CreateFinishedGoodsTransferNoteRequest request)
@@ -1189,30 +1198,38 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
        
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductDto>>>> GetApprovedProducts(
-        int page, 
-        int pageSize, 
-        string searchQuery)
+    public async Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts()
     {
         var productsQuery = context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.Product)
             .Where(p => p.IsApproved)
-            .Select(tn => tn.BatchManufacturingRecord.Product)
-            .Distinct();
+            .AsQueryable();
         
+        var products = await productsQuery.ToListAsync();
         
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            productsQuery = productsQuery.Where(p => p.Name.Contains(searchQuery));
-        }
+        return products
+            .GroupBy(p => p.BatchManufacturingRecord.Product)
+            .Select(item => new ApprovedProductDto
+            {
+                Product = mapper.Map<ProductListDto>(item.Key),
+                TotalQuantity = item.Sum(p => p.QuantityReceived),
+                TotalQuantityPerPack = item.Sum(p => p.QuantityPerPack),
+                TotalLoose = item.Sum(p => p.Loose),
+            }).ToList();
+    }
+    
+    public async Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId)
+    {
+        var finishedGoods = await context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(tn => tn.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Where(p => p.BatchManufacturingRecord.ProductId == productId)
+            .ToListAsync();
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            productsQuery,
-            page,
-            pageSize,
-            mapper.Map<ProductDto>
-        );
+        return mapper.Map<List<FinishedGoodsTransferNoteDto>>(finishedGoods);
     }
 
 

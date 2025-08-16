@@ -159,7 +159,6 @@ public class FinishedGoodsTransferNote:BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public bool IsApproved { get; set; }
     public decimal TotalQuantity { get; set; }
-
     public decimal QuantityReceived { get; set; } = 0;
     
     public string Notes { get; set; }
@@ -168,6 +167,7 @@ public class FinishedGoodsTransferNote:BaseEntity
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
+    public decimal Loose { get; set; }
 }
 
 public class FinishedGoodsTransferNoteDto : BaseDto
@@ -184,6 +184,8 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public string QarNumber { get; set; }
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public ProductionActivityStepDto ProductionActivityStep { get; set; }
+    public bool IsApproved { get; set; }
+    public decimal Loose { get; set; }
 }
 
 public class MaterialBatchReservedQuantity : BaseEntity
@@ -201,6 +203,13 @@ public class MaterialBatchReservedQuantity : BaseEntity
     public decimal Quantity { get; set; }
 }
 
+public class ApprovedProductDto
+{
+    public ProductListDto Product { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public decimal TotalQuantityPerPack { get; set; }
+    public decimal TotalLoose { get; set; }
+}
 
 public enum MovementType
 {
