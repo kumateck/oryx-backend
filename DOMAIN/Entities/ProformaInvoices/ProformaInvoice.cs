@@ -37,7 +37,7 @@ public class ProformaInvoiceProduct : BaseEntity
 public class ProformaInvoiceDto : BaseDto
 {
     public ProductionOrderDto ProductionOrder { get; set; }
-    public List<ProformaInvoiceDto> Products { get; set; } = [];
+    public List<ProformaInvoiceProductDto> Products { get; set; } = [];
 }
 
 public class ProformaInvoiceProductDto : BaseDto
