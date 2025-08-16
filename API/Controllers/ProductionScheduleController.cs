@@ -1116,11 +1116,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     
     
     /// <summary>
-    /// Retrieves detaails of an approved product
+    /// Retrieves details of an approved product
     /// </summary>
     [HttpGet("approved-products/{productId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ApprovedProductDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetApprovedProductDetails([FromRoute] Guid productId)
     {
