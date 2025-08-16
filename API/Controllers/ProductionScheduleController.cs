@@ -10,7 +10,6 @@ using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
-using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using SHARED.Requests;
@@ -177,7 +176,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status,Guid.Parse(userId));
+        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -190,7 +189,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status,Guid.Parse(userId));
+        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

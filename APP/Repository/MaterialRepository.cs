@@ -189,6 +189,37 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task<Result> CreateMaterialBatchWithoutBatchMovement(List<CreateMaterialBatchRequest> request, Guid userId)
     {
+        var providedBatchNumbers = request
+            .Where(r => !string.IsNullOrEmpty(r.BatchNumber))
+            .Select(r => r.BatchNumber.Trim())
+            .ToList();
+        
+        if (providedBatchNumbers.Count != 0)
+        {
+            // Check for duplicates within the request itself
+            var duplicateInRequest = providedBatchNumbers
+                .GroupBy(bn => bn, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .FirstOrDefault();
+
+            if (duplicateInRequest != null)
+            {
+                return Error.Validation("BatchNumber",$"Duplicate batch number '{duplicateInRequest}' found in request.");
+            }
+
+            // Check for duplicates already in the database
+            var existingBatchNumbers = await context.MaterialBatches
+                .Where(mb => providedBatchNumbers.Contains(mb.BatchNumber))
+                .Select(mb => mb.BatchNumber)
+                .ToListAsync();
+
+            if (existingBatchNumbers.Count != 0)
+            {
+                return Error.Validation("BatchNumber",$"Batch number(s) '{string.Join(", ", existingBatchNumbers)}' already exist.");
+            }
+        }
+        
         var batches = mapper.Map<List<MaterialBatch>>(request);
     
         foreach (var batch in batches)

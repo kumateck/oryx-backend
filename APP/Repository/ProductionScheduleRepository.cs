@@ -658,7 +658,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
 
 
-    public async Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status, Guid userId)
+    public async Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status)
     {
         var product = await context.Products
             .AsSplitQuery()
@@ -677,7 +677,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return ProductErrors.NotFound(productId);
 
         var productionSchedule =
-            await context.ProductionSchedules.AsSplitQuery().Include(productionSchedule => productionSchedule.Products).FirstOrDefaultAsync(p => p.Id == productionScheduleId);
+            await context.ProductionSchedules
+                .AsSplitQuery()
+                .Include(productionSchedule => productionSchedule.Products)
+                .Include(p => p.CreatedBy)
+                .FirstOrDefaultAsync(p => p.Id == productionScheduleId);
         if(productionSchedule is null)
             return ProductErrors.NotFound(productionScheduleId);
         
@@ -693,9 +697,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (activeBoM is null)
             return Error.NotFound("Product.BoM", "No active bom found for this product");
 
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = productionSchedule.CreatedBy;
         if (user is null)
-            return UserErrors.NotFound(userId);
+            return Error.NotFound("Product.CreatedBy", "No user found for this production scheduled");
         
         var stockLevels = new Dictionary<Guid, decimal>();
         if (user.Department == null)
@@ -789,7 +793,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return MaterialRequisitionStatus.None;
     }
     
-    public async Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status, Guid userId)
+    public async Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status)
     {
         var product = await context.Products
             .AsSplitQuery()
@@ -800,17 +804,21 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (product is null)
             return ProductErrors.NotFound(productId);
         
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null)
-            return UserErrors.NotFound(userId);
-        
         var productionSchedule =
-            await context.ProductionSchedules.Include(productionSchedule => productionSchedule.Products).FirstOrDefaultAsync(p => p.Id == productionScheduleId);
+            await context.ProductionSchedules
+                .AsSplitQuery()
+                .Include(productionSchedule => productionSchedule.Products)
+                .Include(p => p.CreatedBy)
+                .FirstOrDefaultAsync(p => p.Id == productionScheduleId);
         if(productionSchedule is null)
             return ProductErrors.NotFound(productionScheduleId);
         
         if (productionSchedule.Products.All(p => p.ProductId != productId))
             return Error.Validation("Product.Validation", "This product is not associated with this production scheduled");
+        
+        var user = productionSchedule.CreatedBy;
+        if (user is null)
+            return Error.NotFound("Product.CreatedBy", "No user found for this production scheduled");
 
         var quantityRequired = productionSchedule.Products.First(p => p.ProductId == productId).Quantity;
 
@@ -1416,7 +1424,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
     public async Task FreezeMaterialInProduction(Guid productionScheduleId, Guid productId, Guid userId)
     {
-        var materialResult = await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId,null, userId);
+        var materialResult = await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId,null);
         if (materialResult.IsFailure) return;
 
         var materialDetails = materialResult.Value;
@@ -1437,7 +1445,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             }
         }
         
-        var packageMaterialResult = await CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId,null, userId);
+        var packageMaterialResult = await CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId,null);
         if (packageMaterialResult.IsFailure) return;
         
         var packageMaterialDetails = packageMaterialResult.Value;
@@ -1870,7 +1878,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
 
         var materialStockDetails =
-            await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, MaterialRequisitionStatus.None, userId);
+            await CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, MaterialRequisitionStatus.None);
         
         if (!materialStockDetails.IsSuccess)
         {
@@ -1898,7 +1906,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }
 
         var materialStockDetails =
-            await CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId,productId, null, userId);
+            await CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId,productId, null);
         
         if (!materialStockDetails.IsSuccess)
         {

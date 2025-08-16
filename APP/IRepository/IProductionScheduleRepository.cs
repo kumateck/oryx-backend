@@ -47,8 +47,8 @@ public interface IProductionScheduleRepository
 
     Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>>
         GetProductionActivityStepsGroupedByStatus();
-    Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status, Guid userId);
-    Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId,MaterialRequisitionStatus? status, Guid userId);
+    Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status);
+    Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId,MaterialRequisitionStatus? status);
     
     Task<Result<Guid>> CreateBatchManufacturingRecord(CreateBatchManufacturingRecord request);
     Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(

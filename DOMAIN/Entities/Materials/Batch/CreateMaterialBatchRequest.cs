@@ -2,9 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DOMAIN.Entities.Materials.Batch;
 
-public class CreateMaterialBatchRequest
+public class CreateMaterialBatchRequest 
 {
-    [StringLength(255)] public string Code { get; set; } 
     public Guid MaterialId { get; set; }         // ID of the material being added
     public decimal TotalQuantity { get; set; }             // Quantity of the material batch
     public string BatchNumber { get; set; }      // Batch number of the material

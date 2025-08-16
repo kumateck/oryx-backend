@@ -13,7 +13,6 @@ namespace DOMAIN.Entities.Materials.Batch;
 
 public class MaterialBatch : BaseEntity
 {
-    [StringLength(10000)] public string Code { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid? ChecklistId { get; set; }
