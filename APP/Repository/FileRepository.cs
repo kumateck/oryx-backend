@@ -11,7 +11,8 @@ namespace APP.Repository;
 
 public class FileRepository(ApplicationDbContext context, IBlobStorageService blobStorageService) : IFileRepository
 {
-    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, string reference, IFormFile file, Guid userId)
+    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, string reference, IFormFile file,
+        Guid? userId)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
         
