@@ -1103,7 +1103,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("approved-products")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ApprovedProductDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ApprovedProductDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetApprovedProducts()
     {
@@ -1117,7 +1117,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("approved-products/{productId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FinishedGoodsTransferNoteDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetApprovedProductDetails([FromRoute] Guid productId)
     {
