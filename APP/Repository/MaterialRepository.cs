@@ -1880,11 +1880,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             result.WarehouseStock = warehouseStockResult.Value;
 
             result.PendingStockTransferQuantity = await context.StockTransferSources
+                .AsSplitQuery()
                 .Include(s => s.StockTransfer)
                 .Where(s => s.StockTransfer.MaterialId == result.Material.Id &&
                             s.FromDepartmentId == user.DepartmentId &&
                             s.Status == StockTransferStatus.InProgress)
                 .SumAsync(s => s.Quantity);
+            
+            result.ReservedQuantity = await context.MaterialBatchReservedQuantities
+                .AsSplitQuery()
+                .Include(m => m.MaterialBatch)
+                .Where(m => m.MaterialBatch.MaterialId == result.Material.Id && m.WarehouseId == warehouse.Id)
+                .SumAsync(e => e.Quantity);
         }
 
         return results;
