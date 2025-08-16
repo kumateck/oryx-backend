@@ -1123,6 +1123,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(e => e.Quantity);
         
         var batchReservedQuantities = await context.MaterialBatchReservedQuantities
+            .Where(m => m.WarehouseId == warehouseId)
             .SumAsync(e => e.Quantity);
 
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation - batchReservedQuantities;
