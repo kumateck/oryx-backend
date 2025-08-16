@@ -11,8 +11,8 @@ public interface IEmployeeRepository
    Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request);
    Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto);
    Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId);
-   Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
-      string searchQuery = null, string designation = null, string department = null, EmployeeStatus? status = EmployeeStatus.Active);
+   Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(EmployeeStatus? status,int page, int pageSize,
+      string searchQuery = null, string designation = null, string department = null);
    Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId);
    Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date);
    Task<Result<EmployeeDto>> GetEmployee(Guid id);
