@@ -816,7 +816,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             : mapper.Map<GrnDto>(grn);
     }
     
-    public async Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(int page, int pageSize, string searchQuery, MaterialKind? kind)
+    public async Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(int page, int pageSize, string searchQuery,
+        MaterialKind? kind, Status? status)
     {
         var query = context.Grns
             .AsSplitQuery()
@@ -827,6 +828,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         if (kind.HasValue)
         {
             query = query.Where(q => q.MaterialBatches.Any(b => b.Material.Kind == kind));
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(q => q.MaterialBatches.Any(b => b.Grn.Status == status));
         }
 
         if (!string.IsNullOrEmpty(searchQuery))
