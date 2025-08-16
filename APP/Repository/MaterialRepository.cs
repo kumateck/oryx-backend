@@ -21,7 +21,7 @@ using SHARED.Requests;
 
 namespace APP.Repository;
 
-public class MaterialRepository(ApplicationDbContext context, IMapper mapper, ILogger<MaterialRepository> logger) : IMaterialRepository
+public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : IMaterialRepository
 {
     // ************* CRUD for Materials *************
     // Create Material
@@ -985,6 +985,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper, IL
     {
         // Sum of quantities moved to this location (incoming batches)
         var batchesInLocation = await context.MassMaterialBatchMovements
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.ToWarehouse)
             .Where(m => m.Batch.MaterialId == materialId
@@ -993,6 +994,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper, IL
     
         // Sum of quantities moved out of this location (outgoing batches)
         var batchesMovedOut = await context.MassMaterialBatchMovements
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.FromWarehouse)
             .Where(m => m.Batch.MaterialId == materialId
@@ -1001,6 +1003,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper, IL
     
         // Sum of the consumed quantities at this location for the given material
         var batchesConsumedAtLocation = await context.MaterialBatchEvents
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.ConsumptionWarehouse)
             .Where(e => e.Batch.MaterialId == materialId
@@ -1008,9 +1011,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper, IL
                         && e.ConsumptionWarehouseId == warehouseId
                         && e.Type == EventType.Consumed)
             .SumAsync(e => e.Quantity);
+        
+        var batchReservedQuantities = await context.MaterialBatchReservedQuantities
+            .SumAsync(e => e.Quantity);
 
         // Calculate the total available quantity for the material in this location
-        var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
+        var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation - batchReservedQuantities;
 
         return Math.Max(totalQuantityInLocation, 0);
     }
@@ -1084,10 +1090,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper, IL
     }
     public async Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {
-        logger.LogInformation("Calculating stock for Material {MaterialId} in Warehouse {WarehouseId}", 
-            materialId, 
-            warehouseId);
-
         var batchesInLocation = await context.MassMaterialBatchMovements
             .IgnoreQueryFilters()
             .AsSplitQuery()
@@ -1119,16 +1121,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper, IL
                         e.ConsumptionWarehouseId == warehouseId &&
                         e.Type == EventType.Consumed)
             .SumAsync(e => e.Quantity);
+        
+        var batchReservedQuantities = await context.MaterialBatchReservedQuantities
+            .SumAsync(e => e.Quantity);
 
-        var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
-
-        logger.LogInformation("Stock breakdown for Material {MaterialId} in Warehouse {WarehouseId}: In={In}, Out={Out}, Consumed={Consumed}, Total={Total}", 
-            materialId, 
-            warehouseId, 
-            batchesInLocation, 
-            batchesMovedOut, 
-            batchesConsumedAtLocation, 
-            totalQuantityInLocation);
+        var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation - batchReservedQuantities;
 
         return Math.Max(totalQuantityInLocation, 0);
     }
@@ -1794,6 +1791,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper, IL
         if (user == null) return UserErrors.NotFound(userId);
 
         var query = context.MaterialDepartments
+            .AsSplitQuery()
             .Include(m => m.Material)
             .Include(m => m.UoM)
             .AsQueryable();
@@ -1832,26 +1830,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper, IL
                 ? WarehouseType.RawMaterialStorage
                 : WarehouseType.PackagedStorage;
 
-            logger.LogInformation("Material {MaterialId} ({MaterialName}) using warehouse type {WarehouseType}", 
-                result.Material.Id, 
-                result.Material.Name, 
-                warehouseType);
-
             var warehouse = await context.Warehouses
-                .FirstOrDefaultAsync(w => w.Type == warehouseType);
+                .IgnoreQueryFilters()
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(w => w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
 
             if (warehouse == null)
             {
-                logger.LogWarning("No warehouse found for Material {MaterialId} with type {WarehouseType}", 
-                    result.Material.Id, 
-                    warehouseType);
                 return Error.NotFound("Warehouse", "Warehouse not found");
             }
-
-            logger.LogInformation("Using warehouse {WarehouseId} ({WarehouseName}) for Material {MaterialId}", 
-                warehouse.Id, 
-                warehouse.Name, 
-                result.Material.Id);
 
             var warehouseStockResult = await GetMassMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
             if (warehouseStockResult.IsFailure) continue;
@@ -1864,11 +1851,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper, IL
                             s.FromDepartmentId == user.DepartmentId &&
                             s.Status == StockTransferStatus.InProgress)
                 .SumAsync(s => s.Quantity);
-
-            logger.LogInformation("Final stock for Material {MaterialId}: WarehouseStock={WarehouseStock}, PendingTransfers={Pending}", 
-                result.Material.Id, 
-                result.WarehouseStock, 
-                result.PendingStockTransferQuantity);
         }
 
         return results;

@@ -85,6 +85,7 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result<Paginateable<IEnumerable<DamagedStockDto>>>> GetDamagedStocks(int page, int pageSize, string searchQuery)
     {
         var query = context.DamagedStocks
+            .AsSplitQuery()
             .Include(d => d.Item)
             .AsQueryable();
         
@@ -107,6 +108,7 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result<DamagedStockDto>> GetDamagedStock(Guid id)
     {
         var stocks = await context.DamagedStocks
+            .AsSplitQuery()
             .Include(d => d.Item)
             .FirstOrDefaultAsync(ds => ds.Id == id);
         return stocks is null ? 
@@ -119,6 +121,7 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result> UpdateDamagedStocks(Guid id, CreateDamagedStockRequest request, Guid userId)
     {
         var damagedStock = await context.DamagedStocks
+            .AsSplitQuery()
             .Include(d => d.Item)
             .Include(d => d.Batches)
             .FirstOrDefaultAsync(ds => ds.Id == id);

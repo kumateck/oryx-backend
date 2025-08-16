@@ -36,9 +36,11 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
                     var departmentId = materialDepartment.DepartmentId;
                     var rawWarehouse = await context.Warehouses
                         .IgnoreQueryFilters()
+                        .AsSplitQuery()
                         .FirstOrDefaultAsync(w => w.DepartmentId == departmentId && w.Type == WarehouseType.RawMaterialStorage, cancellationToken: stoppingToken);
                     var packageMaterialWarehouse = await context.Warehouses
                         .IgnoreQueryFilters()
+                        .AsSplitQuery()
                         .FirstOrDefaultAsync(w => w.DepartmentId == departmentId && w.Type == WarehouseType.PackagedStorage, cancellationToken: stoppingToken);
 
                     var stockInWarehouseResult = materialDepartment.Material.Kind == MaterialKind.Raw
