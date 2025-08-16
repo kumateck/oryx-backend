@@ -16,6 +16,7 @@ using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.DamagedStocks;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Departments.Request;
 using DOMAIN.Entities.Designations;
@@ -61,6 +62,7 @@ using DOMAIN.Entities.ProductStandardTestProcedures;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
+using DOMAIN.Entities.RecoverableItemsReports;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Roles;
@@ -1027,6 +1029,23 @@ public class OryxMapper : Profile
         CreateMap<VendorQuotationItem, VendorQuotationItemDto>();
 
         CreateMap<MarketRequisitionVendor, MarketRequisitionVendorDto>();
+
+        #endregion
+
+        #region Damaged Stocks
+
+        CreateMap<CreateDamagedStockRequest, DamagedStock>();
+        CreateMap<DamagedStock, DamagedStockDto>()
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+        CreateMap<DamagedStocksLog, DamagedStockLogDto>();
+     
+
+        #endregion
+
+        #region Recoverable Item Damage Report
+
+        CreateMap<CreateRecoverableItemReportRequest,RecoverableItemReport>();
+        CreateMap<RecoverableItemReport,RecoverableItemReportDto>();
 
         #endregion
     }
