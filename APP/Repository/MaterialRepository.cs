@@ -1154,7 +1154,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(e => e.Quantity);
         
         var batchReservedQuantities = await context.MaterialBatchReservedQuantities
-            .Where(m => m.WarehouseId == warehouseId)
+            .AsSplitQuery()
+            .Include(m => m.MaterialBatch)
+            .Where(m => m.MaterialBatch.MaterialId == materialId/* && m.WarehouseId == warehouseId*/)
             .SumAsync(e => e.Quantity);
 
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation - batchReservedQuantities;
@@ -2149,7 +2151,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var shelfName = GetCell("Shelf");
             var rackName = GetCell("Rack");
             var warehouseLocationName = GetCell("Location");
-            var warehouseCodeName = GetCell("Warehouse Code");
 
             var shelf = await context.WarehouseLocationShelves
                 .Include(s => s.WarehouseLocationRack)
