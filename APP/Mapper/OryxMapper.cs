@@ -321,7 +321,7 @@ public class OryxMapper : Profile
         CreateMap<CreateMaterialRequest, Material>();
         CreateMap<Material, MaterialDto>()
             .ForMember(dest => dest.TotalStock,
-                opt => opt.MapFrom(src => src. Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity)));
+                opt => opt.MapFrom(src => src.Batches.Where(b => b.Status == BatchStatus.Available).Sum(b => b.RemainingQuantity)));
         
         CreateMap<Material, MaterialWithWarehouseStockDto>()
             .ForMember(dest => dest.TotalStock,
