@@ -107,7 +107,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery)
     {
         var query = context.ProformaInvoices
-            .Include(p => p.ProductionOrder)
+            .AsSplitQuery()
+            .Include(p => p.ProductionOrder).ThenInclude(p => p.Customer)
             .Include(p => p.Products).ThenInclude(p => p.Product)
             .AsQueryable();
 
@@ -122,7 +123,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<ProformaInvoiceDto>> GetProformaInvoice(Guid id)
     {
         var invoice = await context.ProformaInvoices
-            .Include(p => p.ProductionOrder)
+            .AsSplitQuery()
+            .Include(p => p.ProductionOrder).ThenInclude(p => p.Customer)
             .Include(p => p.Products).ThenInclude(p => p.Product)
             .FirstOrDefaultAsync(p => p.Id == id);
 
