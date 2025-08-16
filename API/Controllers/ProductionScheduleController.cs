@@ -452,7 +452,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [HttpGet("finished-goods-transfer-note")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
     public async Task<IResult> GetFinishedGoodsTransferNotes(
-        bool onlyApproved = false,
+        bool? onlyApproved = null,
         int page = 1,
         int pageSize = 10,
         string searchQuery = null)
@@ -1105,10 +1105,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ApprovedProductDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetApprovedProducts([FromQuery] int page = 1, 
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null,
-        [FromQuery] bool? includePending = null)
+    public async Task<IResult> GetApprovedProducts()
     {
         var result = await repository.GetApprovedProducts();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

@@ -125,7 +125,7 @@ public interface IProductionScheduleRepository
    Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
        List<BatchTransferRequest> batches, Guid userId);
    Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
-       bool onlyApproved,
+       bool? onlyApproved,
        int page, 
        int pageSize,
        string searchQuery = null);
