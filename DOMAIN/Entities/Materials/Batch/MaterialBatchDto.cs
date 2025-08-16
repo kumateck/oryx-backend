@@ -62,6 +62,7 @@ public class MaterialBatchListDto
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
+    public MaterialBatchChecklistDto Checklist { get; set; }
 }
 
 public class DistributedMaterialBatchDto

@@ -561,6 +561,7 @@ public class OryxMapper : Profile
         #region Checklist
 
         CreateMap<Checklist, ChecklistDto>();
+        CreateMap<Checklist, MaterialBatchChecklistDto>();
         CreateMap<Checklist, DistributedChecklistDto>();
         CreateMap<Checklist, BatchChecklistDto>();
         CreateMap<CreateChecklistRequest, Checklist>()

@@ -809,7 +809,6 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(cl=>cl.Material)
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.DistributedRequisitionMaterial)
             .FirstOrDefaultAsync(g => g.Id == id);
 
         return grn is null
@@ -823,6 +822,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .AsSplitQuery()
             .Include(c => c.MaterialBatches)
             .AsQueryable();
+        
 
         if (kind.HasValue)
         {
