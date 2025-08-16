@@ -768,32 +768,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
         }
-
-        var grn = await context.Grns
-            .Include(g => g.MaterialBatches)
-            .FirstOrDefaultAsync(g => g.MaterialBatches.Any(mb => mb.Id == request.MaterialBatchId));
-
-        if (grn != null)
-        {
-            var batches = grn.MaterialBatches;
-
-            if (batches == null || batches.Count == 0)
-            {
-                grn.Status = Status.Pending;
-            }
-            else if (batches.All(b => b.Status == BatchStatus.Available))
-            {
-                grn.Status = Status.Completed;
-            }
-            else if (batches.Any(b => b.Status == BatchStatus.Available))
-            {
-                grn.Status = Status.Partial;
-            }
-            else
-            {
-                grn.Status = Status.Pending;
-            }
-        }
         
         var totalQuantityToAssign = request.ShelfMaterialBatches.Sum(s => s.Quantity);
 
@@ -870,6 +844,32 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if(materialBatch.QuantityAssigned >= materialBatch.TotalQuantity)
         {
             materialBatch.Status = BatchStatus.Available;
+        }
+        
+        var grn = await context.Grns
+            .Include(g => g.MaterialBatches)
+            .FirstOrDefaultAsync(g => g.MaterialBatches.Any(mb => mb.Id == request.MaterialBatchId));
+
+        if (grn != null)
+        {
+            var batches = grn.MaterialBatches;
+
+            if (batches == null || batches.Count == 0)
+            {
+                grn.Status = Status.Pending;
+            }
+            else if (batches.All(b => b.Status == BatchStatus.Available))
+            {
+                grn.Status = Status.Completed;
+            }
+            else if (batches.Any(b => b.Status == BatchStatus.Available))
+            {
+                grn.Status = Status.Partial;
+            }
+            else
+            {
+                grn.Status = Status.Pending;
+            }
         }
 
         await context.SaveChangesAsync();
