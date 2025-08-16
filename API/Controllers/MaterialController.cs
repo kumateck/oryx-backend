@@ -538,7 +538,6 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="kind">The material kind to filter</param>
-    /// <param name="departmentId">Optional department ID filter.</param>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("department")]
     [Authorize]
