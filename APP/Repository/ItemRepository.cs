@@ -25,7 +25,10 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
     public async Task<Result<Paginateable<IEnumerable<ItemDto>>>> GetItems(int page, int pageSize,
         string searchQuery, Store store)
     {
-        var query = context.Items.Where(i => i.IsActive && i.Store == store).AsQueryable();
+        var query = context.Items
+            .Include(i => i.UnitOfMeasure)
+            .Where(i => i.IsActive && i.Store == store).AsQueryable();
+        
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, i => i.Name,
@@ -49,7 +52,9 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
 
     public async Task<Result<ItemDto>> GetItem(Guid id)
     {
-        var item = await context.Items.FirstOrDefaultAsync(i => i.Id == id);
+        var item = await context.Items
+            .Include(i => i.UnitOfMeasure)
+            .FirstOrDefaultAsync(i => i.Id == id);
         return item is null ? 
             Error.NotFound("Item.NotFound", "Item not found") :
             mapper.Map<ItemDto>(item,
