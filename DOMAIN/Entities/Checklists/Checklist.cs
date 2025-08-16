@@ -43,6 +43,18 @@ public class ChecklistDto
     public List<MaterialBatchDto> MaterialBatches { get; set; } = [];
 }
 
+public class MaterialBatchChecklistDto
+{
+    public DateTime? CheckedAt { get; set; }
+    public ShipmentInvoiceDto ShipmentInvoice { get; set; }
+    public SupplierDto Supplier { get; set; }
+    public ManufacturerDto Manufacturer { get; set; }
+    public bool CertificateOfAnalysisDelivered { get; set; }
+    public bool VisibleLabelling { get; set; }
+    public Intactness IntactnessStatus { get; set; }
+    public ConsignmentCarrier ConsignmentCarrierStatus { get; set; }
+}
+
 public class DistributedChecklistDto
 {
     public List<DistributedMaterialBatchDto> MaterialBatches { get; set; } = [];
