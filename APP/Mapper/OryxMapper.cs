@@ -964,10 +964,11 @@ public class OryxMapper : Profile
         #region Vendors
 
         CreateMap<CreateVendorRequest, Vendor>();
-        CreateMap<Vendor, VendorDto>()
-            .ForMember(dest => dest.Items, 
-                opt =>
-                    opt.MapFrom(src => src.Items.Select(i => i.Item).ToList()));
+        CreateMap<Vendor, VendorDto>();
+        CreateMap<VendorItem, VendorItemDto>();
+
+        
+        
 
         #endregion
 
