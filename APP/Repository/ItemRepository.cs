@@ -15,6 +15,13 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
     {
         var item = await context.Items.FirstOrDefaultAsync(i => i.Code == request.Code || i.Name == request.Name);;
         if (item != null) return Error.Validation("Item.Exists", "Item already exists for this department");
+
+        if (request.ItemCategoryId.HasValue)
+        {
+          var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(ic => ic.Id == request.ItemCategoryId);
+          if (itemCategory == null) return Error.NotFound("ItemCategory.NotFound", "Item category not found");
+                    
+        }
         
         item = mapper.Map<Item>(request);
         await context.Items.AddAsync(item);

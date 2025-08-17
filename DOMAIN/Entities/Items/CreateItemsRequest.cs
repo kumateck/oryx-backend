@@ -26,7 +26,7 @@ public class CreateItemsRequest
     [Required(ErrorMessage = "Status is required")] 
     public bool IsActive { get; set; }
     
-    public Guid ItemCategoryId { get; set; }
+    public Guid? ItemCategoryId { get; set; }
 
     
     public string Description { get; set; }
