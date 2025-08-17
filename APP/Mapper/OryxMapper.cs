@@ -934,6 +934,7 @@ public class OryxMapper : Profile
         CreateMap<CreateProductionOrderProduct, ProductionOrderProducts>();
         CreateMap<ProductionOrder, ProductionOrderDto>();
         CreateMap<ProductionOrderProducts, ProductionOrderProductsDto>();
+        CreateMap<ProductionOrderProductQuantity, ProductionOrderProductQuantityDto>();
 
         #endregion
 

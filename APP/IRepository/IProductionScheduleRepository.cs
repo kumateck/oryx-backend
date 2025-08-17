@@ -3,6 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -93,6 +94,7 @@ public interface IProductionScheduleRepository
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
     Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts();
     Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId);
+    Task<Result> AllocateProduct(AllocateProductionOrder request);
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);
     Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId);

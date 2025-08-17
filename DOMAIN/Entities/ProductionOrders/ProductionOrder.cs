@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -27,14 +28,15 @@ public class ProductionOrderProducts
         ? TotalVolume / Product.FullBatchSize 
         : 0;
     public decimal TotalValue => TotalOrderQuantity * Product.Price;
+    public bool Fulfilled { get; set; }
+    public List<ProductionOrderProductQuantity> FulfilledQuantities { get; set; } = [];
+    public decimal RemainingQuantity => TotalOrderQuantity - FulfilledQuantities.Sum(p => p.Quantity);
 }
 
-public class ProductionOrderProductsDto
+[Owned]
+public class ProductionOrderProductQuantity
 {
-    public CollectionItemDto Product { get; set; }
-    public int TotalOrderQuantity { get; set; }
-    public decimal VolumePerPiece { get; set; }
-    public decimal TotalVolume { get; set; }
-    public decimal TotalBatches { get; set; }
-    public decimal TotalValue { get; set; }
+    public Guid FinishedGoodsTransferNoteId {get; set;}
+    public FinishedGoodsTransferNote  FinishedGoodsTransferNote { get; set; }
+    public decimal Quantity {get; set;}
 }

@@ -1,5 +1,7 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.Materials.Batch;
+using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
 
@@ -9,4 +11,41 @@ public class ProductionOrderDto : BaseDto
     public CustomerDto Customer { get; set; }
     public List<ProductionOrderProductsDto> Products { get; set; } = [];
     public decimal TotalValue { get; set; }
+}
+
+public class ProductionOrderProductsDto
+{
+    public CollectionItemDto Product { get; set; }
+    public int TotalOrderQuantity { get; set; }
+    public decimal VolumePerPiece { get; set; }
+    public decimal TotalVolume { get; set; }
+    public decimal TotalBatches { get; set; }
+    public decimal TotalValue { get; set; }
+    public List<ProductionOrderProductQuantityDto>  FulfilledQuantities { get; set; } = [];
+    public bool Fulfilled { get; set; }
+}
+
+public class ProductionOrderProductQuantityDto
+{
+    public FinishedGoodsTransferNoteDto FinishedGoodsTransferNote { get; set; }
+    public decimal Quantity { get; set; }
+}
+
+public class AllocateProductionOrder
+{
+    public Guid ProductionOrderId { get; set; }
+    public List<AllocateProductionOrderProduct> Products { get; set; } = [];
+    
+}
+
+public class AllocateProductionOrderProduct
+{
+    public Guid ProductId { get; set; }
+    public List<AllocateProductQuantity> FulfilledQuantites { get; set; } = [];
+}
+
+public class AllocateProductQuantity
+{
+    public Guid FinishedGoodsTransferNoteId { get; set; }
+    public decimal Quantity { get; set; }
 }
