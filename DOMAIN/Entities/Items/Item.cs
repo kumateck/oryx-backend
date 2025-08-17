@@ -15,7 +15,9 @@ public class Item : BaseEntity
     public int MinimumLevel { get; set; }
     public int MaximumLevel { get; set; }
     public int ReorderLevel { get; set; }
-    public string Category { get; set; }
+    
+    public Guid? ItemCategoryId { get; set; }
+    public ItemCategory ItemCategory { get; set; }
     public Store Store { get; set; }
     public bool IsActive { get; set; }
     public string Description { get; set; }
@@ -62,4 +64,15 @@ public class ItemStockRequisitionItemDto : BaseDto
     public ItemDto Item { get; set; }
     
     public int QuantityRequested { get; set; }
+}
+
+public class ItemCategory : BaseEntity
+{
+    public string Name { get; set; }
+}
+
+public class ItemCategoryDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; }
 }

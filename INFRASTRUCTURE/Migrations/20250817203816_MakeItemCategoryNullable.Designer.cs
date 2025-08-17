@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250817203816_MakeItemCategoryNullable")]
+    partial class MakeItemCategoryNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3717,9 +3720,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("AllocatedQuantity")
-                        .HasColumnType("numeric");
-
                     b.Property<Guid>("BatchManufacturingRecordId")
                         .HasColumnType("uuid");
 
@@ -4003,6 +4003,10 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("ChecklistId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
 
                     b.Property<decimal>("ConsumedQuantity")
                         .HasColumnType("numeric");
@@ -14206,9 +14210,6 @@ namespace INFRASTRUCTURE.Migrations
 
                             NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
 
-                            b1.Property<bool>("Fulfilled")
-                                .HasColumnType("boolean");
-
                             b1.Property<Guid>("ProductId")
                                 .HasColumnType("uuid");
 
@@ -14232,46 +14233,6 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductionOrderId");
-
-                            b1.OwnsMany("DOMAIN.Entities.ProductionOrders.ProductionOrderProductQuantity", "FulfilledQuantities", b2 =>
-                                {
-                                    b2.Property<Guid>("ProductionOrderProductsProductionOrderId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<int>("ProductionOrderProductsId")
-                                        .HasColumnType("integer");
-
-                                    b2.Property<int>("Id")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("integer");
-
-                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
-
-                                    b2.Property<Guid>("FinishedGoodsTransferNoteId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<decimal>("Quantity")
-                                        .HasColumnType("numeric");
-
-                                    b2.HasKey("ProductionOrderProductsProductionOrderId", "ProductionOrderProductsId", "Id");
-
-                                    b2.HasIndex("FinishedGoodsTransferNoteId");
-
-                                    b2.ToTable("ProductionOrderProductQuantity");
-
-                                    b2.HasOne("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", "FinishedGoodsTransferNote")
-                                        .WithMany()
-                                        .HasForeignKey("FinishedGoodsTransferNoteId")
-                                        .OnDelete(DeleteBehavior.Cascade)
-                                        .IsRequired();
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ProductionOrderProductsProductionOrderId", "ProductionOrderProductsId");
-
-                                    b2.Navigation("FinishedGoodsTransferNote");
-                                });
-
-                            b1.Navigation("FulfilledQuantities");
 
                             b1.Navigation("Product");
                         });

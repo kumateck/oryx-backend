@@ -114,6 +114,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, MarketType>();
         CreateMap<CreateItemRequest, Instrument>();
         CreateMap<CreateItemRequest, ProductState>();
+        CreateMap<CreateItemRequest, ItemCategory>();
         
         #endregion
         
@@ -176,6 +177,7 @@ public class OryxMapper : Profile
         CreateMap<Vendor, CollectionItemDto>();
         CreateMap<Item, CollectionItemDto>();
         CreateMap<Customer, CollectionItemDto>();
+        CreateMap<ItemCategory, CollectionItemDto>();
         
         #endregion
 
@@ -965,11 +967,11 @@ public class OryxMapper : Profile
 
         CreateMap<CreateVendorRequest, Vendor>();
         CreateMap<Vendor, VendorDto>();
+
         CreateMap<VendorItem, VendorItemDto>();
 
         
         
-
         #endregion
 
         #region Items
