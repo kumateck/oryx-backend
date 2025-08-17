@@ -646,4 +646,17 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialsNotLinkedToSpec(materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    
+    [HttpGet("rejects")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    public async Task<IResult> GetMaterialRejects([FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MaterialKind? materialKind = null)
+    {
+        var result = await repository.GetMaterialRejected(page, pageSize, searchQuery, materialKind);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

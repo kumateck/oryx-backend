@@ -2277,4 +2277,31 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success(mapper.Map<List<MaterialDto>>(materials));
         
     }
+
+    public async Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(int page, int pageSize, string searchQuery, MaterialKind? kind)
+    {
+        var query =  context.MaterialRejects
+            .AsSplitQuery()
+            .Include(m => m.MaterialBatch).ThenInclude(m => m.Material)
+            .Include(m => m.Response)
+            .AsQueryable();
+
+        if (kind.HasValue)
+        {
+            query = query.Where(q => q.MaterialBatch.Material.Kind == kind.Value);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.MaterialBatch.BatchNumber,
+                q => q.MaterialBatch.Material.Name, q => q.MaterialBatch.Material.Description, q => q.MaterialBatch.Material.Code) ;
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialRejectDto>
+        );
+    }
 }

@@ -334,6 +334,7 @@ public class OryxMapper : Profile
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
         CreateMap<MaterialBatch, MaterialBatchDto>();
         CreateMap<MaterialBatch, MaterialBatchListDto>();
+        CreateMap<MaterialReject, MaterialRejectDto>();
         CreateMap<MaterialBatch, DistributedMaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
         CreateMap<MassMaterialBatchMovement, MassMaterialBatchMovementDto>();
@@ -342,6 +343,7 @@ public class OryxMapper : Profile
         CreateMap<MaterialDepartment, MaterialDepartmentWithWarehouseStockDto>();
             // .ForMember(dest => dest.WarehouseStock,
             //     opt => opt.MapFrom<>());
+            
         
         CreateMap<CreateSrRequest, Sr>();
         CreateMap<Sr, SrDto>();
