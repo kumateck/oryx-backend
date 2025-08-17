@@ -23,16 +23,21 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
     }
 
     public async Task<Result<Paginateable<IEnumerable<ItemDto>>>> GetItems(int page, int pageSize,
-        string searchQuery, Store store)
+        string searchQuery, Store? store)
     {
         var query = context.Items
             .Include(i => i.UnitOfMeasure)
-            .Where(i => i.IsActive && i.Store == store).AsQueryable();
+            .AsQueryable();
         
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, i => i.Name,
                 i => i.Code);
+        }
+
+        if (store.HasValue)
+        {
+            query = query.Where(i => i.Store == store.Value);
         }
         
         if (!string.IsNullOrWhiteSpace(searchQuery))
