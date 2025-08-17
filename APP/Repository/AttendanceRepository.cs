@@ -34,8 +34,14 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         }
 
         var attendanceRecords = new List<AttendanceRecords>();
+        
+        var lastRow = worksheet.Dimension.End.Row;
+        while (lastRow >= 2 && string.IsNullOrWhiteSpace(worksheet.Cells[lastRow, 1].Text))
+        {
+            lastRow--;
+        }
 
-        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        for (var row = 2; row <= lastRow; row++)
         {
             var empId = worksheet.Cells[row, 1].Text?.Trim();
             var timestampStr = worksheet.Cells[row, 3].Text?.Trim();
@@ -50,14 +56,14 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             {
                 return Error.Validation("Attendance.InvalidTimestamp", $"Invalid timestamp format at row {row}. Use dd/MM/yyyy HH:mm:ss.");
             }
-            
+
             if (localTime.Date != DateTime.UtcNow.Date)
             {
                 return Error.Validation("Attendance.InvalidDate", $"The timestamp at row {row} is not for today. Only today's records are allowed.");
             }
-            
+
             var timeStamp = localTime.ToUniversalTime();
-            
+
             if (!Enum.TryParse<WorkState>(workState, true, out var parsedWorkState))
             {
                 return Error.Validation("Attendance.InvalidWorkState", $"Invalid work state '{workState}' at row {row}. Allowed values: Check In, Check Out.");
