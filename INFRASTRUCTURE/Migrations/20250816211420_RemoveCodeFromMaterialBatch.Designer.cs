@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250816211420_RemoveCodeFromMaterialBatch")]
+    partial class RemoveCodeFromMaterialBatch
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2745,6 +2748,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("AvailableQuantity")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Category")
+                        .HasColumnType("text");
+
                     b.Property<int>("Classification")
                         .HasColumnType("integer");
 
@@ -2768,9 +2774,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
-
-                    b.Property<Guid?>("ItemCategoryId")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -2803,8 +2806,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("CreatedById");
 
-                    b.HasIndex("ItemCategoryId");
-
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
@@ -2812,44 +2813,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("UnitOfMeasureId");
 
                     b.ToTable("Items");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Items.ItemCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.ToTable("ItemCategories");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.ItemStockRequisitionItem", b =>
@@ -3716,9 +3679,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<decimal>("AllocatedQuantity")
-                        .HasColumnType("numeric");
 
                     b.Property<Guid>("BatchManufacturingRecordId")
                         .HasColumnType("uuid");
@@ -7838,20 +7798,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("ItemId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -7859,8 +7810,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("ItemId");
 
                     b.HasIndex("LastDeletedById");
 
@@ -12469,10 +12418,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Items.ItemCategory", "ItemCategory")
-                        .WithMany()
-                        .HasForeignKey("ItemCategoryId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -12489,34 +12434,11 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("CreatedBy");
 
-                    b.Navigation("ItemCategory");
-
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("UnitOfMeasure");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Items.ItemCategory", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.ItemStockRequisitionItem", b =>
@@ -14206,9 +14128,6 @@ namespace INFRASTRUCTURE.Migrations
 
                             NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
 
-                            b1.Property<bool>("Fulfilled")
-                                .HasColumnType("boolean");
-
                             b1.Property<Guid>("ProductId")
                                 .HasColumnType("uuid");
 
@@ -14232,46 +14151,6 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductionOrderId");
-
-                            b1.OwnsMany("DOMAIN.Entities.ProductionOrders.ProductionOrderProductQuantity", "FulfilledQuantities", b2 =>
-                                {
-                                    b2.Property<Guid>("ProductionOrderProductsProductionOrderId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<int>("ProductionOrderProductsId")
-                                        .HasColumnType("integer");
-
-                                    b2.Property<int>("Id")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("integer");
-
-                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
-
-                                    b2.Property<Guid>("FinishedGoodsTransferNoteId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<decimal>("Quantity")
-                                        .HasColumnType("numeric");
-
-                                    b2.HasKey("ProductionOrderProductsProductionOrderId", "ProductionOrderProductsId", "Id");
-
-                                    b2.HasIndex("FinishedGoodsTransferNoteId");
-
-                                    b2.ToTable("ProductionOrderProductQuantity");
-
-                                    b2.HasOne("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", "FinishedGoodsTransferNote")
-                                        .WithMany()
-                                        .HasForeignKey("FinishedGoodsTransferNoteId")
-                                        .OnDelete(DeleteBehavior.Cascade)
-                                        .IsRequired();
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ProductionOrderProductsProductionOrderId", "ProductionOrderProductsId");
-
-                                    b2.Navigation("FinishedGoodsTransferNote");
-                                });
-
-                            b1.Navigation("FulfilledQuantities");
 
                             b1.Navigation("Product");
                         });
@@ -15773,12 +15652,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -15788,8 +15661,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("LastUpdatedById");
 
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("Item");
 
                     b.Navigation("LastDeletedBy");
 

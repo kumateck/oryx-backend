@@ -1128,7 +1128,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Response>().HasQueryFilter(a => !a.Form.DeletedAt.HasValue);
 
         modelBuilder.Entity<Question>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<QuestionOption>().HasQueryFilter(a => !a.Question.DeletedAt.HasValue);
+        modelBuilder.Entity<QuestionOption>().HasQueryFilter(a => !a.DeletedAt.HasValue);
 
         #endregion
 

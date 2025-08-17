@@ -13,7 +13,6 @@ namespace DOMAIN.Entities.Materials.Batch;
 
 public class MaterialBatch : BaseEntity
 {
-    [StringLength(10000)] public string Code { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid? ChecklistId { get; set; }
@@ -168,6 +167,8 @@ public class FinishedGoodsTransferNote:BaseEntity
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public decimal Loose { get; set; }
+    public decimal AllocatedQuantity { get; set; }
+    public decimal RemainingQuantity => TotalQuantity + Loose - AllocatedQuantity;
 }
 
 public class FinishedGoodsTransferNoteDto : BaseDto
@@ -186,6 +187,7 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public ProductionActivityStepDto ProductionActivityStep { get; set; }
     public bool IsApproved { get; set; }
     public decimal Loose { get; set; }
+    public decimal AllocatedQuantity { get; set; }
 }
 
 public class MaterialBatchReservedQuantity : BaseEntity
@@ -207,7 +209,7 @@ public class ApprovedProductDto
 {
     public ProductListDto Product { get; set; }
     public decimal TotalQuantity { get; set; }
-    public decimal TotalQuantityPerPack { get; set; }
+    public decimal QuantityPerPack { get; set; }
     public decimal TotalLoose { get; set; }
 }
 

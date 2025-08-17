@@ -189,6 +189,37 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task<Result> CreateMaterialBatchWithoutBatchMovement(List<CreateMaterialBatchRequest> request, Guid userId)
     {
+        var providedBatchNumbers = request
+            .Where(r => !string.IsNullOrEmpty(r.BatchNumber))
+            .Select(r => r.BatchNumber.Trim())
+            .ToList();
+        
+        if (providedBatchNumbers.Count != 0)
+        {
+            // Check for duplicates within the request itself
+            var duplicateInRequest = providedBatchNumbers
+                .GroupBy(bn => bn, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .FirstOrDefault();
+
+            if (duplicateInRequest != null)
+            {
+                return Error.Validation("BatchNumber",$"Duplicate batch number '{duplicateInRequest}' found in request.");
+            }
+
+            // Check for duplicates already in the database
+            var existingBatchNumbers = await context.MaterialBatches
+                .Where(mb => providedBatchNumbers.Contains(mb.BatchNumber))
+                .Select(mb => mb.BatchNumber)
+                .ToListAsync();
+
+            if (existingBatchNumbers.Count != 0)
+            {
+                return Error.Validation("BatchNumber",$"Batch number(s) '{string.Join(", ", existingBatchNumbers)}' already exist.");
+            }
+        }
+        
         var batches = mapper.Map<List<MaterialBatch>>(request);
     
         foreach (var batch in batches)
@@ -1123,6 +1154,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(e => e.Quantity);
         
         var batchReservedQuantities = await context.MaterialBatchReservedQuantities
+            .AsSplitQuery()
+            .Include(m => m.MaterialBatch)
+            .Where(m => m.MaterialBatch.MaterialId == materialId/* && m.WarehouseId == warehouseId*/)
             .SumAsync(e => e.Quantity);
 
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation - batchReservedQuantities;
@@ -1846,11 +1880,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             result.WarehouseStock = warehouseStockResult.Value;
 
             result.PendingStockTransferQuantity = await context.StockTransferSources
+                .AsSplitQuery()
                 .Include(s => s.StockTransfer)
                 .Where(s => s.StockTransfer.MaterialId == result.Material.Id &&
                             s.FromDepartmentId == user.DepartmentId &&
                             s.Status == StockTransferStatus.InProgress)
                 .SumAsync(s => s.Quantity);
+            
+            result.ReservedQuantity = await context.MaterialBatchReservedQuantities
+                .AsSplitQuery()
+                .Include(m => m.MaterialBatch)
+                .Where(m => m.MaterialBatch.MaterialId == result.Material.Id && m.WarehouseId == warehouse.Id)
+                .SumAsync(e => e.Quantity);
         }
 
         return results;
@@ -2117,7 +2158,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var shelfName = GetCell("Shelf");
             var rackName = GetCell("Rack");
             var warehouseLocationName = GetCell("Location");
-            var warehouseCodeName = GetCell("Warehouse Code");
 
             var shelf = await context.WarehouseLocationShelves
                 .Include(s => s.WarehouseLocationRack)
