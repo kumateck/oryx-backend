@@ -32,7 +32,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AlertDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetAlert(Guid alertId)
+    public async Task<IResult> GetAlert([FromRoute] Guid alertId)
     {
         var result = await repo.GetAlert(alertId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
