@@ -1204,6 +1204,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.Product)
+            .Include(tn => tn.PackageStyle)
             .Where(p => p.IsApproved)
             .AsQueryable();
         
@@ -1226,6 +1227,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.Product)
+            .Include(tn => tn.PackageStyle)
             .Where(p => p.BatchManufacturingRecord.ProductId == productId)
             .ToListAsync();
 
