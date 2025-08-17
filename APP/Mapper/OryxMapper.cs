@@ -936,6 +936,14 @@ public class OryxMapper : Profile
         CreateMap<ProductionOrderProducts, ProductionOrderProductsDto>();
         CreateMap<ProductionOrderProductQuantity, ProductionOrderProductQuantityDto>();
 
+        CreateMap<AllocateProductionOrderRequest, AllocateProductionOrder>();
+        CreateMap<AllocateProductionOrderProductRequest, AllocateProductionOrderProduct>();
+        CreateMap<AllocateProductQuantityRequest, AllocateProductQuantity>();
+        
+        CreateMap<AllocateProductionOrder, AllocateProductionOrderDto>();
+        CreateMap<AllocateProductionOrderProduct, AllocateProductionOrderProductDto>();
+        CreateMap<AllocateProductQuantity, AllocateProductQuantityDto>();
+
         #endregion
 
         #region Uniformity Of Weight

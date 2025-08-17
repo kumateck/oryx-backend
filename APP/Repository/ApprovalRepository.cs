@@ -9,6 +9,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
@@ -759,6 +760,104 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     ModelId = response.Id,
                 });
                 return Result.Success();
+
+            
+            case nameof(AllocateProductionOrder):
+                var allocateProductionOrder = await context.AllocateProductionOrders
+                    .AsSplitQuery()
+                    .Include(a => a.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+                
+                if (allocateProductionOrder is null)
+                    return Error.Validation("AllocationProductionOrder.NotFound", $"Allocation production order {modelId} not found.");
+                
+                var allocateProductionOrderApprovalStages = allocateProductionOrder.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                        
+                    }).ToList();
+                
+                var allocationCurrentApprovals = GetCurrentApprovalStage(allocateProductionOrderApprovalStages);
+                
+                var allocationApprovingStage = allocationCurrentApprovals.FirstOrDefault(stage =>
+                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                
+                if (allocationApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+                
+                // Approve the leave request stage in the actual tracked list
+                var stageToApproveAl = allocateProductionOrder.Approvals.First(
+                    stage => (stage.UserId == allocationApprovingStage.UserId && stage.UserId == userId) ||
+                    (stage.RoleId == allocationApprovingStage.RoleId && allocationApprovingStage.RoleId.HasValue && roleIds.Contains(allocationApprovingStage.RoleId.Value)));
+
+                stageToApproveAl.Status = ApprovalStatus.Approved;
+                stageToApproveAl.ApprovalTime = DateTime.UtcNow;
+                stageToApproveAl.Comments = comments;
+                stageToApproveAl.ApprovedById = userId;
+                
+                // Optionally mark a leave request as fully approved
+                var allRequiredAlApproved = allocateProductionOrder.Approvals
+                    .Where(s => s.Required)
+                    .All(s => s.Status == ApprovalStatus.Approved);
+                
+                if (allRequiredAlApproved)
+                {
+                    var allocateProductResult = await AllocateProduct(allocateProductionOrder);
+                    if(allocateProductResult.IsFailure) return allocateProductResult.Errors;
+                }
+                await context.SaveChangesAsync();
+                
+                //activate next pending stages
+                var nextAllocationStage = allocateProductionOrder.Approvals
+                    .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
+                    .OrderBy(s => s.Order)
+                    .ToList();
+
+                if (nextAllocationStage.Count != 0)
+                {
+                    // Get the current approval stages after the approval
+                    var updatedApprovalStages = allocateProductionOrder.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                    }).ToList();
+
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
+                        .Where(s => !allocateProductionOrder.Approvals.First(ra =>
+                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                        .ToList();
+
+                    foreach (var stageToActivate in newlyActiveStages)
+                    {
+                        var actualStage = allocateProductionOrder.Approvals.First(ra =>
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                        actualStage.ActivatedAt = DateTime.UtcNow;
+                        context.AllocateProductionOrderApprovals.Update(actualStage);
+                    }
+                }
+                await context.SaveChangesAsync();
+                await AddApprovalLogs(new CreateApprovalLog
+                {
+                    UserId = userId,
+                    Comments = comments,
+                    Status = ApprovalStatus.Approved,
+                    ModelId = allocateProductionOrder.Id,
+                });
+                return Result.Success();
             
             default:
                 return Error.Validation("Approval.InvalidType",
@@ -1062,6 +1161,57 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 await context.SaveChangesAsync();
                 break;
             
+            
+            case nameof(AllocateProductionOrder):
+                var allocateProductionOrder = await context.AllocateProductionOrders
+                    .AsSplitQuery()
+                    .Include(a => a.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+                
+                if (allocateProductionOrder is null)
+                    return Error.Validation("Response.NotFound", $"Response {modelId} not found.");
+                
+                var allocationApprovalStages = allocateProductionOrder.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                        
+                    }).ToList();
+                
+                var allocationCurrentApprovals = GetCurrentApprovalStage(allocationApprovalStages);
+                
+                var allocationApprovingStage = allocationCurrentApprovals.FirstOrDefault(stage =>
+                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                
+                if (allocationApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+                
+                // Approve the leave request stage in the actual tracked list
+                var stageToApproveAl = allocateProductionOrder.Approvals.First(
+                    stage => (stage.UserId == allocationApprovingStage.UserId && stage.UserId == userId) ||
+                    (stage.RoleId == allocationApprovingStage.RoleId && allocationApprovingStage.RoleId.HasValue && roleIds.Contains(allocationApprovingStage.RoleId.Value)));
+
+                stageToApproveAl.Status = ApprovalStatus.Rejected;
+                stageToApproveAl.ApprovalTime = DateTime.UtcNow;
+                stageToApproveAl.Comments = comments;
+                await AddApprovalLogs(new CreateApprovalLog
+                {
+                    UserId = userId,
+                    Comments = comments,
+                    Status = ApprovalStatus.Rejected,
+                    ModelId = allocateProductionOrder.Id,
+                });
+                await context.SaveChangesAsync();
+                break;
+            
             default:
                 return Error.Validation("Approval.InvalidType",
                     $"Unsupported model type: {modelType}");
@@ -1207,6 +1357,29 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 CreatedAt = bs.CreatedAt,
                 RequestedBy = mapper.Map<CollectionItemDto>(bs.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(bs.Id)
+            });
+        }
+        
+        var allocateProductionOrders = await context.AllocateProductionOrders
+            .AsSplitQuery()
+            .Include(a => a.Approvals)
+            .Include(a => a.CreatedBy)
+            .ThenInclude(a => a.Department)
+            .Where(bs => bs.Approvals.Any(a =>
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+            .ToListAsync();
+
+        foreach (var allocateProduction in allocateProductionOrders)
+        {
+            entitiesRequiringApproval.Add(new ApprovalEntity
+            {
+                ModelType = nameof(AllocateProductionOrder),
+                Id = allocateProduction.Id,
+                Code = "",
+                Department = mapper.Map<DepartmentDto>(allocateProduction.CreatedBy?.Department),
+                CreatedAt = allocateProduction.CreatedAt,
+                RequestedBy = mapper.Map<CollectionItemDto>(allocateProduction.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(allocateProduction.Id)
             });
         }
 
@@ -1444,6 +1617,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             case nameof(Response):
                 await CreateResponseApprovals(modelId, approvalStages, approval);
                 break;
+            
+            case nameof(AllocateProductionOrder):
+                await CreateAllocateProductionOrderApprovals(modelId, approvalStages, approval);
+                break;
 
             default:
                 throw new NotSupportedException($"Approval creation not supported for model type '{modelType}'");
@@ -1537,6 +1714,25 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         }).ToList();
 
         await context.ResponseApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();
+    }
+    
+    
+    private async Task CreateAllocateProductionOrderApprovals(Guid allocateProductionOrderId, List<ApprovalStage> stages, Approval approval)
+    {
+        var approvals = stages.Select(stage => new AllocateProductionOrderApprovals
+        {
+            Required = stage.Required,
+            Order = stage.Order,
+            AllocateProductionOrderId = allocateProductionOrderId,
+            CreatedAt = DateTime.UtcNow,
+            ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+        }).ToList();
+
+        await context.AllocateProductionOrderApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
     
@@ -1843,5 +2039,96 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
 
             await context.SaveChangesAsync();
         }
+    }
+    
+    private async Task<Result> AllocateProduct(AllocateProductionOrder request)
+    {
+        var productionOrder = await context.ProductionOrders
+            .AsSplitQuery()
+            .Include(p => p.Products)
+                .ThenInclude(p => p.FulfilledQuantities)
+            .FirstOrDefaultAsync(f => f.Id == request.ProductionOrderId);
+
+        if (productionOrder == null)
+            return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
+
+        foreach (var product in request.Products)
+        {
+            var allocationProduct = productionOrder.Products.FirstOrDefault(p => p.ProductId == product.ProductId);
+            if (allocationProduct == null)
+                return Error.NotFound("ProductionOrder.ProductNotFound",
+                    $"Product {product.ProductId} not found in this production order");
+
+            if (allocationProduct.RemainingQuantity == 0)
+                return Error.Validation("ProductionOrder.Product",
+                    $"Product {product.ProductId} has already been allocated completely.");
+
+            if (allocationProduct.Fulfilled)
+                return Error.Validation("ProductionOrder.Product",
+                    "Product has already been marked as fulfilled.");
+
+            var totalToAllocate = product.FulfilledQuantities.Sum(q => q.Quantity);
+            if (totalToAllocate > allocationProduct.RemainingQuantity)
+            {
+                return Error.Validation("ProductionOrder.Product",
+                    $"Allocation quantity {totalToAllocate} is more than what is left to be fulfilled {allocationProduct.RemainingQuantity}");
+            }
+
+            foreach (var quantityToFulfill in product.FulfilledQuantities)
+            {
+                var finishedGoodsTransferNote = await context.FinishedGoodsTransferNotes
+                    .FirstOrDefaultAsync(f => f.Id == quantityToFulfill.FinishedGoodsTransferNoteId);
+
+                if (finishedGoodsTransferNote is null)
+                    return Error.NotFound("ProductionOrder.FinishedGoodsTransferNoteNotFound",
+                        $"Finished goods transfer note {quantityToFulfill.FinishedGoodsTransferNoteId} not found.");
+
+                if (finishedGoodsTransferNote.RemainingQuantity == 0)
+                    return Error.Validation("ProductionOrder.FinishedGoodsTransferNoteValidation",
+                        $"The finished good transfer note {quantityToFulfill.FinishedGoodsTransferNoteId} does not have any remaining quantity.");
+
+                if (quantityToFulfill.Quantity > finishedGoodsTransferNote.RemainingQuantity)
+                    return Error.Validation("ProductionOrder.FinishedGoodsTransferNoteValidation",
+                        $"Trying to allocate {quantityToFulfill.Quantity}, " +
+                        $"but only {finishedGoodsTransferNote.RemainingQuantity} is left in transfer note {quantityToFulfill.FinishedGoodsTransferNoteId}.");
+
+                // Check if an allocation for this note already exists
+                var existingAllocationProductForNote = allocationProduct
+                    .FulfilledQuantities
+                    .FirstOrDefault(p => p.FinishedGoodsTransferNoteId == quantityToFulfill.FinishedGoodsTransferNoteId);
+
+                if (existingAllocationProductForNote is not null)
+                {
+                    existingAllocationProductForNote.Quantity += quantityToFulfill.Quantity;
+                }
+                else
+                {
+                    allocationProduct.FulfilledQuantities.Add(new ProductionOrderProductQuantity
+                    {
+                        Quantity = quantityToFulfill.Quantity,
+                        FinishedGoodsTransferNoteId = quantityToFulfill.FinishedGoodsTransferNoteId
+                    });
+                }
+
+                finishedGoodsTransferNote.AllocatedQuantity += quantityToFulfill.Quantity;
+            }
+        }
+
+        // Save all changes once
+        await context.SaveChangesAsync();
+
+        // Mark products as fulfilled if no remaining quantity
+        foreach (var product in productionOrder.Products)
+        {
+            if (product.RemainingQuantity == 0 && !product.Fulfilled)
+            {
+                product.Fulfilled = true;
+            }
+        }
+        
+        request.Approved = true;
+
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 }

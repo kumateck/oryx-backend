@@ -159,7 +159,6 @@ public class FinishedGoodsTransferNote:BaseEntity
     public bool IsApproved { get; set; }
     public decimal TotalQuantity { get; set; }
     public decimal QuantityReceived { get; set; } = 0;
-    
     public string Notes { get; set; }
     [StringLength(1000)] public string QarNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
@@ -168,7 +167,7 @@ public class FinishedGoodsTransferNote:BaseEntity
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
-    public decimal RemainingQuantity => TotalQuantity + Loose - AllocatedQuantity;
+    public decimal RemainingQuantity => QuantityReceived * QuantityPerPack + Loose - AllocatedQuantity;
 }
 
 public class FinishedGoodsTransferNoteDto : BaseDto
@@ -188,6 +187,7 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public bool IsApproved { get; set; }
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
+    public decimal RemainingQuantity { get; set; }
 }
 
 public class MaterialBatchReservedQuantity : BaseEntity

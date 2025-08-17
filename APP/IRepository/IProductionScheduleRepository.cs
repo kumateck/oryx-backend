@@ -8,7 +8,6 @@ using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
-using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using SHARED;
@@ -94,6 +93,12 @@ public interface IProductionScheduleRepository
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
     Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts();
     Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId);
+    Task<Result> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
+    Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(
+        bool fulfilled, int page,
+        int pageSize, string searchQuery);
+    Task<Result<AllocateProductionOrderDto>> GetProductAllocation(Guid id);
+    
     Task<Result> AllocateProduct(AllocateProductionOrder request);
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);

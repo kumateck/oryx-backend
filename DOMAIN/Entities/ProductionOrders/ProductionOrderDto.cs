@@ -31,21 +31,42 @@ public class ProductionOrderProductQuantityDto
     public decimal Quantity { get; set; }
 }
 
-public class AllocateProductionOrder
+public class AllocateProductionOrderRequest
 {
     public Guid ProductionOrderId { get; set; }
-    public List<AllocateProductionOrderProduct> Products { get; set; } = [];
+    public List<AllocateProductionOrderProductRequest> Products { get; set; } = [];
     
 }
 
-public class AllocateProductionOrderProduct
+public class AllocateProductionOrderProductRequest
 {
     public Guid ProductId { get; set; }
-    public List<AllocateProductQuantity> FulfilledQuantites { get; set; } = [];
+    public List<AllocateProductQuantityRequest> FulfilledQuantities { get; set; } = [];
 }
 
-public class AllocateProductQuantity
+public class AllocateProductQuantityRequest
 {
     public Guid FinishedGoodsTransferNoteId { get; set; }
+    public decimal Quantity { get; set; }
+}
+
+
+public class AllocateProductionOrderDto
+{
+    public ProductionOrderDto ProductionOrder { get; set; }
+    public bool Approved { get; set; }
+    public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
+    
+}
+
+public class AllocateProductionOrderProductDto
+{
+    public CollectionItemDto Product { get; set; }
+    public List<AllocateProductQuantityDto> FulfilledQuantities { get; set; } = [];
+}
+
+public class AllocateProductQuantityDto
+{
+    public FinishedGoodsTransferNoteDto FinishedGoodsTransferNote { get; set; }
     public decimal Quantity { get; set; }
 }
