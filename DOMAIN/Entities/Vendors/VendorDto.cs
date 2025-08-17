@@ -22,6 +22,5 @@ public class VendorDto : BaseDto
 
 public class VendorItemDto : BaseDto
 {
-    public Guid ItemId { get; set; }
     public ItemDto Item { get; set; }
 }

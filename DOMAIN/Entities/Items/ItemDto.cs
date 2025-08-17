@@ -8,7 +8,6 @@ public class ItemDto : WithAttachment
     public string Name { get; set; }
     public string Code { get; set; }
     public InventoryClassification Classification { get; set; }
-    public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasureDto UnitOfMeasure { get; set; }
     public bool HasBatch { get; set; }
     public Store Store { get; set; }

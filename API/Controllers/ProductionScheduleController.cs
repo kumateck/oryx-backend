@@ -1125,7 +1125,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    /// <summary>
+    /*/// <summary>
     /// Allocates stock to a production order
     /// </summary>
     [HttpPost("allocate-products")]
@@ -1136,7 +1136,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var result = await repository.AllocateProduct(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    }
+    }*/
 
     #endregion
 
