@@ -16,26 +16,6 @@ namespace INFRASTRUCTURE.Migrations
                 table: "Items");
 
             migrationBuilder.AddColumn<Guid>(
-                name: "ItemId",
-                table: "RecoverableItemReports",
-                type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
-
-            migrationBuilder.AddColumn<int>(
-                name: "Quantity",
-                table: "RecoverableItemReports",
-                type: "integer",
-                nullable: false,
-                defaultValue: 0);
-
-            migrationBuilder.AddColumn<string>(
-                name: "Reason",
-                table: "RecoverableItemReports",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
                 name: "ItemCategoryId",
                 table: "Items",
                 type: "uuid",
@@ -74,12 +54,7 @@ namespace INFRASTRUCTURE.Migrations
                         principalTable: "users",
                         principalColumn: "Id");
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RecoverableItemReports_ItemId",
-                table: "RecoverableItemReports",
-                column: "ItemId");
-
+            
             migrationBuilder.CreateIndex(
                 name: "IX_Items_ItemCategoryId",
                 table: "Items",
@@ -107,14 +82,6 @@ namespace INFRASTRUCTURE.Migrations
                 principalTable: "ItemCategories",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_RecoverableItemReports_Items_ItemId",
-                table: "RecoverableItemReports",
-                column: "ItemId",
-                principalTable: "Items",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
@@ -124,32 +91,12 @@ namespace INFRASTRUCTURE.Migrations
                 name: "FK_Items_ItemCategories_ItemCategoryId",
                 table: "Items");
 
-            migrationBuilder.DropForeignKey(
-                name: "FK_RecoverableItemReports_Items_ItemId",
-                table: "RecoverableItemReports");
-
             migrationBuilder.DropTable(
                 name: "ItemCategories");
 
             migrationBuilder.DropIndex(
-                name: "IX_RecoverableItemReports_ItemId",
-                table: "RecoverableItemReports");
-
-            migrationBuilder.DropIndex(
                 name: "IX_Items_ItemCategoryId",
                 table: "Items");
-
-            migrationBuilder.DropColumn(
-                name: "ItemId",
-                table: "RecoverableItemReports");
-
-            migrationBuilder.DropColumn(
-                name: "Quantity",
-                table: "RecoverableItemReports");
-
-            migrationBuilder.DropColumn(
-                name: "Reason",
-                table: "RecoverableItemReports");
 
             migrationBuilder.DropColumn(
                 name: "ItemCategoryId",
