@@ -26,7 +26,7 @@ public class BinCardInformationDto
 {
     public Guid Id { get; set; }
     public DateTime CreatedAt { get; set; }
-    public MaterialBatchDto MaterialBatch { get; set; }
+    public MaterialBatchListDto MaterialBatch { get; set; }
     public string Description { get; set; }
     public string WayBill { get; set; }
     public string ArNumber { get; set; }
@@ -34,7 +34,7 @@ public class BinCardInformationDto
     public decimal QuantityIssued { get; set; }
     public decimal BalanceQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
-    public ProductDto Product { get; set; }
+    public ProductListDto Product { get; set; }
 }
 
 public class ProductBinCardInformation:BaseEntity
