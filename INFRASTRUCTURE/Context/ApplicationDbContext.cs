@@ -130,7 +130,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<HoldingMaterialTransferBatch> HoldingMaterialTransferBatches { get; set; }
     
     public DbSet<MaterialSpecification> MaterialSpecifications { get; set; }
-
+    
+    public DbSet<MaterialReject> MaterialRejects { get; set; }
     
     #endregion
 

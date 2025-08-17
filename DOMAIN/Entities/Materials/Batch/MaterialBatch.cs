@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -220,3 +221,19 @@ public enum MovementType
     BetweenLocations
 }
 
+
+public class MaterialReject : BaseEntity
+{
+    public Guid MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
+    public Guid ResponseId { get; set; }
+    public Response Response { get; set; }
+    [StringLength(1000000)] public string Reason { get; set; }
+}
+
+public class MaterialRejectDto : BaseDto
+{
+    public MaterialBatchListDto MaterialBatch { get; set; }
+    public ResponseDto Response { get; set; }
+    public string Reason { get; set; }
+}
