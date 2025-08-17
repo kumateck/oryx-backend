@@ -554,6 +554,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Items
 
     public DbSet<Item> Items { get; set; }
+    public DbSet<ItemCategory> ItemCategories { get; set; }
 
     #endregion
     

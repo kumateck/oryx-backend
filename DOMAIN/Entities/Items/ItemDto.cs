@@ -17,5 +17,7 @@ public class ItemDto : WithAttachment
     public int ReorderLevel { get; set; }
     public bool IsActive { get; set; }
     public string Description { get; set; }
+    public Guid ItemCategoryId { get; set; }
+    public ItemCategoryDto ItemCategory { get; set; }
     public int AvailableQuantity { get; set; }
 }
