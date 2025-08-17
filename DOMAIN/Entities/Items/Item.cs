@@ -16,7 +16,7 @@ public class Item : BaseEntity
     public int MaximumLevel { get; set; }
     public int ReorderLevel { get; set; }
     
-    public Guid ItemCategoryId { get; set; }
+    public Guid? ItemCategoryId { get; set; }
     public ItemCategory ItemCategory { get; set; }
     public Store Store { get; set; }
     public bool IsActive { get; set; }
