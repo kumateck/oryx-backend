@@ -10,3 +10,10 @@ public class RecoverableItemReport : BaseEntity
     public int Quantity { get; set; }
     public string Reason { get; set; }
 }
+
+public class RecoverableItemBatchReport : BaseEntity
+{
+    public Guid RecoverableItemReportId { get; set; }
+    public RecoverableItemReport RecoverableItemReport { get; set; }
+    
+}

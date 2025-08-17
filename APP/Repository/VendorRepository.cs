@@ -13,7 +13,7 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
     public async Task<Result<Guid>> CreateVendor(CreateVendorRequest request)
     {
         var existingSupplier =
-            await context.Vendors.FirstOrDefaultAsync(nps => nps.Name == request.Name);
+            await context.Vendors.FirstOrDefaultAsync(nps => nps.Name == request.Name || nps.Email == request.Email);
 
         if (existingSupplier != null)
             return Error.Validation("Vendor.Exists", "Vendor already exists");
@@ -44,6 +44,8 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
             .AsSplitQuery()
             .Include(v => v.Items)
             .ThenInclude(v => v.Item)
+            .Include(v => v.Currency)
+            .Include(v => v.Country)
             .AsQueryable();
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
@@ -56,6 +58,8 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
             .AsSplitQuery()
             .Include(v => v.Items)
             .ThenInclude(v => v.Item)
+            .Include(v => v.Currency)
+            .Include(v => v.Country)
             .FirstOrDefaultAsync(nps => nps.Id == id);
         
         return supplier is null

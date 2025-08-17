@@ -7,6 +7,7 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Instruments;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
@@ -55,6 +56,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ProductState) => mapper.Map<List<CollectionItemDto>>(await context.ProductStates.OrderBy(c => c.Name).ToListAsync()),
             nameof(MarketType) => mapper.Map<List<CollectionItemDto>>(await context.MarketTypes.OrderBy(c => c.Name).ToListAsync()),
             nameof(Instrument) => mapper.Map<List<CollectionItemDto>>(await context.Instruments.OrderBy(c => c.Name).ToListAsync()),
+            nameof(ItemCategory) => mapper.Map<List<CollectionItemDto>>(await context.ItemCategories.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -208,6 +210,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var instrument = await context.Instruments.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(instrument);
                     break; 
+                
+                case nameof(ItemCategory):
+                    var itemCategory = await context.ItemCategories.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(itemCategory);
+                    break; 
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -265,7 +272,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ProductState),
             nameof(FinishedGoodsTransferNote),
             nameof(MarketType),
-            nameof(Instrument)
+            nameof(Instrument),
+            nameof(ItemCategory)
         };
     }
     
@@ -386,6 +394,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.Instruments.AddAsync(instrument);
                 await context.SaveChangesAsync();
                 return instrument.Id;
+            
+            case nameof(ItemCategory):
+                var itemCategory = mapper.Map<ItemCategory>(request);
+                await context.ItemCategories.AddAsync(itemCategory);
+                await context.SaveChangesAsync();
+                return itemCategory.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -541,6 +555,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Instruments.Update(instrument);
                 await context.SaveChangesAsync();
                 return instrument.Id;
+            
+            case nameof(ItemCategory):
+                var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, itemCategory);
+                context.ItemCategories.Update(itemCategory);
+                await context.SaveChangesAsync();
+                return itemCategory.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -570,6 +591,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ProductState) => await context.ProductStates.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(MarketType) => await context.MarketTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Instrument) => await context.Instruments.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(ItemCategory) => await context.ItemCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -757,6 +779,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 instrument.DeletedAt = currentTime;
                 instrument.LastDeletedById = userId;
                 context.Instruments.Update(instrument);
+                await context.SaveChangesAsync();
+                return Result.Success();  
+            
+            case nameof(ItemCategory):
+                var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (itemCategory == null)
+                    return Error.Validation("Charge", "Not found");
+                itemCategory.DeletedAt = currentTime;
+                itemCategory.LastDeletedById = userId;
+                context.ItemCategories.Update(itemCategory);
                 await context.SaveChangesAsync();
                 return Result.Success();  
             
