@@ -6,6 +6,7 @@ using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -1122,6 +1123,19 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var result = await repository.GetApprovedProductDetails(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Allocates stock to a production order
+    /// </summary>
+    [HttpPost("allocate-products")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> AllocateProductsToProductionOrder([FromBody] AllocateProductionOrder request)
+    {
+        var result = await repository.AllocateProduct(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     #endregion

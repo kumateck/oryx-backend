@@ -167,6 +167,8 @@ public class FinishedGoodsTransferNote:BaseEntity
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public decimal Loose { get; set; }
+    public decimal AllocatedQuantity { get; set; }
+    public decimal RemainingQuantity => TotalQuantity + Loose - AllocatedQuantity;
 }
 
 public class FinishedGoodsTransferNoteDto : BaseDto
@@ -185,6 +187,7 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public ProductionActivityStepDto ProductionActivityStep { get; set; }
     public bool IsApproved { get; set; }
     public decimal Loose { get; set; }
+    public decimal AllocatedQuantity { get; set; }
 }
 
 public class MaterialBatchReservedQuantity : BaseEntity
