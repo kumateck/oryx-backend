@@ -359,6 +359,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionActivityLog> ProductionActivityLogs { get; set; }
     
     public DbSet<ProductionOrder> ProductionOrders { get; set; }
+    public DbSet<AllocateProductionOrder> AllocateProductionOrders { get; set; }
+    public DbSet<AllocateProductionOrderApprovals> AllocateProductionOrderApprovals { get; set; }
     
     #endregion
 

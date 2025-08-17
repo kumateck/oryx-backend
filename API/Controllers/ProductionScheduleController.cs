@@ -1132,9 +1132,9 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> AllocateProductsToProductionOrder([FromBody] AllocateProductionOrder request)
+    public async Task<IResult> CreateProductAllocationToProductionOrder([FromBody] AllocateProductionOrderRequest request)
     {
-        var result = await repository.AllocateProduct(request);
+        var result = await repository.CreateProductOrderAllocation(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

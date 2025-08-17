@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using Microsoft.EntityFrameworkCore;
-using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
 
@@ -39,4 +39,39 @@ public class ProductionOrderProductQuantity
     public Guid FinishedGoodsTransferNoteId {get; set;}
     public FinishedGoodsTransferNote  FinishedGoodsTransferNote { get; set; }
     public decimal Quantity {get; set;}
+}
+
+
+public class AllocateProductionOrder : BaseEntity
+{
+    public Guid ProductionOrderId { get; set; }
+    public ProductionOrder ProductionOrder { get; set; }
+    public List<AllocateProductionOrderProduct> Products { get; set; } = [];
+    public bool Approved { get; set; }
+    public List<AllocateProductionOrderApprovals> Approvals { get; set; } = [];
+}
+
+[Owned]
+public class AllocateProductionOrderProduct
+{
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public List<AllocateProductQuantity> FulfilledQuantities { get; set; } = [];
+}
+
+[Owned]
+public class AllocateProductQuantity
+{
+    public Guid FinishedGoodsTransferNoteId { get; set; }
+    public FinishedGoodsTransferNote  FinishedGoodsTransferNote { get; set; }
+    public decimal Quantity { get; set; }
+}
+
+public class AllocateProductionOrderApprovals : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid AllocateProductionOrderId { get; set; }
+    public AllocateProductionOrder AllocateProductionOrder { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }

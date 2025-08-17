@@ -27,7 +27,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMaterialRepository materialRepository, IBackgroundWorkerService backgroundWorkerService) 
+public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMaterialRepository materialRepository, IBackgroundWorkerService backgroundWorkerService, IApprovalRepository approvalRepository) 
     : IProductionScheduleRepository
 {
     public async Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId) 
@@ -1244,7 +1244,162 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         return mapper.Map<List<FinishedGoodsTransferNoteDto>>(finishedGoods);
     }
+
+    public async Task<Result> CreateProductOrderAllocation(AllocateProductionOrderRequest request)
+    {
+        var validation = await ValidateProductAllocation(request);
+        if (!validation.IsSuccess) return validation;
+
+        var allocationEntity = mapper.Map<AllocateProductionOrder>(request);
+        await context.AllocateProductionOrders.AddAsync(allocationEntity);
+        await context.SaveChangesAsync();
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(AllocateProductionOrder), allocationEntity.Id);
+
+        return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool fulfilled, int page,
+        int pageSize, string searchQuery)
+    {
+        var query = context.AllocateProductionOrders
+            .AsSplitQuery()
+            .Include(a => a.ProductionOrder)
+            .Include(a => a.Products)
+            .ThenInclude(p => p.FulfilledQuantities)
+            .ThenInclude(p => p.FinishedGoodsTransferNote)
+            .Include(a => a.Products).ThenInclude(p => p.Product)
+            .AsQueryable();
+        
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, b => b.ProductionOrder.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<AllocateProductionOrderDto>
+        );
+    }
+
+    public async Task<Result<AllocateProductionOrderDto>> GetProductAllocation(Guid id)
+    {
+        return mapper.Map<AllocateProductionOrderDto>(
+            await context.AllocateProductionOrders
+                .AsSplitQuery()
+                .Include(a => a.ProductionOrder)
+                .Include(a => a.Products)
+                .ThenInclude(p => p.FulfilledQuantities)
+                .ThenInclude(p => p.FinishedGoodsTransferNote)
+                .Include(a => a.Products).ThenInclude(p => p.Product)
+                .FirstOrDefaultAsync(p => p.Id == id)
+        );
+    }
     
+    public async Task<Result> ValidateProductAllocation(AllocateProductionOrderRequest request)
+    {
+        // 1) Load the production order + products (as no-tracking; we're not persisting here)
+        var productionOrder = await context.ProductionOrders
+            .AsNoTracking()
+            .Include(po => po.Products)
+                .ThenInclude(p => p.FulfilledQuantities) // ensure RemainingQuantity is accurate if it's computed from these
+            .FirstOrDefaultAsync(po => po.Id == request.ProductionOrderId);
+
+        if (productionOrder is null)
+            return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
+
+        // Quick lookup of products on this order
+        var orderProductsById = productionOrder.Products.ToDictionary(p => p.ProductId, p => p);
+
+        // 2) Collect all FinishedGoodsTransferNote IDs in the request and fetch them in one go
+        var allNoteIds = request.Products
+            .SelectMany(p => p.FulfilledQuantities)
+            .Select(q => q.FinishedGoodsTransferNoteId)
+            .Distinct()
+            .ToList();
+
+        var notesById = await context.FinishedGoodsTransferNotes
+            .AsNoTracking()
+            .Where(n => allNoteIds.Contains(n.Id))
+            .ToDictionaryAsync(n => n.Id, n => n);
+
+        // 3) Ensure all referenced notes exist
+        var missingNoteIds = allNoteIds.Where(id => !notesById.ContainsKey(id)).ToList();
+        if (missingNoteIds.Any())
+            return Error.NotFound("FinishedGoodsTransferNote.NotFound",
+                $"These finished goods transfer notes were not found: {string.Join(", ", missingNoteIds)}");
+
+        // 4) Pre-compute the TOTAL requested per note across the whole request
+        var requestedPerNote = request.Products
+            .SelectMany(p => p.FulfilledQuantities)
+            .GroupBy(q => q.FinishedGoodsTransferNoteId)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
+
+        // 5) Validate each note has enough remaining for its total requested
+        foreach (var kv in requestedPerNote)
+        {
+            var noteId = kv.Key;
+            var totalRequestedFromNote = kv.Value;
+            var note = notesById[noteId];
+
+            if (totalRequestedFromNote <= 0)
+                return Error.Validation("FinishedGoodsTransferNote.InvalidQuantity",
+                    $"Requested allocation from note {noteId} must be > 0.");
+
+            if (note.RemainingQuantity <= 0)
+                return Error.Validation("FinishedGoodsTransferNote.NoRemaining",
+                    $"Finished goods transfer note {noteId} has no remaining quantity.");
+
+            if (totalRequestedFromNote > note.RemainingQuantity)
+                return Error.Validation("FinishedGoodsTransferNote.OverAllocate",
+                    $"Requesting {totalRequestedFromNote} from note {noteId}, but only {note.RemainingQuantity} remains.");
+        }
+
+        // 6) Per-product validations (membership, remaining, optional note↔product compatibility)
+        foreach (var reqProduct in request.Products)
+        {
+            if (!orderProductsById.TryGetValue(reqProduct.ProductId, out var orderProduct))
+            {
+                return Error.NotFound("ProductionOrder.ProductNotFound",
+                    $"Product {reqProduct.ProductId} not found in this production order");
+            }
+
+            if (orderProduct.Fulfilled)
+                return Error.Validation("ProductionOrder.ProductFulfilled",
+                    $"Product {reqProduct.ProductId} has already been marked as fulfilled.");
+
+            if (orderProduct.RemainingQuantity == 0)
+                return Error.Validation("ProductionOrder.ProductFullyAllocated",
+                    $"Product {reqProduct.ProductId} has already been allocated completely.");
+
+            var totalToAllocateForProduct = reqProduct.FulfilledQuantities.Sum(q => q.Quantity);
+            if (totalToAllocateForProduct <= 0)
+                return Error.Validation("ProductionOrder.InvalidQuantity",
+                    $"Total allocation for product {reqProduct.ProductId} must be > 0.");
+
+            if (totalToAllocateForProduct > orderProduct.RemainingQuantity)
+            {
+                return Error.Validation("ProductionOrder.ProductOverAllocate",
+                    $"Allocation quantity {totalToAllocateForProduct} is more than remaining {orderProduct.RemainingQuantity} for product {reqProduct.ProductId}.");
+            }
+
+            // Optional: if your FinishedGoodsTransferNote has a ProductId, ensure it matches this product
+            foreach (var q in reqProduct.FulfilledQuantities)
+            {
+                var note = notesById[q.FinishedGoodsTransferNoteId];
+
+                if (q.Quantity <= 0)
+                    return Error.Validation("FinishedGoodsTransferNote.InvalidQuantity",
+                        $"Quantity for note {q.FinishedGoodsTransferNoteId} must be > 0.");
+            }
+        }
+
+        return Result.Success();
+    }
+
+
     public async Task<Result> AllocateProduct(AllocateProductionOrder request)
     {
         var productionOrder = await context.ProductionOrders
@@ -1271,14 +1426,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 return Error.Validation("ProductionOrder.Product",
                     "Product has already been marked as fulfilled.");
 
-            var totalToAllocate = product.FulfilledQuantites.Sum(q => q.Quantity);
+            var totalToAllocate = product.FulfilledQuantities.Sum(q => q.Quantity);
             if (totalToAllocate > allocationProduct.RemainingQuantity)
             {
                 return Error.Validation("ProductionOrder.Product",
                     $"Allocation quantity {totalToAllocate} is more than what is left to be fulfilled {allocationProduct.RemainingQuantity}");
             }
 
-            foreach (var quantityToFulfill in product.FulfilledQuantites)
+            foreach (var quantityToFulfill in product.FulfilledQuantities)
             {
                 var finishedGoodsTransferNote = await context.FinishedGoodsTransferNotes
                     .FirstOrDefaultAsync(f => f.Id == quantityToFulfill.FinishedGoodsTransferNoteId);
@@ -1293,7 +1448,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
                 if (quantityToFulfill.Quantity > finishedGoodsTransferNote.RemainingQuantity)
                     return Error.Validation("ProductionOrder.FinishedGoodsTransferNoteValidation",
-                        $"Trying to allocate {quantityToFulfill.Quantity}, but only {finishedGoodsTransferNote.RemainingQuantity} is left in transfer note {quantityToFulfill.FinishedGoodsTransferNoteId}.");
+                        $"Trying to allocate {quantityToFulfill.Quantity}, " +
+                        $"but only {finishedGoodsTransferNote.RemainingQuantity} is left in transfer note {quantityToFulfill.FinishedGoodsTransferNoteId}.");
 
                 // Check if an allocation for this note already exists
                 var existingAllocationProductForNote = allocationProduct

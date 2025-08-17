@@ -78,7 +78,7 @@ public class FormResponse : BaseEntity
     [StringLength(100000)] public string Value { get; set; }
 }
 
-public class ResponseApproval: ResponsibleApprovalStage
+public class ResponseApproval : ResponsibleApprovalStage
 {
     public Guid Id { get; set; }
     
