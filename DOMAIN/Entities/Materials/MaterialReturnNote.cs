@@ -21,9 +21,8 @@ public class MaterialReturnNote : BaseEntity
     public List<MaterialReturnNotePartialReturn> PartialReturns { get; set; } = [];
 }
 
-public class MaterialReturnNoteFullReturn
+public class MaterialReturnNoteFullReturn : BaseEntity
 {
-    public Guid Id { get; set; }
     public Guid MaterialReturnNoteId { get; set; }
     public MaterialReturnNote MaterialReturnNote { get; set; }
     public Guid MaterialBatchReservedQuantityId { get; set; }
@@ -32,9 +31,8 @@ public class MaterialReturnNoteFullReturn
     public Warehouse DestinationWarehouse { get; set; }
 }
 
-public class MaterialReturnNotePartialReturn
+public class MaterialReturnNotePartialReturn : BaseEntity
 {
-    public Guid Id { get; set; }
     public Guid MaterialReturnNoteId { get; set; }
     public MaterialReturnNote MaterialReturnNote { get; set; }
     public Guid MaterialId { get; set; }
@@ -55,6 +53,7 @@ public class MaterialReturnNoteDto : BaseDto
     public MaterialReturnStatus Status { get; set; }
     public List<MaterialReturnNoteFullReturnDto> FullReturns { get; set; } = [];
     public List<MaterialReturnNotePartialReturnDto> PartialReturns { get; set; } = [];
+    public bool IsFullReturn => FullReturns.Count > 0;
 }
 
 public class MaterialReturnNoteFullReturnDto

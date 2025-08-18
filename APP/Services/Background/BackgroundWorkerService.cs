@@ -39,7 +39,6 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
                 {
                     // Asynchronously log activity
                     await repo.RecordActivityAsync(log);
-                    notificationQueue.Enqueue(("Activity log created",  NotificationType.AuditLogEvent, null, []));
                 }
                 catch (Exception ex)
                 {

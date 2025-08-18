@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Alerts;
+using DOMAIN.Entities.Notifications;
 
 namespace API.Controllers;
 
@@ -21,7 +22,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     public async Task<IResult> CreateAlert([FromBody] CreateAlertRequest request)
     {
         var result = await repo.CreateAlert(request);
-        return result.IsSuccess ? TypedResults.Ok(await repo.CreateAlert(request)) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -31,7 +32,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AlertDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetAlert(Guid alertId)
+    public async Task<IResult> GetAlert([FromRoute] Guid alertId)
     {
         var result = await repo.GetAlert(alertId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -46,7 +47,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     public async Task<IResult> GetAlerts([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] bool withDisabled = false)
     {
         var result = await repo.GetAlerts(page, pageSize, searchQuery, withDisabled);
-        return result.IsSuccess ? TypedResults.Ok(result) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
@@ -69,7 +70,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// <summary>
     /// Toggles the disabled status of an alert.
     /// </summary>
-    [HttpPatch("{id}/toggle-disable")]
+    [HttpPut("{id}/toggle-disable")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -77,5 +78,53 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     {
         var result = await repo.ToggleDisable(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Deletes a configurable alert
+    /// </summary>
+    [HttpDelete("{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteAlert(Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repo.DeleteAlert(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Marks a specific notification as read for the given user.
+    /// </summary>
+    [HttpPut("{id}/mark-as-read")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MarkNotificationAsRead(Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repo.MarkNotificationAsRead(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves notifications for the current user, optionally filtering by unread status.
+    /// </summary>
+    [HttpGet("notifications")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<NotificationDto>))]
+    public async Task<IResult> GetNotificationsForUser([FromQuery] bool unreadOnly = false)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repo.GetNotificationsForUser(Guid.Parse(userId), unreadOnly);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

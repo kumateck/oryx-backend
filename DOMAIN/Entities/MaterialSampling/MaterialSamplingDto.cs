@@ -12,7 +12,7 @@ public class MaterialSamplingDto
     
     public Guid GrnId { get; set; }
     
-    public string SampleQuantity { get; set; }
+    public decimal SampleQuantity { get; set; }
     
     public DateTime SampleDate { get; set; } 
 }

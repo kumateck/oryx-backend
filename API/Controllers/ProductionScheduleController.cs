@@ -6,6 +6,7 @@ using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -176,7 +177,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status,Guid.Parse(userId));
+        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -189,7 +190,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status,Guid.Parse(userId));
+        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -450,9 +451,13 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("finished-goods-transfer-note")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
-    public async Task<IResult> GetFinishedGoodsTransferNotes(int page = 1, int pageSize = 10, string searchQuery = null)
+    public async Task<IResult> GetFinishedGoodsTransferNotes(
+        bool? onlyApproved = null,
+        int page = 1,
+        int pageSize = 10,
+        string searchQuery = null)
     {
-        var result = await repository.GetFinishedGoodsTransferNote(page, pageSize, searchQuery);
+        var result = await repository.GetFinishedGoodsTransferNote(onlyApproved, page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -674,7 +679,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetInBoundStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, toDepartmentId);
+        var result = await repository.GetIncomingStockTransferRequestForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, toDepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -692,7 +697,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetOutBoundStockTransferSourceForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, fromDepartmentId);
+        var result = await repository.GetOutgoingStockTransferRequestForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, fromDepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -872,6 +877,22 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
 
         var result = await repository.DeleteFinalPacking(finalPackingId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a Stock Requisition for Packaging based on Production Schedule and Product ID.
+    /// </summary>
+    /// <param name="productionScheduleId">The Production Schedule ID.</param>
+    /// <param name="productId">The Product ID.</param>
+    /// <returns>Returns the Stock Requisition for Packaging.</returns>
+    [HttpGet("stock-requisition/raw/{productionScheduleId}/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStockRequisitionForRaw(Guid productionScheduleId, Guid productId)
+    {
+        var result = await repository.GetStockRequisitionForRaw(productionScheduleId, productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
@@ -1076,6 +1097,82 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.ApproveProductionExtraPacking(productionExtraPackingId, batches, Guid.Parse(userIdStr));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of approved products
+    /// </summary>
+    [HttpGet("approved-products")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ApprovedProductDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetApprovedProducts()
+    {
+        var result = await repository.GetApprovedProducts();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Retrieves details of an approved product
+    /// </summary>
+    [HttpGet("approved-products/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FinishedGoodsTransferNoteDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetApprovedProductDetails([FromRoute] Guid productId)
+    {
+        var result = await repository.GetApprovedProductDetails(productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Allocates stock to a production order
+    /// </summary>
+    [HttpPost("allocate-products")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateProductAllocationToProductionOrder([FromBody] AllocateProductionOrderRequest request)
+    {
+        var result = await repository.CreateProductOrderAllocation(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     #endregion
+
+    #region Report
+
+    /// <summary>
+    /// Retrieves a summary report of Production Schedules.
+    /// </summary>
+    /// <param name="filter">The filter criteria for the report.</param>
+    /// <returns>Returns a list of Production Schedule summary report DTOs.</returns>
+    [HttpGet("summary-report")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductionScheduleReportDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetProductionScheduleSummaryReport([FromQuery] ProductionScheduleReportFilter filter)
+    {
+        var result = await repository.GetProductionScheduleSummaryReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a detailed report of Production Schedules.
+    /// </summary>
+    /// <param name="filter">The filter criteria for the report.</param>
+    /// <returns>Returns a list of Production Schedule summary report DTOs.</returns>
+    [HttpGet("detailed-report")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductionScheduleDetailedReportDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetProductionScheduleDetailedReport([FromQuery] ProductionScheduleReportFilter filter)
+    {
+        var result = await repository.GetProductionScheduleDetailedReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    #endregion
+    
+    
 }

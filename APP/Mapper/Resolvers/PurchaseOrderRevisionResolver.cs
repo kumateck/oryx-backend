@@ -1,6 +1,5 @@
 using AutoMapper;
 using DOMAIN.Entities.PurchaseOrders;
-using System.Diagnostics;
 
 namespace APP.Mapper.Resolvers;
 
@@ -14,7 +13,7 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
             ? source.RevisedPurchaseOrders.Max(r => r.RevisionNumber) 
             : 0;
 
-        for (int rev = 1; rev <= maxRevision; rev++)
+        for (var rev = 1; rev <= maxRevision; rev++)
         {
             var resolvedItems = ResolvePurchaseOrderAtRevision(source, rev);
             var itemDtos = context.Mapper.Map<List<PurchaseOrderItemDto>>(resolvedItems);

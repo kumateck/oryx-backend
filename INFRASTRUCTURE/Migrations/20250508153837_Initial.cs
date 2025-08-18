@@ -1421,7 +1421,7 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Suppliers",
+                name: "NonProductionSuppliers",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -2029,7 +2029,7 @@ namespace INFRASTRUCTURE.Migrations
                     table.ForeignKey(
                         name: "FK_ShipmentInvoices_Suppliers_SupplierId",
                         column: x => x.SupplierId,
-                        principalTable: "Suppliers",
+                        principalTable: "NonProductionSuppliers",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ShipmentInvoices_users_CreatedById",
@@ -2069,7 +2069,7 @@ namespace INFRASTRUCTURE.Migrations
                     table.ForeignKey(
                         name: "FK_SourceRequisitions_Suppliers_SupplierId",
                         column: x => x.SupplierId,
-                        principalTable: "Suppliers",
+                        principalTable: "NonProductionSuppliers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -2482,7 +2482,7 @@ namespace INFRASTRUCTURE.Migrations
                     table.ForeignKey(
                         name: "FK_SupplierManufacturers_Suppliers_SupplierId",
                         column: x => x.SupplierId,
-                        principalTable: "Suppliers",
+                        principalTable: "NonProductionSuppliers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -2666,7 +2666,7 @@ namespace INFRASTRUCTURE.Migrations
                     table.ForeignKey(
                         name: "FK_BillingSheets_Suppliers_SupplierId",
                         column: x => x.SupplierId,
-                        principalTable: "Suppliers",
+                        principalTable: "NonProductionSuppliers",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_BillingSheets_users_CreatedById",
@@ -2778,7 +2778,7 @@ namespace INFRASTRUCTURE.Migrations
                     table.ForeignKey(
                         name: "FK_PurchaseOrders_Suppliers_SupplierId",
                         column: x => x.SupplierId,
-                        principalTable: "Suppliers",
+                        principalTable: "NonProductionSuppliers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -2886,7 +2886,7 @@ namespace INFRASTRUCTURE.Migrations
                     table.ForeignKey(
                         name: "FK_SupplierQuotations_Suppliers_SupplierId",
                         column: x => x.SupplierId,
-                        principalTable: "Suppliers",
+                        principalTable: "NonProductionSuppliers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -5802,7 +5802,7 @@ namespace INFRASTRUCTURE.Migrations
                     table.ForeignKey(
                         name: "FK_Checklists_Suppliers_SupplierId",
                         column: x => x.SupplierId,
-                        principalTable: "Suppliers",
+                        principalTable: "NonProductionSuppliers",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Checklists_users_CreatedById",
@@ -9166,27 +9166,27 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_Suppliers_CountryId",
-                table: "Suppliers",
+                table: "NonProductionSuppliers",
                 column: "CountryId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Suppliers_CreatedById",
-                table: "Suppliers",
+                table: "NonProductionSuppliers",
                 column: "CreatedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Suppliers_CurrencyId",
-                table: "Suppliers",
+                table: "NonProductionSuppliers",
                 column: "CurrencyId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Suppliers_LastDeletedById",
-                table: "Suppliers",
+                table: "NonProductionSuppliers",
                 column: "LastDeletedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Suppliers_LastUpdatedById",
-                table: "Suppliers",
+                table: "NonProductionSuppliers",
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
@@ -9765,7 +9765,7 @@ namespace INFRASTRUCTURE.Migrations
                 name: "Requisitions");
 
             migrationBuilder.DropTable(
-                name: "Suppliers");
+                name: "NonProductionSuppliers");
 
             migrationBuilder.DropTable(
                 name: "Warehouses");

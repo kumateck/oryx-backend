@@ -4,4 +4,5 @@ public interface ICurrentUserService
 {
     Guid? UserId { get; }
     Guid? DepartmentId { get; }
+    string DepartmentType { get; }
 }

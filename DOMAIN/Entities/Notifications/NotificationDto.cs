@@ -4,8 +4,11 @@ namespace DOMAIN.Entities.Notifications;
 
 public class NotificationDto
 {
+    public Guid Id { get; set; }
     public string Message { get; set; }
+    public NotificationType Type { get; set; }
     public List<UserDto> Recipients { get; set; } = [];
+    public DateTime SentAt { get; set; } = DateTime.UtcNow;
 }
 
 public enum NotificationType

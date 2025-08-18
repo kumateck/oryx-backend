@@ -8,7 +8,7 @@ namespace DOMAIN.Entities.Shipments;
 
 public class ShipmentDocumentDto : WithAttachment
 {
-    public string Code { get; set; }
+    public string Code { get; set; } 
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public List<ShipmentDiscrepancyDto> Discrepancies { get; set; } = [];
     public DateTime? ArrivedAt { get; set; }
@@ -26,6 +26,7 @@ public class ShipmentInvoiceDto : BaseDto
     public bool IsAttached { get; set; }
     public decimal TotalCost { get; set; }
     public CurrencyDto Currency { get; set; }
+    public DateTime? PaidAt { get; set; }
 }
 
 public class ShipmentInvoiceItemDto : BaseDto

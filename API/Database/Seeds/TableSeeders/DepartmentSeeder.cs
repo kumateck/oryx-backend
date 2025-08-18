@@ -3,6 +3,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
+using SHARED;
 
 namespace API.Database.Seeds.TableSeeders;
 
@@ -85,6 +86,7 @@ public class DepartmentSeeder : ISeeder
             new()
             {
                 Name = "SYRUP Department",
+                Code = "DEP009",
                 Description = "Handles production operations for syrup products",
                 Type = DepartmentType.Production,
                 CreatedAt = DateTime.UtcNow,
@@ -93,6 +95,7 @@ public class DepartmentSeeder : ISeeder
             new()
             {
                 Name = "OINTMENT Department",
+                Code = "DEP010",
                 Description = "Handles production operations for ointment products",
                 Type = DepartmentType.Production,
                 CreatedAt = DateTime.UtcNow,
@@ -101,6 +104,7 @@ public class DepartmentSeeder : ISeeder
             new()
             {
                 Name = "TABLET Department",
+                Code = "DEP011",
                 Description = "Handles production operations tablet operations",
                 Type = DepartmentType.Production,
                 CreatedAt = DateTime.UtcNow,
@@ -109,6 +113,7 @@ public class DepartmentSeeder : ISeeder
             new()
             {
                 Name = "BETA Department",
+                Code = "DEP012",
                 Description = "Handles production operations beta operations",
                 Type = DepartmentType.Production,
                 CreatedAt = DateTime.UtcNow,

@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 
 namespace DOMAIN.Entities.LeaveEntitlements;

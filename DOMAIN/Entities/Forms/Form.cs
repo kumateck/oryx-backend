@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
@@ -10,10 +11,17 @@ namespace DOMAIN.Entities.Forms;
 public class Form : BaseEntity
 {
     [StringLength(255)] public string Name { get; set; }
+    public FormType Type { get; set; }
     public List<FormSection> Sections { get; set; } = [];
     public List<FormResponse> Responses { get; set; } = [];
     public List<FormAssignee> Assignees { get; set; } = [];
     public List<FormReviewer> Reviewers { get; set; } = [];
+}
+
+public enum FormType
+{
+    Default,
+    Specification
 }
 
 public class FormSection : BaseEntity
@@ -22,6 +30,9 @@ public class FormSection : BaseEntity
     public Form Form { get; set; }
     [StringLength(255)] public string Name { get; set; }
     [StringLength(1000)] public string Description { get; set; }
+    public Guid? InstrumentId { get; set; }
+    public Instrument Instrument { get; set; }
+    public int Order { get; set; }
     public List<FormField> Fields { get; set; }
 }
 
@@ -48,6 +59,8 @@ public class Response : BaseEntity, IRequireApproval
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+    public ProductionActivityStep ProductionActivityStep { get; set; }
     public List<FormResponse> FormResponses { get; set; } = [];
     public List<ResponseApproval> Approvals { get; set; } = [];
     public Guid? CheckedById { get; set; }
@@ -65,7 +78,7 @@ public class FormResponse : BaseEntity
     [StringLength(100000)] public string Value { get; set; }
 }
 
-public class ResponseApproval: ResponsibleApprovalStage
+public class ResponseApproval : ResponsibleApprovalStage
 {
     public Guid Id { get; set; }
     

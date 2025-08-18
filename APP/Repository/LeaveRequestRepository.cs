@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Services.Background;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Notifications;
 using INFRASTRUCTURE.Context;
@@ -33,7 +34,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         if (leaveType is null)
             return Error.NotFound("LeaveType.NotFound", "Leave type not found.");
 
-        // Check if a request already exists for same period
+        // Check if a request already exists for the same period
         var existingRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l => l.EmployeeId == request.EmployeeId &&
                                       l.StartDate == request.StartDate &&
@@ -42,8 +43,8 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         if (existingRequest is not null)
             return Error.Validation("Request.Exists", "A request already exists for this period.");
 
-        int paidDays = 0;
-        int unpaidDays = 0;
+        var paidDays = 0;
+        var unpaidDays = 0;
         
         switch (request.RequestCategory)
         {
@@ -57,7 +58,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             {
                 if (leaveType.DeductFromBalance)
                 {
-                    var balanceDeducted = 0;
+                    int balanceDeducted;
                     if (leaveType.DeductionLimit > 0)
                     {
                         paidDays = (int)Math.Min(totalDays, leaveType.DeductionLimit ?? 0);
@@ -65,17 +66,15 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
                         balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, remaining);
                         unpaidDays = remaining - balanceDeducted;
-
-                        existingEmployee.AnnualLeaveDays -= balanceDeducted;
                     }
                     else
                     {
                         balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, (int)totalDays);
                         paidDays = balanceDeducted;
                         unpaidDays = (int)totalDays - balanceDeducted;
-
-                        existingEmployee.AnnualLeaveDays -= balanceDeducted;
                     }
+
+                    existingEmployee.AnnualLeaveDays -= balanceDeducted;
                 }
                 else
                 {
@@ -89,7 +88,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                 paidDays = 0;
                 unpaidDays = (int)totalDays;
                 break;
-            case RequestCategory.ExitPassRequest:
+            case  RequestCategory.ExitPassRequest:
             {
                 if (request.StartDate != request.EndDate)
                 {
@@ -132,6 +131,27 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
                 break;
             }
+            
+            case RequestCategory.OfficialDuty:
+            {
+                if (existingEmployee.Type != EmployeeType.Permanent)
+                {
+                    return Error.Validation("OfficialDuty.InvalidEmployeeType", "Only permanent staff can request official duty.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Justification))
+                {
+                    request.Justification = "";
+                }
+                
+                if (string.IsNullOrWhiteSpace(request.Destination))
+                {
+                    return Error.Validation("OfficialDuty.MissingDestination", "Destination is required for official duty.");
+                }
+
+                break;
+            }
+                
         }
 
         var entity = mapper.Map<LeaveRequest>(request);

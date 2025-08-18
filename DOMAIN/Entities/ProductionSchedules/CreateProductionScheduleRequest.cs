@@ -21,6 +21,7 @@ public class CreateProductionScheduleItemRequest
 public class CreateProductionScheduleProduct
 {
     public Guid ProductId { get; set; }
+    public Guid? MarketTypeId { get; set; }
     public decimal Quantity { get; set; }
     public BatchSize BatchSize { get; set; }
 }

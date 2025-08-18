@@ -48,8 +48,7 @@ public class AlertUser
 public enum AlertType
 {
     Email = 0, 
-    InApp = 1,
-    Sms = 2
+    InApp = 1
 }
 
 
@@ -62,6 +61,7 @@ public class AlertDto : BaseDto
     public List<RoleDto> Roles { get; set; } = [];
     public List<UserDto> Users { get; set; } = [];
     public bool IsDisabled { get; set; }
+    public bool IsConfigurable { get; set; }
 }
 
 public class AlertRoleDto : BaseDto

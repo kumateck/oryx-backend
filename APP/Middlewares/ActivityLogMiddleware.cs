@@ -7,7 +7,6 @@ using APP.IRepository;
 using DOMAIN.Entities.ActivityLogs;
 using Microsoft.AspNetCore.Http;
 using APP.Services.Background;
-using SHARED.Services.Identity;
 
 namespace APP.Middlewares;
 
@@ -37,7 +36,7 @@ public class ActivityLogMiddleware(RequestDelegate next)
         var headers = JsonSerializer.Serialize(request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString()));
 
         var pathValue = request.Path.Value?.ToLower();
-        string requestBody = await ReadRequestBodyAsync(request);
+        var requestBody = await ReadRequestBodyAsync(request);
 
         if (_excludedMethods.Contains(request.Method))
         {

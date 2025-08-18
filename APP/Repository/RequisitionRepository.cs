@@ -133,10 +133,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     context.ProductionActivitySteps.Update(activityStep);
                 }
             }
-            
+            await context.SaveChangesAsync();
             await approvalRepository.CreateInitialApprovalsAsync("PurchaseRequisition", requisition.Id);
         }
-        
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -150,8 +149,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(r => r.ProductionSchedule)
             .Include(r => r.Product)
             .Include(r => r.RequestedBy)
-            .Include(r => r.Approvals).ThenInclude(r => r.User)
-            .Include(r => r.Approvals).ThenInclude(r => r.Role)
             .Include(r => r.Items).ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
@@ -159,6 +156,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             return RequisitionErrors.NotFound(requisitionId);
         }
+        
+        var result = mapper.Map<RequisitionDto>(requisition);
+
+        // If the requisition type is a purchase, return early
+        if (requisition.RequisitionType == RequisitionType.Purchase) return result;
 
         var user = await context.Users
             .Include(u => u.Department).ThenInclude(u => u.Warehouses)
@@ -166,7 +168,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         if (user?.Department is null)
         {
-            return UserErrors.NotFound(userId);
+            return Error.Validation("User.Department", "This user is not assigned to any department.");
         }
 
         // Find user's raw material & packing warehouses
@@ -177,11 +179,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
         if (packingWarehouse is null)
             return Error.NotFound("User.Warehouse", "No packing material warehouse is associated with current user");
-
-        var result = mapper.Map<RequisitionDto>(requisition);
-
-        // If the requisition type is a purchase, return early
-        if (requisition.RequisitionType == RequisitionType.Purchase) return result;
 
         foreach (var item in result.Items)
         {
@@ -259,20 +256,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             
             foreach (var batch in batchesToConsume)
             {
-                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m => m.Id == batch.MaterialBatchId);
+                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m => m.Id == batch.MaterialBatch.Id);
                 if (materialBatch is null) continue;
                 
                 materialBatch.QuantityAssigned = 0;
                 context.MaterialBatches.Update(materialBatch);
 
                 var shelfMaterialBatches = await context.ShelfMaterialBatches
-                    .Where(sb => sb.MaterialBatchId == batch.MaterialBatchId)
+                    .Where(sb => sb.MaterialBatchId == batch.MaterialBatch.Id)
                     .ToListAsync();
                 context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
 
                 var movement = new MassMaterialBatchMovement
                 {
-                    BatchId = batch.MaterialBatchId,
+                    BatchId = batch.MaterialBatch.Id,
                     FromWarehouseId = appropriateWarehouse.Id,
                     ToWarehouseId = productionWarehouse.Id,
                     Quantity = batch.Quantity,
@@ -284,7 +281,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
                 var batchEvent = new MaterialBatchEvent
                 {
-                    BatchId =  batch.MaterialBatchId,
+                    BatchId =  batch.MaterialBatch.Id,
                     Type = EventType.Moved,
                     Quantity =batch.Quantity,
                     UserId = userId
@@ -318,7 +315,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
         
         // ✅ Check if all items in the requisition are completed
-        bool allItemsCompleted = stockRequisition.Items.All(i => i.Status == RequestStatus.Completed);
+        var allItemsCompleted = stockRequisition.Items.All(i => i.Status == RequestStatus.Completed);
     
         if (allItemsCompleted)
         {
@@ -336,7 +333,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 .Include(r => r.Items)
                 .ToListAsync();
 
-            bool allRequisitionItemsCompleted = relatedRequisitions
+            var allRequisitionItemsCompleted = relatedRequisitions
                 .SelectMany(r => r.Items)
                 .All(i => i.Status == RequestStatus.Completed);
 
@@ -457,7 +454,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 ArNumber = "N/A",
                 QuantityReceived = 0,
                 QuantityIssued = batch.Quantity,
-                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id)).Value,
+                BalanceQuantity = (await materialRepository.GetMassMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id)).Value,
                 UoMId = shelfMaterialBatch.MaterialBatch.UoMId,
                 ProductId = product.Id,
                 CreatedAt = DateTime.UtcNow,
@@ -474,7 +471,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 ArNumber = "N/A",
                 QuantityReceived = batch.Quantity,
                 QuantityIssued = 0,
-                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, productionWarehouse.Id)).Value,
+                BalanceQuantity = (await materialRepository.GetMassMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, productionWarehouse.Id)).Value,
                 UoMId = shelfMaterialBatch.MaterialBatch.UoMId,
                 ProductId = product.Id,
                 CreatedAt = DateTime.UtcNow,

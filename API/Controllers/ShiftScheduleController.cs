@@ -59,6 +59,19 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
         var result = await repository.GetShiftSchedule(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Returns a shift schedule by its department ID.
+    /// </summary>
+    [HttpGet("department/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShiftScheduleDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShiftScheduleByDepartment([FromRoute] Guid id)
+    {
+        var result = await repository.GetShiftScheduleByDepartment(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
+    }
+
 
     /// <summary>
     /// Returns the schedule for a specified date range
@@ -118,6 +131,23 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
         if (userId == null) return TypedResults.Unauthorized();
         
         var result = await repository.DeleteShiftSchedule(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Imports shift assignments from an Excel file.
+    /// </summary>
+    /// <param name="file">The Excel file containing the shift assignments.</param>
+    /// <param name="departmentId">The department the shift assignment is for</param>
+    /// <param name="shiftId">The shift schedule</param>
+    [HttpPost("assign/import")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ImportShiftAssignmentsFromExcel(IFormFile file,  [FromQuery] Guid departmentId,
+        [FromQuery] Guid shiftId)
+    {
+        var result = await repository.ImportShiftAssignmentsFromExcel(file, departmentId, shiftId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

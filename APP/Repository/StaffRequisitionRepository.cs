@@ -27,6 +27,11 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
         {
             return Error.NotFound("Invalid.Department","Invalid Department");
         }
+
+        if (request.RequestUrgency <= DateTime.UtcNow)
+        {
+            return Error.Validation("Invalid.RequestUrgency","Urgency date must be today or later");
+        }
         
         var staffRequisition = mapper.Map<StaffRequisition>(request);
         

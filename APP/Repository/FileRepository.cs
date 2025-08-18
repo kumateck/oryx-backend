@@ -11,7 +11,8 @@ namespace APP.Repository;
 
 public class FileRepository(ApplicationDbContext context, IBlobStorageService blobStorageService) : IFileRepository
 {
-    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, string reference, IFormFile file, Guid userId)
+    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, string reference, IFormFile file,
+        Guid? userId)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
         
@@ -104,6 +105,16 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                     context.PurchaseOrders.Update(purchaseOrder);
                 }
             }
+
+            // if (modelType == nameof(Invoice))
+            // {
+            //     var invoice = await context.Invoices.FirstOrDefaultAsync(item => item.Id == modelId && item.Status != InvoiceStatus.Completed);
+            //     if (invoice is not null)
+            //     {
+            //         invoice.Status = InvoiceStatus.Completed;
+            //         context.Invoices.Update(invoice);
+            //     }
+            // }
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();

@@ -5,7 +5,7 @@ using APP.Repository;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Message;
-using APP.Services.Notification;
+using APP.Services.NotificationService;
 using APP.Services.Pdf;
 using APP.Services.Storage;
 using APP.Services.Token;
@@ -40,9 +40,7 @@ public static class DependencyInjection
         services.AddMassTransit(configure =>
         {
             configure.SetKebabCaseEndpointNameFormatter();
-
-            //configure.AddConsumer<LocationFilterConsumer>();
-    
+            
             configure.UsingRabbitMq((context, cfg) =>
             {
                 cfg.Host(rabbitHost ?? throw new ArgumentException("Invalid rabbit host name"), h =>
@@ -53,7 +51,6 @@ public static class DependencyInjection
         
                 cfg.ReceiveEndpoint("push_notification_queue", e =>
                 {
-                    //e.ConfigureConsumer<LocationFilterConsumer>(context);
                     e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
                     e.UseMessageRetry(r =>
                     {
@@ -107,7 +104,22 @@ public static class DependencyInjection
         services.AddScoped<IAlertRepository, AlertRepository>();
         services.AddScoped<IProductSamplingRepository, ProductSamplingRepository>();
         services.AddScoped<IMaterialSamplingRepository, MaterialSamplingRepository>();
-
+        services.AddScoped<IMaterialSpecificationRepository, MaterialSpecificationRepository>();
+        services.AddScoped<IProductSpecificationRepository, ProductSpecificationRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IProductionOrderRepository, ProductionOrderRepository>();
+        services.AddScoped<IServiceRepository, ServiceRepository>();
+        services.AddScoped<IItemRepository, ItemRepository>();
+        services.AddScoped<IServiceProviderRepository, ServiceProviderRepository>();
+        services.AddScoped<IVendorRepository, VendorRepository>();
+        services.AddScoped<IItemStockRequisitionRepository, ItemStockRequisitionRepository>();
+        services.AddScoped<IInventoryProcurementRepository, InventoryProcurementRepository>();
+        services.AddScoped<IItemInventoryTransactionRepository, ItemInventoryTransactionRepository>();
+        services.AddScoped<IDamagedStocksRepository, DamagedStocksRepository>();
+        services.AddScoped<IRecoverableItemReportRepository, RecoverableItemReportRepository>();
+        services.AddScoped<IJobRequestRepository, JobRequestRepository>();
+        
         
         services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IJwtService, JwtService>();
@@ -121,7 +133,9 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddHostedService<ApprovalEscalationService>();
         services.AddHostedService<LeaveExpiryService>();
+        services.AddHostedService<ServiceExpiryService>();
         services.AddHostedService<MaterialStockService>();
+        services.AddHostedService<EmployeeSuspensionService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)

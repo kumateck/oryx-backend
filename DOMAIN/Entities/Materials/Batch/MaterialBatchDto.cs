@@ -3,7 +3,6 @@ using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
-using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
@@ -14,7 +13,6 @@ public class MaterialBatchDto
 {
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
-    public string Code { get; set; }
     public string BatchNumber { get; set; }
     public BatchChecklistDto Checklist { get; set; }
     public MaterialBatchStockTransferSourceDto StockTransferSource { get; set; }
@@ -30,16 +28,40 @@ public class MaterialBatchDto
     public decimal TotalQuantity { get; set; }        
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity { get; set; }
+    public decimal SampledQuantity { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
-    public List<MaterialBatchEventDto> Events { get; set; } = [];
-    public List<MaterialBatchMovementDto> Movements { get; set; } = [];
     public List<SrDto> SampleWeights { get; set; } = [];
     public List<MassMaterialBatchMovementDto> MassMovements { get; set; } = [];
     public List<CurrentLocationDto> Locations { get; set; } = [];
     public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity { get; set; }
+}
+
+public class MaterialBatchListDto
+{
+    public Guid Id { get; set; }
+    public CollectionItemDto Material { get; set; }
+    public string Code { get; set; }
+    public string BatchNumber { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public int NumberOfContainers { get; set; }
+    public PackageStyleDto ContainerPackageStyle { get; set; }
+    public decimal QuantityPerContainer { get; set; }
+    public BatchStatus Status { get; set; }  
+    public DateTime DateReceived { get; set; }
+    public DateTime? DateApproved { get; set; }
+    public decimal QuantityAssigned { get; set; }
+    public decimal QuantityUnassigned { get; set; }
+    public decimal TotalQuantity { get; set; }        
+    public decimal ConsumedQuantity { get; set; }  
+    public decimal RemainingQuantity { get; set; }
+    public decimal SampledQuantity { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public DateTime? ManufacturingDate { get; set; }
+    public DateTime? RetestDate { get; set; }
+    public MaterialBatchChecklistDto Checklist { get; set; }
 }
 
 public class DistributedMaterialBatchDto
@@ -148,15 +170,15 @@ public class MaterialStockByDepartmentDto
 
 public class BatchToSupply
 {
-    public MaterialBatchDto Batch { get; set; }
+    public MaterialBatchListDto Batch { get; set; }
     public decimal QuantityToTake { get; set; }
 }
 
 public class MaterialBatchReservedQuantityDto : BaseDto
 {
+    public MaterialBatchDto MaterialBatch { get; set; }
     public CollectionItemDto Warehouse { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
 }
-
 

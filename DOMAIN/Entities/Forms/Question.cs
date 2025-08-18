@@ -51,7 +51,8 @@ public enum QuestionType
     FileUpload = 7,
     Signature = 8,
     Reference = 9,
-    Formula = 10
+    Formula = 10,
+    Specification = 11,
 }
 
 public enum QuestionValidationType

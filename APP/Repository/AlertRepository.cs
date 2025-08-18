@@ -1,6 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
-using APP.Services.Notification;
+using APP.Services.NotificationService;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Alerts;
@@ -18,6 +18,14 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
     public async Task<Result<Guid>> CreateAlert(CreateAlertRequest request)
     {
         var alert = mapper.Map<Alert>(request);
+        alert.Roles.AddRange(request.RoleIds.Select(item => new AlertRole
+        {
+            RoleId = item,
+        }));
+        alert.Users.AddRange(request.UserIds.Select(item => new AlertUser
+        {
+            UserId = item,
+        }));
         await context.Alerts.AddAsync(alert);
         await context.SaveChangesAsync();
         return alert.Id;
@@ -105,6 +113,20 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         }
         return Result.Success();
     }
+    
+    public async Task<Result> DeleteAlert(Guid id, Guid userId)
+    {
+        var alert = await context.Alerts.FirstOrDefaultAsync(item => item.Id == id);
+        if (alert != null)
+        {
+            if(!alert.IsConfigurable) return Error.Validation("Alert.IsConfigurable", "You cannot delete a non configurable alert");
+            alert.DeletedAt = DateTime.UtcNow;
+            alert.LastDeletedById = userId;
+            context.Alerts.Update(alert);
+            await context.SaveChangesAsync();
+        }
+        return Result.Success();
+    }
 
     public async Task ProcessAlert(string message, NotificationType notificationType, Guid? departmentId, List<User> assignedUsers = null)
     {
@@ -112,7 +134,9 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
             .AsSplitQuery()
             .Include(alert => alert.Roles).ThenInclude(alertRole => alertRole.Role)
             .Include(alert => alert.Users).ThenInclude(alertUser => alertUser.User)
-            .FirstOrDefaultAsync(item => item.NotificationType == notificationType);
+            .FirstOrDefaultAsync(item => item.NotificationType == notificationType && !item.IsDisabled);
+        
+        if (alert is null) return;
 
         List<User> users = [];
         var roles = alert.Roles;
@@ -147,9 +171,64 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         
         var notification = new NotificationDto
         {
+            Id = Guid.NewGuid(),
             Message = message,
-            Recipients = mapper.Map<List<UserDto>>(users)
+            Recipients = mapper.Map<List<UserDto>>(users),
+            Type = notificationType,
+            SentAt = DateTime.UtcNow,
         };
         await notificationService.SendNotification(notification, alert.AlertTypes);
+    }
+
+    public async Task<Result<List<NotificationDto>>> GetNotificationsForUser(Guid userId, bool unreadOnly)
+    {
+        var query = context.Notifications
+            .Where(n => n.Recipients.Contains(userId))
+            .AsQueryable();
+
+        if (unreadOnly)
+        {
+            query = query.Where(n =>
+                !context.NotificationReads.Any(r => r.UserId == userId && r.NotificationId == n.Id));
+        }
+
+        var notifications = await query
+            .OrderByDescending(n => n.SentAt)
+            .Select(n => new NotificationDto
+            {
+                Id = n.Id,
+                Message = n.Message,
+                Type = n.Type,
+            })
+            .ToListAsync();
+
+        return Result.Success(notifications);
+    }
+
+
+    public async Task<Result> MarkNotificationAsRead(Guid id, Guid userId)
+    {
+        var notification = await context.Notifications.FirstOrDefaultAsync(item => item.Id == id);
+        if(notification is null) return Error.NotFound("Notification", "Notification not found");
+
+        if (!notification.Recipients.Contains(userId))
+        {
+            return Error.Validation("Notification.User", "You do not have permission to read this notification");
+        }
+
+        if (context.NotificationReads.Any(r => r.UserId == userId && r.NotificationId == notification.Id))
+        {
+            return Error.Validation("Notification.User", "You are already read this notification");
+        }
+
+        await context.NotificationReads.AddAsync(new NotificationRead
+        {
+            NotificationId = notification.Id,
+            UserId = userId,
+            ReadAt = DateTime.UtcNow
+        });
+        
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 }

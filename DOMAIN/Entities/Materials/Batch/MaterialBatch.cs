@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -13,7 +14,6 @@ namespace DOMAIN.Entities.Materials.Batch;
 
 public class MaterialBatch : BaseEntity
 {
-    [StringLength(10000)] public string Code { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid? ChecklistId { get; set; }
@@ -32,6 +32,7 @@ public class MaterialBatch : BaseEntity
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity - ReservedQuantity;
     public decimal QuantityUnassigned => RemainingQuantity - QuantityAssigned;
+    public decimal SampledQuantity { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public BatchStatus Status { get; set; }  
@@ -158,11 +159,16 @@ public class FinishedGoodsTransferNote:BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public bool IsApproved { get; set; }
     public decimal TotalQuantity { get; set; }
+    public decimal QuantityReceived { get; set; } = 0;
+    public string Notes { get; set; }
     [StringLength(1000)] public string QarNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
+    public decimal Loose { get; set; }
+    public decimal AllocatedQuantity { get; set; }
+    public decimal RemainingQuantity => QuantityReceived * QuantityPerPack + Loose - AllocatedQuantity;
 }
 
 public class FinishedGoodsTransferNoteDto : BaseDto
@@ -174,9 +180,15 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public PackageStyleDto PackageStyle { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal TotalQuantity { get; set; }
+    public decimal QuantityReceived { get; set; }
+    public string Notes { get; set; }
     public string QarNumber { get; set; }
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public ProductionActivityStepDto ProductionActivityStep { get; set; }
+    public bool IsApproved { get; set; }
+    public decimal Loose { get; set; }
+    public decimal AllocatedQuantity { get; set; }
+    public decimal RemainingQuantity { get; set; }
 }
 
 public class MaterialBatchReservedQuantity : BaseEntity
@@ -194,6 +206,13 @@ public class MaterialBatchReservedQuantity : BaseEntity
     public decimal Quantity { get; set; }
 }
 
+public class ApprovedProductDto
+{
+    public ProductListDto Product { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public decimal QuantityPerPack { get; set; }
+    public decimal TotalLoose { get; set; }
+}
 
 public enum MovementType
 {
@@ -202,3 +221,19 @@ public enum MovementType
     BetweenLocations
 }
 
+
+public class MaterialReject : BaseEntity
+{
+    public Guid MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
+    public Guid ResponseId { get; set; }
+    public Response Response { get; set; }
+    [StringLength(1000000)] public string Reason { get; set; }
+}
+
+public class MaterialRejectDto : BaseDto
+{
+    public MaterialBatchListDto MaterialBatch { get; set; }
+    public ResponseDto Response { get; set; }
+    public string Reason { get; set; }
+}

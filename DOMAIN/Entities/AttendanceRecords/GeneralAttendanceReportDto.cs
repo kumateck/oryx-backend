@@ -1,3 +1,4 @@
+
 namespace DOMAIN.Entities.AttendanceRecords;
 
 public class GeneralAttendanceReportDto
@@ -21,5 +22,15 @@ public class GeneralAttendanceReportDto
     public int CasualAfternoon { get; set; }
     
     public int CasualNight { get; set; }
+    
+    public int ApprovedLeaves { get; set; }
+    
+    public int Absences { get; set; }
+    
+    public int Suspensions { get; set; }
+    
+    public int SickLeaves {get; set;}
+    
+    public int MaternityLeaves {get; set;}
     
 }

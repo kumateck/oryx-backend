@@ -4,7 +4,6 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.ShiftTypes;
-using DOMAIN.Entities.StaffRequisitions;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;

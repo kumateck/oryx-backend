@@ -291,6 +291,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status, SupplierType? type)
     {
         var query = context.PurchaseOrders
+            .AsSplitQuery()
             .Include(po => po.Supplier)
             .Include(po=>po.TermsOfPayment)
             .Include(po=>po.DeliveryMode)
@@ -329,6 +330,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions)
     {
         var existingOrder = await context.PurchaseOrders
+            .AsSplitQuery()
             .Include(p => p.SourceRequisition)
                 .ThenInclude(sr => sr.Items)       
             .Include(po => po.RevisedPurchaseOrders)
@@ -340,7 +342,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
 
-        int latestRevisionNumber = existingOrder.RevisedPurchaseOrders.Count != 0
+        var latestRevisionNumber = existingOrder.RevisedPurchaseOrders.Count != 0
             ? existingOrder.RevisedPurchaseOrders.Max(r => r.RevisionNumber) + 1
             : 1;
 
@@ -694,6 +696,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result<Guid>> CreateBillingSheet(CreateBillingSheetRequest request, Guid userId)
     {
+        if (await context.BillingSheets.AnyAsync(s => s.InvoiceId == request.InvoiceId))
+        {
+            return  Error.Validation("BillingSheet.Duplicate", "A billing sheet for this invoice already exists.");
+        }
+        
         var billingSheet = mapper.Map<BillingSheet>(request);
         billingSheet.CreatedById = userId;
         await context.BillingSheets.AddAsync(billingSheet);
@@ -901,7 +908,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .AsSplitQuery()
             .Include(s => s.ShipmentInvoice)
             .ThenInclude(s => s.Items)
-            .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Shipment);
+            .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
     
         return shipmentDocument is null
             ? Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found")
@@ -1208,6 +1215,49 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> MarkShipmentInvoiceAsPaid(Guid shipmentInvoiceId, DateTime? paidAt, Guid userId)
+    {
+        var existingShipmentInvoice = await context.ShipmentInvoices
+            .Include(si => si.Items)
+            .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
+        if (existingShipmentInvoice is null)
+        {
+            return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
+        }
+
+        existingShipmentInvoice.PaidAt = paidAt ?? DateTime.UtcNow;
+        existingShipmentInvoice.LastUpdatedById = userId;
+        context.ShipmentInvoices.Update(existingShipmentInvoice);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> MarkMultipleShipmentInvoicesAsPaid(List<Guid> shipmentIds, DateTime? paidAt, Guid userId)
+    {
+        paidAt ??= DateTime.UtcNow;
+        
+        shipmentIds ??= [];
+
+        if (shipmentIds.Count == 0)
+        {
+            return Error.NotFound("ShipmentId.Empty", "No shipments ids were provided.");
+        }
+        
+        await context.ShipmentInvoices
+            .Where(s => shipmentIds.Contains(s.Id))
+            .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(p => p.PaidAt, paidAt)
+                    .SetProperty(p => p.LastUpdatedById, userId));
+        
+        await context.BillingSheets
+            .Where(b => shipmentIds.Contains(b.InvoiceId))
+            .ExecuteUpdateAsync(setters=> setters
+                .SetProperty(p => p.LastUpdatedById, userId)
+                .SetProperty(p  => p.Status, BillingSheetStatus.Paid));
+        
+        return Result.Success();
+    }
 
     public async Task<Result> UpdateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid shipmentDiscrepancyId, Guid userId)
     {
@@ -1335,10 +1385,74 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             {
                 if (item.Material?.Id != null)
                     item.Manufacturers = (await GetSupplierManufacturersByMaterial(item.Material.Id.Value, po.Supplier.Id)).Value;
+                
+                var receivedQty = await context.ShipmentInvoiceItems
+                    .Where(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == item.Material.Id)
+                    .SumAsync(sii => sii.ReceivedQuantity);
+
+                item.ReceivedQuantity = receivedQty;
             }
         }
         return result;
     }
+    
+    /*public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsyncV2(Guid supplierId)
+    {
+        // Fetch all relevant Purchase Orders
+        var supplierPurchaseOrders = await context.PurchaseOrders
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+                .ThenInclude(poi => poi.Material) // Include Material to access MaterialId for linking
+            .Where(po => po.SupplierId == supplierId)
+            .ToListAsync();
+
+        // Get all Purchase Order Item IDs that have been linked to any ShipmentInvoiceItem
+        var linkedPurchaseOrderItemIds = await context.ShipmentInvoiceItems
+            .Where(sii => supplierPurchaseOrders.SelectMany(po => po.Items).Select(poi => poi.Id).Contains(sii.PurchaseOrderId)) // Assuming ShipmentInvoiceItem links to PurchaseOrderItem.Id, if not, adjust here.
+            .Select(sii => sii.PurchaseOrderId)
+            .Distinct()
+            .ToListAsync();
+
+        // Get all ShipmentInvoiceItems related to the supplier's purchase orders to calculate received quantities
+        var allRelatedShipmentInvoiceItems = await context.ShipmentInvoiceItems
+            .Where(sii => supplierPurchaseOrders.Select(po => po.Id).Contains(sii.PurchaseOrderId))
+            .ToListAsync();
+
+        // Identify not linked purchase orders
+        var notLinkedPurchaseOrders = supplierPurchaseOrders
+            .Where(po => allRelatedShipmentInvoiceItems.All(sii => sii.PurchaseOrderId != po.Id))
+            .ToList();
+
+        // Identify partially used purchase orders
+        var partiallyUsedPurchaseOrders = supplierPurchaseOrders
+            .Where(po => po.Items.Any(poi => allRelatedShipmentInvoiceItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId)) && // At least one item used
+                         po.Items.Any(poi => !allRelatedShipmentInvoiceItems.Any(sii => sii.PurchaseOrderId == po.Id && sii.MaterialId == poi.MaterialId))) // At least one item NOT used
+            .ToList();
+
+        var resultPurchaseOrders = notLinkedPurchaseOrders
+            .Concat(partiallyUsedPurchaseOrders)
+            .DistinctBy(po => po.Id) // Use DistinctBy to ensure unique Purchase Orders
+            .ToList();
+
+        var result = mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders, opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
+
+        // Populate ReceivedQuantity for each PurchaseOrderItemDto
+        foreach (var poDto in result)
+        {
+            foreach (var itemDto in poDto.Items)
+            {
+                // Sum the ReceivedQuantity from all ShipmentInvoiceItems matching the PurchaseOrder and Material
+                itemDto.ReceivedQuantity = allRelatedShipmentInvoiceItems
+                    .Where(sii => sii.PurchaseOrderId == poDto.Id && sii.MaterialId == itemDto.Material.Id)
+                    .Sum(sii => sii.ReceivedQuantity);
+
+                if (itemDto.Material?.Id != null)
+                    itemDto.Manufacturers = (await GetSupplierManufacturersByMaterial(itemDto.Material.Id.Value, poDto.Supplier.Id)).Value;
+            }
+        }
+
+        return result;
+    }*/
     
     public async Task<Result<List<MaterialDto>>> GetMaterialsByPurchaseOrderIdsAsync(List<Guid> purchaseOrderIds)
     {
@@ -1419,13 +1533,14 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(items=>items.Material)
             .Include(shipmentDoc => shipmentDoc.ShipmentInvoice)
             .ThenInclude(shipmenInvoice => shipmenInvoice.Supplier)
-            .Where(sd => sd.Status == ShipmentStatus.Arrived)
+            .Where(sd => sd.Status == ShipmentStatus.Arrived && !sd.CompletedDistributionAt.HasValue)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, bs => bs.Code);
         }
+        
         
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
         var shipmentDocuments = await paginatedResult.Data.ToListAsync();
@@ -1565,47 +1680,48 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             if (requisitionItem.Material.Kind == MaterialKind.Package)
             {
                 departmentWarehouse = context.Warehouses
+                    .IgnoreQueryFilters()
                     .Include(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.Department.Id && w.Type == WarehouseType.PackagedStorage);
             }
             if(requisitionItem.Material.Kind == MaterialKind.Raw)
             {
                 departmentWarehouse = context.Warehouses
+                    .IgnoreQueryFilters()
                     .Include(warehouse => warehouse.ArrivalLocation).FirstOrDefault(w => w.DepartmentId == item.Department.Id && w.Type == WarehouseType.RawMaterialStorage);
             }
             
-            if (departmentWarehouse != null)
+            if(departmentWarehouse is null) return  Error.NotFound("Warehouse.NotFound", "Warehouse department not found");
+            
+            if (departmentWarehouse.ArrivalLocation == null)
             {
-                if (departmentWarehouse.ArrivalLocation == null)
+                departmentWarehouse.ArrivalLocation = new WarehouseArrivalLocation
                 {
-                    departmentWarehouse.ArrivalLocation = new WarehouseArrivalLocation
-                    {
-                        WarehouseId = departmentWarehouse.Id,
-                        Name = "Default Arrival Location",
-                        FloorName = "Ground Floor",
-                        Description = "Automatically created arrival location"
-                    };
-                    await context.WarehouseArrivalLocations.AddAsync(departmentWarehouse.ArrivalLocation);
-                }
-                
-                var distributedRequisitionMaterial = new DistributedRequisitionMaterial
-                    {
-                        RequisitionItemId = requisitionItem.Id,
-                        MaterialId = requisitionItem.MaterialId,
-                        ShipmentInvoiceId = shipmentDocument.ShipmentInvoiceId,
-                        UomId = requisitionItem.UoMId,
-                        Quantity = item.QuantityAllocated,
-                        Status = DistributedRequisitionMaterialStatus.Distributed,
-                        DistributedAt = DateTime.UtcNow,
-                        MaterialItemDistributions = item.Distributions.Select(d => new MaterialItemDistribution
-                        {
-                            ShipmentInvoiceItemId = d.ShipmentInvoiceItem.Id,
-                            Quantity = d.Quantity,
-                        }).ToList(),
-                        WarehouseArrivalLocationId = departmentWarehouse.ArrivalLocation.Id
-                        
-                    };
-                await context.DistributedRequisitionMaterials.AddAsync(distributedRequisitionMaterial);
+                    WarehouseId = departmentWarehouse.Id,
+                    Name = "Default Arrival Location",
+                    FloorName = "Ground Floor",
+                    Description = "Automatically created arrival location"
+                };
+                await context.WarehouseArrivalLocations.AddAsync(departmentWarehouse.ArrivalLocation);
             }
+                
+            var distributedRequisitionMaterial = new DistributedRequisitionMaterial
+            {
+                RequisitionItemId = requisitionItem.Id,
+                MaterialId = requisitionItem.MaterialId,
+                ShipmentInvoiceId = shipmentDocument.ShipmentInvoiceId,
+                UomId = requisitionItem.UoMId,
+                Quantity = item.QuantityAllocated,
+                Status = DistributedRequisitionMaterialStatus.Distributed,
+                DistributedAt = DateTime.UtcNow,
+                MaterialItemDistributions = item.Distributions.Select(d => new MaterialItemDistribution
+                {
+                    ShipmentInvoiceItemId = d.ShipmentInvoiceItem.Id,
+                    Quantity = d.Quantity,
+                }).ToList(),
+                WarehouseArrivalLocationId = departmentWarehouse.ArrivalLocation.Id
+                        
+            };
+            await context.DistributedRequisitionMaterials.AddAsync(distributedRequisitionMaterial);
         }
 
         var distributions = materialDistribution.Items.SelectMany(i => i.Distributions).ToList();
@@ -1674,7 +1790,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 context.RequisitionItems.Update(requisitionItem);
 
                 // Determine the correct warehouse for this department
-                Warehouse departmentWarehouse = requisitionItem.Material.Kind == MaterialKind.Raw ? await context.Warehouses
+                var departmentWarehouse = requisitionItem.Material.Kind == MaterialKind.Raw ? await context.Warehouses
                     .IgnoreQueryFilters()
                     .Include(warehouse => warehouse.ArrivalLocation)
                     .FirstOrDefaultAsync(w => w.DepartmentId == item.Department.Id && w.Type == WarehouseType.RawMaterialStorage) : 
@@ -1741,14 +1857,24 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 item.Distributed = true;
             }
         }
+        
+        context.ShipmentInvoiceItems.UpdateRange(invoiceItems);
+        await context.SaveChangesAsync();
 
         // If all items in the shipment invoice are distributed, mark the shipment as complete
-        var allItemsDistributed = shipmentDocument.ShipmentInvoice.Items.All(i => i.Distributed);
+        var shipmentInvoice = await context.ShipmentInvoices
+            .Include(si => si.Items)
+            .FirstOrDefaultAsync(si => si.Id == shipmentDocument.ShipmentInvoiceId);
+        
+        if(shipmentInvoice is null) return Error.NotFound("ShipmentInvoice.NotFound", "ShipmentInvoice not found.");
+
+        bool allItemsDistributed = shipmentInvoice.Items.All(i => i.Distributed);
+        
         if (allItemsDistributed)
         {
             shipmentDocument.CompletedDistributionAt = DateTime.UtcNow;
         }
-
+        context.ShipmentDocuments.Update(shipmentDocument);
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -1914,6 +2040,27 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(r => r.Department)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
         return requisition.Department;
+    }
+
+    public async Task<List<Guid>> GetDepartmentIdsFromPurchaseOrder(Guid purchaseOrderId)
+    {
+        var purchaseOrder = await context.PurchaseOrders
+            .FirstOrDefaultAsync(p => p.Id == purchaseOrderId);
+        if (purchaseOrder is null) return [];
+        
+        var sourceRequisition = await context.SourceRequisitions
+            .AsSplitQuery()
+            .Include(s => s.Items)
+            .FirstOrDefaultAsync(s => s.Id == purchaseOrder.SourceRequisitionId);
+        if (sourceRequisition is null) return [];
+        
+        
+        var requisitionIds = sourceRequisition.Items.Select(i => i.RequisitionId).Distinct().ToList();
+        
+        return await context.Requisitions.Where(r => requisitionIds.Contains(r.Id))
+            .Select(r => r.DepartmentId)
+            .Distinct()
+            .ToListAsync();
     }
 }
 

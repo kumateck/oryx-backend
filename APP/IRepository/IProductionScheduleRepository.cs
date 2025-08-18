@@ -3,6 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -46,8 +47,8 @@ public interface IProductionScheduleRepository
 
     Task<Result<Dictionary<string, List<ProductionActivityStepDto>>>>
         GetProductionActivityStepsGroupedByStatus();
-    Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status, Guid userId);
-    Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId,MaterialRequisitionStatus? status, Guid userId);
+    Task<Result<List<ProductionScheduleProcurementDto>>> CheckMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId, MaterialRequisitionStatus? status);
+    Task<Result<List<ProductionScheduleProcurementPackageDto>>> CheckPackageMaterialStockLevelsForProductionSchedule(Guid productionScheduleId, Guid productId,MaterialRequisitionStatus? status);
     
     Task<Result<Guid>> CreateBatchManufacturingRecord(CreateBatchManufacturingRecord request);
     Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(
@@ -67,9 +68,9 @@ public interface IProductionScheduleRepository
     Task<Result<Paginateable<IEnumerable<StockTransferDto>>>> GetStockTransfersForUserDepartment(
         Guid userId, int page, int pageSize, string searchQuery = null, StockTransferStatus? status = null);
     Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>>
-        GetInBoundStockTransferSourceForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null,
+        GetIncomingStockTransferRequestForUserDepartment(Guid userId, int page, int pageSize, string searchQuery = null,
             StockTransferStatus? status = null,  Guid? toDepartmentId = null);
-    Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetOutBoundStockTransferSourceForUserDepartment(
+    Task<Result<Paginateable<IEnumerable<DepartmentStockTransferDto>>>> GetOutgoingStockTransferRequestForUserDepartment(
         Guid userId, int page, int pageSize, string searchQuery = null,
         StockTransferStatus? status = null, Guid? fromDepartmentId = null);
     Task<Result<DepartmentStockTransferDto>> GetStockTransferSource(Guid stockTransferId);
@@ -90,14 +91,22 @@ public interface IProductionScheduleRepository
     Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request);
     
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
+    Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts();
+    Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId);
+    Task<Result> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
+    Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(
+        bool fulfilled, int page,
+        int pageSize, string searchQuery);
+    Task<Result<AllocateProductionOrderDto>> GetProductAllocation(Guid id);
     
-    
+    Task<Result> AllocateProduct(AllocateProductionOrder request);
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);
     Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId);
     Task<Result<Paginateable<IEnumerable<FinalPackingDto>>>> GetFinalPackings(int page, int pageSize, string searchQuery);
     Task<Result> UpdateFinalPacking(CreateFinalPacking request, Guid finalPackingId);
     Task<Result> DeleteFinalPacking(Guid finalPackingId, Guid userId);
+    Task<Result<RequisitionDto>> GetStockRequisitionForRaw(Guid productionScheduleId, Guid productId);
     Task<Result<RequisitionDto>> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId);
     Task<Result<ProductionScheduleProductDto>> GetProductDetailsInProductionSchedule(
         Guid productionScheduleId, Guid productId);
@@ -122,11 +131,18 @@ public interface IProductionScheduleRepository
    Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId);
    Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
        List<BatchTransferRequest> batches, Guid userId);
-   Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(int page, int pageSize,
+   Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
+       bool? onlyApproved,
+       int page, 
+       int pageSize,
        string searchQuery = null);
    Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(
        int page, int pageSize,
        string searchQuery, Guid productId);
    Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNoteByProduct(int page, int pageSize, 
        string searchQuery, Guid productId);
+   Task<Result<IEnumerable<ProductionScheduleReportDto>>> GetProductionScheduleSummaryReport(
+       ProductionScheduleReportFilter filter);
+   Task<Result<IEnumerable<ProductionScheduleDetailedReportDto>>> GetProductionScheduleDetailedReport(
+       ProductionScheduleReportFilter filter);
 }

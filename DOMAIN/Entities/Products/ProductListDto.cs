@@ -31,4 +31,7 @@ public class ProductListDto
     public EquipmentDto Equipment { get; set; }
     public DepartmentDto Department { get; set; }
     public DateTime CreatedAt { get; set; }
-}
+    public decimal Price { get; set; }
+    public Division Division { get; set; }
+    public int PackPerShipper { get; set; }
+    public string LabelClaim { get; set; } }

@@ -14,6 +14,8 @@ using DOMAIN.Entities.Children;
 using DOMAIN.Entities.CompanyWorkingDays;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
+using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.DamagedStocks;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EmployeeHistories;
@@ -21,46 +23,67 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
+using DOMAIN.Entities.Instruments;
+using DOMAIN.Entities.Items;
+using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemInventoryTransactions;
+using DOMAIN.Entities.ItemStockRequisitions;
+using DOMAIN.Entities.Items.Requisitions;
+using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
-using DOMAIN.Entities.MaterialAnalyticalRawData;
+using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
+using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.Memos;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductAnalyticalRawData;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProductSpecifications;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProductStandardTestProcedures;
+using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.RecoverableItemsReports;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Services;
 using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
+using DOMAIN.Entities.StockEntries;
+using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.VendorQuotations;
+using DOMAIN.Entities.Vendors;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.WorkOrders;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using SHARED;
 using SHARED.Services.Identity;
 using Configuration = DOMAIN.Entities.Configurations.Configuration;
+using ServiceProvider = DOMAIN.Entities.ServiceProviders.ServiceProvider;
 
 namespace INFRASTRUCTURE.Context;
 
@@ -107,7 +130,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialDepartment> MaterialDepartments { get; set; }
     public DbSet<HoldingMaterialTransfer> HoldingMaterialTransfers { get; set; }
     public DbSet<HoldingMaterialTransferBatch> HoldingMaterialTransferBatches { get; set; }
-
+    
+    public DbSet<MaterialSpecification> MaterialSpecifications { get; set; }
+    
+    public DbSet<MaterialReject> MaterialRejects { get; set; }
     
     #endregion
 
@@ -144,6 +170,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<ProductPackage> ProductPackages { get; set; }
     public DbSet<PackageType> PackageTypes { get; set; }
+    
+    public DbSet<ProductSpecification> ProductSpecifications { get; set; }
 
     #endregion
 
@@ -172,6 +200,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FinalPacking> FinalPackings { get; set; }
     public DbSet<FinalPackingMaterial> FinalPackingMaterials { get; set; }
     public DbSet<ProductionExtraPacking> ProductionExtraPackings { get; set; }
+    
+    public DbSet<MarketType> MarketTypes { get; set; }
 
 
     #endregion
@@ -331,6 +361,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionActivityStepWorkCenter> ProductionActivityStepWorkCenters { get; set; }
     public DbSet<ProductionActivityLog> ProductionActivityLogs { get; set; }
     
+    public DbSet<ProductionOrder> ProductionOrders { get; set; }
+    public DbSet<AllocateProductionOrder> AllocateProductionOrders { get; set; }
+    public DbSet<AllocateProductionOrderApprovals> AllocateProductionOrderApprovals { get; set; }
+    
     #endregion
 
     #region Checklist
@@ -398,6 +432,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Overtime Request
 
     public DbSet<OvertimeRequest> OvertimeRequests { get; set; }
+    public DbSet<OvertimeRequestApproval> OvertimeRequestApprovals { get; set; }
+
 
     #endregion
 
@@ -487,7 +523,122 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     
     public DbSet<MaterialSampling> MaterialSamplings { get; set; }
     #endregion
+
+    #region Notification
+
+    public DbSet<Notification> Notifications { get; set; }
+    public DbSet<NotificationRead> NotificationReads { get; set; }
+
+
+    #endregion
+
+    #region Customers
+
+    public  DbSet<Customer> Customers { get; set; }
+
+    #endregion
+
+    #region Instrument
+
+    public DbSet<Instrument> Instruments { get; set; }
+
+    #endregion
+
+    #region Uniformity Of Weight
+
+    public DbSet<UniformityOfWeight> UniformityOfWeights { get; set; }
+    public DbSet<UniformityOfWeightResponse> UniformityOfWeightResponses { get; set; }
+
+    #endregion
+
+    #region Services
+
+    public DbSet<Service> Services { get; set; }
+    public DbSet<ServiceProvider> ServiceProviders { get; set; }
+
+    #endregion
+
+    #region Items
+
+    public DbSet<Item> Items { get; set; }
+    public DbSet<ItemCategory> ItemCategories { get; set; }
+
+    #endregion
     
+    #region Vendors
+    public DbSet<Vendor> Vendors { get; set; }
+    public DbSet<VendorItem> VendorItems { get; set; }
+
+    #endregion
+
+    #region Proforma Invoice
+
+    public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
+    public DbSet<ProformaInvoiceProduct>  ProformaInvoiceProducts { get; set; }
+
+    #endregion
+
+    #region Invoice
+
+    public DbSet<Invoice> Invoices { get; set; }
+
+    #endregion
+
+    #region Item Stock Requisitions
+    
+    public DbSet<ItemInventoryTransaction> ItemInventoryTransactions { get; set; }
+    public DbSet<ItemStockRequisition> ItemStockRequisitions { get; set; }
+    public DbSet<ItemStockRequisitionItem> ItemStockRequisitionItems { get; set; }
+    public DbSet<IssueItemStockRequisition> IssueItemStockRequisitions { get; set; }
+    
+
+    #endregion
+
+    #region Inventory Procurement
+
+    public DbSet<InventoryPurchaseRequisition> InventoryPurchaseRequisitions { get; set; }
+    public DbSet<InventoryPurchaseRequisitionItem> InventoryPurchaseRequisitionItems { get; set; }
+    
+    public DbSet<SourceInventoryRequisition> SourceInventoryRequisitions { get; set; }
+    
+    public DbSet<MarketRequisition>  MarketRequisitions { get; set; }
+    
+    public DbSet<VendorQuotation>  VendorQuotations { get; set; }
+    
+    public DbSet<VendorQuotationItem>   VendorQuotationItems { get; set; }
+    
+    public DbSet<MarketRequisitionVendor>  MarketRequisitionVendors { get; set; }
+    
+    public DbSet<Memo> Memos { get; set; }
+    
+    public DbSet<MemoItem> MemoItems { get; set; }
+
+    
+    #endregion
+
+    #region Damaged Stocks
+    public DbSet<DamagedStock> DamagedStocks { get; set; }
+    public DbSet<DamagedStockBatch> DamagedStockBatch { get; set; }
+    public DbSet<DamagedStocksLog> DamagedStocksLogs { get; set; }
+
+    #endregion
+
+    #region Recoverable Items Report
+
+    public DbSet<RecoverableItemReport> RecoverableItemReports { get; set; }
+
+    #endregion
+    
+    #region Stock Entries
+    
+    public DbSet<StockEntry> StockEntries { get; set; }
+    #endregion
+
+    #region Job Requests
+
+    public DbSet<JobRequest> JobRequests { get; set; }
+
+    #endregion
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     // {
@@ -549,6 +700,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             // }
         }
     }
+
+    public bool ShouldNotFilterProducts => currentUserService.DepartmentType == DepartmentType.NonProduction.ToString();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -687,6 +840,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         #endregion
 
+        #region Production Schedule Entities
+
+        modelBuilder.Entity<ProductionScheduleProduct>().Navigation(p => p.MarketType).AutoInclude();
+
+        #endregion
+
         #region Production Activity
 
         modelBuilder.Entity<ProductionActivityStepResource>().Navigation(p => p.Resource).AutoInclude();
@@ -717,6 +876,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #endregion
         
+        
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
@@ -729,15 +889,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #endregion
 
+        #region Alert Filters
+
+        modelBuilder.Entity<Alert>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
         #region Product Filters
 
         modelBuilder.Entity<Product>().HasQueryFilter(entity =>
-            !entity.DeletedAt.HasValue && entity.DepartmentId == currentUserService.DepartmentId);
+            ShouldNotFilterProducts || 
+            (!entity.DeletedAt.HasValue && entity.DepartmentId == currentUserService.DepartmentId)
+        );
         modelBuilder.Entity<ProductPackage>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductCategory>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
         modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductSpecification>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
 
@@ -768,11 +937,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FinishedProductBatchMovement>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);
         modelBuilder.Entity<FinishedProductBatchEvent>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialReturnNote>().HasQueryFilter(entity => !entity.Product.DeletedAt.HasValue);
-        modelBuilder.Entity<MaterialReturnNoteFullReturn>()
-            .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
+        // modelBuilder.Entity<MaterialReturnNoteFullReturn>()
+        //     .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialReturnNotePartialReturn>()
             .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         modelBuilder.Entity<ProductionExtraPacking>().HasQueryFilter(entity => !entity.Material.DeletedAt.HasValue);
+        modelBuilder.Entity<MaterialSpecification>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
 
@@ -866,6 +1036,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Approval>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<ApprovalStage>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
         modelBuilder.Entity<LeaveRequestApproval>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
+        modelBuilder.Entity<OvertimeRequestApproval>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
 
         #endregion
 
@@ -888,7 +1059,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Warehouse Filters
 
         modelBuilder.Entity<Warehouse>()
-            .HasQueryFilter(a => a.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue);
+            .HasQueryFilter(a =>
+                ShouldNotFilterProducts ||
+                (a.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
 
         modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a =>
             !a.DeletedAt.HasValue && a.Warehouse != null && !a.Warehouse.DeletedAt.HasValue);
@@ -908,7 +1081,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region DistributedRequisitionMaterial Filters
 
         modelBuilder.Entity<DistributedRequisitionMaterial>().HasQueryFilter(a =>
-            a.RequisitionItem.Requisition.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue);
+            ShouldNotFilterProducts ||
+            (a.RequisitionItem.Requisition.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
+        
         modelBuilder.Entity<Checklist>().HasQueryFilter(a => a.DistributedRequisitionMaterial != null);
 
         #endregion
@@ -971,7 +1146,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Response>().HasQueryFilter(a => !a.Form.DeletedAt.HasValue);
 
         modelBuilder.Entity<Question>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<QuestionOption>().HasQueryFilter(a => !a.Question.DeletedAt.HasValue);
+        modelBuilder.Entity<QuestionOption>().HasQueryFilter(a => !a.DeletedAt.HasValue);
 
         #endregion
 
@@ -1133,6 +1308,74 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<StaffRequisition>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
+
+        #region Customers
+
+        modelBuilder.Entity<Customer>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+        
+        #region Production Orders
+
+        modelBuilder.Entity<ProductionOrder>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Instruments
+
+        modelBuilder.Entity<Instrument>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Work Center
+
+        modelBuilder.Entity<WorkCenter>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Services
+
+        modelBuilder.Entity<Service>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<ServiceProvider>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+        
+        #region Items
+
+        modelBuilder.Entity<Item>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region  Vendors
+
+        modelBuilder.Entity<Vendor>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Item Stock Requisitions
+
+        modelBuilder.Entity<ItemStockRequisition>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Inventory Procurement
+
+        modelBuilder.Entity<InventoryPurchaseRequisition>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Damaged Stocks
+
+        modelBuilder.Entity<DamagedStock>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Job Requests
+
+        modelBuilder.Entity<JobRequest>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+
+        #endregion
     }
 
     private void ConfigureRelationships(ModelBuilder modelBuilder)
@@ -1173,7 +1416,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //
         // modelBuilder.Entity<Question>().OwnsOne(f => f.Formula);
         //
-        // #endregion
-
+   
     }
 }

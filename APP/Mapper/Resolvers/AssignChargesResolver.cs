@@ -1,4 +1,3 @@
-using System.Data.Entity;
 using AutoMapper;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.PurchaseOrders;

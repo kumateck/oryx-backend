@@ -95,6 +95,8 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         var analyticalRawData = await context.ProductAnalyticalRawData
             .AsSplitQuery()
             .Include(ad => ad.Form)
+            .ThenInclude(f => f.Sections).ThenInclude(f => f.Fields)
+            .ThenInclude(f => f.Question)
             .Include(ad => ad.ProductStandardTestProcedure)
             .ThenInclude(ad => ad.Product)
             .Where(ad => ad.ProductStandardTestProcedure.ProductId == id)

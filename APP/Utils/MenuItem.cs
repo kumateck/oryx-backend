@@ -313,7 +313,7 @@ public static class MenuConfig
                         order: 1
                     ),
                     new MenuItem( // 6.2
-                        module: PermissionSubmodules.QuarantineAreaGRN,
+                        module: PermissionSubmodules.QuarantineAreaGrn,
                         name: "Quarantine / GRN", // Custom Name
                         requiredPermissionKey: [
                             PermissionKeys.CanViewQuarantineRawMaterialsRecords,

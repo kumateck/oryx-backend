@@ -1,7 +1,7 @@
-using System.Net;
-using System.Net.Mail;
+using MailKit.Net.Smtp;
 using DOMAIN.Entities.Notifications;
 using Microsoft.Extensions.Logging;
+using MimeKit;
 
 namespace APP.Services.Email;
 
@@ -9,43 +9,46 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
 {
     public void SendMail(string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
-        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "admin@kumateck.com";
+        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "emailapikey";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
         
         try
         {
-            // Configure SMTP client
-            var smtpClient = new SmtpClient("smtp.zoho.com")
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("Kumateck LTD", "noreply@kumateck.com"));
+            message.To.Add(new MailboxAddress("", to));
+            message.Subject = subject;
+            
+            var bodyPart = new TextPart("html")
             {
-                Port = 587,
-                Credentials = new NetworkCredential(username, password),
-                EnableSsl = true
+                Text = body
             };
-
-            // Create email message
-            var mail = new MailMessage
-            {
-                From = new MailAddress(username, $"Kumateck LTD"),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            };
-
-            // Add recipient
-            mail.To.Add(to);
-
+            var multipart = new Multipart("mixed");
+            multipart.Add(bodyPart);
             if (attachments != null)
             {
-                // Add attachments from byte array list
                 foreach (var attachment in attachments)
                 {
                     var stream = new MemoryStream(attachment.fileContent);
-                    var mailAttachment = new Attachment(stream, attachment.fileName, attachment.fileType);
-                    mail.Attachments.Add(mailAttachment);
+                    var mimePart = new MimePart(attachment.fileType)
+                    {
+                        Content = new MimeContent(stream),
+                        ContentDisposition = new ContentDisposition(ContentDisposition.Attachment),
+                        ContentTransferEncoding = ContentEncoding.Base64,
+                        FileName = attachment.fileName
+                    };
+
+                    multipart.Add(mimePart);
                 }
             }
-
-            smtpClient.Send(mail);
+            message.Body = multipart;
+            
+            var client = new SmtpClient();
+            client.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+            client.Connect("smtp.zeptomail.com", 587, false);
+            client.Authenticate(username, password);
+            client.Send(message);
+            client.Disconnect(true);
 
             logger.LogInformation($"Email sent to {to}");
         }

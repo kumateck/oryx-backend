@@ -1,5 +1,4 @@
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.ShiftSchedules;
 
 namespace DOMAIN.Entities.Holidays;
 

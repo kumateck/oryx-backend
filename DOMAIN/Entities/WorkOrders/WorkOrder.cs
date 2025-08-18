@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
-using DOMAIN.Entities.Products;
 
 namespace DOMAIN.Entities.WorkOrders;
 

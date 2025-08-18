@@ -23,6 +23,7 @@ public class Product : BaseEntity
     [StringLength(1000000)] public string PrimaryPackDescription { get; set; }
     [StringLength(1000000)] public string SecondaryPackDescription { get; set; }
     [StringLength(1000000)] public string TertiaryPackDescription { get; set; }
+    [StringLength(1000000)] public string LabelClaim { get; set; } 
     public Guid? CategoryId { get; set; }
     public ProductCategory Category { get; set; }
     public decimal BaseQuantity { get; set; } 
@@ -40,8 +41,16 @@ public class Product : BaseEntity
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = [];
     public List<ProductPackage> Packages { get; set; } = [];
     public List<Route> Routes { get; set; } = [];
+    public decimal Price { get; set; }
+    public Division Division { get; set; }
+    public int PackPerShipper { get; set; }
 }
 
+public enum Division
+{
+    BetaLactam = 0,
+    NonBetaLactam = 1,
+}
 public class ProductCategory : BaseEntity
 {
     [StringLength(255)] public string Name { get; set; }

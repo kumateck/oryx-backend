@@ -1,5 +1,4 @@
 using AutoMapper;
-using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +9,7 @@ public class AvatarResolver(IHttpContextAccessor request) : IValueResolver<User,
 {
     public string Resolve(User source, UserDto destination, string destMember, ResolutionContext context)
     {
-        return string.IsNullOrEmpty(source.Avatar) ? null : $"https://{request.HttpContext?.Request.Host}/api/v1/file/avatar/{source.Avatar}";
+        return string.IsNullOrEmpty(source.Avatar) ? null : $"http://{request.HttpContext?.Request.Host}/api/v1/file/avatar/{source.Avatar}";
     }
 }
 
@@ -18,7 +17,7 @@ public class EmployeeAvatarResolver(IHttpContextAccessor request) : IValueResolv
 {
     public string Resolve(Employee source, EmployeeDto destination, string destMember, ResolutionContext context)
     {
-        return string.IsNullOrEmpty(source.Avatar) ? null : $"https://{request.HttpContext?.Request.Host}/api/v1/file/avatar/{source.Avatar}";
+        return string.IsNullOrEmpty(source.Avatar) ? null : $"http://{request.HttpContext?.Request.Host}/api/v1/file/avatar/{source.Avatar}";
     }
 }
 
@@ -26,7 +25,7 @@ public class SignatureResolver(IHttpContextAccessor request) : IValueResolver<Us
 {
     public string Resolve(User source, UserDto destination, string destMember, ResolutionContext context)
     {
-        return string.IsNullOrEmpty(source.Avatar) ? null : $"https://{request.HttpContext?.Request.Host}/api/v1/file/signature/{source.Signature}";
+        return string.IsNullOrEmpty(source.Signature) ? null : $"http://{request.HttpContext?.Request.Host}/api/v1/file/signature/{source.Signature}";
     }
 }
 

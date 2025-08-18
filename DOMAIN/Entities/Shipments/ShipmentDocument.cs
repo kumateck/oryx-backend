@@ -24,10 +24,11 @@ public class ShipmentDocument : BaseEntity
 
 public enum ShipmentStatus
 {
-    New,
-    InTransit,
-    Cleared,
-    Arrived
+    New = 0,
+    InTransit = 1,
+    AtPort = 2,
+    Cleared = 3,
+    Arrived = 4
 }
 
 public enum DocType
@@ -45,6 +46,7 @@ public class ShipmentInvoice : BaseEntity
     public decimal TotalCost { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
+    public DateTime? PaidAt { get; set; }
 }
 
 public class ShipmentInvoiceItem : BaseEntity

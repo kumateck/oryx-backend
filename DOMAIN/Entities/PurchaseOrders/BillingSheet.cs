@@ -5,7 +5,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Shipments;
-using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
 
@@ -62,8 +61,7 @@ public class BillingSheetDto : WithAttachment
     public DateTime FreeTimeExpiryDate { get; set; }
     public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
-    public List<ChargeDto> Charges { get; set; } 
-    
+    public List<ChargeDto> Charges { get; set; } = [];
     //container information
     public string ContainerNumber { get; set; }
     public string NumberOfPackages { get; set; }

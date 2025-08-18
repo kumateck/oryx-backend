@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DOMAIN.Entities.Users;
+namespace DOMAIN.Entities.Users.Request;
 
 public class CreateClientRequest
 {

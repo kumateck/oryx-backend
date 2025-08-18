@@ -21,15 +21,25 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [HttpPost("{modelType}/{modelId}/{reference}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    
     public async Task<IResult> UploadFile(string modelType, Guid modelId, 
         string reference, IFormFile file)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        var userIdString = (string)HttpContext.Items["Sub"];
+        Guid? userId = null;
 
-        var result = await fileRepository.SaveBlobItem(modelType, modelId, reference, file, Guid.Parse(userId));
+        if (Guid.TryParse(userIdString, out var parsed))
+        {
+            userId = parsed;
+        }
+
+        var result = await fileRepository.SaveBlobItem(
+            modelType, modelId, reference, file, userId
+        );
+
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+        
     
     /// <summary>
     /// Uploads multiple files to be associated with a model.
@@ -41,7 +51,6 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [HttpPost("{modelType}/{modelId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [Authorize]
     public async Task<IResult> UploadFile(string modelType, Guid modelId, 
       [FromForm] List<IFormFile> files)
     {

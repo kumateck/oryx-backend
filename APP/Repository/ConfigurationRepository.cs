@@ -6,16 +6,19 @@ using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Grns;
+using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Services;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.WorkOrders;
 using INFRASTRUCTURE.Context;
@@ -97,7 +100,8 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
 
-    public async Task<Result<int>> GetCountForCodeConfiguration(string modelType, string prefix)
+    public async Task<Result<int>> 
+        GetCountForCodeConfiguration(string modelType, string prefix)
     {
 
         switch (modelType)
@@ -208,12 +212,41 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                return await context.FinishedGoodsTransferNotes
                    .IgnoreQueryFilters()
                    .CountAsync();
-               return 0;
            
-           case "ArNumber":
-               return await context.BinCardInformation
+           case "ArNumberMaterial":
+               return await context.AnalyticalTestRequests
                    .IgnoreQueryFilters()
                    .Where(m => m.ArNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "ArNumberProduct":
+               return await context.AnalyticalTestRequests
+                   .IgnoreQueryFilters()
+                   .Where(m => m.ArNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(ProductionOrder):
+               return await context.ProductionOrders
+                   .IgnoreQueryFilters()
+                   .Where(po => po.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Service):
+               return await context.Services
+                   .IgnoreQueryFilters()
+                   .Where(s => s.Code.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(ItemStockRequisition):
+               return await context.ItemStockRequisitions
+                   .IgnoreQueryFilters()
+                   .Where(s => s.Number.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "ProductBatchNumber":
+               return await context.BatchManufacturingRecords
+                   .IgnoreQueryFilters()
+                   .Where(b => b.BatchNumber.StartsWith(prefix) && b.Status != BatchManufacturingStatus.Rejected)
                    .CountAsync();
                
            default:

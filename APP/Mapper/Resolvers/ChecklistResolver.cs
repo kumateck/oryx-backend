@@ -1,5 +1,4 @@
-using APP.IRepository;
-    using AutoMapper;
+using AutoMapper;
     using DOMAIN.Entities.Checklists;
     using DOMAIN.Entities.Warehouses;
     using INFRASTRUCTURE.Context;

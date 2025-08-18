@@ -538,15 +538,13 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="kind">The material kind to filter</param>
-    /// <param name="departmentId">Optional department ID filter.</param>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("department")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
     public async Task<IResult> GetMaterialDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
         [FromQuery] string searchQuery = null,
-        [FromQuery] MaterialKind? kind = null,
-        [FromQuery] Guid? departmentId = null)
+        [FromQuery] MaterialKind? kind = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -613,5 +611,52 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
 
         var result = await repository.MoveMaterialBatchToWarehouseFromHolding(holdingMaterialId, request,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+    
+    [HttpPost("batches/import")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ImportMaterialBatchesFromCsv(IFormFile file)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportMaterialBatchesFromExcel(file, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a  list of material batches that have expired
+    /// </summary>
+    /// <returns>Returns a paginated list of material departments.</returns>
+    [HttpGet("batches/expired")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
+    public async Task<IResult> GetExpiredMaterialBatches([FromQuery] MaterialFilter filter)
+    {
+        var result = await repository.GetExpiredMaterialBatches(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("material-specs/not-linked")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    public async Task<IResult> GetMaterialsNotLinkedToSpec([FromQuery] MaterialKind materialKind = 0)
+    {
+        var result = await repository.GetMaterialsNotLinkedToSpec(materialKind);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    [HttpGet("rejects")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    public async Task<IResult> GetMaterialRejects([FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MaterialKind? materialKind = null)
+    {
+        var result = await repository.GetMaterialRejected(page, pageSize, searchQuery, materialKind);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

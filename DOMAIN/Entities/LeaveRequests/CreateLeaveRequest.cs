@@ -2,9 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DOMAIN.Entities.LeaveRequests;
 
-public class CreateLeaveRequest
-{
-    [Required] public Guid LeaveTypeId { get; set; }
+public class CreateLeaveRequest {
+    public Guid? LeaveTypeId { get; set; }
     [Required] public DateTime StartDate { get; set; }
     [Required] public DateTime EndDate { get; set; }
     [Required] public Guid EmployeeId { get; set; }
@@ -13,6 +12,8 @@ public class CreateLeaveRequest
     [StringLength(100)] public string ContactPerson { get; set; }
     
     [Phone] public string ContactPersonNumber { get; set; }
+    
+    public string Destination { get; set; }
     
     public string Justification { get; set; }
 }

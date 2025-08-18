@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Employees;
 using Microsoft.AspNetCore.Authorization;
+using SHARED.Requests;
 
 namespace API.Controllers;
 [Route("api/v{version:apiVersion}/employee")]
@@ -49,15 +50,30 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
+
+    /// <summary>
+    /// Uploads an avatar image for a specific employee by their unique identifier.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("avatar/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UploadAnImage([FromBody] UploadFileRequest request, [FromRoute] Guid id)
+    {
+        await repository.UploadAvatar(request, id);
+        return  TypedResults.NoContent();
+    }
+
     /// <summary>
     /// Retrieves a paginated list of employees based on search criteria.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EmployeeDto>>))]
-    public async Task<IResult> GetEmployees([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null, [FromQuery] string designation = null, [FromQuery] string department = null)
+    public async Task<IResult> GetEmployees([FromQuery] EmployeeStatus? status,[FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null, [FromQuery] string designation = null, [FromQuery] string department = null
+        )
     {
-        var result = await repository.GetEmployees(page, pageSize, searchQuery, designation, department);
+        var result = await repository.GetEmployees(status, page, pageSize, searchQuery, designation, department);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -102,7 +118,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateEmployee([FromRoute] Guid id, [FromBody] CreateEmployeeRequest request)
+    public async Task<IResult> UpdateEmployee([FromRoute] Guid id, [FromBody] UpdateEmployeeRequest request)
     {
         var result = await repository.UpdateEmployee(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -119,6 +135,38 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     {
         var result = await repository.AssignEmployee(id, employeeDto);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Changes the employee type 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="employeeType"></param>
+    /// <returns></returns>
+    [HttpPut("{id:guid}/change-type")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ChangeEmployeeType([FromRoute] Guid id, [FromQuery] EmployeeType employeeType)
+    {
+        var result = await repository.ChangeEmployeeType(id, employeeType);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Changes the employee type 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="status">The states of the employee to be chanegd</param>
+    /// <returns></returns>
+    [HttpPut("{id:guid}/status")]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ChangeEmployeeType([FromRoute] Guid id, [FromBody] UpdateEmployeeStatus status)
+    {
+        var result = await repository.UpdateEmployeeStatus(id, status);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>

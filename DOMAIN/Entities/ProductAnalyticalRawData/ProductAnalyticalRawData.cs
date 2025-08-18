@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Forms;
-using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductStandardTestProcedures;
 
 namespace DOMAIN.Entities.ProductAnalyticalRawData;

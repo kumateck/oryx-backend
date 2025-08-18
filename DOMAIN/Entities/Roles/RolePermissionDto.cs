@@ -1,5 +1,5 @@
-using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Permissions;
+using SHARED;
 
 namespace DOMAIN.Entities.Roles;
 

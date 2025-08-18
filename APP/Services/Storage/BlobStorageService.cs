@@ -157,7 +157,7 @@ public class BlobStorageService : IBlobStorageService
                 .Build();
 
             // Create the bucket if it doesn't exist
-            bool bucketExists = await minioClient.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucketName));
+            var bucketExists = await minioClient.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucketName));
             if (!bucketExists)
             {
                 await minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName));
@@ -196,7 +196,7 @@ public class BlobStorageService : IBlobStorageService
 
             using (var combinedStream = new MemoryStream())
             {
-                for (int i = 0; i < totalChunks; i++)
+                for (var i = 0; i < totalChunks; i++)
                 {
                     var tempObjectName = $"{objectName}.part{i}";
                     var tempStream = new MemoryStream();
@@ -218,7 +218,7 @@ public class BlobStorageService : IBlobStorageService
                     .WithContentType("application/octet-stream"));
 
                 // Cleanup temporary parts
-                for (int i = 0; i < totalChunks; i++)
+                for (var i = 0; i < totalChunks; i++)
                 {
                     var tempObjectName = $"{objectName}.part{i}";
                     await minioClient.RemoveObjectAsync(new RemoveObjectArgs()

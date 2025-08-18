@@ -57,13 +57,48 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
             Result.Success(mapper.Map<DesignationDto>(designation));
     }
 
-    public async Task<Result<List<DesignationDto>>> GetDesignationByDepartment(Guid departmentId)
+    public async Task<Result<List<DesignationWithEmployeesDto>>> GetDesignationByDepartment(Guid departmentId)
     {
-        return mapper.Map<List<DesignationDto>>(await context.Designations
-            .AsSplitQuery()
+        var designations = await context.Designations
+            .AsNoTracking()
             .Include(d => d.Departments)
-            .Where(d => d.Departments.Any(dd => dd.Id == departmentId))
-            .ToListAsync());
+            .Where(d => d.Departments.Any(dep => dep.Id == departmentId))
+            .ToListAsync();
+
+        var employeeQuery = context.Employees
+            .AsNoTracking()
+            .Include(e => e.ReportingManager)
+            .Where(e => e.DesignationId != null);
+
+        var employees = await employeeQuery.ToListAsync();
+        
+        var result = designations.Select(designation =>
+        {
+            var relatedEmployees = employees
+                .Where(e => e.DesignationId == designation.Id)
+                .Select(e => new EmployeeWithManagerDto
+                {
+                    Id = e.Id,
+                    FullName = $"{e.FirstName} {e.LastName}",
+                    Email = e.Email,
+                    Manager = new ManagerDto
+                    {
+                        ReportingManagerId = e.ReportingManagerId,
+                        ReportingManagerName = e.ReportingManager != null
+                            ? $"{e.ReportingManager.FirstName} {e.ReportingManager.LastName}"
+                            : null
+                    }
+                }).ToList();
+
+            return new DesignationWithEmployeesDto
+            {
+                Id = designation.Id,
+                Name = designation.Name,
+                Employees = relatedEmployees
+            };
+        }).ToList();
+
+        return Result.Success(result);
     }
 
     public async Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request)

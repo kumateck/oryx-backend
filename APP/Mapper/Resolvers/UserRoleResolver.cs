@@ -2,7 +2,6 @@ using AutoMapper;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
-using Microsoft.AspNetCore.Http;
 
 namespace APP.Mapper.Resolvers;
 

@@ -1,4 +1,3 @@
-using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Routes;
 
 namespace APP.Utils;
@@ -21,9 +20,9 @@ public static class OperationUtils
             ("Overprinting & Approval of Secondary Packing Materials", "Ensuring secondary packing materials are properly overprinted and approved.", 10, OperationAction.AdditionalStockRequest),
             ("Line Clearance by QA For Hand Packing Activity", "QA clearance before initiating manual packing operations.", 11, OperationAction.AdditionalStockRequest),
             ("Final Packing", "Completing the final packaging of the product.", 12, OperationAction.FinalPackingOrPartialReturn),
-            ("Finished Goods Transfer To Storage Room", "Transferring finished goods to the storage area.", 13, OperationAction.FinishedGoodsTransferNote),
-            ("Inspection & Release", "Inspecting and releasing items for the next phase.", 14, null),
-            ("Quarantine Finished Goods & QC Testing", "Quarantining finished goods and conducting QC tests.", 15, OperationAction.FinishedGoodsTransferNote),
+            ("F.P. Quarantine Finished Goods, QC Testing and retain sample, Collection of retain samples by Q.A", "Quarantining finished goods and conducting QC tests.", 13, null),
+            ("Inspection & Release by QA", "Inspecting and releasing items for the next phase.", 14, null),
+            ("Finished Product Transfer To Finished Goods Store", "Transferring finished goods to the storage area.", 15, OperationAction.FinishedGoodsTransferNote),
             ("Dispatch", "Dispatching finished goods to customers or destinations.", 16, OperationAction.Dispatch)
         };
     }

@@ -79,7 +79,44 @@ public class Employee : BaseEntity
     public Designation Designation { get; set; }
     
     public DateTime DateEmployed { get; set; }
+    public EmployeeLevel? Level { get; set; }
+    public EmployeeStatus Status { get; set; } = EmployeeStatus.New;
+    public EmployeeActiveStatus? ActiveStatus { get; set; }
+    public EmployeeInactiveStatus? InactiveStatus { get; set; }
+    public DateTime? SuspensionStartDate { get; set; }
+    public DateTime? SuspensionEndDate { get; set; }
+    public DateTime? ExitDate { get; set; }
+}
 
+public enum EmployeeLevel {
+    JuniorStaff,
+    SeniorStaff,
+    SeniorManagement
+}
+
+public enum EmployeeStatus
+{
+    Active,
+    Inactive,
+    New
+}
+
+public enum EmployeeActiveStatus
+{
+    Question = 0,
+    Warning = 1,
+    FinalWarning = 2,
+    Suspension = 3,
+}
+
+public enum EmployeeInactiveStatus
+{
+    Resignation = 0,
+    VacatedPost = 1,
+    Deceased = 2,
+    SummaryDismissed = 3,
+    Termination = 4,
+    Transfer = 5
 }
 
 public enum EmployeeType
@@ -99,8 +136,6 @@ public enum MaritalStatus
     Single,
     Married
 }
-
-
 
 public enum Religion
 {

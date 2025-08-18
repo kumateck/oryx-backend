@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using SHARED;
@@ -55,6 +56,7 @@ public class ProductionScheduleProductDto
     public decimal Quantity { get; set; }
     public string BatchNumber { get; set; }
     public BatchSize BatchSize { get; set; }
+    public CustomerDto MarketType { get; set; } 
     public bool Cancelled { get; set; }
    public string ReasonForCancellation { get; set; }
 }

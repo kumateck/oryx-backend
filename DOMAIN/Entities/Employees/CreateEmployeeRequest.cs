@@ -67,3 +67,21 @@ public class CreateEmployeeRequest
 
     [Required] public List<EmploymentHistoryDto> EmploymentHistory { get; set; } = [];
 }
+
+public class UpdateEmployeeRequest : CreateEmployeeRequest
+{
+    public EmployeeStatus Status { get; set; }
+    public EmployeeActiveStatus? ActiveStatus { get; set; }
+    public EmployeeInactiveStatus? InactiveStatus { get; set; }
+    public DateTime? SuspensionStartDate { get; set; }
+    public DateTime? SuspensionEndDate { get; set; }
+}
+
+public class UpdateEmployeeStatus
+{
+    public EmployeeStatus Status { get; set; }
+    public EmployeeActiveStatus? ActiveStatus { get; set; }
+    public EmployeeInactiveStatus? InactiveStatus { get; set; }
+    public DateTime? SuspensionStartDate { get; set; }
+    public DateTime? SuspensionEndDate { get; set; }
+}

@@ -81,6 +81,8 @@ public interface IProcurementRepository
         string searchQuery); 
     Task<Result<IEnumerable<ShipmentInvoiceDto>>> GetUnattachedShipmentInvoices();
     Task<Result> UpdateShipmentInvoice(CreateShipmentInvoice request, Guid shipmentInvoiceId, Guid userId);
+    Task<Result> MarkShipmentInvoiceAsPaid(Guid shipmentInvoiceId, DateTime? paidAt, Guid userId);
+    Task<Result> MarkMultipleShipmentInvoicesAsPaid(List<Guid> shipmentIds, DateTime? paidAt, Guid userId);
     Task<Result> DeleteShipmentInvoice(Guid shipmentInvoiceId, Guid userId);
 
     Task<Result<Guid>> CreateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid userId);
@@ -102,4 +104,5 @@ public interface IProcurementRepository
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId);
     Task<Result> UpdateSupplierStatus(Guid supplierId, SupplierStatus status, Guid userId);
+    Task<List<Guid>> GetDepartmentIdsFromPurchaseOrder(Guid purchaseOrderId);
 }

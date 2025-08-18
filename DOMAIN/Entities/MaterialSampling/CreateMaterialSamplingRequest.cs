@@ -9,5 +9,5 @@ public class CreateMaterialSamplingRequest
    [Required] public string ArNumber { get; set; }
    public Guid MaterialBatchId { get; set; }
    
-   [Required, MinLength(1)] public string SampleQuantity { get; set; }
+   [Required] public decimal SampleQuantity { get; set; }
 }
