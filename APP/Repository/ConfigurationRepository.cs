@@ -15,6 +15,7 @@ using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
@@ -239,7 +240,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
            case "ProductBatchNumber":
                return await context.BatchManufacturingRecords
                    .IgnoreQueryFilters()
-                   .Where(b => b.BatchNumber.StartsWith(prefix))
+                   .Where(b => b.BatchNumber.StartsWith(prefix) && b.Status != BatchManufacturingStatus.Rejected)
                    .CountAsync();
                
            default:
