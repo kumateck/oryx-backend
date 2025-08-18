@@ -12,7 +12,8 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class OvertimeRequestRepository(ApplicationDbContext context, IMapper mapper, IBackgroundWorkerService backgroundWorkerService) : IOvertimeRequestRepository
+public class OvertimeRequestRepository(ApplicationDbContext context, IMapper mapper, IBackgroundWorkerService backgroundWorkerService
+, IApprovalRepository approvalRepository) : IOvertimeRequestRepository
 {
     public async Task<Result<Guid>> CreateOvertimeRequest(CreateOvertimeRequest request)
     {
@@ -59,6 +60,8 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
 
         await context.OvertimeRequests.AddAsync(overtimeRequestEntity);
         await context.SaveChangesAsync();
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(OvertimeRequest), overtimeRequestEntity.Id);
         
         backgroundWorkerService.EnqueueNotification("New overtime request created", NotificationType.OvertimeRequest);
 
