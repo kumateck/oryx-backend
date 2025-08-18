@@ -214,7 +214,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .CountAsync();
            
            case "ArNumberMaterial":
-               return await context.AnalyticalTestRequests
+               return await context.MaterialSamplings
                    .IgnoreQueryFilters()
                    .Where(m => m.ArNumber.StartsWith(prefix))
                    .CountAsync();
