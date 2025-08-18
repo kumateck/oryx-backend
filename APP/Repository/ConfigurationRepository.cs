@@ -235,6 +235,12 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .IgnoreQueryFilters()
                    .Where(s => s.Number.StartsWith(prefix))
                    .CountAsync();
+           
+           case "ProductBatchNumber":
+               return await context.BatchManufacturingRecords
+                   .IgnoreQueryFilters()
+                   .Where(b => b.BatchNumber.StartsWith(prefix))
+                   .CountAsync();
                
            default:
                return Error.Validation("ModelType", "Invalid model type sent");
