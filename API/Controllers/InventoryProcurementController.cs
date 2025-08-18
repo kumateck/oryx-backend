@@ -385,7 +385,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     public async Task<IResult> GetStockEntries()
     {
         var result = await repository.GetStockEntries();
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpPost("items/{id:guid}/approve")]
