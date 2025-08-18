@@ -33,6 +33,7 @@ using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemStockRequisitions;
+using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -1067,6 +1068,13 @@ public class OryxMapper : Profile
         #region Stock Entries
         CreateMap<StockEntry, StockEntryDto>();
         
+        #endregion
+
+        #region Job Requests
+
+        CreateMap<CreateJobRequest, JobRequest>();
+        CreateMap<JobRequest, JobRequestDto>();
+
         #endregion
     }
 }
