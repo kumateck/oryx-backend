@@ -228,40 +228,43 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.DeleteQuestion(questionId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Generates the Certificate of Analysis for a given material batch.
     /// </summary>
     /// <param name="materialBatchId">The ID of the material batch.</param>
+    /// <param name="productionActivityStepId">The id of the production activity step</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("generate-certificate/{materialBatchId}")]
+    [HttpPost("generate-certificate/{materialBatchId}/{productionActivityStepId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GenerateCertificateOfAnalysis(Guid materialBatchId)
+    public async Task<IResult> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid productionActivityStepId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GenerateCertificateOfAnalysis(materialBatchId, Guid.Parse(userId));
+        var result = await repository.GenerateCertificateOfAnalysis(materialBatchId, productionActivityStepId,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Generates the Certificate of Analysis for a given material batch.
     /// </summary>
     /// <param name="batchManufacturingRecordId">The ID of the batch manufacturing.</param>
+    /// <param name="productionActivityStepId">The id of production activity step</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("generate-certificate/product/{batchManufacturingRecordId}")]
+    [HttpPost("generate-certificate/product/{batchManufacturingRecordId}/{productionActivityStepId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId)
+    public async Task<IResult> GenerateCertificateOfAnalysisForProduct([FromRoute] Guid batchManufacturingRecordId,
+        [FromRoute]Guid productionActivityStepId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GenerateCertificateOfAnalysisForProduct(batchManufacturingRecordId, Guid.Parse(userId));
+        var result = await repository.GenerateCertificateOfAnalysisForProduct(batchManufacturingRecordId, productionActivityStepId,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

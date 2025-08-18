@@ -234,9 +234,10 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
-    public async Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId)
+    public async Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid productionActivityStepId, Guid userId)
     {
-        var response = await context.Responses.FirstOrDefaultAsync(r => r.MaterialBatchId == materialBatchId);
+        var response = await context.Responses.FirstOrDefaultAsync(r =>
+            r.MaterialBatchId == materialBatchId && r.ProductionActivityStepId ==  productionActivityStepId);
         if (response == null) return FormErrors.NotFound(materialBatchId);
         
         var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == response.MaterialBatchId);
@@ -259,9 +260,10 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
     
-    public async Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid userId)
+    public async Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid productionActivityStepId, Guid userId)
     {
-        var response = await context.Responses.FirstOrDefaultAsync(r => r.BatchManufacturingRecordId == batchManufacturingRecordId);
+        var response = await context.Responses.FirstOrDefaultAsync(r =>
+            r.BatchManufacturingRecordId == batchManufacturingRecordId && r.ProductionActivityStepId == productionActivityStepId);
         if (response == null) return FormErrors.NotFound(batchManufacturingRecordId);
         
         var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == response.BatchManufacturingRecordId);
