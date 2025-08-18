@@ -1889,6 +1889,44 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
 
         await context.ResponseApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
+        
+        /*var newApprovalKeys = stages.Select(stage => new
+        {
+            ResponseId = responseId,
+            ApprovalId = approval.Id,
+            stage.UserId,
+            stage.RoleId
+        }).ToList();
+
+        var existingApprovals = await context.ResponseApprovals
+            .Where(r => r.ResponseId == responseId && r.ApprovalId == approval.Id)
+            .Select(r => new { r.ResponseId, r.ApprovalId, r.UserId, r.RoleId })
+            .ToListAsync();
+
+        var duplicates = newApprovalKeys
+            .Intersect(existingApprovals)
+            .ToList();
+
+        if (duplicates.Any())
+        {
+            // Validation failed: duplicates already exist
+            return;
+        }
+
+        var approvals = stages.Select(stage => new ResponseApproval
+        {
+            Required = stage.Required,
+            Order = stage.Order,
+            ResponseId = responseId,
+            CreatedAt = DateTime.UtcNow,
+            ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
+        }).ToList();
+
+        await context.ResponseApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();*/
     }
     
     
