@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.Memos;
+using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.VendorQuotations;
 using SHARED;
 
@@ -38,6 +39,11 @@ public interface IInventoryProcurementRepository
    Task<Result<Paginateable<IEnumerable<MemoDto>>>> GetMemos(int page, int pageSize,
         string searchQuery = null);
    Task<Result> MarkMemoItemAsPaid(Guid memoItemId, DateTime? purchasedAt = null);
+
+   Task<Result> ApproveItem(Guid stockEntryId);
+   Task<Result> RejectItem(Guid stockEntryId);
+   
+   Task<Result<List<StockEntryDto>>> GetStockEntries();
   Task<Result<MemoDto>> GetMemo(Guid id);
     
     // Helper methods

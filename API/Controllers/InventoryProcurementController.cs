@@ -5,6 +5,7 @@ using APP.IRepository;
 using DOMAIN.Entities.Items.Requisitions;
 using APP.Utils;
 using DOMAIN.Entities.Memos;
+using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.VendorQuotations;
 
 namespace API.Controllers;
@@ -375,10 +376,35 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.MarkMemoItemAsPaid(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
 
     #endregion
+    
+    [HttpGet("purchased-items")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockEntryDto>))]
+    public async Task<IResult> GetStockEntries()
+    {
+        var result = await repository.GetStockEntries();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
+    [HttpPost("items/{id:guid}/approve")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IResult> ApproveItem([FromRoute] Guid id)
+    {
+        var result = await repository.ApproveItem(id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    [HttpPost("items/{id:guid}/reject")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IResult> RejectItem([FromRoute] Guid id)
+    {
+        var result = await repository.RejectItem(id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     #region Helper Methods
     

@@ -76,6 +76,7 @@ using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.StaffRequisitions;
+using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
@@ -1061,6 +1062,11 @@ public class OryxMapper : Profile
         CreateMap<CreateRecoverableItemReportRequest,RecoverableItemReport>();
         CreateMap<RecoverableItemReport,RecoverableItemReportDto>();
 
+        #endregion
+        
+        #region Stock Entries
+        CreateMap<StockEntry, StockEntryDto>();
+        
         #endregion
     }
 }
