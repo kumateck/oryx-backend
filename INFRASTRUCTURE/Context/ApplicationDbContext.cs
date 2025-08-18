@@ -69,6 +69,7 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
+using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.VendorQuotations;
@@ -430,6 +431,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Overtime Request
 
     public DbSet<OvertimeRequest> OvertimeRequests { get; set; }
+    public DbSet<OvertimeRequestApproval> OvertimeRequestApprovals { get; set; }
+
 
     #endregion
 
@@ -625,6 +628,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #endregion
     
+    #region Stock Entries
+    
+    public DbSet<StockEntry> StockEntries { get; set; }
+    #endregion
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     // {
@@ -1022,6 +1029,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Approval>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<ApprovalStage>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
         modelBuilder.Entity<LeaveRequestApproval>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
+        modelBuilder.Entity<OvertimeRequestApproval>().HasQueryFilter(a => !a.Approval.DeletedAt.HasValue);
 
         #endregion
 

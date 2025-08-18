@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
@@ -18,7 +19,9 @@ public class OvertimeRequest: BaseEntity
     public Guid DepartmentId { get; set; }
     
     public Department Department { get; set; }
-    
+    public List<OvertimeRequestApproval> Approvals { get; set; } = [];
+    public bool Approved { get; set; }
+    public ApprovalStatus ApprovalStatus { get; set; }
     
     public int TotalHours
     {
@@ -32,6 +35,19 @@ public class OvertimeRequest: BaseEntity
 
         }
     }
+}
+
+public class OvertimeRequestApproval: ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    
+    public Guid OvertimeRequestId { get; set; }
+    
+    public OvertimeRequest LeaveRequest { get; set; }
+    
+    public Guid ApprovalId { get; set; }
+    
+    public Approval Approval { get; set; }
 }
 
 public enum OvertimeStatus

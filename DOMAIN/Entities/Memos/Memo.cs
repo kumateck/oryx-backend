@@ -18,7 +18,7 @@ public class CreateMemoItem
 public class Memo : BaseEntity
 {
     public string Code { get; set; }
-    public bool Paid { get; set; }
+    public bool Paid { get; set; } 
     public List<MemoItem> Items { get; set; } = [];
 }
 

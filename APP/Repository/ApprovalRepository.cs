@@ -9,6 +9,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
@@ -611,6 +612,101 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     ModelId = leaveRequest.Id,
                 });
                 return Result.Success();
+       
+            case nameof(OvertimeRequest):
+                var overtimeRequest = await context.OvertimeRequests
+                    .Include(lr => lr.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+                
+                if (overtimeRequest is null)
+                    return Error.Validation("OvertimeRequest.NotFound", $"Overtime Request {modelId} not found.");
+                
+                var overtimeRequestApprovalStages = overtimeRequest.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                        
+                    }).ToList();
+                
+                var overtimeRequestCurrentApprovals = GetCurrentApprovalStage(overtimeRequestApprovalStages);
+                
+                var overtimeRequestApprovingStage = overtimeRequestCurrentApprovals.FirstOrDefault(stage =>
+                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                
+                if (overtimeRequestApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+                
+                // Approve the overtime request stage in the actual tracked list
+                var stageToApproveOr = overtimeRequest.Approvals.First(
+                    stage => (stage.UserId == overtimeRequestApprovingStage.UserId && stage.UserId == userId) ||
+                    (stage.RoleId == overtimeRequestApprovingStage.RoleId && overtimeRequestApprovingStage.RoleId.HasValue && roleIds.Contains(overtimeRequestApprovingStage.RoleId.Value)));
+
+                stageToApproveOr.Status = ApprovalStatus.Approved;
+                stageToApproveOr.ApprovalTime = DateTime.UtcNow;
+                stageToApproveOr.Comments = comments;
+                
+                // Optionally mark a overtime request as fully approved
+                var allRequiredOrApproved = overtimeRequest.Approvals
+                    .Where(s => s.Required)
+                    .All(s => s.Status == ApprovalStatus.Approved);
+                if (allRequiredOrApproved)
+                {
+                    overtimeRequest.Approved = true;
+                    overtimeRequest.ApprovalStatus = ApprovalStatus.Approved;
+                    context.OvertimeRequests.Update(overtimeRequest);
+                }
+                await context.SaveChangesAsync();
+                
+                //activate next pending stages
+                var nextOvertimeStage = overtimeRequest.Approvals
+                    .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
+                    .OrderBy(s => s.Order)
+                    .ToList();
+
+                if (nextOvertimeStage.Count != 0)
+                {
+                    // Get the current approval stages after the approval
+                    var updatedApprovalStages = overtimeRequest.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                    }).ToList();
+
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
+                        .Where(s => !overtimeRequest.Approvals.First(ra =>
+                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                        .ToList();
+
+                    foreach (var stageToActivate in newlyActiveStages)
+                    {
+                        var actualStage = overtimeRequest.Approvals.First(ra =>
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                        actualStage.ActivatedAt = DateTime.UtcNow;
+                        context.OvertimeRequestApprovals.Update(actualStage);
+                    }
+                }
+                await context.SaveChangesAsync();
+                await AddApprovalLogs(new CreateApprovalLog
+                {
+                    UserId = userId,
+                    Comments = comments,
+                    Status = ApprovalStatus.Approved,
+                    ModelId = overtimeRequest.Id,
+                });
+                return Result.Success();
             
             case nameof(Response):
                 var response = await context.Responses
@@ -1071,6 +1167,55 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Comments = comments,
                     Status = ApprovalStatus.Rejected,
                     ModelId = leaveRequest.Id,
+                });
+                await context.SaveChangesAsync();
+                break;
+            
+            case nameof(OvertimeRequest):
+                var overtimeRequest = await context.OvertimeRequests
+                    .Include(lr => lr.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+                
+                if (overtimeRequest is null)
+                    return Error.Validation("OvertimeRequest.NotFound", $"overtime Request {modelId} not found.");
+                
+                var overtimeRequestApprovalStages = overtimeRequest.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                        
+                    }).ToList();
+                
+                var overtimeRequestCurrentApprovals = GetCurrentApprovalStage(overtimeRequestApprovalStages);
+                
+                var overtimeRequestApprovingStage = overtimeRequestCurrentApprovals.FirstOrDefault(stage =>
+                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                
+                if (overtimeRequestApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+                
+                // Approve the overtime request stage in the actual tracked list
+                var stageToApproveOr = overtimeRequest.Approvals.First(
+                    stage => (stage.UserId == overtimeRequestApprovingStage.UserId && stage.UserId == userId) ||
+                    (stage.RoleId == overtimeRequestApprovingStage.RoleId && overtimeRequestApprovingStage.RoleId.HasValue && roleIds.Contains(overtimeRequestApprovingStage.RoleId.Value)));
+
+                stageToApproveOr.Status = ApprovalStatus.Rejected;
+                stageToApproveOr.ApprovalTime = DateTime.UtcNow;
+                stageToApproveOr.Comments = comments;
+                await AddApprovalLogs(new CreateApprovalLog
+                {
+                    UserId = userId,
+                    Comments = comments,
+                    Status = ApprovalStatus.Rejected,
+                    ModelId = overtimeRequest.Id,
                 });
                 await context.SaveChangesAsync();
                 break;
@@ -1618,6 +1763,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 break;
             
             case nameof(LeaveRequest):
+                await CreateLeaveRequestApprovals(modelId, approvalStages, approval);
+                break;
+            
+            case nameof(OvertimeRequest):
                 await CreateLeaveRequestApprovals(modelId, approvalStages, approval);
                 break;
             
