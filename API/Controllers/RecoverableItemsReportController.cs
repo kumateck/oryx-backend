@@ -17,7 +17,7 @@ public class RecoverableItemsReportController(IRecoverableItemReportRepository r
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateRecoverableItemReport(CreateRecoverableItemReportRequest request)
+    public async Task<IResult> CreateRecoverableItemReport([FromBody] CreateRecoverableItemReportRequest request)
     {
         var result = await repository.CreateRecoverableItemReport(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

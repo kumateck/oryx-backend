@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Items;
 
@@ -13,7 +14,9 @@ public class RecoverableItemReport : BaseEntity
 
 public class RecoverableItemBatchReport : BaseEntity
 {
-    public Guid RecoverableItemReportId { get; set; }
-    public RecoverableItemReport RecoverableItemReport { get; set; }
+    public Guid ItemId { get; set; }
+    public ItemDto Item { get; set; }
+    public int Quantity { get; set; }
+    public string Reason { get; set; }
     
 }
