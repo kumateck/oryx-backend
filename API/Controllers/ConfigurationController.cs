@@ -146,11 +146,11 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// <param name="modelType">The model type of which the count is need </param>
     /// <param name="prefix">The prefix of the particular model </param>
     /// <returns>Returns the count or usage of the configuration.</returns>
-    [HttpGet("{modelType}/{prefix}")]
+    [HttpGet("{modelType}/count")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetConfiguration(string modelType, string prefix)
+    public async Task<IResult> GetConfiguration([FromRoute ]string modelType, [FromQuery] string prefix)
     {
         var result = await repository.GetCountForCodeConfiguration(modelType, prefix);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
