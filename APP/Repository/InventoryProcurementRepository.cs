@@ -4,10 +4,12 @@ using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.VendorQuotations;
 using INFRASTRUCTURE.Context;
 using SHARED;
@@ -529,7 +531,13 @@ public class InventoryProcurementRepository(
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
+    public async Task<Result<List<StockEntryDto>>> GetStockEntries()
+    {
+        var stockEntries = await context.StockEntries.ToListAsync();
+        return mapper.Map<List<StockEntryDto>>(stockEntries);
+    }
+
     public async Task<Result<MemoDto>> GetMemo(Guid id)
     {
         var memo = await context.Memos
@@ -597,6 +605,16 @@ public class InventoryProcurementRepository(
 
         memoItem.PurchasedAt = purchasedAt ?? DateTime.UtcNow;
         context.MemoItems.Update(memoItem);
+
+        var stockEntry = new StockEntry
+        {
+            ItemId = memoItem.ItemId,
+            MemoId = memoItem.MemoId,
+            Quantity = memoItem.Quantity
+        };
+        
+        await context.StockEntries.AddAsync(stockEntry);
+        await context.SaveChangesAsync();
         
         var allItemsPaid = await context.MemoItems
             .Where(mi => mi.MemoId == memoItem.MemoId)
@@ -612,6 +630,27 @@ public class InventoryProcurementRepository(
         return Result.Success();
     }
 
+    public async Task<Result> ApproveItem(Guid stockEntryId)
+    {
+        var stockEntry = await context.StockEntries.FirstOrDefaultAsync(s => s.Id == stockEntryId);
+        if (stockEntry == null) return Error.NotFound("StockEntry", "Stock entry not found.");
+
+        stockEntry.Status = ApprovalStatus.Approved;
+        context.StockEntries.Update(stockEntry);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> RejectItem(Guid stockEntryId)
+    {
+        var stockEntry = await context.StockEntries.FirstOrDefaultAsync(s => s.Id == stockEntryId);
+        if (stockEntry == null) return Error.NotFound("StockEntry", "Stock entry not found.");
+        
+        stockEntry.Status = ApprovalStatus.Rejected;
+        context.StockEntries.Update(stockEntry);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
     // --- Helper methods ---
     public async Task<string> GenerateMemoCode()
