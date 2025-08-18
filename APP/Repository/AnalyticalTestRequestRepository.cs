@@ -14,12 +14,16 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
 {
     public async Task<Result<Guid>> CreateAnalyticalTestRequest(CreateAnalyticalTestRequest request)
     {
-       var test = mapper.Map<AnalyticalTestRequest>(request);
-       
-       await context.AddAsync(test);
-       await context.SaveChangesAsync();
-       
-       return test.Id;
+        
+        if(await context.AnalyticalTestRequests.AnyAsync(a => 
+               a.BatchManufacturingRecordId == request.BatchManufacturingRecordId && a.ProductionActivityStepId == request.ProductionActivityStepId
+               && a.ProductionScheduleId == request.ProductionScheduleId && a.ProductId == request.ProductId))
+            return Error.Validation("Atr", "This atr already exists"); 
+        
+        var test = mapper.Map<AnalyticalTestRequest>(request);
+        await context.AddAsync(test);
+        await context.SaveChangesAsync();
+        return test.Id;
     }
 
     public async Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery, AnalyticalTestStatus? status)
