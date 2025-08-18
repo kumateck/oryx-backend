@@ -6,7 +6,6 @@ using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Grns;
-using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -101,7 +100,8 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
 
-    public async Task<Result<int>> GetCountForCodeConfiguration(string modelType, string prefix)
+    public async Task<Result<int>> 
+        GetCountForCodeConfiguration(string modelType, string prefix)
     {
 
         switch (modelType)
@@ -212,9 +212,15 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                return await context.FinishedGoodsTransferNotes
                    .IgnoreQueryFilters()
                    .CountAsync();
-
-           case "ArNumber":
-               return await context.BinCardInformation
+           
+           case "ArNumberMaterial":
+               return await context.AnalyticalTestRequests
+                   .IgnoreQueryFilters()
+                   .Where(m => m.ArNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "ArNumberProduct":
+               return await context.AnalyticalTestRequests
                    .IgnoreQueryFilters()
                    .Where(m => m.ArNumber.StartsWith(prefix))
                    .CountAsync();
