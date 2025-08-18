@@ -29,6 +29,7 @@ using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.ItemInventoryTransactions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Items.Requisitions;
+using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.LeaveTypes;
@@ -631,6 +632,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Stock Entries
     
     public DbSet<StockEntry> StockEntries { get; set; }
+    #endregion
+
+    #region Job Requests
+
+    public DbSet<JobRequest> JobRequests { get; set; }
+
     #endregion
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
@@ -1360,6 +1367,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Damaged Stocks
 
         modelBuilder.Entity<DamagedStock>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Job Requests
+
+        modelBuilder.Entity<JobRequest>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
 
         #endregion
