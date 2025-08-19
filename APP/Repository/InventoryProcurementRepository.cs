@@ -260,114 +260,109 @@ public class InventoryProcurementRepository(
 
     public async Task<Result> ProcessOpenMarketMemo(List<CreateMemoItem> memos, Guid userId)
     {
-        foreach (var memoRequest in memos)
+        var memo = new Memo
         {
-            var memo = new Memo
-            {
-                Code = await GenerateMemoCode(),
-                Items = []
-            };
+            Code = await GenerateMemoCode(),
+            Items = []
+        };
+        
+         foreach (var itemRequest in memos)
+         {
 
-            foreach (var itemRequest in memos)
-            {
+             if (itemRequest.MarketRequisitionVendorId.HasValue)
+             {
+                 var marketRequisitionVendor = await context.MarketRequisitionVendors
+                     .AsSplitQuery()
+                     .Include(marketRequisitionVendor => marketRequisitionVendor.MarketRequisition).ThenInclude(mr => mr.Item)
+                     .Include(marketRequisitionVendor => marketRequisitionVendor.MarketRequisition).ThenInclude(mr => mr.UoM)
+                     .FirstOrDefaultAsync(mrv => mrv.Id == itemRequest.MarketRequisitionVendorId);
 
-                if (itemRequest.MarketRequisitionVendorId.HasValue)
-                {
-                    var marketRequisitionVendor = await context.MarketRequisitionVendors
-                        .AsSplitQuery()
-                        .Include(marketRequisitionVendor => marketRequisitionVendor.MarketRequisition).ThenInclude(mr => mr.Item)
-                        .Include(marketRequisitionVendor => marketRequisitionVendor.MarketRequisition).ThenInclude(mr => mr.UoM)
-                        .FirstOrDefaultAsync(mrv => mrv.Id == itemRequest.MarketRequisitionVendorId);
-
-                    if (marketRequisitionVendor is null)
-                        return Error.Validation("MarketRequisitionVendor", $"marketRequisitionVendor with ID {itemRequest.MarketRequisitionVendorId} not found.");
+                 if (marketRequisitionVendor is null)
+                     return Error.Validation("MarketRequisitionVendor", $"marketRequisitionVendor with ID {itemRequest.MarketRequisitionVendorId} not found.");
                     
                     
-                    if (itemRequest.ItemId == marketRequisitionVendor.MarketRequisition.ItemId ||
-                        itemRequest.UoMId == marketRequisitionVendor.MarketRequisition.UoMId ||
-                        itemRequest.Quantity == marketRequisitionVendor.MarketRequisition.Quantity)
-                    {
-                        return Error.Validation("ItemRequest", "Item request not matching open market requisitions.");
-                    }
+                 if (itemRequest.ItemId == marketRequisitionVendor.MarketRequisition.ItemId ||
+                     itemRequest.UoMId == marketRequisitionVendor.MarketRequisition.UoMId ||
+                     itemRequest.Quantity == marketRequisitionVendor.MarketRequisition.Quantity)
+                 {
+                     return Error.Validation("ItemRequest", "Item request not matching open market requisitions.");
+                 }
 
 
-                    memo.Items.Add(new MemoItem
-                    {
-                        MarketRequisitionVendorId = marketRequisitionVendor.Id,
-                        ItemId = itemRequest.ItemId,
-                        UoMId = itemRequest.UoMId,
-                        Quantity = itemRequest.Quantity
-                    });
-                }
+                 memo.Items.Add(new MemoItem
+                 {
+                     MarketRequisitionVendorId = marketRequisitionVendor.Id,
+                     ItemId = itemRequest.ItemId,
+                     UoMId = itemRequest.UoMId,
+                     Quantity = itemRequest.Quantity
+                 });
+             }
 
-                if (itemRequest.MarketRequisitionVendorId.HasValue)
-                {
-                    var marketRequisitionVendor = await context.MarketRequisitionVendors
-                        .Include(mrv => mrv.MarketRequisition)
-                        .FirstOrDefaultAsync(mrv => mrv.Id == itemRequest.MarketRequisitionVendorId);
+             if (itemRequest.MarketRequisitionVendorId.HasValue)
+             {
+                 var marketRequisitionVendor = await context.MarketRequisitionVendors
+                     .Include(mrv => mrv.MarketRequisition)
+                     .FirstOrDefaultAsync(mrv => mrv.Id == itemRequest.MarketRequisitionVendorId);
 
-                    if (marketRequisitionVendor is null)
-                        return Error.Validation("MarketRequisitionVendor", $"Market requisition vendor with ID {itemRequest.MarketRequisitionVendorId} not found.");
+                 if (marketRequisitionVendor is null)
+                     return Error.Validation("MarketRequisitionVendor", $"Market requisition vendor with ID {itemRequest.MarketRequisitionVendorId} not found.");
 
-                    memo.Items.Add(new MemoItem
-                    {
-                        MarketRequisitionVendorId = marketRequisitionVendor.Id,
-                        ItemId = marketRequisitionVendor.MarketRequisition.ItemId,
-                        UoMId = marketRequisitionVendor.MarketRequisition.UoMId,
-                        Quantity = marketRequisitionVendor.MarketRequisition.Quantity,
-                        PricePerUnit = marketRequisitionVendor.PricePerUnit
-                    });
+                 memo.Items.Add(new MemoItem
+                 {
+                     MarketRequisitionVendorId = marketRequisitionVendor.Id,
+                     ItemId = marketRequisitionVendor.MarketRequisition.ItemId,
+                     UoMId = marketRequisitionVendor.MarketRequisition.UoMId,
+                     Quantity = marketRequisitionVendor.MarketRequisition.Quantity,
+                     PricePerUnit = marketRequisitionVendor.PricePerUnit
+                 });
 
-                    marketRequisitionVendor.Complete = true;
-                    context.MarketRequisitionVendors.Update(marketRequisitionVendor);
-                }
+                 marketRequisitionVendor.Complete = true;
+                 context.MarketRequisitionVendors.Update(marketRequisitionVendor);
+             }
                
-            }
-            await context.Memos.AddAsync(memo);
-        }
+         }
+        await context.Memos.AddAsync(memo);
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
     public async Task<Result> ProcessTrustedVendorMemo(List<CreateMemoItem> memos, Guid userId)
     {
-        foreach (var memoRequest in memos)
+        var memo = new Memo
         {
-            var memo = new Memo
+            Code = await GenerateMemoCode(),
+            Items = []
+        };
+        
+        foreach (var itemRequest in memos)
+        {
+            var vendorQuotationItem = await context.VendorQuotationItems
+                .FirstOrDefaultAsync(sqi => sqi.Id == itemRequest.VendorQuotationItemId);
+
+            if (vendorQuotationItem is null)
+                return Error.Validation("VendorQuotationItem", $"Vendor quotation item with ID {itemRequest.VendorQuotationItemId} not found.");
+
+            if (itemRequest.ItemId == vendorQuotationItem.ItemId ||
+                itemRequest.UoMId == vendorQuotationItem.UoMId ||
+                itemRequest.Quantity == vendorQuotationItem.Quantity)
             {
-                Code = await GenerateMemoCode(),
-                Items = []
-            };
-
-            foreach (var itemRequest in memos)
-            {
-                var vendorQuotationItem = await context.VendorQuotationItems
-                    .FirstOrDefaultAsync(sqi => sqi.Id == itemRequest.VendorQuotationItemId);
-
-                if (vendorQuotationItem is null)
-                    return Error.Validation("VendorQuotationItem", $"Vendor quotation item with ID {itemRequest.VendorQuotationItemId} not found.");
-
-                if (itemRequest.ItemId == vendorQuotationItem.ItemId ||
-                    itemRequest.UoMId == vendorQuotationItem.UoMId ||
-                    itemRequest.Quantity == vendorQuotationItem.Quantity)
-                {
-                    return Error.Validation("ItemRequest", "Item request not matching vendor quotation.");
-                }
-
-                memo.Items.Add(new MemoItem
-                {
-                    VendorQuotationItemId = vendorQuotationItem.Id,
-                    ItemId = itemRequest.ItemId,
-                    UoMId = itemRequest.UoMId,
-                    Quantity = itemRequest.Quantity,
-                    PricePerUnit = vendorQuotationItem.QuotedPrice.GetValueOrDefault()
-                });
-
-                vendorQuotationItem.Status = VendorQuotationItemStatus.Processed;
-                context.VendorQuotationItems.Update(vendorQuotationItem);
+                return Error.Validation("ItemRequest", "Item request not matching vendor quotation.");
             }
-            await context.Memos.AddAsync(memo);
+
+            memo.Items.Add(new MemoItem
+            {
+                VendorQuotationItemId = vendorQuotationItem.Id,
+                ItemId = itemRequest.ItemId,
+                UoMId = itemRequest.UoMId,
+                Quantity = itemRequest.Quantity,
+                PricePerUnit = vendorQuotationItem.QuotedPrice.GetValueOrDefault()
+            });
+
+            vendorQuotationItem.Status = VendorQuotationItemStatus.Processed;
+            context.VendorQuotationItems.Update(vendorQuotationItem);
         }
+        
+        await context.Memos.AddAsync(memo);
         await context.SaveChangesAsync();
         return Result.Success();
     }
