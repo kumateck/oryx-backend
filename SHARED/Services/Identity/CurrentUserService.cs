@@ -20,6 +20,10 @@ public class CurrentUserService : ICurrentUserService
             var token = authHeader.Substring("Bearer ".Length).Trim();
             var jwtSecret = config["JwtSettings:Key"];
             var principal = ValidateToken(token, jwtSecret);
+            if (principal == null)
+            {
+                return;
+            }
             var tokenEnv = principal.FindFirst("environment")?.Value;
             var departmentType = principal.FindFirst("departmentType")?.Value;
 
@@ -59,7 +63,8 @@ public class CurrentUserService : ICurrentUserService
         }
         catch(Exception ex)
         {
-            throw new SecurityTokenException("Invalid token", ex);
+            Console.WriteLine(ex.Message);
+            return null;
         }
     }
 
