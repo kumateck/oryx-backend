@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Distribution;
@@ -74,6 +75,7 @@ public class DistributedRequisitionMaterialDto
     public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; } = [];
     public DistributedRequisitionMaterialStatus Status { get; set; }
     public List<DistributedChecklistDto> Checklists { get; set; }
+    public DepartmentDto Department { get; set; }
 }
 
 public class DistributedFinishedProductDto

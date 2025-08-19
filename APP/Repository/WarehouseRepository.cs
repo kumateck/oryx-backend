@@ -572,9 +572,17 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialById(Guid id)
     {
         var distributedMaterial = await context.DistributedRequisitionMaterials
+            .AsSplitQuery()
+            .Include(m => m.WarehouseArrivalLocation)
+            .ThenInclude(m => m.Warehouse)
+            .ThenInclude(m => m.Department)
             .Include(drm => drm.ShipmentInvoice)
-            .Include(drm => drm.MaterialItemDistributions)
             .Include(drm => drm.Material)
+            .Include(drm => drm.RequisitionItem)
+            .Include(drm => drm.WarehouseArrivalLocation)
+            .Include(drm=>drm.MaterialItemDistributions)
+            .Include(sr=>sr.CheckLists)
+            .ThenInclude(cl=>cl.MaterialBatches)
             .Include(drm => drm.RequisitionItem)
             .FirstOrDefaultAsync(drm => drm.Id == id);
 
@@ -1011,6 +1019,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
 
         
         var query = context.DistributedRequisitionMaterials
+            .AsSplitQuery()
+            .Include(m => m.WarehouseArrivalLocation)
+            .ThenInclude(m => m.Warehouse)
+            .ThenInclude(m => m.Department)
             .Include(drm => drm.ShipmentInvoice)
             .Include(drm => drm.Material)
             .Include(drm => drm.RequisitionItem)
@@ -1042,11 +1054,15 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         Guid distributedMaterialId)
     {
         return mapper.Map<DistributedRequisitionMaterialDto>(await context.DistributedRequisitionMaterials
+            .AsSplitQuery()
+            .Include(m => m.WarehouseArrivalLocation)
+            .ThenInclude(m => m.Warehouse)
+            .ThenInclude(m => m.Department)
             .Include(drm => drm.ShipmentInvoice)
             .Include(drm => drm.Material)
             .Include(drm => drm.RequisitionItem)
             .Include(drm => drm.WarehouseArrivalLocation)
-            .Include(drm => drm.MaterialItemDistributions)
+            .Include(drm=>drm.MaterialItemDistributions)
             .Include(sr=>sr.CheckLists)
             .ThenInclude(cl=>cl.MaterialBatches)
             .FirstOrDefaultAsync(drm => drm.Id == distributedMaterialId));

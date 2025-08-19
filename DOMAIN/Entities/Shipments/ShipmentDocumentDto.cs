@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
 using SHARED;
 
@@ -31,7 +32,7 @@ public class ShipmentInvoiceDto : BaseDto
 
 public class ShipmentInvoiceItemDto : BaseDto
 {
-    public CollectionItemDto Material { get; set; }
+    public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public CollectionItemDto Manufacturer { get; set; }
     public CollectionItemDto PurchaseOrder { get; set; }
