@@ -347,6 +347,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UploadMaterials(IFormFile file, [FromQuery] MaterialKind kind)
