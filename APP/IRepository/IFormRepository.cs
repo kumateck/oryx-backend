@@ -23,7 +23,7 @@ public interface IFormRepository
        GetQuestions(FormFilter filter);
    Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId);
    Task<Result> DeleteQuestion(Guid id, Guid userId);
-   Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid productionActivityStepId, Guid userId);
+   Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId);
    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId);
    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(Guid batchManufacturingRecordId);
   //  Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(

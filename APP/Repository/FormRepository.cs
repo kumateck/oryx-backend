@@ -234,10 +234,10 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
-    public async Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid productionActivityStepId, Guid userId)
+    public async Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId)
     {
         var response = await context.Responses.FirstOrDefaultAsync(r =>
-            r.MaterialBatchId == materialBatchId && r.ProductionActivityStepId ==  productionActivityStepId);
+            r.MaterialBatchId == materialBatchId);
         if (response == null) return FormErrors.NotFound(materialBatchId);
         
         var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == response.MaterialBatchId);
