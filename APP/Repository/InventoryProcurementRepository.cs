@@ -491,8 +491,10 @@ public class InventoryProcurementRepository(
     public async Task<Result<Paginateable<IEnumerable<MarketRequisitionVendorDto>>>> GetMarketRequisitionVendors(int page, int pageSize, bool complete)
     {
         var query = context.MarketRequisitionVendors
+            .AsSplitQuery()
             .Include(mrv => mrv.MarketRequisition).ThenInclude(mr => mr.Item)
             .Include(mrv => mrv.MarketRequisition).ThenInclude(mr => mr.UoM)
+            .Include(m => m.TermsOfPayment)
             .Where(mrv => mrv.Complete == complete)
             .AsQueryable();
 

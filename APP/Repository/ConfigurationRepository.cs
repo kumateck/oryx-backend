@@ -5,7 +5,6 @@ using AutoMapper;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
-using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -172,7 +171,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
-           case nameof(Grn):
+           case "GrnNumber":
                return await context.Grns
                    .IgnoreQueryFilters()
                    .Where(m => m.GrnNumber.StartsWith(prefix))
