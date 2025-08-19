@@ -62,8 +62,9 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         var newRole = new Role
         {
             Name = request.Name,
-            DisplayName = request.Name.Capitalize(),
+            DisplayName = request.Name.Trim().Capitalize(),
             CreatedById = userId,
+            Type = request.Type,
             CreatedAt = DateTime.UtcNow
         };
         
