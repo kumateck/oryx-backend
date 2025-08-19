@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using SHARED;
 
 namespace DOMAIN.Entities.Items.Requisitions;
 
@@ -61,5 +62,13 @@ public class MarketRequisitionVendor : BaseEntity
 
 public class MarketRequisitionVendorDto : BaseDto
 {
-    
+    public string VendorName { get; set; }
+    public string VendorAddress { get; set; }
+    public string VendorPhoneNumber { get; set; }
+    public decimal PricePerUnit { get; set; }
+    public string ModeOfPayment { get; set; }
+    public CollectionItemDto TermsOfPayment { get; set; }
+    public string DeliveryMode { get; set; }
+    public DateTime EstimatedDeliveryDate { get; set; }
+    public bool Complete { get; set; }
 }
