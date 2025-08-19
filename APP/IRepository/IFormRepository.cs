@@ -36,5 +36,5 @@ public interface IFormRepository
    //     Guid materialSpecificationId);
    // Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(
    //     Guid productSpecificationId);
-   Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid userId);
+   Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid productionActivityStepId, Guid userId);
 }
