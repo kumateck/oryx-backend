@@ -70,10 +70,11 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EmployeeDto>>))]
     public async Task<IResult> GetEmployees([FromQuery] EmployeeStatus? status,[FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null, [FromQuery] string designation = null, [FromQuery] string department = null
+        [FromQuery] string searchQuery = null, [FromQuery] string designation = null, [FromQuery] string department = null,
+        [FromQuery] bool? isNotUser = null
         )
     {
-        var result = await repository.GetEmployees(status, page, pageSize, searchQuery, designation, department);
+        var result = await repository.GetEmployees(status, page, pageSize, searchQuery, designation, department, isNotUser);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
