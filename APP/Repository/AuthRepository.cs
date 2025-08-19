@@ -11,12 +11,14 @@ using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using MassTransit;
+using Microsoft.AspNetCore.Http;
 using SHARED;
 using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
 namespace APP.Repository;
 
-public class AuthRepository(IEmailService emailService,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IPublishEndpoint publishEndpoint , IMapper mapper) 
+public class AuthRepository(IEmailService emailService,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService,
+    IPublishEndpoint publishEndpoint , IMapper mapper, IHttpContextAccessor httpContextAccessor) 
     : IAuthRepository
 {
     public async Task<Result<LoginResponse>> Login(LoginRequest request)
@@ -79,7 +81,7 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
             return UserErrors.NotFoundByEmail(request.Email);
         }
 
-        var partialUrl = Environment.GetEnvironmentVariable("CLIENT_BASE_URL");
+        var partialUrl = httpContextAccessor.HttpContext?.Request.Headers.Origin;
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
 
         var key = Guid.NewGuid().ToString();

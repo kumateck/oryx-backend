@@ -14,6 +14,7 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -26,7 +27,8 @@ namespace APP.Repository;
 
 public class EmployeeRepository(ApplicationDbContext context,
     ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper,
-    IConfiguration configuration, UserManager<User> userManager, IBlobStorageService blobStorage) : IEmployeeRepository
+    IConfiguration configuration, UserManager<User> userManager, IBlobStorageService blobStorage,
+    IHttpContextAccessor httpContextAccessor) : IEmployeeRepository
 {
 
     public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
@@ -61,7 +63,7 @@ public class EmployeeRepository(ApplicationDbContext context,
                 var token = tokenHandler.CreateToken(tokenDescriptor);
                 var jwt = tokenHandler.WriteToken(token);
                 
-                var partialUrl = Environment.GetEnvironmentVariable("CLIENT_BASE_URL");
+                var partialUrl = httpContextAccessor.HttpContext?.Request.Headers.Origin;
 
                 var verificationLink = employee.EmployeeType == EmployeeType.Casual
                     ? $"{partialUrl}/onboarding/0?token={jwt}"
@@ -225,7 +227,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
             var emailTemplate = await File.ReadAllTextAsync(templatePath);
             var key = Guid.NewGuid().ToString();
-            var partialUrl = Environment.GetEnvironmentVariable("ClientBaseUrl");
+            var partialUrl = httpContextAccessor.HttpContext?.Request.Headers.Origin;
             var token = await userManager.GeneratePasswordResetTokenAsync(newUser);
 
             await context.PasswordResets.AddAsync(new PasswordReset
