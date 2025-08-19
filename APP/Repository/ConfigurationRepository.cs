@@ -172,7 +172,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .Where(m => m.Code.StartsWith(prefix))
                    .CountAsync();
            
-           case nameof(Grn):
+           case "GrnNumber":
                return await context.Grns
                    .IgnoreQueryFilters()
                    .Where(m => m.GrnNumber.StartsWith(prefix))
