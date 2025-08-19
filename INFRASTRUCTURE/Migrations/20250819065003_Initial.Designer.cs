@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250728132450_ServiceAndServiceProviderRelationship")]
-    partial class ServiceAndServiceProviderRelationship
+    [Migration("20250819065003_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -129,6 +129,16 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("AcknowledgedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AcknowledgedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ArNumber")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<Guid>("BatchManufacturingRecordId")
                         .HasColumnType("uuid");
 
@@ -156,17 +166,29 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime>("ManufacturingDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("NumberOfContainers")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ProductionScheduleId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("ReleaseDate")
+                    b.Property<DateTime?>("ReleasedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ReleasedAt")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("ReleasedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("SampledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("SampledById")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("SampledQuantity")
                         .HasColumnType("text");
@@ -180,10 +202,18 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("TestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("TestedById")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AcknowledgedById");
 
                     b.HasIndex("BatchManufacturingRecordId");
 
@@ -195,9 +225,17 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductId");
 
+                    b.HasIndex("ProductionActivityStepId");
+
                     b.HasIndex("ProductionScheduleId");
 
+                    b.HasIndex("ReleasedById");
+
+                    b.HasIndex("SampledById");
+
                     b.HasIndex("StateId");
+
+                    b.HasIndex("TestedById");
 
                     b.ToTable("AnalyticalTestRequests");
                 });
@@ -1483,6 +1521,149 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("Customers");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.DamagedStocks.DamagedStock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("DamageStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuantityDamaged")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("DamagedStocks");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.DamagedStocks.DamagedStockBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BatchNumber")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DamagedStockId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DamagedStockId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("DamagedStockBatch");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.DamagedStocks.DamagedStocksLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DamagedStockId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("TimeStamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DamagedStockId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("DamagedStocksLogs");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Departments.Department", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2126,10 +2307,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("MaterialBatchId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("MaterialSpecificationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ProductSpecificationId")
+                    b.Property<Guid?>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -2151,9 +2329,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialBatchId");
 
-                    b.HasIndex("MaterialSpecificationId");
-
-                    b.HasIndex("ProductSpecificationId");
+                    b.HasIndex("ProductionActivityStepId");
 
                     b.ToTable("Responses");
                 });
@@ -2251,6 +2427,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("Remarks")
                         .HasMaxLength(10000)
                         .HasColumnType("character varying(10000)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2357,11 +2536,217 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("Instruments");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Inventories.Inventory", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Invoices.Invoice", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CustomerPoNumber")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProformaInvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProformaInvoiceId");
+
+                    b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ItemInventoryTransactions.ItemInventoryTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BatchNumber")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MemoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuantityIssued")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("QuantityReceived")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MemoId");
+
+                    b.ToTable("ItemInventoryTransactions");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ItemStockRequisitions.IssueItemStockRequisition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemStockRequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuantityIssued")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemStockRequisitionId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("IssueItemStockRequisitions");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ItemStockRequisitions.ItemStockRequisition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Justification")
+                        .HasMaxLength(100000)
+                        .HasColumnType("character varying(100000)");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Number")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("QuantityRequested")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RequisitionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("RequestedById");
+
+                    b.ToTable("ItemStockRequisitions");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Item", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AvailableQuantity")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Classification")
                         .HasColumnType("integer");
@@ -2378,23 +2763,17 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
                     b.Property<bool>("HasBatch")
                         .HasColumnType("boolean");
 
-                    b.Property<decimal>("InitialStockQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid>("InventoryTypeId")
-                        .HasColumnType("uuid");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ItemCategoryId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -2402,13 +2781,19 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("MaterialName")
+                    b.Property<int>("MaximumLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinimumLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
                         .HasColumnType("text");
 
-                    b.Property<string>("Remarks")
-                        .HasColumnType("text");
+                    b.Property<int>("ReorderLevel")
+                        .HasColumnType("integer");
 
-                    b.Property<int>("ReorderRule")
+                    b.Property<int>("Store")
                         .HasColumnType("integer");
 
                     b.Property<Guid>("UnitOfMeasureId")
@@ -2421,9 +2806,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("CreatedById");
 
-                    b.HasIndex("DepartmentId");
-
-                    b.HasIndex("InventoryTypeId");
+                    b.HasIndex("ItemCategoryId");
 
                     b.HasIndex("LastDeletedById");
 
@@ -2431,10 +2814,10 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("UnitOfMeasureId");
 
-                    b.ToTable("Inventories");
+                    b.ToTable("Items");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Inventories.InventoryType", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Items.ItemCategory", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2469,7 +2852,460 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("InventoryTypes");
+                    b.ToTable("ItemCategories");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.ItemStockRequisitionItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemStockRequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuantityRequested")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("ItemStockRequisitionId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("ItemStockRequisitionItems");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpectedDeliveryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("InventoryPurchaseRequisitions");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisitionItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InventoryPurchaseRequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UoMId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("InventoryPurchaseRequisitionId");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("UoMId");
+
+                    b.ToTable("InventoryPurchaseRequisitionItems");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.MarketRequisition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InventoryPurchaseRequisitionItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("UoMId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("InventoryPurchaseRequisitionItemId");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("UoMId");
+
+                    b.ToTable("MarketRequisitions");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.MarketRequisitionVendor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Complete")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeliveryMode")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("EstimatedDeliveryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MarketRequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ModeOfPayment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<decimal>("PricePerUnit")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("TermsOfPaymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VendorAddress")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
+
+                    b.Property<string>("VendorName")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("VendorPhoneNumber")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MarketRequisitionId");
+
+                    b.HasIndex("TermsOfPaymentId");
+
+                    b.ToTable("MarketRequisitionVendors");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.SourceInventoryRequisition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InventoryPurchaseRequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
+
+                    b.Property<DateTime?>("SentQuotationRequestAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("InventoryPurchaseRequisitionId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("SourceInventoryRequisitions");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.SourceInventoryRequisitionItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("SourceInventoryPurchaseRequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SourceInventoryRequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UoMId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("SourceInventoryRequisitionId");
+
+                    b.HasIndex("UoMId");
+
+                    b.ToTable("SourceInventoryRequisitionItem");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.JobRequests.JobRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("DateOfIssue")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DescriptionOfWork")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("EquipmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("IssuedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("PreferredCompletionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("EquipmentId");
+
+                    b.HasIndex("IssuedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("JobRequests");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.LeaveEntitlements.LeaveEntitlement", b =>
@@ -2558,7 +3394,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("LeaveStatus")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("LeaveTypeId")
+                    b.Property<Guid?>("LeaveTypeId")
                         .HasColumnType("uuid");
 
                     b.Property<int?>("PaidDays")
@@ -2857,6 +3693,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ResponseId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("ReviewDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -2886,6 +3725,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("MaterialId");
+
+                    b.HasIndex("ResponseId");
 
                     b.HasIndex("UserId");
 
@@ -2944,6 +3785,9 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("AllocatedQuantity")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid>("BatchManufacturingRecordId")
                         .HasColumnType("uuid");
 
@@ -2968,6 +3812,12 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("Loose")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("PackageStyleId")
                         .HasColumnType("uuid");
 
@@ -2979,6 +3829,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("character varying(1000)");
 
                     b.Property<decimal>("QuantityPerPack")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("QuantityReceived")
                         .HasColumnType("numeric");
 
                     b.Property<Guid?>("ToWarehouseId")
@@ -3219,10 +4072,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("ChecklistId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Code")
-                        .HasMaxLength(10000)
-                        .HasColumnType("character varying(10000)");
-
                     b.Property<decimal>("ConsumedQuantity")
                         .HasColumnType("numeric");
 
@@ -3443,6 +4292,55 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("WarehouseId");
 
                     b.ToTable("MaterialBatchReservedQuantities");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MaterialReject", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MaterialBatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000000)
+                        .HasColumnType("character varying(1000000)");
+
+                    b.Property<Guid>("ResponseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialBatchId");
+
+                    b.HasIndex("ResponseId");
+
+                    b.ToTable("MaterialRejects");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.Sr", b =>
@@ -3815,7 +4713,22 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("DestinationWarehouseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("MaterialBatchReservedQuantityId")
@@ -3824,9 +4737,18 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialReturnNoteId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedById");
+
                     b.HasIndex("DestinationWarehouseId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("MaterialBatchReservedQuantityId");
 
@@ -3841,7 +4763,22 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("DestinationWarehouseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("MaterialId")
@@ -3856,9 +4793,18 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedById");
+
                     b.HasIndex("DestinationWarehouseId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("MaterialId");
 
@@ -3910,6 +4856,116 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.ToTable("MaterialTypes");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Memos.Memo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Paid")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("Memos");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Memos.MemoItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MarketRequisitionVendorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MemoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("PricePerUnit")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("PurchasedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("UoMId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("VendorQuotationItemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MarketRequisitionVendorId");
+
+                    b.HasIndex("MemoId");
+
+                    b.HasIndex("UoMId");
+
+                    b.HasIndex("VendorQuotationItemId");
+
+                    b.ToTable("MemoItems");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Notifications.Notification", b =>
@@ -4010,6 +5066,12 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("ApprovalStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Approved")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Code")
                         .HasColumnType("text");
 
@@ -4060,6 +5122,67 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.ToTable("OvertimeRequests");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.OvertimeRequests.OvertimeRequestApproval", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ApprovalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovalTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("OvertimeRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("StageStartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovalId");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("OvertimeRequestId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("OvertimeRequestApprovals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Permissions.PermissionType", b =>
@@ -4410,6 +5533,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ResponseId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("ReviewDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -4445,6 +5571,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("ResponseId");
 
                     b.HasIndex("UserId");
 
@@ -4494,11 +5622,119 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("ProductStandardTestProcedures");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ProductionOrders.AllocateProductionOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Approved")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductionOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.ToTable("AllocateProductionOrders");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ProductionOrders.AllocateProductionOrderApprovals", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AllocateProductionOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApprovalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovalTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("StageStartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AllocateProductionOrderId");
+
+                    b.HasIndex("ApprovalId");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AllocateProductionOrderApprovals");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.ProductionOrders.ProductionOrder", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -4517,12 +5753,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("ProductionOrderCode")
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("TotalValue")
-                        .HasColumnType("numeric");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -6140,6 +7370,94 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("ProductSamplings");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ProformaInvoices.ProformaInvoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductionOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.ToTable("ProformaInvoices");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ProformaInvoices.ProformaInvoiceProduct", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProformaInvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ProformaInvoiceId");
+
+                    b.ToTable("ProformaInvoiceProducts");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BatchItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6791,6 +8109,52 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("UoMId");
 
                     b.ToTable("RevisedPurchaseOrderItem");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.RecoverableItemsReports.RecoverableItemReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("RecoverableItemReports");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
@@ -8374,6 +9738,57 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("StaffRequisitionApprovals");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.StockEntries.StockEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MemoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MemoId");
+
+                    b.ToTable("StockEntries");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.UniformityOfWeights.UniformityOfWeight", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8629,6 +10044,230 @@ namespace INFRASTRUCTURE.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.VendorQuotations.VendorQuotation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("ReceivedQuotation")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("SourceInventoryRequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("SourceInventoryRequisitionId");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("VendorQuotations");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.VendorQuotations.VendorQuotationItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeliveryMode")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("EstimatedDeliveryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("InventoryPurchaseOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("QuotedPrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("TermsOfPaymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UoMId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("VendorQuotationId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("TermsOfPaymentId");
+
+                    b.HasIndex("UoMId");
+
+                    b.HasIndex("VendorQuotationId");
+
+                    b.ToTable("VendorQuotationItems");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Vendors.Vendor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CountryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("Vendors");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Vendors.VendorItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("VendorItems");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedFinishedProduct", b =>
@@ -9463,6 +11102,10 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.AnalyticalTestRequest", b =>
                 {
+                    b.HasOne("DOMAIN.Entities.Users.User", "AcknowledgedBy")
+                        .WithMany()
+                        .HasForeignKey("AcknowledgedById");
+
                     b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
                         .WithMany()
                         .HasForeignKey("BatchManufacturingRecordId")
@@ -9487,17 +11130,35 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
+                        .WithMany()
+                        .HasForeignKey("ProductionActivityStepId");
+
                     b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
                         .WithMany()
                         .HasForeignKey("ProductionScheduleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Users.User", "ReleasedBy")
+                        .WithMany()
+                        .HasForeignKey("ReleasedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "SampledBy")
+                        .WithMany()
+                        .HasForeignKey("SampledById");
+
                     b.HasOne("DOMAIN.Entities.AnalyticalTestRequests.ProductState", "State")
                         .WithMany()
                         .HasForeignKey("StateId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "TestedBy")
+                        .WithMany()
+                        .HasForeignKey("TestedById");
+
+                    b.Navigation("AcknowledgedBy");
 
                     b.Navigation("BatchManufacturingRecord");
 
@@ -9509,9 +11170,17 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("Product");
 
+                    b.Navigation("ProductionActivityStep");
+
                     b.Navigation("ProductionSchedule");
 
+                    b.Navigation("ReleasedBy");
+
+                    b.Navigation("SampledBy");
+
                     b.Navigation("State");
+
+                    b.Navigation("TestedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.AnalyticalTestRequests.ProductState", b =>
@@ -10166,6 +11835,97 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.DamagedStocks.DamagedStock", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.DamagedStocks.DamagedStockBatch", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.DamagedStocks.DamagedStock", null)
+                        .WithMany("Batches")
+                        .HasForeignKey("DamagedStockId");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.DamagedStocks.DamagedStocksLog", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.DamagedStocks.DamagedStock", "DamagedStock")
+                        .WithMany()
+                        .HasForeignKey("DamagedStockId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("DamagedStock");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Departments.Department", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Departments.Department", "ParentDepartment")
@@ -10797,13 +12557,9 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("MaterialBatchId");
 
-                    b.HasOne("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", "MaterialSpecification")
+                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
-                        .HasForeignKey("MaterialSpecificationId");
-
-                    b.HasOne("DOMAIN.Entities.ProductSpecifications.ProductSpecification", "ProductSpecification")
-                        .WithMany()
-                        .HasForeignKey("ProductSpecificationId");
+                        .HasForeignKey("ProductionActivityStepId");
 
                     b.Navigation("BatchManufacturingRecord");
 
@@ -10819,9 +12575,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("MaterialBatch");
 
-                    b.Navigation("MaterialSpecification");
-
-                    b.Navigation("ProductSpecification");
+                    b.Navigation("ProductionActivityStep");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.ResponseApproval", b =>
@@ -10924,7 +12678,94 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Inventories.Inventory", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Invoices.Invoice", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.ProformaInvoices.ProformaInvoice", "ProformaInvoice")
+                        .WithMany()
+                        .HasForeignKey("ProformaInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ProformaInvoice");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ItemInventoryTransactions.ItemInventoryTransaction", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Memos.Memo", "Memo")
+                        .WithMany()
+                        .HasForeignKey("MemoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Memo");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ItemStockRequisitions.IssueItemStockRequisition", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.ItemStockRequisitions.ItemStockRequisition", "ItemStockRequisition")
+                        .WithMany()
+                        .HasForeignKey("ItemStockRequisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("ItemStockRequisition");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ItemStockRequisitions.ItemStockRequisition", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
@@ -10936,11 +12777,40 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Inventories.InventoryType", "InventoryType")
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
-                        .HasForeignKey("InventoryTypeId")
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("RequestedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Item", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.ItemCategory", "ItemCategory")
+                        .WithMany()
+                        .HasForeignKey("ItemCategoryId");
 
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
@@ -10958,9 +12828,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("CreatedBy");
 
-                    b.Navigation("Department");
-
-                    b.Navigation("InventoryType");
+                    b.Navigation("ItemCategory");
 
                     b.Navigation("LastDeletedBy");
 
@@ -10969,7 +12837,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("UnitOfMeasure");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Inventories.InventoryType", b =>
+            modelBuilder.Entity("DOMAIN.Entities.Items.ItemCategory", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
@@ -10984,6 +12852,316 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("LastUpdatedById");
 
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.ItemStockRequisitionItem", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.ItemStockRequisitions.ItemStockRequisition", "ItemStockRequisition")
+                        .WithMany("RequisitionItems")
+                        .HasForeignKey("ItemStockRequisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("ItemStockRequisition");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisitionItem", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", "InventoryPurchaseRequisition")
+                        .WithMany("Items")
+                        .HasForeignKey("InventoryPurchaseRequisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
+                        .WithMany()
+                        .HasForeignKey("UoMId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("InventoryPurchaseRequisition");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("UoM");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.MarketRequisition", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisitionItem", "InventoryPurchaseRequisitionItem")
+                        .WithMany()
+                        .HasForeignKey("InventoryPurchaseRequisitionItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
+                        .WithMany()
+                        .HasForeignKey("UoMId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("InventoryPurchaseRequisitionItem");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("UoM");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.MarketRequisitionVendor", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Requisitions.MarketRequisition", "MarketRequisition")
+                        .WithMany()
+                        .HasForeignKey("MarketRequisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Base.TermsOfPayment", "TermsOfPayment")
+                        .WithMany()
+                        .HasForeignKey("TermsOfPaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MarketRequisition");
+
+                    b.Navigation("TermsOfPayment");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.SourceInventoryRequisition", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", "InventoryPurchaseRequisition")
+                        .WithMany()
+                        .HasForeignKey("InventoryPurchaseRequisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Vendors.Vendor", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("InventoryPurchaseRequisition");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Vendor");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.SourceInventoryRequisitionItem", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Requisitions.SourceInventoryRequisition", "SourceInventoryRequisition")
+                        .WithMany("Items")
+                        .HasForeignKey("SourceInventoryRequisitionId");
+
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
+                        .WithMany()
+                        .HasForeignKey("UoMId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("SourceInventoryRequisition");
+
+                    b.Navigation("UoM");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.JobRequests.JobRequest", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Departments.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Products.Equipments.Equipment", "Equipment")
+                        .WithMany()
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "IssuedBy")
+                        .WithMany()
+                        .HasForeignKey("IssuedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Equipment");
+
+                    b.Navigation("IssuedBy");
 
                     b.Navigation("LastDeletedBy");
 
@@ -11033,9 +13211,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.LeaveTypes.LeaveType", "LeaveType")
                         .WithMany()
-                        .HasForeignKey("LeaveTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("LeaveTypeId");
 
                     b.Navigation("CreatedBy");
 
@@ -11212,6 +13388,10 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Forms.Response", "Response")
+                        .WithMany()
+                        .HasForeignKey("ResponseId");
+
                     b.HasOne("DOMAIN.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -11227,6 +13407,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Material");
+
+                    b.Navigation("Response");
 
                     b.Navigation("User");
                 });
@@ -11625,6 +13807,43 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Warehouse");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MaterialReject", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
+                        .WithMany()
+                        .HasForeignKey("MaterialBatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.Response", "Response")
+                        .WithMany()
+                        .HasForeignKey("ResponseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MaterialBatch");
+
+                    b.Navigation("Response");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.Sr", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -11858,11 +14077,23 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialReturnNoteFullReturn", b =>
                 {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
                     b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "DestinationWarehouse")
                         .WithMany()
                         .HasForeignKey("DestinationWarehouseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
 
                     b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatchReservedQuantity", "MaterialBatchReservedQuantity")
                         .WithMany()
@@ -11876,7 +14107,13 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("CreatedBy");
+
                     b.Navigation("DestinationWarehouse");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
 
                     b.Navigation("MaterialBatchReservedQuantity");
 
@@ -11885,11 +14122,23 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialReturnNotePartialReturn", b =>
                 {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
                     b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "DestinationWarehouse")
                         .WithMany()
                         .HasForeignKey("DestinationWarehouseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
 
                     b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
                         .WithMany()
@@ -11907,7 +14156,13 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("UoMId");
 
+                    b.Navigation("CreatedBy");
+
                     b.Navigation("DestinationWarehouse");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Material");
 
@@ -11935,6 +14190,84 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Memos.Memo", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Memos.MemoItem", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Requisitions.MarketRequisitionVendor", "MarketRequisitionVendor")
+                        .WithMany()
+                        .HasForeignKey("MarketRequisitionVendorId");
+
+                    b.HasOne("DOMAIN.Entities.Memos.Memo", "Memo")
+                        .WithMany("Items")
+                        .HasForeignKey("MemoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
+                        .WithMany()
+                        .HasForeignKey("UoMId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.VendorQuotations.VendorQuotationItem", "VendorQuotationItem")
+                        .WithMany()
+                        .HasForeignKey("VendorQuotationItemId");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MarketRequisitionVendor");
+
+                    b.Navigation("Memo");
+
+                    b.Navigation("UoM");
+
+                    b.Navigation("VendorQuotationItem");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Notifications.NotificationRead", b =>
@@ -12004,6 +14337,43 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.OvertimeRequests.OvertimeRequestApproval", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
+                        .WithMany()
+                        .HasForeignKey("ApprovalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById");
+
+                    b.HasOne("DOMAIN.Entities.OvertimeRequests.OvertimeRequest", "LeaveRequest")
+                        .WithMany("Approvals")
+                        .HasForeignKey("OvertimeRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Approval");
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("LeaveRequest");
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Procurement.Manufacturers.Manufacturer", b =>
@@ -12209,6 +14579,10 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Forms.Response", "Response")
+                        .WithMany()
+                        .HasForeignKey("ResponseId");
+
                     b.HasOne("DOMAIN.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -12224,6 +14598,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Product");
+
+                    b.Navigation("Response");
 
                     b.Navigation("User");
                 });
@@ -12257,6 +14633,146 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ProductionOrders.AllocateProductionOrder", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.ProductionOrders.ProductionOrder", "ProductionOrder")
+                        .WithMany()
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsMany("DOMAIN.Entities.ProductionOrders.AllocateProductionOrderProduct", "Products", b1 =>
+                        {
+                            b1.Property<Guid>("AllocateProductionOrderId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<Guid>("ProductId")
+                                .HasColumnType("uuid");
+
+                            b1.HasKey("AllocateProductionOrderId", "Id");
+
+                            b1.HasIndex("ProductId");
+
+                            b1.ToTable("AllocateProductionOrderProduct");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AllocateProductionOrderId");
+
+                            b1.HasOne("DOMAIN.Entities.Products.Product", "Product")
+                                .WithMany()
+                                .HasForeignKey("ProductId")
+                                .OnDelete(DeleteBehavior.Cascade)
+                                .IsRequired();
+
+                            b1.OwnsMany("DOMAIN.Entities.ProductionOrders.AllocateProductQuantity", "FulfilledQuantities", b2 =>
+                                {
+                                    b2.Property<Guid>("AllocateProductionOrderProductAllocateProductionOrderId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<int>("AllocateProductionOrderProductId")
+                                        .HasColumnType("integer");
+
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<Guid>("FinishedGoodsTransferNoteId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<decimal>("Quantity")
+                                        .HasColumnType("numeric");
+
+                                    b2.HasKey("AllocateProductionOrderProductAllocateProductionOrderId", "AllocateProductionOrderProductId", "Id");
+
+                                    b2.HasIndex("FinishedGoodsTransferNoteId");
+
+                                    b2.ToTable("AllocateProductQuantity");
+
+                                    b2.HasOne("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", "FinishedGoodsTransferNote")
+                                        .WithMany()
+                                        .HasForeignKey("FinishedGoodsTransferNoteId")
+                                        .OnDelete(DeleteBehavior.Cascade)
+                                        .IsRequired();
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("AllocateProductionOrderProductAllocateProductionOrderId", "AllocateProductionOrderProductId");
+
+                                    b2.Navigation("FinishedGoodsTransferNote");
+                                });
+
+                            b1.Navigation("FulfilledQuantities");
+
+                            b1.Navigation("Product");
+                        });
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ProductionOrder");
+
+                    b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ProductionOrders.AllocateProductionOrderApprovals", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.ProductionOrders.AllocateProductionOrder", "AllocateProductionOrder")
+                        .WithMany("Approvals")
+                        .HasForeignKey("AllocateProductionOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
+                        .WithMany()
+                        .HasForeignKey("ApprovalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById");
+
+                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("AllocateProductionOrder");
+
+                    b.Navigation("Approval");
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.ProductionOrders.ProductionOrder", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -12277,7 +14793,7 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.OwnsMany("DOMAIN.Entities.ProductionOrders.ProductionOrderProducts", "ProductionOrderProducts", b1 =>
+                    b.OwnsMany("DOMAIN.Entities.ProductionOrders.ProductionOrderProducts", "Products", b1 =>
                         {
                             b1.Property<Guid>("ProductionOrderId")
                                 .HasColumnType("uuid");
@@ -12287,6 +14803,9 @@ namespace INFRASTRUCTURE.Migrations
                                 .HasColumnType("integer");
 
                             NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<bool>("Fulfilled")
+                                .HasColumnType("boolean");
 
                             b1.Property<Guid>("ProductId")
                                 .HasColumnType("uuid");
@@ -12312,6 +14831,46 @@ namespace INFRASTRUCTURE.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("ProductionOrderId");
 
+                            b1.OwnsMany("DOMAIN.Entities.ProductionOrders.ProductionOrderProductQuantity", "FulfilledQuantities", b2 =>
+                                {
+                                    b2.Property<Guid>("ProductionOrderProductsProductionOrderId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<int>("ProductionOrderProductsId")
+                                        .HasColumnType("integer");
+
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<Guid>("FinishedGoodsTransferNoteId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<decimal>("Quantity")
+                                        .HasColumnType("numeric");
+
+                                    b2.HasKey("ProductionOrderProductsProductionOrderId", "ProductionOrderProductsId", "Id");
+
+                                    b2.HasIndex("FinishedGoodsTransferNoteId");
+
+                                    b2.ToTable("ProductionOrderProductQuantity");
+
+                                    b2.HasOne("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", "FinishedGoodsTransferNote")
+                                        .WithMany()
+                                        .HasForeignKey("FinishedGoodsTransferNoteId")
+                                        .OnDelete(DeleteBehavior.Cascade)
+                                        .IsRequired();
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ProductionOrderProductsProductionOrderId", "ProductionOrderProductsId");
+
+                                    b2.Navigation("FinishedGoodsTransferNote");
+                                });
+
+                            b1.Navigation("FulfilledQuantities");
+
                             b1.Navigation("Product");
                         });
 
@@ -12323,7 +14882,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("ProductionOrderProducts");
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.MarketType", b =>
@@ -12581,7 +15140,7 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.MarketType", "MarketType")
+                    b.HasOne("DOMAIN.Entities.Customers.Customer", "MarketType")
                         .WithMany()
                         .HasForeignKey("MarketTypeId");
 
@@ -13324,6 +15883,72 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ProformaInvoices.ProformaInvoice", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.ProductionOrders.ProductionOrder", "ProductionOrder")
+                        .WithMany()
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ProductionOrder");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ProformaInvoices.ProformaInvoiceProduct", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.ProformaInvoices.ProformaInvoice", "ProformaInvoice")
+                        .WithMany("Products")
+                        .HasForeignKey("ProformaInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("ProformaInvoice");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BatchItem", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -13738,6 +16363,35 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("RevisedPurchaseOrder");
 
                     b.Navigation("UoM");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.RecoverableItemsReports.RecoverableItemReport", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>
@@ -14758,6 +17412,43 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.StockEntries.StockEntry", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Memos.Memo", "Memo")
+                        .WithMany()
+                        .HasForeignKey("MemoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Memo");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.UniformityOfWeights.UniformityOfWeight", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -14833,6 +17524,168 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("DepartmentId");
 
                     b.Navigation("Department");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.VendorQuotations.VendorQuotation", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Requisitions.SourceInventoryRequisition", "SourceInventoryRequisition")
+                        .WithMany()
+                        .HasForeignKey("SourceInventoryRequisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Vendors.Vendor", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("SourceInventoryRequisition");
+
+                    b.Navigation("Vendor");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.VendorQuotations.VendorQuotationItem", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Base.TermsOfPayment", "TermsOfPayment")
+                        .WithMany()
+                        .HasForeignKey("TermsOfPaymentId");
+
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
+                        .WithMany()
+                        .HasForeignKey("UoMId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.VendorQuotations.VendorQuotation", "VendorQuotation")
+                        .WithMany("Items")
+                        .HasForeignKey("VendorQuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("TermsOfPayment");
+
+                    b.Navigation("UoM");
+
+                    b.Navigation("VendorQuotation");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Vendors.Vendor", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Countries.Country", "Country")
+                        .WithMany()
+                        .HasForeignKey("CountryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Currencies.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("Country");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Currency");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Vendors.VendorItem", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Items.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Vendors.Vendor", "Vendor")
+                        .WithMany("Items")
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Vendor");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedFinishedProduct", b =>
@@ -15341,6 +18194,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("MaterialBatches");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.DamagedStocks.DamagedStock", b =>
+                {
+                    b.Navigation("Batches");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Departments.Department", b =>
                 {
                     b.Navigation("Warehouses");
@@ -15384,6 +18242,21 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("MaterialBatches");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ItemStockRequisitions.ItemStockRequisition", b =>
+                {
+                    b.Navigation("RequisitionItems");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.SourceInventoryRequisition", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.LeaveRequests.LeaveRequest", b =>
                 {
                     b.Navigation("Approvals");
@@ -15419,8 +18292,15 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("PartialReturns");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Memos.Memo", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.OvertimeRequests.OvertimeRequest", b =>
                 {
+                    b.Navigation("Approvals");
+
                     b.Navigation("Employees");
                 });
 
@@ -15432,6 +18312,11 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.Supplier", b =>
                 {
                     b.Navigation("AssociatedManufacturers");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ProductionOrders.AllocateProductionOrder", b =>
+                {
+                    b.Navigation("Approvals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.MasterProductionSchedule", b =>
@@ -15479,6 +18364,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ResponsibleUsers");
 
                     b.Navigation("WorkCenters");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ProformaInvoices.ProformaInvoice", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.PurchaseOrders.BillingSheet", b =>
@@ -15560,6 +18450,16 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.UniformityOfWeights.UniformityOfWeight", b =>
                 {
                     b.Navigation("Responses");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.VendorQuotations.VendorQuotation", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Vendors.Vendor", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Warehouses.DistributedRequisitionMaterial", b =>
