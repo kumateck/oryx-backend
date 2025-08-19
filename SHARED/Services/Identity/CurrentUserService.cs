@@ -57,9 +57,9 @@ public class CurrentUserService : ICurrentUserService
 
             return tokenHandler.ValidateToken(token, parameters, out _);
         }
-        catch
+        catch(Exception ex)
         {
-            return null;
+            throw new SecurityTokenException("Invalid token", ex);
         }
     }
 
