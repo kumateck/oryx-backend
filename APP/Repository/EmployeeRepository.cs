@@ -184,7 +184,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
             var existingRoles = await userManager.GetRolesAsync(existingUser);
             await userManager.RemoveFromRolesAsync(existingUser, existingRoles);
-            await userManager.AddToRoleAsync(existingUser, role.DisplayName);
+            await userManager.AddToRoleAsync(existingUser, role.Name ?? string.Empty);
             await context.SaveChangesAsync();
 
             logger.LogInformation("Restored deleted user {UserId} and assigned role {Role}", existingUser.Id, role);
