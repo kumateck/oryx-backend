@@ -15,7 +15,6 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using OfficeOpenXml;
 using SHARED.Requests;
 
@@ -1675,7 +1674,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim();
-            var category = await context.MaterialCategories.FirstOrDefaultAsync(m => m.Name == categoryName);
+            var category = await context.MaterialCategories.FirstOrDefaultAsync(m => m.Name.Equals(categoryName, StringComparison.CurrentCultureIgnoreCase));
 
             if (category == null)
                 return UploadErrors.CategoryNotFound(categoryName);
