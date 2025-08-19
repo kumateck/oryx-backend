@@ -3,6 +3,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Identity;
 using SHARED;
 
 namespace API.Database.Seeds.TableSeeders;
@@ -12,14 +13,15 @@ public class DepartmentSeeder : ISeeder
     public void Handle(IServiceScope scope)
     {
         var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
+        var roleManager = scope.ServiceProvider.GetService<RoleManager<Role>>();
 
         if (dbContext != null)
         {
-            SeedDepartments(dbContext);
+            SeedDepartments(dbContext, roleManager);
         }
     }
 
-    private static void SeedDepartments(ApplicationDbContext dbContext)
+    private static void SeedDepartments(ApplicationDbContext dbContext, RoleManager<Role> roleManager)
     {
         var requiredRoles = new List<Role>
         {
@@ -29,7 +31,8 @@ public class DepartmentSeeder : ISeeder
                 NormalizedName = RoleUtils.ProductionManger.Normalize(),
                 DisplayName = RoleUtils.ProductionManger,
                 Type = DepartmentType.Production,
-                IsManager = true
+                IsManager = true,
+                CreatedAt = DateTime.UtcNow
             },
             new()
             {
@@ -37,7 +40,8 @@ public class DepartmentSeeder : ISeeder
                 NormalizedName = RoleUtils.WarehouseManger.Normalize(),
                 DisplayName = RoleUtils.WarehouseManger,
                 Type = DepartmentType.Production,
-                IsManager = true
+                IsManager = true,
+                CreatedAt = DateTime.UtcNow
             },
             new()
             {
@@ -45,7 +49,8 @@ public class DepartmentSeeder : ISeeder
                 NormalizedName = RoleUtils.QaManager.Normalize(),
                 DisplayName = RoleUtils.QaManager,
                 Type = DepartmentType.NonProduction,
-                IsManager = true
+                IsManager = true,
+                CreatedAt = DateTime.UtcNow
             },
             new()
             {
@@ -53,7 +58,8 @@ public class DepartmentSeeder : ISeeder
                 NormalizedName = RoleUtils.QcManager.Normalize(),
                 DisplayName = RoleUtils.QcManager,
                 Type = DepartmentType.NonProduction,
-                IsManager = true
+                IsManager = true,
+                CreatedAt = DateTime.UtcNow
             },
             new()
             {
@@ -61,7 +67,8 @@ public class DepartmentSeeder : ISeeder
                 NormalizedName = RoleUtils.HrManager.Normalize(),
                 DisplayName = RoleUtils.HrManager,
                 Type = DepartmentType.NonProduction,
-                IsManager = true
+                IsManager = true,
+                CreatedAt = DateTime.UtcNow
             },
             new()
             {
@@ -69,13 +76,15 @@ public class DepartmentSeeder : ISeeder
                 NormalizedName = RoleUtils.LogisticsManager.Normalize(),
                 DisplayName = RoleUtils.LogisticsManager,
                 Type = DepartmentType.NonProduction,
-                IsManager = true
+                IsManager = true,
+                CreatedAt = DateTime.UtcNow
             }
         };
 
         foreach (var role in requiredRoles.Where(role => !dbContext.Roles.Any(r => r.Name == role.Name)))
         {
-            dbContext.Roles.Add(role);
+            var roleResult = roleManager.CreateAsync(role).GetAwaiter().GetResult();
+            if (!roleResult.Succeeded) continue;
             dbContext.SaveChanges();
         }
         
