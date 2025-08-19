@@ -1767,7 +1767,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 break;
             
             case nameof(OvertimeRequest):
-                await CreateLeaveRequestApprovals(modelId, approvalStages, approval);
+                await CreateOvertimeRequestApprovals(modelId, approvalStages, approval);
                 break;
             
             case nameof(Response):
@@ -1852,6 +1852,24 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         }).ToList();
 
         await context.LeaveRequestApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();
+    }
+    
+    private async Task CreateOvertimeRequestApprovals(Guid overtimeRequestId, List<ApprovalStage> stages, Approval approval)
+    {
+        var approvals = stages.Select(stage => new OvertimeRequestApproval
+        {
+            Required = stage.Required,
+            Order = stage.Order,
+            OvertimeRequestId = overtimeRequestId,
+            CreatedAt = DateTime.UtcNow,
+            ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+        }).ToList();
+
+        await context.OvertimeRequestApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
     

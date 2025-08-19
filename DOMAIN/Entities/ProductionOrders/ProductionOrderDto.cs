@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Products;
 using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
@@ -15,7 +16,7 @@ public class ProductionOrderDto : BaseDto
 
 public class ProductionOrderProductsDto
 {
-    public CollectionItemDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public int TotalOrderQuantity { get; set; }
     public decimal VolumePerPiece { get; set; }
     public decimal TotalVolume { get; set; }
