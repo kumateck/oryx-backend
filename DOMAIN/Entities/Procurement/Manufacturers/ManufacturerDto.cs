@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Countries;
+using DOMAIN.Entities.Materials;
 using SHARED;
 
 namespace DOMAIN.Entities.Procurement.Manufacturers;
@@ -17,5 +18,5 @@ public class ManufacturerDto : BaseDto
 
 public class ManufacturerMaterialDto 
 {
-    public CollectionItemDto Material { get; set; }
+    public MaterialDto Material { get; set; }
 }
