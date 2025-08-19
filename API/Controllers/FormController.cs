@@ -235,16 +235,16 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="materialBatchId">The ID of the material batch.</param>
     /// <param name="productionActivityStepId">The id of the production activity step</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("generate-certificate/{materialBatchId}/{productionActivityStepId}")]
+    [HttpPost("generate-certificate/{materialBatchId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid productionActivityStepId)
+    public async Task<IResult> GenerateCertificateOfAnalysis(Guid materialBatchId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GenerateCertificateOfAnalysis(materialBatchId, productionActivityStepId,Guid.Parse(userId));
+        var result = await repository.GenerateCertificateOfAnalysis(materialBatchId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
