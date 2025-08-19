@@ -378,6 +378,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UploadProducts(IFormFile file)
@@ -398,6 +399,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("bom/upload")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UploadProductBom(IFormFile file)
@@ -418,6 +420,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("packages/upload")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UploadProductPackages(IFormFile file)
