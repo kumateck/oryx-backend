@@ -394,6 +394,9 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .Include(r => r.FormField)
             .ThenInclude(r => r.Question)
             .ThenInclude(r => r.Options)
+            .Include(r => r.FormField)
+            .ThenInclude(f => f.FormSection)
+            .Include(f => f.CreatedBy)
             .Where(fr => fr.Response.MaterialBatchId == materialBatchId)
             .ToListAsync();
 
