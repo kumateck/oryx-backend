@@ -4,6 +4,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.DamagedStocks;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.ItemTransactionLogs;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -24,16 +25,6 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
         if (item.AvailableQuantity < request.QuantityDamaged)
             return Error.Validation("Quantity.ExceedsStock", "Damaged quantity exceeds available stock");
 
-        if (item.HasBatch)
-        {
-            if (request.Batches == null || request.Batches.Count == 0)
-                return Error.Validation("Batches.Required", "Batch details are required for this item.");
-
-            var totalBatchQty = request.Batches.Sum(b => b.Quantity);
-            if (totalBatchQty != request.QuantityDamaged)
-                return Error.Validation("Batches.QuantityMismatch", "Total batch quantity must equal damaged quantity.");
-        }
-
         await using var transaction = await context.Database.BeginTransactionAsync();
 
         try
@@ -47,30 +38,29 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
             stock.Id = Guid.NewGuid();
             stock.CreatedAt = DateTime.UtcNow;
 
-            // Add batches if applicable
-            if (item.HasBatch && request.Batches.Count != 0)
-            {
-                stock.Batches = request.Batches.Select(b => new DamagedStockBatch
-                {
-                    Id = Guid.NewGuid(),
-                    BatchNumber = b.BatchNumber,
-                    Quantity = b.Quantity,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList();
-            }
-
             await context.DamagedStocks.AddAsync(stock);
-            
-            var log = new DamagedStocksLog
-            {
-                Id = Guid.NewGuid(),
-                DamagedStockId = stock.Id,
-                UserId = userId,
-                TimeStamp = DateTime.UtcNow
-            };
-            await context.DamagedStocksLogs.AddAsync(log);
 
             await context.SaveChangesAsync();
+            
+            var itemTransaction = await context.ItemTransactionLogs
+                .OrderByDescending(i => i.CreatedAt)
+                .FirstOrDefaultAsync(i => i.ItemCode == item.Code);
+            
+            if (itemTransaction == null) return Error.Validation("Invalid.Action", "Item balance is not valid");
+
+            var itemTransactionLog = new ItemTransactionLog
+            {
+                Id = Guid.NewGuid(),
+                ItemCode = item.Code,
+                TransactionType = "Missing/Damaged Stock",
+                Credit = 0,
+                Debit = request.QuantityDamaged,
+                TotalBalance = itemTransaction.TotalBalance - request.QuantityDamaged
+            };
+            
+            await context.ItemTransactionLogs.AddAsync(itemTransactionLog);
+            await context.SaveChangesAsync();
+            
             await transaction.CommitAsync();
 
             return stock.Id;
@@ -102,7 +92,7 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
             }
         }
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,  entity => mapper.Map<DamagedStockDto>(entity, opts =>
-            opts.Items[AppConstants.ModelType] = nameof(DamagedStockDto)));
+            opts.Items[AppConstants.ModelType] = nameof(DamagedStock)));
     }
 
     public async Task<Result<DamagedStockDto>> GetDamagedStock(Guid id)
@@ -121,9 +111,7 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result> UpdateDamagedStocks(Guid id, CreateDamagedStockRequest request, Guid userId)
     {
         var damagedStock = await context.DamagedStocks
-            .AsSplitQuery()
             .Include(d => d.Item)
-            .Include(d => d.Batches)
             .FirstOrDefaultAsync(ds => ds.Id == id);
 
         if (damagedStock == null)
@@ -132,8 +120,7 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
         var currentQtyDamaged = damagedStock.QuantityDamaged;
         var newQtyDamaged = request.QuantityDamaged;
         var difference = newQtyDamaged - currentQtyDamaged;
-
-        // Adjust item stock
+        
         switch (difference)
         {
             case < 0:
@@ -145,49 +132,35 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
                 damagedStock.Item.AvailableQuantity -= difference;
                 break;
         }
-
-        // Update basic damaged stock fields
+        
         mapper.Map(request, damagedStock);
-
-        // Handle batch items
-        if (damagedStock.Item.HasBatch)
-        {
-            if (request.Batches == null || request.Batches.Count == 0)
-                return Error.Validation("Batches.Required", "Batch details are required for this item.");
-
-            var totalBatchQty = request.Batches.Sum(b => b.Quantity);
-            if (totalBatchQty != newQtyDamaged)
-                return Error.Validation("Batches.QuantityMismatch", "Total batch quantity must equal damaged quantity.");
-
-            // Remove old batch records
-            context.DamagedStockBatch.RemoveRange(damagedStock.Batches);
-
-            // Add new batch records
-            damagedStock.Batches = request.Batches.Select(b => new DamagedStockBatch
-            {
-                Id = Guid.NewGuid(),
-                BatchNumber = b.BatchNumber,
-                Quantity = b.Quantity,
-                CreatedAt = DateTime.UtcNow
-            }).ToList();
-        }
 
         await using var transaction = await context.Database.BeginTransactionAsync();
 
         try
         {
-            // Update damaged stock and item
             context.DamagedStocks.Update(damagedStock);
             context.Items.Update(damagedStock.Item);
             
-            var log = new DamagedStocksLog
+            var lastTransaction = await context.ItemTransactionLogs
+                .Where(i => i.ItemCode == damagedStock.Item.Code)
+                .OrderByDescending(i => i.CreatedAt) 
+                .FirstOrDefaultAsync();
+            
+            var previousBalance = lastTransaction?.TotalBalance ?? damagedStock.Item.AvailableQuantity + difference;
+            
+            var itemTransactionLog = new ItemTransactionLog
             {
                 Id = Guid.NewGuid(),
-                DamagedStockId = damagedStock.Id,
-                UserId = userId,
-                TimeStamp = DateTime.UtcNow
+                ItemCode = damagedStock.Item.Code,
+                Credit = 0,
+                Debit = difference > 0 ? difference : 0,
+                TransactionType = "Missing/Damaged Stock",
+                TotalBalance = previousBalance - (difference > 0 ? difference : 0),
+                CreatedAt = DateTime.UtcNow
             };
-            await context.DamagedStocksLogs.AddAsync(log);
+
+            context.ItemTransactionLogs.Add(itemTransactionLog);
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -200,7 +173,6 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
             return Error.Failure("DamagedStock.UpdateFailed", ex.Message);
         }
     }
-
     public async Task<Result> DeleteDamagedStocks(Guid id, Guid userId)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
@@ -209,22 +181,12 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
         {
             var damagedStock = await context.DamagedStocks
                 .Include(ds => ds.Item)
-                .Include(ds => ds.Batches)
                 .FirstOrDefaultAsync(ds => ds.Id == id);
 
             if (damagedStock == null)
                 return Error.NotFound("DamagedStock.NotFound", "Damaged stock not found");
-            if (damagedStock.Item.HasBatch && damagedStock.Batches.Count != 0)
-            {
-                
-                var totalBatchQty = damagedStock.Batches.Sum(b => b.Quantity);
-                damagedStock.Item.AvailableQuantity += totalBatchQty;
-                context.DamagedStockBatch.RemoveRange(damagedStock.Batches);
-            }
-            else
-            {
-                damagedStock.Item.AvailableQuantity += damagedStock.QuantityDamaged;
-            }
+            
+            damagedStock.Item.AvailableQuantity += damagedStock.QuantityDamaged;
 
             context.Items.Update(damagedStock.Item);
             
@@ -232,14 +194,20 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
             damagedStock.DeletedAt = DateTime.UtcNow;
             context.DamagedStocks.Update(damagedStock);
             
-            var log = new DamagedStocksLog
+            var lastTransaction = await context.ItemTransactionLogs
+                .OrderByDescending(i => i.CreatedAt) // make sure you sort by time or PK
+                .FirstOrDefaultAsync(i => i.ItemCode == damagedStock.Item.Code);
+
+            var newTransaction = new ItemTransactionLog
             {
                 Id = Guid.NewGuid(),
-                DamagedStockId = damagedStock.Id,
-                UserId = userId,
-                TimeStamp = DateTime.UtcNow
+                ItemCode = damagedStock.Item.Code,
+                Credit = damagedStock.QuantityDamaged,
+                Debit = 0,
+                TotalBalance = (lastTransaction?.TotalBalance ?? 0) + damagedStock.QuantityDamaged,
             };
-            await context.DamagedStocksLogs.AddAsync(log);
+
+            await context.ItemTransactionLogs.AddAsync(newTransaction);
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
