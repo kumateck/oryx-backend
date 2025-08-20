@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices.JavaScript;
-using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Products.Equipments;

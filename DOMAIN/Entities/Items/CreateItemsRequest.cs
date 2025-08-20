@@ -15,8 +15,6 @@ public class CreateItemsRequest
     
     [Required(ErrorMessage = "Unit of measure is required")] 
     public Guid UnitOfMeasureId { get; set; }
-    
-    public bool HasBatchNumber { get; set; }
 
     public int MinimumLevel { get; set; }
     public int MaximumLevel { get; set; }

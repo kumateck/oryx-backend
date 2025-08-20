@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.Items;
 
 namespace DOMAIN.Entities.RecoverableItemsReports;
 

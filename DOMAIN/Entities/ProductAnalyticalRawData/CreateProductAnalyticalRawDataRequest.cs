@@ -4,7 +4,7 @@ namespace DOMAIN.Entities.ProductAnalyticalRawData;
 
 public class CreateProductAnalyticalRawDataRequest
 {
-    [Required] public string SpecNumber { get; set; }
+    public string SpecNumber { get; set; }
     
     [Required] public Stage Stage { get; set; }
     
