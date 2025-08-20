@@ -15,7 +15,6 @@ public class CreateInventoryPurchaseRequisition
 
 public class CreateInventoryPurchaseRequisitionItem
 {
-    public Guid InventoryPurchaseRequisitionId { get; set; }
     public Guid ItemId { get; set; }
     public Guid UoMId { get; set; }
     public decimal Quantity { get; set; }
