@@ -53,6 +53,9 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
                 .ThenInclude(ps => ps.Sections)
                 .ThenInclude(ps => ps.Instrument)
                 .Include(ps => ps.CreatedBy)
+                .Include(m => m.Response)
+                .ThenInclude(r => r.FormResponses)
+                .ThenInclude(r => r.FormField)
                 .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")

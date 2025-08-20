@@ -20,7 +20,6 @@ public class MaterialSpecificationDto : BaseDto
     public UserDto User { get; set; }
     public Guid MaterialAnalyticalRawDataId { get; set; }
     public MaterialAnalyticalRawDataDto MaterialAnalyticalRawData { get; set; }
-    public Guid MaterialId { get; set; }
     public MaterialDto Material { get; set; }
     public ResponseDto Response { get; set; }
 }
