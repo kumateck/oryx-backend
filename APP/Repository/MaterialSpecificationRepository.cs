@@ -59,6 +59,9 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .ThenInclude(ps => ps.Sections)
             .ThenInclude(ps => ps.Instrument)
             .Include(ms => ms.CreatedBy)
+            .Include(m => m.Response)
+            .ThenInclude(r => r.FormResponses)
+            .ThenInclude(r => r.FormField)
             .FirstOrDefaultAsync(ps => ps.Id == id);
         
         return materialSpec is null ? 
