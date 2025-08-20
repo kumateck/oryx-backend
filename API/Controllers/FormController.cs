@@ -233,7 +233,6 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Generates the Certificate of Analysis for a given material batch.
     /// </summary>
     /// <param name="materialBatchId">The ID of the material batch.</param>
-    /// <param name="productionActivityStepId">The id of the production activity step</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("generate-certificate/{materialBatchId}")]
     [Authorize]
@@ -298,7 +297,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    /*/// <summary>
+    /// <summary>
     /// Gets form response by batch manufacturing record ID.
     /// </summary>
     /// <param name="materialSpecificationId">The ID of the material spec.</param>
@@ -326,7 +325,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     {
         var result = await repository.GetFormResponseByProductSpecification(productSpecificationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }*/
+    }
     
     
     /// <summary>
