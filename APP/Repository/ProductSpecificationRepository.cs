@@ -67,9 +67,19 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
     {
         var productSpec = await context.ProductSpecifications
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(ps => ps.Product)
             .Include(ps => ps.Form)
+            .ThenInclude(ps => ps.Sections)
+            .ThenInclude(ps => ps.Fields)
+            .ThenInclude(ps => ps.Question)
+            .Include(ps => ps.Form)
+            .ThenInclude(ps => ps.Sections)
+            .ThenInclude(ps => ps.Instrument)
             .Include(ps => ps.CreatedBy)
+            .Include(m => m.Response)
+            .ThenInclude(r => r.FormResponses)
+            .ThenInclude(r => r.FormField)
             .Where(ps => !ps.DeletedAt.HasValue)
             .FirstOrDefaultAsync(ps => ps.ProductId == productId);
         return productSpec is null ? 

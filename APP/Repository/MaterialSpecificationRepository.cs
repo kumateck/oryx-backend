@@ -75,8 +75,16 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
+            .ThenInclude(ps => ps.Sections)
+            .ThenInclude(ps => ps.Fields)
+            .ThenInclude(ps => ps.Question)
+            .Include(ps => ps.Form)
+            .ThenInclude(ps => ps.Sections)
+            .ThenInclude(ps => ps.Instrument)
             .Include(ms => ms.CreatedBy)
-            .Include(ms => ms.Response).ThenInclude(rr => rr.FormResponses)
+            .Include(m => m.Response)
+            .ThenInclude(r => r.FormResponses)
+            .ThenInclude(r => r.FormField)
             .FirstOrDefaultAsync(ps => ps.MaterialId == materialId);
         return materialSpec is null ? 
             Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
