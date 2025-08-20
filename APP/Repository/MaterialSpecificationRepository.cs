@@ -62,6 +62,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Include(m => m.Response)
             .ThenInclude(r => r.FormResponses)
             .ThenInclude(r => r.FormField)
+            .ThenInclude(f => f.FormSection)
             .FirstOrDefaultAsync(ps => ps.Id == id);
         
         return materialSpec is null ? 
@@ -100,6 +101,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Include(m => m.Response)
             .ThenInclude(r => r.FormResponses)
             .ThenInclude(r => r.FormField)
+            .ThenInclude(f => f.FormSection)
             .FirstOrDefaultAsync(ps => ps.MaterialId == materialId);
         return materialSpec is null ? 
             Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
