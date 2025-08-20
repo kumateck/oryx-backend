@@ -186,7 +186,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
             var existingRoles = await userManager.GetRolesAsync(existingUser);
             await userManager.RemoveFromRolesAsync(existingUser, existingRoles);
-            await userManager.AddToRoleAsync(existingUser, role.DisplayName);
+            await userManager.AddToRoleAsync(existingUser, role.Name ?? string.Empty);
             await context.SaveChangesAsync();
 
             logger.LogInformation("Restored deleted user {UserId} and assigned role {Role}", existingUser.Id, role);
@@ -353,7 +353,7 @@ public class EmployeeRepository(ApplicationDbContext context,
     
     public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(EmployeeStatus? activeStatus,
         int page, int pageSize,
-        string searchQuery = null, string designation = null, string department = null)
+        string searchQuery = null, string designation = null, string department = null, bool? isNotUser = null)
     {
         var query = context.Employees
             .Include(e => e.Department)
@@ -371,12 +371,12 @@ public class EmployeeRepository(ApplicationDbContext context,
                 q => q.GhanaCardNumber);
         }
         
-        if (!string.IsNullOrWhiteSpace(designation))
+        if (!string.IsNullOrEmpty(designation))
         {
             query = query.WhereSearch(designation, q => q.Designation.Name);
         }
 
-        if (!string.IsNullOrWhiteSpace(department))
+        if (!string.IsNullOrEmpty(department))
         {
             query = query.WhereSearch(department, q => q.Department.Name);
         }
@@ -384,6 +384,11 @@ public class EmployeeRepository(ApplicationDbContext context,
         if (activeStatus.HasValue)
         {
             query = query.Where(e => e.Status == activeStatus);
+        }
+
+        if (isNotUser.HasValue && isNotUser.Value)
+        {
+            query = query.Where(e => !context.Users.Any(u => u.Email == e.Email));
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

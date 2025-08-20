@@ -1610,7 +1610,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim().ToLower();
-            var category = context.MaterialCategories.FirstOrDefault(m => m.Name != null && m.Name.ToLower() == categoryName);
+            var category = context.MaterialCategories.FirstOrDefault(m => m.Name != null && m.Name.Trim().ToLower() == categoryName);
             string pharmacopoeia = null;
 
             try
@@ -1674,7 +1674,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             var categoryName = worksheet.Cells[row, headers["Category"]].Text.Trim();
-            var category = await context.MaterialCategories.FirstOrDefaultAsync(m => m.Name == categoryName);
+            var category = await context.MaterialCategories.FirstOrDefaultAsync(m => m.Name.Equals(categoryName, StringComparison.CurrentCultureIgnoreCase));
 
             if (category == null)
                 return UploadErrors.CategoryNotFound(categoryName);

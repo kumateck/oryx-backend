@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using SHARED;
 
 namespace DOMAIN.Entities.BillOfMaterials;
@@ -14,7 +15,7 @@ public class BillOfMaterialDto
 public class BillOfMaterialItemDto
 {
     public Guid Id { get; set; }
-    public CollectionItemDto Material { get; set; }
+    public MaterialDto Material { get; set; }
     public CollectionItemDto MaterialType { get; set; }
     public bool IsSubstitutable { get; set; } 
     public string Grade { get; set; }
