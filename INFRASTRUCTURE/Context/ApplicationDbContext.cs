@@ -1070,15 +1070,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 (a.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
 
         modelBuilder.Entity<WarehouseLocation>().HasQueryFilter(a =>
-            !a.DeletedAt.HasValue && a.Warehouse != null && !a.Warehouse.DeletedAt.HasValue);
+            ShouldNotFilterProducts || 
+            (a.Warehouse != null && a.Warehouse.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
 
         modelBuilder.Entity<WarehouseLocationRack>().HasQueryFilter(a =>
-            !a.DeletedAt.HasValue && a.WarehouseLocation != null && !a.WarehouseLocation.DeletedAt.HasValue);
+            ShouldNotFilterProducts || 
+            (a.WarehouseLocation != null && a.WarehouseLocation.Warehouse != null 
+                                         && a.WarehouseLocation.Warehouse.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
 
         modelBuilder.Entity<WarehouseLocationShelf>().HasQueryFilter(a =>
-            !a.DeletedAt.HasValue && a.WarehouseLocationRack != null && !a.WarehouseLocationRack.DeletedAt.HasValue);
+            ShouldNotFilterProducts || 
+            (a.WarehouseLocationRack != null && a.WarehouseLocationRack.WarehouseLocation != null && a.WarehouseLocationRack.WarehouseLocation.Warehouse != null
+                                         && a.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
+        
         modelBuilder.Entity<WarehouseArrivalLocation>().HasQueryFilter(a =>
-            !a.DeletedAt.HasValue && a.Warehouse != null && !a.Warehouse.DeletedAt.HasValue);
+            ShouldNotFilterProducts || 
+            (a.Warehouse != null && a.Warehouse.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
 
         modelBuilder.Entity<MaterialItemDistribution>().HasQueryFilter(a => a.ShipmentInvoiceItem != null);
 
