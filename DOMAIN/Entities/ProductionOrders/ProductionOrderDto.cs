@@ -28,7 +28,6 @@ public class ProductionOrderProductsDto
 
 public class ProductionOrderProductQuantityDto
 {
-    public FinishedGoodsListTransferNoteDto FinishedGoodsTransferNote { get; set; }
     public decimal Quantity { get; set; }
 }
 

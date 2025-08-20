@@ -52,6 +52,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery, WarehouseType? type)
     {
         var query = context.Warehouses
+            .AsSplitQuery()
             .Include(w => w.Locations)
             .ThenInclude(wl=>wl.Racks)
             .ThenInclude(r=>r.Shelves)
@@ -170,6 +171,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(int page, int pageSize, string searchQuery)
     {
         var query = context.WarehouseLocations
+            .AsSplitQuery()
             .Include(r => r.Warehouse)
             .Include(wl=>wl.Racks)
             .ThenInclude(r=>r.Shelves)
@@ -198,7 +200,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     
     public async Task<Result<List<WarehouseLocationDto>>>  GetWarehouseLocations()
     {
-        return mapper.Map<List<WarehouseLocationDto>>(await context.WarehouseLocations.Include(r => r.Warehouse)
+        return mapper.Map<List<WarehouseLocationDto>>(await context.WarehouseLocations
+            .AsSplitQuery()
+            .Include(r => r.Warehouse)
             .Include(wl=>wl.Racks)
             .ThenInclude(r=>r.Shelves)
             .ThenInclude(s=>s.MaterialBatches)
@@ -434,6 +438,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<WarehouseLocationShelfDto>> GetWarehouseLocationShelf(Guid shelfId)
     {
         var shelf = await context.WarehouseLocationShelves
+            .AsSplitQuery()
             .Include(s => s.WarehouseLocationRack).ThenInclude(s => s.WarehouseLocation)
             .Include(w=>w.MaterialBatches)
             .ThenInclude(smb=>smb.MaterialBatch)
@@ -451,6 +456,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetWarehouseLocationShelves(int page, int pageSize, string searchQuery)
     {
         var query = context.WarehouseLocationShelves
+            .AsSplitQuery()
             .Include(s => s.WarehouseLocationRack)
             .ThenInclude(s => s.WarehouseLocation).ThenInclude(s => s.Warehouse)
             .Include(w=>w.MaterialBatches)
@@ -672,6 +678,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId)
     {
         var checklist = await context.Checklists
+            .AsSplitQuery()
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.Checklist)
             .ThenInclude(cl=>cl.Manufacturer)
@@ -724,6 +731,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterials(List<Guid> distributedMaterialIds)
     {
         var checklists = await context.Checklists
+            .AsSplitQuery()
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.Checklist)
             .ThenInclude(cl=>cl.Manufacturer)
@@ -860,6 +868,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
     {
         var query = context.BinCardInformation
+            .AsSplitQuery()
             .Include(bci => bci.MaterialBatch)
             .ThenInclude(mb => mb.Material)
             .Include(bci => bci.Product)
@@ -905,6 +914,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialId)
     {
         var query =  context.WarehouseLocationShelves
+            .AsSplitQuery()
             .Include(s=>s.WarehouseLocationRack)
             .ThenInclude(r=>r.WarehouseLocation)
             .Include(s => s.MaterialBatches)
@@ -929,6 +939,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByRackId(int page, int pageSize, string searchQuery, Guid rackId)
     {
         var query = context.WarehouseLocationShelves
+            .AsSplitQuery()
             .Include(s => s.WarehouseLocationRack)
             .ThenInclude(r => r.WarehouseLocation)
             .Include(s => s.MaterialBatches)
@@ -953,6 +964,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialBatchId)
     {
         var query =  context.WarehouseLocationShelves
+            .AsSplitQuery()
             .Include(s=>s.WarehouseLocationRack)
             .ThenInclude(r=>r.WarehouseLocation)
             .Include(s => s.MaterialBatches)
@@ -977,6 +989,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize, string searchQuery,Guid warehouseId)
     {
         var query =  context.WarehouseLocationShelves
+            .AsSplitQuery()
             .Include(s=>s.WarehouseLocationRack)
             .ThenInclude(r=>r.WarehouseLocation)
             .Include(s => s.MaterialBatches)
