@@ -1,6 +1,7 @@
 using APP.IRepository;
 using AutoMapper;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.ItemTransactionLogs;
 using DOMAIN.Entities.RecoverableItemsReports;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,25 @@ public class RecoverableItemReportRepository(ApplicationDbContext context, IMapp
         // item.AvailableQuantity -= request.Quantity;
         // context.Items.Update(item);
         // await context.SaveChangesAsync();
+        
+        var itemTransaction = await context.ItemTransactionLogs
+            .OrderByDescending(i => i.CreatedAt)
+            .LastOrDefaultAsync(i => i.ItemCode == item.Code);
+            
+        if (itemTransaction == null) return Error.Validation("Invalid.Action", "Item balance is not valid");
+        
+        var itemTransactionLog = new ItemTransactionLog
+        {
+            Id = Guid.NewGuid(),
+            ItemCode = item.Code,
+            Credit = 0,
+            TransactionType = "Missing/Damaged Stock",
+            Debit = request.Quantity,
+            TotalBalance = itemTransaction.TotalBalance - request.Quantity
+        };
+            
+        await context.ItemTransactionLogs.AddAsync(itemTransactionLog);
+        await context.SaveChangesAsync();
         
         var report = mapper.Map<RecoverableItemReport>(request);
         await context.RecoverableItemReports.AddAsync(report);

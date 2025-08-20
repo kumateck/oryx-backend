@@ -33,6 +33,7 @@ using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemStockRequisitions;
+using DOMAIN.Entities.ItemTransactionLogs;
 using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
@@ -1053,7 +1054,6 @@ public class OryxMapper : Profile
         CreateMap<CreateDamagedStockRequest, DamagedStock>();
         CreateMap<DamagedStock, DamagedStockDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
-        CreateMap<DamagedStocksLog, DamagedStockLogDto>();
      
 
         #endregion
@@ -1074,6 +1074,12 @@ public class OryxMapper : Profile
 
         CreateMap<CreateJobRequest, JobRequest>();
         CreateMap<JobRequest, JobRequestDto>();
+
+        #endregion
+
+        #region Item Transaction Reports
+
+        CreateMap<ItemTransactionLog, ItemTransactionLogDto>();
 
         #endregion
     }

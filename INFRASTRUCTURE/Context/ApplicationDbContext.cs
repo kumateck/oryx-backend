@@ -29,6 +29,7 @@ using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.ItemInventoryTransactions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Items.Requisitions;
+using DOMAIN.Entities.ItemTransactionLogs;
 using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.LeaveRequests;
@@ -618,8 +619,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     #region Damaged Stocks
     public DbSet<DamagedStock> DamagedStocks { get; set; }
-    public DbSet<DamagedStockBatch> DamagedStockBatch { get; set; }
-    public DbSet<DamagedStocksLog> DamagedStocksLogs { get; set; }
 
     #endregion
 
@@ -639,6 +638,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<JobRequest> JobRequests { get; set; }
 
     #endregion
+
+    #region Item Transaction Logs
+
+    public DbSet<ItemTransactionLog> ItemTransactionLogs { get; set; }
+
+    #endregion
+    
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     // {
