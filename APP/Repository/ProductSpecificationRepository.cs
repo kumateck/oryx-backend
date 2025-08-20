@@ -27,6 +27,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
     public async Task<Result<Paginateable<IEnumerable<ProductSpecificationDto>>>> GetProductSpecifications(int page, int pageSize, string searchQuery)
     {
         var query = context.ProductSpecifications
+            .AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(ps => ps.Form)
             .Include(ps => ps.Product)
@@ -41,11 +42,20 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
     {
 
         var productSpec = await context.ProductSpecifications
+                .AsSplitQuery()
                 .IgnoreQueryFilters()
                 .Include(ps => ps.Product)
                 .Include(ps => ps.Form)
+                .ThenInclude(ps => ps.Sections)
+                .ThenInclude(ps => ps.Fields)
+                .ThenInclude(ps => ps.Question)
+                .Include(ps => ps.Form)
+                .ThenInclude(ps => ps.Sections)
+                .ThenInclude(ps => ps.Instrument)
                 .Include(ps => ps.CreatedBy)
-                .Where(ps => !ps.DeletedAt.HasValue)
+                .Include(m => m.Response)
+                .ThenInclude(r => r.FormResponses)
+                .ThenInclude(r => r.FormField)
                 .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
