@@ -1150,12 +1150,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<Form>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<FormSection>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<FormField>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<FormField>().HasQueryFilter(a => 
+            !a.FormSection.DeletedAt.HasValue && !a.DeletedAt.HasValue);
         modelBuilder.Entity<FormAssignee>()
             .HasQueryFilter(a => !a.User.DeletedAt.HasValue && !a.Form.DeletedAt.HasValue);
         modelBuilder.Entity<FormReviewer>()
             .HasQueryFilter(a => !a.User.DeletedAt.HasValue && !a.Form.DeletedAt.HasValue);
-        modelBuilder.Entity<FormResponse>().HasQueryFilter(a => !a.FormField.DeletedAt.HasValue);
+        modelBuilder.Entity<FormResponse>().HasQueryFilter(a =>
+            a.FormField != null && !a.FormField.DeletedAt.HasValue);
         modelBuilder.Entity<Response>().HasQueryFilter(a => !a.Form.DeletedAt.HasValue);
 
         modelBuilder.Entity<Question>().HasQueryFilter(a => !a.DeletedAt.HasValue);

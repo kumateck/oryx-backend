@@ -176,7 +176,7 @@ public class BatchToSupply
 
 public class MaterialBatchReservedQuantityDto : BaseDto
 {
-    public MaterialBatchDto MaterialBatch { get; set; }
+    public MaterialBatchListDto MaterialBatch { get; set; }
     public CollectionItemDto Warehouse { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }

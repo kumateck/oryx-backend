@@ -850,6 +850,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         var warehouse = await context.Warehouses
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(w => w.Id == context.WarehouseLocationShelves
                 .FirstOrDefault(s => s.Id == request.ShelfMaterialBatches.First().WarehouseLocationShelfId)
                 .WarehouseLocationRack.WarehouseLocation.Warehouse.Id);
