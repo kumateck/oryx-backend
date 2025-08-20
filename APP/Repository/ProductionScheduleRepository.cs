@@ -2503,7 +2503,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
     public async Task<Result> ReturnLeftOverStockAfterProductionEnds(Guid productionScheduleId, Guid productId, List<PartialMaterialToReturn> returns)
     {
-        var product = await context.Products.IgnoreQueryFilters()
+        var product = await context.Products
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -2538,8 +2539,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var partialReturns = returns.Select(r => new MaterialReturnNotePartialReturn
         {
             MaterialId = r.MaterialId,
+            
             UoMId = r.UoMId,
             Quantity = r.Quantity,
+            MaterialBatchId = context.MaterialBatchReservedQuantities
+                .IgnoreQueryFilters()
+                .FirstOrDefault(mb => mb.MaterialBatch.MaterialId == r.MaterialId &&
+                                      mb.WarehouseId == productionWarehouse.Id && mb.ProductId == productId &&
+                                      mb.ProductionScheduleId == productionScheduleId)?.MaterialBatchId,
             DestinationWarehouseId =
                 context.Materials.FirstOrDefault(m => m.Id == r.MaterialId)?.Kind == MaterialKind.Raw
                     ? rawStorageWarehouse.Id
@@ -2581,19 +2588,24 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
     public async Task<Result<MaterialReturnNoteDto>> GetMaterialReturnNoteById(Guid materialReturnNoteId)
     {
-        return mapper.Map<MaterialReturnNoteDto>(await context.MaterialReturnNotes
+        var materialReturnNote = await context.MaterialReturnNotes
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(m => m.Product)
             .Include(m => m.ProductionSchedule)
             .Include(m => m.FullReturns)
-            .ThenInclude(mf => mf.MaterialBatchReservedQuantity)
+                .ThenInclude(mf => mf.MaterialBatchReservedQuantity)
             .Include(m => m.FullReturns)
-            .ThenInclude(mf => mf.DestinationWarehouse)
+                .ThenInclude(mf => mf.DestinationWarehouse)
             .Include(m => m.PartialReturns)
-            .ThenInclude(mp => mp.Material)
+                .ThenInclude(mp => mp.Material)
             .Include(m => m.PartialReturns)
-            .ThenInclude(mp => mp.DestinationWarehouse)
-            .FirstOrDefaultAsync(m => m.Id == materialReturnNoteId));
+                .ThenInclude(mp => mp.DestinationWarehouse)
+            .Include(m => m.PartialReturns)
+                .ThenInclude(mp => mp.MaterialBatch)
+            .FirstOrDefaultAsync(m => m.Id == materialReturnNoteId);
+        
+        return mapper.Map<MaterialReturnNoteDto>(materialReturnNote);
     }
 
     public async Task<Result> CompleteMaterialReturn(Guid materialReturnNoteId)

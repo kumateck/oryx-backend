@@ -9,6 +9,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
+using SHARED;
 
 namespace DOMAIN.Entities.Materials.Batch;
 
@@ -185,6 +186,24 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public string QarNumber { get; set; }
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public ProductionActivityStepDto ProductionActivityStep { get; set; }
+    public bool IsApproved { get; set; }
+    public decimal Loose { get; set; }
+    public decimal AllocatedQuantity { get; set; }
+    public decimal RemainingQuantity { get; set; }
+}
+
+public class FinishedGoodsListTransferNoteDto : BaseDto
+{
+    public string TransferNoteNumber { get; set; }
+    public CollectionItemDto FromWarehouse { get; set; }
+    public CollectionItemDto ToWarehouse { get; set; }
+    public decimal QuantityPerPack { get; set; }
+    public PackageStyleDto PackageStyle { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public decimal QuantityReceived { get; set; }
+    public string Notes { get; set; }
+    public string QarNumber { get; set; }
     public bool IsApproved { get; set; }
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }

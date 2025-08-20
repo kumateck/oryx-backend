@@ -16,7 +16,7 @@ public class ProductionOrderDto : BaseDto
 
 public class ProductionOrderProductsDto
 {
-    public ProductListDto Product { get; set; }
+    public CollectionItemDto Product { get; set; }
     public int TotalOrderQuantity { get; set; }
     public decimal VolumePerPiece { get; set; }
     public decimal TotalVolume { get; set; }
@@ -28,7 +28,6 @@ public class ProductionOrderProductsDto
 
 public class ProductionOrderProductQuantityDto
 {
-    public FinishedGoodsTransferNoteDto FinishedGoodsTransferNote { get; set; }
     public decimal Quantity { get; set; }
 }
 
