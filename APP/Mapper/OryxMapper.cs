@@ -645,6 +645,7 @@ public class OryxMapper : Profile
         CreateMap<PackageStyle, PackageStyleDto>();
         CreateMap<FinishedGoodsTransferNote, FinishedGoodsTransferNoteDto>()
             .ForMember(dest => dest.PackageStyle, opt => opt.MapFrom(src => src.PackageStyle));
+        CreateMap<FinishedGoodsTransferNote, FinishedGoodsListTransferNoteDto>();
 
         CreateMap<ProductionActivity, ProductionActivityDto>();
         CreateMap<ProductionActivity, ProductionActivityListDto>();
