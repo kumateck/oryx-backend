@@ -56,7 +56,6 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
                 .Include(m => m.Response)
                 .ThenInclude(r => r.FormResponses)
                 .ThenInclude(r => r.FormField)
-                .ThenInclude(f => f.FormSection)
                 .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
@@ -81,7 +80,6 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Include(m => m.Response)
             .ThenInclude(r => r.FormResponses)
             .ThenInclude(r => r.FormField)
-            .ThenInclude(f => f.FormSection)
             .Where(ps => !ps.DeletedAt.HasValue)
             .FirstOrDefaultAsync(ps => ps.ProductId == productId);
         return productSpec is null ? 
