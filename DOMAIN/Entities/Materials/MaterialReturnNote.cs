@@ -37,6 +37,8 @@ public class MaterialReturnNotePartialReturn : BaseEntity
     public MaterialReturnNote MaterialReturnNote { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
     public decimal Quantity { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
@@ -65,6 +67,7 @@ public class MaterialReturnNoteFullReturnDto
 public class MaterialReturnNotePartialReturnDto
 {
     public MaterialDto Material { get; set; }
+    public MaterialBatchListDto MaterialBatch { get; set; }
     public decimal Quantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public CollectionItemDto DestinationWarehouse { get; set; }
