@@ -32,9 +32,9 @@ public interface IFormRepository
   //      Guid productSpecificationId);
    Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(Guid materialBatchId);
    Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByBmr(Guid batchManufacturingRecordId);
-   // Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(
-   //     Guid materialSpecificationId);
-   // Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(
-   //     Guid productSpecificationId);
+    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(
+        Guid materialSpecificationId);
+    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(
+        Guid productSpecificationId);
    Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid productionActivityStepId, Guid userId);
 }

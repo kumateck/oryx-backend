@@ -387,6 +387,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId)
     {
         var formResponse = await context.FormResponses
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.Response)
@@ -406,6 +407,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(Guid batchManufacturingRecordId)
     {
         var formResponse = await context.FormResponses
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.Response)
@@ -419,9 +421,13 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<List<FormResponseDto>>(formResponse, opt => opt.Items[AppConstants.ModelType]  = typeof(FormResponse));
     }
     
-    /*public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(Guid materialSpecificationId)
+    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(Guid materialSpecificationId)
     {
+        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(m => m.Id == materialSpecificationId);
+        if (materialSpec is null) return Error.NotFound("Material.Spec", "Material Specification not found");
+        
         var formResponse = await context.FormResponses
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.Response)
@@ -429,7 +435,10 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .Include(r => r.FormField)
             .ThenInclude(r => r.Question)
             .ThenInclude(r => r.Options)
-            .Where(fr => fr.Response.MaterialSpecificationId == materialSpecificationId)
+            .Include(r => r.FormField)
+            .ThenInclude(f => f.FormSection)
+            .Include(f => f.CreatedBy)
+            .Where(fr => fr.ResponseId == materialSpec.ResponseId)
             .ToListAsync();
 
         return mapper.Map<List<FormResponseDto>>(formResponse, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
@@ -437,7 +446,10 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(Guid productSpecificationId)
     {
+        var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(p => p.Id == productSpecificationId);
+        if(productSpec is null) return Error.NotFound("Product.Spec",  "Product specification not found");
         var formResponse = await context.FormResponses
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.Response)
@@ -445,14 +457,15 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .Include(r => r.FormField)
             .ThenInclude(r => r.Question)
             .ThenInclude(r => r.Options)
-            .Where(fr => fr.Response.ProductSpecificationId == productSpecificationId)
+            .Include(r => r.FormField)
+            .ThenInclude(f => f.FormSection)
+            .Include(f => f.CreatedBy)
+            .Where(fr => fr.ResponseId == productSpec.ResponseId)
             .ToListAsync();
 
         return mapper.Map<List<FormResponseDto>>(formResponse, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
-    }*/
+    }
     
-    
-
 
     public async Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId)
     {
