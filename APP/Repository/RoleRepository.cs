@@ -61,7 +61,7 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
     {
         var newRole = new Role
         {
-            Name = request.Name,
+            Name = request.Name.Trim(),
             DisplayName = request.Name.Trim().Capitalize(),
             CreatedById = userId,
             Type = request.Type,
