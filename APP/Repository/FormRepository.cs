@@ -52,6 +52,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         var query = context.Forms
             .AsSplitQuery()
             .OrderByDescending(f => f.CreatedAt)
+            .Include(f => 
+                f.Sections.OrderByDescending(s => s.Order))
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(filter.SearchQuery))
