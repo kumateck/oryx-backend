@@ -29,7 +29,7 @@ public class GeneralAttendanceReportDto
 
 public class GeneralSystemReport
 {
-    public List<SystemGeneraltaffCountDto> Departments { get; set; }
+    public List<SystemGeneralStaffCountDto> Departments { get; set; }
     public SystemGeneralStats Totals { get; set; }
 
 }
@@ -55,7 +55,7 @@ public class SystemGeneralStats
     public int NumberOfCasualSuspensions { get; set; }
 }
 
-public class SystemGeneraltaffCountDto : SystemGeneralStats
+public class SystemGeneralStaffCountDto : SystemGeneralStats
 {
     public string Department { get; set; }
 }
