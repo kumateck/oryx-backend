@@ -19,6 +19,7 @@ public class MaterialReturnNote : BaseEntity
     public MaterialReturnStatus Status { get; set; }
     public List<MaterialReturnNoteFullReturn> FullReturns { get; set; } = [];
     public List<MaterialReturnNotePartialReturn> PartialReturns { get; set; } = [];
+    public bool IsFullReturn => FullReturns.Count > 0;
 }
 
 public class MaterialReturnNoteFullReturn : BaseEntity
@@ -29,6 +30,7 @@ public class MaterialReturnNoteFullReturn : BaseEntity
     public MaterialBatchReservedQuantity MaterialBatchReservedQuantity { get; set; }
     public Guid DestinationWarehouseId { get; set; }
     public Warehouse DestinationWarehouse { get; set; }
+    public bool Returned { get; set; }
 }
 
 public class MaterialReturnNotePartialReturn : BaseEntity
@@ -44,6 +46,7 @@ public class MaterialReturnNotePartialReturn : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public Guid DestinationWarehouseId { get; set; }
     public Warehouse DestinationWarehouse { get; set; }
+    public bool Returned { get; set; }
 }
 
 public class MaterialReturnNoteDto : BaseDto
@@ -55,13 +58,14 @@ public class MaterialReturnNoteDto : BaseDto
     public MaterialReturnStatus Status { get; set; }
     public List<MaterialReturnNoteFullReturnDto> FullReturns { get; set; } = [];
     public List<MaterialReturnNotePartialReturnDto> PartialReturns { get; set; } = [];
-    public bool IsFullReturn => FullReturns.Count > 0;
+    public bool IsFullReturn { get; set; }
 }
 
 public class MaterialReturnNoteFullReturnDto
 {
     public MaterialBatchReservedQuantityDto MaterialBatchReservedQuantity { get; set; }
     public CollectionItemDto DestinationWarehouse { get; set; }
+    public bool Returned { get; set; }
 }
 
 public class MaterialReturnNotePartialReturnDto
@@ -71,6 +75,7 @@ public class MaterialReturnNotePartialReturnDto
     public decimal Quantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public CollectionItemDto DestinationWarehouse { get; set; }
+    public bool Returned { get; set; }
 }
 
 public class PartialMaterialToReturn
@@ -78,10 +83,11 @@ public class PartialMaterialToReturn
     public Guid MaterialId { get; set; }
     public Guid? UoMId { get; set; }
     public decimal Quantity { get; set; }
+    public bool Returned { get; set; }
 }
 
 public enum MaterialReturnStatus
 {
-    Pending, 
-    Completed
+    Pending = 0, 
+    Completed = 1
 }

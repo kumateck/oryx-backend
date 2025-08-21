@@ -905,13 +905,75 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (request.MaterialReturnNoteId.HasValue)
         {
-            var materialReturnNote = await context.MaterialReturnNotes.FirstOrDefaultAsync(m => m.Id == request.MaterialReturnNoteId.Value);
-            if(materialReturnNote  is null) return Error.NotFound("MaterialReturnNote.NotFound",  $"MaterialReturnNote with ID {request.MaterialReturnNoteId.Value} not found");
-            materialReturnNote.Status = MaterialReturnStatus.Completed;
-            context.MaterialReturnNotes.Update(materialReturnNote);
+            var materialReturnNote = await context.MaterialReturnNotes
+                .AsSplitQuery()
+                .IgnoreQueryFilters()
+                .Include(m => m.FullReturns)
+                .Include(m => m.PartialReturns)
+                .FirstOrDefaultAsync(m => m.Id == request.MaterialReturnNoteId.Value);
+
+            if (materialReturnNote is null) return Error.NotFound("Material.Return", "Material return note not found");
+
+            if (materialReturnNote.IsFullReturn)
+            {
+                var materialReturnNoteFullReturn = await context.MaterialReturnNoteFullReturns
+                    .AsSplitQuery()
+                    .Include(m => m.MaterialBatchReservedQuantity)
+                    .FirstOrDefaultAsync(m => m.MaterialBatchReservedQuantity.MaterialBatchId == request.MaterialBatchId);
+
+                if (materialReturnNoteFullReturn is not null)
+                {
+                    materialReturnNoteFullReturn.Returned = true;
+                    context.MaterialReturnNoteFullReturns.Update(materialReturnNoteFullReturn);
+                }
+            }
+            else
+            {
+                var materialReturnNotePartialReturn = await context.MaterialReturnNotePartialReturns
+                    .AsSplitQuery()
+                    .FirstOrDefaultAsync(m => m.MaterialBatchId == request.MaterialBatchId);
+
+                if (materialReturnNotePartialReturn is not null)
+                {
+                    materialReturnNotePartialReturn.Returned = true;
+                    context.MaterialReturnNotePartialReturns.Update(materialReturnNotePartialReturn);
+                }
+            }
         }
         
         await context.SaveChangesAsync();
+
+        if (request.MaterialReturnNoteId.HasValue)
+        {
+            var materialReturnNote = await context.MaterialReturnNotes
+                .AsSplitQuery()
+                .IgnoreQueryFilters()
+                .Include(m => m.FullReturns)
+                .Include(m => m.PartialReturns)
+                .FirstOrDefaultAsync(m => m.Id == request.MaterialReturnNoteId.Value);
+
+            if (materialReturnNote is not null)
+            {
+                if (materialReturnNote.IsFullReturn)
+                {
+                    if (materialReturnNote.FullReturns.All(f => f.Returned))
+                    {
+                        materialReturnNote.Status = MaterialReturnStatus.Completed;
+                        context.MaterialReturnNotes.Update(materialReturnNote);
+                    }
+                }
+                else
+                {
+                    if (!materialReturnNote.PartialReturns.All(f => f.Returned))
+                    {
+                        materialReturnNote.Status = MaterialReturnStatus.Completed;
+                        context.MaterialReturnNotes.Update(materialReturnNote);
+                    }
+                }
+
+                await context.SaveChangesAsync();
+            }
+        }
         return Result.Success();
     }
     
