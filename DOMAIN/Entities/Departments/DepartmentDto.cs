@@ -14,3 +14,13 @@ public class DepartmentDto : BaseDto
     public bool IsBeta => Name == "Beta";
     public CollectionItemDto ParentDepartment { get; set; }
 }
+
+public class DepartmentListDto : BaseDto
+{ 
+    public string Code { get; set; }
+    public string Name { get; set; }
+    public DepartmentType Type { get; set; }
+    public string Description { get; set; }
+    public bool IsBeta => Name == "Beta";
+    public CollectionItemDto ParentDepartment { get; set; }
+}
