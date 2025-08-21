@@ -964,7 +964,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 }
                 else
                 {
-                    if (!materialReturnNote.PartialReturns.All(f => f.Returned))
+                    if (materialReturnNote.PartialReturns.All(f => f.Returned))
                     {
                         materialReturnNote.Status = MaterialReturnStatus.Completed;
                         context.MaterialReturnNotes.Update(materialReturnNote);
