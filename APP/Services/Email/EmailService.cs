@@ -10,8 +10,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
     public void SendMail(string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
         var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "emailapikey";
-        var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? "wSsVR61/8hKmWK8vzzL/dehpmVpSUQijF0t50VWkuCX8TP2W9MdvlEPLUASkSfkaGWdqEDpB8b57zRsC1mVbjoh+yFpSDSiF9mqRe1U4J3x17qnvhDzJWGRZlRKPLYoMxQpvn2BpFs0i+g==";
-        
+        var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
         try
         {
             var message = new MimeMessage();
