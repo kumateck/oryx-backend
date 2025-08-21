@@ -55,10 +55,15 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     public async Task<IResult> UploadFile(string modelType, Guid modelId, 
       [FromForm] List<IFormFile> files)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        var userIdString = (string)HttpContext.Items["Sub"];
+        Guid? userId = null;
 
-        var result = await fileRepository.SaveBlobItem(modelType, modelId, files, Guid.Parse(userId));
+        if (Guid.TryParse(userIdString, out var parsed))
+        {
+            userId = parsed;
+        }
+
+        var result = await fileRepository.SaveBlobItem(modelType, modelId, files, userId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
