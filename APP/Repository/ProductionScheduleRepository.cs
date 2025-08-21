@@ -994,6 +994,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
         transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
+        transferNote.FromWarehouseId = productionWarehouse.Id;
         context.FinishedGoodsTransferNotes.Add(transferNote);
 
         var movement = new FinishedProductBatchMovement
@@ -1274,7 +1275,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.Product)
             .Include(tn => tn.PackageStyle)
-            .Where(p => p.BatchManufacturingRecord.ProductId == productId)
+            .Where(p => p.BatchManufacturingRecord.ProductId == productId && p.IsApproved)
             .ToListAsync();
 
         return mapper.Map<List<FinishedGoodsTransferNoteDto>>(finishedGoods);

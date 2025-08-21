@@ -190,6 +190,7 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
     public decimal RemainingQuantity { get; set; }
+    public decimal PendingAllocatedQuantity { get; set; }
 }
 
 public class FinishedGoodsListTransferNoteDto : BaseDto
