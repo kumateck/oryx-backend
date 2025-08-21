@@ -58,7 +58,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
         return Result.Success();
     }
 
-    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, List<IFormFile> files, Guid userId)
+    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, List<IFormFile> files, Guid?  userId)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
