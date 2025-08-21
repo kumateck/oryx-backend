@@ -351,6 +351,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             return UserErrors.WarehouseNotFound(kind);
         
         var query = await context.WarehouseLocationRacks
+            .AsSplitQuery()
             .Include(r => r.WarehouseLocation)
             .Include(r=>r.Shelves)
             .ThenInclude(s=>s.MaterialBatches)
