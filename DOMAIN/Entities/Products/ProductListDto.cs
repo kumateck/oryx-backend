@@ -29,9 +29,10 @@ public class ProductListDto
     public UnitOfMeasureDto BaseUoM { get; set; }
     public UnitOfMeasureDto BasePackingUoM { get; set; }
     public EquipmentDto Equipment { get; set; }
-    public DepartmentDto Department { get; set; }
+    public CollectionItemDto Department { get; set; }
     public DateTime CreatedAt { get; set; }
     public decimal Price { get; set; }
     public Division Division { get; set; }
     public int PackPerShipper { get; set; }
-    public string LabelClaim { get; set; } }
+    public string LabelClaim { get; set; }
+}
