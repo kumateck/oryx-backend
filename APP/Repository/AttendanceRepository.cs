@@ -276,12 +276,11 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
 
             departmentReports.Add(summary);
         }
-
-        // ✅ System-Wide Stats (Yellow Section)
+        
         var departmentStats = groupedByDepartment.Select(group =>
         {
             var deptName = group.Key;
-            return new SystemGeneraltaffCountDto
+            return new SystemGeneralStaffCountDto
             {
                 Department = deptName,
                 NumberOfPermanentLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
@@ -323,7 +322,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         return Result.Success(new GeneralAttendanceReportResponse
         {
             DepartmentReports = departmentReports,
-            SystemStatistics = new StaffGenderRatioReport
+            SystemStatistics = new GeneralSystemReport
             {
                 Departments = departmentStats,
                 Totals = systemStats
