@@ -51,11 +51,12 @@ public class AllocateProductQuantityRequest
 }
 
 
-public class AllocateProductionOrderDto
+public class AllocateProductionOrderDto : BaseDto
 {
     public ProductionOrderDto ProductionOrder { get; set; }
     public bool Approved { get; set; }
     public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
+    public DateTime? DeliveredAt { get; set; }
     
 }
 

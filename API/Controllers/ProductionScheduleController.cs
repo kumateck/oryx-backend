@@ -1179,6 +1179,19 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetProductAllocation(allocatedProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Mark a product allocation as delivered
+    /// </summary>
+    [HttpGet("allocate-products/deliver/{allocatedProductId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> MarkProductAllocationAsDelivered([FromRoute]  Guid allocatedProductId)
+    {
+        var result = await repository.MarkProductAllocationAsDelivered(allocatedProductId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     #endregion
 

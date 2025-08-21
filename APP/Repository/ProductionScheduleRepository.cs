@@ -1343,6 +1343,18 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         );
     }
     
+    public async Task<Result> MarkProductAllocationAsDelivered(Guid id)
+    {
+        var productAllocation = await context.AllocateProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productAllocation == null) return Error.NotFound("Product.Allocation", "Product allocation not found");
+        
+        productAllocation.DeliveredAt = DateTime.UtcNow;
+        context.AllocateProductionOrders.Update(productAllocation);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
     public async Task<Result> ValidateProductAllocation(AllocateProductionOrderRequest request)
     {
         // 1) Load the production order + products (as no-tracking; we're not persisting here)

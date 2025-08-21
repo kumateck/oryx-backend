@@ -49,6 +49,7 @@ public class AllocateProductionOrder : BaseEntity
     public List<AllocateProductionOrderProduct> Products { get; set; } = [];
     public bool Approved { get; set; }
     public List<AllocateProductionOrderApprovals> Approvals { get; set; } = [];
+    public DateTime? DeliveredAt { get; set; }
 }
 
 [Owned]
