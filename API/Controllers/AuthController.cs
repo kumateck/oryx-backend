@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Email;
 using DOMAIN.Entities.Auth;
 using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
@@ -10,7 +11,7 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/auth")]
 [ApiController]
-public class AuthController(IAuthRepository repo) : ControllerBase
+public class AuthController(IAuthRepository repo, EmailService emailService) : ControllerBase
 {
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LoginResponse))]
     [AllowAnonymous]
@@ -18,6 +19,7 @@ public class AuthController(IAuthRepository repo) : ControllerBase
     public async Task<IResult> Login([FromBody] LoginRequest request)
     {
         var response = await repo.Login(request);
+        emailService.SendMail("anthonygyan@gmail.com", "test email","hi testing email", []);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
     
