@@ -1227,6 +1227,31 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             {
                 Product = mapper.Map<ProductListDto>(item.Key),
                 TotalQuantity = item.Sum(p => p.QuantityReceived),
+                TotalRemainingQuantity = item.Sum(p => p.RemainingQuantity),
+                QuantityPerPack = item.Select(p => p.QuantityPerPack).First(),
+                TotalLoose = item.Sum(p => p.Loose),
+            }).ToList();
+    }
+    
+    public async Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProduct(Guid productId)
+    {
+        var productsQuery = context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(tn => tn.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(tn => tn.PackageStyle)
+            .Where(p => p.IsApproved && p.BatchManufacturingRecord.ProductId == productId)
+            .AsQueryable();
+        
+        var products = await productsQuery.ToListAsync();
+        
+        return products
+            .GroupBy(p => p.BatchManufacturingRecord.Product)
+            .Select(item => new ApprovedProductDto
+            {
+                Product = mapper.Map<ProductListDto>(item.Key),
+                TotalQuantity = item.Sum(p => p.QuantityReceived),
+                TotalRemainingQuantity = item.Sum(p => p.RemainingQuantity),
                 QuantityPerPack = item.Select(p => p.QuantityPerPack).First(),
                 TotalLoose = item.Sum(p => p.Loose),
             }).ToList();
