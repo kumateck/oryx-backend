@@ -60,7 +60,7 @@ public class MaterialReturnNoteDto : BaseDto
 
 public class MaterialReturnNoteFullReturnDto
 {
-    public MaterialBatchReservedQuantityDto BatchReservedQuantity { get; set; }
+    public MaterialBatchReservedQuantityDto MaterialBatchReservedQuantity { get; set; }
     public CollectionItemDto DestinationWarehouse { get; set; }
 }
 

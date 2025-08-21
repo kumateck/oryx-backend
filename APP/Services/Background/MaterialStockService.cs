@@ -68,7 +68,7 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
                     }
                 }
                 
-                foreach (var material in materialBelowMinimumStockLevel)
+                /*foreach (var material in materialBelowMinimumStockLevel)
                 {
                     notificationQueue.Enqueue(($"Material {material.Material.Code} is below minimum stock level", NotificationType.MaterialBelowMinStock, material.DepartmentId, []));
                 }
@@ -81,7 +81,7 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
                 foreach (var material in materialAtReorderStockLevel)
                 {
                     notificationQueue.Enqueue(($"Material {material.Material.Code} stock is at reorder stock level", NotificationType.MaterialReachedReorderLevel, material.DepartmentId, []));
-                }
+                }*/
             }
             catch (Exception e)
             {
