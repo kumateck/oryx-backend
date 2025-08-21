@@ -604,6 +604,7 @@ public class InventoryProcurementRepository(
 
         memoItem.PurchasedAt = purchasedAt ?? DateTime.UtcNow;
         context.MemoItems.Update(memoItem);
+        await context.SaveChangesAsync();
 
         var stockEntry = new StockEntry
         {
@@ -640,7 +641,6 @@ public class InventoryProcurementRepository(
         context.StockEntries.Update(stockEntry);
         await context.SaveChangesAsync();
         
-        //TODO: add transaction
         var lastTransaction = await context.ItemTransactionLogs
             .OrderByDescending(i => i.CreatedAt) 
             .FirstOrDefaultAsync(i => i.ItemCode == stockEntry.Item.Code);
