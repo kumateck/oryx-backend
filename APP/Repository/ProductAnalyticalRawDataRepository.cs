@@ -69,7 +69,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             pageSize,
             entity => mapper.Map<ProductAnalyticalRawDataDto>(entity, opts =>
             {
-                opts.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawDataDto);
+                opts.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
             }));
     }
 
