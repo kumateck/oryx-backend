@@ -1209,7 +1209,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
        
     }
 
-    public async Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts()
+    public async Task<Result<IEnumerable<ApprovedProductDto>>>  GetApprovedProducts()
     {
         var productsQuery = context.FinishedGoodsTransferNotes
             .AsSplitQuery()
@@ -1227,9 +1227,44 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             {
                 Product = mapper.Map<ProductListDto>(item.Key),
                 TotalQuantity = item.Sum(p => p.QuantityReceived),
+                TotalRemainingQuantity = item.Sum(p => p.RemainingQuantity),
                 QuantityPerPack = item.Select(p => p.QuantityPerPack).First(),
                 TotalLoose = item.Sum(p => p.Loose),
             }).ToList();
+    }
+    
+    public async Task<Result<ApprovedProductDetailDto>> GetApprovedProduct(Guid productId)
+    {
+        var productsQuery = context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .Include(tn => tn.BatchManufacturingRecord)
+            .ThenInclude(b => b.Product)
+            .Include(tn => tn.PackageStyle)
+            .Where(p => p.IsApproved && p.BatchManufacturingRecord.ProductId == productId)
+            .AsQueryable();
+    
+        var products = await productsQuery.ToListAsync();
+        if (products.Count == 0)
+            return Error.Failure("Product.Empty", "No approved products found for this productId.");
+
+        // get details
+        var finishedGoodsTransferNoteResult = await GetApprovedProductDetails(productId);
+        if (finishedGoodsTransferNoteResult.IsFailure) 
+            return finishedGoodsTransferNoteResult.Errors;
+
+        var grouped = products.GroupBy(p => p.BatchManufacturingRecord.Product).First();
+
+        var dto = new ApprovedProductDetailDto
+        {
+            Product = mapper.Map<ProductListDto>(grouped.Key),
+            TotalQuantity = grouped.Sum(p => p.QuantityReceived),
+            TotalRemainingQuantity = grouped.Sum(p => p.RemainingQuantity),
+            QuantityPerPack = grouped.Select(p => p.QuantityPerPack).First(),
+            TotalLoose = grouped.Sum(p => p.Loose),
+            FinishedGoodsTransferNotes = finishedGoodsTransferNoteResult.Value.ToList()
+        };
+
+        return dto;
     }
     
     public async Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId)
