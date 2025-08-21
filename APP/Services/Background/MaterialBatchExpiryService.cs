@@ -14,21 +14,28 @@ public class MaterialBatchExpiryService(IServiceScopeFactory scopeFactory, Concu
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = scopeFactory.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            var monthAgo = DateTime.UtcNow.AddMonths(-1);
-            
-            var expiredBatches = await dbContext.MaterialBatches
-                .Where(l => l.ExpiryDate < monthAgo)
-                .ToListAsync(stoppingToken);
-
-            foreach (var batch in expiredBatches)
+            try
             {
-                notificationQueue.Enqueue(($"Material batch {batch.BatchNumber} expires at {batch.ExpiryDate:dd MMMM yyyy}", NotificationType.ExpiredMaterial,null, []));
-            }
+                using var scope = scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                var monthAgo = DateTime.UtcNow.AddMonths(-1);
+
+                var expiredBatches = await dbContext.MaterialBatches
+                    .Where(l => l.ExpiryDate < monthAgo)
+                    .ToListAsync(stoppingToken);
+
+                foreach (var batch in expiredBatches)
+                {
+                    notificationQueue.Enqueue(($"Material batch {batch.BatchNumber} expires at {batch.ExpiryDate:dd MMMM yyyy}", NotificationType.ExpiredMaterial,null, []));
+                }
             
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
     }
 }
