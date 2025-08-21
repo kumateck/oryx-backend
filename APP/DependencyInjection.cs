@@ -134,6 +134,7 @@ public static class DependencyInjection
         services.AddHostedService<LeaveExpiryService>();
         services.AddHostedService<ServiceExpiryService>();
         services.AddHostedService<MaterialStockService>();
+        services.AddHostedService<MaterialBatchExpiryService>();
         services.AddHostedService<EmployeeSuspensionService>();
     }
 

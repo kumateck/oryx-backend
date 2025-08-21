@@ -27,5 +27,6 @@ public enum NotificationType
     StaffRequest = 11,
     AuditLogEvent = 12,
     BmrBprRequested = 13,
-    BmrBprApproved = 14
+    BmrBprApproved = 14,
+    ExpiredMaterial = 15,
 }
