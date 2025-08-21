@@ -11,7 +11,6 @@ public class Grn:BaseEntity
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
     [StringLength(10000)]public string GrnNumber { get; set; }
-    
     public Status Status { get; set; }
     public List<MaterialBatch> MaterialBatches { get; set; }
 }
@@ -28,6 +27,7 @@ public class CreateGrnRequest
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
     [StringLength(10000)]public string GrnNumber { get; set; }
+    public Guid? DepartmentId { get; set; }
     public List<Guid> MaterialBatchIds { get; set; }
 }
 

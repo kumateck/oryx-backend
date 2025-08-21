@@ -826,6 +826,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(cl=>cl.Material)
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.Checklist)
+            .Include(mb => mb.CreatedBy)
             .FirstOrDefaultAsync(g => g.Id == id);
 
         return grn is null
@@ -839,6 +840,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         var query = context.Grns
             .AsSplitQuery()
             .Include(c => c.MaterialBatches)
+            .Include(c => c.CreatedBy)
             .AsQueryable();
         
 

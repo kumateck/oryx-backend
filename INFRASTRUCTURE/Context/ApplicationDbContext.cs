@@ -1308,8 +1308,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region GRN
 
-        modelBuilder.Entity<Grn>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
-
+        modelBuilder.Entity<Grn>().HasQueryFilter(entity =>
+            ShouldNotFilterProducts ||
+            (!entity.DeletedAt.HasValue && entity.CreatedBy.DepartmentId == currentUserService.DepartmentId));
         #endregion
 
         #region Overtime Request
