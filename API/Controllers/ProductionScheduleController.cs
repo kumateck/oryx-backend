@@ -1170,7 +1170,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Get product allocation by id
     /// </summary>
-    [HttpPost("allocate-products/{allocatedProductId}")]
+    [HttpGet("allocate-products/{allocatedProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AllocateProductionOrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
