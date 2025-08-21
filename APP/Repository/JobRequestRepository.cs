@@ -30,7 +30,11 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
     public async Task<Result<List<JobRequestDto>>> GetJobRequests()
     {
-        var jobRequests = await context.JobRequests.ToListAsync();
+        var jobRequests = await context.JobRequests
+            .AsSplitQuery()
+            .Include(p => p.Department)
+            .Include(p => p.IssuedBy)
+            .ToListAsync();
         return mapper.Map<List<JobRequestDto>>(jobRequests);
     }
 }
