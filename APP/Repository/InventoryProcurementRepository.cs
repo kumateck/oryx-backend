@@ -7,6 +7,7 @@ using AutoMapper;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Items.Requisitions;
+using DOMAIN.Entities.ItemTransactionLogs;
 using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.StockEntries;
@@ -629,11 +630,31 @@ public class InventoryProcurementRepository(
 
     public async Task<Result> ApproveItem(Guid stockEntryId)
     {
-        var stockEntry = await context.StockEntries.FirstOrDefaultAsync(s => s.Id == stockEntryId);
+        var stockEntry = await context.StockEntries
+            .Include(stockEntry => stockEntry.Item)
+            .FirstOrDefaultAsync(s => s.Id == stockEntryId);
         if (stockEntry == null) return Error.NotFound("StockEntry", "Stock entry not found.");
 
         stockEntry.Status = ApprovalStatus.Approved;
         context.StockEntries.Update(stockEntry);
+        await context.SaveChangesAsync();
+        
+        //TODO: add transaction
+        var lastTransaction = await context.ItemTransactionLogs
+            .OrderByDescending(i => i.CreatedAt) 
+            .FirstOrDefaultAsync(i => i.ItemCode == stockEntry.Item.Code);
+
+        var newTransaction = new ItemTransactionLog
+        {
+            Id = Guid.NewGuid(),
+            ItemCode = stockEntry.Item.Code,
+            Credit = stockEntry.Quantity,
+            TransactionType = "Stock Entry",
+            Debit = 0,
+            TotalBalance = (lastTransaction?.TotalBalance ?? 0) + stockEntry.Quantity
+        };
+
+        await context.ItemTransactionLogs.AddAsync(newTransaction);
         await context.SaveChangesAsync();
         return Result.Success();
     }

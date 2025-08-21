@@ -5,6 +5,7 @@ using AutoMapper;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -240,6 +241,12 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                return await context.ItemStockRequisitions
                    .IgnoreQueryFilters()
                    .Where(s => s.Number.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(Item):
+               return await context.Items
+                   .IgnoreQueryFilters()
+                   .Where(s => s.Code.StartsWith(prefix))
                    .CountAsync();
            
            case "ProductBatchNumber":
