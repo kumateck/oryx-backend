@@ -9,7 +9,7 @@ public interface IEmployeeRepository
 {
    Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDto);
    Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request);
-   Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto);
+   Task<Result<Guid>> CreateEmployeeUser(EmployeeUserDto employeeUserDto);
    Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId);
    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(EmployeeStatus? status,int page, int pageSize,
       string searchQuery = null, string designation = null, string department = null, bool? isNotUser = null);

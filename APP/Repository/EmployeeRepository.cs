@@ -155,7 +155,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         return employee.Id;
     }
 
-    public async Task<Result> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
+    public async Task<Result<Guid>> CreateEmployeeUser(EmployeeUserDto employeeUserDto)
     {
         var employee = await context.Employees
             .Include(e => e.Department)
@@ -210,7 +210,7 @@ public class EmployeeRepository(ApplicationDbContext context,
                 return Error.Failure("User.CreationFailed", errors);
             }
 
-            await userManager.AddToRoleAsync(newUser, role.DisplayName);
+            await userManager.AddToRoleAsync(newUser, role.Name ?? string.Empty);
             logger.LogInformation("Assigned role {Role} to user {UserId}", role, newUser.Id);
 
             await context.SaveChangesAsync();

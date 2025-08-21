@@ -44,10 +44,11 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [HttpPost("user")]
     [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [AllowAnonymous]
     public async Task<IResult> CreateUserFromEmployee([FromBody] EmployeeUserDto employeeUserDto)
     {
         var result = await repository.CreateEmployeeUser(employeeUserDto);
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
 
