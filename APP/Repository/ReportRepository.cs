@@ -21,7 +21,6 @@ using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SHARED;
-using StaffGenderRatioReport = DOMAIN.Entities.AttendanceRecords.StaffGenderRatioReport;
 
 namespace APP.Repository;
 
