@@ -21,6 +21,7 @@ using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SHARED;
+using StaffGenderRatioReport = DOMAIN.Entities.AttendanceRecords.StaffGenderRatioReport;
 
 namespace APP.Repository;
 
@@ -426,6 +427,12 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         });
     }
 
+    public Task<Result<DOMAIN.Entities.Reports.HumanResource.StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
+    {
+        throw new NotImplementedException();
+    }
+
+    /*
     public async Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
     {
 
@@ -493,6 +500,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         return Result.Success(result);
     }
+    */
 
     public async Task<Result<StaffLeaveSummaryReportDto>> GetStaffLeaveSummaryReport(MovementReportFilter filter)
     {
