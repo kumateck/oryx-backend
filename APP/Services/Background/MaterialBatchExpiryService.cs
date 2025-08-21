@@ -22,7 +22,7 @@ public class MaterialBatchExpiryService(IServiceScopeFactory scopeFactory, Concu
                 var monthAgo = DateTime.UtcNow.AddMonths(-1);
 
                 var expiredBatches = await dbContext.MaterialBatches
-                    .Where(l => l.ExpiryDate < monthAgo)
+                    .Where(l => l.ExpiryDate.HasValue && l.ExpiryDate < monthAgo)
                     .ToListAsync(stoppingToken);
 
                 foreach (var batch in expiredBatches)
