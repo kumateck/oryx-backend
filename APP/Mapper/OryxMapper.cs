@@ -489,6 +489,7 @@ public class OryxMapper : Profile
         CreateMap<CreateDepartmentRequest, Department>();
         CreateMap<UpdateDepartmentRequest, Department>();
         CreateMap<Department, DepartmentDto>();
+        CreateMap<Department, DepartmentListDto>();
 
         #endregion
 

@@ -234,6 +234,16 @@ public class ApprovedProductDto
     public decimal TotalLoose { get; set; }
 }
 
+public class ApprovedProductDetailDto
+{
+    public ProductListDto Product { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public decimal TotalRemainingQuantity { get; set; }
+    public decimal QuantityPerPack { get; set; }
+    public decimal TotalLoose { get; set; }
+    public List<FinishedGoodsTransferNoteDto> FinishedGoodsTransferNotes { get; set; } = [];
+}
+
 public enum MovementType
 {
     ToWarehouse,
