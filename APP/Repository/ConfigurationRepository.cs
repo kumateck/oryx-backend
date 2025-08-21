@@ -5,7 +5,6 @@ using AutoMapper;
 using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
-using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -247,6 +246,18 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                return await context.BatchManufacturingRecords
                    .IgnoreQueryFilters()
                    .Where(b => b.BatchNumber.StartsWith(prefix) && b.Status != BatchManufacturingStatus.Rejected)
+                   .CountAsync();
+           
+           case "MaterialSTPNumber":
+               return await context.MaterialStandardTestProcedures
+                   .IgnoreQueryFilters()
+                   .Where(m => m.StpNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "ProductSTPNumber":
+               return await context.ProductStandardTestProcedures
+                   .IgnoreQueryFilters()
+                   .Where(m => m.StpNumber.StartsWith(prefix))
                    .CountAsync();
                
            default:
