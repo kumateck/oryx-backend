@@ -11,6 +11,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
     {
         var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "emailapikey";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
+        
         try
         {
             var message = new MimeMessage();
