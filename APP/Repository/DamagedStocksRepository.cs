@@ -202,6 +202,7 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
             {
                 Id = Guid.NewGuid(),
                 ItemCode = damagedStock.Item.Code,
+                TransactionType = "Missing/Damaged Stock deleted",
                 Credit = damagedStock.QuantityDamaged,
                 Debit = 0,
                 TotalBalance = (lastTransaction?.TotalBalance ?? 0) + damagedStock.QuantityDamaged,

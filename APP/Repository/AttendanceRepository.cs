@@ -141,20 +141,20 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             }).ToList();
     }
 
-    public async Task<Result<List<GeneralAttendanceReportDto>>> GeneralAttendanceReport()
+    public async Task<Result<GeneralAttendanceReportResponse>> GeneralAttendanceReport()
     {
         var today = DateTime.UtcNow.Date;
-
+        
         var dailyRecords = await context.AttendanceRecords
             .Where(a => a.TimeStamp.Date == today && a.WorkState == WorkState.CheckIn)
             .ToListAsync();
-
+        
         var allEmployees = await context.Employees
             .Include(e => e.Department)
             .ToListAsync();
 
         var employeeDbIds = allEmployees.Select(e => e.Id).ToList();
-
+        
         var shiftAssignments = await context.ShiftAssignments
             .AsSplitQuery()
             .Include(sa => sa.ShiftType)
@@ -169,90 +169,56 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         var shiftAssignmentMap = shiftAssignments
             .GroupBy(sa => sa.EmployeeId)
             .ToDictionary(g => g.Key, g => g.FirstOrDefault());
-
+        
         var approvedLeaves = await context.LeaveRequests
             .Where(l =>
                 l.Approved &&
-                l.RequestCategory != RequestCategory.OfficialDuty &&
+                l.RequestCategory == RequestCategory.LeaveRequest &&
                 l.LeaveType.Name != "Maternity Leave" &&
                 l.LeaveType.Name != "Sick Leave" &&
-                l.StartDate <= today &&
-                l.EndDate >= today)
-            .Include(l => l.Employee)
-            .ThenInclude(e => e.Department)
+                l.StartDate <= today && l.EndDate >= today)
+            .Include(l => l.Employee).ThenInclude(e => e.Department)
             .ToListAsync();
-        
-        var approvedLeaveCounts = approvedLeaves
-            .GroupBy(l => l.Employee.Department?.Name ?? "Unassigned")
-            .ToDictionary(g => g.Key, g => g.Count());
 
-        var approvedAbsences = await context.LeaveRequests
-            .Where(a =>
-                a.RequestCategory == RequestCategory.AbsenceRequest &&
-                a.Approved &&
-                a.StartDate.Date <= today &&
-                a.EndDate.Date >= today)
-            .Select(a => a.EmployeeId)
+        var sickLeaves = await context.LeaveRequests
+            .Where(l => l.Approved && l.LeaveType.Name == "Sick Leave" &&
+                l.StartDate <= today && l.EndDate >= today)
+            .Include(l => l.Employee).ThenInclude(e => e.Department)
+            .ToListAsync();
+
+        var maternityLeaves = await context.LeaveRequests
+            .Where(l => l.Approved && l.LeaveType.Name == "Maternity Leave" &&
+                l.StartDate <= today && l.EndDate >= today)
+            .Include(l => l.Employee).ThenInclude(e => e.Department)
+            .ToListAsync();
+
+        var absences = await context.LeaveRequests
+            .Where(l => l.Approved && l.RequestCategory == RequestCategory.AbsenceRequest &&
+                l.StartDate <= today && l.EndDate >= today)
+            .Include(l => l.Employee).ThenInclude(e => e.Department)
+            .ToListAsync();
+
+        var officialDuties = await context.LeaveRequests
+            .Where(l => l.Approved && l.RequestCategory == RequestCategory.OfficialDuty &&
+                l.StartDate <= today && l.EndDate >= today)
+            .Include(l => l.Employee).ThenInclude(e => e.Department)
             .ToListAsync();
 
         var suspendedEmployees = await context.Employees
-            .Where(s =>
-                s.ActiveStatus == EmployeeActiveStatus.Suspension &&
-                s.SuspensionStartDate.HasValue &&
-                s.SuspensionEndDate.HasValue &&
-                s.SuspensionStartDate.Value.Date <= today &&
-                s.SuspensionEndDate.Value.Date >= today)
-            .Select(s => s.Id)
+            .Where(s => s.ActiveStatus == EmployeeActiveStatus.Suspension &&
+                s.SuspensionStartDate <= today && s.SuspensionEndDate >= today)
+            .Include(s => s.Department)
             .ToListAsync();
         
-        var sickLeaves = await context.LeaveRequests
-            .Where(l =>
-                l.Approved &&
-                l.LeaveType.Name == "Sick Leave" &&
-                l.StartDate <= today &&
-                l.EndDate >= today)
-            .Include(l => l.Employee)
-            .ThenInclude(e => e.Department)
-            .ToListAsync();
-
-        var sickLeaveCounts = sickLeaves
-            .GroupBy(l => l.Employee.Department?.Name ?? "Unassigned")
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        var maternityLeaves = await context.LeaveRequests
-            .Where(l =>
-                l.Approved &&
-                l.LeaveType.Name == "Maternity Leave" &&
-                l.StartDate <= today &&
-                l.EndDate >= today)
-            .Include(l => l.Employee)
-            .ThenInclude(e => e.Department)
-            .ToListAsync();
-
-        var maternityLeaveCounts = maternityLeaves
-            .GroupBy(l => l.Employee.Department?.Name ?? "Unassigned")
-            .ToDictionary(g => g.Key, g => g.Count());
-
         var attendanceMap = dailyRecords.ToDictionary(r => r.EmployeeId);
-        var groupedByDepartment = allEmployees
-            .GroupBy(e => e.Department?.Name ?? "Unassigned")
-            .ToList();
+        var groupedByDepartment = allEmployees.GroupBy(e => e.Department?.Name ?? "Unassigned").ToList();
 
-        var report = new List<GeneralAttendanceReportDto>();
+        var departmentReports = new List<GeneralAttendanceReportDto>();
 
         foreach (var group in groupedByDepartment)
         {
             var departmentName = group.Key;
-
-            var summary = new GeneralAttendanceReportDto
-            {
-                DepartmentName = departmentName,
-                ApprovedLeaves = approvedLeaveCounts.GetValueOrDefault(departmentName, 0),
-                Absences = 0,
-                Suspensions = 0,
-                SickLeaves = sickLeaveCounts.GetValueOrDefault(departmentName, 0),
-                MaternityLeaves = maternityLeaveCounts.GetValueOrDefault(departmentName, 0)
-            };
+            var summary = new GeneralAttendanceReportDto { DepartmentName = departmentName };
 
             foreach (var employee in group)
             {
@@ -264,9 +230,12 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                         shiftAssignment?.ShiftType?.StartTime == null)
                         continue;
 
-                    if (!DateTime.TryParseExact(shiftAssignment.ShiftType.StartTime, "hh:mm tt",
+                    if (!DateTime.TryParseExact(
+                            shiftAssignment.ShiftType.StartTime,
+                            "hh:mm tt",
                             CultureInfo.InvariantCulture,
-                            DateTimeStyles.None, out var parsedShiftStartTime))
+                            DateTimeStyles.None,
+                            out var parsedShiftStartTime))
                         continue;
 
                     var shiftStartTime = parsedShiftStartTime.TimeOfDay;
@@ -290,37 +259,92 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                         else summary.PermanentNight++;
                     }
                 }
-                else if (suspendedEmployees.Contains(employee.Id))
+                else if (suspendedEmployees.Any(s => s.Id == employee.Id))
                 {
                     summary.Suspensions++;
                 }
-                else if (approvedAbsences.Contains(employee.Id))
+                else if (absences.Any(a => a.EmployeeId == employee.Id))
                 {
                     summary.Absences++;
                 }
             }
 
-            report.Add(summary);
-        }
+            // Add leaves by department
+            summary.ApprovedLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == departmentName);
+            summary.SickLeaves = sickLeaves.Count(l => l.Employee.Department?.Name == departmentName);
+            summary.MaternityLeaves = maternityLeaves.Count(l => l.Employee.Department?.Name == departmentName);
 
-        return Result.Success(report);
+            departmentReports.Add(summary);
+        }
+        
+        var departmentStats = groupedByDepartment.Select(group =>
+        {
+            var deptName = group.Key;
+            return new SystemGeneralStaffCountDto
+            {
+                Department = deptName,
+                NumberOfPermanentLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
+
+                NumberOfPermanentSickLeaves = sickLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualSickLeaves = sickLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
+
+                NumberOfPermanentMaternityLeave = maternityLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualMaternityLeave = maternityLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
+
+                NumberOfPermanentAbsentEmployees = absences.Count(a => a.Employee.Department?.Name == deptName && a.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualAbsentEmployees = absences.Count(a => a.Employee.Department?.Name == deptName && a.Employee.Type == EmployeeType.Casual),
+
+                NumberOfPermanentOfficialDuty = officialDuties.Count(o => o.Employee.Department?.Name == deptName && o.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualOfficialDuty = officialDuties.Count(o => o.Employee.Department?.Name == deptName && o.Employee.Type == EmployeeType.Casual),
+
+                NumberOfPermanentSuspensions = suspendedEmployees.Count(s => s.Department?.Name == deptName && s.Type == EmployeeType.Permanent),
+                NumberOfCasualSuspensions = suspendedEmployees.Count(s => s.Department?.Name == deptName && s.Type == EmployeeType.Casual),
+            };
+        }).ToList();
+
+        var systemStats = new SystemGeneralStats
+        {
+            NumberOfPermanentLeaves = departmentStats.Sum(d => d.NumberOfPermanentLeaves),
+            NumberOfCasualLeaves = departmentStats.Sum(d => d.NumberOfCasualLeaves),
+            NumberOfPermanentSickLeaves = departmentStats.Sum(d => d.NumberOfPermanentSickLeaves),
+            NumberOfCasualSickLeaves = departmentStats.Sum(d => d.NumberOfCasualSickLeaves),
+            NumberOfPermanentMaternityLeave = departmentStats.Sum(d => d.NumberOfPermanentMaternityLeave),
+            NumberOfCasualMaternityLeave = departmentStats.Sum(d => d.NumberOfCasualMaternityLeave),
+            NumberOfPermanentAbsentEmployees = departmentStats.Sum(d => d.NumberOfPermanentAbsentEmployees),
+            NumberOfCasualAbsentEmployees = departmentStats.Sum(d => d.NumberOfCasualAbsentEmployees),
+            NumberOfPermanentOfficialDuty = departmentStats.Sum(d => d.NumberOfPermanentOfficialDuty),
+            NumberOfCasualOfficialDuty = departmentStats.Sum(d => d.NumberOfCasualOfficialDuty),
+            NumberOfPermanentSuspensions = departmentStats.Sum(d => d.NumberOfPermanentSuspensions),
+            NumberOfCasualSuspensions = departmentStats.Sum(d => d.NumberOfCasualSuspensions)
+        };
+
+        return Result.Success(new GeneralAttendanceReportResponse
+        {
+            DepartmentReports = departmentReports,
+            SystemStatistics = new GeneralSystemReport
+            {
+                Departments = departmentStats,
+                Totals = systemStats
+            }
+        });
     }
     
-
     public async Task<Result<FileExportResult>> ExportAttendanceSummary(FileFormat format)
     {
         var attendanceResult = await GeneralAttendanceReport();
         if (!attendanceResult.IsSuccess)
             return Error.Failure("Export.Failed", "Failed to generate attendance report.");
-        var report = attendanceResult.Value;
-
+        
+        var report = attendanceResult.Value; // now contains DepartmentReports + SystemStatistics
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        
         if (format.FileType == "csv")
         {
             var sb = new StringBuilder();
             sb.AppendLine("Department,Permanent,Casual,Morning(P),Afternoon(P),Night(P),Morning(C),Afternoon(C),Night(C),Absent,Suspended,Sick,Maternity,Leave");
 
-            foreach (var item in report)
+            foreach (var item in report.DepartmentReports)
             {
                 sb.AppendLine($"{item.DepartmentName},{item.PermanentStaff},{item.CasualStaff}," +
                               $"{item.PermanentMorning},{item.PermanentAfternoon},{item.PermanentNight}," +
@@ -332,6 +356,33 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                               $"{item.ApprovedLeaves}");
             }
 
+            // Add a separator for system statistics
+            sb.AppendLine();
+            sb.AppendLine("===== System Wide Breakdown =====");
+            sb.AppendLine("Department,Perm.Leaves,Cas.Leaves,Perm.Sick,Cas.Sick,Perm.Maternity,Cas.Maternity,Perm.Absent,Cas.Absent,Perm.OfficialDuty,Cas.OfficialDuty,Perm.Suspended,Cas.Suspended");
+
+            foreach (var dept in report.SystemStatistics.Departments)
+            {
+                sb.AppendLine($"{dept.Department}," +
+                              $"{dept.NumberOfPermanentLeaves},{dept.NumberOfCasualLeaves}," +
+                              $"{dept.NumberOfPermanentSickLeaves},{dept.NumberOfCasualSickLeaves}," +
+                              $"{dept.NumberOfPermanentMaternityLeave},{dept.NumberOfCasualMaternityLeave}," +
+                              $"{dept.NumberOfPermanentAbsentEmployees},{dept.NumberOfCasualAbsentEmployees}," +
+                              $"{dept.NumberOfPermanentOfficialDuty},{dept.NumberOfCasualOfficialDuty}," +
+                              $"{dept.NumberOfPermanentSuspensions},{dept.NumberOfCasualSuspensions}");
+            }
+
+            // Add totals
+            var totals = report.SystemStatistics.Totals;
+            sb.AppendLine();
+            sb.AppendLine("TOTALS," +
+                          $"{totals.NumberOfPermanentLeaves},{totals.NumberOfCasualLeaves}," +
+                          $"{totals.NumberOfPermanentSickLeaves},{totals.NumberOfCasualSickLeaves}," +
+                          $"{totals.NumberOfPermanentMaternityLeave},{totals.NumberOfCasualMaternityLeave}," +
+                          $"{totals.NumberOfPermanentAbsentEmployees},{totals.NumberOfCasualAbsentEmployees}," +
+                          $"{totals.NumberOfPermanentOfficialDuty},{totals.NumberOfCasualOfficialDuty}," +
+                          $"{totals.NumberOfPermanentSuspensions},{totals.NumberOfCasualSuspensions}");
+
             var bytes = Encoding.UTF8.GetBytes(sb.ToString());
             return Result.Success(new FileExportResult
             {
@@ -340,49 +391,101 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 FileName = $"AttendanceSummary_{timestamp}.csv"
             });
         }
-        
+
+        // ---------- EXCEL ----------
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
-
         using var package = new ExcelPackage();
-        var worksheet = package.Workbook.Worksheets.Add("Attendance Summary");
 
-        worksheet.Cells[1, 1].Value = "Department";
-        worksheet.Cells[1, 2].Value = "Permanent Staff";
-        worksheet.Cells[1, 3].Value = "Casual Staff";
-        worksheet.Cells[1, 4].Value = "Morning Shift (P)";
-        worksheet.Cells[1, 5].Value = "Afternoon Shift (P)";
-        worksheet.Cells[1, 6].Value = "Night Shift (P)";
-        worksheet.Cells[1, 7].Value = "Morning Shift (C)";
-        worksheet.Cells[1, 8].Value = "Afternoon Shift (C)";
-        worksheet.Cells[1, 9].Value = "Night Shift (C)";
-        worksheet.Cells[1, 10].Value = "Absent Count";
-        worksheet.Cells[1, 11].Value = "Suspended Count";
-        worksheet.Cells[1, 12].Value = "Sick Leave Count";
-        worksheet.Cells[1, 13].Value = "Maternity Leave Count";
-        worksheet.Cells[1, 14].Value = "Approved Leave Count";
+        // Department Report
+        var deptSheet = package.Workbook.Worksheets.Add("Department Summary");
+        deptSheet.Cells[1, 1].Value = "Department";
+        deptSheet.Cells[1, 2].Value = "Permanent Staff";
+        deptSheet.Cells[1, 3].Value = "Casual Staff";
+        deptSheet.Cells[1, 4].Value = "Morning (P)";
+        deptSheet.Cells[1, 5].Value = "Afternoon (P)";
+        deptSheet.Cells[1, 6].Value = "Night (P)";
+        deptSheet.Cells[1, 7].Value = "Morning (C)";
+        deptSheet.Cells[1, 8].Value = "Afternoon (C)";
+        deptSheet.Cells[1, 9].Value = "Night (C)";
+        deptSheet.Cells[1, 10].Value = "Absences";
+        deptSheet.Cells[1, 11].Value = "Suspensions";
+        deptSheet.Cells[1, 12].Value = "Sick Leaves";
+        deptSheet.Cells[1, 13].Value = "Maternity Leaves";
+        deptSheet.Cells[1, 14].Value = "Approved Leaves";
 
         var row = 2;
-
-        foreach (var item in report)
+        foreach (var item in report.DepartmentReports)
         {
-            worksheet.Cells[row, 1].Value = item.DepartmentName;
-            worksheet.Cells[row, 2].Value = item.PermanentStaff;
-            worksheet.Cells[row, 3].Value = item.CasualStaff;
-            worksheet.Cells[row, 4].Value = item.PermanentMorning;
-            worksheet.Cells[row, 5].Value = item.PermanentAfternoon;
-            worksheet.Cells[row, 6].Value = item.PermanentNight;
-            worksheet.Cells[row, 7].Value = item.CasualMorning;
-            worksheet.Cells[row, 8].Value = item.CasualAfternoon;
-            worksheet.Cells[row, 9].Value = item.CasualNight;
-            worksheet.Cells[row, 10].Value = item.Absences;
-            worksheet.Cells[row, 11].Value = item.Suspensions;
-            worksheet.Cells[row, 12].Value = item.SickLeaves;
-            worksheet.Cells[row, 13].Value = item.MaternityLeaves;
-            worksheet.Cells[row, 14].Value = item.ApprovedLeaves;
+            deptSheet.Cells[row, 1].Value = item.DepartmentName;
+            deptSheet.Cells[row, 2].Value = item.PermanentStaff;
+            deptSheet.Cells[row, 3].Value = item.CasualStaff;
+            deptSheet.Cells[row, 4].Value = item.PermanentMorning;
+            deptSheet.Cells[row, 5].Value = item.PermanentAfternoon;
+            deptSheet.Cells[row, 6].Value = item.PermanentNight;
+            deptSheet.Cells[row, 7].Value = item.CasualMorning;
+            deptSheet.Cells[row, 8].Value = item.CasualAfternoon;
+            deptSheet.Cells[row, 9].Value = item.CasualNight;
+            deptSheet.Cells[row, 10].Value = item.Absences;
+            deptSheet.Cells[row, 11].Value = item.Suspensions;
+            deptSheet.Cells[row, 12].Value = item.SickLeaves;
+            deptSheet.Cells[row, 13].Value = item.MaternityLeaves;
+            deptSheet.Cells[row, 14].Value = item.ApprovedLeaves;
             row++;
         }
+        deptSheet.Cells.AutoFitColumns();
 
-        worksheet.Cells.AutoFitColumns();
+        // System-wide report
+        var sysSheet = package.Workbook.Worksheets.Add("System Statistics");
+        sysSheet.Cells[1, 1].Value = "Department";
+        sysSheet.Cells[1, 2].Value = "Permanent Leaves";
+        sysSheet.Cells[1, 3].Value = "Casual Leaves";
+        sysSheet.Cells[1, 4].Value = "Permanent Sick";
+        sysSheet.Cells[1, 5].Value = "Casual Sick";
+        sysSheet.Cells[1, 6].Value = "Permanent Maternity";
+        sysSheet.Cells[1, 7].Value = "Casual Maternity";
+        sysSheet.Cells[1, 8].Value = "Permanent Absent";
+        sysSheet.Cells[1, 9].Value = "Casual Absent";
+        sysSheet.Cells[1, 10].Value = "Permanent OfficialDuty";
+        sysSheet.Cells[1, 11].Value = "Casual OfficialDuty";
+        sysSheet.Cells[1, 12].Value = "Permanent Suspended";
+        sysSheet.Cells[1, 13].Value = "Casual Suspended";
+
+        var sysRow = 2;
+        foreach (var dept in report.SystemStatistics.Departments)
+        {
+            sysSheet.Cells[sysRow, 1].Value = dept.Department;
+            sysSheet.Cells[sysRow, 2].Value = dept.NumberOfPermanentLeaves;
+            sysSheet.Cells[sysRow, 3].Value = dept.NumberOfCasualLeaves;
+            sysSheet.Cells[sysRow, 4].Value = dept.NumberOfPermanentSickLeaves;
+            sysSheet.Cells[sysRow, 5].Value = dept.NumberOfCasualSickLeaves;
+            sysSheet.Cells[sysRow, 6].Value = dept.NumberOfPermanentMaternityLeave;
+            sysSheet.Cells[sysRow, 7].Value = dept.NumberOfCasualMaternityLeave;
+            sysSheet.Cells[sysRow, 8].Value = dept.NumberOfPermanentAbsentEmployees;
+            sysSheet.Cells[sysRow, 9].Value = dept.NumberOfCasualAbsentEmployees;
+            sysSheet.Cells[sysRow, 10].Value = dept.NumberOfPermanentOfficialDuty;
+            sysSheet.Cells[sysRow, 11].Value = dept.NumberOfCasualOfficialDuty;
+            sysSheet.Cells[sysRow, 12].Value = dept.NumberOfPermanentSuspensions;
+            sysSheet.Cells[sysRow, 13].Value = dept.NumberOfCasualSuspensions;
+            sysRow++;
+        }
+
+        // Add totals row
+        var systemTotals = report.SystemStatistics.Totals;
+        sysSheet.Cells[sysRow, 1].Value = "TOTALS";
+        sysSheet.Cells[sysRow, 2].Value = systemTotals.NumberOfPermanentLeaves;
+        sysSheet.Cells[sysRow, 3].Value = systemTotals.NumberOfCasualLeaves;
+        sysSheet.Cells[sysRow, 4].Value = systemTotals.NumberOfPermanentSickLeaves;
+        sysSheet.Cells[sysRow, 5].Value = systemTotals.NumberOfCasualSickLeaves;
+        sysSheet.Cells[sysRow, 6].Value = systemTotals.NumberOfPermanentMaternityLeave;
+        sysSheet.Cells[sysRow, 7].Value = systemTotals.NumberOfCasualMaternityLeave;
+        sysSheet.Cells[sysRow, 8].Value = systemTotals.NumberOfPermanentAbsentEmployees;
+        sysSheet.Cells[sysRow, 9].Value = systemTotals.NumberOfCasualAbsentEmployees;
+        sysSheet.Cells[sysRow, 10].Value = systemTotals.NumberOfPermanentOfficialDuty;
+        sysSheet.Cells[sysRow, 11].Value = systemTotals.NumberOfCasualOfficialDuty;
+        sysSheet.Cells[sysRow, 12].Value = systemTotals.NumberOfPermanentSuspensions;
+        sysSheet.Cells[sysRow, 13].Value = systemTotals.NumberOfCasualSuspensions;
+
+        sysSheet.Cells.AutoFitColumns();
 
         return Result.Success(new FileExportResult
         {

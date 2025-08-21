@@ -25,7 +25,7 @@ public class Checklist: BaseEntity
     public bool VisibleLabelling { get; set; }
     public Intactness IntactnessStatus { get; set; }
     public ConsignmentCarrier ConsignmentCarrierStatus { get; set; }
-    public List<MaterialBatch> MaterialBatches { get; set; }
+    public List<MaterialBatch> MaterialBatches { get; set; } = [];
 }
 
 public class ChecklistDto
