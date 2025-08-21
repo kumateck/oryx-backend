@@ -530,9 +530,10 @@ public class InventoryProcurementRepository(
         return Result.Success();
     }
 
-    public async Task<Result<List<StockEntryDto>>> GetStockEntries()
+    public async Task<Result<List<StockEntryDto>>> GetStockEntries(ApprovalStatus status)
     {
-        var stockEntries = await context.StockEntries.ToListAsync();
+        var stockEntries = await context.StockEntries
+            .Where(s => s.Status == status).ToListAsync();
         return mapper.Map<List<StockEntryDto>>(stockEntries);
     }
 

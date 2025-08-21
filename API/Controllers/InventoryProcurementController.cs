@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using DOMAIN.Entities.Items.Requisitions;
 using APP.Utils;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.VendorQuotations;
@@ -382,9 +383,9 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     [HttpGet("purchased-items")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockEntryDto>))]
-    public async Task<IResult> GetStockEntries()
+    public async Task<IResult> GetStockEntries([FromQuery] ApprovalStatus status)
     {
-        var result = await repository.GetStockEntries();
+        var result = await repository.GetStockEntries(status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

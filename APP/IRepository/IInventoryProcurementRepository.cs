@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.StockEntries;
@@ -43,7 +44,7 @@ public interface IInventoryProcurementRepository
    Task<Result> ApproveItem(Guid stockEntryId);
    Task<Result> RejectItem(Guid stockEntryId);
    
-   Task<Result<List<StockEntryDto>>> GetStockEntries();
+   Task<Result<List<StockEntryDto>>> GetStockEntries(ApprovalStatus status);
   Task<Result<MemoDto>> GetMemo(Guid id);
     
     // Helper methods
