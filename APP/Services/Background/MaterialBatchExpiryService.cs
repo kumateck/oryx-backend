@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -22,7 +23,8 @@ public class MaterialBatchExpiryService(IServiceScopeFactory scopeFactory, Concu
                 var monthAgo = DateTime.UtcNow.AddMonths(-1);
 
                 var expiredBatches = await dbContext.MaterialBatches
-                    .Where(l => l.ExpiryDate.HasValue && l.ExpiryDate < monthAgo)
+                    .Where(l => l.Status == BatchStatus.Available &&
+                                l.ExpiryDate.HasValue && l.ExpiryDate < monthAgo)
                     .ToListAsync(stoppingToken);
 
                 foreach (var batch in expiredBatches)
