@@ -1295,7 +1295,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool fulfilled, int page,
+    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? onlyApproved, int page,
         int pageSize, string searchQuery)
     {
         var query = context.AllocateProductionOrders
@@ -1304,12 +1304,21 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(a => a.Products)
             .ThenInclude(p => p.FulfilledQuantities)
             .ThenInclude(p => p.FinishedGoodsTransferNote)
-            .Include(a => a.Products).ThenInclude(p => p.Product)
+            .Include(a => a.Products)
+            .ThenInclude(p => p.Product)
             .AsQueryable();
         
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, b => b.ProductionOrder.Code);
+        }
+
+        if (onlyApproved.HasValue)
+        {
+            if (onlyApproved.Value)
+            {
+                query = query.Where(q => q.Approved);
+            }
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
