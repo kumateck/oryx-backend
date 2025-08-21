@@ -135,7 +135,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    /// <summary>
+    /*/// <summary>
     /// Retrieves the staff gender ratio report
     /// </summary>
     /// <param name="filter"></param>
@@ -146,7 +146,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     {
         var result = await repository.GetStaffGenderRatioReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
+    }*/
     
 
     [HttpGet("staff-leave-report")]
