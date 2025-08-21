@@ -1111,6 +1111,19 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Retrieves a single approved product
+    /// </summary>
+    [HttpGet("approved-products/product/{productId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ApprovedProductDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetApprovedProduct([FromRoute] Guid productId)
+    {
+        var result = await repository.GetApprovedProduct(productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     
     /// <summary>
     /// Retrieves details of an approved product

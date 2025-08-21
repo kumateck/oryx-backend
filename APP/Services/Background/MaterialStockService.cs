@@ -31,7 +31,7 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
                 List<MaterialDepartment> materialAtReorderStockLevel = [];
 
 
-                foreach (var materialDepartment in materialDepartments)
+                /*foreach (var materialDepartment in materialDepartments)
                 {
                     var departmentId = materialDepartment.DepartmentId;
                     var rawWarehouse = await context.Warehouses
@@ -66,7 +66,7 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
                     {
                         materialAtReorderStockLevel.Add(materialDepartment);
                     }
-                }
+                }*/
                 
                 /*foreach (var material in materialBelowMinimumStockLevel)
                 {

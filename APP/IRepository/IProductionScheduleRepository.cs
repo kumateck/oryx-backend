@@ -92,6 +92,7 @@ public interface IProductionScheduleRepository
     
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
     Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts();
+    Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProduct(Guid productId);
     Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId);
     Task<Result> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
     Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(
