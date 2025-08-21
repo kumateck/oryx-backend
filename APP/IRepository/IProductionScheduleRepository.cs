@@ -96,7 +96,7 @@ public interface IProductionScheduleRepository
     Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId);
     Task<Result> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
     Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(
-        bool fulfilled, int page,
+        bool? onlyApproved, int page,
         int pageSize, string searchQuery);
     Task<Result<AllocateProductionOrderDto>> GetProductAllocation(Guid id);
     
