@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
-using System.Data.Entity;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
