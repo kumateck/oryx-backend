@@ -4,7 +4,7 @@ namespace DOMAIN.Entities.AttendanceRecords;
 public class GeneralAttendanceReportResponse
 {
     public List<GeneralAttendanceReportDto> DepartmentReports { get; set; }
-    public StaffGenderRatioReport SystemStatistics { get; set; }
+    public GeneralSystemReport SystemStatistics { get; set; }
 }
 public class GeneralAttendanceReportDto
 {
@@ -24,10 +24,10 @@ public class GeneralAttendanceReportDto
     public int SickLeaves {get; set;}
     public int MaternityLeaves {get; set;}
     
-    public StaffGenderRatioReport SystemStatistics { get; set; }
+    public GeneralSystemReport SystemStatistics { get; set; }
 }
 
-public class StaffGenderRatioReport
+public class GeneralSystemReport
 {
     public List<SystemGeneraltaffCountDto> Departments { get; set; }
     public SystemGeneralStats Totals { get; set; }
