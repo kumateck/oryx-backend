@@ -24,6 +24,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(int page, int pageSize, string searchQuery)
     {
         var query = context.ProductionOrders
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(p => p.Customer)
             .Include(p => p.Products)
@@ -41,6 +42,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<ProductionOrderDto>> GetProductionOrder(Guid id)
     {
         var productionOrder = await context.ProductionOrders
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)

@@ -3,6 +3,7 @@ namespace DOMAIN.Entities.Materials.Batch;
 public class SupplyMaterialBatchRequest
 {
     public Guid MaterialBatchId { get; set; }
+    public Guid? MaterialReturnNoteId { get; set; }
     public List<CreateShelfMaterialBatch> ShelfMaterialBatches { get; set; }
 }
 

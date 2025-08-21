@@ -903,6 +903,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             }
         }
 
+        if (request.MaterialReturnNoteId.HasValue)
+        {
+            var materialReturnNote = await context.MaterialReturnNotes.FirstOrDefaultAsync(m => m.Id == request.MaterialReturnNoteId.Value);
+            if(materialReturnNote  is null) return Error.NotFound("MaterialReturnNote.NotFound",  $"MaterialReturnNote with ID {request.MaterialReturnNoteId.Value} not found");
+            materialReturnNote.Status = MaterialReturnStatus.Completed;
+            context.MaterialReturnNotes.Update(materialReturnNote);
+        }
+        
         await context.SaveChangesAsync();
         return Result.Success();
     }
