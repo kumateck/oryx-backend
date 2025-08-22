@@ -1183,7 +1183,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Mark a product allocation as delivered
     /// </summary>
-    [HttpGet("allocate-products/deliver/{allocatedProductId}")]
+    [HttpPut("allocate-products/deliver/{allocatedProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
