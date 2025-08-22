@@ -1628,6 +1628,23 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     RequestedBy = mapper.Map<CollectionItemDto>(response.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
+            
+            case nameof(AllocateProductionOrder):
+                var allocate = await context.AllocateProductionOrders
+                    .AsSplitQuery()
+                    .Include(l => l.CreatedBy).ThenInclude(u => u.Department)
+                    .Include(l => l.Approvals).ThenInclude(a => a.ApprovedBy)
+                    .FirstOrDefaultAsync(l => l.Id == modelId);
+                return new ApprovalEntity
+                {
+                    ModelType = modelType,
+                    Id = modelId,
+                    Code = "",
+                    CreatedAt = allocate.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(allocate.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<CollectionItemDto>(allocate.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId)
+                };
 
             default:
                 throw new NotImplementedException($"Approval handling not implemented for model type: {modelType}");

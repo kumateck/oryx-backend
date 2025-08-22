@@ -245,7 +245,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
     private async Task<bool> ValidRoleName(string roleName)
     {
-        var role = await context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Name.Trim() == roleName.Trim());
         return role != null;
     }
 }
