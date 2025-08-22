@@ -1301,6 +1301,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var query = context.AllocateProductionOrders
             .AsSplitQuery()
             .Include(a => a.ProductionOrder)
+            .ThenInclude(p => p.Customer)
             .Include(a => a.Products)
             .ThenInclude(p => p.FulfilledQuantities)
             .ThenInclude(p => p.FinishedGoodsTransferNote)
@@ -1335,6 +1336,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             await context.AllocateProductionOrders
                 .AsSplitQuery()
                 .Include(a => a.ProductionOrder)
+                .ThenInclude(p => p.Customer)
                 .Include(a => a.Products)
                 .ThenInclude(p => p.FulfilledQuantities)
                 .ThenInclude(p => p.FinishedGoodsTransferNote)
