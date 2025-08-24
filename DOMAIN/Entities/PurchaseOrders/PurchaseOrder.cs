@@ -60,6 +60,7 @@ public class PurchaseOrderItem : BaseEntity
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
+    public decimal QuantityInvoiced { get; set; }
     public decimal Price { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
@@ -67,11 +68,12 @@ public class PurchaseOrderItem : BaseEntity
 
 public enum PurchaseOrderStatus
 {
-    New,
-    Pending,
-    Delivered,
-    Attached,
-    Completed
+    New = 0,
+    Pending = 1,
+    Delivered = 2,
+    Attached = 3,
+    Completed = 4,
+    Linked = 5,
 }
 
 public enum PurchaseOrderAttachmentStatus
@@ -123,4 +125,5 @@ public class PurchaseOrderItemDto
     public decimal Cost => Price * (Quantity - ReceivedQuantity);
     public bool CanReassignSupplier { get; set; }
     public decimal ReceivedQuantity { get; set; }
+    public decimal QuantityInvoiced { get; set; }
 }

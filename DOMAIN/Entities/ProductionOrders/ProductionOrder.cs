@@ -76,3 +76,31 @@ public class AllocateProductionOrderApprovals : ResponsibleApprovalStage
     public Guid ApprovalId { get; set; }
     public Approval Approval { get; set; }
 }
+
+public class CreateProductionOrderInvoice
+{
+    public Guid ProductionOrderId { get; set; }
+    public List<CreateProductionOrderInvoiceItem> Items { get; set; } = [];
+}
+
+public class CreateProductionOrderInvoiceItem
+{
+    public Guid ProductId { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class ProductionOrderInvoice : BaseEntity
+{
+    public Guid ProductionOrderId { get; set; }
+    public ProductionOrder ProductionOrder { get; set; }
+    public List<ProductionOrderInvoiceItem> Items { get; set; } = [];
+}
+
+public class ProductionOrderInvoiceItem : BaseEntity
+{
+    public Guid ProductionOrderInvoiceId { get; set; }
+    public ProductionOrderInvoice ProductionOrderInvoice { get; set; }
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public int Quantity { get; set; }
+}

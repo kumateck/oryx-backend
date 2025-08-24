@@ -509,6 +509,24 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.CreateMaterialDepartment(materialDepartments, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Creates a new material department.
+    /// </summary>
+    /// <param name="materialId">The material you want to unlink from your department</param>
+    /// <returns>Returns the result of the creation process.</returns>
+    [HttpDelete("department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> RemoveMaterialDepartment([FromQuery] Guid materialId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.RemoveMaterialDepartment(Guid.Parse(userId), materialId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
     
     /// <summary>
     /// Returns a list of materials that have not been linked.

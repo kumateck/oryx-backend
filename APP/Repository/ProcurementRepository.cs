@@ -342,6 +342,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
 
+        if (existingOrder.Status == PurchaseOrderStatus.Linked)
+        {
+            return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
+        }
+
         var latestRevisionNumber = existingOrder.RevisedPurchaseOrders.Count != 0
             ? existingOrder.RevisedPurchaseOrders.Max(r => r.RevisionNumber) + 1
             : 1;
@@ -506,6 +511,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
+        
+        if (existingOrder.Status == PurchaseOrderStatus.Linked)
+        {
+            return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
+        }
     
         // var revisedPurchaseOrder = mapper.Map<RevisedPurchaseOrder>(request);
         // revisedPurchaseOrder.CreatedById = userId;
@@ -540,6 +550,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         if (purchaseOrder is null)
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        }
+        
+        if (purchaseOrder.Status == PurchaseOrderStatus.Linked)
+        {
+            return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
         }
 
         purchaseOrder.DeletedAt = DateTime.UtcNow;
@@ -1064,11 +1079,39 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     
     public async Task<Result<Guid>> CreateShipmentInvoice(CreateShipmentInvoice request, Guid userId)
     {
+
+        if (request.Items.DistinctBy(i => i.PurchaseOrderId).Count() != request.Items.Count)
+        {
+            return Error.Validation("Items.Count", "Purchase Order IDs must be unique");
+        }
+        
         var shipmentInvoice = mapper.Map<ShipmentInvoice>(request);
         shipmentInvoice.CreatedById = userId;
         await context.ShipmentInvoices.AddAsync(shipmentInvoice);
-        await context.SaveChangesAsync();
 
+        foreach (var item in request.Items)
+        {
+            var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(p => p.Id == item.PurchaseOrderId);
+            if(purchaseOrder is null) return Error.NotFound("PurchaseOrder.NotFound", "Purchase Order not found");
+
+            purchaseOrder.Status = PurchaseOrderStatus.Linked;
+            
+            var purchaseOrderItem = await context.PurchaseOrderItems.FirstOrDefaultAsync(it => 
+                it.PurchaseOrderId == purchaseOrder.Id && it.MaterialId == item.MaterialId);
+            if(purchaseOrderItem is null) return Error.NotFound("PurchaseOrderItem.NotFound", "Purchase Order Item not found");
+
+            purchaseOrderItem.QuantityInvoiced += item.ReceivedQuantity;
+            if (purchaseOrderItem.QuantityInvoiced >= purchaseOrderItem.Quantity)
+            {
+                return 
+                    Error.Validation("Item.ReceivedQuantity", "Purchase Order Item does  not have enough quantity");
+            }
+            
+            context.PurchaseOrders.Update(purchaseOrder);
+            context.PurchaseOrderItems.Update(purchaseOrderItem);
+        }
+        
+        await context.SaveChangesAsync();
         return shipmentInvoice.Id;
     }
 
@@ -1309,8 +1352,38 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
         return Result.Success();
     }
-
+    
     public async Task<Result<List<SupplierDto>>> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed()
+    {
+        // Purchase Orders not linked at all (all items have QuantityInvoiced == 0)
+        var notLinkedPurchaseOrders = await context.PurchaseOrders
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po => po.Items.All(poi => poi.QuantityInvoiced == 0))
+            .ToListAsync();
+
+        // Purchase Orders partially used (some items invoiced but at least one not fully invoiced)
+        var partiallyUsedPurchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po =>
+                    po.Items.Any(poi => poi.QuantityInvoiced > 0) &&  // At least one item invoiced
+                    po.Items.Any(poi => poi.QuantityInvoiced < poi.Quantity) // At least one not fully invoiced
+            )
+            .ToListAsync();
+
+        // Combine and select distinct suppliers
+        var suppliers = notLinkedPurchaseOrders
+            .Concat(partiallyUsedPurchaseOrders)
+            .Select(po => po.Supplier)
+            .DistinctBy(s => s.Id)
+            .ToList();
+
+        return mapper.Map<List<SupplierDto>>(suppliers);
+    }
+
+    /*public async Task<Result<List<SupplierDto>>> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed()
     {
         var linkedPurchaseOrderIds = await context.ShipmentInvoiceItems
             .Select(sii => sii.PurchaseOrderId)
@@ -1341,9 +1414,62 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ToList();
         
         return mapper.Map<List<SupplierDto>>(suppliers);
-    }
+    }*/
     
     public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
+    {
+        // Get supplier purchase orders that are NOT linked at all (all items have QuantityInvoiced == 0)
+        var notLinkedPurchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po => po.SupplierId == supplierId && po.Items.All(poi => poi.QuantityInvoiced == 0))
+            .ToListAsync();
+
+        // Get supplier purchase orders that are partially used 
+        // (at least one item invoiced but at least one not fully invoiced)
+        var partiallyUsedPurchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po => po.SupplierId == supplierId &&
+                         po.Items.Any(poi => poi.QuantityInvoiced > 0) &&
+                         po.Items.Any(poi => poi.QuantityInvoiced < poi.Quantity))
+            .ToListAsync();
+
+        var resultPurchaseOrders = notLinkedPurchaseOrders
+            .Concat(partiallyUsedPurchaseOrders)
+            .Distinct()
+            .ToList();
+
+        // Map to DTO
+        var result = mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders,
+            opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
+
+        // Enrich DTO with manufacturers and received quantities
+        foreach (var po in result)
+        {
+            foreach (var item in po.Items)
+            {
+                if (item.Material?.Id != null)
+                {
+                    item.Manufacturers = (await GetSupplierManufacturersByMaterial(
+                        item.Material.Id.Value, po.Supplier.Id)).Value;
+                }
+
+                // Received quantity = already tracked by QuantityInvoiced
+                var poItem = resultPurchaseOrders
+                    .First(p => p.Id == po.Id)
+                    .Items.First(i => i.MaterialId == item.Material?.Id);
+
+                item.ReceivedQuantity = poItem.QuantityInvoiced;
+            }
+        }
+
+        return result;
+    }
+    
+    /*public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
     {
         var allSupplierPurchaseOrderIds = await context.PurchaseOrders
             .Include(p => p.Supplier)
@@ -1394,7 +1520,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             }
         }
         return result;
-    }
+    }*/
     
     /*public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsyncV2(Guid supplierId)
     {

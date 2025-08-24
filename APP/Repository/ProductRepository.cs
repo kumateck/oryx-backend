@@ -30,6 +30,11 @@ namespace APP.Repository;
          
          var product = mapper.Map<Product>(request);
          product.CreatedById = userId;
+         product.Prices.Add(new ProductPrices
+         {
+             Price = request.Price,
+             Date = DateTime.UtcNow
+         });
          await context.Products.AddAsync(product); 
          await context.SaveChangesAsync();
 
@@ -84,6 +89,15 @@ namespace APP.Repository;
          if (existingProduct is null)
          {
              return ProductErrors.NotFound(productId);
+         }
+
+         if (existingProduct.Price != request.Price)
+         {
+             existingProduct.Prices.Add(new ProductPrices
+             {
+                 Price = request.Price,
+                 Date = DateTime.UtcNow
+             });
          }
 
          mapper.Map(request, existingProduct);
