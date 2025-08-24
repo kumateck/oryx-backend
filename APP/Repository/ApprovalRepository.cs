@@ -2354,9 +2354,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 product.Fulfilled = true;
             }
         }
-        
         request.Approved = true;
-
+        context.ProductionOrders.Update(productionOrder);
+        context.AllocateProductionOrders.Update(request);
         await context.SaveChangesAsync();
         return Result.Success();
     }

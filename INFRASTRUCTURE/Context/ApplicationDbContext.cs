@@ -365,6 +365,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionOrder> ProductionOrders { get; set; }
     public DbSet<AllocateProductionOrder> AllocateProductionOrders { get; set; }
     public DbSet<AllocateProductionOrderApprovals> AllocateProductionOrderApprovals { get; set; }
+    public DbSet<ProductionOrderInvoice> ProductionOrderInvoices { get; set; }
+    public DbSet<ProductionOrderInvoiceItem> ProductionOrderInvoiceItems { get; set; }
     
     #endregion
 

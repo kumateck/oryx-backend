@@ -1356,6 +1356,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+
+    public async Task<Result> CostProductAllocation(Guid productAllocationId)
+    {
+        throw new NotImplementedException();
+    }
     
     public async Task<Result> ValidateProductAllocation(AllocateProductionOrderRequest request)
     {
@@ -1459,7 +1464,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
 
 
-    public async Task<Result> AllocateProduct(AllocateProductionOrder request)
+    public async Task<Result> AllocateProduct(AllocateProductionOrderRequest request)
     {
         var productionOrder = await context.ProductionOrders
             .AsSplitQuery()
