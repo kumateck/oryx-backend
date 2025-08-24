@@ -1441,7 +1441,15 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Concat(partiallyUsedPurchaseOrders)
             .Distinct()
             .ToList();
-
+        
+        // ✅ filter out fully invoiced items
+        foreach (var po in resultPurchaseOrders)
+        {
+            po.Items = po.Items
+                .Where(i => i.QuantityInvoiced < i.Quantity)
+                .ToList();
+        }
+        
         // Map to DTO
         var result = mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders,
             opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
