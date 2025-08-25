@@ -190,6 +190,8 @@ public class OryxMapper : Profile
 
         #region UoM
 
+        CreateMap<CreateUnitOfMeasure, UnitOfMeasure>();
+
         CreateMap<UnitOfMeasure, UnitOfMeasureDto>();
 
         #endregion
@@ -941,6 +943,7 @@ public class OryxMapper : Profile
         CreateMap<CreateProductionOrderRequest, ProductionOrder>();
         CreateMap<CreateProductionOrderProduct, ProductionOrderProducts>();
         CreateMap<ProductionOrder, ProductionOrderDto>();
+        CreateMap<ProductionOrder, ProductionOrderDetailDto>();
         CreateMap<ProductionOrderProducts, ProductionOrderProductsDto>();
         CreateMap<ProductionOrderProductQuantity, ProductionOrderProductQuantityDto>();
 

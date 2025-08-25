@@ -45,7 +45,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Retrieves a production order by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionOrderDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionOrderDetailDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductionOrder([FromRoute] Guid id)
     {
@@ -208,6 +208,32 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteInvoice(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Creates an invoice.
+    /// </summary>
+    [HttpPost("allocate")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> AllocateProductionOrder([FromBody] AllocateProductionOrderRequest request)
+    {
+        var result = await repository.AllocateProduct(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Mark a production order as delivered
+    /// </summary>
+    [HttpPut("deliver/{productionOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> MarkProductAllocationAsDelivered([FromRoute]  Guid productionOrderId)
+    {
+        var result = await repository.MarkProductionOrderAsDelivered(productionOrderId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
