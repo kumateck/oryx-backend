@@ -4,6 +4,7 @@ using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Routes;
+using Microsoft.EntityFrameworkCore;
 
 namespace DOMAIN.Entities.Products;
 
@@ -41,9 +42,18 @@ public class Product : BaseEntity
     public List<ProductBillOfMaterial> BillOfMaterials { get; set; } = [];
     public List<ProductPackage> Packages { get; set; } = [];
     public List<Route> Routes { get; set; } = [];
-    public decimal Price { get; set; }
+    public decimal Price => Prices.OrderByDescending(p => p.Date).FirstOrDefault()?.Price ?? 0;
     public Division Division { get; set; }
     public int PackPerShipper { get; set; }
+    public List<ProductPrices>  Prices { get; set; } = [];
+    public decimal ExpectedYield { get; set; }
+}
+
+[Owned]
+public class ProductPrices
+{
+    public decimal Price { get; set; }
+    public DateTime Date { get; set; }
 }
 
 public enum Division

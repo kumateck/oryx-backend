@@ -5,6 +5,7 @@ using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using Microsoft.EntityFrameworkCore;
+using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
 
@@ -14,6 +15,26 @@ public class ProductionOrder : BaseEntity
     public Guid CustomerId { get; set; }
     public Customer Customer { get; set; }
     public List<ProductionOrderProducts> Products { get; set; } = [];
+    public ProductionOrderStatus Status { get; set; }
+    public List<ProductionOrderApprovals> Approvals { get; set; } = [];
+    public bool Approved { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+}
+
+public enum ProductionOrderStatus
+{
+    Pending = 0,
+    Invoiced = 1,
+    Delivered = 2,
+}
+
+public class ProductionOrderApprovals : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid ProductionOrderId { get; set; }
+    public ProductionOrder ProductionOrder { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 [Owned]
@@ -75,4 +96,44 @@ public class AllocateProductionOrderApprovals : ResponsibleApprovalStage
     public AllocateProductionOrder AllocateProductionOrder { get; set; }
     public Guid ApprovalId { get; set; }
     public Approval Approval { get; set; }
+}
+
+public class CreateProductionOrderInvoice
+{
+    public Guid ProductionOrderId { get; set; }
+    public List<CreateProductionOrderInvoiceItem> Items { get; set; } = [];
+}
+
+public class CreateProductionOrderInvoiceItem
+{
+    public Guid ProductId { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class ProductionOrderInvoice : BaseEntity
+{
+    public Guid ProductionOrderId { get; set; }
+    public ProductionOrder ProductionOrder { get; set; }
+    public List<ProductionOrderInvoiceItem> Items { get; set; } = [];
+}
+
+public class ProductionOrderInvoiceItem : BaseEntity
+{
+    public Guid ProductionOrderInvoiceId { get; set; }
+    public ProductionOrderInvoice ProductionOrderInvoice { get; set; }
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class ProductionOrderInvoiceDto : BaseDto
+{
+    public CollectionItemDto ProductionOrder { get; set; }
+    public List<ProductionOrderInvoiceItemDto> Items { get; set; } = [];
+}
+
+public class ProductionOrderInvoiceItemDto : BaseDto
+{
+    public ProductListDto Product { get; set; }
+    public int Quantity { get; set; }
 }

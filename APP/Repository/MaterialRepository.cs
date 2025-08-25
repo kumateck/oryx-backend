@@ -328,7 +328,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(m => m.MaterialBatch)
             .ThenInclude(mb => mb.Material)
             .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-            .Where(m => m.MaterialBatch.Material.Kind == kind && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id &&
+            .Where(m => 
+                m.MaterialBatch.Material.Kind == kind && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id &&
                         (m.MaterialBatch.Status == BatchStatus.Available || m.MaterialBatch.Status == BatchStatus.Frozen))
             .Select(m => m.MaterialBatch.Material)
             .Distinct()
@@ -1831,6 +1832,30 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }));
         
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+
+        if (!user.DepartmentId.HasValue)
+        {
+            return UserErrors.DepartmentNotFound;
+        }
+
+        var materialDepartment = await context.MaterialDepartments
+            .FirstOrDefaultAsync(m => m.DepartmentId == user.DepartmentId.Value && m.MaterialId == materialId);
+
+        if (materialDepartment == null)
+        {
+            return Error.NotFound("MaterialDepartment.NotFound", "Material not assigned to this department");
+        }
+
+        context.MaterialDepartments.Remove(materialDepartment);
+        await context.SaveChangesAsync();
+
         return Result.Success();
     }
 

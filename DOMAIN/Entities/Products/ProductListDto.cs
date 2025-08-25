@@ -35,4 +35,5 @@ public class ProductListDto
     public Division Division { get; set; }
     public int PackPerShipper { get; set; }
     public string LabelClaim { get; set; }
+    public decimal ExpectedYield { get; set; }
 }
