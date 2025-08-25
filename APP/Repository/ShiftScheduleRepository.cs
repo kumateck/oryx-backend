@@ -329,9 +329,8 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
    
-   public async Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file, Guid departmentId, Guid shiftId)
+    public async Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file, Guid departmentId, Guid shiftId)
     {
-        
         var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
         if (department is null) return Error.NotFound("Department.NotFound", "Department not found.");
         
@@ -374,35 +373,51 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         }
 
         var assignments = new List<ShiftAssignment>();
+        var skipped = new List<string>();
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
 
             var staffIdStr = GetCell("STAFF ID");
-
             var shiftCategoryName = GetCell("CATEGORY");
             var shiftTypeName = GetCell("SHIFT TYPE");
             
             var employee = await context.Employees.FirstOrDefaultAsync(e => e.StaffNumber == staffIdStr);
-            if (employee == null) continue;
+            if (employee == null)
+            {
+                skipped.Add($"{staffIdStr} - Employee not found");
+                continue;
+            }
 
             var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(c => c.Name == shiftCategoryName);
-            if (shiftCategory == null) continue;
+            if (shiftCategory == null)
+            {
+                skipped.Add($"{staffIdStr} - Shift category '{shiftCategoryName}' not found");
+                continue;
+            }
 
             var shiftType = await context.ShiftTypes.FirstOrDefaultAsync(t => t.ShiftName == shiftTypeName);
-            if (shiftType == null) continue;
+            if (shiftType == null)
+            {
+                skipped.Add($"{staffIdStr} - Shift type '{shiftTypeName}' not found");
+                continue;
+            }
             
-
-            // Conflict & leave check
+            // Leave check
             var hasLeave = await context.LeaveRequests.AnyAsync(l =>
                 l.EmployeeId == employee.Id &&
                 l.LeaveStatus == LeaveStatus.Approved &&
                 l.EndDate.Date >= startDate &&
                 l.StartDate.Date <= endDate);
 
-            if (hasLeave) continue;
+            if (hasLeave)
+            {
+                skipped.Add($"{staffIdStr} - On approved leave during schedule period");
+                continue;
+            }
 
+            // Conflict check
             var existingAssignments = await context.ShiftAssignments
                 .Where(sa =>
                     sa.EmployeeId == employee.Id &&
@@ -418,7 +433,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                         ConvertTime(existing.StartTime) < ConvertTime(current.EndTime) &&
                         ConvertTime(existing.EndTime) > ConvertTime(current.StartTime))));
 
-            if (hasConflict) continue;
+            if (hasConflict)
+            {
+                skipped.Add($"{staffIdStr} - Schedule conflict with existing assignment");
+                continue;
+            }
 
             for (var date = startDate; date <= endDate; date = date.AddDays(1))
             {
@@ -440,10 +459,13 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         await context.ShiftAssignments.AddRangeAsync(assignments);
         await context.SaveChangesAsync();
 
-        return Result.Success();
+        var message = $"Successfully imported {assignments.Count} assignments.";
+        if (skipped.Count != 0)
+            message += $" Skipped {skipped.Count}: {string.Join("; ", skipped)}";
+
+        return Result.Success(message);
     }
-
-
+    
     private static TimeOnly ConvertTime(string time)
     {
         return TimeOnly.ParseExact(time, "hh:mm tt", CultureInfo.InvariantCulture);
