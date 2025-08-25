@@ -12,6 +12,14 @@ public class ProductionOrderDto : BaseDto
     public CustomerDto Customer { get; set; }
     public List<ProductionOrderProductsDto> Products { get; set; } = [];
     public decimal TotalValue { get; set; }
+    public ProductionOrderStatus Status { get; set; }
+    public bool Approved { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+}
+
+public class ProductionOrderDetailDto : ProductionOrderDto
+{
+    public ProductionOrderInvoiceDto Invoice { get; set; }
 }
 
 public class ProductionOrderProductsDto

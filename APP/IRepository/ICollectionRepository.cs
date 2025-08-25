@@ -1,3 +1,4 @@
+using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using SHARED;
@@ -15,4 +16,6 @@ public interface ICollectionRepository
     Task<Result<Guid>> UpdateItem(CreateItemRequest request, Guid itemId, string itemType, Guid userId);
     Task<Result> SoftDeleteItem(Guid itemId, string itemType, Guid userId);
     Task<Result<IEnumerable<PackageStyleDto>>> GetPackageStyles();
+    Task<Result> CreateUoM(CreateUnitOfMeasure request);
+    Task<Result<Paginateable<IEnumerable<UnitOfMeasureDto>>>> GetUoM(FilterUnitOfMeasure filter);
 }

@@ -1,4 +1,6 @@
+using APP.Extensions;
 using APP.IRepository;
+using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
@@ -795,5 +797,40 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             default:
                 return Error.Validation("Item", "Invalid item type");
         }    
+    }
+
+    public async Task<Result> CreateUoM(CreateUnitOfMeasure request)
+    {
+        var uom = mapper.Map<UnitOfMeasure>(request);
+        await context.UnitOfMeasures.AddAsync(uom);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<UnitOfMeasureDto>>>> GetUoM(FilterUnitOfMeasure filter)
+    {
+        var query = context.UnitOfMeasures.
+            AsQueryable();
+
+        if (string.IsNullOrEmpty(filter.SearchQuery))
+        {
+            query = query.WhereSearch(filter.SearchQuery, q => q.Name, q => q.Description);
+        }
+
+        if (filter.Types.Count != 0)
+        {
+            query = query.Where(q => filter.Types.Contains(q.Type));
+        }
+
+        if (filter.Categories.Count != 0)
+        {
+            query = query.Where(q => filter.Categories.Contains(q.Category));
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            filter,
+            mapper.Map<UnitOfMeasureDto>
+        );
     }
 }

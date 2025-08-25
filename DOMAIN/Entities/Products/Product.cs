@@ -46,6 +46,7 @@ public class Product : BaseEntity
     public Division Division { get; set; }
     public int PackPerShipper { get; set; }
     public List<ProductPrices>  Prices { get; set; } = [];
+    public decimal ExpectedYield { get; set; }
 }
 
 [Owned]
