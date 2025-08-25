@@ -158,4 +158,48 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.GetUoM(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    
+    /// <summary>
+    /// Retrieves a unit of measure by its id
+    /// </summary>
+    /// <returns>Returns a collection of uom items.</returns>
+    [HttpPost("uom/{uomId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UnitOfMeasureDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetUoM([FromRoute] Guid uomId)
+    {
+        var result = await repository.GetUoM(uomId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a unit of measure by its id
+    /// </summary>
+    /// <returns>Returns a collection of uom items.</returns>
+    [HttpPut("uom/{uomId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateUoM([FromRoute] Guid uomId, [FromBody]  CreateUnitOfMeasure request)
+    {
+        var result = await repository.UpdateUoM(request, uomId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Retrieves a unit of measure by its id
+    /// </summary>
+    /// <returns>Returns a collection of uom items.</returns>
+    [HttpDelete("uom/{uomId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteUoM([FromRoute] Guid uomId)
+    {
+        var result = await repository.DeleteUoM(uomId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

@@ -828,4 +828,37 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             mapper.Map<UnitOfMeasureDto>
         );
     }
+    
+    public async Task<Result<UnitOfMeasureDto>> GetUoM(Guid uomId)
+    {
+       return mapper.Map<UnitOfMeasureDto>(
+           await context.UnitOfMeasures.FirstOrDefaultAsync(p => p.Id == uomId));
+    }
+    
+    
+    public async Task<Result> UpdateUoM(CreateUnitOfMeasure request, Guid id)
+    {
+        var uom = await context.UnitOfMeasures.
+            FirstOrDefaultAsync(u => u.Id == id);
+        if(uom is null) return Error.NotFound("Uom", "Uom not found");
+        
+        mapper.Map(request, uom);
+        
+        context.UnitOfMeasures.Update(uom);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    
+    public async Task<Result> DeleteUoM(Guid uomId)
+    {
+        var uom = await context.UnitOfMeasures.
+            FirstOrDefaultAsync(u => u.Id == uomId);
+        if(uom is null) return Error.NotFound("Uom", "Uom not found");
+        
+        uom.DeletedAt = DateTime.UtcNow;
+        context.UnitOfMeasures.Update(uom);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 }
