@@ -917,11 +917,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                       .AsSplitQuery()
                       .Include(p => p.ProformaInvoice)
                       .FirstOrDefaultAsync(p => p.ProformaInvoice.ProductionOrderId == productionOrder.Id);
-                  if (invoice != null)
-                  {
-                      invoice.Status = InvoiceStatus.Completed;
-                      context.Invoices.Update(invoice);
-                  }
+                  if(invoice is null) return Error.Validation("Invoice.NotFound", $"Invoice {productionOrder.Id} not found. " +
+                      $"An invoice is needed before final approval can be made");
+                  invoice.Status = InvoiceStatus.Approved;
+                  context.Invoices.Update(invoice);
                 }
                 
                 context.ProductionOrders.Update(productionOrder);

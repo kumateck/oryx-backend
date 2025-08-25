@@ -22,7 +22,7 @@ public class Invoice : BaseEntity
 public enum InvoiceStatus
 {
     Pending,
-    Completed,
+    Approved,
 }
 
 public class InvoiceDto : WithAttachment
