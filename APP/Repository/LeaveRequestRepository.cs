@@ -46,127 +46,151 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         var paidDays = 0;
         var unpaidDays = 0;
         
-        switch (request.RequestCategory)
+switch (request.RequestCategory)
+{
+    // ---------------- Absence Request ----------------
+    case RequestCategory.AbsenceRequest:
+    {
+        if (string.IsNullOrWhiteSpace(request.ContactPerson) ||
+            string.IsNullOrWhiteSpace(request.ContactPersonNumber))
         {
-            case RequestCategory.AbsenceRequest or RequestCategory.LeaveRequest when string.IsNullOrWhiteSpace(request.ContactPerson) ||
-                                                     string.IsNullOrWhiteSpace(request.ContactPersonNumber):
-                return Error.Validation("AbsenceRequest.InvalidContactPerson", "Contact person and contact person number are required.");
-            // Absence rules
-            case RequestCategory.AbsenceRequest when totalDays > 2:
-                return Error.Validation("AbsenceRequest.InvalidDuration", "Absence requests must be at most 2 days.");
-            case RequestCategory.AbsenceRequest when leaveType.IsPaid:
-            {
-                if (leaveType.DeductFromBalance)
-                {
-                    int balanceDeducted;
-                    if (leaveType.DeductionLimit > 0)
-                    {
-                        paidDays = (int)Math.Min(totalDays, leaveType.DeductionLimit ?? 0);
-                        var remaining = (int)totalDays - paidDays;
-
-                        balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, remaining);
-                        unpaidDays = remaining - balanceDeducted;
-                    }
-                    else
-                    {
-                        balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, (int)totalDays);
-                        paidDays = balanceDeducted;
-                        unpaidDays = (int)totalDays - balanceDeducted;
-                    }
-
-                    existingEmployee.AnnualLeaveDays -= balanceDeducted;
-                }
-                else
-                {
-                    paidDays = (int)totalDays;
-                    unpaidDays = 0;
-                }
-
-                break;
-            }
-            case RequestCategory.AbsenceRequest:
-                paidDays = 0;
-                unpaidDays = (int)totalDays;
-                break;
-            case  RequestCategory.ExitPassRequest:
-            {
-                if (request.StartDate != request.EndDate)
-                {
-                    return Error.Validation("LeaveRequest.InvalidDates", "Exit Pass request must be a single day.");
-                }
-
-                break;
-            }
-            case RequestCategory.LeaveRequest:
-            default:
-            {
-                // Leave rules
-                if (totalDays < 3)
-                    return Error.Validation("LeaveRequest.InvalidDuration", "Leave request must be at least 3 days long.");
-
-                if (leaveType.IsPaid)
-                {
-                    var deductionLimit = leaveType.DeductionLimit ?? 0;
-                    var balance = existingEmployee.AnnualLeaveDays;
-
-                    if (leaveType.DeductFromBalance)
-                    {
-                        if (balance >= totalDays - deductionLimit)
-                        {
-                            paidDays = (int)totalDays;
-                            existingEmployee.AnnualLeaveDays -= (int)(totalDays - deductionLimit);
-                        }
-                        else
-                        {
-                            paidDays = balance + deductionLimit;
-                            unpaidDays = (int)totalDays - paidDays;
-                        }
-                    }
-                }
-                else
-                {
-                    paidDays = 0;
-                    unpaidDays = (int)totalDays;
-                }
-
-                break;
-            }
-            
-            case RequestCategory.OfficialDuty:
-            {
-                if (existingEmployee.Type != EmployeeType.Permanent)
-                {
-                    return Error.Validation("OfficialDuty.InvalidEmployeeType", "Only permanent staff can request official duty.");
-                }
-
-                if (string.IsNullOrWhiteSpace(request.Justification))
-                {
-                    request.Justification = "";
-                }
-                
-                if (string.IsNullOrWhiteSpace(request.Destination))
-                {
-                    return Error.Validation("OfficialDuty.MissingDestination", "Destination is required for official duty.");
-                }
-
-                break;
-            }
-                
+            return Error.Validation("AbsenceRequest.InvalidContactPerson", "Contact person and contact person number are required.");
         }
 
-        var entity = mapper.Map<LeaveRequest>(request);
+        if (totalDays > 2)
+        {
+            return Error.Validation("AbsenceRequest.InvalidDuration", "Absence requests must be at most 2 days.");
+        }
 
-        entity.PaidDays = paidDays;
-        entity.UnpaidDays = unpaidDays;
+        if (leaveType.IsPaid)
+        {
+            if (leaveType.DeductFromBalance)
+            {
+                int balanceDeducted;
+                if (leaveType.DeductionLimit > 0)
+                {
+                    paidDays = (int)Math.Min(totalDays, leaveType.DeductionLimit ?? 0);
+                    var remaining = (int)totalDays - paidDays;
 
-        await context.LeaveRequests.AddAsync(entity);
-        await context.SaveChangesAsync();
+                    balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, remaining);
+                    unpaidDays = remaining - balanceDeducted;
+                }
+                else
+                {
+                    balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, (int)totalDays);
+                    paidDays = balanceDeducted;
+                    unpaidDays = (int)totalDays - balanceDeducted;
+                }
+
+                existingEmployee.AnnualLeaveDays -= balanceDeducted;
+            }
+            else
+            {
+                paidDays = (int)totalDays;
+                unpaidDays = 0;
+            }
+        }
+        else
+        {
+            paidDays = 0;
+            unpaidDays = (int)totalDays;
+        }
+
+        break;
+    }
+
+    // ---------------- Leave Request ----------------
+    case RequestCategory.LeaveRequest:
+    {
+        if (string.IsNullOrWhiteSpace(request.ContactPerson) ||
+            string.IsNullOrWhiteSpace(request.ContactPersonNumber))
+        {
+            return Error.Validation("LeaveRequest.InvalidContactPerson", "Contact person and contact person number are required.");
+        }
+
+        if (totalDays < 3)
+        {
+            return Error.Validation("LeaveRequest.InvalidDuration", "Leave request must be at least 3 days long.");
+        }
+
+        if (leaveType.IsPaid)
+        {
+            var deductionLimit = leaveType.DeductionLimit ?? 0;
+            var balance = existingEmployee.AnnualLeaveDays;
+
+            if (leaveType.DeductFromBalance)
+            {
+                if (balance >= totalDays - deductionLimit)
+                {
+                    paidDays = (int)totalDays;
+                    existingEmployee.AnnualLeaveDays -= (int)(totalDays - deductionLimit);
+                }
+                else
+                {
+                    paidDays = balance + deductionLimit;
+                    unpaidDays = (int)totalDays - paidDays;
+                }
+            }
+        }
+        else
+        {
+            paidDays = 0;
+            unpaidDays = (int)totalDays;
+        }
+
+        break;
+    }
+
+    // ---------------- Exit Pass Request ----------------
+    case RequestCategory.ExitPassRequest:
+    {
+        if (request.StartDate != request.EndDate)
+        {
+            return Error.Validation("ExitPassRequest.InvalidDates", "Exit Pass request must be a single day.");
+        }
+
+        break;
+    }
+
+    // ---------------- Official Duty ----------------
+    case RequestCategory.OfficialDuty:
+    {
+        if (existingEmployee.Type != EmployeeType.Permanent)
+        {
+            return Error.Validation("OfficialDuty.InvalidEmployeeType", "Only permanent staff can request official duty.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Justification))
+        {
+            request.Justification = "";
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Destination))
+        {
+            return Error.Validation("OfficialDuty.MissingDestination", "Destination is required for official duty.");
+        }
         
-        await approvalRepository.CreateInitialApprovalsAsync(nameof(LeaveRequest), entity.Id);
-        
-        backgroundWorkerService.EnqueueNotification("New leave request created", NotificationType.LeaveRequest);
-        
-        return entity.Id;
+        break;
+    }
+
+    // ---------------- Default ----------------
+        default:
+            return Error.Validation("RequestCategory.Invalid", "Unknown request category.");
+    }
+
+    var entity = mapper.Map<LeaveRequest>(request);
+
+    entity.PaidDays = paidDays;
+    entity.UnpaidDays = unpaidDays;
+
+    await context.LeaveRequests.AddAsync(entity);
+    await context.SaveChangesAsync();
+    
+    await approvalRepository.CreateInitialApprovalsAsync(nameof(LeaveRequest), entity.Id);
+    
+    backgroundWorkerService.EnqueueNotification("New leave request created", NotificationType.LeaveRequest);
+    
+    return entity.Id;
     }
     public async Task<Result<Paginateable<IEnumerable<LeaveRequestDto>>>> GetLeaveRequests(int page, int pageSize, string searchQuery)
     {
