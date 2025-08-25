@@ -11,7 +11,7 @@ public class AssignEmployeeDto
     
     public string StaffNumber { get; set; }
     
-    public EmployeeLevel Level { get; set; }
+    [Required] public EmployeeLevel Level { get; set; }
     
     public DateTime StartDate { get; set; }
     

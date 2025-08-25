@@ -71,6 +71,8 @@ public class CreateEmployeeRequest
 public class UpdateEmployeeRequest : CreateEmployeeRequest
 {
     public EmployeeStatus Status { get; set; }
+    
+    public EmployeeLevel? Level { get; set; }
     public EmployeeActiveStatus? ActiveStatus { get; set; }
     public EmployeeInactiveStatus? InactiveStatus { get; set; }
     public DateTime? SuspensionStartDate { get; set; }
