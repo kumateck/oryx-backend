@@ -1480,6 +1480,29 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             });
         }
         
+        var overtimeRequests = await context.OvertimeRequests
+            .AsSplitQuery()
+            .Include(bs => bs.Approvals)
+            .Include(po => po.CreatedBy)
+            .ThenInclude(po => po.Department)
+            .Where(bs => bs.Approvals.Any(a =>
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+            .ToListAsync();
+
+        foreach (var bs in overtimeRequests)
+        {
+            entitiesRequiringApproval.Add(new ApprovalEntity
+            {
+                ModelType = nameof(OvertimeRequest),
+                Id = bs.Id,
+                Code = "",
+                Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
+                CreatedAt = bs.CreatedAt,
+                RequestedBy = mapper.Map<CollectionItemDto>(bs.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(bs.Id)
+            });
+        }
+        
         var leaveRequests = await context.LeaveRequests
             .AsSplitQuery()
             .Include(bs => bs.Approvals)
@@ -1626,6 +1649,23 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
             
+            case nameof(OvertimeRequest):
+                var overtimeRequest = await context.OvertimeRequests
+                    .AsSplitQuery()
+                    .Include(l => l.CreatedBy).ThenInclude(u => u.Department)
+                    .Include(l => l.Approvals).ThenInclude(a => a.ApprovedBy)
+                    .FirstOrDefaultAsync(l => l.Id == modelId);
+                return new ApprovalEntity
+                {
+                    ModelType = modelType,
+                    Id = modelId,
+                    Code = "",
+                    CreatedAt = overtimeRequest.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(overtimeRequest.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<CollectionItemDto>(overtimeRequest.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId)
+                };
+            
             case nameof(Response):
                 var response = await context.Responses
                     .AsSplitQuery()
@@ -1765,6 +1805,17 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         leaveRequest.LeaveStatus = LeaveStatus.Pending;
                         leaveRequest.Approved = true;
                         context.LeaveRequests.Update(leaveRequest);
+                        await context.SaveChangesAsync();
+                    }
+                    break;
+                
+                case nameof(OvertimeRequest):
+                    var overtimeRequest = await context.OvertimeRequests.FirstOrDefaultAsync(r => r.Id == modelId);
+                    if (overtimeRequest != null)
+                    {
+                        overtimeRequest.Status = OvertimeStatus.Pending;
+                        overtimeRequest.Approved = true;
+                        context.OvertimeRequests.Update(overtimeRequest);
                         await context.SaveChangesAsync();
                     }
                     break;
@@ -2046,6 +2097,12 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             .Where(r => !r.Approved)
             .Include(requisition => requisition.Approvals)
             .ToListAsync();
+        
+        var unapprovedOverTimeRequests = await context.OvertimeRequests
+            .AsSplitQuery()
+            .Where(r => !r.Approved)
+            .Include(requisition => requisition.Approvals)
+            .ToListAsync();
 
         foreach (var approval in approvalsWithEscalation)
         {
@@ -2078,6 +2135,14 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     if (leaveRequest != null)
                     {
                         await ProcessLeaveRequestEscalations(leaveRequest, approval.EscalationDuration);
+                    }
+                    break;
+                
+                case nameof(OvertimeRequest):
+                    var overtimeRequest = unapprovedOverTimeRequests.FirstOrDefault(po => po.Approvals.Any(a => a.ApprovalId == approval.Id));
+                    if (overtimeRequest != null)
+                    {
+                        await ProcessOvertimeRequestEscalations(overtimeRequest, approval.EscalationDuration);
                     }
                     break;
             }
@@ -2265,6 +2330,51 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             await context.SaveChangesAsync();
         }
     }
+    
+    private async Task ProcessOvertimeRequestEscalations(OvertimeRequest overtimeRequest, TimeSpan escalationDuration)
+    {
+        if (overtimeRequest is null || overtimeRequest.Approvals.Count == 0) return;
+
+        var currentApprovalStages = GetCurrentApprovalStage(overtimeRequest.Approvals.Select(a =>
+            new ResponsibleApprovalStage
+            {
+                Status = a.Status,
+                Required = a.Required,
+                Order = a.Order,
+                CreatedAt = a.CreatedAt,
+                ActivatedAt = a.ActivatedAt
+            }).ToList());
+
+        if (currentApprovalStages.Count <= 1) return;
+
+        var stagesToAutoApprove = currentApprovalStages
+            .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue &&
+                        (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
+            .ToList();
+
+        if (stagesToAutoApprove.Any())
+        {
+            foreach (var stage in stagesToAutoApprove)
+            {
+                //var actualStage = purchaseOrder.Approvals.First(a => a.Id == stage.Id);
+                stage.Status = ApprovalStatus.Approved;
+                stage.ApprovalTime = DateTime.UtcNow;
+                stage.Comments = "Approval stage exceeded escalation duration.";
+            }
+
+            var allRequiredApproved = overtimeRequest.Approvals
+                .Where(s => s.Required)
+                .All(s => s.Status == ApprovalStatus.Approved);
+
+            if (allRequiredApproved)
+            {
+                overtimeRequest.Approved = true;
+            }
+
+            await context.SaveChangesAsync();
+        }
+    }
+
     
     /*private async Task<Result> AllocateProduct(ProductionOrder request)
     {
