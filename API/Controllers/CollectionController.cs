@@ -177,7 +177,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <summary>
     /// Retrieves a unit of measure by its id
     /// </summary>
-    /// <returns>Returns a collection of uom items.</returns>
+    /// <returns>Updayes a uom.</returns>
     [HttpPut("uom/{uomId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -192,7 +192,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <summary>
     /// Retrieves a unit of measure by its id
     /// </summary>
-    /// <returns>Returns a collection of uom items.</returns>
+    /// <returns>Deletes a uom.</returns>
     [HttpDelete("uom/{uomId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
