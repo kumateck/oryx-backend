@@ -358,6 +358,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         var query = context.Employees
             .Include(e => e.Department)
             .Include(e => e.Designation)
+            .Include(e => e.ReportingManager)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
