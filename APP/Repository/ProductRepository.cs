@@ -461,7 +461,7 @@ namespace APP.Repository;
         return Result.Success();
     }
     
-    public async Task<Result<Guid>> CreateProductPacking(List<CreateProductPackingList> request, Guid productId, Guid userId)
+    public async Task<Result<Guid>> CreateProductPacking(List<CreateProductPacking> request, Guid productId, Guid userId)
     {
         var product = await context.Products
             .AsSingleQuery()
@@ -475,20 +475,16 @@ namespace APP.Repository;
         }
         
         
-        // Remove old packages if they exist
         if (product.Packings.Count != 0)
         {
             context.ProductPackings.RemoveRange(product.Packings);
         }
 
-        foreach (var packing in request.Select(packingList => new ProductPacking
-                 {
-                     ProductId = productId,
-                     CreatedById = userId,
-                     PackingLists = mapper.Map<List<ProductPackingList>>(packingList)
-                 }))
+        foreach (var packing in request)
         {
-            await context.ProductPackings.AddAsync(packing);
+            var productPacking = mapper.Map<ProductPacking>(packing);
+            productPacking.ProductId = productId;
+            await context.ProductPackings.AddAsync(productPacking);
         }
         
         await context.SaveChangesAsync();
@@ -500,6 +496,7 @@ namespace APP.Repository;
         var query = await context.ProductPackings
             .AsSplitQuery()
             .Include(p => p.PackingLists)
+            .ThenInclude(p => p.Uom)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
         

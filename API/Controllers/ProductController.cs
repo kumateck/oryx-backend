@@ -199,7 +199,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateProductPacking([FromBody] List<CreateProductPackingList> request, Guid productId)
+    public async Task<IResult> CreateProductPacking([FromBody] List<CreateProductPacking> request, Guid productId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
