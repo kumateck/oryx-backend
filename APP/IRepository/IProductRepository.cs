@@ -40,4 +40,8 @@ public interface IProductRepository
     Task<Result> ImportProductsFromExcel(IFormFile file);
     Task<Result> ImportProductBomFromExcel(IFormFile file);
     Task<Result> ImportProductPackagesFromExcel(IFormFile file);
+
+    Task<Result<Guid>> CreateProductPacking(List<CreateProductPackingList> request, Guid productId,
+        Guid userId);
+    Task<Result<IEnumerable<ProductPackingDto>>> GetProductPackings(Guid productId);
 }

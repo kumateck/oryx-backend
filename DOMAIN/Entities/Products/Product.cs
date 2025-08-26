@@ -47,6 +47,7 @@ public class Product : BaseEntity
     public int PackPerShipper { get; set; }
     public List<ProductPrices>  Prices { get; set; } = [];
     public decimal ExpectedYield { get; set; }
+    public List<ProductPacking> Packings { get; set; } = [];
 }
 
 [Owned]
@@ -54,6 +55,21 @@ public class ProductPrices
 {
     public decimal Price { get; set; }
     public DateTime Date { get; set; }
+}
+
+
+public class ProductPacking : BaseEntity
+{
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public List<ProductPackingList> PackingLists { get; set; } = [];
+}
+
+[Owned]
+public class ProductPackingList
+{
+    [StringLength(10000)] public string Unit { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 public enum Division

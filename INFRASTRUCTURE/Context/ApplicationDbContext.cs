@@ -173,6 +173,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PackageType> PackageTypes { get; set; }
     
     public DbSet<ProductSpecification> ProductSpecifications { get; set; }
+    public DbSet<ProductPacking> ProductPackings { get; set; }
 
     #endregion
 
@@ -914,6 +915,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductSpecification>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductPacking>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
 
         #endregion
 

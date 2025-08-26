@@ -191,6 +191,35 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.CreateProductPackage(request, productId,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Creates a new product package.
+    /// </summary>
+    [HttpPost("{productId}/packing")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateProductPacking([FromBody] List<CreateProductPackingList> request, Guid productId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateProductPacking(request, productId,Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves packings lists for a product
+    /// </summary>
+    [HttpGet("{productId}/packing")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductPackingDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductPackings([FromRoute] Guid productId)
+    {
+        var result = await repository.GetProductPackings(productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a specific product package by its ID.
