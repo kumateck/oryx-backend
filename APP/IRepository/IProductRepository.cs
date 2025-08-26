@@ -41,7 +41,7 @@ public interface IProductRepository
     Task<Result> ImportProductBomFromExcel(IFormFile file);
     Task<Result> ImportProductPackagesFromExcel(IFormFile file);
 
-    Task<Result<Guid>> CreateProductPacking(List<CreateProductPackingList> request, Guid productId,
+    Task<Result<Guid>> CreateProductPacking(List<CreateProductPacking> request, Guid productId,
         Guid userId);
     Task<Result<IEnumerable<ProductPackingDto>>> GetProductPackings(Guid productId);
 }

@@ -62,13 +62,16 @@ public class ProductPacking : BaseEntity
 {
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
+    [StringLength(10000)] public string Name { get; set; }
+    [StringLength(10000)] public string Description { get; set; }
     public List<ProductPackingList> PackingLists { get; set; } = [];
 }
 
 [Owned]
 public class ProductPackingList
 {
-    [StringLength(10000)] public string Unit { get; set; }
+    public Guid UomId { get; set; }
+    public UnitOfMeasure Uom { get; set; }
     public decimal Quantity { get; set; }
 }
 

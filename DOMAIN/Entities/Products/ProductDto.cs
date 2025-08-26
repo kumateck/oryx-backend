@@ -25,18 +25,27 @@ public class ProductBillOfMaterialDto
     public bool IsActive { get; set; }
 }
 
+public class CreateProductPacking
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public List<CreateProductPackingList> PackingLists { get; set; } = [];
+}
+
 public class CreateProductPackingList
 {
-    public string Unit { get; set; }
+    public Guid UomId { get; set; }
     public decimal Quantity { get; set; }
 }
 public class ProductPackingDto : BaseDto
 {
+    public string Name { get; set; }
+    public string Description { get; set; }
     public List<ProductPackingListDto> PackingLists { get; set; } = [];
 }
 
 public class ProductPackingListDto
 {
-    public string Unit { get; set; }
+    public UnitOfMeasureDto Uom { get; set; }
     public decimal Quantity { get; set; }
 }
