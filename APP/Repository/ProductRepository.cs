@@ -461,6 +461,51 @@ namespace APP.Repository;
         return Result.Success();
     }
     
+    public async Task<Result<Guid>> CreateProductPacking(List<CreateProductPackingList> request, Guid productId, Guid userId)
+    {
+        var product = await context.Products
+            .AsSingleQuery()
+            .Include(product => product.Packings)
+            .ThenInclude(p => p.PackingLists)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+
+        if (product is null)
+        {
+            return ProductErrors.NotFound(productId);
+        }
+        
+        
+        // Remove old packages if they exist
+        if (product.Packings.Count != 0)
+        {
+            context.ProductPackings.RemoveRange(product.Packings);
+        }
+
+        foreach (var packing in request.Select(packingList => new ProductPacking
+                 {
+                     ProductId = productId,
+                     CreatedById = userId,
+                     PackingLists = mapper.Map<List<ProductPackingList>>(packingList)
+                 }))
+        {
+            await context.ProductPackings.AddAsync(packing);
+        }
+        
+        await context.SaveChangesAsync();
+        return product.Id;
+    }
+
+    public async Task<Result<IEnumerable<ProductPackingDto>>> GetProductPackings(Guid productId)
+    {
+        var query = await context.ProductPackings
+            .AsSplitQuery()
+            .Include(p => p.PackingLists)
+            .Where(p => p.ProductId == productId)
+            .ToListAsync();
+        
+        return mapper.Map<List<ProductPackingDto>>(query);
+    }
+    
     public async Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId, Guid userId)
     {
         var product = await context.Products.Include(product => product.FinishedProducts).FirstOrDefaultAsync(p => p.Id == productId);

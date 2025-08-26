@@ -1538,6 +1538,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
         var query = context.BatchManufacturingRecords
+            .AsSplitQuery()
             .Include(b => b.CreatedBy)
             .Include(p => p.ProductionActivityStep)
             .Include(p => p.ProductionSchedule)
@@ -1567,6 +1568,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         return mapper.Map<BatchManufacturingRecordDto>(
             await context.BatchManufacturingRecords
+                .AsSplitQuery()
                 .Include(b => b.CreatedBy)
                 .Include(p => p.ProductionActivityStep)
                 .Include(p => p.ProductionSchedule)
@@ -1629,10 +1631,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<BatchPackagingRecordDto>>>> GetBatchPackagingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
         var query = context.BatchPackagingRecords
+            .AsSplitQuery()
             .Include(b => b.CreatedBy)
             .Include(p => p.ProductionActivityStep)
             .Include(p => p.ProductionSchedule)
             .Include(p => p.Product)
+            .Include(p => p.ProductPacking)
+            .ThenInclude(pp => pp.PackingLists)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -1657,10 +1662,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         return mapper.Map<BatchPackagingRecordDto>(
             await context.BatchPackagingRecords
+                .AsSplitQuery()
                 .Include(b => b.CreatedBy)
                 .Include(p => p.ProductionActivityStep)
                 .Include(p => p.ProductionSchedule)
                 .Include(p => p.Product)
+                .Include(p => p.ProductPacking)
+                .ThenInclude(pp => pp.PackingLists)
                 .FirstOrDefaultAsync(b => b.Id == id));
     }
 

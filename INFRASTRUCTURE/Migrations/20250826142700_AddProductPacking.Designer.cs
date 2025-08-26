@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250826142700_AddProductPacking")]
+    partial class AddProductPacking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -7063,9 +7066,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductPackingId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
@@ -7086,8 +7086,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductPackingId");
 
                     b.HasIndex("ProductionActivityStepId");
 
@@ -15785,10 +15783,6 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Products.ProductPacking", "ProductPacking")
-                        .WithMany()
-                        .HasForeignKey("ProductPackingId");
-
                     b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
                         .HasForeignKey("ProductionActivityStepId")
@@ -15810,8 +15804,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Product");
-
-                    b.Navigation("ProductPacking");
 
                     b.Navigation("ProductionActivityStep");
 
