@@ -18,10 +18,3 @@ public class AssignEmployeeDto
     [Required] public Guid ReportingManagerId {get; set;}
     
 }
-
-public class AssignEmployeeData : AssignEmployeeDto
-{
-    
-    public UserDto ReportingManager { get; set; }
-
-}
