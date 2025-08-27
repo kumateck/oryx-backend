@@ -1668,7 +1668,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 .Include(p => p.ProductionSchedule)
                 .Include(p => p.Product)
                 .Include(p => p.ProductPacking)
-                .ThenInclude(pp => pp.PackingLists)
+                .ThenInclude(p => p.PackingLists.OrderBy(pp => pp.Order))
                 .FirstOrDefaultAsync(b => b.Id == id));
     }
 

@@ -36,6 +36,7 @@ public class CreateProductPackingList
 {
     public Guid UomId { get; set; }
     public decimal Quantity { get; set; }
+    public int Order { get; set; }
 }
 public class ProductPackingDto : BaseDto
 {
@@ -48,4 +49,5 @@ public class ProductPackingListDto
 {
     public UnitOfMeasureDto Uom { get; set; }
     public decimal Quantity { get; set; }
+    public int Order { get; set; }
 }

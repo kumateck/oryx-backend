@@ -73,6 +73,7 @@ public class ProductPackingList
     public Guid UomId { get; set; }
     public UnitOfMeasure Uom { get; set; }
     public decimal Quantity { get; set; }
+    public int Order { get; set; }
 }
 
 public enum Division
