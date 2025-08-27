@@ -1589,6 +1589,20 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
         batchRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
         context.BatchManufacturingRecords.Update(batchRecord);
+        
+        
+        var batchPackingRecord = await context.BatchPackagingRecords
+            .AsSplitQuery()
+            .Include(batchPackagingRecord => batchPackagingRecord.ProductionActivityStep)
+            .FirstOrDefaultAsync(p => p.ProductionActivityStepId == batchRecord.ProductionActivityStepId);
+        if (batchPackingRecord is not  null)
+        {
+            mapper.Map(request, batchPackingRecord);
+            batchPackingRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
+            batchPackingRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
+            context.BatchPackagingRecords.Update(batchPackingRecord);
+        }
+        
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -1613,8 +1627,27 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             Message = "Issued batch manufacturing record",
             Timestamp = DateTime.UtcNow
         });
-        await context.SaveChangesAsync();
         
+        var batchPackingRecord = await context.BatchPackagingRecords
+            .AsSplitQuery()
+            .Include(batchPackagingRecord => batchPackagingRecord.ProductionActivityStep)
+            .FirstOrDefaultAsync(p => p.ProductionActivityStepId == batchRecord.ProductionActivityStepId);
+        if (batchPackingRecord is not  null)
+        {
+            batchPackingRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
+            batchPackingRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
+            context.BatchPackagingRecords.Update(batchPackingRecord);
+            
+            await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
+            {
+                ProductionActivityId = batchRecord.ProductionActivityStep.ProductionActivityId,
+                UserId = userId,
+                Message = "Issued batch packing record",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        await context.SaveChangesAsync();
         backgroundWorkerService.EnqueueNotification("Batch manufacturing issued", NotificationType.BmrBprApproved);
 
         return Result.Success();
