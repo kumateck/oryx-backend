@@ -495,7 +495,7 @@ namespace APP.Repository;
     {
         var query = await context.ProductPackings
             .AsSplitQuery()
-            .Include(p => p.PackingLists)
+            .Include(p => p.PackingLists.OrderBy(pp => pp.Order))
             .ThenInclude(p => p.Uom)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
