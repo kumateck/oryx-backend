@@ -23,6 +23,7 @@ public class UpdateBatchManufacturingRecord
     public DateTime? ManufacturingDate { get; set; } 
     public DateTime? ExpiryDate { get; set; } 
     public decimal BatchQuantity { get; set; }
+    public Guid? ProductPackingId { get; set; }
 }
 
 public class BatchManufacturingRecord : BaseEntity
