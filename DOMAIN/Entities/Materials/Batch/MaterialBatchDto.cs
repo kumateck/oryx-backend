@@ -37,6 +37,7 @@ public class MaterialBatchDto
     public List<CurrentLocationDto> Locations { get; set; } = [];
     public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity { get; set; }
+    public DateTime? ReturnDate { get; set; }
 }
 
 public class MaterialBatchListDto

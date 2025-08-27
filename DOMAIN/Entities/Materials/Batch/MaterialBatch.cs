@@ -48,6 +48,7 @@ public class MaterialBatch : BaseEntity
     public List<MassMaterialBatchMovement> MassMovements { get; set; } = [];
     public List<MaterialBatchReservedQuantity> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity => ReservedQuantities.Sum(r => r.Quantity);
+    public DateTime? ReturnDate { get; set; }
 }
 
 public class Sr:BaseEntity

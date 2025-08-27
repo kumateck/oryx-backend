@@ -971,10 +971,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         context.MaterialReturnNotes.Update(materialReturnNote);
                     }
                 }
-
+                
+                materialBatch.ReturnDate = DateTime.UtcNow;
+                context.MaterialReturnNotes.Update(materialReturnNote);
                 await context.SaveChangesAsync();
             }
         }
+        
         return Result.Success();
     }
     
