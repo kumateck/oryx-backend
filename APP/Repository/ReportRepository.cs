@@ -151,17 +151,20 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var leaveRequests = context.LeaveRequests.AsQueryable();
         var overtimeRequests = context.OvertimeRequests.AsQueryable();
         var employees = context.Employees.AsQueryable();
+        var staffRequisitions = context.StaffRequisitions.AsQueryable();
 
         if (filter.StartDate.HasValue)
         {
             leaveRequests = leaveRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             overtimeRequests = overtimeRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            staffRequisitions = staffRequisitions.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
         }
 
         if (filter.EndDate.HasValue)
         {
             leaveRequests = leaveRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             overtimeRequests = overtimeRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            staffRequisitions = staffRequisitions.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
         }
 
         return new HrDashboardDto
@@ -174,11 +177,31 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             NumberOfExpiredOvertimeRequests =
                 await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Expired),
             NumberOfCasualEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Casual),
+            NumberOfActiveCasualEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Active),
+            NumberOfActivePermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Active),
             NumberOfPermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent),
             NumberOfLeaveRequests = await leaveRequests.CountAsync(),
             NumberOfPendingLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Pending),
             NumberOfExpiredLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Expired),
             NumberOfRejectedLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Rejected),
+            NumberOfAbsenceRequests = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.AbsenceRequest),
+            NumberOfPendingAbsenceRequests = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.AbsenceRequest && lr.LeaveStatus == LeaveStatus.Approved),
+            NumberOfApprovedAbsenceRequests = await  leaveRequests.CountAsync(lr =>lr.LeaveStatus == LeaveStatus.Approved && lr.RequestCategory == RequestCategory.AbsenceRequest),
+            NumberOfRejectedAbsenceRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Approved && lr.LeaveStatus == LeaveStatus.Approved),
+            NumberOfExitPasses = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.ExitPassRequest),
+            NumberOfPendingExitPasses = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Pending),
+            NumberOfApprovedExitPasses = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Approved),
+            NumberOfRejectedExitPasses = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Rejected),
+            NumberOfOfficialDutyLeaves = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.OfficialDuty),
+            NumberOfApprovedOfficialDutyLeaves = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Approved),
+            NumberOfRejectedOfficialDutyLeaves = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Rejected),
+            NumberOfInactiveCasualEmployees = await  employees.CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Inactive),
+            NumberOfInactivePermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Inactive),
+            NumberOfNewCasualEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.New),
+            NumberOfNewPermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.New),
+            NumberOfPendingOfficialDutyLeaves = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Pending),
+            NumberOfStaffRequisitions = await staffRequisitions.CountAsync(),
+            EmployeeGenderRatio = await employees.CountAsync(e => e.Gender == Gender.Male) / await employees.CountAsync(e => e.Gender == Gender.Female),
             AttendanceStats = await GetAttendanceStatsAsync(filter.StartDate, filter.EndDate)
         };
 
@@ -277,97 +300,94 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             {
                 var isCasual = emp.Type == EmployeeType.Casual;
 
-                // Count new hires during the period
-                if (emp.DateEmployed >= start && emp.DateEmployed <= end)
+                switch (emp.Status)
                 {
-                    if (isCasual)
-                    {
+                    // Count new hires during the period
+                    case EmployeeStatus.New when isCasual:
                         dto.CasualNew++;
                         totals.CasualNew++;
-                    }
-                    else
-                    {
+                        break;
+                    case EmployeeStatus.New:
                         dto.PermanentNew++;
                         totals.PermanentNew++;
-                    }
-                }
+                        break;
+                    // Count exits during the period (only for inactive employees)
+                    case EmployeeStatus.Inactive when 
+                        emp.ExitDate.HasValue && 
+                        emp.ExitDate >= start && 
+                        emp.ExitDate <= end && 
+                        emp.InactiveStatus.HasValue:
+                        switch (emp.InactiveStatus.Value)
+                        {
+                            case EmployeeInactiveStatus.Resignation:
+                                if (isCasual)
+                                {
+                                    dto.CasualResignation++;
+                                    totals.CasualResignation++;
+                                }
+                                else
+                                {
+                                    dto.PermanentResignation++;
+                                    totals.PermanentResignation++;
+                                }
+                                break;
+                            
+                            case EmployeeInactiveStatus.Termination:
+                            case EmployeeInactiveStatus.Deceased:
+                                if (isCasual)
+                                {
+                                    dto.CasualTermination++;
+                                    totals.CasualTermination++;
+                                }
+                                else
+                                {
+                                    dto.PermanentTermination++;
+                                    totals.PermanentTermination++;
+                                }
+                                break;
+                            
+                            case EmployeeInactiveStatus.SummaryDismissed:
+                                if (isCasual)
+                                {
+                                    dto.CasualSDVP++;
+                                    totals.CasualSDVP++;
+                                }
+                                else
+                                {
+                                    dto.PermanentSDVP++;
+                                    totals.PermanentSDVP++;
+                                }
+                                break;
+                            
+                            case EmployeeInactiveStatus.Transfer:
+                                // Transfers are typically permanent employees
+                                if (!isCasual)
+                                {
+                                    dto.PermanentTransfer++;
+                                    totals.PermanentTransfer++;
+                                }
+                                break;
+                            
+                            case EmployeeInactiveStatus.VacatedPost:
+                                // These might need separate handling depending on your business rules
+                                // For now, treating them as terminations
+                                if (isCasual)
+                                {
+                                    dto.CasualSDVP++;
+                                    totals.CasualSDVP++;
+                                }
+                                else
+                                {
+                                    dto.PermanentSDVP++;
+                                    totals.PermanentSDVP++;
+                                }
+                                break;
+                            
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
 
-                // Count exits during the period (only for inactive employees)
-                if (emp.Status == EmployeeStatus.Inactive && 
-                    emp.ExitDate.HasValue && 
-                    emp.ExitDate >= start && 
-                    emp.ExitDate <= end && 
-                    emp.InactiveStatus.HasValue)
-                {
-                    switch (emp.InactiveStatus.Value)
-                    {
-                        case EmployeeInactiveStatus.Resignation:
-                            if (isCasual)
-                            {
-                                dto.CasualResignation++;
-                                totals.CasualResignation++;
-                            }
-                            else
-                            {
-                                dto.PermanentResignation++;
-                                totals.PermanentResignation++;
-                            }
-                            break;
-                            
-                        case EmployeeInactiveStatus.Termination:
-                        case EmployeeInactiveStatus.Deceased:
-                            if (isCasual)
-                            {
-                                dto.CasualTermination++;
-                                totals.CasualTermination++;
-                            }
-                            else
-                            {
-                                dto.PermanentTermination++;
-                                totals.PermanentTermination++;
-                            }
-                            break;
-                            
-                        case EmployeeInactiveStatus.SummaryDismissed:
-                            if (isCasual)
-                            {
-                                dto.CasualSDVP++;
-                                totals.CasualSDVP++;
-                            }
-                            else
-                            {
-                                dto.PermanentSDVP++;
-                                totals.PermanentSDVP++;
-                            }
-                            break;
-                            
-                        case EmployeeInactiveStatus.Transfer:
-                            // Transfers are typically permanent employees
-                            if (!isCasual)
-                            {
-                                dto.PermanentTransfer++;
-                                totals.PermanentTransfer++;
-                            }
-                            break;
-                            
-                        case EmployeeInactiveStatus.VacatedPost:
-                            // These might need separate handling depending on your business rules
-                            // For now, treating them as terminations
-                            if (isCasual)
-                            {
-                                dto.CasualSDVP++;
-                                totals.CasualSDVP++;
-                            }
-                            else
-                            {
-                                dto.PermanentSDVP++;
-                                totals.PermanentSDVP++;
-                            }
-                            break;
-                            
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                        break;
                 }
             }
             
