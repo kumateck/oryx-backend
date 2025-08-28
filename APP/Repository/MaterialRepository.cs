@@ -810,6 +810,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         foreach (var shelfBatch in request.ShelfMaterialBatches)
         {
             var shelf = await context.WarehouseLocationShelves
+                .AsSplitQuery()
                 .Include(warehouseLocationShelf => warehouseLocationShelf.WarehouseLocationRack)
                 .ThenInclude(warehouseLocationRack => warehouseLocationRack.WarehouseLocation)
                 .ThenInclude(warehouseLocation => warehouseLocation.Warehouse)
@@ -1436,7 +1437,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(b => b.UoM)
             .Where(b => b.MaterialId == materialId &&
                         b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)) // Only include batches in the specified warehouse
-            .OrderBy(b => b.ExpiryDate) // FIFO order
+            .OrderBy(b => b.ReturnDate == null)   // false (not null) first, true (null) last
+            .ThenBy(b => b.ReturnDate)            // earliest non-null return dates first
+            .ThenBy(b => b.ExpiryDate)
             .ToListAsync();
 
         foreach (var batch in batches)
