@@ -24,10 +24,16 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
         if (product.BillOfMaterials.Count != 0)
         {
-            context.ProductBillOfMaterials.RemoveRange(product.BillOfMaterials);
-            var boms = context.BillOfMaterials
-                .Where(b => product.BillOfMaterials.Select(p => p.BillOfMaterialId).Contains(b.Id));
-            context.BillOfMaterials.RemoveRange(boms);
+            await context.Database.ExecuteSqlRawAsync(
+                "DELETE FROM \"ProductBillOfMaterials\" WHERE \"ProductId\" = {0}", request.ProductId);
+            
+            var bomIds = product.BillOfMaterials.Select(p => p.BillOfMaterialId).ToList();
+
+            if (bomIds.Count != 0)
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM \"BillOfMaterials\" WHERE \"Id\" = ANY({0})", bomIds.ToArray());
+            }
         }
         
         var billOfMaterial = mapper.Map<BillOfMaterial>(request); 

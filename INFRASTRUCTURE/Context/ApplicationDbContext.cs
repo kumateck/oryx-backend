@@ -701,11 +701,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                     entity.LastDeletedById = currentUserService.UserId;
                     break;
             }
-            
-            // if (entry.Entity is IOrganizationType organization)
-            // {
-            //     organization.OrganizationName = tenantProvider.Tenant;
-            // }
         }
     }
 
