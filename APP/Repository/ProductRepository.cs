@@ -265,6 +265,7 @@ namespace APP.Repository;
     public async Task<Result> UpdateRoute(UpdateRouteRequest request, Guid routeId, Guid userId)
     {
         var route = await context.Routes
+            .AsSplitQuery()
             .Include(r => r.Resources)
             .Include(route => route.ResponsibleRoles)
             .Include(route => route.ResponsibleUsers)
