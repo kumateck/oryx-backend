@@ -295,6 +295,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(po => po.Supplier)
             .Include(po=>po.TermsOfPayment)
             .Include(po=>po.DeliveryMode)
+            .OrderByDescending(p => p.CreatedAt)
             .AsQueryable();
 
         if (type.HasValue)
