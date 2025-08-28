@@ -309,6 +309,7 @@ namespace APP.Repository;
     public async Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId)
     {
         var product = await context.Products
+            .AsSplitQuery()
             .Include(p => p.Packages)
             .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -386,6 +387,7 @@ namespace APP.Repository;
     public async Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId)
     {
         var productPackage = await context.ProductPackages
+            .AsSplitQuery()
             .Include(p => p.Product)
             .Include(p => p.Material)
             .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
@@ -411,6 +413,7 @@ namespace APP.Repository;
     public async Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId)
     {
         var productPackage = await context.ProductPackages
+            .AsSplitQuery()
             .Include(p => p.Product)
             .ThenInclude(p => p.Packages) // Include related packages for validation
             .FirstOrDefaultAsync(p => p.Id == productPackageId);
@@ -464,7 +467,7 @@ namespace APP.Repository;
     public async Task<Result<Guid>> CreateProductPacking(List<CreateProductPacking> request, Guid productId, Guid userId)
     {
         var product = await context.Products
-            .AsSingleQuery()
+            .AsSplitQuery()
             .Include(product => product.Packings)
             .ThenInclude(p => p.PackingLists)
             .FirstOrDefaultAsync(p => p.Id == productId);
@@ -505,7 +508,10 @@ namespace APP.Repository;
     
     public async Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId, Guid userId)
     {
-        var product = await context.Products.Include(product => product.FinishedProducts).FirstOrDefaultAsync(p => p.Id == productId);
+        var product = await context.Products
+            .AsSplitQuery()
+            .Include(product => product.FinishedProducts)
+            .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null)
         {
             return ProductErrors.NotFound(productId);
@@ -529,7 +535,9 @@ namespace APP.Repository;
     
     public async Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId) 
     { 
-        var product = await context.Products.Include(product => product.BillOfMaterials)
+        var product = await context.Products
+            .AsSplitQuery()
+            .Include(product => product.BillOfMaterials)
             .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null) return ProductErrors.NotFound(productId);
         
@@ -561,6 +569,7 @@ namespace APP.Repository;
     public async Task<Result<EquipmentDto>> GetEquipment(Guid equipmentId)
     {
         var equipment = await context.Equipments
+            .AsSplitQuery()
             .Include(e => e.UoM)
             .Include(e => e.Department)
             .FirstOrDefaultAsync(e => e.Id == equipmentId);
