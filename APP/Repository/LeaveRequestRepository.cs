@@ -243,6 +243,7 @@ switch (request.RequestCategory)
            .AsSplitQuery()
            .Include(l => l.LeaveType)
            .Include(l => l.Employee)
+           .ThenInclude(l => l.Department)
            .FirstOrDefaultAsync(l => l.Id == leaveRequestId);
        
        return leaveRequest is null ? 
