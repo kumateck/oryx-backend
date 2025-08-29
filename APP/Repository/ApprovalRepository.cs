@@ -1508,6 +1508,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             .Include(bs => bs.Approvals)
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
+            .Include(a => a.Employee)
+            .ThenInclude(a => a.Department)
             .Where(bs => bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
             .ToListAsync();
