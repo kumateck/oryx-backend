@@ -1110,4 +1110,30 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.ConfirmDistribution(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of supplier materials by material
+    /// </summary>
+    [HttpGet("supplier/{supplierId}/material/{materialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierManufacturerDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetSupplierManufacturersByMaterial([FromRoute]Guid supplierId, [FromRoute]Guid materialId)
+    {
+        var result = await repository.GetSupplierManufacturersByMaterial(materialId, supplierId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of supplier materials by material
+    /// </summary>
+    [HttpGet("supplier/{supplierId}/material")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierManufacturerDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetSupplierManufacturersBySupplier([FromRoute]Guid supplierId)
+    {
+        var result = await repository.GetSupplierManufacturersBySupplier(supplierId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

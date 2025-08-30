@@ -93,6 +93,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ToListAsync());
     }
     
+    public async Task<Result<List<SupplierManufacturerDto>>> GetSupplierManufacturersBySupplier(Guid supplierId)
+    {
+        return mapper.Map<List<SupplierManufacturerDto>>(await context.SupplierManufacturers
+            .AsSplitQuery()
+            .Include(m => m.Manufacturer)
+            .Include(m => m.Material)
+            .Where(m => m.SupplierId == supplierId)
+            .ToListAsync());
+    }
+    
     public async Task<Result> UpdateManufacturer(CreateManufacturerRequest request, Guid manufacturerId, Guid userId)
     {
         var existingManufacturer = await context.Manufacturers

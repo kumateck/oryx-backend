@@ -20,6 +20,7 @@ public interface IProcurementRepository
     Task<Result<List<ManufacturerDto>>> GetManufacturersByMaterial(Guid materialId);
     Task<Result<List<SupplierManufacturerDto>>> GetSupplierManufacturersByMaterial(Guid materialId,
         Guid supplierId);
+    Task<Result<List<SupplierManufacturerDto>>> GetSupplierManufacturersBySupplier(Guid supplierId);
     Task<Result> UpdateManufacturer(CreateManufacturerRequest request, Guid manufacturerId, Guid userId);
     Task<Result> DeleteManufacturer(Guid manufacturerId, Guid userId);
 
