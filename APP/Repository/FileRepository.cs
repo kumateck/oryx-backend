@@ -41,7 +41,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             {
                 case nameof(PurchaseOrder):
                     var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item => item.Id == modelId &&
-                        (item.Status != PurchaseOrderStatus.Completed || item.Status != PurchaseOrderStatus.Linked));
+                        (item.Status != PurchaseOrderStatus.Completed || item.Status != PurchaseOrderStatus.PartiallyLinked || item.Status != PurchaseOrderStatus.Linked));
                     if (purchaseOrder is not null)
                     {
                         purchaseOrder.Status = PurchaseOrderStatus.Attached;
@@ -100,7 +100,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             if (modelType == nameof(PurchaseOrder))
             {
                 var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item => item.Id == modelId &&
-                    (item.Status != PurchaseOrderStatus.Completed || item.Status != PurchaseOrderStatus.Linked));
+                    (item.Status != PurchaseOrderStatus.Completed || item.Status != PurchaseOrderStatus.PartiallyLinked || item.Status != PurchaseOrderStatus.Linked));
                 if (purchaseOrder is not null)
                 {
                     purchaseOrder.Status = PurchaseOrderStatus.Attached;
