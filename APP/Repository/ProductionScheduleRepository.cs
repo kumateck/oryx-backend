@@ -2594,6 +2594,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(m => m.FullReturns)
                 .ThenInclude(mf => mf.MaterialBatchReservedQuantity)
                     .ThenInclude(mf => mf.MaterialBatch)
+                        .ThenInclude(m => m.Material)
             .Include(m => m.FullReturns)
                 .ThenInclude(mf => mf.MaterialBatchReservedQuantity)
                     .ThenInclude(mf => mf.UoM)
