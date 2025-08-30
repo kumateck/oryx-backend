@@ -1065,9 +1065,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType)
     {
         var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
+            .AsSplitQuery()
             .Include(s => s.Material)
             .Include(s => s.UoM)
-            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
+            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier).ThenInclude(s => s.AssociatedManufacturers)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.SourceRequisition)
             .Where(s => s.QuotedPrice != null && s.Status == SupplierQuotationItemStatus.NotProcessed && s.SupplierQuotation.Supplier.Type == supplierType)
             .ToListAsync();
@@ -1084,7 +1085,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     .Select(sg => sg.OrderByDescending(s => s.SupplierQuotation.CreatedAt).First())
                     .Select(s => new SupplierPrice
                     {
-                        Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                        Supplier = mapper.Map<SupplierDto>(s.SupplierQuotation.Supplier),
                         SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
                         Status = s.Status,
                         Price = s.QuotedPrice
@@ -1096,9 +1097,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         SupplierType supplierType, Guid materialId, Guid purchaseOrderId, SupplierQuotationItemStatus? status)
     {
         var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
+            .AsSplitQuery()
             .Include(s => s.Material)
             .Include(s => s.UoM)
-            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
+            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier).ThenInclude(s => s.AssociatedManufacturers)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.SourceRequisition)
             .Where(s => s.QuotedPrice != null
                                               && s.SupplierQuotation.Supplier.Type == supplierType && s.MaterialId == materialId && s.PurchaseOrderId == purchaseOrderId)
@@ -1121,7 +1123,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     .Select(sg => sg.OrderByDescending(s => s.SupplierQuotation.CreatedAt).First())
                     .Select(s => new SupplierPrice
                     {
-                        Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                        Supplier = mapper.Map<SupplierDto>(s.SupplierQuotation.Supplier),
                         SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
                         Status = s.Status,
                         Price = s.QuotedPrice

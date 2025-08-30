@@ -73,7 +73,8 @@ public enum PurchaseOrderStatus
     Delivered = 2,
     Attached = 3,
     Completed = 4,
-    Linked = 5,
+    PartiallyLinked = 5,
+    Linked = 6,
 }
 
 public enum PurchaseOrderAttachmentStatus

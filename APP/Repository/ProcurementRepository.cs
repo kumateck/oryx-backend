@@ -1090,38 +1090,54 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     
     public async Task<Result<Guid>> CreateShipmentInvoice(CreateShipmentInvoice request, Guid userId)
     {
-
         if (request.Items.DistinctBy(i => i.PurchaseOrderId).Count() != request.Items.Count)
         {
             return Error.Validation("Items.Count", "Purchase Order IDs must be unique");
         }
-        
+
         var shipmentInvoice = mapper.Map<ShipmentInvoice>(request);
         shipmentInvoice.CreatedById = userId;
         await context.ShipmentInvoices.AddAsync(shipmentInvoice);
 
         foreach (var item in request.Items)
         {
-            var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(p => p.Id == item.PurchaseOrderId);
-            if(purchaseOrder is null) return Error.NotFound("PurchaseOrder.NotFound", "Purchase Order not found");
+            var purchaseOrder = await context.PurchaseOrders
+                .AsSplitQuery()
+                .Include(p => p.Items)
+                .FirstOrDefaultAsync(p => p.Id == item.PurchaseOrderId);
 
-            purchaseOrder.Status = PurchaseOrderStatus.Linked;
-            
-            var purchaseOrderItem = await context.PurchaseOrderItems.FirstOrDefaultAsync(it => 
-                it.PurchaseOrderId == purchaseOrder.Id && it.MaterialId == item.MaterialId);
-            if(purchaseOrderItem is null) return Error.NotFound("PurchaseOrderItem.NotFound", "Purchase Order Item not found");
+            if (purchaseOrder is null) 
+                return Error.NotFound("PurchaseOrder.NotFound", "Purchase Order not found");
+
+            var purchaseOrderItem = purchaseOrder.Items
+                .FirstOrDefault(it => it.MaterialId == item.MaterialId);
+
+            if (purchaseOrderItem is null) 
+                return Error.NotFound("PurchaseOrderItem.NotFound", "Purchase Order Item not found");
 
             purchaseOrderItem.QuantityInvoiced += item.ReceivedQuantity;
-            if (purchaseOrderItem.QuantityInvoiced >= purchaseOrderItem.Quantity)
+
+            if (purchaseOrderItem.QuantityInvoiced > purchaseOrderItem.Quantity)
             {
-                return 
-                    Error.Validation("Item.ReceivedQuantity", "Purchase Order Item does  not have enough quantity");
+                return Error.Validation("Item.ReceivedQuantity", "Purchase Order Item does not have enough quantity");
             }
-            
-            context.PurchaseOrders.Update(purchaseOrder);
+
+            // save item update
             context.PurchaseOrderItems.Update(purchaseOrderItem);
+
+            // 🔑 after processing items, decide overall PO status
+            if (purchaseOrder.Items.All(i => i.QuantityInvoiced == i.Quantity))
+            {
+                purchaseOrder.Status = PurchaseOrderStatus.Linked; // fully linked
+            }
+            else
+            {
+                purchaseOrder.Status = PurchaseOrderStatus.PartiallyLinked; // some still open
+            }
+
+            context.PurchaseOrders.Update(purchaseOrder);
         }
-        
+
         await context.SaveChangesAsync();
         return shipmentInvoice.Id;
     }
@@ -1140,6 +1156,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<ShipmentInvoiceDto>> GetShipmentInvoice(Guid shipmentInvoiceId)
     {
         var shipmentInvoice = await context.ShipmentInvoices
+            .AsSplitQuery()
             .Include(si => si.Items)
                 .ThenInclude(item => item.Material)
             .Include(si => si.Items)
@@ -1148,7 +1165,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .ThenInclude(si => si.Manufacturer)
             .Include(si => si.Items)
             .ThenInclude(si => si.PurchaseOrder)
-            .AsSplitQuery()
             .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
 
         return shipmentInvoice is null
@@ -1368,6 +1384,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         // Purchase Orders not linked at all (all items have QuantityInvoiced == 0)
         var notLinkedPurchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
             .Include(po => po.Supplier)
             .Include(po => po.Items)
             .Where(po => po.Items.All(poi => poi.QuantityInvoiced == 0))
@@ -1447,6 +1464,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                          po.Items.Any(poi => poi.QuantityInvoiced > 0) &&
                          po.Items.Any(poi => poi.QuantityInvoiced < poi.Quantity))
             .ToListAsync();
+        
+        var purchaseOrders = await context.PurchaseOrders
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po => po.SupplierId == supplierId &&
+                         po.Status != PurchaseOrderStatus.Linked)
+            .ToListAsync();
+
 
         var resultPurchaseOrders = notLinkedPurchaseOrders
             .Concat(partiallyUsedPurchaseOrders)
