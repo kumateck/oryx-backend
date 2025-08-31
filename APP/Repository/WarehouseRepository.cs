@@ -654,6 +654,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     
     public async Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request, Guid userId)
     {
+        if(request.MaterialBatches.Count == 0)
+            return Error.Validation("Material.Batches", "Must have at least one batch.");
+        
         var checklist = mapper.Map<Checklist>(request);
         checklist.CreatedById = userId;
         await context.Checklists.AddAsync(checklist);
@@ -741,7 +744,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(cl=>cl.Supplier)
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.Checklist)
-            .ThenInclude(cl=>cl.ShipmentInvoice)
+            .ThenInclude(cl=> cl.ShipmentInvoice)
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.Checklist)
             .ThenInclude(cl=>cl.Material)
@@ -751,7 +754,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Where(c => distributedMaterialIds.Contains(c.DistributedRequisitionMaterialId))
             .ToListAsync();
 
-        if (!checklists.Any())
+        if (checklists.Count == 0)
         {
             return Error.NotFound("Checklist.NotFound", "Checklists not found for the specified distributed requisition materials.");
         }
