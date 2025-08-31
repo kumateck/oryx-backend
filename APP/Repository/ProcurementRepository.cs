@@ -1446,7 +1446,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     
     public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
     {
-        // Get supplier purchase orders that are NOT linked at all (all items have QuantityInvoiced == 0)
+        /*// Get supplier purchase orders that are NOT linked at all (all items have QuantityInvoiced == 0)
         var notLinkedPurchaseOrders = await context.PurchaseOrders
             .AsSplitQuery()
             .Include(po => po.Supplier)
@@ -1463,7 +1463,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Where(po => po.SupplierId == supplierId &&
                          po.Items.Any(poi => poi.QuantityInvoiced > 0) &&
                          po.Items.Any(poi => poi.QuantityInvoiced < poi.Quantity))
-            .ToListAsync();
+            .ToListAsync();*/
         
         var purchaseOrders = await context.PurchaseOrders
             .IgnoreQueryFilters()
@@ -1471,17 +1471,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(po => po.Supplier)
             .Include(po => po.Items)
             .Where(po => po.SupplierId == supplierId &&
-                         po.Status != PurchaseOrderStatus.Linked)
+                         po.Status != PurchaseOrderStatus.Linked && po.Id == Guid.Parse("0198ff4d-a3a0-7bd1-8250-b46bba7d4fb7"))
             .ToListAsync();
-
-
-        var resultPurchaseOrders = notLinkedPurchaseOrders
-            .Concat(partiallyUsedPurchaseOrders)
-            .Distinct()
-            .ToList();
         
         // ✅ filter out fully invoiced items
-        foreach (var po in resultPurchaseOrders)
+        foreach (var po in purchaseOrders)
         {
             po.Items = po.Items
                 .Where(i => i.QuantityInvoiced < i.Quantity)
@@ -1489,7 +1483,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         }
         
         // Map to DTO
-        var result = mapper.Map<List<PurchaseOrderDto>>(resultPurchaseOrders,
+        var result = mapper.Map<List<PurchaseOrderDto>>(purchaseOrders,
             opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
 
         // Enrich DTO with manufacturers and received quantities
@@ -1502,13 +1496,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     item.Manufacturers = (await GetSupplierManufacturersByMaterial(
                         item.Material.Id.Value, po.Supplier.Id)).Value;
                 }
-
-                // Received quantity = already tracked by QuantityInvoiced
-                var poItem = resultPurchaseOrders
-                    .First(p => p.Id == po.Id)
-                    .Items.First(i => i.MaterialId == item.Material?.Id);
-
-                item.ReceivedQuantity = poItem.QuantityInvoiced;
             }
         }
 
