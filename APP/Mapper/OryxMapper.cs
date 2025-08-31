@@ -640,6 +640,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateBatchManufacturingRecord, BatchManufacturingRecord>();
         CreateMap<UpdateBatchManufacturingRecord, BatchManufacturingRecord>();
+        CreateMap<UpdateBatchManufacturingRecord, BatchPackagingRecord>();
         CreateMap<BatchManufacturingRecord, BatchManufacturingRecordDto>();
 
         CreateMap<CreateBatchPackagingRecord, BatchPackagingRecord>();
