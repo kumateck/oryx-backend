@@ -1468,10 +1468,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var purchaseOrders = await context.PurchaseOrders
             .IgnoreQueryFilters()
             .AsSplitQuery()
+            .AsNoTracking()
             .Include(po => po.Supplier)
             .Include(po => po.Items)
             .Where(po => po.SupplierId == supplierId &&
-                         po.Status != PurchaseOrderStatus.Linked && po.Id == Guid.Parse("0198ff4d-a3a0-7bd1-8250-b46bba7d4fb7"))
+                         po.Status != PurchaseOrderStatus.Linked)
             .ToListAsync();
         
         // ✅ filter out fully invoiced items
