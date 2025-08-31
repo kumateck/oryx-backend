@@ -881,6 +881,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         
         var grn = await context.Grns
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(g => g.MaterialBatches)
             .FirstOrDefaultAsync(g => g.MaterialBatches.Any(mb => mb.Id == request.MaterialBatchId));
 

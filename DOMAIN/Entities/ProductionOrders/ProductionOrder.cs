@@ -9,7 +9,7 @@ using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
 
-public class ProductionOrder : BaseEntity
+public class ProductionOrder : BaseEntity, IRequireApproval
 {
     [StringLength(1000)] public string Code { get; set; }
     public Guid CustomerId { get; set; }

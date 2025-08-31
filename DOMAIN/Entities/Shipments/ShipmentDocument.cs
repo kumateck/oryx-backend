@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
@@ -8,7 +9,7 @@ using DOMAIN.Entities.PurchaseOrders;
 
 namespace DOMAIN.Entities.Shipments;
 
-public class ShipmentDocument : BaseEntity
+public class ShipmentDocument : BaseEntity, IRequireApproval
 {
     [StringLength(255)] public string Code { get; set; }
     public List<ShipmentDiscrepancy> Discrepancies { get; set; } = [];
@@ -20,8 +21,19 @@ public class ShipmentDocument : BaseEntity
     public DocType Type { get; set; } 
     public DateTime? CompletedDistributionAt { get; set; }
     public ShipmentStatus Status { get; set; }
+    public bool Approved { get; set; }
+    public List<ShipmentDocumentApproval> Approvals { get; set; } = [];
 }
 
+
+public class ShipmentDocumentApproval : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid ShipmentDocumentId { get; set; }
+    public ShipmentDocument ShipmentDocument { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
+}
 public enum ShipmentStatus
 {
     New = 0,

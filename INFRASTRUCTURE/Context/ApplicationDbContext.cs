@@ -330,6 +330,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Shipment Document
 
     public DbSet<ShipmentDocument> ShipmentDocuments { get; set; }
+    public DbSet<ShipmentDocumentApproval> ShipmentDocumentApprovals { get; set; }
     public DbSet<ShipmentInvoice> ShipmentInvoices { get; set; }
     public DbSet<ShipmentDiscrepancy> ShipmentDiscrepancies { get; set; }
     public DbSet<ShipmentDiscrepancyType> ShipmentDiscrepancyTypes { get; set; }
