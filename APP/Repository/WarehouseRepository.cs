@@ -1050,6 +1050,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(sr=>sr.CheckLists)
             .ThenInclude(cl=>cl.MaterialBatches)
             .Where(drm => !drm.Status.Equals(DistributedRequisitionMaterialStatus.GrnGenerated))
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         query = kind == MaterialKind.Raw
