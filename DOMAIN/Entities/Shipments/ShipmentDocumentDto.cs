@@ -24,10 +24,10 @@ public class ShipmentInvoiceDto : BaseDto
     public string Code { get; set; }
     public SupplierDto Supplier { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
-    public bool IsAttached { get; set; }
     public decimal TotalCost { get; set; }
     public CurrencyDto Currency { get; set; }
     public DateTime? PaidAt { get; set; }
+    public ShipmentStatus Status { get; set; }
 }
 
 public class ShipmentInvoiceItemDto : BaseDto

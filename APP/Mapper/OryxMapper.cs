@@ -562,7 +562,9 @@ public class OryxMapper : Profile
 
         CreateMap<CreateShipmentInvoice, ShipmentInvoice>();
         CreateMap<CreateShipmentInvoiceItem, ShipmentInvoiceItem>();
-        CreateMap<ShipmentInvoice, ShipmentInvoiceDto>();
+        CreateMap<ShipmentInvoice, ShipmentInvoiceDto>()
+            .ForMember(dest => dest.Status,
+                opt => opt.MapFrom<ShipmentInvoiceStatusResolver>());
         CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>()
             .ForMember(dest => dest.Price,
                 opt => opt.MapFrom(src => src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).Price));
