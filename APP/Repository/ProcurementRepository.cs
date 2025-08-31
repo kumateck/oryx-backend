@@ -1090,9 +1090,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     
     public async Task<Result<Guid>> CreateShipmentInvoice(CreateShipmentInvoice request, Guid userId)
     {
-        if (request.Items.DistinctBy(i => i.PurchaseOrderId).Count() != request.Items.Count)
+        if (request.Items.DistinctBy(i => new {i.PurchaseOrderId, i.MaterialId}).Count() != request.Items.Count)
         {
-            return Error.Validation("Items.Count", "Purchase Order IDs must be unique");
+            return Error.Validation("Items.Count", "Purchase Order & material must be unique");
         }
 
         var shipmentInvoice = mapper.Map<ShipmentInvoice>(request);
