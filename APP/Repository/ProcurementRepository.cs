@@ -1027,8 +1027,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetWaybillDocuments(int page, int pageSize, string searchQuery, ShipmentStatus? status = null)
     {
         var query = context.ShipmentDocuments
+            .AsSplitQuery()
             .Include(s => s.ShipmentInvoice)
             .Where(s => s.Type == DocType.Waybill)
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (status.HasValue)
