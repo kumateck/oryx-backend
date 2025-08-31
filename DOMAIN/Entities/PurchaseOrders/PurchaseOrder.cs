@@ -123,8 +123,7 @@ public class PurchaseOrderItemDto
     public decimal Price { get; set; }
     public CollectionItemDto Currency { get; set; }
     public List<SupplierManufacturerDto> Manufacturers { get; set; } = [];
-    public decimal Cost => Price * (Quantity - ReceivedQuantity);
+    public decimal Cost => Price * (Quantity - QuantityInvoiced);
     public bool CanReassignSupplier { get; set; }
-    public decimal ReceivedQuantity { get; set; }
     public decimal QuantityInvoiced { get; set; }
 }
