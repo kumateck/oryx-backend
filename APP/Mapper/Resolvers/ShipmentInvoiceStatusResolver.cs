@@ -4,12 +4,11 @@ using INFRASTRUCTURE.Context;
 
 namespace APP.Mapper.Resolvers;
 
-public class ShipmentInvoiceStatusResolver(ApplicationDbContext dbContext) : IValueResolver<ShipmentInvoice, ShipmentInvoiceDto, ShipmentStatus>
+public class ShipmentInvoiceStatusResolver(ApplicationDbContext dbContext) : IValueResolver<ShipmentInvoice, ShipmentInvoiceDto, bool>
 {
-    public ShipmentStatus Resolve(ShipmentInvoice source, ShipmentInvoiceDto destination, ShipmentStatus destMember,
+    public bool Resolve(ShipmentInvoice source, ShipmentInvoiceDto destination, bool destMember,
         ResolutionContext context)
     {
-        return dbContext.ShipmentDocuments.FirstOrDefault(s => s.ShipmentInvoiceId == source.Id)?.Status 
-               ?? ShipmentStatus.New;
+        return dbContext.ShipmentDocuments.FirstOrDefault(s => s.ShipmentInvoiceId == source.Id) is not null;
     }
 }
