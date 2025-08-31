@@ -201,6 +201,7 @@ switch (request.RequestCategory)
             .Include(l => l.Employee)
                 .ThenInclude(l => l.Designation)
                 .ThenInclude(l => l.Departments)
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
