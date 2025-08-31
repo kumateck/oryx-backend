@@ -18,6 +18,7 @@ public class ShipmentDocumentDto : WithAttachment
     public DocType Type { get; set; } 
     public ShipmentStatus Status { get; set; }
     public bool HasBillingSheet { get; set; }
+    public bool Approved { get; set; }
 }
 
 public class ShipmentInvoiceDto : BaseDto

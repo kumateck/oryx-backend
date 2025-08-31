@@ -15,6 +15,7 @@ using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -969,6 +970,106 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 });
                 return Result.Success();
             
+            
+            case nameof(ShipmentDocument):
+                var shipmentDocument = await context.ShipmentDocuments
+                    .AsSplitQuery()
+                    .Include(a => a.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+                
+                if (shipmentDocument is null)
+                    return Error.Validation("ShipmentDocument.NotFound", $"Shipment document {modelId} not found.");
+                
+                var shipmentDocumentOrderApprovalStages = shipmentDocument.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                        
+                    }).ToList();
+                
+                var shipmentDocumentCurrentApprovals = GetCurrentApprovalStage(shipmentDocumentOrderApprovalStages);
+                
+                var shipmentDocumentApprovingStage = shipmentDocumentCurrentApprovals.FirstOrDefault(stage =>
+                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                
+                if (shipmentDocumentApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+                
+                // Approve the leave request stage in the actual tracked list
+                var stageToApproveSd = shipmentDocument.Approvals.First(
+                    stage => (stage.UserId == shipmentDocumentApprovingStage.UserId && stage.UserId == userId) ||
+                    (stage.RoleId == shipmentDocumentApprovingStage.RoleId && shipmentDocumentApprovingStage.RoleId.HasValue && roleIds.Contains(shipmentDocumentApprovingStage.RoleId.Value)));
+
+                stageToApproveSd.Status = ApprovalStatus.Approved;
+                stageToApproveSd.ApprovalTime = DateTime.UtcNow;
+                stageToApproveSd.Comments = comments;
+                stageToApproveSd.ApprovedById = userId;
+                //context.ProductionOrderApprovals.Update(stageToApproveAl);
+                
+                // Optionally mark a leave request as fully approved
+                var allRequireSdlApproved = shipmentDocument.Approvals
+                    .Where(s => s.Required)
+                    .All(s => s.Status == ApprovalStatus.Approved);
+                
+                if (allRequireSdlApproved)
+                {
+                  shipmentDocument.Approved = true;
+                }
+                
+                context.ShipmentDocuments.Update(shipmentDocument);
+                await context.SaveChangesAsync();
+                
+                //activate next pending stages
+                var nextShipmentStage = shipmentDocument.Approvals
+                    .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
+                    .OrderBy(s => s.Order)
+                    .ToList();
+
+                if (nextShipmentStage.Count != 0)
+                {
+                    // Get the current approval stages after the approval
+                    var updatedApprovalStages = shipmentDocument.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                    }).ToList();
+
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
+                        .Where(s => !shipmentDocument.Approvals.First(ra =>
+                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                        .ToList();
+
+                    foreach (var stageToActivate in newlyActiveStages)
+                    {
+                        var actualStage = shipmentDocument.Approvals.First(ra =>
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                        actualStage.ActivatedAt = DateTime.UtcNow;
+                        context.ShipmentDocumentApprovals.Update(actualStage);
+                    }
+                }
+                await context.SaveChangesAsync();
+                await AddApprovalLogs(new CreateApprovalLog
+                {
+                    UserId = userId,
+                    Comments = comments,
+                    Status = ApprovalStatus.Approved,
+                    ModelId = shipmentDocument.Id,
+                });
+                return Result.Success();
+            
             default:
                 return Error.Validation("Approval.InvalidType",
                     $"Unsupported model type: {modelType}");
@@ -1335,7 +1436,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
                 
                 if (productionOrder is null)
-                    return Error.Validation("Response.NotFound", $"Response {modelId} not found.");
+                    return Error.Validation("ProductionOrder.NotFound", $"Production order {modelId} not found.");
                 
                 var allocationApprovalStages = productionOrder.Approvals.Select(item => new ResponsibleApprovalStage
                     {
@@ -1374,6 +1475,57 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Comments = comments,
                     Status = ApprovalStatus.Rejected,
                     ModelId = productionOrder.Id,
+                });
+                await context.SaveChangesAsync();
+                break;
+            
+            
+            case nameof(ShipmentDocument):
+                var shipmentDocument = await context.ShipmentDocuments
+                    .AsSplitQuery()
+                    .Include(a => a.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+                
+                if (shipmentDocument is null)
+                    return Error.Validation("ShipmentDocument.NotFound", $"Shipment document {modelId} not found.");
+                
+                var shipmentDocumentApprovalStages = shipmentDocument.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                        
+                    }).ToList();
+                
+                var shipmentDocumentCurrentApprovals = GetCurrentApprovalStage(shipmentDocumentApprovalStages);
+                
+                var shipmentDocumentApprovingStage = shipmentDocumentCurrentApprovals.FirstOrDefault(stage =>
+                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                
+                if (shipmentDocumentApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+                
+                // Approve the leave request stage in the actual tracked list
+                var stageToApproveSd = shipmentDocument.Approvals.First(
+                    stage => (stage.UserId == shipmentDocumentApprovingStage.UserId && stage.UserId == userId) ||
+                    (stage.RoleId == shipmentDocumentApprovingStage.RoleId && shipmentDocumentApprovingStage.RoleId.HasValue && roleIds.Contains(shipmentDocumentApprovingStage.RoleId.Value)));
+
+                stageToApproveSd.Status = ApprovalStatus.Rejected;
+                stageToApproveSd.ApprovalTime = DateTime.UtcNow;
+                stageToApproveSd.Comments = comments;
+                await AddApprovalLogs(new CreateApprovalLog
+                {
+                    UserId = userId,
+                    Comments = comments,
+                    Status = ApprovalStatus.Rejected,
+                    ModelId = shipmentDocument.Id,
                 });
                 await context.SaveChangesAsync();
                 break;
@@ -1573,6 +1725,29 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 ApprovalLogs = GetApprovalLogs(productionOrder.Id)
             });
         }
+        
+        var shipmentDocuments = await context.ShipmentDocuments
+            .AsSplitQuery()
+            .Include(a => a.Approvals)
+            .Include(a => a.CreatedBy)
+            .ThenInclude(a => a.Department)
+            .Where(bs => bs.Approvals.Any(a =>
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+            .ToListAsync();
+
+        foreach (var shipmentDocument in shipmentDocuments)
+        {
+            entitiesRequiringApproval.Add(new ApprovalEntity
+            {
+                ModelType = nameof(ShipmentDocument),
+                Id = shipmentDocument.Id,
+                Code = shipmentDocument.Code,
+                Department = mapper.Map<DepartmentDto>(shipmentDocument.CreatedBy?.Department),
+                CreatedAt = shipmentDocument.CreatedAt,
+                RequestedBy = mapper.Map<CollectionItemDto>(shipmentDocument.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(shipmentDocument.Id)
+            });
+        }
 
         return entitiesRequiringApproval;
     }
@@ -1661,7 +1836,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 {
                     ModelType = modelType,
                     Id = modelId,
-                    Code = "",
+                    Code = overtimeRequest.Code,
                     CreatedAt = overtimeRequest.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(overtimeRequest.CreatedBy?.Department),
                     RequestedBy = mapper.Map<CollectionItemDto>(overtimeRequest.CreatedBy),
@@ -1695,10 +1870,27 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 {
                     ModelType = modelType,
                     Id = modelId,
-                    Code = "",
+                    Code = allocate.Code,
                     CreatedAt = allocate.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(allocate.CreatedBy?.Department),
                     RequestedBy = mapper.Map<CollectionItemDto>(allocate.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId)
+                };
+            
+            case nameof(ShipmentDocument):
+                var shipmentDoc = await context.ShipmentDocuments
+                    .AsSplitQuery()
+                    .Include(l => l.CreatedBy).ThenInclude(u => u.Department)
+                    .Include(l => l.Approvals).ThenInclude(a => a.ApprovedBy)
+                    .FirstOrDefaultAsync(l => l.Id == modelId);
+                return new ApprovalEntity
+                {
+                    ModelType = modelType,
+                    Id = modelId,
+                    Code = shipmentDoc.Code,
+                    CreatedAt = shipmentDoc.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(shipmentDoc.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<CollectionItemDto>(shipmentDoc.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
 
@@ -1860,6 +2052,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             
             case nameof(ProductionOrder):
                 await CreateProductionOrderApprovals(modelId, approvalStages, approval);
+                break;
+            
+            case nameof(ShipmentDocument):
+                await CreateShipmentDocumentApprovals(modelId, approvalStages, approval);
                 break;
 
             default:
@@ -2031,7 +2227,25 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         await context.ProductionOrderApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
+    
+    private async Task CreateShipmentDocumentApprovals(Guid shipmentDocumentId, List<ApprovalStage> stages, Approval approval)
+    {
+        var approvals = stages.Select(stage => new ShipmentDocumentApproval
+        {
+            Required = stage.Required,
+            Order = stage.Order,
+            ShipmentDocumentId = shipmentDocumentId,
+            CreatedAt = DateTime.UtcNow,
+            ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+        }).ToList();
 
+        await context.ShipmentDocumentApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();
+    }
+    
     private async Task AddApprovalLogs(CreateApprovalLog log)
     {
         await context.ApprovalActionLogs.AddAsync(new ApprovalActionLog
@@ -2266,7 +2480,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
             .ToList();
 
-        if (stagesToAutoApprove.Any())
+        if (stagesToAutoApprove.Count != 0)
         {
             foreach (var stage in stagesToAutoApprove)
             {
@@ -2310,7 +2524,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
             .ToList();
 
-        if (stagesToAutoApprove.Any())
+        if (stagesToAutoApprove.Count != 0)
         {
             foreach (var stage in stagesToAutoApprove)
             {

@@ -941,7 +941,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             : mapper.Map<ShipmentDocumentDto>(shipmentDocument, opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentDocument));
     }
     
-    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page, int pageSize, string searchQuery, bool? onlyApproved)
     {
         var query = context.ShipmentDocuments
             .Include(s => s.ShipmentInvoice)
@@ -951,6 +951,14 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, bs => bs.Code);
+        }
+
+        if (onlyApproved.HasValue)
+        {
+            if (onlyApproved.Value)
+            {
+                query = query.Where(q => q.Approved);
+            }
         }
         
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
@@ -1688,6 +1696,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         backgroundWorkerService.EnqueueNotification(
             $"Shipment for Invoice {shipmentDocument.ShipmentInvoice.Code} has arrived.",
             NotificationType.ShipmentArrived, null, creators);
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(ShipmentDocument), shipmentDocument.Id);
 
         return Result.Success();
     }

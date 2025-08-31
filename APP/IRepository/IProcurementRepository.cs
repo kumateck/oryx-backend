@@ -70,7 +70,7 @@ public interface IProcurementRepository
     Task<Result> DeleteWaybillDocument(Guid shipmentDocumentId, Guid userId);
     Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId);
     Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page,
-        int pageSize, string searchQuery);
+        int pageSize, string searchQuery, bool? onlyApproved);
     Task<Result> UpdateShipmentDocument(CreateShipmentDocumentRequest request, Guid shipmentDocumentId,
         Guid userId);
     Task<Result> DeleteShipmentDocument(Guid shipmentDocumentId, Guid userId);
