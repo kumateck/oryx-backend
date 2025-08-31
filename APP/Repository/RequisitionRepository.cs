@@ -1068,9 +1068,15 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .AsSplitQuery()
             .Include(s => s.Material)
             .Include(s => s.UoM)
-            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier).ThenInclude(s => s.AssociatedManufacturers)
-            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier).ThenInclude(s => s.Currency)
-            .Include(s => s.SupplierQuotation).ThenInclude(s => s.SourceRequisition)
+            .Include(s => s.SupplierQuotation)
+                .ThenInclude(s => s.Supplier)
+                    .ThenInclude(s => s.AssociatedManufacturers)
+                        .ThenInclude(m => m.Manufacturer)
+            .Include(s => s.SupplierQuotation)
+                .ThenInclude(s => s.Supplier)
+                    .ThenInclude(s => s.Currency)
+            .Include(s => s.SupplierQuotation)
+                .ThenInclude(s => s.SourceRequisition)
             .Where(s => s.QuotedPrice != null && s.Status == SupplierQuotationItemStatus.NotProcessed && s.SupplierQuotation.Supplier.Type == supplierType)
             .ToListAsync();
 
