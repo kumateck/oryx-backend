@@ -1297,6 +1297,14 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
         }
+        
+        var existingBillingSheet = await context.BillingSheets
+            .FirstOrDefaultAsync(bs => bs.InvoiceId == shipmentInvoiceId);
+        if (existingBillingSheet is not null)
+        {
+            existingBillingSheet.Status = BillingSheetStatus.Paid;
+            context.BillingSheets.Update(existingBillingSheet);
+        }
 
         existingShipmentInvoice.PaidAt = paidAt ?? DateTime.UtcNow;
         existingShipmentInvoice.LastUpdatedById = userId;
