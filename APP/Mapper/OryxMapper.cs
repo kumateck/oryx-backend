@@ -559,6 +559,8 @@ public class OryxMapper : Profile
 
         CreateMap<CreateShipmentDocumentRequest, ShipmentDocument>();
         CreateMap<ShipmentDocument, ShipmentDocumentDto>()
+            .ForMember(dest => dest.HasBillingSheet,
+                opt => opt.MapFrom<HasBillingSheetResolver>())
             .ForMember(dest => dest.Attachments,
                 opt => opt.MapFrom<AttachmentsResolver>());
 

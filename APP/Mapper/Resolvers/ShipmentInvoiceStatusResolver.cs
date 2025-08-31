@@ -9,6 +9,6 @@ public class ShipmentInvoiceStatusResolver(ApplicationDbContext dbContext) : IVa
     public bool Resolve(ShipmentInvoice source, ShipmentInvoiceDto destination, bool destMember,
         ResolutionContext context)
     {
-        return dbContext.ShipmentDocuments.FirstOrDefault(s => s.ShipmentInvoiceId == source.Id) is not null;
+        return dbContext.ShipmentDocuments.Any(s => s.ShipmentInvoiceId == source.Id);
     }
 }
