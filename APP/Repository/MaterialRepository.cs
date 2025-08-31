@@ -849,7 +849,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             };
             
             await context.MaterialBatchEvents.AddAsync(batchEvent);
-            await context.SaveChangesAsync();
         }
 
         var warehouse = await context.Warehouses
@@ -881,6 +880,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
         
         var grn = await context.Grns
+            .IgnoreQueryFilters()
             .Include(g => g.MaterialBatches)
             .FirstOrDefaultAsync(g => g.MaterialBatches.Any(mb => mb.Id == request.MaterialBatchId));
 
@@ -905,9 +905,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 grn.Status = Status.Pending;
             }
         }
-        
+
         if (!request.MaterialReturnNoteId.HasValue)
+        {
+            await context.SaveChangesAsync();
             return Result.Success();
+        }
         
         var materialReturnNote = await context.MaterialReturnNotes
             .AsSplitQuery()

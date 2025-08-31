@@ -25,9 +25,9 @@ public class ShipmentDocument : BaseEntity
 public enum ShipmentStatus
 {
     New = 0,
-    InTransit = 1,
-    AtPort = 2,
-    Cleared = 3,
+    AtPort = 1,
+    Cleared = 2,
+    InTransit = 3,
     Arrived = 4
 }
 
