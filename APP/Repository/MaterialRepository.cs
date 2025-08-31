@@ -2359,6 +2359,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .AsSplitQuery()
             .Include(m => m.MaterialBatch).ThenInclude(m => m.Material)
             .Include(m => m.Response)
+            .OrderByDescending(m => m.CreatedAt)
             .AsQueryable();
 
         if (kind.HasValue)
