@@ -58,6 +58,7 @@ namespace APP.Repository;
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleUsers)
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleRoles)
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.Resources)
+             .Include(p => p.Packings).ThenInclude(p => p.PackingLists.OrderBy(r => r.Order)).ThenInclude(p  => p.Uom)
              .Include(p =>p.CreatedBy)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
