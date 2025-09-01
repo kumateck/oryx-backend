@@ -146,8 +146,10 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     }
 
 
-    public async Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(ReportFilter filter)
+    public async Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(MovementReportFilter filter,
+        Guid? designationId, EmployeeType? employeeType, Gender? gender)
     {
+
         var leaveRequests = context.LeaveRequests.AsQueryable();
         var overtimeRequests = context.OvertimeRequests.AsQueryable();
         var employees = context.Employees.AsQueryable();
@@ -156,55 +158,147 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         if (filter.StartDate.HasValue)
         {
             leaveRequests = leaveRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            overtimeRequests = overtimeRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            staffRequisitions = staffRequisitions.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.CreatedAt >= filter.StartDate.Value);
+            staffRequisitions = staffRequisitions.Where(sr => sr.CreatedAt >= filter.StartDate.Value);
         }
 
         if (filter.EndDate.HasValue)
         {
-            leaveRequests = leaveRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            overtimeRequests = overtimeRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            staffRequisitions = staffRequisitions.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            var end = filter.EndDate.Value.AddDays(1);
+            leaveRequests = leaveRequests.Where(lr => lr.CreatedAt < end);
+            overtimeRequests = overtimeRequests.Where(or => or.CreatedAt < end);
+            staffRequisitions = staffRequisitions.Where(sr => sr.CreatedAt < end);
         }
 
+
+        if (filter.DepartmentId.HasValue)
+        {
+            employees = employees.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+            leaveRequests = leaveRequests.Where(lr => lr.Employee.DepartmentId == filter.DepartmentId.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.DepartmentId == filter.DepartmentId.Value));
+            staffRequisitions = staffRequisitions.Where(sr => sr.DepartmentId == filter.DepartmentId.Value);
+        }
+
+
+        if (designationId.HasValue)
+        {
+            employees = employees.Where(e => e.DesignationId == designationId.Value);
+            leaveRequests = leaveRequests.Where(lr => lr.Employee.DesignationId == designationId.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.DesignationId == designationId.Value));
+            staffRequisitions = staffRequisitions.Where(sr => sr.DesignationId == designationId.Value);
+        }
+
+
+        if (employeeType.HasValue)
+        {
+            employees = employees.Where(e => e.Type == employeeType.Value);
+            leaveRequests = leaveRequests.Where(lr => lr.Employee.Type == employeeType.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.Type == employeeType.Value));
+        }
+
+
+        if (gender.HasValue)
+        {
+            employees = employees.Where(e => e.Gender == gender.Value);
+            leaveRequests = leaveRequests.Where(lr => lr.Employee.Gender == gender.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.Gender == gender.Value));
+        }
+        
+        var employeeStats = await employees.GroupBy(e => 1).Select(g => new
+        {
+            TotalCasual = g.Count(e => e.Type == EmployeeType.Casual),
+            TotalPermanent = g.Count(e => e.Type == EmployeeType.Permanent),
+            ActiveCasual = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Active),
+            ActivePermanent = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Active),
+            InactiveCasual = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Inactive),
+            InactivePermanent = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Inactive),
+            NewCasual = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.New),
+            NewPermanent = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.New),
+            Male = g.Count(e => e.Gender == Gender.Male),
+            Female = g.Count(e => e.Gender == Gender.Female)
+        }).FirstOrDefaultAsync();
+
+      
+        var leaveStats = await leaveRequests.GroupBy(lr => 1).Select(g => new
+        {
+            Total = g.Count(),
+            Pending = g.Count(lr => lr.LeaveStatus == LeaveStatus.Pending),
+            Expired = g.Count(lr => lr.LeaveStatus == LeaveStatus.Expired),
+            Rejected = g.Count(lr => lr.LeaveStatus == LeaveStatus.Rejected),
+
+            Absence = g.Count(lr => lr.RequestCategory == RequestCategory.AbsenceRequest),
+            PendingAbsence = g.Count(lr => lr.RequestCategory == RequestCategory.AbsenceRequest && lr.LeaveStatus == LeaveStatus.Pending),
+            ApprovedAbsence = g.Count(lr => lr.RequestCategory == RequestCategory.AbsenceRequest && lr.LeaveStatus == LeaveStatus.Approved),
+            RejectedAbsence = g.Count(lr => lr.RequestCategory == RequestCategory.AbsenceRequest && lr.LeaveStatus == LeaveStatus.Rejected),
+
+            ExitPass = g.Count(lr => lr.RequestCategory == RequestCategory.ExitPassRequest),
+            PendingExitPass = g.Count(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Pending),
+            ApprovedExitPass = g.Count(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Approved),
+            RejectedExitPass = g.Count(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Rejected),
+
+            OfficialDuty = g.Count(lr => lr.RequestCategory == RequestCategory.OfficialDuty),
+            ApprovedOfficialDuty = g.Count(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Approved),
+            RejectedOfficialDuty = g.Count(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Rejected),
+            PendingOfficialDuty = g.Count(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Pending)
+        }).FirstOrDefaultAsync();
+
+  
+        var overtimeStats = await overtimeRequests.GroupBy(or => 1).Select(g => new
+        {
+            Total = g.Count(),
+            Approved = g.Count(or => or.Status == OvertimeStatus.Approved),
+            Pending = g.Count(or => or.Status == OvertimeStatus.Pending),
+            Expired = g.Count(or => or.Status == OvertimeStatus.Expired)
+        }).FirstOrDefaultAsync();
+
+     
+        var staffRequisitionCount = await staffRequisitions.CountAsync();
+        
+        var ratio = (employeeStats?.Female > 0)
+            ? (decimal)employeeStats.Male / employeeStats.Female
+            : 0;
+        
         return new HrDashboardDto
         {
-            NumberOfOvertimeRequests = overtimeRequests.Count(),
-            NumberOfApprovedOvertimeRequests =
-                await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Approved),
-            NumberOfPendingOvertimeRequests =
-                await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Pending),
-            NumberOfExpiredOvertimeRequests =
-                await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Expired),
-            NumberOfCasualEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Casual),
-            NumberOfActiveCasualEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Active),
-            NumberOfActivePermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Active),
-            NumberOfPermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent),
-            NumberOfLeaveRequests = await leaveRequests.CountAsync(),
-            NumberOfPendingLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Pending),
-            NumberOfExpiredLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Expired),
-            NumberOfRejectedLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Rejected),
-            NumberOfAbsenceRequests = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.AbsenceRequest),
-            NumberOfPendingAbsenceRequests = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.AbsenceRequest && lr.LeaveStatus == LeaveStatus.Approved),
-            NumberOfApprovedAbsenceRequests = await  leaveRequests.CountAsync(lr =>lr.LeaveStatus == LeaveStatus.Approved && lr.RequestCategory == RequestCategory.AbsenceRequest),
-            NumberOfRejectedAbsenceRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Approved && lr.LeaveStatus == LeaveStatus.Approved),
-            NumberOfExitPasses = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.ExitPassRequest),
-            NumberOfPendingExitPasses = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Pending),
-            NumberOfApprovedExitPasses = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Approved),
-            NumberOfRejectedExitPasses = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Rejected),
-            NumberOfOfficialDutyLeaves = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.OfficialDuty),
-            NumberOfApprovedOfficialDutyLeaves = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Approved),
-            NumberOfRejectedOfficialDutyLeaves = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Rejected),
-            NumberOfInactiveCasualEmployees = await  employees.CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Inactive),
-            NumberOfInactivePermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Inactive),
-            NumberOfNewCasualEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.New),
-            NumberOfNewPermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.New),
-            NumberOfPendingOfficialDutyLeaves = await leaveRequests.CountAsync(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Pending),
-            NumberOfStaffRequisitions = await staffRequisitions.CountAsync(),
-            EmployeeGenderRatio = await employees.CountAsync(e => e.Gender == Gender.Male) / await employees.CountAsync(e => e.Gender == Gender.Female),
+            NumberOfOvertimeRequests = overtimeStats?.Total ?? 0,
+            NumberOfApprovedOvertimeRequests = overtimeStats?.Approved ?? 0,
+            NumberOfPendingOvertimeRequests = overtimeStats?.Pending ?? 0,
+            NumberOfExpiredOvertimeRequests = overtimeStats?.Expired ?? 0,
+
+            NumberOfCasualEmployees = employeeStats?.TotalCasual ?? 0,
+            NumberOfPermanentEmployees = employeeStats?.TotalPermanent ?? 0,
+            NumberOfActiveCasualEmployees = employeeStats?.ActiveCasual ?? 0,
+            NumberOfActivePermanentEmployees = employeeStats?.ActivePermanent ?? 0,
+            NumberOfInactiveCasualEmployees = employeeStats?.InactiveCasual ?? 0,
+            NumberOfInactivePermanentEmployees = employeeStats?.InactivePermanent ?? 0,
+            NumberOfNewCasualEmployees = employeeStats?.NewCasual ?? 0,
+            NumberOfNewPermanentEmployees = employeeStats?.NewPermanent ?? 0,
+
+            NumberOfLeaveRequests = leaveStats?.Total ?? 0,
+            NumberOfPendingLeaveRequests = leaveStats?.Pending ?? 0,
+            NumberOfExpiredLeaveRequests = leaveStats?.Expired ?? 0,
+            NumberOfRejectedLeaveRequests = leaveStats?.Rejected ?? 0,
+
+            NumberOfAbsenceRequests = leaveStats?.Absence ?? 0,
+            NumberOfPendingAbsenceRequests = leaveStats?.PendingAbsence ?? 0,
+            NumberOfApprovedAbsenceRequests = leaveStats?.ApprovedAbsence ?? 0,
+            NumberOfRejectedAbsenceRequests = leaveStats?.RejectedAbsence ?? 0,
+
+            NumberOfExitPasses = leaveStats?.ExitPass ?? 0,
+            NumberOfPendingExitPasses = leaveStats?.PendingExitPass ?? 0,
+            NumberOfApprovedExitPasses = leaveStats?.ApprovedExitPass ?? 0,
+            NumberOfRejectedExitPasses = leaveStats?.RejectedExitPass ?? 0,
+
+            NumberOfOfficialDutyLeaves = leaveStats?.OfficialDuty ?? 0,
+            NumberOfApprovedOfficialDutyLeaves = leaveStats?.ApprovedOfficialDuty ?? 0,
+            NumberOfRejectedOfficialDutyLeaves = leaveStats?.RejectedOfficialDuty ?? 0,
+            NumberOfPendingOfficialDutyLeaves = leaveStats?.PendingOfficialDuty ?? 0,
+
+            NumberOfStaffRequisitions = staffRequisitionCount,
+
+            EmployeeGenderRatio = ratio,
             AttendanceStats = await GetAttendanceStatsAsync(filter.StartDate, filter.EndDate)
         };
-
     }
 
     public async Task<Result<PermanentStaffGradeReportDto>> GetPermanentStaffGradeReport(Guid? departmentId)
