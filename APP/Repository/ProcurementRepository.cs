@@ -742,6 +742,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var billingSheet = await context.BillingSheets
             .AsSplitQuery()
             .Include(bs => bs.Supplier)
+            .ThenInclude(s => s.Currency)
+            .Include(bs => bs.Supplier)
+            .ThenInclude(s => s.Country)
             .Include(bs => bs.Invoice)
             .ThenInclude(i => i.Items)
             .ThenInclude(ii => ii.Material)
@@ -844,12 +847,18 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
          {
              case ShipmentStatus.Cleared:
                  shipmentDocument.ClearedAt = DateTime.UtcNow;
+                 // var billingSheet = await context.BillingSheets.FirstOrDefaultAsync(bs => bs.InvoiceId == shipmentDocument.ShipmentInvoiceId);
+                 // if (billingSheet is not null)
+                 // {
+                 //     billingSheet.Status = BillingSheetStatus.Paid;
+                 //     context.BillingSheets.Update(billingSheet);
+                 // }
                  break;
              case ShipmentStatus.InTransit:
                  shipmentDocument.TransitStartedAt = DateTime.UtcNow;
                  break;
              case ShipmentStatus.Arrived:
-                 shipmentDocument.ArrivedAt = DateTime.UtcNow;
+                 await MarkShipmentAsArrived(shipmentDocument.Id, userId);
                  break;
          }
      
