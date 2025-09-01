@@ -43,14 +43,13 @@ public enum HoldingMaterialTransferStatus
 
 public class HoldingMaterialTransferDto
 {
-    public MaterialDto Material { get; set; }
     public HoldingMaterialTransferStatus Status { get; set; }
     public List<HoldingMaterialTransferBatchDto> Batches { get; set; } = [];
 }
 
 public class HoldingMaterialTransferBatchDto
 {
-    public MaterialBatchDto MaterialBatch { get; set; }
+    public MaterialBatchListDto MaterialBatch { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public CollectionItemDto SourceWarehouse { get; set; }
