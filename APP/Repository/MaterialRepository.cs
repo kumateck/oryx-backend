@@ -1990,28 +1990,27 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     public async Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(int page,
-        int pageSize, string searchQuery, bool withProcessed, Guid? userId)
+        int pageSize, string searchQuery, bool withProcessed, Guid userId, MaterialKind? kind)
     {
         var query = context.HoldingMaterialTransfers
             .AsSplitQuery()
             .Include(m => m.Batches)
-            .ThenInclude(b => b.MaterialBatch)
+                .ThenInclude(b => b.MaterialBatch)
+                    .ThenInclude(m => m.Material)
             .Include(m => m.Batches)
-            .ThenInclude(b => b.UoM)
+                .ThenInclude(b => b.UoM)
             .Include(m => m.Batches)
-            .ThenInclude(b => b.SourceWarehouse)
+                .ThenInclude(b => b.SourceWarehouse)
             .Include(m => m.Batches)
-            .ThenInclude(b => b.DestinationWarehouse)
+                .ThenInclude(b => b.DestinationWarehouse)
+            .Where(q => q.Batches.Select(b => b.DestinationWarehouse.DepartmentId).Contains(userId))            
             .AsQueryable();
-
+        
         query = withProcessed ? query : query.Where(q => q.Status == HoldingMaterialTransferStatus.Pending);
-
-        if (userId.HasValue)
+        
+        if (kind.HasValue)
         {
-            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-            if (user is null) return UserErrors.NotFound(userId.Value);
-
-            query = query.Where(q => q.Batches.Select(b => b.DestinationWarehouse.DepartmentId).Contains(user.DepartmentId.Value));
+            query = query.Where(q => q.Batches.Any(b => b.MaterialBatch.Material.Kind == kind));
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
