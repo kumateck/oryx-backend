@@ -759,7 +759,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         
         return billingSheet is null
             ? Error.NotFound("BillingSheet.NotFound", "Billing sheet not found")
-            : mapper.Map<BillingSheetDto>(billingSheet);
+            : mapper.Map<BillingSheetDto>(billingSheet, opts =>
+                opts.Items[AppConstants.ModelType] = nameof(BillingSheet));
     }
     
     public async Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize, string searchQuery, BillingSheetStatus? status = null)
@@ -783,7 +784,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             query,
             page,
             pageSize,
-            mapper.Map<BillingSheetDto>
+            entity => mapper.Map<BillingSheetDto>(entity, opts =>
+                opts.Items[AppConstants.ModelType] = nameof(BillingSheet))
         );
     }
 
