@@ -847,12 +847,12 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
          {
              case ShipmentStatus.Cleared:
                  shipmentDocument.ClearedAt = DateTime.UtcNow;
-                 // var billingSheet = await context.BillingSheets.FirstOrDefaultAsync(bs => bs.InvoiceId == shipmentDocument.ShipmentInvoiceId);
-                 // if (billingSheet is not null)
-                 // {
-                 //     billingSheet.Status = BillingSheetStatus.Paid;
-                 //     context.BillingSheets.Update(billingSheet);
-                 // }
+                 var billingSheet = await context.BillingSheets.FirstOrDefaultAsync(bs => bs.InvoiceId == shipmentDocument.ShipmentInvoiceId);
+                 if (billingSheet is not null)
+                 {
+                     billingSheet.Status = BillingSheetStatus.Paid;
+                     context.BillingSheets.Update(billingSheet);
+                 }
                  break;
              case ShipmentStatus.InTransit:
                  shipmentDocument.TransitStartedAt = DateTime.UtcNow;
