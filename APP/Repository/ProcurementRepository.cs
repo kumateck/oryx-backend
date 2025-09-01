@@ -740,19 +740,20 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<BillingSheetDto>> GetBillingSheet(Guid billingSheetId)
     {
         var billingSheet = await context.BillingSheets
+            .AsSplitQuery()
             .Include(bs => bs.Supplier)
             .Include(bs => bs.Invoice)
-            .ThenInclude(i=>i.Items)
-            .ThenInclude(ii=>ii.Material)
+            .ThenInclude(i => i.Items)
+            .ThenInclude(ii => ii.Material)
             .Include(bs => bs.Invoice)
-            .ThenInclude(i=>i.Items)
-            .ThenInclude(ii=>ii.Manufacturer)
+            .ThenInclude(i => i.Items)
+            .ThenInclude(ii => ii.Manufacturer)
             .Include(bs => bs.Invoice)
-            .ThenInclude(i=>i.Items)
-            .ThenInclude(ii=>ii.PurchaseOrder)
-            .Include(bs=>bs.Charges)
+            .ThenInclude(i => i.Items)
+            .ThenInclude(ii => ii.PurchaseOrder)
+            .Include(bs => bs.Charges)
             .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
-
+        
         return billingSheet is null
             ? Error.NotFound("BillingSheet.NotFound", "Billing sheet not found")
             : mapper.Map<BillingSheetDto>(billingSheet);
