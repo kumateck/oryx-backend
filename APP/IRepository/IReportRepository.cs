@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
@@ -11,7 +12,7 @@ public interface IReportRepository
 {
     Task<Result<ProductionReportDto>> GetProductionReport(ReportFilter filter, Guid departmentId);
     Task<Result<List<MaterialWithStockDto>>> GetMaterialsBelowMinimumStockLevel(Guid departmentId);
-    Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(ReportFilter filter);
+    Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(MovementReportFilter filter, Guid? designationId, EmployeeType? employeeType, Gender? gender);
     Task<Result<PermanentStaffGradeReportDto>> GetPermanentStaffGradeReport(Guid? departmentId);
     
     Task<Result<EmployeeMovementReportDto>> GetEmployeeMovementReport(MovementReportFilter filter);
