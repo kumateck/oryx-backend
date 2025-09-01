@@ -173,6 +173,7 @@ public class BatchToSupply
 {
     public MaterialBatchListDto Batch { get; set; }
     public decimal QuantityToTake { get; set; }
+    public Guid? WarehouseLocationShelfId { get; set; }
 }
 
 public class MaterialBatchReservedQuantityDto : BaseDto
