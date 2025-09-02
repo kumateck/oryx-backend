@@ -1154,6 +1154,16 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         foreach (var quotation in processQuotations)
         {
+            var sourceRequisition = await context.SourceRequisitions
+                .AsSplitQuery()
+                .Include(sourceRequisition => sourceRequisition.Items).FirstOrDefaultAsync(s => s.Id == quotation.SourceRequisitionId);
+            if (sourceRequisition == null) return Error.NotFound("Source.Requisition", "Source requisition not found");
+
+            if (quotation.Items.Count > sourceRequisition.Items.Count)
+            {
+                return Error.Validation("SourceRequisition.Items", "Source requisition items count is greater than what is in the source requisition item count");
+            }
+            
             var poId = (await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
                 Code = await GeneratePurchaseOrderCode(),

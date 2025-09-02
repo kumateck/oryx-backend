@@ -1762,7 +1762,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             var shipmentDocument = await context.ShipmentDocuments
                 .AsSplitQuery()
-                .Include(s => s.ShipmentInvoice)
                 .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 
             var invoices = await context.ShipmentInvoices
@@ -1801,6 +1800,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                           && sd.Id == shipmentDocumentId // Ensuring linkage to the shipment document
                     select r
                 ).Distinct().ToListAsync();
+
+                if (requisitionMaterialRequests.Count == 0)
+                {
+                    return Error.Validation("Shipment.Document", "No requisitions found for this shipment doc");
+                }
 
                 foreach (var requisitionItem in requisitionMaterialRequests)
                 {
