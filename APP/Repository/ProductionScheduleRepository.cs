@@ -31,7 +31,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     : IProductionScheduleRepository
 {
     public async Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId) 
-    { 
+    {
+        if (request.ScheduledEndTime < request.ScheduledStartTime)
+        {
+            return Error.Validation("ProductionSchedule.Validation", "Scheduled end time cannot be before scheduled start time");
+        }
+
+        if (request.ScheduledEndTime < DateTime.UtcNow)
+        {
+            return Error.Validation("ProductionSchedule.Validation", "Scheduled end time cannot be before current time");
+        }
+        
         var productionSchedule = mapper.Map<ProductionSchedule>(request); 
         productionSchedule.CreatedById = userId;
         await context.ProductionSchedules.AddAsync(productionSchedule); 
