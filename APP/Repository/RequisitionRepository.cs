@@ -1163,7 +1163,14 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             {
                 return Error.Validation("SourceRequisition.Items", "Source requisition items count is greater than what is in the source requisition item count");
             }
-            
+
+            if (!quotation.Items
+                    .Select(qi => qi.MaterialId)
+                    .All(id => sourceRequisition.Items.Select(si => si.MaterialId).Contains(id)))
+            {
+                return Error.Validation("SourceRequisition.Materials", "Quotation contains materials that are not in the source requisition.");
+            }
+
             var poId = (await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
                 Code = await GeneratePurchaseOrderCode(),
