@@ -9,7 +9,8 @@ namespace APP.IRepository;
 public interface IShiftScheduleRepository
 {
     Task<Result<Guid>> CreateShiftSchedule(CreateShiftScheduleRequest request);
-    Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize,
+        string searchQuery, ScheduleStatus? status, ScheduleFrequency? frequency);
     Task<Result<ShiftScheduleDto>> GetShiftSchedule(Guid id);
     
     Task<Result<List<ShiftScheduleDto>>> GetShiftScheduleByDepartment(Guid departmentId);
