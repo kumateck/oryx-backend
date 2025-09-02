@@ -73,7 +73,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     {
         var query = context.Products
             .AsSplitQuery()
-            .Where(p => context.ProductStandardTestProcedures.Any(s => s.ProductId == p.Id))
+            .Where(p => !context.ProductStandardTestProcedures.Any(s => s.ProductId == p.Id))
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

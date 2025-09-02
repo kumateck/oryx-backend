@@ -83,7 +83,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         var query = context.Materials
             .AsSplitQuery()
             .Include(m => m.MaterialCategory)
-            .Where(m => m.Kind == kind && context.MaterialStandardTestProcedures.Any(stp => stp.MaterialId != m.Id))
+            .Where(m => m.Kind == kind && !context.MaterialStandardTestProcedures.Any(stp => stp.MaterialId == m.Id))
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
