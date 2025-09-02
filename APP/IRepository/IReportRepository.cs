@@ -25,9 +25,9 @@ public interface IReportRepository
     
     Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(ReportFilter filter);
     
-    Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter);
+    Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter, Guid? productId);
     
-    Task<Result<QcDashboardDto>> GetQcDashboardReport(ReportFilter filter);
+    Task<Result<QcDashboardDto>> GetQcDashboardReport(ReportFilter filter, Guid? productId, Guid? materialId);
 
     Task<Result<WarehouseReportDto>> GetWarehouseReport(ReportFilter filter, Guid departmentId);
     Task<Result<List<MaterialBatchReservedQuantityReportDto>>> GetReservedMaterialBatchesForDepartment(

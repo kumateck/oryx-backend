@@ -38,6 +38,6 @@ public enum ScheduleStatus
     New,
     Assigned,
     InProgress,
-    Completed,
-    Cancelled
+    Cancelled,
+    Expired
 }
