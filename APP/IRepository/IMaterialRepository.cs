@@ -69,6 +69,7 @@ public interface IMaterialRepository
     Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
     Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments,
         Guid userId);
+    Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId);
     Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery, MaterialKind? kind, Guid userId);
     Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page,
         int pageSize,
@@ -76,7 +77,7 @@ public interface IMaterialRepository
     Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId);
     Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
         int page,
-        int pageSize, string searchQuery, bool withProcessed, Guid? userId);
+        int pageSize, string searchQuery, bool withProcessed, Guid userId, MaterialKind? kind);
     Task<Result> MoveMaterialBatchToWarehouseFromHolding(Guid holdingMaterialId, 
         MoveShelfMaterialBatchRequest request, Guid userId);
    Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId);

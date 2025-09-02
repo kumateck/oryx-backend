@@ -640,13 +640,15 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="onlyApproved">Get onlt shipment documents that have been approved</param>
     /// <returns>Returns a paginated list of shipment documents.</returns>
     [HttpGet("shipment-document")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShipmentDocumentDto>>))]
-    public async Task<IResult> GetShipmentDocuments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetShipmentDocuments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
+        [FromQuery] bool? onlyApproved = null)
     {
-        var result = await repository.GetShipmentDocuments(page, pageSize, searchQuery);
+        var result = await repository.GetShipmentDocuments(page, pageSize, searchQuery, onlyApproved);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -1109,5 +1111,31 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     {
         var result = await repository.ConfirmDistribution(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of supplier materials by material
+    /// </summary>
+    [HttpGet("supplier/{supplierId}/material/{materialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierManufacturerDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetSupplierManufacturersByMaterial([FromRoute]Guid supplierId, [FromRoute]Guid materialId)
+    {
+        var result = await repository.GetSupplierManufacturersByMaterial(materialId, supplierId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of supplier materials by material
+    /// </summary>
+    [HttpGet("supplier/{supplierId}/material")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierManufacturerDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetSupplierManufacturersBySupplier([FromRoute]Guid supplierId)
+    {
+        var result = await repository.GetSupplierManufacturersBySupplier(supplierId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

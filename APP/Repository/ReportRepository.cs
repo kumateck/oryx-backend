@@ -8,6 +8,7 @@ using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.ProductAnalyticalRawData;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
@@ -146,42 +147,159 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     }
 
 
-    public async Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(ReportFilter filter)
+    public async Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(MovementReportFilter filter,
+        Guid? designationId, EmployeeType? employeeType, Gender? gender)
     {
+
         var leaveRequests = context.LeaveRequests.AsQueryable();
         var overtimeRequests = context.OvertimeRequests.AsQueryable();
         var employees = context.Employees.AsQueryable();
+        var staffRequisitions = context.StaffRequisitions.AsQueryable();
 
         if (filter.StartDate.HasValue)
         {
             leaveRequests = leaveRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            overtimeRequests = overtimeRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.CreatedAt >= filter.StartDate.Value);
+            staffRequisitions = staffRequisitions.Where(sr => sr.CreatedAt >= filter.StartDate.Value);
         }
 
         if (filter.EndDate.HasValue)
         {
-            leaveRequests = leaveRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            overtimeRequests = overtimeRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            var end = filter.EndDate.Value.AddDays(1);
+            leaveRequests = leaveRequests.Where(lr => lr.CreatedAt < end);
+            overtimeRequests = overtimeRequests.Where(or => or.CreatedAt < end);
+            staffRequisitions = staffRequisitions.Where(sr => sr.CreatedAt < end);
         }
 
+
+        if (filter.DepartmentId.HasValue)
+        {
+            employees = employees.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+            leaveRequests = leaveRequests.Where(lr => lr.Employee.DepartmentId == filter.DepartmentId.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.DepartmentId == filter.DepartmentId.Value));
+            staffRequisitions = staffRequisitions.Where(sr => sr.DepartmentId == filter.DepartmentId.Value);
+        }
+
+
+        if (designationId.HasValue)
+        {
+            employees = employees.Where(e => e.DesignationId == designationId.Value);
+            leaveRequests = leaveRequests.Where(lr => lr.Employee.DesignationId == designationId.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.DesignationId == designationId.Value));
+            staffRequisitions = staffRequisitions.Where(sr => sr.DesignationId == designationId.Value);
+        }
+
+
+        if (employeeType.HasValue)
+        {
+            employees = employees.Where(e => e.Type == employeeType.Value);
+            leaveRequests = leaveRequests.Where(lr => lr.Employee.Type == employeeType.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.Type == employeeType.Value));
+        }
+
+
+        if (gender.HasValue)
+        {
+            employees = employees.Where(e => e.Gender == gender.Value);
+            leaveRequests = leaveRequests.Where(lr => lr.Employee.Gender == gender.Value);
+            overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.Gender == gender.Value));
+        }
+        
+        var employeeStats = await employees.GroupBy(e => 1).Select(g => new
+        {
+            TotalCasual = g.Count(e => e.Type == EmployeeType.Casual),
+            TotalPermanent = g.Count(e => e.Type == EmployeeType.Permanent),
+            ActiveCasual = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Active),
+            ActivePermanent = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Active),
+            InactiveCasual = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Inactive),
+            InactivePermanent = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Inactive),
+            NewCasual = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.New),
+            NewPermanent = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.New),
+            Male = g.Count(e => e.Gender == Gender.Male),
+            Female = g.Count(e => e.Gender == Gender.Female)
+        }).FirstOrDefaultAsync();
+
+      
+        var leaveStats = await leaveRequests.GroupBy(lr => 1).Select(g => new
+        {
+            Total = g.Count(),
+            Pending = g.Count(lr => lr.LeaveStatus == LeaveStatus.Pending),
+            Expired = g.Count(lr => lr.LeaveStatus == LeaveStatus.Expired),
+            Rejected = g.Count(lr => lr.LeaveStatus == LeaveStatus.Rejected),
+
+            Absence = g.Count(lr => lr.RequestCategory == RequestCategory.AbsenceRequest),
+            PendingAbsence = g.Count(lr => lr.RequestCategory == RequestCategory.AbsenceRequest && lr.LeaveStatus == LeaveStatus.Pending),
+            ApprovedAbsence = g.Count(lr => lr.RequestCategory == RequestCategory.AbsenceRequest && lr.LeaveStatus == LeaveStatus.Approved),
+            RejectedAbsence = g.Count(lr => lr.RequestCategory == RequestCategory.AbsenceRequest && lr.LeaveStatus == LeaveStatus.Rejected),
+
+            ExitPass = g.Count(lr => lr.RequestCategory == RequestCategory.ExitPassRequest),
+            PendingExitPass = g.Count(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Pending),
+            ApprovedExitPass = g.Count(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Approved),
+            RejectedExitPass = g.Count(lr => lr.RequestCategory == RequestCategory.ExitPassRequest && lr.LeaveStatus == LeaveStatus.Rejected),
+
+            OfficialDuty = g.Count(lr => lr.RequestCategory == RequestCategory.OfficialDuty),
+            ApprovedOfficialDuty = g.Count(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Approved),
+            RejectedOfficialDuty = g.Count(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Rejected),
+            PendingOfficialDuty = g.Count(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Pending)
+        }).FirstOrDefaultAsync();
+
+  
+        var overtimeStats = await overtimeRequests.GroupBy(or => 1).Select(g => new
+        {
+            Total = g.Count(),
+            Approved = g.Count(or => or.Status == OvertimeStatus.Approved),
+            Pending = g.Count(or => or.Status == OvertimeStatus.Pending),
+            Expired = g.Count(or => or.Status == OvertimeStatus.Expired)
+        }).FirstOrDefaultAsync();
+
+     
+        var staffRequisitionCount = await staffRequisitions.CountAsync();
+        
+        var ratio = (employeeStats?.Female > 0)
+            ? (decimal)employeeStats.Male / employeeStats.Female
+            : 0;
+        
         return new HrDashboardDto
         {
-            NumberOfOvertimeRequests = overtimeRequests.Count(),
-            NumberOfApprovedOvertimeRequests =
-                await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Approved),
-            NumberOfPendingOvertimeRequests =
-                await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Pending),
-            NumberOfExpiredOvertimeRequests =
-                await overtimeRequests.CountAsync(or => or.Status == OvertimeStatus.Expired),
-            NumberOfCasualEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Casual),
-            NumberOfPermanentEmployees = await employees.CountAsync(e => e.Type == EmployeeType.Permanent),
-            NumberOfLeaveRequests = await leaveRequests.CountAsync(),
-            NumberOfPendingLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Pending),
-            NumberOfExpiredLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Expired),
-            NumberOfRejectedLeaveRequests = await leaveRequests.CountAsync(lr => lr.LeaveStatus == LeaveStatus.Rejected),
+            NumberOfOvertimeRequests = overtimeStats?.Total ?? 0,
+            NumberOfApprovedOvertimeRequests = overtimeStats?.Approved ?? 0,
+            NumberOfPendingOvertimeRequests = overtimeStats?.Pending ?? 0,
+            NumberOfExpiredOvertimeRequests = overtimeStats?.Expired ?? 0,
+
+            NumberOfCasualEmployees = employeeStats?.TotalCasual ?? 0,
+            NumberOfPermanentEmployees = employeeStats?.TotalPermanent ?? 0,
+            NumberOfActiveCasualEmployees = employeeStats?.ActiveCasual ?? 0,
+            NumberOfActivePermanentEmployees = employeeStats?.ActivePermanent ?? 0,
+            NumberOfInactiveCasualEmployees = employeeStats?.InactiveCasual ?? 0,
+            NumberOfInactivePermanentEmployees = employeeStats?.InactivePermanent ?? 0,
+            NumberOfNewCasualEmployees = employeeStats?.NewCasual ?? 0,
+            NumberOfNewPermanentEmployees = employeeStats?.NewPermanent ?? 0,
+
+            NumberOfLeaveRequests = leaveStats?.Total ?? 0,
+            NumberOfPendingLeaveRequests = leaveStats?.Pending ?? 0,
+            NumberOfExpiredLeaveRequests = leaveStats?.Expired ?? 0,
+            NumberOfRejectedLeaveRequests = leaveStats?.Rejected ?? 0,
+
+            NumberOfAbsenceRequests = leaveStats?.Absence ?? 0,
+            NumberOfPendingAbsenceRequests = leaveStats?.PendingAbsence ?? 0,
+            NumberOfApprovedAbsenceRequests = leaveStats?.ApprovedAbsence ?? 0,
+            NumberOfRejectedAbsenceRequests = leaveStats?.RejectedAbsence ?? 0,
+
+            NumberOfExitPasses = leaveStats?.ExitPass ?? 0,
+            NumberOfPendingExitPasses = leaveStats?.PendingExitPass ?? 0,
+            NumberOfApprovedExitPasses = leaveStats?.ApprovedExitPass ?? 0,
+            NumberOfRejectedExitPasses = leaveStats?.RejectedExitPass ?? 0,
+
+            NumberOfOfficialDutyLeaves = leaveStats?.OfficialDuty ?? 0,
+            NumberOfApprovedOfficialDutyLeaves = leaveStats?.ApprovedOfficialDuty ?? 0,
+            NumberOfRejectedOfficialDutyLeaves = leaveStats?.RejectedOfficialDuty ?? 0,
+            NumberOfPendingOfficialDutyLeaves = leaveStats?.PendingOfficialDuty ?? 0,
+
+            NumberOfStaffRequisitions = staffRequisitionCount,
+
+            EmployeeGenderRatio = ratio,
             AttendanceStats = await GetAttendanceStatsAsync(filter.StartDate, filter.EndDate)
         };
-
     }
 
     public async Task<Result<PermanentStaffGradeReportDto>> GetPermanentStaffGradeReport(Guid? departmentId)
@@ -277,97 +395,94 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             {
                 var isCasual = emp.Type == EmployeeType.Casual;
 
-                // Count new hires during the period
-                if (emp.DateEmployed >= start && emp.DateEmployed <= end)
+                switch (emp.Status)
                 {
-                    if (isCasual)
-                    {
+                    // Count new hires during the period
+                    case EmployeeStatus.New when isCasual:
                         dto.CasualNew++;
                         totals.CasualNew++;
-                    }
-                    else
-                    {
+                        break;
+                    case EmployeeStatus.New:
                         dto.PermanentNew++;
                         totals.PermanentNew++;
-                    }
-                }
+                        break;
+                    // Count exits during the period (only for inactive employees)
+                    case EmployeeStatus.Inactive when 
+                        emp.ExitDate.HasValue && 
+                        emp.ExitDate >= start && 
+                        emp.ExitDate <= end && 
+                        emp.InactiveStatus.HasValue:
+                        switch (emp.InactiveStatus.Value)
+                        {
+                            case EmployeeInactiveStatus.Resignation:
+                                if (isCasual)
+                                {
+                                    dto.CasualResignation++;
+                                    totals.CasualResignation++;
+                                }
+                                else
+                                {
+                                    dto.PermanentResignation++;
+                                    totals.PermanentResignation++;
+                                }
+                                break;
+                            
+                            case EmployeeInactiveStatus.Termination:
+                            case EmployeeInactiveStatus.Deceased:
+                                if (isCasual)
+                                {
+                                    dto.CasualTermination++;
+                                    totals.CasualTermination++;
+                                }
+                                else
+                                {
+                                    dto.PermanentTermination++;
+                                    totals.PermanentTermination++;
+                                }
+                                break;
+                            
+                            case EmployeeInactiveStatus.SummaryDismissed:
+                                if (isCasual)
+                                {
+                                    dto.CasualSDVP++;
+                                    totals.CasualSDVP++;
+                                }
+                                else
+                                {
+                                    dto.PermanentSDVP++;
+                                    totals.PermanentSDVP++;
+                                }
+                                break;
+                            
+                            case EmployeeInactiveStatus.Transfer:
+                                // Transfers are typically permanent employees
+                                if (!isCasual)
+                                {
+                                    dto.PermanentTransfer++;
+                                    totals.PermanentTransfer++;
+                                }
+                                break;
+                            
+                            case EmployeeInactiveStatus.VacatedPost:
+                                // These might need separate handling depending on your business rules
+                                // For now, treating them as terminations
+                                if (isCasual)
+                                {
+                                    dto.CasualSDVP++;
+                                    totals.CasualSDVP++;
+                                }
+                                else
+                                {
+                                    dto.PermanentSDVP++;
+                                    totals.PermanentSDVP++;
+                                }
+                                break;
+                            
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
 
-                // Count exits during the period (only for inactive employees)
-                if (emp.Status == EmployeeStatus.Inactive && 
-                    emp.ExitDate.HasValue && 
-                    emp.ExitDate >= start && 
-                    emp.ExitDate <= end && 
-                    emp.InactiveStatus.HasValue)
-                {
-                    switch (emp.InactiveStatus.Value)
-                    {
-                        case EmployeeInactiveStatus.Resignation:
-                            if (isCasual)
-                            {
-                                dto.CasualResignation++;
-                                totals.CasualResignation++;
-                            }
-                            else
-                            {
-                                dto.PermanentResignation++;
-                                totals.PermanentResignation++;
-                            }
-                            break;
-                            
-                        case EmployeeInactiveStatus.Termination:
-                        case EmployeeInactiveStatus.Deceased:
-                            if (isCasual)
-                            {
-                                dto.CasualTermination++;
-                                totals.CasualTermination++;
-                            }
-                            else
-                            {
-                                dto.PermanentTermination++;
-                                totals.PermanentTermination++;
-                            }
-                            break;
-                            
-                        case EmployeeInactiveStatus.SummaryDismissed:
-                            if (isCasual)
-                            {
-                                dto.CasualSDVP++;
-                                totals.CasualSDVP++;
-                            }
-                            else
-                            {
-                                dto.PermanentSDVP++;
-                                totals.PermanentSDVP++;
-                            }
-                            break;
-                            
-                        case EmployeeInactiveStatus.Transfer:
-                            // Transfers are typically permanent employees
-                            if (!isCasual)
-                            {
-                                dto.PermanentTransfer++;
-                                totals.PermanentTransfer++;
-                            }
-                            break;
-                            
-                        case EmployeeInactiveStatus.VacatedPost:
-                            // These might need separate handling depending on your business rules
-                            // For now, treating them as terminations
-                            if (isCasual)
-                            {
-                                dto.CasualSDVP++;
-                                totals.CasualSDVP++;
-                            }
-                            else
-                            {
-                                dto.PermanentSDVP++;
-                                totals.PermanentSDVP++;
-                            }
-                            break;
-                            
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                        break;
                 }
             }
             
@@ -426,10 +541,11 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         });
     }
 
-    public Task<Result<DOMAIN.Entities.Reports.HumanResource.StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
+    public async Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
     {
         throw new NotImplementedException();
     }
+
 
     /*
     public async Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
@@ -626,9 +742,8 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         };
     }
 
-    public async Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter)
+    public async Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter, Guid? productId)
     {
-        var approvals = context.Approvals.AsQueryable();
         var analyticalTestRequests = context.AnalyticalTestRequests.AsQueryable();
         var approvedManufacturers = context.Manufacturers.AsQueryable();
         var products = context.Products.AsQueryable();
@@ -644,7 +759,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         
         if (filter.StartDate.HasValue)
         {
-            approvals = approvals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             analyticalTestRequests = analyticalTestRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             approvedManufacturers = approvedManufacturers.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             products = products.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
@@ -660,7 +774,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         if (filter.EndDate.HasValue)
         {
-            approvals = approvals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             analyticalTestRequests = analyticalTestRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             approvedManufacturers = approvedManufacturers.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             products = products.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
@@ -674,6 +787,14 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
         }
 
+        if (productId.HasValue)
+        {
+            analyticalTestRequests = analyticalTestRequests.Where(lr => lr.ProductId == productId);
+            products = products.Where(lr => lr.Id == productId);
+            bmrRequests = bmrRequests.Where(lr => lr.ProductId == productId);
+            requisitionApprovals = requisitionApprovals.Where(lr => lr.Requisition.ProductId == productId);
+        }
+
         return new QaDashboardDto
         {
             NumberOfBmrRequests = bmrRequests.Count(),
@@ -683,7 +804,11 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             NumberOfAnalyticalTestRequests = analyticalTestRequests.Count(),
             NumberOfExpiredAnalyticalTestRequests = 
                 await analyticalTestRequests.CountAsync(or => or.ExpiryDate > filter.StartDate && or.ExpiryDate <= filter.EndDate),
-            NumberOfApprovals = await approvals.CountAsync(),
+            NumberOfApprovals = await requisitionApprovals.CountAsync() + await billingSheetApprovals.CountAsync() 
+                                + await leaveRequestApprovals.CountAsync() + await purchaseOrderApprovals.CountAsync()
+                                + await staffRequisitionApprovals.CountAsync() + await purchaseOrderApprovals.CountAsync()
+                                + await responseApprovals.CountAsync(),
+            
             NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
                                        + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
                                     + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
@@ -701,6 +826,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                                         + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected),
             NumberOfManufacturers = await approvedManufacturers.CountAsync(),
             NumberOfNewManufacturers = await approvedManufacturers.CountAsync(),
+            NumberOfApprovedManufacturers = await approvedManufacturers.CountAsync(am => am.ApprovedAt.HasValue),
             NumberOfExpiredManufacturers = await approvedManufacturers.CountAsync(am =>am.ValidityDate.HasValue && am.ValidityDate.Value < DateTime.UtcNow),
             NumberOfProducts = await products.CountAsync(),
             NumberOfPackingMaterials = await materials.CountAsync(m => m.Kind == MaterialKind.Package),
@@ -709,7 +835,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
     }
 
-    public async Task<Result<QcDashboardDto>> GetQcDashboardReport(ReportFilter filter)
+    public async Task<Result<QcDashboardDto>> GetQcDashboardReport(ReportFilter filter, Guid? productId, Guid? materialId)
     {
         var materialStp = context.MaterialStandardTestProcedures.AsQueryable();
         var productStp = context.ProductStandardTestProcedures.AsQueryable();
@@ -718,69 +844,109 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var productAnalyticalRawData = context.ProductAnalyticalRawData.AsQueryable();
 
         var rawMaterialBatchTest = context.MaterialBatches.AsQueryable();
-        var approvals = context.Approvals.AsQueryable();
-        var billingSheetApprovals = context.BillingSheetApprovals.AsQueryable();
-        var leaveRequestApprovals = context.LeaveRequestApprovals.AsQueryable();
-        var purchaseOrderApprovals = context.PurchaseOrderApprovals.AsQueryable();
-        var requisitionApprovals = context.RequisitionApprovals.AsQueryable();
-        var responseApprovals = context.ResponseApprovals.AsQueryable();
-        var staffRequisitionApprovals = context.StaffRequisitionApprovals.AsQueryable();
+        // var approvals = context.Approvals.AsQueryable();
+        // var billingSheetApprovals = context.BillingSheetApprovals.AsQueryable();
+        // var leaveRequestApprovals = context.LeaveRequestApprovals.AsQueryable();
+        // var purchaseOrderApprovals = context.PurchaseOrderApprovals.AsQueryable();
+        // var requisitionApprovals = context.RequisitionApprovals.AsQueryable();
+        // var responseApprovals = context.ResponseApprovals.AsQueryable();
+        // var staffRequisitionApprovals = context.StaffRequisitionApprovals.AsQueryable();
         
         if (filter.StartDate.HasValue)
         {
+            materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             materialStp = materialStp.Where(ms => ms.CreatedAt >= filter.StartDate);
             productStp = productStp.Where(ms => ms.CreatedAt >= filter.StartDate);
-            approvals = approvals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            responseApprovals = responseApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            purchaseOrderApprovals =  purchaseOrderApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            productAnalyticalRawData = productAnalyticalRawData.Where(lr => lr.CreatedAt >= filter.StartDate);
+            rawMaterialBatchTest = rawMaterialBatchTest.Where(lr => lr.CreatedAt >= filter.StartDate);
+            // approvals = approvals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // responseApprovals = responseApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // purchaseOrderApprovals =  purchaseOrderApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
         }
 
         if (filter.EndDate.HasValue)
         {
-            approvals = approvals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             materialStp = materialStp.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             productStp = productStp.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             productAnalyticalRawData = productAnalyticalRawData.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             rawMaterialBatchTest = rawMaterialBatchTest.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            responseApprovals = responseApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            purchaseOrderApprovals = purchaseOrderApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // responseApprovals = responseApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // purchaseOrderApprovals = purchaseOrderApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
         }
-        
+
+        if (productId.HasValue)
+        {
+            productStp = productStp.Where(lr => lr.ProductId == productId);
+            productAnalyticalRawData = productAnalyticalRawData.Where(lr => lr.ProductStandardTestProcedure.ProductId == productId);
+            
+        }
+
+        if (materialId.HasValue)
+        {
+            materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.MaterialStandardTestProcedure.MaterialId == materialId);
+            materialStp = materialStp.Where(lr => lr.MaterialId == materialId);
+            rawMaterialBatchTest = rawMaterialBatchTest.Where(lr => lr.MaterialId == materialId);
+            
+        }
         return new QcDashboardDto
         {
             NumberOfStpRawMaterials = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Raw),
+            NumberOfStpPackingMaterials = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Package),
             NumberOfStpProducts = await productStp.CountAsync(),
-            NumberOfAnalyticalRawData = await materialAnalyticalRawData.CountAsync() + await productAnalyticalRawData.CountAsync(),
+            NumberOfMaterialAnalyticalRawData = await materialAnalyticalRawData.CountAsync(m => m.MaterialStandardTestProcedure.Material.Kind == MaterialKind.Raw),
+            NumberOfMaterialAnalyticalPackingData = await materialAnalyticalRawData.CountAsync(m => m.MaterialStandardTestProcedure.Material.Kind == MaterialKind.Package),
             NumberOfBatchTestCountRawMaterials = rawMaterialBatchTest.Count(rm => rm.Material.Kind == MaterialKind.Raw),
             NumberOfBatchTestPendingRawMaterials = 
                 await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Received), //check this
             NumberOfBatchTestApprovedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Approved),
             NumberOfBatchTestRejectedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Rejected),
-            NumberOfApprovals = await approvals.CountAsync(),
-            NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                       + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                    + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                       + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
-                                    + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                       + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
-                                    + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending),
+            NumberOfBulkProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Bulk),
+            NumberOfIntermediateProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Intermediate),
+            NumberOfFinishedProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Finished),
+            NumberOfRawMaterialSpecifications = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Raw),
+            NumberOfPackingMaterialSpecifications = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Package),
+            NumberOfIntermediateProductSpecifications = await productStp
+                .CountAsync(p => productAnalyticalRawData
+                    .Where(ar => ar.Stage == Stage.Intermediate)
+                    .Select(ar => ar.Id)
+                    .Contains(p.ProductId)),
+            NumberOfBulkProductSpecifications = await productStp.CountAsync(p=> productAnalyticalRawData
+                .Where(ar => ar.Stage == Stage.Bulk)
+                .Select(ar => ar.Id)
+                .Contains(p.ProductId)),
             
-            NumberOfRejectedApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
-                                        + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
-                                        + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+            NumberOfFinishedProductSpecifications = await productStp.CountAsync(
+                p => productAnalyticalRawData
+                    .Where(ar => ar.Stage == Stage.Finished)
+                    .Select(ar => ar.Id)
+                    .Contains(p.ProductId))
+            
+            
+            // NumberOfApprovals = await approvals.CountAsync(),
+            // NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+            //                            + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+            //                         + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+            //                            + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
+            //                         + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+            //                            + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
+            //                         + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending),
+            //
+            // NumberOfRejectedApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+            //                             + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+            //                             + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+            //                             + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+            //                             + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+            //                             + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+            //                             + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
         };
     }
 

@@ -1,4 +1,6 @@
+using APP.Extensions;
 using APP.IRepository;
+using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
@@ -226,11 +228,6 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         var invalidItems = string.Join(", ", invalidItemTypes);
         return Error.Validation("Item", $"Invalid item types: {invalidItems}");
     }
-    
-    public async Task<Result<IEnumerable<UnitOfMeasureDto>>> GetUoM(bool isRawMaterial)
-    {
-       return mapper.Map<List<UnitOfMeasureDto>>(await context.UnitOfMeasures.Where(u => u.IsRawMaterial == isRawMaterial).ToListAsync());
-    } 
     
     public async Task<Result<IEnumerable<PackageStyleDto>>> GetPackageStyles()
     {
@@ -795,5 +792,73 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             default:
                 return Error.Validation("Item", "Invalid item type");
         }    
+    }
+
+    public async Task<Result> CreateUoM(CreateUnitOfMeasure request)
+    {
+        var uom = mapper.Map<UnitOfMeasure>(request);
+        await context.UnitOfMeasures.AddAsync(uom);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<UnitOfMeasureDto>>>> GetUoM(FilterUnitOfMeasure filter)
+    {
+        var query = context.UnitOfMeasures.
+            AsQueryable();
+
+        if (string.IsNullOrEmpty(filter.SearchQuery))
+        {
+            query = query.WhereSearch(filter.SearchQuery, q => q.Name, q => q.Description);
+        }
+
+        if (filter.Types.Count != 0)
+        {
+            query = query.Where(q => filter.Types.Contains(q.Type));
+        }
+
+        if (filter.Categories.Count != 0)
+        {
+            query = query.Where(q => filter.Categories.Contains(q.Category));
+        }
+        
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            filter,
+            mapper.Map<UnitOfMeasureDto>
+        );
+    }
+    
+    public async Task<Result<UnitOfMeasureDto>> GetUoM(Guid uomId)
+    {
+       return mapper.Map<UnitOfMeasureDto>(
+           await context.UnitOfMeasures.FirstOrDefaultAsync(p => p.Id == uomId));
+    }
+    
+    
+    public async Task<Result> UpdateUoM(CreateUnitOfMeasure request, Guid id)
+    {
+        var uom = await context.UnitOfMeasures.
+            FirstOrDefaultAsync(u => u.Id == id);
+        if(uom is null) return Error.NotFound("Uom", "Uom not found");
+        
+        mapper.Map(request, uom);
+        
+        context.UnitOfMeasures.Update(uom);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    
+    public async Task<Result> DeleteUoM(Guid uomId)
+    {
+        var uom = await context.UnitOfMeasures.
+            FirstOrDefaultAsync(u => u.Id == uomId);
+        if(uom is null) return Error.NotFound("Uom", "Uom not found");
+        
+        uom.DeletedAt = DateTime.UtcNow;
+        context.UnitOfMeasures.Update(uom);
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 }

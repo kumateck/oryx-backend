@@ -29,6 +29,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         {
             return Error.Validation("ShiftSchedule.Exists", "Shift schedule already exists.");
         }
+
+        if (request.StartDate == DateTime.Today)
+        {
+            return Error.Validation("ShiftSchedule.Today", "Shift schedule cannot start on today.");
+        }
         
         var shiftTypes = await context.ShiftTypes
             .Where(shift => request.ShiftTypeIds.Contains(shift.Id)).ToListAsync();
@@ -72,12 +77,22 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         };
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize, string searchQuery, ScheduleStatus? status = null, ScheduleFrequency? frequency = null)
     {
         var query = context.ShiftSchedules
             .Include(schedule => schedule.Department)
             .Include(schedule => schedule.ShiftTypes)
             .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(s => s.ScheduleStatus == status.Value);
+        }
+
+        if (frequency.HasValue)
+        {
+            query = query.Where(s => s.Frequency == frequency.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -91,6 +106,14 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                query = query.Where(q => q.Frequency == parsedFrequency); 
             }
             
+        }
+        
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            if (Enum.TryParse<ScheduleStatus>(searchQuery, true, out var parsedStatus))
+            {
+                query = query.Where(q => q.ScheduleStatus == parsedStatus); 
+            }
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -326,12 +349,15 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         await context.ShiftAssignments.AddRangeAsync(assignments);
         await context.SaveChangesAsync();
 
+        shiftSchedule.ScheduleStatus = ScheduleStatus.Assigned;
+        context.ShiftSchedules.Update(shiftSchedule);
+        await context.SaveChangesAsync();
+
         return Result.Success();
     }
    
-   public async Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file, Guid departmentId, Guid shiftId)
+    public async Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file, Guid departmentId, Guid shiftId)
     {
-        
         var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
         if (department is null) return Error.NotFound("Department.NotFound", "Department not found.");
         
@@ -374,35 +400,51 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         }
 
         var assignments = new List<ShiftAssignment>();
+        var skipped = new List<string>();
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
 
             var staffIdStr = GetCell("STAFF ID");
-
             var shiftCategoryName = GetCell("CATEGORY");
             var shiftTypeName = GetCell("SHIFT TYPE");
             
             var employee = await context.Employees.FirstOrDefaultAsync(e => e.StaffNumber == staffIdStr);
-            if (employee == null) continue;
+            if (employee == null)
+            {
+                skipped.Add($"{staffIdStr} - Employee not found");
+                continue;
+            }
 
             var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(c => c.Name == shiftCategoryName);
-            if (shiftCategory == null) continue;
+            if (shiftCategory == null)
+            {
+                skipped.Add($"{staffIdStr} - Shift category '{shiftCategoryName}' not found");
+                continue;
+            }
 
             var shiftType = await context.ShiftTypes.FirstOrDefaultAsync(t => t.ShiftName == shiftTypeName);
-            if (shiftType == null) continue;
+            if (shiftType == null)
+            {
+                skipped.Add($"{staffIdStr} - Shift type '{shiftTypeName}' not found");
+                continue;
+            }
             
-
-            // Conflict & leave check
+            // Leave check
             var hasLeave = await context.LeaveRequests.AnyAsync(l =>
                 l.EmployeeId == employee.Id &&
                 l.LeaveStatus == LeaveStatus.Approved &&
                 l.EndDate.Date >= startDate &&
                 l.StartDate.Date <= endDate);
 
-            if (hasLeave) continue;
+            if (hasLeave)
+            {
+                skipped.Add($"{staffIdStr} - On approved leave during schedule period");
+                continue;
+            }
 
+            // Conflict check
             var existingAssignments = await context.ShiftAssignments
                 .Where(sa =>
                     sa.EmployeeId == employee.Id &&
@@ -418,7 +460,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                         ConvertTime(existing.StartTime) < ConvertTime(current.EndTime) &&
                         ConvertTime(existing.EndTime) > ConvertTime(current.StartTime))));
 
-            if (hasConflict) continue;
+            if (hasConflict)
+            {
+                skipped.Add($"{staffIdStr} - Schedule conflict with existing assignment");
+                continue;
+            }
 
             for (var date = startDate; date <= endDate; date = date.AddDays(1))
             {
@@ -440,10 +486,13 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         await context.ShiftAssignments.AddRangeAsync(assignments);
         await context.SaveChangesAsync();
 
-        return Result.Success();
+        var message = $"Successfully imported {assignments.Count} assignments.";
+        if (skipped.Count != 0)
+            message += $" Skipped {skipped.Count}: {string.Join("; ", skipped)}";
+
+        return Result.Success(message);
     }
-
-
+    
     private static TimeOnly ConvertTime(string time)
     {
         return TimeOnly.ParseExact(time, "hh:mm tt", CultureInfo.InvariantCulture);
@@ -455,6 +504,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         if (shiftSchedule is null)
         {
             return Error.NotFound("ShiftSchedule.NotFound", "Shift schedule is not found");
+        }
+
+        if (shiftSchedule.StartDate < DateTime.Today)
+        {
+            return Error.Validation("ShiftSchedule.NotModifiable", "Shift schedule is already running and cannot be modified.");
         }
 
         var shiftTypes = await context.ShiftTypes

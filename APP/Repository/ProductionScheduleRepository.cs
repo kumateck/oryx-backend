@@ -31,7 +31,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     : IProductionScheduleRepository
 {
     public async Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId) 
-    { 
+    {
+        if (request.ScheduledEndTime < request.ScheduledStartTime)
+        {
+            return Error.Validation("ProductionSchedule.Validation", "Scheduled end time cannot be before scheduled start time");
+        }
+
+        if (request.ScheduledEndTime < DateTime.UtcNow)
+        {
+            return Error.Validation("ProductionSchedule.Validation", "Scheduled end time cannot be before current time");
+        }
+        
         var productionSchedule = mapper.Map<ProductionSchedule>(request); 
         productionSchedule.CreatedById = userId;
         await context.ProductionSchedules.AddAsync(productionSchedule); 
@@ -1345,18 +1355,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         );
     }
     
-    public async Task<Result> MarkProductAllocationAsDelivered(Guid id)
-    {
-        var productAllocation = await context.AllocateProductionOrders
-            .FirstOrDefaultAsync(p => p.Id == id);
-        if (productAllocation == null) return Error.NotFound("Product.Allocation", "Product allocation not found");
-        
-        productAllocation.DeliveredAt = DateTime.UtcNow;
-        context.AllocateProductionOrders.Update(productAllocation);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-    
     public async Task<Result> ValidateProductAllocation(AllocateProductionOrderRequest request)
     {
         // 1) Load the production order + products (as no-tracking; we're not persisting here)
@@ -1459,96 +1457,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
 
 
-    public async Task<Result> AllocateProduct(AllocateProductionOrder request)
-    {
-        var productionOrder = await context.ProductionOrders
-            .AsSplitQuery()
-            .Include(p => p.Products)
-                .ThenInclude(p => p.FulfilledQuantities)
-            .FirstOrDefaultAsync(f => f.Id == request.ProductionOrderId);
-
-        if (productionOrder == null)
-            return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
-
-        foreach (var product in request.Products)
-        {
-            var allocationProduct = productionOrder.Products.FirstOrDefault(p => p.ProductId == product.ProductId);
-            if (allocationProduct == null)
-                return Error.NotFound("ProductionOrder.ProductNotFound",
-                    $"Product {product.ProductId} not found in this production order");
-
-            if (allocationProduct.RemainingQuantity == 0)
-                return Error.Validation("ProductionOrder.Product",
-                    $"Product {product.ProductId} has already been allocated completely.");
-
-            if (allocationProduct.Fulfilled)
-                return Error.Validation("ProductionOrder.Product",
-                    "Product has already been marked as fulfilled.");
-
-            var totalToAllocate = product.FulfilledQuantities.Sum(q => q.Quantity);
-            if (totalToAllocate > allocationProduct.RemainingQuantity)
-            {
-                return Error.Validation("ProductionOrder.Product",
-                    $"Allocation quantity {totalToAllocate} is more than what is left to be fulfilled {allocationProduct.RemainingQuantity}");
-            }
-
-            foreach (var quantityToFulfill in product.FulfilledQuantities)
-            {
-                var finishedGoodsTransferNote = await context.FinishedGoodsTransferNotes
-                    .FirstOrDefaultAsync(f => f.Id == quantityToFulfill.FinishedGoodsTransferNoteId);
-
-                if (finishedGoodsTransferNote is null)
-                    return Error.NotFound("ProductionOrder.FinishedGoodsTransferNoteNotFound",
-                        $"Finished goods transfer note {quantityToFulfill.FinishedGoodsTransferNoteId} not found.");
-
-                if (finishedGoodsTransferNote.RemainingQuantity == 0)
-                    return Error.Validation("ProductionOrder.FinishedGoodsTransferNoteValidation",
-                        $"The finished good transfer note {quantityToFulfill.FinishedGoodsTransferNoteId} does not have any remaining quantity.");
-
-                if (quantityToFulfill.Quantity > finishedGoodsTransferNote.RemainingQuantity)
-                    return Error.Validation("ProductionOrder.FinishedGoodsTransferNoteValidation",
-                        $"Trying to allocate {quantityToFulfill.Quantity}, " +
-                        $"but only {finishedGoodsTransferNote.RemainingQuantity} is left in transfer note {quantityToFulfill.FinishedGoodsTransferNoteId}.");
-
-                // Check if an allocation for this note already exists
-                var existingAllocationProductForNote = allocationProduct
-                    .FulfilledQuantities
-                    .FirstOrDefault(p => p.FinishedGoodsTransferNoteId == quantityToFulfill.FinishedGoodsTransferNoteId);
-
-                if (existingAllocationProductForNote is not null)
-                {
-                    existingAllocationProductForNote.Quantity += quantityToFulfill.Quantity;
-                }
-                else
-                {
-                    allocationProduct.FulfilledQuantities.Add(new ProductionOrderProductQuantity
-                    {
-                        Quantity = quantityToFulfill.Quantity,
-                        FinishedGoodsTransferNoteId = quantityToFulfill.FinishedGoodsTransferNoteId
-                    });
-                }
-
-                finishedGoodsTransferNote.AllocatedQuantity += quantityToFulfill.Quantity;
-            }
-        }
-
-        // Save all changes once
-        await context.SaveChangesAsync();
-
-        // Mark products as fulfilled if no remaining quantity
-        foreach (var product in productionOrder.Products)
-        {
-            if (product.RemainingQuantity == 0 && !product.Fulfilled)
-            {
-                product.Fulfilled = true;
-            }
-        }
-
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
-
     /*public async Task<Result> AllocateProduct(AllocateProductionOrder request)
     {
         var productionOrder =  await context.ProductionOrders
@@ -1640,6 +1548,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
         var query = context.BatchManufacturingRecords
+            .AsSplitQuery()
             .Include(b => b.CreatedBy)
             .Include(p => p.ProductionActivityStep)
             .Include(p => p.ProductionSchedule)
@@ -1669,6 +1578,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         return mapper.Map<BatchManufacturingRecordDto>(
             await context.BatchManufacturingRecords
+                .AsSplitQuery()
                 .Include(b => b.CreatedBy)
                 .Include(p => p.ProductionActivityStep)
                 .Include(p => p.ProductionSchedule)
@@ -1689,6 +1599,20 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
         batchRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
         context.BatchManufacturingRecords.Update(batchRecord);
+        
+        
+        var batchPackingRecord = await context.BatchPackagingRecords
+            .AsSplitQuery()
+            .Include(batchPackagingRecord => batchPackagingRecord.ProductionActivityStep)
+            .FirstOrDefaultAsync(p => p.ProductionActivityStepId == batchRecord.ProductionActivityStepId);
+        if (batchPackingRecord is not  null)
+        {
+            mapper.Map(request, batchPackingRecord);
+            batchPackingRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
+            batchPackingRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
+            context.BatchPackagingRecords.Update(batchPackingRecord);
+        }
+        
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -1713,8 +1637,27 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             Message = "Issued batch manufacturing record",
             Timestamp = DateTime.UtcNow
         });
-        await context.SaveChangesAsync();
         
+        var batchPackingRecord = await context.BatchPackagingRecords
+            .AsSplitQuery()
+            .Include(batchPackagingRecord => batchPackagingRecord.ProductionActivityStep)
+            .FirstOrDefaultAsync(p => p.ProductionActivityStepId == batchRecord.ProductionActivityStepId);
+        if (batchPackingRecord is not  null)
+        {
+            batchPackingRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
+            batchPackingRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
+            context.BatchPackagingRecords.Update(batchPackingRecord);
+            
+            await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
+            {
+                ProductionActivityId = batchRecord.ProductionActivityStep.ProductionActivityId,
+                UserId = userId,
+                Message = "Issued batch packing record",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        
+        await context.SaveChangesAsync();
         backgroundWorkerService.EnqueueNotification("Batch manufacturing issued", NotificationType.BmrBprApproved);
 
         return Result.Success();
@@ -1731,10 +1674,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<Paginateable<IEnumerable<BatchPackagingRecordDto>>>> GetBatchPackagingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
         var query = context.BatchPackagingRecords
+            .AsSplitQuery()
             .Include(b => b.CreatedBy)
             .Include(p => p.ProductionActivityStep)
             .Include(p => p.ProductionSchedule)
             .Include(p => p.Product)
+            .Include(p => p.ProductPacking)
+            .ThenInclude(pp => pp.PackingLists)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -1759,10 +1705,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         return mapper.Map<BatchPackagingRecordDto>(
             await context.BatchPackagingRecords
+                .AsSplitQuery()
                 .Include(b => b.CreatedBy)
                 .Include(p => p.ProductionActivityStep)
                 .Include(p => p.ProductionSchedule)
                 .Include(p => p.Product)
+                .Include(p => p.ProductPacking)
+                .ThenInclude(p => p.PackingLists.OrderBy(pp => pp.Order))
                 .FirstOrDefaultAsync(b => b.Id == id));
     }
 
@@ -2655,6 +2604,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(m => m.FullReturns)
                 .ThenInclude(mf => mf.MaterialBatchReservedQuantity)
                     .ThenInclude(mf => mf.MaterialBatch)
+                        .ThenInclude(m => m.Material)
             .Include(m => m.FullReturns)
                 .ThenInclude(mf => mf.MaterialBatchReservedQuantity)
                     .ThenInclude(mf => mf.UoM)

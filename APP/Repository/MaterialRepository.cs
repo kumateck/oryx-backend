@@ -328,7 +328,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(m => m.MaterialBatch)
             .ThenInclude(mb => mb.Material)
             .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-            .Where(m => m.MaterialBatch.Material.Kind == kind && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id &&
+            .Where(m => 
+                m.MaterialBatch.Material.Kind == kind && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id &&
                         (m.MaterialBatch.Status == BatchStatus.Available || m.MaterialBatch.Status == BatchStatus.Frozen))
             .Select(m => m.MaterialBatch.Material)
             .Distinct()
@@ -809,6 +810,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         foreach (var shelfBatch in request.ShelfMaterialBatches)
         {
             var shelf = await context.WarehouseLocationShelves
+                .IgnoreQueryFilters()
+                .AsSplitQuery()
                 .Include(warehouseLocationShelf => warehouseLocationShelf.WarehouseLocationRack)
                 .ThenInclude(warehouseLocationRack => warehouseLocationRack.WarehouseLocation)
                 .ThenInclude(warehouseLocation => warehouseLocation.Warehouse)
@@ -846,7 +849,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             };
             
             await context.MaterialBatchEvents.AddAsync(batchEvent);
-            await context.SaveChangesAsync();
         }
 
         var warehouse = await context.Warehouses
@@ -878,6 +880,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
         
         var grn = await context.Grns
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(g => g.MaterialBatches)
             .FirstOrDefaultAsync(g => g.MaterialBatches.Any(mb => mb.Id == request.MaterialBatchId));
 
@@ -903,77 +907,52 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             }
         }
 
-        if (request.MaterialReturnNoteId.HasValue)
+        if (!request.MaterialReturnNoteId.HasValue)
         {
-            var materialReturnNote = await context.MaterialReturnNotes
-                .AsSplitQuery()
-                .IgnoreQueryFilters()
-                .Include(m => m.FullReturns)
-                .Include(m => m.PartialReturns)
-                .FirstOrDefaultAsync(m => m.Id == request.MaterialReturnNoteId.Value);
-
-            if (materialReturnNote is null) return Error.NotFound("Material.Return", "Material return note not found");
-
-            if (materialReturnNote.IsFullReturn)
-            {
-                var materialReturnNoteFullReturn = await context.MaterialReturnNoteFullReturns
-                    .AsSplitQuery()
-                    .Include(m => m.MaterialBatchReservedQuantity)
-                    .FirstOrDefaultAsync(m => m.MaterialBatchReservedQuantity.MaterialBatchId == request.MaterialBatchId);
-
-                if (materialReturnNoteFullReturn is not null)
-                {
-                    materialReturnNoteFullReturn.Returned = true;
-                    context.MaterialReturnNoteFullReturns.Update(materialReturnNoteFullReturn);
-                }
-            }
-            else
-            {
-                var materialReturnNotePartialReturn = await context.MaterialReturnNotePartialReturns
-                    .AsSplitQuery()
-                    .FirstOrDefaultAsync(m => m.MaterialBatchId == request.MaterialBatchId);
-
-                if (materialReturnNotePartialReturn is not null)
-                {
-                    materialReturnNotePartialReturn.Returned = true;
-                    context.MaterialReturnNotePartialReturns.Update(materialReturnNotePartialReturn);
-                }
-            }
+            await context.SaveChangesAsync();
+            return Result.Success();
         }
         
-        await context.SaveChangesAsync();
+        var materialReturnNote = await context.MaterialReturnNotes
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(m => m.FullReturns)
+            .ThenInclude(fr => fr.MaterialBatchReservedQuantity)
+            .Include(m => m.PartialReturns)
+            .FirstOrDefaultAsync(m => m.Id == request.MaterialReturnNoteId.Value);
 
-        if (request.MaterialReturnNoteId.HasValue)
+        if (materialReturnNote is null)
+            return Error.NotFound("Material.Return", "Material return note not found");
+
+        if (materialReturnNote.IsFullReturn)
         {
-            var materialReturnNote = await context.MaterialReturnNotes
-                .AsSplitQuery()
-                .IgnoreQueryFilters()
-                .Include(m => m.FullReturns)
-                .Include(m => m.PartialReturns)
-                .FirstOrDefaultAsync(m => m.Id == request.MaterialReturnNoteId.Value);
+            var fullReturn = materialReturnNote.FullReturns
+                .FirstOrDefault(fr => fr.MaterialBatchReservedQuantity.MaterialBatchId == request.MaterialBatchId);
 
-            if (materialReturnNote is not null)
-            {
-                if (materialReturnNote.IsFullReturn)
-                {
-                    if (materialReturnNote.FullReturns.All(f => f.Returned))
-                    {
-                        materialReturnNote.Status = MaterialReturnStatus.Completed;
-                        context.MaterialReturnNotes.Update(materialReturnNote);
-                    }
-                }
-                else
-                {
-                    if (materialReturnNote.PartialReturns.All(f => f.Returned))
-                    {
-                        materialReturnNote.Status = MaterialReturnStatus.Completed;
-                        context.MaterialReturnNotes.Update(materialReturnNote);
-                    }
-                }
+            if (fullReturn is not null)
+                fullReturn.Returned = true;
 
-                await context.SaveChangesAsync();
-            }
+            if (materialReturnNote.FullReturns.All(fr => fr.Returned))
+                materialReturnNote.Status = MaterialReturnStatus.Completed;
         }
+        else
+        {
+            var partialReturn = materialReturnNote.PartialReturns
+                .FirstOrDefault(pr => pr.MaterialBatchId == request.MaterialBatchId);
+
+            if (partialReturn is not null)
+                partialReturn.Returned = true;
+
+            if (materialReturnNote.PartialReturns.All(pr => pr.Returned))
+                materialReturnNote.Status = MaterialReturnStatus.Completed;
+        }
+
+        // mark the batch as returned
+        materialBatch.ReturnDate = DateTime.UtcNow;
+
+        context.MaterialReturnNotes.Update(materialReturnNote);
+        context.MaterialBatches.Update(materialBatch);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
     
@@ -1432,7 +1411,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(b => b.UoM)
             .Where(b => b.MaterialId == materialId &&
                         b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)) // Only include batches in the specified warehouse
-            .OrderBy(b => b.ExpiryDate) // FIFO order
+            .OrderBy(b => b.ReturnDate == null)   // false (not null) first, true (null) last
+            .ThenBy(b => b.ReturnDate)            // earliest non-null return dates first
+            .ThenBy(b => b.ExpiryDate)
             .ToListAsync();
 
         foreach (var batch in batches)
@@ -1833,6 +1814,30 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+
+        if (!user.DepartmentId.HasValue)
+        {
+            return UserErrors.DepartmentNotFound;
+        }
+
+        var materialDepartment = await context.MaterialDepartments
+            .FirstOrDefaultAsync(m => m.DepartmentId == user.DepartmentId.Value && m.MaterialId == materialId);
+
+        if (materialDepartment == null)
+        {
+            return Error.NotFound("MaterialDepartment.NotFound", "Material not assigned to this department");
+        }
+
+        context.MaterialDepartments.Remove(materialDepartment);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 
     public async Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery,MaterialKind? kind, Guid userId)
     {
@@ -1985,28 +1990,27 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     public async Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(int page,
-        int pageSize, string searchQuery, bool withProcessed, Guid? userId)
+        int pageSize, string searchQuery, bool withProcessed, Guid userId, MaterialKind? kind)
     {
         var query = context.HoldingMaterialTransfers
             .AsSplitQuery()
             .Include(m => m.Batches)
-            .ThenInclude(b => b.MaterialBatch)
+                .ThenInclude(b => b.MaterialBatch)
+                    .ThenInclude(m => m.Material)
             .Include(m => m.Batches)
-            .ThenInclude(b => b.UoM)
+                .ThenInclude(b => b.UoM)
             .Include(m => m.Batches)
-            .ThenInclude(b => b.SourceWarehouse)
+                .ThenInclude(b => b.SourceWarehouse)
             .Include(m => m.Batches)
-            .ThenInclude(b => b.DestinationWarehouse)
+                .ThenInclude(b => b.DestinationWarehouse)
+            .Where(q => q.Batches.Select(b => b.DestinationWarehouse.DepartmentId).Contains(userId))            
             .AsQueryable();
-
+        
         query = withProcessed ? query : query.Where(q => q.Status == HoldingMaterialTransferStatus.Pending);
-
-        if (userId.HasValue)
+        
+        if (kind.HasValue)
         {
-            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-            if (user is null) return UserErrors.NotFound(userId.Value);
-
-            query = query.Where(q => q.Batches.Select(b => b.DestinationWarehouse.DepartmentId).Contains(user.DepartmentId.Value));
+            query = query.Where(q => q.Batches.Any(b => b.MaterialBatch.Material.Kind == kind));
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -2354,6 +2358,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .AsSplitQuery()
             .Include(m => m.MaterialBatch).ThenInclude(m => m.Material)
             .Include(m => m.Response)
+            .OrderByDescending(m => m.CreatedAt)
             .AsQueryable();
 
         if (kind.HasValue)

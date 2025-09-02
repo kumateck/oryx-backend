@@ -192,6 +192,8 @@ public class OryxMapper : Profile
 
         #region UoM
 
+        CreateMap<CreateUnitOfMeasure, UnitOfMeasure>();
+
         CreateMap<UnitOfMeasure, UnitOfMeasureDto>();
 
         #endregion
@@ -260,6 +262,10 @@ public class OryxMapper : Profile
         CreateMap<FinishedProduct, FinishedProductDto>();
         CreateMap<CreateProductPackageRequest, ProductPackage>();
         CreateMap<ProductPackage, ProductPackageDto>();
+        CreateMap<CreateProductPacking, ProductPacking>();
+        CreateMap<CreateProductPackingList, ProductPackingList>();
+        CreateMap<ProductPacking, ProductPackingDto>();
+        CreateMap<ProductPackingList, ProductPackingListDto>();
 
         CreateMap<CreateProductSpecificationRequest, ProductSpecification>();
         CreateMap<ProductSpecification, ProductSpecificationDto>()
@@ -539,7 +545,9 @@ public class OryxMapper : Profile
         CreateMap<CreateBillingSheetRequest, BillingSheet>()
             .ForMember(dest => dest.Charges, opt => opt.MapFrom<AssignChargesResolver>());
         
-        CreateMap<BillingSheet, BillingSheetDto>();
+        CreateMap<BillingSheet, BillingSheetDto>()
+            .ForMember(dest => dest.Attachments,
+                opt => opt.MapFrom<AttachmentsResolver>());
 
         CreateMap<CreatePurchaseOrderRequest, RevisedPurchaseOrder>();
         CreateMap<CreatePurchaseOrderItemRequest, RevisedPurchaseOrderItem>();
@@ -553,12 +561,16 @@ public class OryxMapper : Profile
 
         CreateMap<CreateShipmentDocumentRequest, ShipmentDocument>();
         CreateMap<ShipmentDocument, ShipmentDocumentDto>()
+            .ForMember(dest => dest.HasBillingSheet,
+                opt => opt.MapFrom<HasBillingSheetResolver>())
             .ForMember(dest => dest.Attachments,
                 opt => opt.MapFrom<AttachmentsResolver>());
 
         CreateMap<CreateShipmentInvoice, ShipmentInvoice>();
         CreateMap<CreateShipmentInvoiceItem, ShipmentInvoiceItem>();
-        CreateMap<ShipmentInvoice, ShipmentInvoiceDto>();
+        CreateMap<ShipmentInvoice, ShipmentInvoiceDto>()
+            .ForMember(dest => dest.IsUsed,
+                opt => opt.MapFrom<ShipmentInvoiceStatusResolver>());
         CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>()
             .ForMember(dest => dest.Price,
                 opt => opt.MapFrom(src => src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).Price));
@@ -636,6 +648,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateBatchManufacturingRecord, BatchManufacturingRecord>();
         CreateMap<UpdateBatchManufacturingRecord, BatchManufacturingRecord>();
+        CreateMap<UpdateBatchManufacturingRecord, BatchPackagingRecord>();
         CreateMap<BatchManufacturingRecord, BatchManufacturingRecordDto>();
 
         CreateMap<CreateBatchPackagingRecord, BatchPackagingRecord>();
@@ -943,6 +956,7 @@ public class OryxMapper : Profile
         CreateMap<CreateProductionOrderRequest, ProductionOrder>();
         CreateMap<CreateProductionOrderProduct, ProductionOrderProducts>();
         CreateMap<ProductionOrder, ProductionOrderDto>();
+        CreateMap<ProductionOrder, ProductionOrderDetailDto>();
         CreateMap<ProductionOrderProducts, ProductionOrderProductsDto>();
         CreateMap<ProductionOrderProductQuantity, ProductionOrderProductQuantityDto>();
 

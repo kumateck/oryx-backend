@@ -127,7 +127,7 @@ public class SupplierPriceComparison
 
 public class SupplierPrice
 {
-    public CollectionItemDto Supplier { get; set; }
+    public SupplierDto Supplier { get; set; }
     public CollectionItemDto SourceRequisition { get; set; }
     public SupplierQuotationItemStatus? Status { get; set; }
     public decimal? Price { get; set; }

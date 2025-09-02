@@ -30,6 +30,11 @@ namespace APP.Repository;
          
          var product = mapper.Map<Product>(request);
          product.CreatedById = userId;
+         product.Prices.Add(new ProductPrices
+         {
+             Price = request.Price,
+             Date = DateTime.UtcNow
+         });
          await context.Products.AddAsync(product); 
          await context.SaveChangesAsync();
 
@@ -53,6 +58,7 @@ namespace APP.Repository;
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleUsers)
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleRoles)
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.Resources)
+             .Include(p => p.Packings).ThenInclude(p => p.PackingLists.OrderBy(r => r.Order)).ThenInclude(p  => p.Uom)
              .Include(p =>p.CreatedBy)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -84,6 +90,15 @@ namespace APP.Repository;
          if (existingProduct is null)
          {
              return ProductErrors.NotFound(productId);
+         }
+
+         if (existingProduct.Price != request.Price)
+         {
+             existingProduct.Prices.Add(new ProductPrices
+             {
+                 Price = request.Price,
+                 Date = DateTime.UtcNow
+             });
          }
 
          mapper.Map(request, existingProduct);
@@ -251,6 +266,7 @@ namespace APP.Repository;
     public async Task<Result> UpdateRoute(UpdateRouteRequest request, Guid routeId, Guid userId)
     {
         var route = await context.Routes
+            .AsSplitQuery()
             .Include(r => r.Resources)
             .Include(route => route.ResponsibleRoles)
             .Include(route => route.ResponsibleUsers)
@@ -295,6 +311,7 @@ namespace APP.Repository;
     public async Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId)
     {
         var product = await context.Products
+            .AsSplitQuery()
             .Include(p => p.Packages)
             .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -372,6 +389,7 @@ namespace APP.Repository;
     public async Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId)
     {
         var productPackage = await context.ProductPackages
+            .AsSplitQuery()
             .Include(p => p.Product)
             .Include(p => p.Material)
             .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
@@ -397,6 +415,7 @@ namespace APP.Repository;
     public async Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId)
     {
         var productPackage = await context.ProductPackages
+            .AsSplitQuery()
             .Include(p => p.Product)
             .ThenInclude(p => p.Packages) // Include related packages for validation
             .FirstOrDefaultAsync(p => p.Id == productPackageId);
@@ -447,9 +466,54 @@ namespace APP.Repository;
         return Result.Success();
     }
     
+    public async Task<Result<Guid>> CreateProductPacking(List<CreateProductPacking> request, Guid productId, Guid userId)
+    {
+        var product = await context.Products
+            .AsSplitQuery()
+            .Include(product => product.Packings)
+            .ThenInclude(p => p.PackingLists)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+
+        if (product is null)
+        {
+            return ProductErrors.NotFound(productId);
+        }
+        
+        
+        if (product.Packings.Count != 0)
+        {
+            context.ProductPackings.RemoveRange(product.Packings);
+        }
+
+        foreach (var packing in request)
+        {
+            var productPacking = mapper.Map<ProductPacking>(packing);
+            productPacking.ProductId = productId;
+            await context.ProductPackings.AddAsync(productPacking);
+        }
+        
+        await context.SaveChangesAsync();
+        return product.Id;
+    }
+
+    public async Task<Result<IEnumerable<ProductPackingDto>>> GetProductPackings(Guid productId)
+    {
+        var query = await context.ProductPackings
+            .AsSplitQuery()
+            .Include(p => p.PackingLists.OrderBy(pp => pp.Order))
+            .ThenInclude(p => p.Uom)
+            .Where(p => p.ProductId == productId)
+            .ToListAsync();
+        
+        return mapper.Map<List<ProductPackingDto>>(query);
+    }
+    
     public async Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId, Guid userId)
     {
-        var product = await context.Products.Include(product => product.FinishedProducts).FirstOrDefaultAsync(p => p.Id == productId);
+        var product = await context.Products
+            .AsSplitQuery()
+            .Include(product => product.FinishedProducts)
+            .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null)
         {
             return ProductErrors.NotFound(productId);
@@ -473,7 +537,9 @@ namespace APP.Repository;
     
     public async Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId) 
     { 
-        var product = await context.Products.Include(product => product.BillOfMaterials)
+        var product = await context.Products
+            .AsSplitQuery()
+            .Include(product => product.BillOfMaterials)
             .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null) return ProductErrors.NotFound(productId);
         
@@ -505,6 +571,7 @@ namespace APP.Repository;
     public async Task<Result<EquipmentDto>> GetEquipment(Guid equipmentId)
     {
         var equipment = await context.Equipments
+            .AsSplitQuery()
             .Include(e => e.UoM)
             .Include(e => e.Department)
             .FirstOrDefaultAsync(e => e.Id == equipmentId);

@@ -37,6 +37,7 @@ public class MaterialBatchDto
     public List<CurrentLocationDto> Locations { get; set; } = [];
     public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity { get; set; }
+    public DateTime? ReturnDate { get; set; }
 }
 
 public class MaterialBatchListDto
@@ -172,6 +173,7 @@ public class BatchToSupply
 {
     public MaterialBatchListDto Batch { get; set; }
     public decimal QuantityToTake { get; set; }
+    public Guid? WarehouseLocationShelfId { get; set; }
 }
 
 public class MaterialBatchReservedQuantityDto : BaseDto

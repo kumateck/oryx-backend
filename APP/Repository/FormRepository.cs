@@ -23,7 +23,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         var validate = FormValidator.Validate(form);
 
         if (validate.IsFailure)
-            return Result.Failure<Guid>(validate.Errors);
+            return validate.Errors;
 
         await context.Forms.AddAsync(form);
         await context.SaveChangesAsync();

@@ -502,6 +502,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(r => r.Approvals).ThenInclude(r => r.Role)
             .Include(r => r.Items)
             .ThenInclude(i => i.Material)
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (departmentId.HasValue)
@@ -747,6 +748,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId)
     {
         var requisition = await context.Requisitions
+            .AsSplitQuery()
             .Include(r => r.Items) // Include items since their status will be updated
             .FirstOrDefaultAsync(r => r.Id == request.RequisitionId);
 
@@ -832,6 +834,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<SourceRequisitionDto>> GetSourceRequisition(Guid sourceRequisitionId)
     {
         var sourceRequisition = await context.SourceRequisitions
+            .AsSplitQuery()
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
@@ -849,6 +852,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<SourceRequisitionDto>>>> GetSourceRequisitions(int page, int pageSize, string searchQuery)
     {
         var query = context.SourceRequisitions
+            .AsSplitQuery()
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
@@ -870,10 +874,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<SourceRequisitionItemDto>>>> GetSourceRequisitionItems(int page, int pageSize,  ProcurementSource source)
     {
         var query = context.SourceRequisitionItems
+            .AsSplitQuery()
             .Include(sr => sr.SourceRequisition)
             .Include(sr => sr.Material)
             .Include(sr => sr.UoM)
             .Where(sr => sr.Source == source)
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
       
@@ -941,6 +947,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         // Base query
         var query = await context.SourceRequisitions
+            .AsSplitQuery()
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
@@ -953,6 +960,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> SendQuotationToSupplier(Guid supplierId)
     {
         var sourceRequisition = await context.SourceRequisitions
+            .AsSplitQuery()
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
@@ -1010,6 +1018,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
 
         var query =  context.SupplierQuotations
+            .AsSplitQuery()
             .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Items).ThenInclude(s => s.UoM)
             .Include(s => s.Supplier)
@@ -1030,6 +1039,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId)
     {
         return mapper.Map<SupplierQuotationDto>(await  context.SupplierQuotations
+            .AsSplitQuery()
             .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Items).ThenInclude(s => s.UoM)
             .Include(s => s.Supplier)
@@ -1039,6 +1049,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse, Guid supplierQuotationId)
     {
         var supplierQuotation = await context.SupplierQuotations
+            .AsSplitQuery()
             .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Items).ThenInclude(s => s.UoM)
             .Include(s => s.Supplier)
@@ -1065,10 +1076,18 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType)
     {
         var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
+            .AsSplitQuery()
             .Include(s => s.Material)
             .Include(s => s.UoM)
-            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
-            .Include(s => s.SupplierQuotation).ThenInclude(s => s.SourceRequisition)
+            .Include(s => s.SupplierQuotation)
+                .ThenInclude(s => s.Supplier)
+                    .ThenInclude(s => s.AssociatedManufacturers)
+                        .ThenInclude(m => m.Manufacturer)
+            .Include(s => s.SupplierQuotation)
+                .ThenInclude(s => s.Supplier)
+                    .ThenInclude(s => s.Currency)
+            .Include(s => s.SupplierQuotation)
+                .ThenInclude(s => s.SourceRequisition)
             .Where(s => s.QuotedPrice != null && s.Status == SupplierQuotationItemStatus.NotProcessed && s.SupplierQuotation.Supplier.Type == supplierType)
             .ToListAsync();
 
@@ -1084,7 +1103,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     .Select(sg => sg.OrderByDescending(s => s.SupplierQuotation.CreatedAt).First())
                     .Select(s => new SupplierPrice
                     {
-                        Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                        Supplier = mapper.Map<SupplierDto>(s.SupplierQuotation.Supplier),
                         SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
                         Status = s.Status,
                         Price = s.QuotedPrice
@@ -1096,9 +1115,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         SupplierType supplierType, Guid materialId, Guid purchaseOrderId, SupplierQuotationItemStatus? status)
     {
         var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
+            .AsSplitQuery()
             .Include(s => s.Material)
             .Include(s => s.UoM)
-            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
+            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier).ThenInclude(s => s.AssociatedManufacturers)
+            .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier).ThenInclude(s => s.Currency)
             .Include(s => s.SupplierQuotation).ThenInclude(s => s.SourceRequisition)
             .Where(s => s.QuotedPrice != null
                                               && s.SupplierQuotation.Supplier.Type == supplierType && s.MaterialId == materialId && s.PurchaseOrderId == purchaseOrderId)
@@ -1121,7 +1142,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     .Select(sg => sg.OrderByDescending(s => s.SupplierQuotation.CreatedAt).First())
                     .Select(s => new SupplierPrice
                     {
-                        Supplier = mapper.Map<CollectionItemDto>(s.SupplierQuotation.Supplier),
+                        Supplier = mapper.Map<SupplierDto>(s.SupplierQuotation.Supplier),
                         SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
                         Status = s.Status,
                         Price = s.QuotedPrice
@@ -1133,6 +1154,23 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         foreach (var quotation in processQuotations)
         {
+            var sourceRequisition = await context.SourceRequisitions
+                .AsSplitQuery()
+                .Include(sourceRequisition => sourceRequisition.Items).FirstOrDefaultAsync(s => s.Id == quotation.SourceRequisitionId);
+            if (sourceRequisition == null) return Error.NotFound("Source.Requisition", "Source requisition not found");
+
+            if (quotation.Items.Count > sourceRequisition.Items.Count)
+            {
+                return Error.Validation("SourceRequisition.Items", "Source requisition items count is greater than what is in the source requisition item count");
+            }
+
+            if (!quotation.Items
+                    .Select(qi => qi.MaterialId)
+                    .All(id => sourceRequisition.Items.Select(si => si.MaterialId).Contains(id)))
+            {
+                return Error.Validation("SourceRequisition.Materials", "Quotation contains materials that are not in the source requisition.");
+            }
+
             var poId = (await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
                 Code = await GeneratePurchaseOrderCode(),

@@ -20,6 +20,7 @@ public interface IProcurementRepository
     Task<Result<List<ManufacturerDto>>> GetManufacturersByMaterial(Guid materialId);
     Task<Result<List<SupplierManufacturerDto>>> GetSupplierManufacturersByMaterial(Guid materialId,
         Guid supplierId);
+    Task<Result<List<SupplierManufacturerDto>>> GetSupplierManufacturersBySupplier(Guid supplierId);
     Task<Result> UpdateManufacturer(CreateManufacturerRequest request, Guid manufacturerId, Guid userId);
     Task<Result> DeleteManufacturer(Guid manufacturerId, Guid userId);
 
@@ -69,7 +70,7 @@ public interface IProcurementRepository
     Task<Result> DeleteWaybillDocument(Guid shipmentDocumentId, Guid userId);
     Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId);
     Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page,
-        int pageSize, string searchQuery);
+        int pageSize, string searchQuery, bool? onlyApproved);
     Task<Result> UpdateShipmentDocument(CreateShipmentDocumentRequest request, Guid shipmentDocumentId,
         Guid userId);
     Task<Result> DeleteShipmentDocument(Guid shipmentDocumentId, Guid userId);

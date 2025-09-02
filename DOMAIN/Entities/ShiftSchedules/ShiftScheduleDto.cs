@@ -17,6 +17,8 @@ public class ShiftScheduleDto: BaseDto
    
    public Guid DepartmentId { get; set; }
    
+   public ScheduleStatus ScheduleStatus { get; set; }
+   
    public DepartmentDto Department { get; set; }
 
 }

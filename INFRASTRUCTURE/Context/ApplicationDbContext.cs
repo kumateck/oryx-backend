@@ -173,6 +173,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PackageType> PackageTypes { get; set; }
     
     public DbSet<ProductSpecification> ProductSpecifications { get; set; }
+    public DbSet<ProductPacking> ProductPackings { get; set; }
 
     #endregion
 
@@ -329,6 +330,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Shipment Document
 
     public DbSet<ShipmentDocument> ShipmentDocuments { get; set; }
+    public DbSet<ShipmentDocumentApproval> ShipmentDocumentApprovals { get; set; }
     public DbSet<ShipmentInvoice> ShipmentInvoices { get; set; }
     public DbSet<ShipmentDiscrepancy> ShipmentDiscrepancies { get; set; }
     public DbSet<ShipmentDiscrepancyType> ShipmentDiscrepancyTypes { get; set; }
@@ -363,6 +365,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionActivityLog> ProductionActivityLogs { get; set; }
     
     public DbSet<ProductionOrder> ProductionOrders { get; set; }
+    public DbSet<ProductionOrderApprovals> ProductionOrderApprovals { get; set; }
     public DbSet<AllocateProductionOrder> AllocateProductionOrders { get; set; }
     public DbSet<AllocateProductionOrderApprovals> AllocateProductionOrderApprovals { get; set; }
     
@@ -699,11 +702,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                     entity.LastDeletedById = currentUserService.UserId;
                     break;
             }
-            
-            // if (entry.Entity is IOrganizationType organization)
-            // {
-            //     organization.OrganizationName = tenantProvider.Tenant;
-            // }
         }
     }
 
@@ -766,6 +764,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Product>().Navigation(p => p.BasePackingUoM).AutoInclude();
         modelBuilder.Entity<Product>().Navigation(p => p.Equipment).AutoInclude();
         modelBuilder.Entity<Product>().Navigation(p => p.Department).AutoInclude();
+        modelBuilder.Entity<Product>().Navigation(p => p.Prices).AutoInclude();
         modelBuilder.Entity<FinishedProduct>().Navigation(fp => fp.UoM).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Material).AutoInclude();
         modelBuilder.Entity<ProductBillOfMaterial>().Navigation(pbm => pbm.BillOfMaterial).AutoInclude();
@@ -913,6 +912,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FinishedProduct>().HasQueryFilter(entity =>
             !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
         modelBuilder.Entity<ProductSpecification>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductPacking>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && entity.Product != null && !entity.Product.DeletedAt.HasValue);
 
         #endregion
 

@@ -509,6 +509,24 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.CreateMaterialDepartment(materialDepartments, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Creates a new material department.
+    /// </summary>
+    /// <param name="materialId">The material you want to unlink from your department</param>
+    /// <returns>Returns the result of the creation process.</returns>
+    [HttpDelete("department")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> RemoveMaterialDepartment([FromQuery] Guid materialId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.RemoveMaterialDepartment(Guid.Parse(userId), materialId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
     
     /// <summary>
     /// Returns a list of materials that have not been linked.
@@ -579,7 +597,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
-    /// <param name="userId">Optional user ID filter.</param>
+    /// <param name="kind">The material kind you want</param>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("holding")]
     [Authorize]
@@ -587,9 +605,12 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     public async Task<IResult> GetMaterialDepartments([FromQuery] bool withProcessed =  false,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
         [FromQuery] string searchQuery = null,
-        [FromQuery] Guid? userId = null)
+        [FromQuery] MaterialKind? kind = null)
     {
-        var result = await repository.GetHoldingMaterialTransfers(page, pageSize, searchQuery, withProcessed, userId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetHoldingMaterialTransfers(page, pageSize, searchQuery, withProcessed, Guid.Parse(userId), kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -99,9 +99,6 @@ public interface IProductionScheduleRepository
         bool? onlyApproved, int page,
         int pageSize, string searchQuery);
     Task<Result<AllocateProductionOrderDto>> GetProductAllocation(Guid id);
-    Task<Result> MarkProductAllocationAsDelivered(Guid id);
-    
-    Task<Result> AllocateProduct(AllocateProductionOrder request);
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);
     Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId);

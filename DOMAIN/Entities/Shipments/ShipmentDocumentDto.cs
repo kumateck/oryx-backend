@@ -17,6 +17,8 @@ public class ShipmentDocumentDto : WithAttachment
     public DateTime? TransitStartedAt { get; set; }
     public DocType Type { get; set; } 
     public ShipmentStatus Status { get; set; }
+    public bool HasBillingSheet { get; set; }
+    public bool Approved { get; set; }
 }
 
 public class ShipmentInvoiceDto : BaseDto
@@ -24,10 +26,10 @@ public class ShipmentInvoiceDto : BaseDto
     public string Code { get; set; }
     public SupplierDto Supplier { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
-    public bool IsAttached { get; set; }
     public decimal TotalCost { get; set; }
     public CurrencyDto Currency { get; set; }
-    public DateTime? PaidAt { get; set; }
+    public DateTime? PaidAt { get; set; } 
+    public bool IsUsed { get; set; }
 }
 
 public class ShipmentInvoiceItemDto : BaseDto

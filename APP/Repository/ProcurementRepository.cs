@@ -93,6 +93,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ToListAsync());
     }
     
+    public async Task<Result<List<SupplierManufacturerDto>>> GetSupplierManufacturersBySupplier(Guid supplierId)
+    {
+        return mapper.Map<List<SupplierManufacturerDto>>(await context.SupplierManufacturers
+            .AsSplitQuery()
+            .Include(m => m.Manufacturer)
+            .Include(m => m.Material)
+            .Where(m => m.SupplierId == supplierId)
+            .ToListAsync());
+    }
+    
     public async Task<Result> UpdateManufacturer(CreateManufacturerRequest request, Guid manufacturerId, Guid userId)
     {
         var existingManufacturer = await context.Manufacturers
@@ -295,6 +305,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(po => po.Supplier)
             .Include(po=>po.TermsOfPayment)
             .Include(po=>po.DeliveryMode)
+            .OrderByDescending(p => p.CreatedAt)
             .AsQueryable();
 
         if (type.HasValue)
@@ -340,6 +351,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         if (existingOrder is null)
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        }
+
+        if (existingOrder.Status == PurchaseOrderStatus.Linked)
+        {
+            return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
         }
 
         var latestRevisionNumber = existingOrder.RevisedPurchaseOrders.Count != 0
@@ -506,6 +522,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
+        
+        if (existingOrder.Status == PurchaseOrderStatus.Linked)
+        {
+            return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
+        }
     
         // var revisedPurchaseOrder = mapper.Map<RevisedPurchaseOrder>(request);
         // revisedPurchaseOrder.CreatedById = userId;
@@ -540,6 +561,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         if (purchaseOrder is null)
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        }
+        
+        if (purchaseOrder.Status == PurchaseOrderStatus.Linked)
+        {
+            return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
         }
 
         purchaseOrder.DeletedAt = DateTime.UtcNow;
@@ -714,22 +740,27 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<BillingSheetDto>> GetBillingSheet(Guid billingSheetId)
     {
         var billingSheet = await context.BillingSheets
+            .AsSplitQuery()
             .Include(bs => bs.Supplier)
+            .ThenInclude(s => s.Currency)
+            .Include(bs => bs.Supplier)
+            .ThenInclude(s => s.Country)
             .Include(bs => bs.Invoice)
-            .ThenInclude(i=>i.Items)
-            .ThenInclude(ii=>ii.Material)
+            .ThenInclude(i => i.Items)
+            .ThenInclude(ii => ii.Material)
             .Include(bs => bs.Invoice)
-            .ThenInclude(i=>i.Items)
-            .ThenInclude(ii=>ii.Manufacturer)
+            .ThenInclude(i => i.Items)
+            .ThenInclude(ii => ii.Manufacturer)
             .Include(bs => bs.Invoice)
-            .ThenInclude(i=>i.Items)
-            .ThenInclude(ii=>ii.PurchaseOrder)
-            .Include(bs=>bs.Charges)
+            .ThenInclude(i => i.Items)
+            .ThenInclude(ii => ii.PurchaseOrder)
+            .Include(bs => bs.Charges)
             .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
-
+        
         return billingSheet is null
             ? Error.NotFound("BillingSheet.NotFound", "Billing sheet not found")
-            : mapper.Map<BillingSheetDto>(billingSheet);
+            : mapper.Map<BillingSheetDto>(billingSheet, opts =>
+                opts.Items[AppConstants.ModelType] = nameof(BillingSheet));
     }
     
     public async Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize, string searchQuery, BillingSheetStatus? status = null)
@@ -753,7 +784,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             query,
             page,
             pageSize,
-            mapper.Map<BillingSheetDto>
+            entity => mapper.Map<BillingSheetDto>(entity, opts =>
+                opts.Items[AppConstants.ModelType] = nameof(BillingSheet))
         );
     }
 
@@ -817,12 +849,18 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
          {
              case ShipmentStatus.Cleared:
                  shipmentDocument.ClearedAt = DateTime.UtcNow;
+                 var billingSheet = await context.BillingSheets.FirstOrDefaultAsync(bs => bs.InvoiceId == shipmentDocument.ShipmentInvoiceId);
+                 if (billingSheet is not null)
+                 {
+                     billingSheet.Status = BillingSheetStatus.Paid;
+                     context.BillingSheets.Update(billingSheet);
+                 }
                  break;
              case ShipmentStatus.InTransit:
                  shipmentDocument.TransitStartedAt = DateTime.UtcNow;
                  break;
              case ShipmentStatus.Arrived:
-                 shipmentDocument.ArrivedAt = DateTime.UtcNow;
+                 await MarkShipmentAsArrived(shipmentDocument.Id, userId);
                  break;
          }
      
@@ -915,16 +953,26 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             : mapper.Map<ShipmentDocumentDto>(shipmentDocument, opt => opt.Items[AppConstants.ModelType] = nameof(ShipmentDocument));
     }
     
-    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetShipmentDocuments(int page, int pageSize, string searchQuery, bool? onlyApproved)
     {
         var query = context.ShipmentDocuments
+            .AsSplitQuery()
             .Include(s => s.ShipmentInvoice)
             .Where(s => s.Type == DocType.Shipment)
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
     
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, bs => bs.Code);
+        }
+
+        if (onlyApproved.HasValue)
+        {
+            if (onlyApproved.Value)
+            {
+                query = query.Where(q => q.Approved);
+            }
         }
         
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
@@ -1001,8 +1049,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetWaybillDocuments(int page, int pageSize, string searchQuery, ShipmentStatus? status = null)
     {
         var query = context.ShipmentDocuments
+            .AsSplitQuery()
             .Include(s => s.ShipmentInvoice)
             .Where(s => s.Type == DocType.Waybill)
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (status.HasValue)
@@ -1064,11 +1114,55 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     
     public async Task<Result<Guid>> CreateShipmentInvoice(CreateShipmentInvoice request, Guid userId)
     {
+        if (request.Items.DistinctBy(i => new {i.PurchaseOrderId, i.MaterialId}).Count() != request.Items.Count)
+        {
+            return Error.Validation("Items.Count", "Purchase Order & material must be unique");
+        }
+
         var shipmentInvoice = mapper.Map<ShipmentInvoice>(request);
         shipmentInvoice.CreatedById = userId;
         await context.ShipmentInvoices.AddAsync(shipmentInvoice);
-        await context.SaveChangesAsync();
 
+        foreach (var item in request.Items)
+        {
+            var purchaseOrder = await context.PurchaseOrders
+                .AsSplitQuery()
+                .Include(p => p.Items)
+                .FirstOrDefaultAsync(p => p.Id == item.PurchaseOrderId);
+
+            if (purchaseOrder is null) 
+                return Error.NotFound("PurchaseOrder.NotFound", "Purchase Order not found");
+
+            var purchaseOrderItem = purchaseOrder.Items
+                .FirstOrDefault(it => it.MaterialId == item.MaterialId);
+
+            if (purchaseOrderItem is null) 
+                return Error.NotFound("PurchaseOrderItem.NotFound", "Purchase Order Item not found");
+
+            purchaseOrderItem.QuantityInvoiced += item.ReceivedQuantity;
+
+            if (purchaseOrderItem.QuantityInvoiced > purchaseOrderItem.Quantity)
+            {
+                return Error.Validation("Item.ReceivedQuantity", "Purchase Order Item does not have enough quantity");
+            }
+
+            // save item update
+            context.PurchaseOrderItems.Update(purchaseOrderItem);
+
+            // 🔑 after processing items, decide overall PO status
+            if (purchaseOrder.Items.All(i => i.QuantityInvoiced == i.Quantity))
+            {
+                purchaseOrder.Status = PurchaseOrderStatus.Linked; // fully linked
+            }
+            else
+            {
+                purchaseOrder.Status = PurchaseOrderStatus.PartiallyLinked; // some still open
+            }
+
+            context.PurchaseOrders.Update(purchaseOrder);
+        }
+
+        await context.SaveChangesAsync();
         return shipmentInvoice.Id;
     }
 
@@ -1086,6 +1180,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<ShipmentInvoiceDto>> GetShipmentInvoice(Guid shipmentInvoiceId)
     {
         var shipmentInvoice = await context.ShipmentInvoices
+            .AsSplitQuery()
             .Include(si => si.Items)
                 .ThenInclude(item => item.Material)
             .Include(si => si.Items)
@@ -1094,7 +1189,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .ThenInclude(si => si.Manufacturer)
             .Include(si => si.Items)
             .ThenInclude(si => si.PurchaseOrder)
-            .AsSplitQuery()
             .FirstOrDefaultAsync(si => si.Id == shipmentInvoiceId);
 
         return shipmentInvoice is null
@@ -1105,6 +1199,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<ShipmentInvoiceDto>> GetShipmentInvoiceByShipmentDocument(Guid shipmentDocumentId)
     {
         var shipmentDocument = await context.ShipmentDocuments
+            .AsSplitQuery()
             .Include(s => s.ShipmentInvoice)
             .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 
@@ -1114,6 +1209,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         }
         
         var shipmentInvoice = await context.ShipmentInvoices
+            .AsSplitQuery()
             .Include(si => si.Items)
             .ThenInclude(item => item.Material)
             .Include(si => si.Items)
@@ -1122,7 +1218,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(si => si.Manufacturer)
             .Include(si => si.Items)
             .ThenInclude(si => si.PurchaseOrder)
-            .AsSplitQuery()
             .FirstOrDefaultAsync(si => si.Id == shipmentDocument.ShipmentInvoiceId);
         
         return shipmentInvoice is null
@@ -1133,6 +1228,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<ShipmentInvoiceDto>>>> GetShipmentInvoices(int page, int pageSize, string searchQuery)
     {
         var query = context.ShipmentInvoices
+            .AsSplitQuery()
             .Include(si => si.Items)
             .ThenInclude(item => item.Material)
             .Include(si => si.Items)
@@ -1141,7 +1237,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(si => si.Manufacturer)
             .Include(si => si.Items)
             .ThenInclude(si => si.PurchaseOrder)
-            .AsSplitQuery()
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -1165,6 +1261,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<IEnumerable<ShipmentInvoiceDto>>> GetUnattachedShipmentInvoices()
     {
         var unattachedShipmentInvoices = await context.ShipmentInvoices
+            .AsSplitQuery()
             .Where(si => !context.ShipmentDocuments.Any(sd => sd.ShipmentInvoiceId == si.Id))
             .Include(si => si.Items)
             .ThenInclude(item => item.Material)
@@ -1174,7 +1271,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(item => item.Manufacturer)
             .Include(si => si.Items)
             .ThenInclude(item => item.PurchaseOrder)
-            .AsSplitQuery()
+            .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
 
         return
@@ -1224,6 +1321,14 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         if (existingShipmentInvoice is null)
         {
             return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
+        }
+        
+        var existingBillingSheet = await context.BillingSheets
+            .FirstOrDefaultAsync(bs => bs.InvoiceId == shipmentInvoiceId);
+        if (existingBillingSheet is not null)
+        {
+            existingBillingSheet.Status = BillingSheetStatus.Paid;
+            context.BillingSheets.Update(existingBillingSheet);
         }
 
         existingShipmentInvoice.PaidAt = paidAt ?? DateTime.UtcNow;
@@ -1309,8 +1414,39 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
         return Result.Success();
     }
-
+    
     public async Task<Result<List<SupplierDto>>> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed()
+    {
+        // Purchase Orders not linked at all (all items have QuantityInvoiced == 0)
+        var notLinkedPurchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po => po.Items.All(poi => poi.QuantityInvoiced == 0))
+            .ToListAsync();
+
+        // Purchase Orders partially used (some items invoiced but at least one not fully invoiced)
+        var partiallyUsedPurchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po =>
+                    po.Items.Any(poi => poi.QuantityInvoiced > 0) &&  // At least one item invoiced
+                    po.Items.Any(poi => poi.QuantityInvoiced < poi.Quantity) // At least one not fully invoiced
+            )
+            .ToListAsync();
+
+        // Combine and select distinct suppliers
+        var suppliers = notLinkedPurchaseOrders
+            .Concat(partiallyUsedPurchaseOrders)
+            .Select(po => po.Supplier)
+            .DistinctBy(s => s.Id)
+            .ToList();
+
+        return mapper.Map<List<SupplierDto>>(suppliers);
+    }
+
+    /*public async Task<Result<List<SupplierDto>>> GetSupplierForPurchaseOrdersNotLinkedOrPartiallyUsed()
     {
         var linkedPurchaseOrderIds = await context.ShipmentInvoiceItems
             .Select(sii => sii.PurchaseOrderId)
@@ -1341,9 +1477,68 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ToList();
         
         return mapper.Map<List<SupplierDto>>(suppliers);
-    }
+    }*/
     
     public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
+    {
+        /*// Get supplier purchase orders that are NOT linked at all (all items have QuantityInvoiced == 0)
+        var notLinkedPurchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po => po.SupplierId == supplierId && po.Items.All(poi => poi.QuantityInvoiced == 0))
+            .ToListAsync();
+
+        // Get supplier purchase orders that are partially used 
+        // (at least one item invoiced but at least one not fully invoiced)
+        var partiallyUsedPurchaseOrders = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po => po.SupplierId == supplierId &&
+                         po.Items.Any(poi => poi.QuantityInvoiced > 0) &&
+                         po.Items.Any(poi => poi.QuantityInvoiced < poi.Quantity))
+            .ToListAsync();*/
+        
+        var purchaseOrders = await context.PurchaseOrders
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .AsNoTracking()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+            .Where(po => po.SupplierId == supplierId &&
+                         po.Status != PurchaseOrderStatus.Linked)
+            .ToListAsync();
+        
+        // ✅ filter out fully invoiced items
+        foreach (var po in purchaseOrders)
+        {
+            po.Items = po.Items
+                .Where(i => i.QuantityInvoiced < i.Quantity)
+                .ToList();
+        }
+        
+        // Map to DTO
+        var result = mapper.Map<List<PurchaseOrderDto>>(purchaseOrders,
+            opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder));
+
+        // Enrich DTO with manufacturers and received quantities
+        foreach (var po in result)
+        {
+            foreach (var item in po.Items)
+            {
+                if (item.Material?.Id != null)
+                {
+                    item.Manufacturers = (await GetSupplierManufacturersByMaterial(
+                        item.Material.Id.Value, po.Supplier.Id)).Value;
+                }
+            }
+        }
+
+        return result;
+    }
+    
+    /*public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
     {
         var allSupplierPurchaseOrderIds = await context.PurchaseOrders
             .Include(p => p.Supplier)
@@ -1394,7 +1589,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             }
         }
         return result;
-    }
+    }*/
     
     /*public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsyncV2(Guid supplierId)
     {
@@ -1518,6 +1713,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         backgroundWorkerService.EnqueueNotification(
             $"Shipment for Invoice {shipmentDocument.ShipmentInvoice.Code} has arrived.",
             NotificationType.ShipmentArrived, null, creators);
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(ShipmentDocument), shipmentDocument.Id);
 
         return Result.Success();
     }
@@ -1525,6 +1722,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize, string searchQuery)
     {
         var query = context.ShipmentDocuments
+            .AsSplitQuery()
             .Include(shipmentDoc => shipmentDoc.ShipmentInvoice)
             .ThenInclude(shipmenInvoice => shipmenInvoice.Items)
             .ThenInclude(items=>items.Manufacturer)
@@ -1534,6 +1732,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(shipmentDoc => shipmentDoc.ShipmentInvoice)
             .ThenInclude(shipmenInvoice => shipmenInvoice.Supplier)
             .Where(sd => sd.Status == ShipmentStatus.Arrived && !sd.CompletedDistributionAt.HasValue)
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -1562,7 +1761,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         try
         {
             var shipmentDocument = await context.ShipmentDocuments
-                .Include(s => s.ShipmentInvoice)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 
             var invoices = await context.ShipmentInvoices
@@ -1601,6 +1800,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                           && sd.Id == shipmentDocumentId // Ensuring linkage to the shipment document
                     select r
                 ).Distinct().ToListAsync();
+
+                if (requisitionMaterialRequests.Count == 0)
+                {
+                    return Error.Validation("Shipment.Document", "No requisitions found for this shipment doc");
+                }
 
                 foreach (var requisitionItem in requisitionMaterialRequests)
                 {
@@ -1649,6 +1853,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         
         var shipmentDocument = await context.ShipmentDocuments
+            .AsSplitQuery()
             .Include(s => s.ShipmentInvoice).ThenInclude(shipmentInvoice => shipmentInvoice.Items)
             .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 
@@ -1754,6 +1959,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> ConfirmDistribution(Guid shipmentDocumentId)
     {
         var shipmentDocument = await context.ShipmentDocuments
+            .AsSplitQuery()
             .Include(s => s.ShipmentInvoice).ThenInclude(shipmentInvoice => shipmentInvoice.Items)
             .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
 

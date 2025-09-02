@@ -30,4 +30,5 @@ public class CreateProductRequest
     public decimal Price { get; set; }
     public Division Division { get; set; }
     public int PackPerShipper { get; set; }
+    public decimal ExpectedYield { get; set; }
 }

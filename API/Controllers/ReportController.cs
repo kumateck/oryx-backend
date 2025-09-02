@@ -2,6 +2,7 @@ using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
@@ -96,9 +97,11 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [HttpGet("human-resource")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HrDashboardDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetHumanResourceReport([FromQuery] ReportFilter filter)
+    public async Task<IResult> GetHumanResourceReport([FromQuery] MovementReportFilter filter,
+        [FromQuery] Guid? designationId, [FromQuery] EmployeeType? employeeType, 
+        [FromQuery] Gender? gender)
     {
-        var result = await repository.GetHumanResourceDashboardReport(filter);
+        var result = await repository.GetHumanResourceDashboardReport(filter, designationId,employeeType, gender);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -135,7 +138,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    /*/// <summary>
+    /// <summary>
     /// Retrieves the staff gender ratio report
     /// </summary>
     /// <param name="filter"></param>
@@ -146,7 +149,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     {
         var result = await repository.GetStaffGenderRatioReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }*/
+    }
     
 
     [HttpGet("staff-leave-report")]
@@ -197,17 +200,18 @@ public class ReportController(IReportRepository repository) : ControllerBase
 
     [HttpGet("qa-dashboard")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QaDashboardDto))]
-    public async Task<IResult> GetQaDashboard([FromQuery] ReportFilter filter)
+    public async Task<IResult> GetQaDashboard([FromQuery] ReportFilter filter, [FromQuery] Guid? productId)
     {
-        var result = await repository.GetQaDashboardReport(filter);
+        var result = await repository.GetQaDashboardReport(filter, productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     [HttpGet("qc-dashboard")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QaDashboardDto))]
-    public async Task<IResult> GetQcDashboard([FromQuery] ReportFilter filter)
+    public async Task<IResult> GetQcDashboard([FromQuery] ReportFilter filter, 
+        [FromQuery] Guid? productId, [FromQuery] Guid? materialId)
     {
-        var result = await repository.GetQcDashboardReport(filter);
+        var result = await repository.GetQcDashboardReport(filter, productId, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

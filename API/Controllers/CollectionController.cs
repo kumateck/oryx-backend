@@ -2,6 +2,7 @@ using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
+using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using SHARED;
@@ -115,19 +116,6 @@ public class CollectionController(ICollectionRepository repository) : Controller
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
-    /// <summary>
-    /// Retrieves a units of measures in the system.
-    /// </summary>
-    /// <returns>Returns a collection of uom items.</returns>
-    [HttpGet("uom")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UnitOfMeasureDto>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetUoM([FromQuery] bool isRawMaterial)
-    {
-        var result = await repository.GetUoM(isRawMaterial);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
     
     /// <summary>
     /// Retrieves all available package styles.
@@ -141,5 +129,77 @@ public class CollectionController(ICollectionRepository repository) : Controller
     {
         var result = await repository.GetPackageStyles();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves all available package styles.
+    /// </summary>
+    /// <returns>Returns a collection of package styles.</returns>
+    [HttpPost("uom")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CreateUoM([FromBody] CreateUnitOfMeasure request)
+    {
+        var result = await repository.CreateUoM(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a units of measures in the system.
+    /// </summary>
+    /// <returns>Returns a collection of uom items.</returns>
+    [HttpPost("uom/paginated")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UnitOfMeasureDto>>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetUoM([FromBody] FilterUnitOfMeasure filter)
+    {
+        var result = await repository.GetUoM(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Retrieves a unit of measure by its id
+    /// </summary>
+    /// <returns>Returns a collection of uom items.</returns>
+    [HttpPost("uom/{uomId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UnitOfMeasureDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetUoM([FromRoute] Guid uomId)
+    {
+        var result = await repository.GetUoM(uomId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a unit of measure by its id
+    /// </summary>
+    /// <returns>Updayes a uom.</returns>
+    [HttpPut("uom/{uomId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateUoM([FromRoute] Guid uomId, [FromBody]  CreateUnitOfMeasure request)
+    {
+        var result = await repository.UpdateUoM(request, uomId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Retrieves a unit of measure by its id
+    /// </summary>
+    /// <returns>Deletes a uom.</returns>
+    [HttpDelete("uom/{uomId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteUoM([FromRoute] Guid uomId)
+    {
+        var result = await repository.DeleteUoM(uomId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

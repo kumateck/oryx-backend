@@ -356,8 +356,11 @@ public class EmployeeRepository(ApplicationDbContext context,
         string searchQuery = null, string designation = null, string department = null, bool? isNotUser = null)
     {
         var query = context.Employees
+            .AsSplitQuery()
             .Include(e => e.Department)
             .Include(e => e.Designation)
+            .Include(e => e.ReportingManager)
+            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))

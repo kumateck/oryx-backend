@@ -45,7 +45,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Retrieves a production order by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionOrderDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionOrderDetailDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductionOrder([FromRoute] Guid id)
     {
@@ -88,7 +88,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Creates a proforma invoice.
     /// </summary>
-    [HttpPost("proforma-invoices")]
+    [HttpPost("proforma-invoice")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProformaInvoice([FromBody] CreateProformaInvoice request)
@@ -100,7 +100,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Retrieves a paginated list of proforma invoices.
     /// </summary>
-    [HttpGet("proforma-invoices")]
+    [HttpGet("proforma-invoice")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProformaInvoiceDto>>))]
     public async Task<IResult> GetProformaInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
@@ -111,7 +111,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Retrieves a proforma invoice by its ID.
     /// </summary>
-    [HttpGet("proforma-invoices/{id:guid}")]
+    [HttpGet("proforma-invoice/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProformaInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProformaInvoice([FromRoute] Guid id)
@@ -123,7 +123,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Updates a proforma invoice by its ID.
     /// </summary>
-    [HttpPut("proforma-invoices/{id:guid}")]
+    [HttpPut("proforma-invoice/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -136,7 +136,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Deletes a proforma invoice by its ID.
     /// </summary>
-    [HttpDelete("proforma-invoices/{id:guid}")]
+    [HttpDelete("proforma-invoice/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteProformaInvoice([FromRoute] Guid id)
@@ -151,7 +151,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Creates an invoice.
     /// </summary>
-    [HttpPost("invoices")]
+    [HttpPost("invoice")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateInvoice([FromBody] CreateInvoice request)
@@ -163,7 +163,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Gets a paginated list of invoices.
     /// </summary>
-    [HttpGet("invoices")]
+    [HttpGet("invoice")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<InvoiceDto>>))]
     public async Task<IResult> GetInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
@@ -174,7 +174,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Gets an invoice by ID.
     /// </summary>
-    [HttpGet("invoices/{id:guid}")]
+    [HttpGet("invoice/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(InvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetInvoice([FromRoute] Guid id)
@@ -186,7 +186,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Updates an invoice.
     /// </summary>
-    [HttpPut("invoices/{id:guid}")]
+    [HttpPut("invoice/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -199,7 +199,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Deletes an invoice.
     /// </summary>
-    [HttpDelete("invoices/{id:guid}")]
+    [HttpDelete("invoice/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteInvoice([FromRoute] Guid id)
@@ -208,6 +208,32 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteInvoice(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Creates an invoice.
+    /// </summary>
+    [HttpPost("allocate")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> AllocateProductionOrder([FromBody] AllocateProductionOrderRequest request)
+    {
+        var result = await repository.AllocateProduct(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Mark a production order as delivered
+    /// </summary>
+    [HttpPut("deliver/{productionOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> MarkProductAllocationAsDelivered([FromRoute]  Guid productionOrderId)
+    {
+        var result = await repository.MarkProductionOrderAsDelivered(productionOrderId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

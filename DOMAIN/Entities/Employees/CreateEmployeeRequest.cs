@@ -38,7 +38,7 @@ public class CreateEmployeeRequest
     
     [Required] [StringLength(20)] public string BankAccountNumber { get; set; }
     
-    [Required] [StringLength(20)] public string SsnitNumber { get; set; }
+    [Required, StringLength(13, ErrorMessage = "SSNIT Number must be exactly 13 characters")] public string SsnitNumber { get; set; }
     
     [Required] [StringLength(15)] 
     [RegularExpression(@"^GHA-\d{9}-\d{1}$",
@@ -71,6 +71,8 @@ public class CreateEmployeeRequest
 public class UpdateEmployeeRequest : CreateEmployeeRequest
 {
     public EmployeeStatus Status { get; set; }
+    
+    public EmployeeLevel? Level { get; set; }
     public EmployeeActiveStatus? ActiveStatus { get; set; }
     public EmployeeInactiveStatus? InactiveStatus { get; set; }
     public DateTime? SuspensionStartDate { get; set; }
