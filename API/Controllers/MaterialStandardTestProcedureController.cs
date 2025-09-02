@@ -77,4 +77,18 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Retrieves a paginated list of materials that are not yet used in any standard test procedure.
+    /// </summary>
+    [HttpGet("unused-materials")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDto>>))]
+    public async Task<IResult> GetMaterialsNotUsedInStandardTestProcedure(
+        [FromQuery] MaterialKind kind,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetMaterialsNotUsedInStandardTestProcedure(page, pageSize, searchQuery, kind);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

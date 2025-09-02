@@ -77,6 +77,27 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             mapper.Map<MaterialStandardTestProcedureDto>(procedure
             , opts => {opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure);});
     }
+    
+    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotUsedInStandardTestProcedure(int page, int pageSize, string searchQuery, MaterialKind kind)
+    {
+        var query = context.Materials
+            .AsSplitQuery()
+            .Include(m => m.MaterialCategory)
+            .Where(m => m.Kind == kind && context.MaterialStandardTestProcedures.Any(stp => stp.MaterialId != m.Id))
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialDto>
+        );
+    }
 
     public async Task<Result> UpdateMaterialStandardTestProcedure(Guid id, CreateMaterialStandardTestProcedureRequest request)
     {
