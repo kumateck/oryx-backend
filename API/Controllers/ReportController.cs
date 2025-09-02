@@ -200,17 +200,18 @@ public class ReportController(IReportRepository repository) : ControllerBase
 
     [HttpGet("qa-dashboard")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QaDashboardDto))]
-    public async Task<IResult> GetQaDashboard([FromQuery] ReportFilter filter)
+    public async Task<IResult> GetQaDashboard([FromQuery] ReportFilter filter, [FromQuery] Guid? productId)
     {
-        var result = await repository.GetQaDashboardReport(filter);
+        var result = await repository.GetQaDashboardReport(filter, productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     [HttpGet("qc-dashboard")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QaDashboardDto))]
-    public async Task<IResult> GetQcDashboard([FromQuery] ReportFilter filter)
+    public async Task<IResult> GetQcDashboard([FromQuery] ReportFilter filter, 
+        [FromQuery] Guid? productId, [FromQuery] Guid? materialId)
     {
-        var result = await repository.GetQcDashboardReport(filter);
+        var result = await repository.GetQcDashboardReport(filter, productId, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

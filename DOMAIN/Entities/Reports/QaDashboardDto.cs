@@ -18,7 +18,7 @@ public class QaDashboardDto
     
     public int NumberOfManufacturers { get; set; }
     public int NumberOfNewManufacturers { get; set; }
-    // public int NumberOfApprovedManufacturers { get; set; }
+    public int NumberOfApprovedManufacturers { get; set; }
     public int NumberOfExpiredManufacturers { get; set; }
     
     public int NumberOfProducts { get; set; }

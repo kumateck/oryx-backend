@@ -268,8 +268,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                     summary.Absences++;
                 }
             }
-
-            // Add leaves by department
+            
             summary.ApprovedLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == departmentName);
             summary.SickLeaves = sickLeaves.Count(l => l.Employee.Department?.Name == departmentName);
             summary.MaternityLeaves = maternityLeaves.Count(l => l.Employee.Department?.Name == departmentName);

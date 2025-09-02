@@ -29,6 +29,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         {
             return Error.Validation("ShiftSchedule.Exists", "Shift schedule already exists.");
         }
+
+        if (request.StartDate == DateTime.Today)
+        {
+            return Error.Validation("ShiftSchedule.Today", "Shift schedule cannot start on today.");
+        }
         
         var shiftTypes = await context.ShiftTypes
             .Where(shift => request.ShiftTypeIds.Contains(shift.Id)).ToListAsync();
@@ -72,12 +77,22 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         };
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize, string searchQuery, ScheduleStatus? status = null, ScheduleFrequency? frequency = null)
     {
         var query = context.ShiftSchedules
             .Include(schedule => schedule.Department)
             .Include(schedule => schedule.ShiftTypes)
             .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(s => s.ScheduleStatus == status.Value);
+        }
+
+        if (frequency.HasValue)
+        {
+            query = query.Where(s => s.Frequency == frequency.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -91,6 +106,14 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                query = query.Where(q => q.Frequency == parsedFrequency); 
             }
             
+        }
+        
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            if (Enum.TryParse<ScheduleStatus>(searchQuery, true, out var parsedStatus))
+            {
+                query = query.Where(q => q.ScheduleStatus == parsedStatus); 
+            }
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -326,6 +349,10 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         await context.ShiftAssignments.AddRangeAsync(assignments);
         await context.SaveChangesAsync();
 
+        shiftSchedule.ScheduleStatus = ScheduleStatus.Assigned;
+        context.ShiftSchedules.Update(shiftSchedule);
+        await context.SaveChangesAsync();
+
         return Result.Success();
     }
    
@@ -477,6 +504,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         if (shiftSchedule is null)
         {
             return Error.NotFound("ShiftSchedule.NotFound", "Shift schedule is not found");
+        }
+
+        if (shiftSchedule.StartDate < DateTime.Today)
+        {
+            return Error.Validation("ShiftSchedule.NotModifiable", "Shift schedule is already running and cannot be modified.");
         }
 
         var shiftTypes = await context.ShiftTypes

@@ -8,6 +8,7 @@ using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.ProductAnalyticalRawData;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
@@ -540,10 +541,11 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         });
     }
 
-    public Task<Result<DOMAIN.Entities.Reports.HumanResource.StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
+    public async Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
     {
         throw new NotImplementedException();
     }
+
 
     /*
     public async Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
@@ -740,9 +742,8 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         };
     }
 
-    public async Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter)
+    public async Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter, Guid? productId)
     {
-        var approvals = context.Approvals.AsQueryable();
         var analyticalTestRequests = context.AnalyticalTestRequests.AsQueryable();
         var approvedManufacturers = context.Manufacturers.AsQueryable();
         var products = context.Products.AsQueryable();
@@ -758,7 +759,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         
         if (filter.StartDate.HasValue)
         {
-            approvals = approvals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             analyticalTestRequests = analyticalTestRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             approvedManufacturers = approvedManufacturers.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             products = products.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
@@ -774,7 +774,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         if (filter.EndDate.HasValue)
         {
-            approvals = approvals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             analyticalTestRequests = analyticalTestRequests.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             approvedManufacturers = approvedManufacturers.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             products = products.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
@@ -788,6 +787,14 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
         }
 
+        if (productId.HasValue)
+        {
+            analyticalTestRequests = analyticalTestRequests.Where(lr => lr.ProductId == productId);
+            products = products.Where(lr => lr.Id == productId);
+            bmrRequests = bmrRequests.Where(lr => lr.ProductId == productId);
+            requisitionApprovals = requisitionApprovals.Where(lr => lr.Requisition.ProductId == productId);
+        }
+
         return new QaDashboardDto
         {
             NumberOfBmrRequests = bmrRequests.Count(),
@@ -797,7 +804,11 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             NumberOfAnalyticalTestRequests = analyticalTestRequests.Count(),
             NumberOfExpiredAnalyticalTestRequests = 
                 await analyticalTestRequests.CountAsync(or => or.ExpiryDate > filter.StartDate && or.ExpiryDate <= filter.EndDate),
-            NumberOfApprovals = await approvals.CountAsync(),
+            NumberOfApprovals = await requisitionApprovals.CountAsync() + await billingSheetApprovals.CountAsync() 
+                                + await leaveRequestApprovals.CountAsync() + await purchaseOrderApprovals.CountAsync()
+                                + await staffRequisitionApprovals.CountAsync() + await purchaseOrderApprovals.CountAsync()
+                                + await responseApprovals.CountAsync(),
+            
             NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
                                        + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
                                     + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
@@ -815,6 +826,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                                         + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected),
             NumberOfManufacturers = await approvedManufacturers.CountAsync(),
             NumberOfNewManufacturers = await approvedManufacturers.CountAsync(),
+            NumberOfApprovedManufacturers = await approvedManufacturers.CountAsync(am => am.ApprovedAt.HasValue),
             NumberOfExpiredManufacturers = await approvedManufacturers.CountAsync(am =>am.ValidityDate.HasValue && am.ValidityDate.Value < DateTime.UtcNow),
             NumberOfProducts = await products.CountAsync(),
             NumberOfPackingMaterials = await materials.CountAsync(m => m.Kind == MaterialKind.Package),
@@ -823,7 +835,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
     }
 
-    public async Task<Result<QcDashboardDto>> GetQcDashboardReport(ReportFilter filter)
+    public async Task<Result<QcDashboardDto>> GetQcDashboardReport(ReportFilter filter, Guid? productId, Guid? materialId)
     {
         var materialStp = context.MaterialStandardTestProcedures.AsQueryable();
         var productStp = context.ProductStandardTestProcedures.AsQueryable();
@@ -832,69 +844,109 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var productAnalyticalRawData = context.ProductAnalyticalRawData.AsQueryable();
 
         var rawMaterialBatchTest = context.MaterialBatches.AsQueryable();
-        var approvals = context.Approvals.AsQueryable();
-        var billingSheetApprovals = context.BillingSheetApprovals.AsQueryable();
-        var leaveRequestApprovals = context.LeaveRequestApprovals.AsQueryable();
-        var purchaseOrderApprovals = context.PurchaseOrderApprovals.AsQueryable();
-        var requisitionApprovals = context.RequisitionApprovals.AsQueryable();
-        var responseApprovals = context.ResponseApprovals.AsQueryable();
-        var staffRequisitionApprovals = context.StaffRequisitionApprovals.AsQueryable();
+        // var approvals = context.Approvals.AsQueryable();
+        // var billingSheetApprovals = context.BillingSheetApprovals.AsQueryable();
+        // var leaveRequestApprovals = context.LeaveRequestApprovals.AsQueryable();
+        // var purchaseOrderApprovals = context.PurchaseOrderApprovals.AsQueryable();
+        // var requisitionApprovals = context.RequisitionApprovals.AsQueryable();
+        // var responseApprovals = context.ResponseApprovals.AsQueryable();
+        // var staffRequisitionApprovals = context.StaffRequisitionApprovals.AsQueryable();
         
         if (filter.StartDate.HasValue)
         {
+            materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             materialStp = materialStp.Where(ms => ms.CreatedAt >= filter.StartDate);
             productStp = productStp.Where(ms => ms.CreatedAt >= filter.StartDate);
-            approvals = approvals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            responseApprovals = responseApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            purchaseOrderApprovals =  purchaseOrderApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            productAnalyticalRawData = productAnalyticalRawData.Where(lr => lr.CreatedAt >= filter.StartDate);
+            rawMaterialBatchTest = rawMaterialBatchTest.Where(lr => lr.CreatedAt >= filter.StartDate);
+            // approvals = approvals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // responseApprovals = responseApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // purchaseOrderApprovals =  purchaseOrderApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            // staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
         }
 
         if (filter.EndDate.HasValue)
         {
-            approvals = approvals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             materialStp = materialStp.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             productStp = productStp.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             productAnalyticalRawData = productAnalyticalRawData.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
             rawMaterialBatchTest = rawMaterialBatchTest.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            responseApprovals = responseApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            purchaseOrderApprovals = purchaseOrderApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
-            staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // requisitionApprovals = requisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // responseApprovals = responseApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // purchaseOrderApprovals = purchaseOrderApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
+            // staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt < filter.EndDate.Value.AddDays(1));
         }
-        
+
+        if (productId.HasValue)
+        {
+            productStp = productStp.Where(lr => lr.ProductId == productId);
+            productAnalyticalRawData = productAnalyticalRawData.Where(lr => lr.ProductStandardTestProcedure.ProductId == productId);
+            
+        }
+
+        if (materialId.HasValue)
+        {
+            materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.MaterialStandardTestProcedure.MaterialId == materialId);
+            materialStp = materialStp.Where(lr => lr.MaterialId == materialId);
+            rawMaterialBatchTest = rawMaterialBatchTest.Where(lr => lr.MaterialId == materialId);
+            
+        }
         return new QcDashboardDto
         {
             NumberOfStpRawMaterials = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Raw),
+            NumberOfStpPackingMaterials = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Package),
             NumberOfStpProducts = await productStp.CountAsync(),
-            NumberOfAnalyticalRawData = await materialAnalyticalRawData.CountAsync() + await productAnalyticalRawData.CountAsync(),
+            NumberOfMaterialAnalyticalRawData = await materialAnalyticalRawData.CountAsync(m => m.MaterialStandardTestProcedure.Material.Kind == MaterialKind.Raw),
+            NumberOfMaterialAnalyticalPackingData = await materialAnalyticalRawData.CountAsync(m => m.MaterialStandardTestProcedure.Material.Kind == MaterialKind.Package),
             NumberOfBatchTestCountRawMaterials = rawMaterialBatchTest.Count(rm => rm.Material.Kind == MaterialKind.Raw),
             NumberOfBatchTestPendingRawMaterials = 
                 await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Received), //check this
             NumberOfBatchTestApprovedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Approved),
             NumberOfBatchTestRejectedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Rejected),
-            NumberOfApprovals = await approvals.CountAsync(),
-            NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                       + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                    + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                       + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
-                                    + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                       + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
-                                    + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending),
+            NumberOfBulkProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Bulk),
+            NumberOfIntermediateProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Intermediate),
+            NumberOfFinishedProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Finished),
+            NumberOfRawMaterialSpecifications = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Raw),
+            NumberOfPackingMaterialSpecifications = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Package),
+            NumberOfIntermediateProductSpecifications = await productStp
+                .CountAsync(p => productAnalyticalRawData
+                    .Where(ar => ar.Stage == Stage.Intermediate)
+                    .Select(ar => ar.Id)
+                    .Contains(p.ProductId)),
+            NumberOfBulkProductSpecifications = await productStp.CountAsync(p=> productAnalyticalRawData
+                .Where(ar => ar.Stage == Stage.Bulk)
+                .Select(ar => ar.Id)
+                .Contains(p.ProductId)),
             
-            NumberOfRejectedApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
-                                        + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
-                                        + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+            NumberOfFinishedProductSpecifications = await productStp.CountAsync(
+                p => productAnalyticalRawData
+                    .Where(ar => ar.Stage == Stage.Finished)
+                    .Select(ar => ar.Id)
+                    .Contains(p.ProductId))
+            
+            
+            // NumberOfApprovals = await approvals.CountAsync(),
+            // NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+            //                            + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+            //                         + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+            //                            + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
+            //                         + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+            //                            + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
+            //                         + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending),
+            //
+            // NumberOfRejectedApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+            //                             + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+            //                             + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+            //                             + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+            //                             + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+            //                             + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+            //                             + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
         };
     }
 
