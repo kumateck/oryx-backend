@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.ProductStandardTestProcedures;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -73,5 +74,19 @@ public class ProductStandardTestProcedureController(IProductStandardTestProcedur
         
         var result = await repository.DeleteProductStandardTestProcedure(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of products that are not yet used in any standard test procedure.
+    /// </summary>
+    [HttpGet("unused-products")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductListDto>>))]
+    public async Task<IResult> GetProductsNotUsedInStandardTestProcedure(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetProductsNotUsedInStandardTestProcedure(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

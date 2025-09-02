@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.ProductStandardTestProcedures;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -66,6 +67,26 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             Error.NotFound("ProductStandardTestProcedure.NotFound", "Product Standard test procedure not found") : 
             mapper.Map<ProductStandardTestProcedureDto>(procedure
             , opts => {opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure);});
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProductsNotUsedInStandardTestProcedure(int page, int pageSize, string searchQuery)
+    {
+        var query = context.Products
+            .AsSplitQuery()
+            .Where(p => context.ProductStandardTestProcedures.Any(s => s.ProductId == p.Id))
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, f => f.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<ProductListDto>
+        );
     }
 
     public async Task<Result> UpdateProductStandardTestProcedure(Guid id, CreateProductStandardTestProcedureRequest request)
