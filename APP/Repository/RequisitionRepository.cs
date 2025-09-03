@@ -291,7 +291,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 
                 await context.SaveChangesAsync();
                 
-                var binCardEvent =new BinCardInformation
+                var binCardEvent = new BinCardInformation
                 {
                     MaterialBatchId = materialBatch.Id,
                     Description = appropriateWarehouse.Name,
@@ -400,6 +400,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             }
 
             var productionWarehouse = await context.Warehouses
+                .AsSplitQuery()
                 .Where(dw => dw.Id == shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.Warehouse.Id)
                 .Include(warehouse => warehouse.ArrivalLocation)
