@@ -181,6 +181,7 @@ public class MaterialBatchReservedQuantityDto : BaseDto
     public MaterialBatchListDto MaterialBatch { get; set; }
     public CollectionItemDto Warehouse { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
+    public WarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
     public decimal Quantity { get; set; }
 }
 

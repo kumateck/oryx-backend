@@ -30,6 +30,8 @@ public class MaterialReturnNoteFullReturn : BaseEntity
     public MaterialBatchReservedQuantity MaterialBatchReservedQuantity { get; set; }
     public Guid DestinationWarehouseId { get; set; }
     public Warehouse DestinationWarehouse { get; set; }
+    public Guid? SourceWarehouseLocationShelfId { get; set; }
+    public WarehouseLocationShelf SourceWarehouseLocationShelf { get; set; }
     public bool Returned { get; set; }
 }
 
@@ -46,6 +48,8 @@ public class MaterialReturnNotePartialReturn : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public Guid DestinationWarehouseId { get; set; }
     public Warehouse DestinationWarehouse { get; set; }
+    public Guid? SourceWarehouseLocationShelfId { get; set; }
+    public WarehouseLocationShelf SourceWarehouseLocationShelf { get; set; }
     public bool Returned { get; set; }
 }
 
@@ -83,6 +87,7 @@ public class PartialMaterialToReturn
     public Guid MaterialId { get; set; }
     public Guid? UoMId { get; set; }
     public decimal Quantity { get; set; }
+    public Guid? SourceWarehouseLocationShelfId { get; set; }
     public bool Returned { get; set; }
 }
 

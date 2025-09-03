@@ -42,8 +42,8 @@ public class ShiftScheduleController(IShiftScheduleRepository repository): Contr
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShiftScheduleDto>>))]
-    public async Task<IResult> GetShiftSchedules([FromQuery] ScheduleFrequency? frequency, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
-        [FromQuery] string searchQuery = null, [FromQuery] ScheduleStatus? status = ScheduleStatus.InProgress)
+    public async Task<IResult> GetShiftSchedules([FromQuery] ScheduleStatus? status, [FromQuery] ScheduleFrequency? frequency, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetShiftSchedules(page, pageSize, searchQuery, status, frequency);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

@@ -48,6 +48,7 @@ public class MaterialBatch : BaseEntity
     public List<MassMaterialBatchMovement> MassMovements { get; set; } = [];
     public List<MaterialBatchReservedQuantity> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity => ReservedQuantities.Sum(r => r.Quantity);
+    public List<ShelfMaterialBatch> ShelfMaterialBatches { get; set; } = [];
     public DateTime? ReturnDate { get; set; }
 }
 
@@ -218,6 +219,8 @@ public class MaterialBatchReservedQuantity : BaseEntity
     public MaterialBatch MaterialBatch { get; set; }
     public Guid WarehouseId { get; set; }
     public Warehouse Warehouse { get; set; }
+    public Guid? WarehouseLocationShelfId { get; set; }
+    public WarehouseLocationShelf WarehouseLocationShelf { get; set; }
     public Guid ProductionScheduleId { get; set; }
     public ProductionSchedule ProductionSchedule { get; set; }
     public Guid ProductId { get; set; }

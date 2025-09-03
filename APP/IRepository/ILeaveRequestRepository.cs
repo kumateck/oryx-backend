@@ -7,7 +7,8 @@ namespace APP.IRepository;
 public interface ILeaveRequestRepository
 {
     Task<Result<Guid>> CreateLeaveOrAbsenceRequest(CreateLeaveRequest leaveRequest);
-    Task<Result<Paginateable<IEnumerable<LeaveRequestDto>>>> GetLeaveRequests(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<LeaveRequestDto>>>> GetLeaveRequests(int page, int pageSize,
+        string searchQuery, LeaveStatus? status, RequestCategory? leaveCategory, Guid? departmentId);
     Task<Result<LeaveRequestDto>> GetLeaveRequest(Guid leaveRequestId);
     Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest);
     Task<Result> ReapplyLeaveRequest(Guid leaveRequestId, ReapplyLeaveRequest reapplyLeaveRequest);
