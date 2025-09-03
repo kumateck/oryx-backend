@@ -1101,7 +1101,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Math.Max(totalQuantityInLocation, 0);
     }
     
-    public async Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
+    /*public async Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
     {
         // Sum of quantities moved to this location (incoming batches)
         var batchesInLocation = await context.MassMaterialBatchMovements
@@ -1133,6 +1133,20 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var totalQuantityInLocation = batchesInLocation - batchesMovedOut - batchesConsumedAtLocation;
 
         return totalQuantityInLocation;
+    }*/
+    
+    public async Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
+    {
+        var totalQuantityInWarehouse = await context.ShelfMaterialBatches
+            .AsSplitQuery()
+            .Include(smb => smb.WarehouseLocationShelf)
+            .ThenInclude(shelf => shelf.WarehouseLocationRack)
+            .ThenInclude(rack => rack.WarehouseLocation)
+            .Where(smb => smb.MaterialBatchId == batchId 
+                          && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId)
+            .SumAsync(smb => smb.Quantity);
+
+        return totalQuantityInWarehouse;
     }
     
     public async Task<Result<decimal>> GetProductStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
@@ -1401,16 +1415,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var result = new List<BatchToSupply>();
         var remainingQuantityToFulfill = quantity;
 
-        // Fetch batches in the given warehouse, sorted by expiry date (FIFO)
+        // Fetch batches in the given warehouse, sorted by return date (if any) and expiry (FIFO)
         var batches = await context.MaterialBatches
             .AsSplitQuery()
-            .Include(b => b.MassMovements)
-            .ThenInclude(m => m.ToWarehouse)
-            .Include(b => b.MassMovements)
-            .ThenInclude(m => m.FromWarehouse)
             .Include(b => b.UoM)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                .ThenInclude(shelf => shelf.WarehouseLocationRack)
+                .ThenInclude(rack => rack.WarehouseLocation)
             .Where(b => b.MaterialId == materialId &&
-                        b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)) // Only include batches in the specified warehouse
+                        b.ShelfMaterialBatches.Any(smb => smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId))
             .OrderBy(b => b.ReturnDate == null)   // false (not null) first, true (null) last
             .ThenBy(b => b.ReturnDate)            // earliest non-null return dates first
             .ThenBy(b => b.ExpiryDate)
@@ -1421,30 +1435,35 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             if (remainingQuantityToFulfill <= 0)
                 break; // Stop if we've met the required quantity
 
-            // Get the available stock for the batch in the given warehouse
-            var availableQuantityResult = await GetMaterialStockInWarehouseByBatch(batch.Id, warehouseId);
-            if(availableQuantityResult.IsFailure)
+            // Look at the shelf-level quantities
+            var shelfBatches = batch.ShelfMaterialBatches
+                .Where(smb => smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId)
+                .OrderBy(smb => batch.ReturnDate == null)   // returned batches first
+                .ThenBy(smb => batch.ReturnDate)            // earliest return date first
+                .ThenBy(smb => batch.ExpiryDate)            // then by expiry
+                .ToList();
+
+
+            foreach (var shelfBatch in shelfBatches)
             {
-                continue;
+                if (remainingQuantityToFulfill <= 0)
+                    break;
+
+                if (shelfBatch.Quantity <= 0)
+                    continue;
+
+                var quantityToTake = Math.Min(shelfBatch.Quantity, remainingQuantityToFulfill);
+
+                var batchDto = mapper.Map<MaterialBatchListDto>(batch);
+                result.Add(new BatchToSupply
+                {
+                    Batch = batchDto,
+                    QuantityToTake = quantityToTake,
+                    WarehouseLocationShelfId = shelfBatch.WarehouseLocationShelfId  // shelf origin
+                });
+
+                remainingQuantityToFulfill -= quantityToTake;
             }
-
-            var availableQuantity = availableQuantityResult.Value;
-
-            if (availableQuantity <= 0)
-                continue; // Skip batches with no stock
-
-            // Determine how much we can take from this batch
-            var quantityToTake = Math.Min(availableQuantity, remainingQuantityToFulfill);
-
-            // Map and add batch to the result list
-            var batchDto = mapper.Map<MaterialBatchListDto>(batch);
-            result.Add(new BatchToSupply
-            {
-                Batch = batchDto,
-                QuantityToTake = quantityToTake
-            });
-
-            remainingQuantityToFulfill -= quantityToTake; // Reduce the required quantity
         }
 
         if (remainingQuantityToFulfill > 0)
@@ -1454,7 +1473,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return result;
     }
-
 
     
     public async Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, decimal quantity, Guid userId)
@@ -1502,20 +1520,53 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity, Guid? uoMId)
+    public async Task<Result> ReserveQuantityFromBatchForProduction(
+        Guid batchId,
+        Guid warehouseId,
+        Guid productionScheduleId,
+        Guid productId,
+        decimal quantity,
+        Guid? uoMId,
+        Guid? warehouseLocationShelfId)
     {
-        await context.MaterialBatchReservedQuantities.AddAsync(new MaterialBatchReservedQuantity
+        // 1️⃣ Load the shelf batch if shelf is provided
+        if (warehouseLocationShelfId.HasValue)
+        {
+            var shelfBatch = await context.ShelfMaterialBatches
+                .FirstOrDefaultAsync(smb => smb.MaterialBatchId == batchId 
+                                            && smb.WarehouseLocationShelfId == warehouseLocationShelfId.Value);
+
+            if (shelfBatch == null)
+                return Error.NotFound("ShelfMaterialBatch", "No shelf allocation found for this batch.");
+
+            if (shelfBatch.Quantity < quantity)
+                return Error.Validation("ShelfMaterialBatch", "Not enough stock on the shelf to reserve.");
+        
+            // Deduct from shelf stock
+            shelfBatch.Quantity -= quantity;
+            context.ShelfMaterialBatches.Update(shelfBatch);
+        }
+
+        // 2️⃣ Create the reservation entry
+        var reservation = new MaterialBatchReservedQuantity
         {
             MaterialBatchId = batchId,
             WarehouseId = warehouseId,
             ProductionScheduleId = productionScheduleId,
             ProductId = productId,
             Quantity = quantity,
-            UoMId = uoMId
-        });
+            UoMId = uoMId,
+            WarehouseLocationShelfId = warehouseLocationShelfId
+        };
 
+        await context.MaterialBatchReservedQuantities.AddAsync(reservation);
+
+        // 3️⃣ Save changes
         await context.SaveChangesAsync();
+
+        return Result.Success();
     }
+
 
     public async Task<List<MaterialBatchReservedQuantityDto>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, Guid productionScheduleId, Guid productId)
     {
@@ -1524,6 +1575,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .AsSplitQuery()
                 .Include(r => r.MaterialBatch)
                 .ThenInclude(b => b.Material)
+                .Include(b => b.WarehouseLocationShelf)
                 .Where(r => r.MaterialBatch.MaterialId == materialId && 
                             r.WarehouseId == warehouseId && r.ProductionScheduleId == productionScheduleId && r.ProductId == productId)
                 .ToListAsync());
@@ -1581,7 +1633,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId)
     {
-        // Get all material batch movements for the given materialId, including both FromWarehouse and ToWarehouse
+        // Get all movements for this material
         var batchMovements = await context.MassMaterialBatchMovements
             .IgnoreQueryFilters()
             .Where(m => m.Batch.MaterialId == materialId)
@@ -1589,37 +1641,51 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(m => m.FromWarehouse)
             .ToListAsync();
 
-        // Get all unique warehouse IDs (both from and to locations)
+        // All unique warehouses
         var warehouseIds = batchMovements
-            .SelectMany(m => new[]
-            {
-                m.ToWarehouseId, 
-                m.FromWarehouseId
-            })
-            .Where(warehouseId => warehouseId.HasValue)
+            .SelectMany(m => new[] { m.ToWarehouseId, m.FromWarehouseId })
+            .Where(id => id.HasValue)
             .Distinct()
             .ToList();
 
-        // List to store the WarehouseStockDto
         var warehouseStockList = new List<WarehouseStockDto>();
 
-        // For each warehouse ID, retrieve the stock and warehouse info
-        foreach (var warehouseId in warehouseIds.Where(warehouseId => warehouseId.HasValue))
+        foreach (var warehouseId in warehouseIds.Where(id => id.HasValue))
         {
-            var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouseId.Value);
-            if (!stockResult.IsSuccess) continue;
+            var warehouse = await context.Warehouses
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(w => w.Id == warehouseId.Value);
 
-            // Get warehouse details (you can map this from your Warehouse entity)
-            var warehouse = await context.Warehouses.IgnoreQueryFilters().FirstOrDefaultAsync(w => w.Id == warehouseId.Value);
-        
-            if (warehouse != null)
+            if (warehouse == null) continue;
+
+            // 1️⃣ Get raw stock in warehouse
+            var stockResult = await GetShelfMaterialStockInWarehouse(materialId, warehouseId.Value);
+            if (!stockResult.IsSuccess) continue;
+            var grossStock = stockResult.Value;
+
+            // 2️⃣ Add reserved if this is a production warehouse
+            var reservedQty = await context.MaterialBatchReservedQuantities
+                .Where(r => r.WarehouseId == warehouseId.Value && r.MaterialBatch.MaterialId == materialId)
+                .SumAsync(r => r.Quantity);
+
+            var finalStock = grossStock;
+
+            if (warehouse.Type == WarehouseType.Production)
             {
-                warehouseStockList.Add(new WarehouseStockDto
-                {
-                    Warehouse = mapper.Map<WarehouseDto>(warehouse),
-                    StockQuantity = stockResult.Value
-                });
+                // Production stock = gross stock + reserved (because reservations are physically there)
+                finalStock += reservedQty;
             }
+            else
+            {
+                // Other warehouses = gross stock - reserved (because those materials left the shelf)
+                finalStock -= reservedQty;
+            }
+
+            warehouseStockList.Add(new WarehouseStockDto
+            {
+                Warehouse = mapper.Map<WarehouseDto>(warehouse),
+                StockQuantity = finalStock
+            });
         }
 
         return Result.Success(warehouseStockList);

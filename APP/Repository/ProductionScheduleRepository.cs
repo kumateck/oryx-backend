@@ -1775,7 +1775,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 foreach (var batch in batches)
                 {
                     await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleId, productId,
-                        batch.QuantityToTake, batch.Batch.UoM?.Id);
+                        batch.QuantityToTake, batch.Batch.UoM?.Id, batch.WarehouseLocationShelfId);
                 }
             }
         }
@@ -1796,7 +1796,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 foreach (var batch in batches)
                 {
                     await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleId, productId,
-                        batch.QuantityToTake, batch.Batch.UoM?.Id);
+                        batch.QuantityToTake, batch.Batch.UoM?.Id, batch.WarehouseLocationShelfId);
                 }
             }
         }
@@ -2090,70 +2090,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             
             remainingQuantity -= batchRequest.Quantity;
             if (remainingQuantity <= 0) break;
-
-            /*var movement = new MassMaterialBatchMovement
-            {
-                BatchId = batch.Id,
-                FromWarehouseId = fromWarehouse.Id,
-                ToWarehouseId = toWarehouse.Id,
-                Quantity = batchRequest.Quantity,
-                MovedAt = DateTime.UtcNow,
-                MovedById = userId
-            };
-            
-            await context.MassMaterialBatchMovements.AddAsync(movement);
-            
-            var batchEvent = new MaterialBatchEvent
-            {
-                BatchId = batch.Id,
-                Type = EventType.Moved,
-                Quantity = batchRequest.Quantity,
-                UserId = userId
-            };
-            await context.MaterialBatchEvents.AddAsync(batchEvent);
-            
-            await context.SaveChangesAsync();
-            
-            var toBinCardEvent =new BinCardInformation
-            {
-                MaterialBatchId = batch.Id,
-                Description = fromWarehouse.Name,
-                WayBill = "N/A",
-                ArNumber = "N/A",
-                QuantityReceived = 0,
-                QuantityIssued = batchRequest.Quantity,
-                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(batch.MaterialId, fromWarehouse.Id)).Value,
-                UoMId = batch.UoMId,
-                ProductId = stockTransferSource.StockTransfer.ProductId,
-                CreatedAt = DateTime.UtcNow,
-                CreatedById = userId
-            };
-
-            await context.BinCardInformation.AddAsync(toBinCardEvent);
-
-            var fromBinCardEvent =new BinCardInformation
-            {
-                MaterialBatchId = batch.Id,
-                Description = toWarehouse.Name,
-                WayBill = "N/A",
-                ArNumber = "N/A",
-                QuantityReceived = batchRequest.Quantity,
-                QuantityIssued = 0,
-                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(batch.MaterialId, toWarehouse.Id)).Value,
-                UoMId = batch.UoMId,
-                ProductId =  stockTransferSource.StockTransfer.ProductId,
-                CreatedAt = DateTime.UtcNow,
-                CreatedById = userId
-            };
-
-            await context.BinCardInformation.AddAsync(fromBinCardEvent);
-            batch.StockTransferSourceId = id;
-            
-            context.MaterialBatches.Update(batch);
-            
-            await context.SaveChangesAsync();
-            
-            */
         }
         
         if (remainingQuantity > 0)
@@ -2175,18 +2111,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         };
         
         await context.HoldingMaterialTransfers.AddAsync(holdingMaterial);
-        /*if (toWarehouse.ArrivalLocation == null)
-        {
-            toWarehouse.ArrivalLocation = new WarehouseArrivalLocation
-            {
-                WarehouseId = toWarehouse.Id,
-                Name = "Default Arrival Location",
-                FloorName = "Ground Floor",
-                Description = "Automatically created arrival location"
-            };
-            await context.WarehouseArrivalLocations.AddAsync(toWarehouse.ArrivalLocation);
-        }*/
-
         stockTransferSource.IssuedAt = DateTime.UtcNow;
         stockTransferSource.IssuedById = userId;
         stockTransferSource.Status = StockTransferStatus.Issued;
@@ -2479,7 +2403,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                     MaterialBatchReservedQuantityId = b.Id,
                     DestinationWarehouseId = material.Kind == MaterialKind.Raw
                         ? rawStorageWarehouse.Id
-                        : packedStorageWarehouse.Id
+                        : packedStorageWarehouse.Id,
+                    SourceWarehouseLocationShelfId = b.WarehouseLocationShelf?.Id
                 }).ToList();
                 
                 var batchesToRemove = await context.MaterialBatchReservedQuantities
@@ -2559,6 +2484,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 context.Materials.FirstOrDefault(m => m.Id == r.MaterialId)?.Kind == MaterialKind.Raw
                     ? rawStorageWarehouse.Id
                     : packedStorageWarehouse.Id,
+            SourceWarehouseLocationShelfId = r.SourceWarehouseLocationShelfId
         }).ToList();
         foreach (var partial in partialReturns)
         {
