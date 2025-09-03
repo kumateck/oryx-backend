@@ -32,10 +32,10 @@ public class DesignationController(IDesignationRepository repository): Controlle
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DesignationDto>>))]
     public async Task<IResult> GetDesignations([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery = null, [FromQuery] Guid? departmentId = null)
     {
 
-        var result = await repository.GetDesignations(page, pageSize, searchQuery);
+        var result = await repository.GetDesignations(page, pageSize, searchQuery, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     /// <summary>
