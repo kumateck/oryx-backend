@@ -32,13 +32,18 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         return designation.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<DesignationDto>>>> GetDesignations(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<DesignationDto>>>> GetDesignations(int page, int pageSize, string searchQuery, Guid? departmentId = null)
     {
         var query = context.Designations.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.Name);
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(q => q.Departments.Any(d => d.Id == departmentId.Value));
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

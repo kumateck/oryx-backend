@@ -8,7 +8,8 @@ public interface IDesignationRepository
 {
     Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request);
     
-    Task<Result<Paginateable<IEnumerable<DesignationDto>>>> GetDesignations(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<DesignationDto>>>> GetDesignations(int page, int pageSize, string searchQuery,
+        Guid? departmentId = null);
     
     Task<Result<DesignationDto>> GetDesignation(Guid id);
     
