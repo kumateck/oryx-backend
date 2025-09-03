@@ -825,6 +825,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Material Entities
 
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.UoM).AutoInclude();
+        modelBuilder.Entity<MaterialBatch>().Navigation(p => p.ShelfMaterialBatches).AutoInclude();
 
         #endregion
 

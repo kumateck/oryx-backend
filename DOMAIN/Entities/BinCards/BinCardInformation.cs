@@ -3,6 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.BinCards;
 
@@ -20,6 +21,8 @@ public class BinCardInformation : BaseEntity
     public Guid? UoMId { get; set; }
     public Product Product { get; set; }
     public Guid? ProductId { get; set; }
+    public Guid? WarehouseId { get; set; }
+    public Warehouse Warehouse { get; set; }
 }
 
 public class BinCardInformationDto
