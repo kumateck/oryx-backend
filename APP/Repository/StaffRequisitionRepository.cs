@@ -45,7 +45,7 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
     }
 
     public async Task<Result<Paginateable<IEnumerable<StaffRequisitionDto>>>> GetStaffRequisitions(int page, int pageSize, string searchQuery,
-        DateTime? startDate, DateTime? endDate)
+        DateTime? startDate, DateTime? endDate, Guid? departmentId, AppointmentType? appointmentType)
     {
         var query = context.StaffRequisitions
             .Include(sr => sr.Designation)
@@ -83,6 +83,16 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
         if (endDate.HasValue)
         {
             query = query.Where(sr => sr.RequestUrgency <= endDate.Value);
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(sr => sr.DepartmentId == departmentId.Value);
+        }
+
+        if (appointmentType.HasValue)
+        {
+            query = query.Where(sr => sr.AppointmentType == appointmentType.Value);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

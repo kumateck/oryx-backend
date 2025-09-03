@@ -192,7 +192,8 @@ switch (request.RequestCategory)
     
     return entity.Id;
     }
-    public async Task<Result<Paginateable<IEnumerable<LeaveRequestDto>>>> GetLeaveRequests(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<LeaveRequestDto>>>> GetLeaveRequests(int page, int pageSize, string searchQuery,
+        LeaveStatus? status, RequestCategory? leaveCategory, Guid? departmentId)
     {
         var query = context.LeaveRequests
             .AsSplitQuery()
@@ -228,6 +229,21 @@ switch (request.RequestCategory)
             {
                query = query.Where(q => q.LeaveStatus == leaveStatus); 
             }
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(q => q.Employee.DepartmentId == departmentId.Value);
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(s => s.LeaveStatus == status.Value);
+        }
+
+        if (leaveCategory.HasValue)
+        {
+            query = query.Where(q => q.RequestCategory == leaveCategory.Value);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(

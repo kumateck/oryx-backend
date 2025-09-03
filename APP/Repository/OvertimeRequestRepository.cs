@@ -79,7 +79,8 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
             out _);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<OvertimeRequestDto>>>> GetOvertimeRequests(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<OvertimeRequestDto>>>> GetOvertimeRequests(int page, int pageSize, string searchQuery,
+        OvertimeStatus? overtimeStatus = null, Guid? departmentId = null)
     {
         var query =  context.OvertimeRequests
             .AsSplitQuery()
@@ -98,6 +99,16 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
             {
                   query = query.Where(ot => ot.Status == status);
             }
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(ot => ot.DepartmentId == departmentId.Value);
+        }
+
+        if (overtimeStatus.HasValue)
+        {
+            query = query.Where(ot => ot.Status == overtimeStatus.Value); 
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<OvertimeRequestDto>);

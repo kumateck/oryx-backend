@@ -33,12 +33,13 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveRequestDto>>))]
-    public async Task<IResult> GetLeaveRequests([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetLeaveRequests([FromQuery] LeaveStatus? status, [FromQuery] RequestCategory? leaveCategory, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
+        [FromQuery] Guid? departmentId = null)
     {
         var userId = (string) HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.GetLeaveRequests(page, pageSize, searchQuery);
+        var result = await repository.GetLeaveRequests(page, pageSize, searchQuery, status, leaveCategory, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     

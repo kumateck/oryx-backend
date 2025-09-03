@@ -52,7 +52,8 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         return leaveType.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<LeaveTypeDto>>>> GetLeaveTypes(int page, int pageSize, string searchQuery = null)
+    public async Task<Result<Paginateable<IEnumerable<LeaveTypeDto>>>> GetLeaveTypes(int page, int pageSize, string searchQuery = null,
+        Guid? designationId = null)
     {
         var query = context.LeaveTypes
             .AsSplitQuery()
@@ -63,6 +64,11 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.Where(l => l.Name.Contains(searchQuery));
+        }
+
+        if (designationId.HasValue)
+        {
+            query = query.Where(l => l.Designations.Any(d => d.Id == designationId.Value));       
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
