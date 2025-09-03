@@ -804,8 +804,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
 
     public async Task<Result<Paginateable<IEnumerable<UnitOfMeasureDto>>>> GetUoM(FilterUnitOfMeasure filter)
     {
-        var query = context.UnitOfMeasures.
-            AsQueryable();
+        var query = context.UnitOfMeasures
+            .AsQueryable();
 
         if (string.IsNullOrEmpty(filter.SearchQuery))
         {
