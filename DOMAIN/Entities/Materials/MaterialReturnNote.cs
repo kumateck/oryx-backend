@@ -69,6 +69,7 @@ public class MaterialReturnNoteFullReturnDto
 {
     public MaterialBatchReservedQuantityDto MaterialBatchReservedQuantity { get; set; }
     public CollectionItemDto DestinationWarehouse { get; set; }
+    public WarehouseLocationShelfDto SourceWarehouseLocationShelf { get; set; }
     public bool Returned { get; set; }
 }
 
@@ -79,6 +80,7 @@ public class MaterialReturnNotePartialReturnDto
     public decimal Quantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public CollectionItemDto DestinationWarehouse { get; set; }
+    public WarehouseLocationShelfDto SourceWarehouseLocationShelf { get; set; }
     public bool Returned { get; set; }
 }
 

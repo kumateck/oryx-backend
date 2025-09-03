@@ -2532,6 +2532,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                     .ThenInclude(mf => mf.MaterialBatch)
                         .ThenInclude(m => m.Material)
             .Include(m => m.FullReturns)
+                .ThenInclude(mf => mf.SourceWarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+            .Include(m => m.FullReturns)
                 .ThenInclude(mf => mf.MaterialBatchReservedQuantity)
                     .ThenInclude(mf => mf.UoM)
             .Include(m => m.FullReturns)
@@ -2547,6 +2550,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 .ThenInclude(mp => mp.DestinationWarehouse)
             .Include(m => m.PartialReturns)
                 .ThenInclude(mp => mp.MaterialBatch)
+            .Include(m => m.PartialReturns)
+                .ThenInclude(mf => mf.SourceWarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
             .FirstOrDefaultAsync(m => m.Id == materialReturnNoteId);
         
         return mapper.Map<MaterialReturnNoteDto>(materialReturnNote);
