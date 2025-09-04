@@ -241,7 +241,7 @@ public class ApprovedProductDto
 
 public class ApprovedProductDetailDto
 {
-    public ProductListDto Product { get; set; }
+    public ProductDto Product { get; set; }
     public decimal TotalQuantity { get; set; }
     public decimal TotalRemainingQuantity { get; set; }
     public decimal QuantityPerPack { get; set; }

@@ -213,7 +213,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     
     
     /// <summary>
-    /// Creates an invoice.
+    /// Allocates stock to a production order
     /// </summary>
     [HttpPost("allocate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
