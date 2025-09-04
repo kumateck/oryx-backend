@@ -1250,6 +1250,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.Product)
+            .ThenInclude(p => p.Packings).ThenInclude(p => p.PackingLists)
             .Include(tn => tn.PackageStyle)
             .Where(p => p.IsApproved && p.BatchManufacturingRecord.ProductId == productId)
             .AsQueryable();
@@ -1267,7 +1268,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         var dto = new ApprovedProductDetailDto
         {
-            Product = mapper.Map<ProductListDto>(grouped.Key),
+            Product = mapper.Map<ProductDto>(grouped.Key),
             TotalQuantity = grouped.Sum(p => p.QuantityReceived),
             TotalRemainingQuantity = grouped.Sum(p => p.RemainingQuantity),
             QuantityPerPack = grouped.Select(p => p.QuantityPerPack).First(),

@@ -1138,18 +1138,6 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    /// <summary>
-    /// Allocates stock to a production order
-    /// </summary>
-    [HttpPost("allocate-products")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateProductAllocationToProductionOrder([FromBody] AllocateProductionOrderRequest request)
-    {
-        var result = await repository.CreateProductOrderAllocation(request);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    }
     
     /// <summary>
     /// Get product allocations
