@@ -482,7 +482,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps).ThenInclude(step => step.Operation)
             .FirstOrDefaultAsync(pa => pa.ProductionScheduleId == productionScheduleId && pa.ProductId == productId);
 
-        return mapper.Map<ProductionActivityDto>(productionActivity);
+        return Result.Success(mapper.Map<ProductionActivityDto>(productionActivity));
     }
     
     public async Task<Result<Paginateable<IEnumerable<ProductionActivityStepDto>>>> GetProductionActivitySteps(ProductionFilter filter)
