@@ -8,6 +8,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
+using SHARED;
 
 namespace DOMAIN.Entities.Warehouses;
 
@@ -20,6 +21,7 @@ public class Warehouse : BaseEntity
     public List<WarehouseLocation> Locations { get; set; } = [];
     public WarehouseArrivalLocation ArrivalLocation { get; set; }
     public WarehouseType Type { get; set; } 
+    public bool? IsBeta { get; set; }
 }
 
 public class WarehouseArrivalLocation:BaseEntity
