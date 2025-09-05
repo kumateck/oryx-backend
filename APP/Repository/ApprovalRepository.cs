@@ -13,6 +13,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
@@ -863,16 +864,17 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 return Result.Success();
 
             
-            case nameof(ProductionOrder):
-                var productionOrder = await context.ProductionOrders
+            case nameof(ProformaInvoice):
+                var proformaInvoice = await context.ProformaInvoices
                     .AsSplitQuery()
                     .Include(a => a.Approvals)
+                    .Include(proformaInvoice => proformaInvoice.AllocateProductionOrder)
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
                 
-                if (productionOrder is null)
+                if (proformaInvoice is null)
                     return Error.Validation("AllocationProductionOrder.NotFound", $"Allocation production order {modelId} not found.");
                 
-                var allocateProductionOrderApprovalStages = productionOrder.Approvals.Select(item => new ResponsibleApprovalStage
+                var allocateProductionOrderApprovalStages = proformaInvoice.Approvals.Select(item => new ResponsibleApprovalStage
                     {
                         RoleId = item.RoleId,
                         UserId = item.UserId,
@@ -896,7 +898,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 }
                 
                 // Approve the leave request stage in the actual tracked list
-                var stageToApproveAl = productionOrder.Approvals.First(
+                var stageToApproveAl = proformaInvoice.Approvals.First(
                     stage => (stage.UserId == allocationApprovingStage.UserId && stage.UserId == userId) ||
                     (stage.RoleId == allocationApprovingStage.RoleId && allocationApprovingStage.RoleId.HasValue && roleIds.Contains(allocationApprovingStage.RoleId.Value)));
 
@@ -907,28 +909,21 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 //context.ProductionOrderApprovals.Update(stageToApproveAl);
                 
                 // Optionally mark a leave request as fully approved
-                var allRequiredAlApproved = productionOrder.Approvals
+                var allRequiredAlApproved = proformaInvoice.Approvals
                     .Where(s => s.Required)
                     .All(s => s.Status == ApprovalStatus.Approved);
                 
                 if (allRequiredAlApproved)
                 {
-                  productionOrder.Approved = true;
-                  var invoice = await context.Invoices
-                      .AsSplitQuery()
-                      .Include(p => p.ProformaInvoice)
-                      .FirstOrDefaultAsync(p => p.ProformaInvoice.ProductionOrderId == productionOrder.Id);
-                  if(invoice is null) return Error.Validation("Invoice.NotFound", $"Invoice {productionOrder.Id} not found. " +
-                      $"An invoice is needed before final approval can be made");
-                  invoice.Status = InvoiceStatus.Approved;
-                  context.Invoices.Update(invoice);
+                    proformaInvoice.Approved = true;
+                    proformaInvoice.AllocateProductionOrder.Approved = true;
+                    context.ProformaInvoices.Update(proformaInvoice);
                 }
                 
-                context.ProductionOrders.Update(productionOrder);
                 await context.SaveChangesAsync();
                 
                 //activate next pending stages
-                var nextAllocationStage = productionOrder.Approvals
+                var nextAllocationStage = proformaInvoice.Approvals
                     .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
                     .OrderBy(s => s.Order)
                     .ToList();
@@ -936,7 +931,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 if (nextAllocationStage.Count != 0)
                 {
                     // Get the current approval stages after the approval
-                    var updatedApprovalStages = productionOrder.Approvals.Select(item => new ResponsibleApprovalStage
+                    var updatedApprovalStages = proformaInvoice.Approvals.Select(item => new ResponsibleApprovalStage
                     {
                         RoleId = item.RoleId,
                         UserId = item.UserId,
@@ -948,16 +943,16 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     }).ToList();
 
                     var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                        .Where(s => !productionOrder.Approvals.First(ra =>
+                        .Where(s => !proformaInvoice.Approvals.First(ra =>
                             (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
                         .ToList();
 
                     foreach (var stageToActivate in newlyActiveStages)
                     {
-                        var actualStage = productionOrder.Approvals.First(ra =>
+                        var actualStage = proformaInvoice.Approvals.First(ra =>
                             (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
                         actualStage.ActivatedAt = DateTime.UtcNow;
-                        context.ProductionOrderApprovals.Update(actualStage);
+                        context.ProformaInvoiceApprovals.Update(actualStage);
                     }
                 }
                 await context.SaveChangesAsync();
@@ -966,7 +961,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     UserId = userId,
                     Comments = comments,
                     Status = ApprovalStatus.Approved,
-                    ModelId = productionOrder.Id,
+                    ModelId = proformaInvoice.Id,
                 });
                 return Result.Success();
             
@@ -1429,16 +1424,16 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 break;
             
             
-            case nameof(ProductionOrder):
-                var productionOrder = await context.ProductionOrders
+            case nameof(ProformaInvoice):
+                var proformaInvoice = await context.ProformaInvoices
                     .AsSplitQuery()
                     .Include(a => a.Approvals)
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
                 
-                if (productionOrder is null)
-                    return Error.Validation("ProductionOrder.NotFound", $"Production order {modelId} not found.");
+                if (proformaInvoice is null)
+                    return Error.Validation("Proforma.NotFound", $"Invoice {modelId} not found.");
                 
-                var allocationApprovalStages = productionOrder.Approvals.Select(item => new ResponsibleApprovalStage
+                var allocationApprovalStages = proformaInvoice.Approvals.Select(item => new ResponsibleApprovalStage
                     {
                         RoleId = item.RoleId,
                         UserId = item.UserId,
@@ -1462,7 +1457,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 }
                 
                 // Approve the leave request stage in the actual tracked list
-                var stageToApproveAl = productionOrder.Approvals.First(
+                var stageToApproveAl = proformaInvoice.Approvals.First(
                     stage => (stage.UserId == allocationApprovingStage.UserId && stage.UserId == userId) ||
                     (stage.RoleId == allocationApprovingStage.RoleId && allocationApprovingStage.RoleId.HasValue && roleIds.Contains(allocationApprovingStage.RoleId.Value)));
 
@@ -1474,7 +1469,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     UserId = userId,
                     Comments = comments,
                     Status = ApprovalStatus.Rejected,
-                    ModelId = productionOrder.Id,
+                    ModelId = proformaInvoice.Id,
                 });
                 await context.SaveChangesAsync();
                 break;
@@ -1703,7 +1698,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             });
         }
         
-        var productionOrders = await context.ProductionOrders
+        var proformaInvoices = await context.ProformaInvoices
             .AsSplitQuery()
             .Include(a => a.Approvals)
             .Include(a => a.CreatedBy)
@@ -1712,17 +1707,17 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
-        foreach (var productionOrder in productionOrders)
+        foreach (var proformaInvoice in proformaInvoices)
         {
             entitiesRequiringApproval.Add(new ApprovalEntity
             {
                 ModelType = nameof(ProductionOrder),
-                Id = productionOrder.Id,
-                Code = productionOrder.Code,
-                Department = mapper.Map<DepartmentDto>(productionOrder.CreatedBy?.Department),
-                CreatedAt = productionOrder.CreatedAt,
-                RequestedBy = mapper.Map<CollectionItemDto>(productionOrder.CreatedBy),
-                ApprovalLogs = GetApprovalLogs(productionOrder.Id)
+                Id = proformaInvoice.Id,
+                Code = "",
+                Department = mapper.Map<DepartmentDto>(proformaInvoice.CreatedBy?.Department),
+                CreatedAt = proformaInvoice.CreatedAt,
+                RequestedBy = mapper.Map<CollectionItemDto>(proformaInvoice.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(proformaInvoice.Id)
             });
         }
         
@@ -1860,8 +1855,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
             
-            case nameof(ProductionOrder):
-                var allocate = await context.ProductionOrders
+            case nameof(ProformaInvoice):
+                var proformaInvoice = await context.ProformaInvoices
                     .AsSplitQuery()
                     .Include(l => l.CreatedBy).ThenInclude(u => u.Department)
                     .Include(l => l.Approvals).ThenInclude(a => a.ApprovedBy)
@@ -1870,10 +1865,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 {
                     ModelType = modelType,
                     Id = modelId,
-                    Code = allocate.Code,
-                    CreatedAt = allocate.CreatedAt,
-                    Department = mapper.Map<DepartmentDto>(allocate.CreatedBy?.Department),
-                    RequestedBy = mapper.Map<CollectionItemDto>(allocate.CreatedBy),
+                    Code = "",
+                    CreatedAt = proformaInvoice.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(proformaInvoice.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<CollectionItemDto>(proformaInvoice.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
             
@@ -2050,8 +2045,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 await CreateResponseApprovals(modelId, approvalStages, approval);
                 break;
             
-            case nameof(ProductionOrder):
-                await CreateProductionOrderApprovals(modelId, approvalStages, approval);
+            case nameof(ProformaInvoice):
+                await CreateProformaInvoiceApprovals(modelId, approvalStages, approval);
                 break;
             
             case nameof(ShipmentDocument):
@@ -2169,44 +2164,6 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
 
         await context.ResponseApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
-        
-        /*var newApprovalKeys = stages.Select(stage => new
-        {
-            ResponseId = responseId,
-            ApprovalId = approval.Id,
-            stage.UserId,
-            stage.RoleId
-        }).ToList();
-
-        var existingApprovals = await context.ResponseApprovals
-            .Where(r => r.ResponseId == responseId && r.ApprovalId == approval.Id)
-            .Select(r => new { r.ResponseId, r.ApprovalId, r.UserId, r.RoleId })
-            .ToListAsync();
-
-        var duplicates = newApprovalKeys
-            .Intersect(existingApprovals)
-            .ToList();
-
-        if (duplicates.Any())
-        {
-            // Validation failed: duplicates already exist
-            return;
-        }
-
-        var approvals = stages.Select(stage => new ResponseApproval
-        {
-            Required = stage.Required,
-            Order = stage.Order,
-            ResponseId = responseId,
-            CreatedAt = DateTime.UtcNow,
-            ApprovalId = approval.Id,
-            UserId = stage.UserId,
-            RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
-        }).ToList();
-
-        await context.ResponseApprovals.AddRangeAsync(approvals);
-        await context.SaveChangesAsync();*/
     }
     
     
@@ -2243,6 +2200,24 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         }).ToList();
 
         await context.ShipmentDocumentApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();
+    }
+    
+    private async Task CreateProformaInvoiceApprovals(Guid proformaInvoiceId, List<ApprovalStage> stages, Approval approval)
+    {
+        var approvals = stages.Select(stage => new ProformaInvoiceApproval
+        {
+            Required = stage.Required,
+            Order = stage.Order,
+            ProformaInvoiceId = proformaInvoiceId,
+            CreatedAt = DateTime.UtcNow,
+            ApprovalId = approval.Id,
+            UserId = stage.UserId,
+            RoleId = stage.RoleId,
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+        }).ToList();
+
+        await context.ProformaInvoiceApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
     

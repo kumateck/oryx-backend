@@ -1,6 +1,7 @@
 using APP.IRepository;
 using APP.Services.Storage;
 using DOMAIN.Entities.Attachments;
+using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
@@ -9,7 +10,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class FileRepository(ApplicationDbContext context, IBlobStorageService blobStorageService) : IFileRepository
+public class FileRepository(ApplicationDbContext context, IBlobStorageService blobStorageService, IApprovalRepository approvalRepository) : IFileRepository
 {
     public async Task<Result> SaveBlobItem(string modelType, Guid modelId, string reference, IFormFile file,
         Guid? userId)
@@ -47,6 +48,17 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                         purchaseOrder.Status = PurchaseOrderStatus.Attached;
                         context.PurchaseOrders.Update(purchaseOrder);
                         await context.SaveChangesAsync();
+                    }
+                    break;
+                
+                case nameof(ProformaInvoice):
+                    var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item => item.Id == modelId);
+                    if (proformaInvoice is not null)
+                    {
+                        proformaInvoice.Status = ProformaInvoiceStatus.Invoice;
+                        context.ProformaInvoices.Update(proformaInvoice);
+                        await context.SaveChangesAsync();
+                        await approvalRepository.CreateInitialApprovalsAsync(nameof(ProformaInvoice), proformaInvoice.Id);
                     }
                     break;
             }
