@@ -24,8 +24,8 @@ public class ProductionOrder : BaseEntity, IRequireApproval
 public enum ProductionOrderStatus
 {
     Pending = 0,
-    Invoiced = 1,
-    Delivered = 2,
+    PartialPackingReady = 1,
+    FullPackingReady = 2,
 }
 
 public class ProductionOrderApprovals : ResponsibleApprovalStage

@@ -94,11 +94,6 @@ public interface IProductionScheduleRepository
     Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts();
     Task<Result<ApprovedProductDetailDto>> GetApprovedProduct(Guid productId);
     Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId);
-    Task<Result> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
-    Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(
-        bool? onlyApproved, int page,
-        int pageSize, string searchQuery);
-    Task<Result<AllocateProductionOrderDto>> GetProductAllocation(Guid id);
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
     Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId);
     Task<Result<FinalPackingDto>> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId);

@@ -11,7 +11,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionOrderRepository(ApplicationDbContext context, IMapper mapper, IApprovalRepository approvalRepository) : IProductionOrderRepository
+public class ProductionOrderRepository(ApplicationDbContext context, IMapper mapper) : IProductionOrderRepository
 {
     public async Task<Result<Guid>> CreateProductionOrder(CreateProductionOrderRequest request)
     {
@@ -57,8 +57,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         productionOrderDto.Invoice =
             mapper.Map<ProductionOrderInvoiceDto>(await context.Invoices
                 .AsSplitQuery()
-                .Include(p => p.ProformaInvoice)
-                .FirstOrDefaultAsync(p => p.ProformaInvoice.ProductionOrderId == productionOrderDto.Id));
+                .Include(p => p.ProformaInvoice).ThenInclude(p => p.AllocateProductionOrder)
+                .FirstOrDefaultAsync(p => p.ProformaInvoice.AllocateProductionOrder.ProductionOrderId == productionOrderDto.Id));
         
         return productionOrderDto;
     }
@@ -94,7 +94,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result<Guid>> CreateProformaInvoice(CreateProformaInvoice request)
     {
-        var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(po => po.Id == request.ProductionOrderId);
+        var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(po => po.Id == request.AllocateProductionOrderId);
         if (productionOrder is null)
         {
             return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
@@ -102,7 +102,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         var invoice = new ProformaInvoice
         {
-            ProductionOrderId = request.ProductionOrderId,
+            AllocateProductionOrderId = request.AllocateProductionOrderId,
             Products = request.Products.Select(p => new ProformaInvoiceProduct
             {
                 ProductId = p.ProductId,
@@ -110,26 +110,34 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             }).ToList()
         };
         await context.ProformaInvoices.AddAsync(invoice);
-        productionOrder.Status = ProductionOrderStatus.Invoiced;
-        context.ProductionOrders.Update(productionOrder);
         await context.SaveChangesAsync();
         
-        await approvalRepository.CreateInitialApprovalsAsync(nameof(ProductionOrder), productionOrder.Id);
-
         return invoice.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery)
+    public Task<Result> SendProformaInvoiceToCustomer(Guid allocateProductionOrderId, Guid userId)
+    {
+        throw new NotImplementedException();
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery, ProformaInvoiceStatus? status = null)
     {
         var query = context.ProformaInvoices
             .AsSplitQuery()
-            .Include(p => p.ProductionOrder).ThenInclude(p => p.Customer)
-            .Include(p => p.Products).ThenInclude(p => p.Product)
+            .Include(p => p.AllocateProductionOrder)
+            .ThenInclude(p => p.ProductionOrder)
+            .ThenInclude(p => p.Customer)     
+            .Include(p => p.Products)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.ProductionOrder.Code);
+            query = query.WhereSearch(searchQuery, q => q.AllocateProductionOrder.ProductionOrder.Code);
+        }
+
+        if (status != null)
+        {
+            query = query.Where(q => q.Status == status);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProformaInvoiceDto>);
@@ -139,8 +147,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var invoice = await context.ProformaInvoices
             .AsSplitQuery()
-            .Include(p => p.ProductionOrder).ThenInclude(p => p.Customer)
-            .Include(p => p.Products).ThenInclude(p => p.Product)
+            .Include(p => p.AllocateProductionOrder)
+            .ThenInclude(p => p.ProductionOrder)
+            .ThenInclude(p => p.Customer)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.Product)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         return invoice is null
@@ -157,7 +168,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         if (invoice is null)
             return Error.NotFound("ProformaInvoice.NotFound", "Proforma Invoice not found");
 
-        invoice.ProductionOrderId = request.ProductionOrderId;
+        invoice.AllocateProductionOrderId = request.AllocateProductionOrderId;
 
         context.ProformaInvoiceProducts.RemoveRange(invoice.Products);
 
@@ -207,7 +218,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         var query = context.Invoices
             .AsSplitQuery()
             .Include(i => i.ProformaInvoice)
-                .ThenInclude(p => p.ProductionOrder)
+                .ThenInclude(p => p.AllocateProductionOrder)
             .Include(i => i.ProformaInvoice.Products)
             .ThenInclude(p => p.Product)
             .Include(i => i.Customer)
@@ -227,7 +238,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         var invoice = await context.Invoices
             .AsSplitQuery()
             .Include(i => i.ProformaInvoice)
-                .ThenInclude(p => p.ProductionOrder)
+                .ThenInclude(p => p.AllocateProductionOrder)
             .Include(i => i.ProformaInvoice.Products).ThenInclude(p => p.Product)
             .FirstOrDefaultAsync(i => i.Id == id);
 
@@ -351,23 +362,228 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             }
         }
 
+        if (productionOrder.Products.All(p => p.Fulfilled))
+        {
+            productionOrder.Status = ProductionOrderStatus.FullPackingReady;
+
+        }
+        else if (productionOrder.Products.Any(p => p.Fulfilled))
+        {
+            productionOrder.Status = ProductionOrderStatus.PartialPackingReady;
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+     
+
+    public async Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id)
+    {
+        var productionOrder = await context.AllocateProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder == null) return Error.NotFound("Product.Order", "Product order not found");
+
+        productionOrder.DeliveredAt = DateTime.UtcNow;
+        context.AllocateProductionOrders.Update(productionOrder);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> CreateProductOrderAllocation(AllocateProductionOrderRequest request)
+    {
+        var validation = await ValidateProductAllocation(request);
+        if (!validation.IsSuccess) return validation;
+
+        var allocationEntity = mapper.Map<AllocateProductionOrder>(request);
+        await context.AllocateProductionOrders.AddAsync(allocationEntity);
+        await context.SaveChangesAsync();
+
+        // Now update fulfillment and order status
+        var productionOrder = await context.ProductionOrders
+            .AsSplitQuery()
+            .Include(p => p.Products)
+            .ThenInclude(p => p.FulfilledQuantities)
+            .FirstOrDefaultAsync(p => p.Id == request.ProductionOrderId);
+
+        if (productionOrder is null)
+            return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
+
+        // Mark products as fulfilled if no remaining quantity
+        foreach (var product in productionOrder.Products)
+        {
+            if (product.RemainingQuantity == 0 && !product.Fulfilled)
+            {
+                product.Fulfilled = true;
+            }
+        }
+
+        // Update overall production order status
+        if (productionOrder.Products.All(p => p.Fulfilled))
+        {
+            productionOrder.Status = ProductionOrderStatus.FullPackingReady;
+        }
+        else if (productionOrder.Products.Any(p => p.Fulfilled))
+        {
+            productionOrder.Status = ProductionOrderStatus.PartialPackingReady;
+        }
+
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
-    public async Task<Result> MarkProductionOrderAsDelivered(Guid id)
+    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? onlyApproved, int page,
+        int pageSize, string searchQuery, Guid? productionOrderId)
     {
-        var productionOrder = await context.ProductionOrders
-            .FirstOrDefaultAsync(p => p.Id == id);
-        if (productionOrder == null) return Error.NotFound("Product.Order", "Product order not found");
-
-        if (productionOrder.Status != ProductionOrderStatus.Invoiced && !productionOrder.Approved)
+        var query = context.AllocateProductionOrders
+            .AsSplitQuery()
+            .Include(a => a.ProductionOrder)
+            .ThenInclude(p => p.Customer)
+            .Include(a => a.Products)
+            .ThenInclude(p => p.FulfilledQuantities)
+            .ThenInclude(p => p.FinishedGoodsTransferNote)
+            .Include(a => a.Products)
+            .ThenInclude(p => p.Product)
+            .AsQueryable();
+        
+        if (!string.IsNullOrEmpty(searchQuery))
         {
-            return Error.Validation("Product.Order.Approved", "Product order not approved");
+            query = query.WhereSearch(searchQuery, b => b.ProductionOrder.Code);
         }
-        productionOrder.DeliveredAt = DateTime.UtcNow;
-        context.ProductionOrders.Update(productionOrder);
-        await context.SaveChangesAsync();
+
+        if (onlyApproved.HasValue)
+        {
+            if (onlyApproved.Value)
+            {
+                query = query.Where(q => q.Approved);
+            }
+        }
+
+        if (productionOrderId.HasValue)
+        {
+            query = query.Where(p => p.ProductionOrderId == productionOrderId.Value);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<AllocateProductionOrderDto>
+        );
+    }
+
+    public async Task<Result<AllocateProductionOrderDto>> GetProductAllocation(Guid id)
+    {
+        return mapper.Map<AllocateProductionOrderDto>(
+            await context.AllocateProductionOrders
+                .AsSplitQuery()
+                .Include(a => a.ProductionOrder)
+                .ThenInclude(p => p.Customer)
+                .Include(a => a.Products)
+                .ThenInclude(p => p.FulfilledQuantities)
+                .ThenInclude(p => p.FinishedGoodsTransferNote)
+                .Include(a => a.Products).ThenInclude(p => p.Product)
+                .FirstOrDefaultAsync(p => p.Id == id)
+        );
+    }
+    
+    public async Task<Result> ValidateProductAllocation(AllocateProductionOrderRequest request)
+    {
+        // 1) Load the production order + products (as no-tracking; we're not persisting here)
+        var productionOrder = await context.ProductionOrders
+            .AsNoTracking()
+            .Include(po => po.Products)
+                .ThenInclude(p => p.FulfilledQuantities) // ensure RemainingQuantity is accurate if it's computed from these
+            .FirstOrDefaultAsync(po => po.Id == request.ProductionOrderId);
+
+        if (productionOrder is null)
+            return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
+
+        // Quick lookup of products on this order
+        var orderProductsById = productionOrder.Products.ToDictionary(p => p.ProductId, p => p);
+
+        // 2) Collect all FinishedGoodsTransferNote IDs in the request and fetch them in one go
+        var allNoteIds = request.Products
+            .SelectMany(p => p.FulfilledQuantities)
+            .Select(q => q.FinishedGoodsTransferNoteId)
+            .Distinct()
+            .ToList();
+
+        var notesById = await context.FinishedGoodsTransferNotes
+            .AsNoTracking()
+            .Where(n => allNoteIds.Contains(n.Id))
+            .ToDictionaryAsync(n => n.Id, n => n);
+
+        // 3) Ensure all referenced notes exist
+        var missingNoteIds = allNoteIds.Where(id => !notesById.ContainsKey(id)).ToList();
+        if (missingNoteIds.Any())
+            return Error.NotFound("FinishedGoodsTransferNote.NotFound",
+                $"These finished goods transfer notes were not found: {string.Join(", ", missingNoteIds)}");
+
+        // 4) Pre-compute the TOTAL requested per note across the whole request
+        var requestedPerNote = request.Products
+            .SelectMany(p => p.FulfilledQuantities)
+            .GroupBy(q => q.FinishedGoodsTransferNoteId)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
+
+        // 5) Validate each note has enough remaining for its total requested
+        foreach (var kv in requestedPerNote)
+        {
+            var noteId = kv.Key;
+            var totalRequestedFromNote = kv.Value;
+            var note = notesById[noteId];
+
+            if (totalRequestedFromNote <= 0)
+                return Error.Validation("FinishedGoodsTransferNote.InvalidQuantity",
+                    $"Requested allocation from note {noteId} must be > 0.");
+
+            if (note.RemainingQuantity <= 0)
+                return Error.Validation("FinishedGoodsTransferNote.NoRemaining",
+                    $"Finished goods transfer note {noteId} has no remaining quantity.");
+
+            if (totalRequestedFromNote > note.RemainingQuantity)
+                return Error.Validation("FinishedGoodsTransferNote.OverAllocate",
+                    $"Requesting {totalRequestedFromNote} from note {noteId}, but only {note.RemainingQuantity} remains.");
+        }
+
+        // 6) Per-product validations (membership, remaining, optional note↔product compatibility)
+        foreach (var reqProduct in request.Products)
+        {
+            if (!orderProductsById.TryGetValue(reqProduct.ProductId, out var orderProduct))
+            {
+                return Error.NotFound("ProductionOrder.ProductNotFound",
+                    $"Product {reqProduct.ProductId} not found in this production order");
+            }
+
+            if (orderProduct.Fulfilled)
+                return Error.Validation("ProductionOrder.ProductFulfilled",
+                    $"Product {reqProduct.ProductId} has already been marked as fulfilled.");
+
+            if (orderProduct.RemainingQuantity == 0)
+                return Error.Validation("ProductionOrder.ProductFullyAllocated",
+                    $"Product {reqProduct.ProductId} has already been allocated completely.");
+
+            var totalToAllocateForProduct = reqProduct.FulfilledQuantities.Sum(q => q.Quantity);
+            if (totalToAllocateForProduct <= 0)
+                return Error.Validation("ProductionOrder.InvalidQuantity",
+                    $"Total allocation for product {reqProduct.ProductId} must be > 0.");
+
+            if (totalToAllocateForProduct > orderProduct.RemainingQuantity)
+            {
+                return Error.Validation("ProductionOrder.ProductOverAllocate",
+                    $"Allocation quantity {totalToAllocateForProduct} is more than remaining {orderProduct.RemainingQuantity} for product {reqProduct.ProductId}.");
+            }
+
+            // Optional: if your FinishedGoodsTransferNote has a ProductId, ensure it matches this product
+            foreach (var q in reqProduct.FulfilledQuantities)
+            {
+                var note = notesById[q.FinishedGoodsTransferNoteId];
+
+                if (q.Quantity <= 0)
+                    return Error.Validation("FinishedGoodsTransferNote.InvalidQuantity",
+                        $"Quantity for note {q.FinishedGoodsTransferNoteId} must be > 0.");
+            }
+        }
+
         return Result.Success();
     }
 }
