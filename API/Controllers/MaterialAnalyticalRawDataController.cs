@@ -76,6 +76,18 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     }
     
     /// <summary>
+    /// Retrieves specific analytical raw data by is material batch ID.
+    /// </summary>
+    [HttpGet("material/batch-details/{materialBatchId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialBatchArd))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetRelevantMaterialInfoForArd([FromRoute] Guid materialBatchId)
+    {
+        var result = await repository.GetRelevantMaterialInfoForArd(materialBatchId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Updates analytical raw data by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
