@@ -5,7 +5,10 @@ using AutoMapper;
 using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.UniformityOfWeights;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -123,6 +126,39 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         {
             opt.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
         });
+    }
+
+    public async Task<Result<MaterialBatchArd>> GetRelevantMaterialInfoForArd(Guid materialBatchId)
+    {
+        var materialBatch = await context.MaterialBatches
+            .AsSplitQuery()
+            .Include(materialBatch => materialBatch.Grn)
+            .FirstOrDefaultAsync(m => m.Id == materialBatchId);
+        
+        if(materialBatch is null) return Error.NotFound("MaterialBatch.NotFound", "MaterialBatch not found.");
+        
+        var materialSampling = await context.MaterialSamplings
+            .AsSplitQuery()
+            .Include(m => m.CreatedBy)
+            .FirstOrDefaultAsync(m => m.MaterialBatchId == materialBatchId);
+        
+        var checkList = await context.Checklists
+            .AsSplitQuery()
+            .Include(checklist => checklist.Supplier)
+            .Include(checklist => checklist.Manufacturer)
+            .FirstOrDefaultAsync(c => c.Id == materialBatch.ChecklistId);
+        
+        return new MaterialBatchArd
+        {
+            MaterialBatch = mapper.Map<MaterialBatchListDto>(materialBatch),
+            ArNumber = materialSampling?.ArNumber,
+            GrnNumber = materialBatch.Grn.GrnNumber,
+            SampledDate = materialSampling?.SampleDate,
+            Supplier = mapper.Map<SupplierDto>(checkList.Supplier),
+            Manufacturer = mapper.Map<ManufacturerDto>(checkList.Manufacturer),
+            SampledBy = mapper.Map<UserDto>(materialSampling?.CreatedBy),
+            QuantitySampled = materialSampling?.SampleQuantity ?? 0,
+        };
     }
 
     public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request)
