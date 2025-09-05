@@ -65,6 +65,30 @@ public class MaterialBatchListDto
     public MaterialBatchChecklistDto Checklist { get; set; }
 }
 
+public class MaterialBatchReducedDto
+{
+    public Guid Id { get; set; }
+    public CollectionItemDto Material { get; set; }
+    public string Code { get; set; }
+    public string BatchNumber { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public int NumberOfContainers { get; set; }
+    public PackageStyleDto ContainerPackageStyle { get; set; }
+    public decimal QuantityPerContainer { get; set; }
+    public BatchStatus Status { get; set; }  
+    public DateTime DateReceived { get; set; }
+    public DateTime? DateApproved { get; set; }
+    public decimal QuantityAssigned { get; set; }
+    public decimal QuantityUnassigned { get; set; }
+    public decimal TotalQuantity { get; set; }        
+    public decimal ConsumedQuantity { get; set; }  
+    public decimal RemainingQuantity { get; set; }
+    public decimal SampledQuantity { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public DateTime? ManufacturingDate { get; set; }
+    public DateTime? RetestDate { get; set; }
+}
+
 public class DistributedMaterialBatchDto
 {
     public Guid Id { get; set; }

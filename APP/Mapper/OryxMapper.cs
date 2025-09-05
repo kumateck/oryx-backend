@@ -348,6 +348,7 @@ public class OryxMapper : Profile
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
         CreateMap<MaterialBatch, MaterialBatchDto>();
         CreateMap<MaterialBatch, MaterialBatchListDto>();
+        CreateMap<MaterialBatch, MaterialBatchReducedDto>();
         CreateMap<MaterialReject, MaterialRejectDto>();
         CreateMap<MaterialBatch, DistributedMaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();

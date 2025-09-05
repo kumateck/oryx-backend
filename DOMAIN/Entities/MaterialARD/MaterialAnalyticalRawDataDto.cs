@@ -20,7 +20,7 @@ public class MaterialAnalyticalRawDataDto : WithAttachment
 
 public class MaterialBatchArd
 {
-    public MaterialBatchListDto MaterialBatch { get; set; }
+    public MaterialBatchReducedDto MaterialBatch { get; set; }
     public string ArNumber { get; set; }
     public string GrnNumber { get; set; }
     public SupplierDto Supplier { get; set; }

@@ -133,6 +133,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         var materialBatch = await context.MaterialBatches
             .AsSplitQuery()
             .Include(materialBatch => materialBatch.Grn)
+            .Include(m => m.Material)
             .FirstOrDefaultAsync(m => m.Id == materialBatchId);
         
         if(materialBatch is null) return Error.NotFound("MaterialBatch.NotFound", "MaterialBatch not found.");
@@ -150,7 +151,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         
         return new MaterialBatchArd
         {
-            MaterialBatch = mapper.Map<MaterialBatchListDto>(materialBatch),
+            MaterialBatch = mapper.Map<MaterialBatchReducedDto>(materialBatch),
             ArNumber = materialSampling?.ArNumber,
             GrnNumber = materialBatch.Grn.GrnNumber,
             SampledDate = materialSampling?.SampleDate,
