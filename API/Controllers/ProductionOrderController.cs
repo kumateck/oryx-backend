@@ -247,7 +247,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Get product allocations
     /// </summary>
-    [HttpGet("allocate-products")]
+    [HttpGet("allocate")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<AllocateProductionOrderDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -264,7 +264,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// <summary>
     /// Get product allocation by id
     /// </summary>
-    [HttpGet("allocate-products/{allocatedProductId}")]
+    [HttpGet("allocate/{allocatedProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AllocateProductionOrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
