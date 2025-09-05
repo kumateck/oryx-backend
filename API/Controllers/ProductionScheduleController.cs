@@ -1138,48 +1138,6 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    /// <summary>
-    /// Allocates stock to a production order
-    /// </summary>
-    [HttpPost("allocate-products")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateProductAllocationToProductionOrder([FromBody] AllocateProductionOrderRequest request)
-    {
-        var result = await repository.CreateProductOrderAllocation(request);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    }
-    
-    /// <summary>
-    /// Get product allocations
-    /// </summary>
-    [HttpGet("allocate-products")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<AllocateProductionOrderDto>>))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetProductAllocations([FromQuery] bool? onlyApproved = null,
-        [FromQuery] int page =1, 
-        [FromQuery] int pageSize = 10,
-        [FromQuery] String searchQuery = null)
-    {
-        var result = await repository.GetProductAllocations(onlyApproved, page, pageSize, searchQuery);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-    
-    /// <summary>
-    /// Get product allocation by id
-    /// </summary>
-    [HttpGet("allocate-products/{allocatedProductId}")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AllocateProductionOrderDto))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetAllocatedProduct([FromRoute]  Guid allocatedProductId)
-    {
-        var result = await repository.GetProductAllocation(allocatedProductId);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-    
 
     #endregion
 

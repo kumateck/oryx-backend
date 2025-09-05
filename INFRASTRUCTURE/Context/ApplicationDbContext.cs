@@ -579,6 +579,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
     public DbSet<ProformaInvoiceProduct>  ProformaInvoiceProducts { get; set; }
+    public DbSet<ProformaInvoiceApproval> ProformaInvoiceApprovals { get; set; }
 
     #endregion
 

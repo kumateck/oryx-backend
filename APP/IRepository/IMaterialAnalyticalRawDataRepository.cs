@@ -15,6 +15,7 @@ public interface IMaterialAnalyticalRawDataRepository
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id);
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterial(Guid id); 
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterialBatch(Guid id);
+    Task<Result<MaterialBatchArd>> GetRelevantMaterialInfoForArd(Guid materialBatchId);
     Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request);
     
     Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId);
