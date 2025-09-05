@@ -24,7 +24,6 @@ public class GeneralAttendanceReportDto
     public int SickLeaves {get; set;}
     public int MaternityLeaves {get; set;}
     
-    public GeneralSystemReport SystemStatistics { get; set; }
 }
 
 public class GeneralSystemReport
