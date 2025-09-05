@@ -18,6 +18,7 @@ public class WarehouseDto
     public string Name { get; set; }
     public string Description { get; set; }
     public WarehouseType Type { get; set; }
+    public bool? IsBeta { get; set; }
     public List<CollectionItemDto> Locations { get; set; } = [];
 }
 

@@ -4,6 +4,7 @@ using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace API.Database.Seeds.TableSeeders;
@@ -88,7 +89,7 @@ public class DepartmentSeeder : ISeeder
             dbContext.SaveChanges();
         }
         
-        if (dbContext.Departments.Any()) return;
+        if (dbContext.Departments.IgnoreQueryFilters().Any()) return;
         
         var departments = new List<Department>
         {
@@ -166,16 +167,6 @@ public class DepartmentSeeder : ISeeder
                     CreatedAt = DateTime.UtcNow,
                     Type = WarehouseType.RawMaterialStorage
                 });
-
-                department.Warehouses.Add(new Warehouse
-                {
-                    Id = Guid.NewGuid(),
-                    Name = $"{departmentName} Finished Goods Warehouse",
-                    Description = $"The {departmentName} finished goods warehouse",
-                    DepartmentId = department.Id,
-                    CreatedAt = DateTime.UtcNow,
-                    Type = WarehouseType.FinishedGoodsStorage
-                });
             }
 
             dbContext.Departments.Add(department);
@@ -191,6 +182,25 @@ public class DepartmentSeeder : ISeeder
             });
         }
 
+        dbContext.Warehouses.AddRange(
+            new Warehouse
+            {
+                Id = Guid.NewGuid(),
+                Name = "Beta Finished Goods Warehouse",
+                Description = "The  beta finished goods warehouse",
+                CreatedAt = DateTime.UtcNow,
+                Type = WarehouseType.FinishedGoodsStorage,
+                IsBeta = true
+            },
+            new Warehouse
+            {
+                Id = Guid.NewGuid(),
+                Name = "Non Beta Finished Goods Warehouse",
+                Description = "The  non beta finished goods warehouse",
+                CreatedAt = DateTime.UtcNow,
+                Type = WarehouseType.FinishedGoodsStorage,
+                IsBeta = false
+            });
         dbContext.SaveChanges();
     }
 }
