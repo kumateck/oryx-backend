@@ -210,7 +210,13 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             .Include(s => s.Department)
             .ToListAsync();
         
-        var attendanceMap = dailyRecords.ToDictionary(r => r.EmployeeId);
+        var attendanceMap = dailyRecords
+            .GroupBy(r => r.EmployeeId)
+            .ToDictionary(
+                g => g.Key, 
+                g => g.OrderBy(r => r.TimeStamp).First()
+            );
+        
         var groupedByDepartment = allEmployees.GroupBy(e => e.Department?.Name ?? "Unassigned").ToList();
 
         var departmentReports = new List<GeneralAttendanceReportDto>();
