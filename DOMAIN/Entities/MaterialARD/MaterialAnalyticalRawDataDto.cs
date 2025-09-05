@@ -23,8 +23,8 @@ public class MaterialBatchArd
     public MaterialBatchReducedDto MaterialBatch { get; set; }
     public string ArNumber { get; set; }
     public string GrnNumber { get; set; }
-    public SupplierDto Supplier { get; set; }
-    public ManufacturerDto Manufacturer { get; set; }
+    public CollectionItemDto Supplier { get; set; }
+    public CollectionItemDto Manufacturer { get; set; }
     public DateTime? SampledDate { get; set; }
     public UserDto SampledBy { get; set; }
     public decimal QuantityReceived { get; set; }
