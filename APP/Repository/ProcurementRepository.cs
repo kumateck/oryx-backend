@@ -362,7 +362,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             ? existingOrder.RevisedPurchaseOrders.Max(r => r.RevisionNumber) + 1
             : 1;
 
-        var enrichedRevisions = new List<CreatePurchaseOrderRevision>();
+        var enrichedRevisions = new List<EnrichedRevision>();
 
         foreach (var revision in revisions)
         {
@@ -762,6 +762,32 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             : mapper.Map<BillingSheetDto>(billingSheet, opts =>
                 opts.Items[AppConstants.ModelType] = nameof(BillingSheet));
     }
+
+    public async Task<Result<BillingSheetDto>> GetBillingSheetByInvoice(Guid invoiceId)
+    {
+        var billingSheet = await context.BillingSheets
+            .AsSplitQuery()
+            .Include(bs => bs.Supplier)
+            .ThenInclude(s => s.Currency)
+            .Include(bs => bs.Supplier)
+            .ThenInclude(s => s.Country)
+            .Include(bs => bs.Invoice)
+            .ThenInclude(i => i.Items)
+            .ThenInclude(ii => ii.Material)
+            .Include(bs => bs.Invoice)
+            .ThenInclude(i => i.Items)
+            .ThenInclude(ii => ii.Manufacturer)
+            .Include(bs => bs.Invoice)
+            .ThenInclude(i => i.Items)
+            .ThenInclude(ii => ii.PurchaseOrder)
+            .Include(bs => bs.Charges)
+            .FirstOrDefaultAsync(bs => bs.InvoiceId == invoiceId);
+        
+        return billingSheet is null
+            ? Error.NotFound("BillingSheet.NotFound", "Billing sheet not found")
+            : mapper.Map<BillingSheetDto>(billingSheet, opts =>
+                opts.Items[AppConstants.ModelType] = nameof(BillingSheet));
+    }
     
     public async Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize, string searchQuery, BillingSheetStatus? status = null)
     {
@@ -858,6 +884,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                  break;
              case ShipmentStatus.InTransit:
                  shipmentDocument.TransitStartedAt = DateTime.UtcNow;
+                 break;
+             case ShipmentStatus.AtPort:
+                 shipmentDocument.AtPortAt = DateTime.UtcNow;
                  break;
              case ShipmentStatus.Arrived:
                  await MarkShipmentAsArrived(shipmentDocument.Id, userId);

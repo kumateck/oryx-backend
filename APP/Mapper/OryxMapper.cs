@@ -560,7 +560,7 @@ public class OryxMapper : Profile
         CreateMap<CreatePurchaseOrderItemRequest, RevisedPurchaseOrderItem>();
         CreateMap<RevisedPurchaseOrder, RevisedPurchaseOrderDto>();
         CreateMap<CreatePurchaseOrderRevision, RevisedPurchaseOrder>();
-        CreateMap<RevisedPurchaseOrderItem, RevisedPurchaseOrderItemDto>();
+        CreateMap<EnrichedRevision, RevisedPurchaseOrder>();
 
         #endregion
 

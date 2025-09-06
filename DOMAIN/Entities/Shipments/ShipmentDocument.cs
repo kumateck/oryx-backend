@@ -18,6 +18,7 @@ public class ShipmentDocument : BaseEntity, IRequireApproval
     public DateTime? ArrivedAt { get; set; }
     public DateTime? ClearedAt { get; set; }
     public DateTime? TransitStartedAt { get; set; }
+    public DateTime? AtPortAt { get; set; }
     public DocType Type { get; set; } 
     public DateTime? CompletedDistributionAt { get; set; }
     public ShipmentStatus Status { get; set; }

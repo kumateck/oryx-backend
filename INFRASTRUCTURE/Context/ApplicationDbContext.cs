@@ -809,6 +809,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.UoM).AutoInclude();
         modelBuilder.Entity<PurchaseOrderItem>().Navigation(p => p.Currency).AutoInclude();
         
+        modelBuilder.Entity<RevisedPurchaseOrder>().Navigation(p => p.Material).AutoInclude();
+        modelBuilder.Entity<RevisedPurchaseOrder>().Navigation(p => p.UoM).AutoInclude();
+        modelBuilder.Entity<RevisedPurchaseOrder>().Navigation(p => p.Currency).AutoInclude();
+        modelBuilder.Entity<RevisedPurchaseOrder>().Navigation(p => p.MaterialBefore).AutoInclude();
+        modelBuilder.Entity<RevisedPurchaseOrder>().Navigation(p => p.UomBefore).AutoInclude();
+        modelBuilder.Entity<RevisedPurchaseOrder>().Navigation(p => p.CurrencyBefore).AutoInclude();
+
+        
         modelBuilder.Entity<RevisedPurchaseOrderItem>().Navigation(p => p.Material).AutoInclude();
         modelBuilder.Entity<RevisedPurchaseOrderItem>().Navigation(p => p.UoM).AutoInclude();
         modelBuilder.Entity<RevisedPurchaseOrderItem>().Navigation(p => p.Currency).AutoInclude();

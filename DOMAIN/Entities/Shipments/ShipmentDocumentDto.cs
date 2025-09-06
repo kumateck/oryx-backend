@@ -17,6 +17,7 @@ public class ShipmentDocumentDto : WithAttachment
     public DateTime? TransitStartedAt { get; set; }
     public DocType Type { get; set; } 
     public ShipmentStatus Status { get; set; }
+    public DateTime? AtPortAt { get; set; }
     public bool HasBillingSheet { get; set; }
     public bool Approved { get; set; }
 }
