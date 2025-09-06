@@ -27,6 +27,7 @@ public class CreateProductRequest
     public decimal FullBatchSize { get; set; }
     public Guid? BasePackingUomId { get; set; }
     public Guid? DepartmentId { get; set; }
+    [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
     public decimal Price { get; set; }
     public Division Division { get; set; }
     public int PackPerShipper { get; set; }

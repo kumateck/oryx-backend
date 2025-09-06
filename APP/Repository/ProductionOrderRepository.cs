@@ -459,10 +459,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         if (productionOrder.Products.All(p => p.Fulfilled))
         {
             productionOrder.Status = ProductionOrderStatus.FullPackingReady;
+            context.ProductionOrders.Update(productionOrder);
         }
         else if (productionOrder.Products.Any(p => p.Fulfilled))
         {
             productionOrder.Status = ProductionOrderStatus.PartialPackingReady;
+            context.ProductionOrders.Update(productionOrder);
         }
 
         await context.SaveChangesAsync();

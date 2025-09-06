@@ -32,6 +32,7 @@ public class ProductionOrderProductsDto
     public decimal TotalValue { get; set; }
     public List<ProductionOrderProductQuantityDto>  FulfilledQuantities { get; set; } = [];
     public bool Fulfilled { get; set; }
+    public decimal RemainingQuantity { get; set; }
 }
 
 public class ProductionOrderProductQuantityDto
