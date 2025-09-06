@@ -42,6 +42,7 @@ public class BatchPackagingRecord : BaseEntity
     public User IssuedBy { get; set; }
     public Guid? ProductPackingId { get; set; }
     public ProductPacking ProductPacking { get; set; }
+    public DateTime? IssuedDate { get; set; }
 }
 
 public class BatchPackagingRecordDto : BaseDto

@@ -1465,6 +1465,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
         batchRecord.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         batchRecord.IssuedById = userId;
+        batchRecord.IssuedDate = DateTime.UtcNow;
         context.BatchManufacturingRecords.Update(batchRecord);
         await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
         {
@@ -1480,8 +1481,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .FirstOrDefaultAsync(p => p.ProductionActivityStepId == batchRecord.ProductionActivityStepId);
         if (batchPackingRecord is not  null)
         {
-            batchPackingRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
-            batchPackingRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
+            batchPackingRecord.IssuedDate = DateTime.UtcNow;
             context.BatchPackagingRecords.Update(batchPackingRecord);
             
             await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog

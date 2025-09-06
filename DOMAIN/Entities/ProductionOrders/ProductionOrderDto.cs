@@ -61,7 +61,7 @@ public class AllocateProductQuantityRequest
 
 public class AllocateProductionOrderDto : BaseDto
 {
-    public ProductionOrderDto ProductionOrder { get; set; }
+    public CollectionItemDto ProductionOrder { get; set; }
     public bool Approved { get; set; }
     public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
     public DateTime? DeliveredAt { get; set; }
@@ -76,6 +76,6 @@ public class AllocateProductionOrderProductDto
 
 public class AllocateProductQuantityDto
 {
-    public FinishedGoodsTransferNoteDto FinishedGoodsTransferNote { get; set; }
+    public FinishedGoodsListTransferNoteDto FinishedGoodsTransferNote { get; set; }
     public decimal Quantity { get; set; }
 }

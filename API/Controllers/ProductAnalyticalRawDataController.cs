@@ -59,6 +59,18 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     }
     
     /// <summary>
+    /// Retrieves specific product batch analytical raw data details 
+    /// </summary>
+    [HttpGet("product/batch-details/{batchManufacturingRecordId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductBatchArd))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetRelevantProductInfoForArd([FromRoute] Guid batchManufacturingRecordId)
+    {
+        var result = await repository.GetRelevantProductInfoForArd(batchManufacturingRecordId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Updates product analytical raw data by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
