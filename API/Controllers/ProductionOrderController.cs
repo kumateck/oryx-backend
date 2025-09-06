@@ -247,13 +247,14 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Get product allocations
     /// </summary>
     [HttpGet("allocate")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<AllocateProductionOrderDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<List<AllocateProductionOrderDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetProductAllocations([FromQuery] bool? onlyApproved = null,
-        [FromQuery] int page =1, 
+    public async Task<IResult> GetProductAllocations(
+        [FromQuery] int page = 1, 
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
-        [FromQuery]  Guid? productionOrderId = null)
+        [FromQuery]  Guid? productionOrderId = null,
+        [FromQuery] bool? onlyApproved = null)
     {
         var result = await repository.GetProductAllocations(onlyApproved, page, pageSize, searchQuery, productionOrderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
