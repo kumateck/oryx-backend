@@ -389,10 +389,10 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         return Result.Success();
     }
     
-    public async Task<Result> CreateProductOrderAllocation(AllocateProductionOrderRequest request)
+    public async Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request)
     {
         var validation = await ValidateProductAllocation(request);
-        if (!validation.IsSuccess) return validation;
+        if (!validation.IsSuccess) return validation.Errors;
 
         var allocationEntity = mapper.Map<AllocateProductionOrder>(request);
         await context.AllocateProductionOrders.AddAsync(allocationEntity);
@@ -428,7 +428,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         }
 
         await context.SaveChangesAsync();
-        return Result.Success();
+        return allocationEntity.Id;
     }
 
     public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? onlyApproved, int page,

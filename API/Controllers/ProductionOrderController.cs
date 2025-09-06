@@ -1,7 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
-using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProformaInvoices;
@@ -236,19 +235,18 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Allocates stock to a production order
     /// </summary>
     [HttpPost("allocate")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> AllocateProductionOrder([FromBody] AllocateProductionOrderRequest request)
     {
         var result = await repository.CreateProductOrderAllocation(request);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
     /// <summary>
     /// Get product allocations
     /// </summary>
     [HttpGet("allocate")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<AllocateProductionOrderDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetProductAllocations([FromQuery] bool? onlyApproved = null,
@@ -265,7 +263,6 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Get product allocation by id
     /// </summary>
     [HttpGet("allocate/{allocatedProductId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AllocateProductionOrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetAllocatedProduct([FromRoute]  Guid allocatedProductId)
@@ -278,7 +275,6 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Mark a production order as delivered
     /// </summary>
     [HttpPut("deliver/{allocateProductionOrderId:guid}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> MarkProductAllocationAsDelivered([FromRoute]  Guid allocateProductionOrderId)
