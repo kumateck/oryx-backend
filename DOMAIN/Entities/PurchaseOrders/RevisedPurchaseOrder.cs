@@ -1,8 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
-using DOMAIN.Entities.Procurement.Manufacturers;
-using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
 
@@ -29,6 +27,7 @@ public class RevisedPurchaseOrder
     public Guid? MaterialBeforeId { get; set; }
     public Material MaterialBefore { get; set; }
     public int RevisionNumber { get; set; }
+    public DateTime? RevisionDate { get; set; }
 }
 
 public class RevisedPurchaseOrderDto
@@ -46,7 +45,7 @@ public class RevisedPurchaseOrderDto
     public CurrencyDto CurrencyBefore { get; set; }
     public MaterialDto MaterialBefore { get; set; }
     public int RevisionNumber { get; set; }
-    
+    public DateTime? RevisionDate { get; set; }
 }
 
 public class RevisedPurchaseOrderItem : BaseEntity

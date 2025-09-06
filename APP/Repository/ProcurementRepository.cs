@@ -384,7 +384,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 Quantity = revision.Quantity,
                 Price = revision.Price,
                 CurrencyId = revision.CurrencyId,
-                RevisionNumber = latestRevisionNumber
+                RevisionNumber = latestRevisionNumber,
             };
 
             switch (revision.Type)
@@ -505,6 +505,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         foreach (var rev in mappedRevisions)
         {
             rev.RevisionNumber = latestRevisionNumber;
+            rev.RevisionDate = DateTime.UtcNow;
         }
         existingOrder.RevisionNumber = latestRevisionNumber;
         context.PurchaseOrders.Update(existingOrder);
