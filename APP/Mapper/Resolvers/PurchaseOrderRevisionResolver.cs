@@ -7,9 +7,14 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
 {
     public List<PurchaseOrderRevisionDto> Resolve(PurchaseOrder source, PurchaseOrderDto destination, List<PurchaseOrderRevisionDto> destMember, ResolutionContext context)
     {
-        var result = new List<PurchaseOrderRevisionDto>();
+        return source.RevisedPurchaseOrders.GroupBy(i => i.RevisionNumber).Select(g => new PurchaseOrderRevisionDto
+        {
+            RevisionNumber = g.Key,
+            Items = context.Mapper.Map<List<RevisedPurchaseOrderDto>>(g.ToList())
+        }).ToList();
+        
 
-        var maxRevision = source.RevisedPurchaseOrders.Any() 
+        /*var maxRevision = source.RevisedPurchaseOrders.Count != 0
             ? source.RevisedPurchaseOrders.Max(r => r.RevisionNumber) 
             : 0;
 
@@ -25,7 +30,7 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
             });
         }
 
-        return result;
+        return result;*/
     }
     
     private List<PurchaseOrderItemSnapshot> ResolvePurchaseOrderAtRevision(PurchaseOrder order, int revisionNumber)
@@ -45,8 +50,8 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
         }));
 
         var revisions = order.RevisedPurchaseOrders
-            .Where(r => revisionNumber + 1 <= r.RevisionNumber)
-            .OrderByDescending(r => r.RevisionNumber)
+            .Where(r => r.RevisionNumber <= revisionNumber)
+            .OrderBy(r => r.RevisionNumber)
             //.ThenBy(r => r.Type)
             .ToList();
 
@@ -54,24 +59,37 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
         {
             switch (revision.Type)
             {
-                case RevisedPurchaseOrderType.AddItem:
-                    // Reverse the AddItem action, so remove the item
-                    initialItems.RemoveAll(i => i.Id == revision.PurchaseOrderItemId);
-                    break;
-
-                case RevisedPurchaseOrderType.UpdateItem:
-                    var updateTarget = initialItems.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
-                    if (updateTarget != null)
+                // case RevisedPurchaseOrderType.AddItem: // Reverse the AddItem action, so remove the item
+                //     initialItems.RemoveAll(i => i.Id == revision.PurchaseOrderItemId);
+                //     break;
+                
+                // case RevisedPurchaseOrderType.UpdateItem: 
+                //     var updateTarget = initialItems.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                //     if (updateTarget != null)
+                //     {
+                //         updateTarget.UoMId = revision.UoMId ?? updateTarget.UoMId;
+                //         updateTarget.Quantity = revision.Quantity ?? updateTarget.Quantity; 
+                //         updateTarget.Price = revision.Price ?? updateTarget.Price;
+                //         updateTarget.CurrencyId = revision.CurrencyId ?? updateTarget.CurrencyId;
+                //     } break;
+                
+                /*case RevisedPurchaseOrderType.RemoveItem: 
+                    var itemToAddBack = initialItems.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                    if (itemToAddBack != null)
                     {
-                        updateTarget.UoMId = revision.UoMId ?? updateTarget.UoMId;
-                        updateTarget.Quantity = revision.Quantity ?? updateTarget.Quantity;
-                        updateTarget.Price = revision.Price ?? updateTarget.Price;
-                        updateTarget.CurrencyId = revision.CurrencyId ?? updateTarget.CurrencyId;
-                    }
-                    break;
-
-                case RevisedPurchaseOrderType.RemoveItem:
-                    // Reverse the RemoveItem action, so add the item back
+                        resolvedItems.Add(new PurchaseOrderItemSnapshot 
+                            { 
+                                Id = itemToAddBack.Id, 
+                                MaterialId = itemToAddBack.MaterialId, 
+                                UoMId = itemToAddBack.UoMId,
+                                Quantity = itemToAddBack.Quantity, 
+                                Price = itemToAddBack.Price, 
+                                CurrencyId = itemToAddBack.CurrencyId 
+                            });
+                    } 
+                    break;*/
+                
+                case RevisedPurchaseOrderType.AddItem:
                     var itemToAddBack = initialItems.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
                     if (itemToAddBack != null)
                     {
@@ -87,7 +105,33 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
                     }
                     break;
 
+                case RevisedPurchaseOrderType.UpdateItem:
+                    var updateTarget = resolvedItems
+                        .FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                    if (updateTarget != null)
+                    {
+                        updateTarget.UoMId = revision.UoMId ?? updateTarget.UoMId;
+                        updateTarget.Quantity = revision.Quantity ?? updateTarget.Quantity;
+                        updateTarget.Price = revision.Price ?? updateTarget.Price;
+                        updateTarget.CurrencyId = revision.CurrencyId ?? updateTarget.CurrencyId;
+                    }
+                    break;
+
+                case RevisedPurchaseOrderType.RemoveItem:
+                    resolvedItems.RemoveAll(i => i.Id == revision.PurchaseOrderItemId);
+                    break;
+                
                 case RevisedPurchaseOrderType.ReassignSuppler:
+                    // Item is no longer with this supplier in this PO → remove it
+                    resolvedItems.RemoveAll(i => i.Id == revision.PurchaseOrderItemId);
+                    break;
+
+                case RevisedPurchaseOrderType.ChangeSource:
+                    // Item has been moved to a new source → remove it here
+                    resolvedItems.RemoveAll(i => i.Id == revision.PurchaseOrderItemId);
+                    break;
+
+                /*case RevisedPurchaseOrderType.ReassignSuppler:
                     var reassignedItemsToAddBack = order.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
                     if (reassignedItemsToAddBack != null)
                     {
@@ -116,7 +160,7 @@ public class PurchaseOrderRevisionResolver : IValueResolver<PurchaseOrder, Purch
                             CurrencyId = changeSourceItemsToAddBack.CurrencyId
                         });
                     }
-                    break;
+                    break;*/
             }
         }
 

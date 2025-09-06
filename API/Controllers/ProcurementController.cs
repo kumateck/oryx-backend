@@ -545,6 +545,21 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetBillingSheet(billingSheetId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a billing sheet by its invoice.
+    /// </summary>
+    /// <param name="invoiceId">The ID of the invoice.</param>
+    /// <returns>Returns the billing sheet details.</returns>
+    [HttpGet("billing-sheet/invoice/{invoiceId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BillingSheetDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetBillingSheetByInvoice(Guid invoiceId)
+    {
+        var result = await repository.GetBillingSheetByInvoice(invoiceId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a paginated list of billing sheets.
