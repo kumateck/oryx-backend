@@ -59,12 +59,14 @@ public class AllocateProductQuantityRequest
 }
 
 
-public class AllocateProductionOrderDto : BaseDto
+public class AllocateProductionOrderDto 
 {
+    public Guid Id { get; set; }
     public CollectionItemDto ProductionOrder { get; set; }
     public bool Approved { get; set; }
     public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
     public DateTime? DeliveredAt { get; set; }
+    public DateTime CreatedAt { get; set; }
     
 }
 
