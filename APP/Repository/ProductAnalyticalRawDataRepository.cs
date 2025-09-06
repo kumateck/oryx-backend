@@ -4,6 +4,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.ProductAnalyticalRawData;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -106,6 +107,40 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         {
             opt.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
         });
+    }
+    
+    public async Task<Result<ProductBatchArd>> GetRelevantProductInfoForArd(Guid batchManufacturingRecordId)
+    {
+        var bmr = await context.BatchManufacturingRecords
+            .AsSplitQuery()
+            .Include(batchManufacturingRecord => batchManufacturingRecord.IssuedBy)
+            .FirstOrDefaultAsync(m => m.Id == batchManufacturingRecordId);
+        
+        if(bmr is null) return Error.NotFound("Bmr.NotFound", "Bmr not found.");
+        
+        var productSampling = await context.ProductSamplings
+            .AsSplitQuery()
+            .Include(m => m.CreatedBy)
+            .Include(m => m.AnalyticalTestRequest)
+            .FirstOrDefaultAsync(m => m.AnalyticalTestRequest.BatchManufacturingRecordId == batchManufacturingRecordId);
+
+        var productArd = await context.ProductAnalyticalRawData
+            .AsSplitQuery()
+            .Include(p => p.ProductStandardTestProcedure)
+            .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == bmr.ProductId);
+
+        
+        return new ProductBatchArd
+        {
+            BatchManufacturingRecord = mapper.Map<BatchManufacturingRecordDto>(bmr),
+            ArNumber = productSampling?.ArNumber,
+            SpecNumber = productArd?.SpecNumber,
+            SampledDate = productSampling?.SampleDate,
+            IssueDate = bmr?.IssuedDate,
+            IssuedBy = mapper.Map<UserDto>(bmr.IssuedBy),
+            // AnalysedDate = ,
+            // AnalysedBy = mapper.Map<UserDto>()
+        };
     }
 
     public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateProductAnalyticalRawDataRequest request)

@@ -12,6 +12,7 @@ public interface IProductAnalyticalRawDataRepository
     
     Task<Result<ProductAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id);
     Task<Result<List<ProductAnalyticalRawDataDto>>> GetAnalyticalRawDataByProduct(Guid id);
+    Task<Result<ProductBatchArd>> GetRelevantProductInfoForArd(Guid batchManufacturingRecordId);
     
     Task<Result> UpdateAnalyticalRawData(Guid id, CreateProductAnalyticalRawDataRequest request);
     
