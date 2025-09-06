@@ -398,17 +398,56 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         await context.AllocateProductionOrders.AddAsync(allocationEntity);
         await context.SaveChangesAsync();
 
-        // Now update fulfillment and order status
         var productionOrder = await context.ProductionOrders
             .AsSplitQuery()
             .Include(p => p.Products)
-            .ThenInclude(p => p.FulfilledQuantities)
+                .ThenInclude(p => p.FulfilledQuantities)
             .FirstOrDefaultAsync(p => p.Id == request.ProductionOrderId);
 
         if (productionOrder is null)
             return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
 
-        // Mark products as fulfilled if no remaining quantity
+        foreach (var reqProduct in request.Products)
+        {
+            var allocationProduct = productionOrder.Products
+                .FirstOrDefault(p => p.ProductId == reqProduct.ProductId);
+
+            if (allocationProduct is null)
+                return Error.NotFound("ProductionOrder.ProductNotFound",
+                    $"Product {reqProduct.ProductId} not found in this production order");
+
+            foreach (var quantityToFulfill in reqProduct.FulfilledQuantities)
+            {
+                var finishedGoodsTransferNote = await context.FinishedGoodsTransferNotes
+                    .FirstOrDefaultAsync(f => f.Id == quantityToFulfill.FinishedGoodsTransferNoteId);
+
+                if (finishedGoodsTransferNote is null)
+                    return Error.NotFound("FinishedGoodsTransferNote.NotFound",
+                        $"Finished goods transfer note {quantityToFulfill.FinishedGoodsTransferNoteId} not found.");
+
+                // Update product fulfilled quantities
+                var existingAllocationProductForNote = allocationProduct
+                    .FulfilledQuantities
+                    .FirstOrDefault(p => p.FinishedGoodsTransferNoteId == quantityToFulfill.FinishedGoodsTransferNoteId);
+
+                if (existingAllocationProductForNote is not null)
+                {
+                    existingAllocationProductForNote.Quantity += quantityToFulfill.Quantity;
+                }
+                else
+                {
+                    allocationProduct.FulfilledQuantities.Add(new ProductionOrderProductQuantity
+                    {
+                        Quantity = quantityToFulfill.Quantity,
+                        FinishedGoodsTransferNoteId = quantityToFulfill.FinishedGoodsTransferNoteId
+                    });
+                }
+
+                // Update transfer note allocation
+                finishedGoodsTransferNote.AllocatedQuantity += quantityToFulfill.Quantity;
+            }
+        }
+
         foreach (var product in productionOrder.Products)
         {
             if (product.RemainingQuantity == 0 && !product.Fulfilled)
@@ -417,7 +456,6 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             }
         }
 
-        // Update overall production order status
         if (productionOrder.Products.All(p => p.Fulfilled))
         {
             productionOrder.Status = ProductionOrderStatus.FullPackingReady;
@@ -428,8 +466,10 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         }
 
         await context.SaveChangesAsync();
+
         return allocationEntity.Id;
     }
+
 
     public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? onlyApproved, int page,
         int pageSize, string searchQuery, Guid? productionOrderId)
