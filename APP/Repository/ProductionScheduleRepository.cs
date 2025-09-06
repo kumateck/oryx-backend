@@ -1257,7 +1257,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
         var products = await productsQuery.ToListAsync();
         if (products.Count == 0)
-            return Error.Failure("Product.Empty", "No approved products found for this productId.");
+            return null;
 
         // get details
         var finishedGoodsTransferNoteResult = await GetApprovedProductDetails(productId);
