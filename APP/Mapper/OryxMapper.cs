@@ -971,7 +971,9 @@ public class OryxMapper : Profile
         CreateMap<AllocateProductionOrderProductRequest, AllocateProductionOrderProduct>();
         CreateMap<AllocateProductQuantityRequest, AllocateProductQuantity>();
         
-        CreateMap<AllocateProductionOrder, AllocateProductionOrderDto>();
+        CreateMap<AllocateProductionOrder, AllocateProductionOrderDto>()
+            .ForMember(dest => dest.HasInvoice,
+                opt => opt.MapFrom<AllocateProductionOrderHasInvoice>());
         CreateMap<AllocateProductionOrderProduct, AllocateProductionOrderProductDto>();
         CreateMap<AllocateProductQuantity, AllocateProductQuantityDto>();
 

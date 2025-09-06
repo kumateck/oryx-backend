@@ -68,6 +68,7 @@ public class AllocateProductionOrderDto
     public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
     public DateTime? DeliveredAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool HasInvoice { get; set; }
     
 }
 
