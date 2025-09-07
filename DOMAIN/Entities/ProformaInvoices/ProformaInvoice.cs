@@ -66,6 +66,6 @@ public class ProformaInvoiceDto : BaseDto
 
 public class ProformaInvoiceProductDto : BaseDto
 {
-    public ProductDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public decimal Quantity { get; set; }
 }
