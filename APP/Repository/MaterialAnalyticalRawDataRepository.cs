@@ -161,6 +161,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             ArNumber = materialSampling?.ArNumber,
             GrnNumber = materialBatch.Grn.GrnNumber,
             SpecNumber = materialArd.SpecNumber,
+            StpNumber = materialArd.MaterialStandardTestProcedure?.StpNumber,
             SampledDate = materialSampling?.SampleDate,
             Supplier = mapper.Map<CollectionItemDto>(checkList.Supplier),
             Manufacturer = mapper.Map<CollectionItemDto>(checkList.Manufacturer),
