@@ -50,7 +50,11 @@ public interface IMaterialRepository
     Task<Result> UpdateBatchStatus(UpdateBatchStatusRequest request, Guid userId);
     Task<Result> MoveMaterialBatchV2(MoveShelfMaterialBatchRequest request, Guid userId);
     Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId);
-    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
+    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(int page, int pageSize,
+        string searchQuery, MaterialKind kind, Guid userId);
+    
+    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page, int pageSize,
+        string searchQuery, MaterialKind kind, Guid warehouseId, Guid departmentId);
 
     Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page,
         int pageSize, Guid materialId, Guid userId);
