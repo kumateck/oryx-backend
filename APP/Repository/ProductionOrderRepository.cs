@@ -136,6 +136,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .ThenInclude(p => p.ProductionOrder)
             .ThenInclude(p => p.Customer)     
             .Include(p => p.Products)
+            .ThenInclude(p => p.Product)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
