@@ -43,7 +43,8 @@ public class ProformaInvoiceApproval : ResponsibleApprovalStage
 public enum ProformaInvoiceStatus
 {
     Pending = 0,
-    Invoice = 1,
+    SentToCustomer = 1,
+    Invoice = 2,
 }
 
 public class ProformaInvoiceProduct : BaseEntity

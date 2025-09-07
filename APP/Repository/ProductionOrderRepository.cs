@@ -115,9 +115,16 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         return invoice.Id;
     }
 
-    public Task<Result> SendProformaInvoiceToCustomer(Guid allocateProductionOrderId, Guid userId)
+    public async Task<Result> SendProformaInvoiceToCustomer(Guid proformaInvoiceId, Guid userId)
     {
-        throw new NotImplementedException();
+        var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(p => p.Id == proformaInvoiceId);
+        if (proformaInvoice is null) return Error.NotFound("ProformaInvoice.notFound", "Proforma Invoice not found");
+
+        proformaInvoice.Status = ProformaInvoiceStatus.SentToCustomer;
+        proformaInvoice.LastUpdatedById = userId;
+        //context.ProformaInvoices.Update(proformaInvoice);
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
     
     public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery, ProformaInvoiceStatus? status = null)
