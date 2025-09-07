@@ -431,7 +431,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetApprovedRawMaterials([FromQuery] MaterialKind kind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetApprovedRawMaterials([FromQuery] MaterialKind kind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -439,6 +440,29 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetApprovedMaterials(page, pageSize, searchQuery, kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a paginated list of approved materials for a specific warehouse.
+    /// </summary>
+    /// <param name="kind">The kind of material needed.</param>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="warehouseId">The warehouse id for filtering results.</param>
+    /// <param name="departmentId">The department id for filtering results.</param>
+    /// <returns>Returns a paginated list of approved raw materials.</returns>
+    [HttpGet("department/approved-materials")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetApprovedRawMaterialsByDepartment([FromQuery] Guid warehouseId, [FromQuery] Guid departmentId, [FromQuery] MaterialKind kind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetApprovedMaterialsByDepartment(page, pageSize, searchQuery, kind, warehouseId, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
 
     /// <summary>
     /// Retrieves a paginated list of material batches by material ID for a specific warehouse.

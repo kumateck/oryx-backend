@@ -14,6 +14,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
+using MassTransit.Initializers;
 using Microsoft.AspNetCore.Http;
 using OfficeOpenXml;
 using SHARED.Requests;
@@ -312,7 +313,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return batches;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(int page,
+        int pageSize, string searchQuery, MaterialKind kind, Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
@@ -339,6 +341,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description);
         }
+        
 
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(
             query,
@@ -372,6 +375,75 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 UnitOfMeasure = unitOfMeasure.Value,
                 //TotalAvailableQuantity = totalAvailableQuantities.FirstOrDefault(q => q.MaterialId == m.Id)?.TotalQuantity ?? 0
                 TotalAvailableQuantity = totalAvailableQuantity.Value,
+            });
+        }
+
+        var result = new Paginateable<IEnumerable<MaterialDetailsDto>>
+        {
+            Data = materialDetails,
+            PageIndex = paginatedResult.PageIndex,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            NumberOfPagesToShow = paginatedResult.NumberOfPagesToShow,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+
+        return Result.Success(result);
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page, int pageSize, string searchQuery, MaterialKind kind,
+        Guid warehouseId, Guid departmentId)
+    {
+
+        var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId);
+
+        if (warehouse is null)
+            return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
+        
+        var query = context.ShelfMaterialBatches
+            .AsNoTracking()
+            .Where(m =>
+                m.MaterialBatch.Material.Kind == kind &&
+                (m.MaterialBatch.Status == BatchStatus.Available || m.MaterialBatch.Status == BatchStatus.Frozen) &&
+                m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id &&
+                m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId
+            )
+            .Select(m => m.MaterialBatch.Material)
+            .Distinct();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description);
+        }
+        
+
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialDto>);
+        
+        var materialDetails = new List<MaterialDetailsDto>();
+
+        foreach (var m in paginatedResult.Data)
+        {
+            var totalAvailableQuantity = await GetMassMaterialStockInWarehouse(m.Id, warehouse.Id);
+            if(totalAvailableQuantity.IsFailure) return totalAvailableQuantity.Errors;
+
+            var unitOfMeasureDto = await context.MaterialDepartments
+                .Where(md => md.DepartmentId == departmentId)
+                .Select(md => mapper.Map<UnitOfMeasureDto>(md.UoM)) 
+                .FirstOrDefaultAsync();
+
+            if (unitOfMeasureDto == null)
+                return Error.NotFound("MaterialDepartment.NotFound", "Unit of measure not found for this department.");
+
+            materialDetails.Add(new MaterialDetailsDto
+            {
+                Material = m,
+                UnitOfMeasure = unitOfMeasureDto,
+                TotalAvailableQuantity = totalAvailableQuantity.Value
             });
         }
 
