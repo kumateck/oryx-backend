@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -159,6 +160,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             Manufacturer = mapper.Map<CollectionItemDto>(checkList.Manufacturer),
             SampledBy = mapper.Map<UserDto>(materialSampling?.CreatedBy),
             QuantitySampled = materialSampling?.SampleQuantity ?? 0,
+            QuantityReceived = materialBatch.TotalQuantity
         };
     }
 
