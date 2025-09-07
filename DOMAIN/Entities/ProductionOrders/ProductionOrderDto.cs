@@ -17,6 +17,16 @@ public class ProductionOrderDto : BaseDto
     public DateTime? DeliveredAt { get; set; }
 }
 
+public class ProductionOrderListDto : BaseDto
+{
+    public string Code { get; set; }
+    public CustomerDto Customer { get; set; }
+    public decimal TotalValue { get; set; }
+    public ProductionOrderStatus Status { get; set; }
+    public bool Approved { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+}
+
 public class ProductionOrderDetailDto : ProductionOrderDto
 {
     public ProductionOrderInvoiceDto Invoice { get; set; }
@@ -63,7 +73,7 @@ public class AllocateProductQuantityRequest
 public class AllocateProductionOrderDto 
 {
     public Guid Id { get; set; }
-    public ProductionOrderDto ProductionOrder { get; set; }
+    public ProductionOrderListDto ProductionOrder { get; set; }
     public bool Approved { get; set; }
     public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
     public DateTime? DeliveredAt { get; set; }
