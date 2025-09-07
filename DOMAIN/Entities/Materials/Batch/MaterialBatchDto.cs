@@ -68,7 +68,7 @@ public class MaterialBatchListDto
 public class MaterialBatchReducedDto
 {
     public Guid Id { get; set; }
-    public CollectionItemDto Material { get; set; }
+    public MaterialDto Material { get; set; }
     public string Code { get; set; }
     public string BatchNumber { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
