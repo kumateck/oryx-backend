@@ -112,7 +112,9 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
     
     public async Task<Result<UserWithRoleDto>> GetUser(Guid userId)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await context.Users
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return UserErrors.NotFound(userId);
         return mapper.Map<UserWithRoleDto>(user);
     }

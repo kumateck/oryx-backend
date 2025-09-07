@@ -2069,7 +2069,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             ApprovalId = approval.Id,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
         }).ToList();
 
         await context.RequisitionApprovals.AddRangeAsync(approvals);
