@@ -94,10 +94,10 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result<Guid>> CreateProformaInvoice(CreateProformaInvoice request)
     {
-        var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(po => po.Id == request.AllocateProductionOrderId);
+        var productionOrder = await context.AllocateProductionOrders.FirstOrDefaultAsync(po => po.Id == request.AllocateProductionOrderId);
         if (productionOrder is null)
         {
-            return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
+            return Error.NotFound("Allocation.ProductionOrder.NotFound", "Allocation production Order not found");
         }
 
         var invoice = new ProformaInvoice
