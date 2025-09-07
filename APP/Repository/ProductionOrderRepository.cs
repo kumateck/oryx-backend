@@ -485,6 +485,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         int pageSize, string searchQuery, Guid? productionOrderId)
     {
         var query = context.AllocateProductionOrders
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(a => a.ProductionOrder)
             .ThenInclude(p => p.Customer)
@@ -525,12 +526,14 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         return mapper.Map<AllocateProductionOrderDto>(
             await context.AllocateProductionOrders
+                .IgnoreQueryFilters()
                 .AsSplitQuery()
                 .Include(a => a.ProductionOrder)
                 .ThenInclude(p => p.Customer)
                 .Include(a => a.Products)
                 .ThenInclude(p => p.FulfilledQuantities)
                 .ThenInclude(p => p.FinishedGoodsTransferNote)
+                .ThenInclude(f => f.BatchManufacturingRecord)
                 .Include(a => a.Products)
                 .ThenInclude(p => p.Product)
                 .FirstOrDefaultAsync(p => p.Id == id)
