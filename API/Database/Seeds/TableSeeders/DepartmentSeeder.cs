@@ -95,7 +95,7 @@ public class DepartmentSeeder : ISeeder
         {
             new()
             {
-                Name = "SYRUP Department",
+                Name = "SYRUP",
                 Code = "DEP009",
                 Description = "Handles production operations for syrup products",
                 Type = DepartmentType.Production,
@@ -104,7 +104,7 @@ public class DepartmentSeeder : ISeeder
             },
             new()
             {
-                Name = "OINTMENT Department",
+                Name = "OINTMENT",
                 Code = "DEP010",
                 Description = "Handles production operations for ointment products",
                 Type = DepartmentType.Production,
@@ -113,7 +113,7 @@ public class DepartmentSeeder : ISeeder
             },
             new()
             {
-                Name = "TABLET Department",
+                Name = "TABLET",
                 Code = "DEP011",
                 Description = "Handles production operations tablet operations",
                 Type = DepartmentType.Production,
@@ -122,7 +122,7 @@ public class DepartmentSeeder : ISeeder
             },
             new()
             {
-                Name = "BETA Department",
+                Name = "BETA",
                 Code = "DEP012",
                 Description = "Handles production operations beta operations",
                 Type = DepartmentType.Production,

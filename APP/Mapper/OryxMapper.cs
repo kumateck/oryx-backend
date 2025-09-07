@@ -963,6 +963,7 @@ public class OryxMapper : Profile
         CreateMap<CreateProductionOrderRequest, ProductionOrder>();
         CreateMap<CreateProductionOrderProduct, ProductionOrderProducts>();
         CreateMap<ProductionOrder, ProductionOrderDto>();
+        CreateMap<ProductionOrder, ProductionOrderListDto>();
         CreateMap<ProductionOrder, ProductionOrderDetailDto>();
         CreateMap<ProductionOrderProducts, ProductionOrderProductsDto>();
         CreateMap<ProductionOrderProductQuantity, ProductionOrderProductQuantityDto>();
