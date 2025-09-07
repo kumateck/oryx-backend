@@ -102,6 +102,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         var invoice = new ProformaInvoice
         {
+            Code = request.Code,
             AllocateProductionOrderId = request.AllocateProductionOrderId,
             Products = request.Products.Select(p => new ProformaInvoiceProduct
             {
@@ -530,7 +531,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
                 .Include(a => a.Products)
                 .ThenInclude(p => p.FulfilledQuantities)
                 .ThenInclude(p => p.FinishedGoodsTransferNote)
-                .Include(a => a.Products).ThenInclude(p => p.Product)
+                .Include(a => a.Products)
+                .ThenInclude(p => p.Product)
                 .FirstOrDefaultAsync(p => p.Id == id)
         );
     }

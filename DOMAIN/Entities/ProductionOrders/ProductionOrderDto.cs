@@ -63,7 +63,7 @@ public class AllocateProductQuantityRequest
 public class AllocateProductionOrderDto 
 {
     public Guid Id { get; set; }
-    public CollectionItemDto ProductionOrder { get; set; }
+    public ProductionOrderDto ProductionOrder { get; set; }
     public bool Approved { get; set; }
     public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
     public DateTime? DeliveredAt { get; set; }
@@ -74,12 +74,12 @@ public class AllocateProductionOrderDto
 
 public class AllocateProductionOrderProductDto
 {
-    public CollectionItemDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public List<AllocateProductQuantityDto> FulfilledQuantities { get; set; } = [];
 }
 
 public class AllocateProductQuantityDto
 {
-    public FinishedGoodsListTransferNoteDto FinishedGoodsTransferNote { get; set; }
+    public FinishedGoodsTransferNoteDto FinishedGoodsTransferNote { get; set; }
     public decimal Quantity { get; set; }
 }
