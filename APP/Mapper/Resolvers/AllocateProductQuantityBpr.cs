@@ -17,8 +17,8 @@ public class AllocateProductQuantityBpr(ApplicationDbContext dbContext, IMapper 
             .ThenInclude(b => b.PackingLists)
             .ThenInclude(b => b.Uom)
             .FirstOrDefault(p =>
-                p.ProductionActivityStepId ==
-                source.FinishedGoodsTransferNote.BatchManufacturingRecord.ProductionActivityStepId);
+                source.FinishedGoodsTransferNote != null && source.FinishedGoodsTransferNote.BatchManufacturingRecord != null &&
+                p.ProductionActivityStepId == source.FinishedGoodsTransferNote.BatchManufacturingRecord.ProductionActivityStepId);
         return bpr == null ? null : mapper.Map<BatchPackagingRecordDto>(bpr);
     }
 }
