@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
-    image: oryxapi
+    image: oryx-api
     ports:
       - "8080:5001"
     environment:
@@ -16,18 +16,20 @@ services:
       - MINIO_SECRET_KEY=${SECRET_KEY}
       - MINIO_PORT=9000
       - REDIS_HOST=redis
-      - MONGO_DB_CONNECTION_STRING=mongodb://mongo:27017
       - REDIS_PORT=6379
       - DEFAULT_USER_PASSWORD=${DEFAULT_USER_PASSWORD}
+      - MONGO_DB_CONNECTION_STRING=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
     volumes:
-      - ~/.aspnet/https:/https:ro
-      - .:/app
+      - ./https:/https:ro
     networks:
       - sail
     container_name: oryx_api
 
 networks:
   sail:
-    external: true 
+    external: true
   shared:
     driver: bridge
