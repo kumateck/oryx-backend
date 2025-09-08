@@ -52,5 +52,6 @@ public class BatchPackagingRecordDto : BaseDto
     public string BatchNumber { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
     public decimal BatchQuantity { get; set; }
 }

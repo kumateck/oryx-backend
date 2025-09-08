@@ -50,9 +50,12 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductListDto>>))]
-    public async Task<IResult> GetProducts([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetProducts([FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] Guid? departmentId = null)
     {
-        var result = await repository.GetProducts(page, pageSize, searchQuery);
+        var result = await repository.GetProducts(page, pageSize, searchQuery, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

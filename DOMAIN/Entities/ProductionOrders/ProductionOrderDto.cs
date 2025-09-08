@@ -2,6 +2,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
@@ -91,5 +92,6 @@ public class AllocateProductionOrderProductDto
 public class AllocateProductQuantityDto
 {
     public FinishedGoodsTransferNoteDto FinishedGoodsTransferNote { get; set; }
+    public BatchPackagingRecordDto BatchPackagingRecord { get; set; }
     public decimal Quantity { get; set; }
 }
