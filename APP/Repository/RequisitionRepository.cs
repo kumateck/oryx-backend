@@ -538,7 +538,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, r => r.Comments);
+            query = query.WhereSearch(searchQuery, r => r.Comments, r => r.Code);
         }
 
         var result = await PaginationHelper.GetPaginatedResultAsync(
