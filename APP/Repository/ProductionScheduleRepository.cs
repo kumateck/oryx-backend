@@ -84,11 +84,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
     
 
-    public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page, int pageSize, string searchQuery) 
+    public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page, int pageSize, string searchQuery, Guid departmentId) 
     { 
         var query = context.ProductionSchedules
             .AsSplitQuery()
-            .Include(s => s.Products).ThenInclude(s => s.Product)
+            .Include(s => s.Products.Where(p => p.Product.DepartmentId == departmentId))
+            .ThenInclude(p => p.Product)
+            .Where(s => s.Products.Any(p => p.Product.DepartmentId == departmentId))
             .AsQueryable();
         
         return await PaginationHelper.GetPaginatedResultAsync(
