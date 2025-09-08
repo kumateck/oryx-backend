@@ -2132,7 +2132,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(r => r.Approvals).ThenInclude(a => a.Role)
             .Where(r => r.ProductionScheduleId == productionScheduleId 
                         && r.ProductId == productId 
-                        && r.Code.EndsWith("-raw") // Ensure the code ends in "raw"
+                        && r.Code.StartsWith("RM") // Ensure the code starts with "RM"
                         && r.RequisitionType == RequisitionType.Stock) // Ensure it's a stock requisition
             .FirstOrDefaultAsync();
 
@@ -2150,7 +2150,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(r => r.Approvals).ThenInclude(a => a.Role)
             .Where(r => r.ProductionScheduleId == productionScheduleId 
                         && r.ProductId == productId 
-                        && r.Code.EndsWith("-package") // Ensure the code ends in "package"
+                        && r.Code.StartsWith("PM") // Ensure the code starts with "package"
                         && r.RequisitionType == RequisitionType.Stock) // Ensure it's a stock requisition
             .FirstOrDefaultAsync();
 
