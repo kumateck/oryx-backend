@@ -880,7 +880,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var materialDetails = product.Packages.Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
-            var quantityNeeded = Math.Floor(GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
+            var quantityNeeded = Math.Ceiling(GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
                 product.BasePackingQuantity));
 
             return new ProductionScheduleProcurementPackageDto
