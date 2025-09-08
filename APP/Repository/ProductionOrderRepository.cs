@@ -493,6 +493,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(a => a.Products)
             .ThenInclude(p => p.FulfilledQuantities)
             .ThenInclude(p => p.FinishedGoodsTransferNote)
+            .ThenInclude(p => p.BatchManufacturingRecord)
             .Include(a => a.Products)
             .ThenInclude(p => p.Product)
             .AsQueryable();
