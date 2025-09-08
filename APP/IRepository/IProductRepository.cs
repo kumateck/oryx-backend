@@ -12,7 +12,7 @@ public interface IProductRepository
     Task<Result<Guid>> CreateProduct(CreateProductRequest request, Guid userId);
     Task<Result<ProductDto>> GetProduct(Guid productId);
     Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize,
-        string searchQuery);
+        string searchQuery, Guid? departmentId);
     Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId);
     Task<Result> DeleteProduct(Guid productId, Guid userId);
     Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId);

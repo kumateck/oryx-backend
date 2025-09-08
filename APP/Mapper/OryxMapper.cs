@@ -978,7 +978,9 @@ public class OryxMapper : Profile
             /*.ForMember(dest => dest.Customer,
                 opt => opt.MapFrom(src => src.ProductionOrder.Customer))*/
         CreateMap<AllocateProductionOrderProduct, AllocateProductionOrderProductDto>();
-        CreateMap<AllocateProductQuantity, AllocateProductQuantityDto>();
+        CreateMap<AllocateProductQuantity, AllocateProductQuantityDto>()
+            .ForMember(dest => dest.BatchPackagingRecord,
+                opt => opt.MapFrom<AllocateProductQuantityBpr>());
 
         #endregion
 
