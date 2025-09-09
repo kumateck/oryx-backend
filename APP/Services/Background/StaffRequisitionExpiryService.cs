@@ -12,23 +12,30 @@ public class StaffRequisitionExpiryService(IServiceScopeFactory scopeFactory) : 
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = scopeFactory.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            var today = DateTime.UtcNow;
-
-            var expiredRequisitions = await dbContext.StaffRequisitions
-                .Where(l => l.RequestUrgency < today && l.StaffRequisitionStatus == StaffRequisitionStatus.Approved && l.LastDeletedById == null)
-                .ToListAsync(stoppingToken);
-
-            foreach (var requisition in expiredRequisitions)
+            try
             {
-                requisition.StaffRequisitionStatus = StaffRequisitionStatus.Expired;
-            }
+                using var scope = scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            await dbContext.SaveChangesAsync(stoppingToken);
+                var today = DateTime.UtcNow;
+
+                var expiredRequisitions = await dbContext.StaffRequisitions
+                    .Where(l => l.RequestUrgency < today && l.StaffRequisitionStatus == StaffRequisitionStatus.Approved && l.LastDeletedById == null)
+                    .ToListAsync(stoppingToken);
+
+                foreach (var requisition in expiredRequisitions)
+                {
+                    requisition.StaffRequisitionStatus = StaffRequisitionStatus.Expired;
+                }
+
+                await dbContext.SaveChangesAsync(stoppingToken);
             
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
     }
 }
