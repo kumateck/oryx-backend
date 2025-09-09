@@ -17,7 +17,7 @@ public interface IProductionOrderRepository
 
     // Proforma Invoices
     Task<Result<Guid>> CreateProformaInvoice(CreateProformaInvoice request);
-    Task<Result> SendProformaInvoiceToCustomer(Guid allocateProductionOrderId, Guid userId);
+    Task<Result> SendProformaInvoiceToCustomer(Guid proformaInvoiceId, Guid userId);
     Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery, ProformaInvoiceStatus? status = null);
     Task<Result<ProformaInvoiceDto>> GetProformaInvoice(Guid id);
     Task<Result> UpdateProformaInvoice(Guid id, CreateProformaInvoice request);
@@ -32,7 +32,7 @@ public interface IProductionOrderRepository
     Task<Result> AllocateProduct(AllocateProductionOrderRequest request);
      Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id);
      
-     Task<Result> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
+     Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
      Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(
          bool? onlyApproved, int page,
          int pageSize, string searchQuery, Guid? productionOrderId);

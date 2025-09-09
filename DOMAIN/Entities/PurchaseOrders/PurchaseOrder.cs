@@ -110,7 +110,7 @@ public class PurchaseOrderDto : WithAttachment
 public class PurchaseOrderRevisionDto
 {
     public int RevisionNumber { get; set; }
-    public List<PurchaseOrderItemDto> Items { get; set; } = [];
+    public List<RevisedPurchaseOrderDto> Items { get; set; } = [];
 }
 
 public class PurchaseOrderItemDto

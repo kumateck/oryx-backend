@@ -56,6 +56,7 @@ public interface IProcurementRepository
     // ************* BillingSheet *************
     Task<Result<Guid>> CreateBillingSheet(CreateBillingSheetRequest request, Guid userId);
     Task<Result<BillingSheetDto>> GetBillingSheet(Guid billingSheetId);
+    Task<Result<BillingSheetDto>> GetBillingSheetByInvoice(Guid invoiceId);
     Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize,
         string searchQuery, BillingSheetStatus? status);
     Task<Result> UpdateBillingSheet(CreateBillingSheetRequest request, Guid billingSheetId, Guid userId);

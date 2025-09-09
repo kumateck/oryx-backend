@@ -65,7 +65,7 @@ namespace APP.Repository;
          return product is null ? ProductErrors.NotFound(productId) : mapper.Map<ProductDto>(product);
      }
 
-     public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize, string searchQuery)
+     public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize, string searchQuery, Guid? departmentId)
      {
          var query = context.Products
              .AsSplitQuery()
@@ -74,6 +74,11 @@ namespace APP.Repository;
          if (!string.IsNullOrEmpty(searchQuery))
          {
              query = query.WhereSearch(searchQuery, f => f.Name);
+         }
+
+         if (departmentId.HasValue)
+         {
+             query = query.Where(p => p.DepartmentId == departmentId);
          }
 
          return await PaginationHelper.GetPaginatedResultAsync(

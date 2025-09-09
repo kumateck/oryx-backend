@@ -42,6 +42,7 @@ public class BatchManufacturingRecord : BaseEntity
     public BatchManufacturingStatus Status { get; set; }
     public Guid? IssuedById { get; set; }
     public User IssuedBy { get; set; }
+    public DateTime? IssuedDate { get; set; }
 }
 
 public enum BatchManufacturingStatus
@@ -65,4 +66,5 @@ public class BatchManufacturingRecordDto : BaseDto
     public BatchManufacturingStatus Status { get; set; }
     public decimal ExpectedQuantity => BatchQuantity / Product.BasePackingQuantity;
     public decimal SampledQuantity { get; set; }
+    public DateTime? IssuedDate { get; set; }
 }

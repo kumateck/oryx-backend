@@ -61,6 +61,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (!user.DepartmentId.HasValue)
             return UserErrors.DepartmentNotFound;
         
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == user.DepartmentId.Value);
+        if (department is null) return UserErrors.DepartmentNotFound;
+        
         if (request.RequisitionType == RequisitionType.Stock)
         {
             // Fetch materials to determine their kind (Raw or Package)
@@ -75,28 +78,33 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             var packageItems = request.Items.Where(i => materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Package)).ToList();
             
             // Create Raw Material Requisition
-            var rawStockRequisitionId = await CreateStockRequisition("raw", rawItems);
+            var rawStockRequisitionId = await CreateStockRequisition("RM", rawItems);
             if (rawStockRequisitionId.HasValue)
             {
                 await approvalRepository.CreateInitialApprovalsAsync("RawStockRequisition", rawStockRequisitionId.Value);
             }
 
             // Create Package Material Requisition
-             var packageStockRequisitionId = await CreateStockRequisition("package", packageItems);
+             var packageStockRequisitionId = await CreateStockRequisition("PM", packageItems);
              if (packageStockRequisitionId.HasValue)
              {
                  await approvalRepository.CreateInitialApprovalsAsync("PackageStockRequisition", packageStockRequisitionId.Value);
              }
              
-            async Task<Guid?> CreateStockRequisition(string suffix, List<CreateRequisitionItemRequest> items)
+            async Task<Guid?> CreateStockRequisition(string prefix, List<CreateRequisitionItemRequest> items)
             {
                 if (items.Count == 0) return null; // Skip if no items
+
+                var beta = department.Name == "Beta" ? "B" : "N";
+                var year = DateTime.Now.Year.ToString("yy");
+                var count = await context.Requisitions
+                    .IgnoreQueryFilters()
+                    .CountAsync(c => c.RequisitionType == RequisitionType.Stock && c.Code.StartsWith(prefix)) + 1;
                 var requisition = mapper.Map<Requisition>(request);
-                requisition.Code = $"{request.Code}-{suffix}";
+                requisition.Code = $"{prefix}/{beta}/{year}/{count:D3}";
                 requisition.RequestedById = userId;
                 requisition.DepartmentId = user.DepartmentId.Value;
                 requisition.Items = mapper.Map<List<RequisitionItem>>(items);
-
                 await context.Requisitions.AddAsync(requisition);
                 return requisition.Id;
             }
@@ -527,10 +535,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 switch (materialKind.Value)
                 {
                     case MaterialKind.Raw:
-                        query = query.Where(r => r.Code.EndsWith("-raw"));
+                        query = query.Where(r => r.Code.StartsWith("RM"));
                         break;
                     case MaterialKind.Package:
-                        query = query.Where(r => r.Code.EndsWith("-package"));
+                        query = query.Where(r => r.Code.StartsWith("PM"));
                         break;
                 }
             }
@@ -538,7 +546,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, r => r.Comments);
+            query = query.WhereSearch(searchQuery, r => r.Comments, r => r.Code);
         }
 
         var result = await PaginationHelper.GetPaginatedResultAsync(
@@ -926,6 +934,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         // Base query
         var query = context.SourceRequisitions
+            .AsSplitQuery()
             .Include(sr => sr.Supplier)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)

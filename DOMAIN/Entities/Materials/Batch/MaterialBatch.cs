@@ -195,13 +195,14 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public decimal PendingAllocatedQuantity { get; set; }
 }
 
-public class FinishedGoodsListTransferNoteDto : BaseDto
+public class FinishedGoodsListTransferNoteDto 
 {
+    public Guid Id { get; set; }
     public string TransferNoteNumber { get; set; }
     public CollectionItemDto FromWarehouse { get; set; }
     public CollectionItemDto ToWarehouse { get; set; }
     public decimal QuantityPerPack { get; set; }
-    public PackageStyleDto PackageStyle { get; set; }
+    public CollectionItemDto PackageStyle { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal TotalQuantity { get; set; }
     public decimal QuantityReceived { get; set; }
@@ -211,6 +212,7 @@ public class FinishedGoodsListTransferNoteDto : BaseDto
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
     public decimal RemainingQuantity { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class MaterialBatchReservedQuantity : BaseEntity

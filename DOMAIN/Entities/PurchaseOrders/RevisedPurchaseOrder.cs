@@ -1,8 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
-using DOMAIN.Entities.Procurement.Manufacturers;
-using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
 
@@ -29,6 +27,25 @@ public class RevisedPurchaseOrder
     public Guid? MaterialBeforeId { get; set; }
     public Material MaterialBefore { get; set; }
     public int RevisionNumber { get; set; }
+    public DateTime? RevisionDate { get; set; }
+}
+
+public class RevisedPurchaseOrderDto
+{
+    public Guid Id { get; set; }
+    public RevisedPurchaseOrderType Type { get; set; }
+    public MaterialDto Material { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public decimal? Quantity { get; set; }
+    public decimal? Price { get; set; }
+    public CurrencyDto Currency { get; set; }
+    public UnitOfMeasureDto UomBefore { get; set; }
+    public decimal? QuantityBefore { get; set; }
+    public decimal? PriceBefore { get; set; }
+    public CurrencyDto CurrencyBefore { get; set; }
+    public MaterialDto MaterialBefore { get; set; }
+    public int RevisionNumber { get; set; }
+    public DateTime? RevisionDate { get; set; }
 }
 
 public class RevisedPurchaseOrderItem : BaseEntity
@@ -43,28 +60,6 @@ public class RevisedPurchaseOrderItem : BaseEntity
     public decimal Price { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
-}
-
-public class RevisedPurchaseOrderDto : BaseDto
-{
-    public string Code { get; set; }
-    public CollectionItemDto Supplier { get; set; }
-    public DateTime RequestDate { get; set; }
-    public DateTime? ExpectedDeliveryDate { get; set; }
-    public List<PurchaseOrderItemDto> Items { get; set; } = [];
-    public PurchaseOrderStatus Status { get; set; }
-}
-
-public class RevisedPurchaseOrderItemDto
-{
-    public CollectionItemDto RevisedPurchaseOrder { get; set; }
-    public CollectionItemDto Material { get; set; }
-    public CollectionItemDto Currency { get; set; }
-    public UnitOfMeasureDto Uom { get; set; }
-    public decimal Quantity { get; set; }
-    public decimal Price { get; set; }
-    public List<ManufacturerDto> Manufacturers { get; set; } = [];
-    public decimal Cost => Price * Quantity;
 }
 
 public enum RevisedPurchaseOrderType
@@ -87,4 +82,10 @@ public class PurchaseOrderItemSnapshot
     public decimal Price { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
+    public Guid? UoMBeforeId { get; set; }
+    public UnitOfMeasure UomBefore { get; set; }
+    public decimal? QuantityBefore { get; set; }
+    public decimal? PriceBefore { get; set; }
+    public Guid? CurrencyBeforeId { get; set; }
+    public Currency CurrencyBefore { get; set; }
 }

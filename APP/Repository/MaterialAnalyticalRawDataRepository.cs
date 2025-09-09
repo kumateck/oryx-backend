@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -149,16 +150,24 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .Include(checklist => checklist.Manufacturer)
             .FirstOrDefaultAsync(c => c.Id == materialBatch.ChecklistId);
         
+        var materialArd = await context.MaterialAnalyticalRawData
+            .AsSplitQuery()
+            .Include(ad => ad.MaterialStandardTestProcedure)
+            .FirstOrDefaultAsync(m => m.MaterialStandardTestProcedure.MaterialId == materialBatch.MaterialId);
+        
         return new MaterialBatchArd
         {
             MaterialBatch = mapper.Map<MaterialBatchReducedDto>(materialBatch),
             ArNumber = materialSampling?.ArNumber,
             GrnNumber = materialBatch.Grn.GrnNumber,
+            SpecNumber = materialArd.SpecNumber,
+            StpNumber = materialArd.MaterialStandardTestProcedure?.StpNumber,
             SampledDate = materialSampling?.SampleDate,
             Supplier = mapper.Map<CollectionItemDto>(checkList.Supplier),
             Manufacturer = mapper.Map<CollectionItemDto>(checkList.Manufacturer),
             SampledBy = mapper.Map<UserDto>(materialSampling?.CreatedBy),
             QuantitySampled = materialSampling?.SampleQuantity ?? 0,
+            QuantityReceived = materialBatch.TotalQuantity
         };
     }
 

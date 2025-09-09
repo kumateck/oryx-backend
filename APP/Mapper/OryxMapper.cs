@@ -181,6 +181,7 @@ public class OryxMapper : Profile
         CreateMap<Item, CollectionItemDto>();
         CreateMap<Customer, CollectionItemDto>();
         CreateMap<ItemCategory, CollectionItemDto>();
+        CreateMap<ProductionOrder, CollectionItemDto>();
         
         #endregion
 
@@ -559,7 +560,7 @@ public class OryxMapper : Profile
         CreateMap<CreatePurchaseOrderItemRequest, RevisedPurchaseOrderItem>();
         CreateMap<RevisedPurchaseOrder, RevisedPurchaseOrderDto>();
         CreateMap<CreatePurchaseOrderRevision, RevisedPurchaseOrder>();
-        CreateMap<RevisedPurchaseOrderItem, RevisedPurchaseOrderItemDto>();
+        CreateMap<EnrichedRevision, RevisedPurchaseOrder>();
 
         #endregion
 
@@ -962,6 +963,7 @@ public class OryxMapper : Profile
         CreateMap<CreateProductionOrderRequest, ProductionOrder>();
         CreateMap<CreateProductionOrderProduct, ProductionOrderProducts>();
         CreateMap<ProductionOrder, ProductionOrderDto>();
+        CreateMap<ProductionOrder, ProductionOrderListDto>();
         CreateMap<ProductionOrder, ProductionOrderDetailDto>();
         CreateMap<ProductionOrderProducts, ProductionOrderProductsDto>();
         CreateMap<ProductionOrderProductQuantity, ProductionOrderProductQuantityDto>();
@@ -969,10 +971,16 @@ public class OryxMapper : Profile
         CreateMap<AllocateProductionOrderRequest, AllocateProductionOrder>();
         CreateMap<AllocateProductionOrderProductRequest, AllocateProductionOrderProduct>();
         CreateMap<AllocateProductQuantityRequest, AllocateProductQuantity>();
-        
-        CreateMap<AllocateProductionOrder, AllocateProductionOrderDto>();
+
+        CreateMap<AllocateProductionOrder, AllocateProductionOrderDto>()
+            .ForMember(dest => dest.HasInvoice,
+                opt => opt.MapFrom<AllocateProductionOrderHasInvoice>());
+            /*.ForMember(dest => dest.Customer,
+                opt => opt.MapFrom(src => src.ProductionOrder.Customer))*/
         CreateMap<AllocateProductionOrderProduct, AllocateProductionOrderProductDto>();
-        CreateMap<AllocateProductQuantity, AllocateProductQuantityDto>();
+        CreateMap<AllocateProductQuantity, AllocateProductQuantityDto>()
+            .ForMember(dest => dest.BatchPackagingRecord,
+                opt => opt.MapFrom<AllocateProductQuantityBpr>());
 
         #endregion
 

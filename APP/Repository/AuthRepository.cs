@@ -29,6 +29,11 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
         {
             return UserErrors.IncorrectCredentials;
         }
+
+        if (user.IsDisabled)
+        {
+            return Error.Failure("Login.Disabled", "You are not authorised to login. Please contact your administrator. ");       
+        }
         
         if (user.PasswordHash == null) return UserErrors.IncorrectCredentials;
         var verifyRes = userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);

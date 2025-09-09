@@ -16,6 +16,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductsSampling;
+using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Services;
@@ -265,6 +266,24 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                return await context.ProductStandardTestProcedures
                    .IgnoreQueryFilters()
                    .Where(m => m.StpNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "MaterialSpecNumber":
+               return await context.MaterialAnalyticalRawData
+                   .IgnoreQueryFilters()
+                   .Where(m => m.SpecNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           case "ProductSpecNumber":
+               return await context.ProductAnalyticalRawData
+                   .IgnoreQueryFilters()
+                   .Where(m => m.SpecNumber.StartsWith(prefix))
+                   .CountAsync();
+           
+           case nameof(ProformaInvoice):
+               return await context.ProformaInvoices
+                   .IgnoreQueryFilters()
+                   .Where(p => p.Code.StartsWith(prefix))
                    .CountAsync();
                
            default:

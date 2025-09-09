@@ -8,6 +8,7 @@ namespace DOMAIN.Entities.ProformaInvoices;
 
 public class CreateProformaInvoice
 {
+    public string Code { get; set; }
     public Guid AllocateProductionOrderId { get; set; }
     [MinLength(1, ErrorMessage = "At least one product must be included in the proforma invoice.")]
     public List<CreateProformaInvoiceProduct> Products { get; set; } = [];
@@ -21,6 +22,7 @@ public class CreateProformaInvoiceProduct
 
 public class ProformaInvoice : BaseEntity, IRequireApproval
 {
+    [StringLength(1000)] public string Code { get; set; }
     public Guid AllocateProductionOrderId { get; set; }
     public AllocateProductionOrder AllocateProductionOrder { get; set; }
     public ProformaInvoiceStatus Status { get; set; }
@@ -41,7 +43,8 @@ public class ProformaInvoiceApproval : ResponsibleApprovalStage
 public enum ProformaInvoiceStatus
 {
     Pending = 0,
-    Invoice = 1,
+    SentToCustomer = 1,
+    Invoice = 2,
 }
 
 public class ProformaInvoiceProduct : BaseEntity
@@ -55,6 +58,7 @@ public class ProformaInvoiceProduct : BaseEntity
 
 public class ProformaInvoiceDto : BaseDto
 {
+    public string Code { get; set; }
     public AllocateProductionOrderDto AllocateProductionOrder { get; set; }
     public ProformaInvoiceStatus Status { get; set; }
     public List<ProformaInvoiceProductDto> Products { get; set; } = [];
@@ -62,6 +66,6 @@ public class ProformaInvoiceDto : BaseDto
 
 public class ProformaInvoiceProductDto : BaseDto
 {
-    public ProductDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public decimal Quantity { get; set; }
 }

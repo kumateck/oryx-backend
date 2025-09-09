@@ -36,11 +36,11 @@ public class UserController(IUserRepository repo) : ControllerBase
     [Authorize]
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserWithRoleDto>>))]
-    public async Task<IResult> GetUsers([FromQuery(Name = "page")] int page = 1,
+    public async Task<IResult> GetUsers( [FromQuery(Name ="isActive")] bool? isDisabled, [FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 5,
         [FromQuery(Name = "searchQuery")] string searchQuery = null)
     {
-        var response = await repo.GetUsers(page, pageSize, searchQuery);
+        var response = await repo.GetUsers(page, pageSize, searchQuery, isDisabled);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
     

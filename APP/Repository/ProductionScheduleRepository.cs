@@ -84,11 +84,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
     
 
-    public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page, int pageSize, string searchQuery) 
+    public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page, int pageSize, string searchQuery, Guid departmentId) 
     { 
         var query = context.ProductionSchedules
             .AsSplitQuery()
-            .Include(s => s.Products).ThenInclude(s => s.Product)
+            .Include(s => s.Products.Where(p => p.Product.DepartmentId == departmentId))
+            .ThenInclude(p => p.Product)
+            .Where(s => s.Products.Any(p => p.Product.DepartmentId == departmentId))
             .AsQueryable();
         
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -878,7 +880,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var materialDetails = product.Packages.Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
-            var quantityNeeded = Math.Floor(GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
+            var quantityNeeded = Math.Ceiling(GetQuantityNeeded(item, product.Packages.ToList(), quantityRequired,
                 product.BasePackingQuantity));
 
             return new ProductionScheduleProcurementPackageDto
@@ -1257,7 +1259,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     
         var products = await productsQuery.ToListAsync();
         if (products.Count == 0)
-            return Error.Failure("Product.Empty", "No approved products found for this productId.");
+            return null;
 
         // get details
         var finishedGoodsTransferNoteResult = await GetApprovedProductDetails(productId);
@@ -1465,6 +1467,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
         batchRecord.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         batchRecord.IssuedById = userId;
+        batchRecord.IssuedDate = DateTime.UtcNow;
         context.BatchManufacturingRecords.Update(batchRecord);
         await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
         {
@@ -1480,8 +1483,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .FirstOrDefaultAsync(p => p.ProductionActivityStepId == batchRecord.ProductionActivityStepId);
         if (batchPackingRecord is not  null)
         {
-            batchPackingRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
-            batchPackingRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
+            batchPackingRecord.IssuedDate = DateTime.UtcNow;
             context.BatchPackagingRecords.Update(batchPackingRecord);
             
             await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
@@ -2130,7 +2132,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(r => r.Approvals).ThenInclude(a => a.Role)
             .Where(r => r.ProductionScheduleId == productionScheduleId 
                         && r.ProductId == productId 
-                        && r.Code.EndsWith("-raw") // Ensure the code ends in "raw"
+                        && r.Code.StartsWith("RM") // Ensure the code starts with "RM"
                         && r.RequisitionType == RequisitionType.Stock) // Ensure it's a stock requisition
             .FirstOrDefaultAsync();
 
@@ -2148,7 +2150,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(r => r.Approvals).ThenInclude(a => a.Role)
             .Where(r => r.ProductionScheduleId == productionScheduleId 
                         && r.ProductId == productId 
-                        && r.Code.EndsWith("-package") // Ensure the code ends in "package"
+                        && r.Code.StartsWith("PM") // Ensure the code starts with "package"
                         && r.RequisitionType == RequisitionType.Stock) // Ensure it's a stock requisition
             .FirstOrDefaultAsync();
 

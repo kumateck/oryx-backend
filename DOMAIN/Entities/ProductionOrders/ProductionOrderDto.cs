@@ -2,6 +2,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
@@ -11,6 +12,16 @@ public class ProductionOrderDto : BaseDto
     public string Code { get; set; }
     public CustomerDto Customer { get; set; }
     public List<ProductionOrderProductsDto> Products { get; set; } = [];
+    public decimal TotalValue { get; set; }
+    public ProductionOrderStatus Status { get; set; }
+    public bool Approved { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+}
+
+public class ProductionOrderListDto : BaseDto
+{
+    public string Code { get; set; }
+    public CustomerDto Customer { get; set; }
     public decimal TotalValue { get; set; }
     public ProductionOrderStatus Status { get; set; }
     public bool Approved { get; set; }
@@ -32,6 +43,7 @@ public class ProductionOrderProductsDto
     public decimal TotalValue { get; set; }
     public List<ProductionOrderProductQuantityDto>  FulfilledQuantities { get; set; } = [];
     public bool Fulfilled { get; set; }
+    public decimal RemainingQuantity { get; set; }
 }
 
 public class ProductionOrderProductQuantityDto
@@ -59,23 +71,27 @@ public class AllocateProductQuantityRequest
 }
 
 
-public class AllocateProductionOrderDto : BaseDto
+public class AllocateProductionOrderDto 
 {
-    public ProductionOrderDto ProductionOrder { get; set; }
+    public Guid Id { get; set; }
+    public ProductionOrderListDto ProductionOrder { get; set; }
     public bool Approved { get; set; }
     public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
     public DateTime? DeliveredAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public bool HasInvoice { get; set; }
     
 }
 
 public class AllocateProductionOrderProductDto
 {
-    public CollectionItemDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public List<AllocateProductQuantityDto> FulfilledQuantities { get; set; } = [];
 }
 
 public class AllocateProductQuantityDto
 {
     public FinishedGoodsTransferNoteDto FinishedGoodsTransferNote { get; set; }
+    public BatchPackagingRecordDto BatchPackagingRecord { get; set; }
     public decimal Quantity { get; set; }
 }

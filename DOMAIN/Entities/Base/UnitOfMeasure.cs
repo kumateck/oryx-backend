@@ -30,8 +30,9 @@ public enum UnitOfMeasureCategory
     Area = 4,
 }
 
-public class UnitOfMeasureDto : BaseDto
+public class UnitOfMeasureDto 
 {
+    public Guid Id { get; set; }
     public string Name { get; set; }
     public string Symbol { get; set; }
     public string Description { get; set; }
@@ -39,6 +40,7 @@ public class UnitOfMeasureDto : BaseDto
     public bool IsRawMaterial { get; set; }
     public UnitOfMeasureType Type { get; set; }
     public UnitOfMeasureCategory Category { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class PackageStyleDto : BaseDto

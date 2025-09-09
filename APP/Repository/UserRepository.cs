@@ -87,13 +87,19 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         return await jwtService.AuthenticateNewUser(user);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize,
+        string searchQuery, bool? isDisabled)
     {
         var query = context.Users.AsQueryable();
         
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.FirstName, q => q.LastName, q => q.Email);
+        }
+
+        if (isDisabled.HasValue)
+        {
+            query = query.Where(q => q.IsDisabled == isDisabled.Value);       
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -106,7 +112,9 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
     
     public async Task<Result<UserWithRoleDto>> GetUser(Guid userId)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await context.Users
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return UserErrors.NotFound(userId);
         return mapper.Map<UserWithRoleDto>(user);
     }

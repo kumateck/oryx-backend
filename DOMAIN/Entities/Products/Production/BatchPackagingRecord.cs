@@ -42,6 +42,7 @@ public class BatchPackagingRecord : BaseEntity
     public User IssuedBy { get; set; }
     public Guid? ProductPackingId { get; set; }
     public ProductPacking ProductPacking { get; set; }
+    public DateTime? IssuedDate { get; set; }
 }
 
 public class BatchPackagingRecordDto : BaseDto
@@ -51,5 +52,6 @@ public class BatchPackagingRecordDto : BaseDto
     public string BatchNumber { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
     public decimal BatchQuantity { get; set; }
 }

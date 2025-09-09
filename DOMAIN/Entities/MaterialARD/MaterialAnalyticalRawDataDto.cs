@@ -23,6 +23,8 @@ public class MaterialBatchArd
     public MaterialBatchReducedDto MaterialBatch { get; set; }
     public string ArNumber { get; set; }
     public string GrnNumber { get; set; }
+    public string SpecNumber { get; set; }
+    public string StpNumber { get; set; }
     public CollectionItemDto Supplier { get; set; }
     public CollectionItemDto Manufacturer { get; set; }
     public DateTime? SampledDate { get; set; }
