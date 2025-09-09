@@ -12,23 +12,30 @@ public class LeaveExpiryService(IServiceScopeFactory scopeFactory) : BackgroundS
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = scopeFactory.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            var today = DateTime.UtcNow;
-
-            var expiredLeaves = await dbContext.LeaveRequests
-                .Where(l => l.EndDate < today && l.LeaveStatus == LeaveStatus.Approved && l.LastDeletedById == null)
-                .ToListAsync(stoppingToken);
-
-            foreach (var leave in expiredLeaves)
+            try
             {
-                leave.LeaveStatus = LeaveStatus.Expired;
-            }
+                using var scope = scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            await dbContext.SaveChangesAsync(stoppingToken);
+                var today = DateTime.UtcNow;
+
+                var expiredLeaves = await dbContext.LeaveRequests
+                    .Where(l => l.EndDate < today && l.LeaveStatus == LeaveStatus.Approved && l.LastDeletedById == null)
+                    .ToListAsync(stoppingToken);
+
+                foreach (var leave in expiredLeaves)
+                {
+                    leave.LeaveStatus = LeaveStatus.Expired;
+                }
+
+                await dbContext.SaveChangesAsync(stoppingToken);
             
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
     }
 }
