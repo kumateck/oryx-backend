@@ -119,16 +119,18 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                     context.PurchaseOrders.Update(purchaseOrder);
                 }
             }
-
-            // if (modelType == nameof(Invoice))
-            // {
-            //     var invoice = await context.Invoices.FirstOrDefaultAsync(item => item.Id == modelId && item.Status != InvoiceStatus.Completed);
-            //     if (invoice is not null)
-            //     {
-            //         invoice.Status = InvoiceStatus.Completed;
-            //         context.Invoices.Update(invoice);
-            //     }
-            // }
+            
+            if(modelType ==  nameof(ProformaInvoice))
+            {
+                var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item => item.Id == modelId);
+                if (proformaInvoice is not null)
+                {
+                    proformaInvoice.Status = ProformaInvoiceStatus.Invoice;
+                    context.ProformaInvoices.Update(proformaInvoice);
+                    await context.SaveChangesAsync();
+                    await approvalRepository.CreateInitialApprovalsAsync(nameof(ProformaInvoice), proformaInvoice.Id);
+                }
+            }
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
