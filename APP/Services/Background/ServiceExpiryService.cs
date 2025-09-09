@@ -11,23 +11,30 @@ public class ServiceExpiryService(IServiceScopeFactory scopeFactory) : Backgroun
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = scopeFactory.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            var today = DateTime.UtcNow;
-
-            var expiredServices = await dbContext.Services
-                .Where(l => l.EndDate < today && l.LastDeletedById == null)
-                .ToListAsync(stoppingToken);
-
-            foreach (var service in expiredServices)
+            try
             {
-                service.IsActive = false;
-            }
+                using var scope = scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            await dbContext.SaveChangesAsync(stoppingToken);
+                var today = DateTime.UtcNow;
+
+                var expiredServices = await dbContext.Services
+                    .Where(l => l.EndDate < today && l.LastDeletedById == null)
+                    .ToListAsync(stoppingToken);
+
+                foreach (var service in expiredServices)
+                {
+                    service.IsActive = false;
+                }
+
+                await dbContext.SaveChangesAsync(stoppingToken);
             
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
     }
 }
