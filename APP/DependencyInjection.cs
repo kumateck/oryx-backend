@@ -33,9 +33,9 @@ public static class DependencyInjection
      public static void AddInfrastructure(this IServiceCollection services)
     {
         //add mass transit
-        var rabbitHost = "164.90.142.68";
-        var rabbitUserName = "root";
-        var rabbitPassword = "MvK6o4yR1CUXarZ";
+        var rabbitHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST");
+        var rabbitUserName = Environment.GetEnvironmentVariable("RABBITMQ_DEFAULT_USER");
+        var rabbitPassword = Environment.GetEnvironmentVariable("RABBITMQ_DEFAULT_PASS");
 
         services.AddMassTransit(configure =>
         {
