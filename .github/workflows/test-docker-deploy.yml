@@ -81,6 +81,8 @@ jobs:
             docker run -d --restart always --net sail -p "${HOST_PORT}:${CONTAINER_PORT}" --name "${CONTAINER_NAME}" \
             --env DB_USERNAME=${{ secrets.DB_USERNAME }} \
             --env DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            --env DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
+            --env DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
             --env ACCESS_KEY=${{ secrets.ACCESS_KEY }} \
             --env SECRET_KEY=${{ secrets.SECRET_KEY }} \
             --env DEFAULT_PASSWORD=${{ secrets.DEFAULT_PASSWORD }} \
@@ -95,7 +97,5 @@ jobs:
             --env RABBITMQ_DEFAULT_USER=${{ secrets.RABBITMQ_DEFAULT_USER }} \
             --env RABBITMQ_DEFAULT_PASS=${{ secrets.RABBITMQ_DEFAULT_PASS }} \
             --env RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }} \
-            --env DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
-            --env DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
             "${DOCKER_IMAGE_NAME}:latest"
           EOF
