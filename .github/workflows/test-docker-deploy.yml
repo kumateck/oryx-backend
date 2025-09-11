@@ -95,7 +95,7 @@ jobs:
             --env RABBITMQ_DEFAULT_USER=${{ secrets.RABBITMQ_DEFAULT_USER }} \
             --env RABBITMQ_DEFAULT_PASS=${{ secrets.RABBITMQ_DEFAULT_PASS }} \
             --env RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }} \
-            --env DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
-            --env DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
+            --env DOCKER_PASSWORD="${{ secrets.DOCKER_PASSWORD }}" \
+            --env DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}" \
             "${DOCKER_IMAGE_NAME}:latest"
           EOF
