@@ -1,5 +1,4 @@
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Products.Equipments;
 using SHARED;
 
@@ -33,7 +32,6 @@ public class ProductListDto
     public DateTime CreatedAt { get; set; }
     public decimal Price { get; set; }
     public Division Division { get; set; }
-    public int PackPerShipper { get; set; }
     public string LabelClaim { get; set; }
     public decimal ExpectedYield { get; set; }
 }
