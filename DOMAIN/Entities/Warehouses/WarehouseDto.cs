@@ -129,7 +129,7 @@ public class ShelfMaterialBatchDto
 {
     public Guid Id { get; set; }
     public MaterialWarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
-    public MaterialBatchDto MaterialBatch { get; set; }
+    public MaterialBatchReducedDto MaterialBatch { get; set; }
     public decimal Quantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public string Note { get; set; }
