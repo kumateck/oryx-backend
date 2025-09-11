@@ -81,7 +81,7 @@ public class EmployeeRepository(ApplicationDbContext context,
                 {
                     try 
                     {
-                        emailService.SendMail(employee.Email, "Welcome to the team", emailBody, []);
+                        emailService.SendMail(employee.Name,employee.Email, "Welcome to the team", emailBody, []);
                         logger.LogInformation($"Email sent to {employee.Email}");
                         sent = true;
                     }
@@ -253,7 +253,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             {
                 try
                 {
-                    emailService.SendMail(newUser.Email, "Password Setup", emailBody, []);
+                    emailService.SendMail(newUser.FirstName, newUser.Email, "Password Setup", emailBody, []);
                     sent = true;
                     logger.LogInformation("Password setup email sent to {Email}", newUser.Email);
                 }
@@ -502,7 +502,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             try
             {
-                emailService.SendMail(employee.Email, "Welcome to the Company", body, []);
+                emailService.SendMail(employee.FirstName, employee.Email, "Welcome to the Company", body, []);
                 logger.LogInformation($"Email sent to {employee.Email}");
                 sent = true;
             }

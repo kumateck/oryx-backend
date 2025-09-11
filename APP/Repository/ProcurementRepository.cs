@@ -597,7 +597,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         try
         {
-            emailService.SendMail(purchaseOrder.Supplier.Email, "Purchase Order From Entrance", "Please find attached to this email your final awarded quotation to draft a purchase order.", mailAttachments);
+            emailService.SendMail(purchaseOrder.Supplier.Name, purchaseOrder.Supplier.Email, "Purchase Order From Entrance", "Please find attached to this email your final awarded quotation to draft a purchase order.", mailAttachments);
         }
         catch (Exception e)
         {
@@ -623,7 +623,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         try
         {
-            emailService.SendMail(purchaseOrder.Supplier.Email, "Proforma Invoice From Entrance", "Please find attached a proforma invoice.", mailAttachments);
+            emailService.SendMail(purchaseOrder.Supplier.Name, purchaseOrder.Supplier.Email, "Proforma Invoice From Entrance", "Please find attached a proforma invoice.", mailAttachments);
         }
         catch (Exception e)
         {

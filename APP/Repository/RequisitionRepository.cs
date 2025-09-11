@@ -996,7 +996,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         try
         {
-            emailService.SendMail(supplierQuotationDto.Supplier.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
+            emailService.SendMail(supplierQuotationDto.Supplier.Name, supplierQuotationDto.Supplier.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
         }
         catch (Exception e)
         {
