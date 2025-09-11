@@ -60,7 +60,6 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
             echo "Logging in to Docker Hub"
-            echo "Docker password: ${{ secrets.DOCKER_PASSWORD }}, Docker usernmae = ${{ secrets.DOCKER_USERNAME }}"
             echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
 
             echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
@@ -96,5 +95,7 @@ jobs:
             --env RABBITMQ_DEFAULT_USER=${{ secrets.RABBITMQ_DEFAULT_USER }} \
             --env RABBITMQ_DEFAULT_PASS=${{ secrets.RABBITMQ_DEFAULT_PASS }} \
             --env RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }} \
+            --env DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
+            --env DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
             "${DOCKER_IMAGE_NAME}:latest"
           EOF
