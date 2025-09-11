@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Employees;
 

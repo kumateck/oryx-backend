@@ -6,7 +6,7 @@ public class MenuItem(
     List<MenuItem> children = null,
     string icon = null,
     string route = null,
-    string name =null,
+    string name = null,
     int order = 0)
 {
     public string Name { get; set; } = name ?? module;
@@ -17,13 +17,13 @@ public class MenuItem(
     public string Route { get; set; } = route;
     public int Order { get; set; } = order;
     public bool IsVisible { get; set; } = true;
-    
+
     public MenuItem Clone()
     {
         return new MenuItem(
             name: Name,
             module: Module,
-            requiredPermissionKey: [..RequiredPermissionKey],
+            requiredPermissionKey: [.. RequiredPermissionKey],
             children: Children?.Select(child => child.Clone()).ToList(),
             icon: Icon,
             route: Route,
@@ -34,839 +34,259 @@ public class MenuItem(
 
 public static class MenuConfig
 {
-        public static List<MenuItem> MenuItems =
-        [
-            new( // Order 1: Dashboard
-                name: "Main", // Or "Dashboard" if preferred
-                module: PermissionModules.Dashboard,
-                requiredPermissionKey: [], // Typically open or requires a basic view permission
-                route: "/dashboard",
-                icon: "dashboard",
-                order: 1
-            ),
+    public static List<MenuItem> MenuItems =
+    [
+        // Order 1: Dashboard
+        new(
+            name: "Dashboard",
+            module: "Dashboard", // A conceptual module, not in permissions
+            requiredPermissionKey: [], // Open to all logged-in users
+            route: "/dashboard",
+            icon: "dashboard",
+            order: 1
+        ),
 
-            new( // Order 2: Product Board
-                name: "Main", // Or "Product Board" if preferred
-                module: PermissionModules.ProductBoard,
-                requiredPermissionKey: [], // Define specific permission if needed
-                route: "/product-board",
-                icon: "product-board",
-                order: 2
-            ),
+        // Order 2: Procurement
+        new(
+            name: "Procurement",
+            module: PermissionModules.Procurement,
+            requiredPermissionKey: [],
+            route: "/procurement/purchase-requisition",
+            icon: "procurement",
+            order: 2,
+            children:
+            [
+                new("Purchase Requisition", [PermissionKeys.CanViewPurchaseRequisitions, PermissionKeys.CanSourcePurchaseRequisition], route: "/procurement/purchase-requisition", order: 1),
+                new("Quotations Request", [PermissionKeys.CanViewForeignQuotation, PermissionKeys.CanSendForeignQuotationRequest, PermissionKeys.CanViewLocalQuotation, PermissionKeys.CanSendLocalQuotationRequest], route: "/procurement/quotations-request", order: 2),
+                new("Quotations Responses", [PermissionKeys.CanViewForeignQuotationResponse, PermissionKeys.CanSendForeignQuotationResponse, PermissionKeys.CanViewLocalQuotationResponse, PermissionKeys.CanSendLocalQuotationResponse], route: "/procurement/quotations-responses", order: 3),
+                new("Price Comparison", [PermissionKeys.CanViewForeignVendorPricing, PermissionKeys.CanApplyChangesForForeignVendorPricingSelection, PermissionKeys.CanViewLocalVendorPricing, PermissionKeys.CanApplyChangesForLocalVendorPricingSelection], route: "/procurement/price-comparison", order: 4),
+                new("Proforma Request", [PermissionKeys.CanViewForeignProformaRequest, PermissionKeys.CanSendForeignProformaRequest, PermissionKeys.CanViewLocalProformaRequest, PermissionKeys.CanSendLocalProformaRequest], route: "/procurement/proforma-request", order: 5),
+                new("Proforma Responses", [PermissionKeys.CanViewForeignProformaInvoiceSubmissions, PermissionKeys.CanUploadForeignProformaInvoice, PermissionKeys.CanViewLocalProformaInvoiceSubmissions, PermissionKeys.CanUploadLocalProformaInvoice], route: "/procurement/proforma-responses", order: 6),
+                new("Create Purchase Orders", [PermissionKeys.CanViewForeignPurchaseOrder, PermissionKeys.CanCreateForeignPurchaseOrder, PermissionKeys.CanViewLocalPurchaseOrder, PermissionKeys.CanCreateLocalPurchaseOrder], route: "/procurement/create-purchase-orders", order: 7),
+                new("Purchase Order List", [PermissionKeys.CanReviseForeignPurchaseOrder, PermissionKeys.CanReviseLocalPurchaseOrder], route: "/procurement/purchase-order-list", order: 8),
+                new("Material Distribution", [PermissionKeys.CanViewMaterialDistribution, PermissionKeys.CanDistributeMaterial], route: "/procurement/material-distribution", order: 9)
+            ]
+        ),
 
-            // Order 3: Procurement (Supply Chain) - Partially provided, completed below
-            new(
-                name: "Supply Chain",
-                module: PermissionModules.Procurement,
-                requiredPermissionKey: [], // Parent - visible if any child is visible
-                route: "/manufacturer", // Route to first child
-                icon: "procurement", // General icon for the module
-                order: 3,
-                children: [
-                    new MenuItem( // 3.1
-                        module: PermissionSubmodules.Manufacturers,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanCreateManufacturer,
-                            PermissionKeys.CanViewManufacturerDetails,
-                            PermissionKeys.CanUpdateManufacturerDetails,
-                            PermissionKeys.CanDeleteManufacturer
-                            ],
-                        route: "/manufacturer",
-                        icon: "manufacturer",
-                        order: 1
-                    ),
-                    new( // 3.2
-                        module: PermissionSubmodules.Vendors,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanCreateVendor,
-                            PermissionKeys.CanViewVendorDetails,
-                            PermissionKeys.CanUpdateVendorDetails,
-                            PermissionKeys.CanDeleteVendor
-                            ],
-                        route: "/vendor",
-                        icon: "vendor",
-                        order: 2
-                    ),
-                    new( // 3.3
-                        module: PermissionSubmodules.PurchaseRequisition,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewPurchaseRequisitions,
-                            PermissionKeys.CanSourceItemsBasedOnRequisition
-                            ],
-                        route: "/purchase-requisition",
-                        icon: "purchase-requisition",
-                        order: 3
-                    ),
-                    new( // 3.4
-                        module: PermissionSubmodules.QuotationsRequest,
-                        requiredPermissionKey: [PermissionKeys.CanSendQuotationRequest],
-                        route: "/quotation-request",
-                        icon: "quotation-request",
-                        order: 4
-                    ),
-                    new MenuItem( // 3.5
-                        module: PermissionSubmodules.QuotationsResponses,
-                        requiredPermissionKey: [PermissionKeys.CanInputResponses],
-                        route: "/quotations-response",
-                        icon: "quotation-response",
-                        order: 5
-                    ),
-                    new MenuItem( // 3.6
-                        module: PermissionSubmodules.PriceComparison,
-                        requiredPermissionKey: [PermissionKeys.CanSelectVendorPricing],
-                        route: "/price-comparison",
-                        icon: "price-comparison",
-                        order: 6
-                    ),
-                    new MenuItem( // 3.7
-                        module: PermissionSubmodules.AwardedQuotations,
-                        requiredPermissionKey: [PermissionKeys.CanSendAwardedQuotations],
-                        route: "/awarded-quotations",
-                        icon: "awarded-quotation",
-                        order: 7
-                    ),
-                    new MenuItem( // 3.8
-                        module: PermissionSubmodules.ProformaResponses,
-                        requiredPermissionKey: [PermissionKeys.CanUploadProformaInvoice],
-                        route: "/proforma-response",
-                        icon: "proforma-response",
-                        order: 8
-                    ),
-                    new MenuItem( // 3.9
-                        module: PermissionSubmodules.PurchaseOrders,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanCreatePurchaseOrder,
-                            PermissionKeys.CanReviseExistingPurchaseOrder
-                            // Add CanViewPurchaseOrders if such a permission exists and is required
-                            ],
-                        route: "/purchase-orders", // Changed route to be specific
-                        icon: "purchase-order", // Changed icon
-                        order: 9
-                    ),
-                    new MenuItem( // 3.10
-                        module: PermissionSubmodules.MaterialDistribution,
-                        requiredPermissionKey: [PermissionKeys.CanDistributeMaterials],
-                        route: "/material-distribution",
-                        icon: "material-distribution",
-                        order: 10
-                    )
-                ]
-            ),
+        // Order 3: Logistics
+        new(
+            name: "Logistics",
+            module: PermissionModules.Logistics,
+            requiredPermissionKey: [],
+            route: "/logistics/shipment-invoice",
+            icon: "logistics",
+            order: 3,
+            children:
+            [
+                new(PermissionSubmodules.ShipmentInvoice, [PermissionKeys.CanCreateShipmentInvoice, PermissionKeys.CanViewShipmentInvoice, PermissionKeys.CanEditShipmentInvoice, PermissionKeys.CanDeleteShipmentInvoice], route: "/logistics/shipment-invoice", order: 1),
+                new(PermissionSubmodules.ShipmentDocument, [PermissionKeys.CanCreateShipmentDocument, PermissionKeys.CanViewShipmentDocument, PermissionKeys.CanChangeShipmentDocumentStatus, PermissionKeys.CanEditShipmentDocument, PermissionKeys.CanDeleteShipmentDocument], route: "/logistics/shipment-document", order: 2),
+                new(PermissionSubmodules.BillingSheet, [PermissionKeys.CanCreateBillingSheet, PermissionKeys.CanViewBillingSheet, PermissionKeys.CanEditBillingSheet], route: "/logistics/billing-sheet", order: 3),
+                new(PermissionSubmodules.Waybill, [PermissionKeys.CanCreateWaybill, PermissionKeys.CanViewWaybill, PermissionKeys.CanChangeWaybillStatus], route: "/logistics/waybill", order: 4),
+                new(PermissionSubmodules.AvailableStock, [PermissionKeys.CanViewRawMaterialStock, PermissionKeys.CanFilterRawMaterialStockByDepartment, PermissionKeys.CanViewPackingMaterialStock, PermissionKeys.CanFilterPackingMaterialStockByDepartment], route: "/logistics/available-stock", order: 5)
+            ]
+        ),
 
-            // Order 4: Logistics
-            new(
-                name: "Logistics",
-                module: PermissionModules.Logistics,
-                requiredPermissionKey: [],
-                route: "/shipment-invoice", // Route to first child
-                icon: "logistics", // General icon
-                order: 4,
-                children: [
-                    new MenuItem( // 4.1
-                        module: PermissionSubmodules.ShipmentInvoice,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanCreateShipmentInvoice,
-                            PermissionKeys.CanViewShipmentInvoice,
-                            PermissionKeys.CanEditShipmentInvoice,
-                            PermissionKeys.CanDeleteShipmentInvoice
-                            ],
-                        route: "/shipment-invoice",
-                        icon: "shipment-invoice",
-                        order: 1
-                    ),
-                    new MenuItem( // 4.2
-                        module: PermissionSubmodules.ShipmentDocument,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanCreateShipmentDocument,
-                            PermissionKeys.CanViewShipmentDocument,
-                            PermissionKeys.CanEditShipmentDocument,
-                            PermissionKeys.CanDeleteShipmentDocument,
-                            PermissionKeys.CanChangeShipmentDocumentStatus
-                            ],
-                        route: "/shipment-document",
-                        icon: "shipment-document",
-                        order: 2
-                    ),
-                    new MenuItem( // 4.3
-                        module: PermissionSubmodules.BillingSheet,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanCreateBillingSheet,
-                            PermissionKeys.CanViewBillingSheet,
-                            PermissionKeys.CanEditBillingSheet,
-                            PermissionKeys.CanDeleteBillingSheet
-                            ],
-                        route: "/billing-sheet",
-                        icon: "billing-sheet",
-                        order: 3
-                    ),
-                    new MenuItem( // 4.4
-                        module: PermissionSubmodules.Waybill,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanCreateWaybill,
-                            PermissionKeys.CanViewWaybill,
-                            PermissionKeys.CanEditWaybill,
-                            PermissionKeys.CanDeleteWaybill,
-                            PermissionKeys.CanChangeWaybillStatus
-                            ],
-                        route: "/waybill",
-                        icon: "waybill",
-                        order: 4
-                    )
-                ]
-            ),
+        // Order 4: Warehouse
+        new(
+            name: "Warehouse",
+            module: PermissionModules.Warehouse,
+            requiredPermissionKey: [],
+            route: "/warehouse/receiving-area",
+            icon: "warehouse",
+            order: 4,
+            children:
+            [
+                new(PermissionSubmodules.ReceivingArea, [PermissionKeys.CanViewRawMaterialsItems, PermissionKeys.CanCreateChecklistForRawMaterials, PermissionKeys.CanCreateGrnForRawMaterialsChecklistedItems, PermissionKeys.CanViewPackagingMaterialsItems, PermissionKeys.CanCreateChecklistForPackagingMaterials, PermissionKeys.CanCreateGrnForPackagingMaterialsChecklistedItems], route: "/warehouse/receiving-area", order: 1),
+                new(PermissionSubmodules.QuarantineAreaGrn, [PermissionKeys.CanViewQuarantineRawMaterials, PermissionKeys.CanAssignRawMaterialsStockToShelves, PermissionKeys.CanViewQuarantinePackagingMaterials, PermissionKeys.CanAssignPackagingMaterialsStockToShelves], name: "Quarantine / GRN", route: "/warehouse/quarantine-grn", order: 2),
+                new(PermissionSubmodules.LinkedMaterials, [PermissionKeys.CanViewLinkedRawMaterials, PermissionKeys.CanUnlinkRawMaterials, PermissionKeys.CanViewLinkedPackagingMaterials, PermissionKeys.CanUnlinkPackagingMaterials], route: "/warehouse/linked-materials", order: 3),
+                new(PermissionSubmodules.UnlinkedMaterials, [PermissionKeys.CanViewUnlinkedRawMaterials, PermissionKeys.CanLinkRawMaterials, PermissionKeys.CanViewUnlinkedPackagingMaterials, PermissionKeys.CanLinkPackagingMaterials], route: "/warehouse/unlinked-materials", order: 4),
+                new(PermissionSubmodules.Materials, [PermissionKeys.CanViewRawMaterials, PermissionKeys.CanCreateNewRawMaterials, PermissionKeys.CanEditRawMaterials, PermissionKeys.CanDeleteRawMaterials, PermissionKeys.CanViewPackagingMaterials, PermissionKeys.CanCreateNewPackagingMaterials, PermissionKeys.CanEditPackagingMaterials, PermissionKeys.CanDeletePackagingMaterials], route: "/warehouse/materials", order: 5),
+                new(PermissionSubmodules.ApprovedMaterials, [PermissionKeys.CanViewApprovedRawMaterials, PermissionKeys.CanViewApprovedPackagingMaterials], route: "/warehouse/approved-materials", order: 6),
+                new(PermissionSubmodules.RejectedMaterials, [PermissionKeys.CanViewRejectedRawMaterials, PermissionKeys.CanViewRejectedPackingMaterials], route: "/warehouse/rejected-materials", order: 7),
+                new(PermissionSubmodules.IssueStockRequisitions, [PermissionKeys.CanViewRawMaterialRequisitions, PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions], route: "/warehouse/issue-stock-requisitions", order: 8),
+                new(PermissionSubmodules.StockTransferIssues, [PermissionKeys.CanViewRawMaterialTransferList, PermissionKeys.CanIssueRawMaterialStockTransfers, PermissionKeys.CanViewPackagingMaterialTransferList, PermissionKeys.CanIssuePackagingMaterialStockTransfers], route: "/warehouse/stock-transfer-issues", order: 9),
+                new(PermissionSubmodules.LocationChartRecord, [PermissionKeys.CanViewRawMaterialLocationChartList, PermissionKeys.CanReassignRawMaterialStock, PermissionKeys.CanViewPackagingMaterialLocationChartList, PermissionKeys.CanReassignPackagingMaterialStock], route: "/warehouse/location-chart-record", order: 10)
+            ]
+        ),
 
-            // Order 5: Human Resources
-            new(
-                name: "Human Resources",
-                module: PermissionModules.HumanResources,
-                requiredPermissionKey: [],
-                route: "/employee-management", // Route to first child
-                icon: "human-resources", // General icon
-                order: 5,
-                children: [
-                    new MenuItem( // 5.1
-                        module: PermissionSubmodules.EmployeeManagement,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewEmployee,
-                            PermissionKeys.CanRegisterEmployee,
-                            PermissionKeys.CanUpdateEmployeeDetails,
-                            PermissionKeys.CanDeleteEmployee
-                            ],
-                        route: "/employee-management",
-                        icon: "employee-management",
-                        order: 1
-                    ),
-                    new MenuItem( // 5.2
-                        module: PermissionSubmodules.UserManagement,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewUser,
-                            PermissionKeys.CanCreateUser,
-                            PermissionKeys.CanUpdateUserDetails,
-                            PermissionKeys.CanDeleteUser
-                            ],
-                        route: "/user-management",
-                        icon: "user-management",
-                        order: 2
-                    ),
-                    new MenuItem( // 5.3
-                        module: PermissionSubmodules.DesignationManagement,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewDesignation,
-                            PermissionKeys.CanCreateDesignation,
-                            PermissionKeys.CanEditDesignation,
-                            PermissionKeys.CanDeleteDesignation
-                            ],
-                        route: "/designation-management",
-                        icon: "designation-management",
-                        order: 3
-                    ),
-                    new MenuItem( // 5.4
-                        module: PermissionSubmodules.RolesPermissionsManagement,
-                        name: "Roles & Permissions", // Custom Name
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewRoles,
-                            PermissionKeys.CanCreateRoleAndAssignPermissions,
-                            PermissionKeys.CanEditRoleWithItsPermissions,
-                            PermissionKeys.CanDeleteRole
-                            ],
-                        route: "/roles-permissions",
-                        icon: "roles-permissions",
-                        order: 4
-                    ),
-                    new MenuItem( // 5.5
-                        module: PermissionSubmodules.LeaveManagement,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewLeaveRequests,
-                            PermissionKeys.CanCreateLeaveRequest,
-                            PermissionKeys.CanEditLeaveRequest,
-                            PermissionKeys.CanDeleteOrCancelLeaveRequest,
-                            PermissionKeys.CanApproveOrRejectLeaveRequest
-                            ],
-                        route: "/leave-management",
-                        icon: "leave-management",
-                        order: 5
-                    )
-                ]
-            ),
+        // Order 5: Production
+        new(
+            name: "Production",
+            module: PermissionModules.Production,
+            requiredPermissionKey: [],
+            route: "/production/requisitions",
+            icon: "production",
+            order: 5,
+            children:
+            [
+                new(PermissionSubmodules.Requisitions, [PermissionKeys.CanViewMaterialRequisitions, PermissionKeys.CanViewMaterialRequisitionDetailsPage], route: "/production/requisitions", order: 1),
+                new(PermissionSubmodules.CreatePurchaseRequisitions, [PermissionKeys.CanViewRawMaterialRequisitionsForCreation, PermissionKeys.CanCreateRawMaterialRequisitions, PermissionKeys.CanViewPackageMaterialRequisitionsForCreation, PermissionKeys.CanCreatePackageMaterialRequisitions], route: "/production/create-purchase-requisitions", order: 2),
+                new(PermissionSubmodules.Planning, [PermissionKeys.CanViewPlannedProducts, PermissionKeys.CanCreateNewProductionPlan, PermissionKeys.CanEditProductionPlan], route: "/production/planning", order: 3),
+                new(PermissionSubmodules.StockTransferRequests, [PermissionKeys.CanViewIncomingStockTransferRequests, PermissionKeys.CanApproveOrRejectIncomingStockTransferRequest, PermissionKeys.CanViewOutgoingStockTransferRequests], route: "/production/stock-transfer-requests", order: 4),
+                new(PermissionSubmodules.ProductSchedule, [PermissionKeys.CanViewProductSchedules, PermissionKeys.CanCreateProductSchedule], route: "/production/product-schedule", order: 5)
+            ]
+        ),
 
-             // Order 6: Warehouse
-            new(
-                name: "Warehouse",
-                module: PermissionModules.Warehouse,
-                requiredPermissionKey: [],
-                route: "/receiving-area", // Route to first child
-                icon: "warehouse", // General icon
-                order: 6,
-                children: [
-                    new MenuItem( // 6.1
-                        module: PermissionSubmodules.ReceivingArea,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewReceivedRawMaterialsItems,
-                            PermissionKeys.CanViewReceivedPackagingMaterialsItems,
-                            PermissionKeys.CanCreateChecklistForIncomingRawMaterialsGoods,
-                            PermissionKeys.CanCreateChecklistForIncomingPackagingMaterialsGoods,
-                            PermissionKeys.CanCreateGrnForRawMaterialsChecklistedItems,
-                            PermissionKeys.CanCreateGrnForPackagingMaterialsChecklistedItems
-                            ],
-                        route: "/receiving-area",
-                        icon: "receiving-area",
-                        order: 1
-                    ),
-                    new MenuItem( // 6.2
-                        module: PermissionSubmodules.QuarantineAreaGrn,
-                        name: "Quarantine / GRN", // Custom Name
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewQuarantineRawMaterialsRecords,
-                            PermissionKeys.CanViewQuarantinePackagingMaterialsRecords,
-                            PermissionKeys.CanAssignRawMaterialsStockToStorageLocations,
-                            PermissionKeys.CanAssignPackagingMaterialsStockToStorageLocations
-                            ],
-                        route: "/quarantine-grn",
-                        icon: "quarantine",
-                        order: 2
-                    ),
-                    new MenuItem( // 6.3
-                        module: PermissionSubmodules.Departments,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewDepartments,
-                            PermissionKeys.CanCreateNewDepartment,
-                            PermissionKeys.CanEditDepartment
-                            ],
-                        route: "/departments",
-                        icon: "departments",
-                        order: 3
-                    ),
-                     new MenuItem( // 6.4
-                        module: PermissionSubmodules.Warehouses,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewWarehouses,
-                            PermissionKeys.CanAddWarehouse,
-                            PermissionKeys.CanEditWarehouse
-                            ],
-                        route: "/warehouses",
-                        icon: "warehouses", // Consider singular icon name if preferred
-                        order: 4
-                    ),
-                     new MenuItem( // 6.5
-                        module: PermissionSubmodules.Locations,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewLocations,
-                            PermissionKeys.CanAddNewLocation,
-                            PermissionKeys.CanEditLocation
-                            ],
-                        route: "/locations",
-                        icon: "locations", // Consider singular icon name
-                        order: 5
-                    ),
-                     new MenuItem( // 6.6
-                        module: PermissionSubmodules.Racks,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewRacks,
-                            PermissionKeys.CanAddNewRack,
-                            PermissionKeys.CanEditRack
-                            ],
-                        route: "/racks",
-                        icon: "racks", // Consider singular icon name
-                        order: 6
-                    ),
-                     new MenuItem( // 6.7
-                        module: PermissionSubmodules.Shelves,
-                        requiredPermissionKey: [ // Assuming distinct permissions or mapped from Rack permissions in list
-                            PermissionKeys.CanViewShelves,
-                            PermissionKeys.CanAddNewShelf,
-                            PermissionKeys.CanEditShelf
-                            ],
-                        route: "/shelves",
-                        icon: "shelves", // Consider singular icon name
-                        order: 7
-                    ),
-                    new MenuItem( // 6.8
-                        module: PermissionSubmodules.Materials,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewRawMaterials,
-                            PermissionKeys.CanViewPackagingMaterials,
-                            PermissionKeys.CanCreateNewRawMaterials,
-                            PermissionKeys.CanCreateNewPackagingMaterials,
-                            PermissionKeys.CanEditRawMaterials,
-                            PermissionKeys.CanEditPackagingMaterials,
-                            PermissionKeys.CanDeleteRawMaterials,
-                            PermissionKeys.CanDeletePackagingMaterials
-                            ],
-                        route: "/materials", // Or specific like /raw-materials
-                        icon: "materials",
-                        order: 8
-                        // Consider splitting into Raw/Packaging if needed
-                    ),
-                     new MenuItem( // 6.9
-                        module: PermissionSubmodules.ApprovedMaterials,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewApprovedRawMaterials,
-                            PermissionKeys.CanViewApprovedPackagingMaterials
-                            ],
-                        route: "/approved-materials",
-                        icon: "approved-materials",
-                        order: 9
-                    ),
-                     new MenuItem( // 6.10
-                        module: PermissionSubmodules.RejectedMaterials,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewRejectedRawMaterials,
-                            PermissionKeys.CanViewRejectedPackagingMaterials
-                            ],
-                        route: "/rejected-materials",
-                        icon: "rejected-materials",
-                        order: 10
-                    ),
-                     new MenuItem( // 6.11
-                        module: PermissionSubmodules.StockRequisitions,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewRawMaterialRequisitions,
-                            PermissionKeys.CanViewPackagingMaterialRequisitions,
-                            PermissionKeys.CanIssueRawMaterialRequisitions,
-                            PermissionKeys.CanIssuePackagingMaterialRequisitions
-                            ],
-                        route: "/stock-requisitions",
-                        icon: "stock-requisitions",
-                        order: 11
-                    ),
-                    new MenuItem( // 6.12
-                        module: PermissionSubmodules.StockTransferIssues,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewRawMaterialTransferList,
-                            PermissionKeys.CanViewPackagingMaterialTransferList,
-                            PermissionKeys.CanIssueRawMaterialStockTransfers,
-                            PermissionKeys.CanIssuePackagingMaterialStockTransfers
-                            ],
-                        route: "/stock-transfer-issues",
-                        icon: "stock-transfer",
-                        order: 12
-                    ),
-                    new MenuItem( // 6.13
-                        module: PermissionSubmodules.LocationChartRecord,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewRawMaterialLocationChartList,
-                            PermissionKeys.CanViewPackagingMaterialLocationChartList,
-                            PermissionKeys.CanReassignRawMaterialStock,
-                            PermissionKeys.CanReassignPackagingMaterialStock
-                            ],
-                        route: "/location-chart-record",
-                        icon: "location-chart",
-                        order: 13
-                    )
-                ]
-            ),
+        // Order 6: Quality Control
+        new(
+            name: "Quality Control",
+            module: PermissionModules.QualityControl,
+            requiredPermissionKey: [],
+            route: "/quality-control/goods-receipt-note",
+            icon: "quality-control",
+            order: 6,
+            children:
+            [
+                new(PermissionSubmodules.GoodsReceiptNote, [PermissionKeys.CanViewRawMaterialGoodsReceiptNotes, PermissionKeys.CanTakeRawMaterialSample, PermissionKeys.CanStartRawMaterialTest, PermissionKeys.CanCheckRawMaterialTestResult, PermissionKeys.CanViewPackagingMaterialGoodsReceiptNotes, PermissionKeys.CanTakePackagingMaterialSample, PermissionKeys.CanStartPackagingMaterialTest, PermissionKeys.CanCheckPackagingMaterialTestResult], route: "/quality-control/goods-receipt-note", order: 1),
+                new(PermissionSubmodules.AnalyticalTestRequestProducts, [PermissionKeys.CanViewProductAnalyticalTestRequests, PermissionKeys.CanAcknowledgeSampleTaken, PermissionKeys.CanStartProductTest, PermissionKeys.CanCheckProductTest], route: "/quality-control/analytical-test-request-products", order: 2),
+                new(PermissionSubmodules.MaterialStp, [PermissionKeys.CanViewRawMaterialStps, PermissionKeys.CanCreateRawMaterialStp, PermissionKeys.CanViewPackagingMaterialStps, PermissionKeys.CanCreatePackagingMaterialStp], route: "/quality-control/material-stp", order: 3),
+                new(PermissionSubmodules.MaterialSpecification, [PermissionKeys.CanViewRawMaterialSpecifications, PermissionKeys.CanCreateRawMaterialSpecification, PermissionKeys.CanViewPackagingMaterialSpecifications, PermissionKeys.CanCreatePackagingMaterialSpecification], route: "/quality-control/material-specification", order: 4),
+                new(PermissionSubmodules.MaterialArd, [PermissionKeys.CanViewRawMaterialArds, PermissionKeys.CanCreateRawMaterialArd, PermissionKeys.CanViewPackagingMaterialArds, PermissionKeys.CanCreatePackagingMaterialArd], route: "/quality-control/material-ard", order: 5),
+                new(PermissionSubmodules.ProductStp, [PermissionKeys.CanViewProductStps, PermissionKeys.CanCreateProductStp], route: "/quality-control/product-stp", order: 6),
+                new(PermissionSubmodules.ProductArd, [PermissionKeys.CanViewProductArds, PermissionKeys.CanCreateProductArd], route: "/quality-control/product-ard", order: 7),
+                new(PermissionSubmodules.ProductSpecification, [PermissionKeys.CanViewProductSpecifications, PermissionKeys.CanCreateProductSpecification], route: "/quality-control/product-specification", order: 8)
+            ]
+        ),
 
-            // Order 7: Production
-            new(
-                name: "Production",
-                module: PermissionModules.Production,
-                requiredPermissionKey: [],
-                route: "/production-requisitions", // Route to first logical group/child
-                icon: "production", // General icon
-                order: 7,
-                children: [
-                    // Grouping Requisitions under Production might need a non-routable parent item
-                    // Or list them directly. Listing directly for simplicity:
-                    new MenuItem( // 7.1 (Was under REQUISITIONS header)
-                         module: PermissionSubmodules.RawMaterialRequisitions, // Using specific submodule name
-                         name: "Raw Material Requisitions", // Explicit name
-                         requiredPermissionKey: [ PermissionKeys.CanViewRawMaterialRequisitions],
-                         route: "/production-raw-requisitions", // Unique route
-                         icon: "raw-material",
-                         order: 1
-                    ),
-                     new MenuItem( // 7.2 (Was under REQUISITIONS header)
-                         module: PermissionSubmodules.PackageMaterialRequisitions, // Using specific submodule name
-                         name: "Package Material Requisitions", // Explicit name
-                         requiredPermissionKey: [ PermissionKeys.CanViewPackagingMaterialRequisitions],
-                         route: "/production-package-requisitions", // Unique route
-                         icon: "package-material",
-                         order: 2
-                    ),
-                    new MenuItem( // 7.3
-                        module: PermissionSubmodules.Planning,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewPlannedProducts,
-                            PermissionKeys.CanCreateNewProductionPlan,
-                            PermissionKeys.CanEditProductionPlan
-                            ],
-                        route: "/production-planning",
-                        icon: "planning",
-                        order: 3
-                    ),
-                    new MenuItem( // 7.4
-                        module: PermissionSubmodules.StockTransferRequests,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewStockTransferRequests,
-                            PermissionKeys.CanApproveOrRejectStockTransferRequest
-                            ],
-                        route: "/production-stock-transfer-requests",
-                        icon: "stock-transfer-request",
-                        order: 4
-                    ),
-                     new MenuItem( // 7.5
-                        module: PermissionSubmodules.ProductSchedule,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewProductSchedules,
-                            PermissionKeys.CanCreateProductSchedule,
-                            PermissionKeys.CanUpdateProductSchedule,
-                            PermissionKeys.CanCreateRawMaterialPurchaseRequisition,
-                            PermissionKeys.CanCreatePackagingMaterialPurchaseRequisition,
-                            PermissionKeys.CanCreateRawMaterialStockRequisition,
-                            PermissionKeys.CanCreatePackagingMaterialStockRequisition,
-                            PermissionKeys.CanCreateRawMaterialStockTransfer,
-                            PermissionKeys.CanCreatePackagingMaterialStockTransfer
-                            ],
-                        route: "/product-schedule",
-                        icon: "product-schedule",
-                        order: 5
-                    )
-                    // Add more Production submodules if any were missed
-                ]
-            ),
+        // Order 7: Quality Assurance
+        new(
+            name: "Quality Assurance",
+            module: PermissionModules.QualityAssurance,
+            requiredPermissionKey: [],
+            route: "/quality-assurance/issue-bmr",
+            icon: "quality-assurance",
+            order: 7,
+            children:
+            [
+                new(PermissionSubmodules.IssueBmr, [PermissionKeys.CanViewIssuedBmrBprs, PermissionKeys.CanIssueBmr], route: "/quality-assurance/issue-bmr", order: 1),
+                new(PermissionSubmodules.AnalyticalTestRequests, [PermissionKeys.CanViewAnalyticalTestRequests, PermissionKeys.CanTakeSamples], route: "/quality-assurance/analytical-test-requests", order: 2),
+                new(PermissionSubmodules.PendingApprovals, [PermissionKeys.CanViewPendingApprovals, PermissionKeys.CanApprovePendingApproval, PermissionKeys.CanRejectPendingApproval], route: "/quality-assurance/pending-approvals", order: 3)
+            ]
+        ),
 
-             // Order 8: Settings
-            new(
-                name: "Settings",
-                module: PermissionModules.Settings,
-                requiredPermissionKey: [],
-                route: "/system-settings", // Route to first child or overview
-                icon: "settings", // General icon
-                order: 8,
-                children: [
-                    new MenuItem( // 8.1
-                        module: PermissionSubmodules.SystemSettings,
-                        requiredPermissionKey: [ PermissionKeys.CanViewSystemSettings ],
-                        route: "/system-settings",
-                        icon: "system-settings",
-                        order: 1
-                    ),
-                     new MenuItem( // 8.2
-                        module: PermissionSubmodules.UserSettings,
-                        requiredPermissionKey: [ PermissionKeys.CanViewUserSettings ],
-                        route: "/user-settings",
-                        icon: "user-settings",
-                        order: 2
-                    ),
-                     new MenuItem( // 8.3
-                        module: PermissionSubmodules.AuditTrail,
-                        requiredPermissionKey: [
-                            PermissionKeys.CanViewAuditLogs,
-                            PermissionKeys.CanExportAuditLogs
-                            ],
-                        route: "/audit-trail",
-                        icon: "audit-trail",
-                        order: 3
-                    ),
-                    // 8.4: Configurations (as a nested parent item)
-                     new MenuItem(
-                        name: "Configurations",
-                        module: PermissionModules.Settings, // Using a dedicated module for the group
-                        requiredPermissionKey: [], // Parent - visible if children are
-                        route: "/product-categories", // Route to its first child
-                        icon: "configurations",
-                        order: 4,
-                        children: [
-                            // 8.4.1 Category Grouping (Optional Parent - or list children directly)
-                            new MenuItem(
-                                name:"Categories", // Group name
-                                module: PermissionSubmodules.Categories, // Group module
-                                requiredPermissionKey: [],
-                                route: "/product-categories", // Route to first child
-                                icon: "category",
-                                order: 1,
-                                children: [
-                                     new MenuItem( // 8.4.1.1
-                                        module: PermissionSubmodules.ProductCategory,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewProductCategories,
-                                            PermissionKeys.CanCreateNewProductCategory,
-                                            PermissionKeys.CanEditProductCategory,
-                                            PermissionKeys.CanDeleteProductCategory
-                                            ],
-                                        route: "/product-categories",
-                                        icon: "product-category",
-                                        order: 1
-                                    ),
-                                     new MenuItem( // 8.4.1.2
-                                        module: PermissionSubmodules.RawCategory,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewRawCategories,
-                                            PermissionKeys.CanCreateNewRawCategory,
-                                            PermissionKeys.CanEditRawCategory,
-                                            PermissionKeys.CanDeleteRawCategory
-                                            ],
-                                        route: "/raw-categories",
-                                        icon: "raw-category",
-                                        order: 2
-                                    ),
-                                    new MenuItem( // 8.4.1.3
-                                        module: PermissionSubmodules.PackageCategory,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewPackageCategories,
-                                            PermissionKeys.CanCreateNewPackageCategory,
-                                            PermissionKeys.CanEditPackageCategory,
-                                            PermissionKeys.CanDeletePackageCategory
-                                            ],
-                                        route: "/package-categories",
-                                        icon: "package-category",
-                                        order: 3
-                                    )
-                                ]
-                            ),
-                            // 8.4.2 Procedures Grouping
-                            new MenuItem(
-                                name:"Procedures",
-                                module: PermissionSubmodules.Procedures,
-                                requiredPermissionKey: [],
-                                route: "/resources",
-                                icon: "procedures",
-                                order: 2,
-                                children: [
-                                    new MenuItem( // 8.4.2.1
-                                        module: PermissionSubmodules.Resource,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewResources,
-                                            PermissionKeys.CanCreateNewResource,
-                                            PermissionKeys.CanEditResource,
-                                            PermissionKeys.CanDeleteResource
-                                            ],
-                                        route: "/resources",
-                                        icon: "resource",
-                                        order: 1
-                                    ),
-                                    new MenuItem( // 8.4.2.2
-                                        module: PermissionSubmodules.Operation,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewOperations,
-                                            PermissionKeys.CanCreateNewOperation,
-                                            PermissionKeys.CanEditOperation,
-                                            PermissionKeys.CanDeleteOperation
-                                            ],
-                                        route: "/operations",
-                                        icon: "operation",
-                                        order: 2
-                                    ),
-                                     new MenuItem( // 8.4.2.3
-                                        module: PermissionSubmodules.WorkCenter,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewWorkCenters,
-                                            PermissionKeys.CanCreateNewWorkCenter,
-                                            PermissionKeys.CanEditWorkCenter,
-                                            PermissionKeys.CanDeleteWorkCenter
-                                            ],
-                                        route: "/work-centers",
-                                        icon: "work-center",
-                                        order: 3
-                                    )
-                                ]
-                            ),
-                            // 8.4.3 Products Grouping
-                             new MenuItem(
-                                name:"Products",
-                                module: PermissionSubmodules.Products,
-                                requiredPermissionKey: [],
-                                route: "/material-types",
-                                icon: "products", // Reusing product icon
-                                order: 3,
-                                children: [
-                                    new MenuItem( // 8.4.3.1
-                                        module: PermissionSubmodules.MaterialType,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewMaterialTypes,
-                                            PermissionKeys.CanCreateNewMaterialType,
-                                            PermissionKeys.CanEditMaterialType,
-                                            PermissionKeys.CanDeleteMaterialType
-                                            ],
-                                        route: "/material-types",
-                                        icon: "material-type",
-                                        order: 1
-                                    )
-                                    // Add other Product sub-items if any
-                                ]
-                            ),
-                            // 8.4.4 Unit of Measure (Directly under Configurations)
-                             new MenuItem( // 8.4.4
-                                module: PermissionSubmodules.UnitOfMeasure,
-                                requiredPermissionKey: [ PermissionKeys.CanViewUnitOfMeasure ],
-                                route: "/unit-of-measure",
-                                icon: "uom", // Abbreviation or full name
-                                order: 4
-                            ),
-                            // 8.4.5 Address Grouping
-                             new MenuItem(
-                                name:"Address",
-                                module: PermissionSubmodules.Address,
-                                requiredPermissionKey: [],
-                                route: "/countries",
-                                icon: "address",
-                                order: 5,
-                                children: [
-                                     new MenuItem( // 8.4.5.1
-                                        module: PermissionSubmodules.Country,
-                                        requiredPermissionKey: [ PermissionKeys.CanViewCountries ],
-                                        route: "/countries",
-                                        icon: "country",
-                                        order: 1
-                                    )
-                                    // Add State, City etc. if needed
-                                ]
-                            ),
-                             // 8.4.6 Container Grouping
-                             new MenuItem(
-                                name:"Container",
-                                module: PermissionSubmodules.Container,
-                                requiredPermissionKey: [],
-                                route: "/pack-styles",
-                                icon: "container",
-                                order: 6,
-                                children: [
-                                     new MenuItem( // 8.4.6.1
-                                        module: PermissionSubmodules.PackStyle,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewPackStyles,
-                                            PermissionKeys.CanCreateNewPackStyle,
-                                            PermissionKeys.CanEditPackStyle,
-                                            PermissionKeys.CanDeletePackStyle
-                                            ],
-                                        route: "/pack-styles",
-                                        icon: "pack-style",
-                                        order: 1
-                                    )
-                                ]
-                            ),
-                             // 8.4.7 Billing Sheet Charge (Directly under Configurations)
-                             new MenuItem( // 8.4.7
-                                module: PermissionSubmodules.BillingSheetCharge,
-                                requiredPermissionKey: [
-                                    PermissionKeys.CanViewBillingCharges,
-                                    PermissionKeys.CanCreateNewBillingSheetCharge,
-                                    PermissionKeys.CanEditBillingSheetCharge,
-                                    PermissionKeys.CanDeleteBillingSheetCharge
-                                    ],
-                                route: "/billing-charges",
-                                icon: "billing-charge",
-                                order: 7
-                            ),
-                            // 8.4.8 Terms of Payment (Directly under Configurations)
-                            new MenuItem( // 8.4.8
-                                module: PermissionSubmodules.TermsOfPayment,
-                                requiredPermissionKey: [
-                                    PermissionKeys.CanViewPaymentTerms,
-                                    PermissionKeys.CanCreateNewPaymentTerm,
-                                    PermissionKeys.CanEditPaymentTerm,
-                                    PermissionKeys.CanDeletePaymentTerm
-                                    ],
-                                route: "/payment-terms",
-                                icon: "payment-terms",
-                                order: 8
-                            ),
-                            // 8.4.9 Delivery Mode (Directly under Configurations)
-                             new MenuItem( // 8.4.9
-                                module: PermissionSubmodules.DeliveryMode,
-                                requiredPermissionKey: [
-                                    PermissionKeys.CanViewDeliveryModes,
-                                    PermissionKeys.CanCreateNewDeliveryMode,
-                                    PermissionKeys.CanEditDeliveryMode,
-                                    PermissionKeys.CanDeleteDeliveryMode
-                                    ],
-                                route: "/delivery-modes",
-                                icon: "delivery-mode",
-                                order: 9
-                            ),
-                             // 8.4.10 Code Settings (Directly under Configurations)
-                            new MenuItem( // 8.4.10
-                                module: PermissionSubmodules.CodeSettings,
-                                requiredPermissionKey: [
-                                    PermissionKeys.CanViewCodeSettings,
-                                    PermissionKeys.CanAddNewCodes,
-                                    PermissionKeys.CanEditCodeSettings,
-                                    PermissionKeys.CanDeleteCodeSettings
-                                    ],
-                                route: "/code-settings",
-                                icon: "code-settings",
-                                order: 10
-                            ),
-                            // 8.4.11 Approvals (Directly under Configurations)
-                             new MenuItem( // 8.4.11
-                                module: PermissionSubmodules.Approvals,
-                                requiredPermissionKey: [
-                                    PermissionKeys.CanViewApproval,
-                                    PermissionKeys.CanCreateOrConfigureNewApproval,
-                                    PermissionKeys.CanEditApprovalWorkflow,
-                                    PermissionKeys.CanDeleteOrDisableApprovals
-                                    ],
-                                route: "/approvals",
-                                icon: "approvals",
-                                order: 11
-                            ),
-                            // 8.4.12 Alerts & Notifications (Directly under Configurations)
-                            new MenuItem( // 8.4.12
-                                module: PermissionSubmodules.AlertsNotifications,
-                                name: "Alerts & Notifications", // Custom Name
-                                requiredPermissionKey: [
-                                    PermissionKeys.CanViewAlerts,
-                                    PermissionKeys.CanCreateNewAlerts,
-                                    PermissionKeys.CanEditAlerts,
-                                    PermissionKeys.CanEnableOrDisableAlerts,
-                                    PermissionKeys.CanDeleteAlerts
-                                    ],
-                                route: "/alerts-notifications",
-                                icon: "notifications",
-                                order: 12
-                            ),
-                            // 8.4.13 Equipment (Directly under Configurations)
-                            new MenuItem( // 8.4.13
-                                module: PermissionSubmodules.Equipment,
-                                requiredPermissionKey: [
-                                    PermissionKeys.CanViewEquipments,
-                                    PermissionKeys.CanAddNewEquipment,
-                                    PermissionKeys.CanEditEquipmentDetails,
-                                    PermissionKeys.CanDeleteEquipment
-                                    ],
-                                route: "/equipment",
-                                icon: "equipment",
-                                order: 13
-                            ),
-                             // 8.4.14 Work Flow Forms Grouping
-                             new MenuItem(
-                                name:"Work Flow Forms",
-                                module: PermissionSubmodules.WorkFlowForms,
-                                requiredPermissionKey: [],
-                                route: "/workflow-questions",
-                                icon: "workflow",
-                                order: 14,
-                                children: [
-                                     new MenuItem( // 8.4.14.1
-                                        module: PermissionSubmodules.Questions,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewQuestions,
-                                            PermissionKeys.CanCreateNewQuestions,
-                                            PermissionKeys.CanEditQuestions,
-                                            PermissionKeys.CanDeleteQuestions
-                                        ],
-                                        route: "/workflow-questions",
-                                        icon: "question",
-                                        order: 1
-                                    ),
-                                     new MenuItem( // 8.4.14.2
-                                        module: PermissionSubmodules.Templates,
-                                        requiredPermissionKey: [
-                                            PermissionKeys.CanViewTemplates,
-                                            PermissionKeys.CanCreateNewTemplates,
-                                            PermissionKeys.CanEditTemplates,
-                                            PermissionKeys.CanDeleteTemplates
-                                        ],
-                                        route: "/workflow-templates",
-                                        icon: "template",
-                                        order: 2
-                                    )
-                                ]
-                            )
-                        ]
-                    )
-                ]
-            )
-            // Add more top-level menu items if needed
-        ];
-    }
+        // Order 8: Finished Goods
+        new(
+            name: "Finished Goods",
+            module: PermissionModules.FinishedGoodsWarehouse,
+            requiredPermissionKey: [],
+            route: "/finished-goods/customer-management",
+            icon: "finished-goods",
+            order: 8,
+            children:
+            [
+                new(PermissionSubmodules.CustomerManagement, [PermissionKeys.CanViewCustomers, PermissionKeys.CanCreateCustomer, PermissionKeys.CanEditCustomer, PermissionKeys.CanDeleteCustomer], route: "/finished-goods/customer-management", order: 1),
+                new(PermissionSubmodules.ProductionOrders, [PermissionKeys.CanViewOrder, PermissionKeys.CanCreateOrders, PermissionKeys.CanGeneratePackingList], route: "/finished-goods/production-orders", order: 2),
+                new(PermissionSubmodules.PackingList, [PermissionKeys.CanViewPackingList], route: "/finished-goods/packing-list", order: 3),
+                new(PermissionSubmodules.ProformaInvoice, [PermissionKeys.CanGenerateProformaInvoice, PermissionKeys.CanViewProformaInvoice], route: "/finished-goods/proforma-invoice", order: 4),
+                new(PermissionSubmodules.Invoice, [PermissionKeys.CanViewInvoice], route: "/finished-goods/invoice", order: 5),
+                new(PermissionSubmodules.WaybillFgw, [PermissionKeys.CanViewWaybillForFgw, PermissionKeys.CanCreateWaybillForFgw, PermissionKeys.CanEditWaybillForFgw, PermissionKeys.CanDeleteWaybillForFgw], name: "Waybill", route: "/finished-goods/waybill", order: 6)
+            ]
+        ),
+
+        // Order 9: Inventory Management
+        new(
+            name: "Inventory",
+            module: PermissionModules.InventoryManagement,
+            requiredPermissionKey: [],
+            route: "/inventory/manufacturers",
+            icon: "inventory",
+            order: 9,
+            children:
+            [
+                new(PermissionSubmodules.Manufacturers, [PermissionKeys.CanViewManufacturers, PermissionKeys.CanCreateManufacturer, PermissionKeys.CanUpdateManufacturerDetails, PermissionKeys.CanDeleteManufacturer], route: "/inventory/manufacturers", order: 1),
+                new(PermissionSubmodules.Suppliers, [PermissionKeys.CanViewVendors, PermissionKeys.CanCreateVendor, PermissionKeys.CanUpdateVendorDetails, PermissionKeys.CanDeleteVendor], route: "/inventory/suppliers", order: 2),
+                new(PermissionSubmodules.Warehouses, [PermissionKeys.CanViewWarehouses], route: "/inventory/warehouses", order: 3),
+                new(PermissionSubmodules.Locations, [PermissionKeys.CanViewLocations, PermissionKeys.CanAddNewLocation, PermissionKeys.CanEditLocation, PermissionKeys.CanDeleteLocation], route: "/inventory/locations", order: 4),
+                new(PermissionSubmodules.Racks, [PermissionKeys.CanViewRacks, PermissionKeys.CanAddNewRack, PermissionKeys.CanEditRack, PermissionKeys.CanDeleteRack], route: "/inventory/racks", order: 5),
+                new(PermissionSubmodules.Shelves, [PermissionKeys.CanViewShelves, PermissionKeys.CanAddNewShelf, PermissionKeys.CanEditShelf, PermissionKeys.CanDeleteShelf], route: "/inventory/shelves", order: 6),
+                new(PermissionSubmodules.Equipment, [PermissionKeys.CanViewEquipment, PermissionKeys.CanAddNewEquipment, PermissionKeys.CanEditEquipmentDetails, PermissionKeys.CanDeleteEquipment], route: "/inventory/equipment", order: 7),
+                new(PermissionSubmodules.UnitOfMeasure, [PermissionKeys.CanViewUnitOfMeasure, PermissionKeys.CanCreateUnitOfMeasure, PermissionKeys.CanEditUnitOfMeasure, PermissionKeys.CanDeleteUnitOfMeasure], route: "/inventory/unit-of-measure", order: 8)
+            ]
+        ),
+
+        // Order 10: Human Resources
+        new(
+            name: "Human Resources",
+            module: PermissionModules.HumanResources,
+            requiredPermissionKey: [],
+            route: "/hr/employee-management",
+            icon: "human-resources",
+            order: 10,
+            children:
+            [
+                new(PermissionSubmodules.EmployeeManagement, [PermissionKeys.CanViewEmployee, PermissionKeys.CanRegisterEmployee, PermissionKeys.CanUpdateEmployeeInfo, PermissionKeys.CanViewEmployeeDetails], route: "/hr/employee-management", order: 1),
+                new(PermissionSubmodules.DepartmentEmployeeExport, [PermissionKeys.CanViewDepartmentEmployee, PermissionKeys.CanExportDepartmentEmployee], name: "Department Employees", route: "/hr/department-employees", order: 2),
+                new(PermissionSubmodules.DesignationManagement, [PermissionKeys.CanViewDesignation, PermissionKeys.CanCreateDesignation, PermissionKeys.CanEditDesignation, PermissionKeys.CanDeleteDesignation], route: "/hr/designation-management", order: 3),
+                new(PermissionSubmodules.LeaveManagement, [PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanCreateLeaveRequest, PermissionKeys.CanEditLeaveRequest, PermissionKeys.CanDeleteLeaveRequest, PermissionKeys.CanRecallLeave], route: "/hr/leave-management", order: 4),
+                new(PermissionSubmodules.LeaveTypeConfiguration, [PermissionKeys.CanViewLeaveTypeConfig, PermissionKeys.CanCreateLeaveTypeConfig, PermissionKeys.CanEditLeaveTypeConfig, PermissionKeys.CanDeleteLeaveTypeConfig], route: "/hr/leave-type-config", order: 5),
+                new(PermissionSubmodules.StaffRequisition, [PermissionKeys.CanViewStaffRequisition, PermissionKeys.CanCreateStaffRequisition, PermissionKeys.CanEditStaffRequisition, PermissionKeys.CanDeleteStaffRequisition], route: "/hr/staff-requisition", order: 6),
+                new(PermissionSubmodules.AttendanceReportUpload, [PermissionKeys.CanViewAttendanceReportUpload, PermissionKeys.CanSubmitAttendanceReportUpload, PermissionKeys.CanCancelAttendanceReportUpload], route: "/hr/attendance-upload", order: 7),
+                new(PermissionSubmodules.ShiftScheduleReportUpload, [PermissionKeys.CanViewShiftScheduleReportUpload, PermissionKeys.CanSubmitShiftScheduleReportUpload], route: "/hr/shift-schedule-upload", order: 8),
+                new(PermissionSubmodules.OvertimeManagement, [PermissionKeys.CanViewOvertimeManagement, PermissionKeys.CanCreateOvertimeManagement, PermissionKeys.CanEditOvertimeManagement, PermissionKeys.CanDeleteOvertimeManagement], route: "/hr/overtime-management", order: 9)
+            ]
+        ),
+        
+        // Order 11: Organizational Structure
+        new(
+            name: "Organization",
+            module: PermissionModules.OrganizationalStructure,
+            requiredPermissionKey: [],
+            route: "/organization/departments",
+            icon: "organization",
+            order: 11,
+            children:
+            [
+                new(PermissionSubmodules.Departments, [PermissionKeys.CanViewDepartments, PermissionKeys.CanCreateNewDepartment, PermissionKeys.CanEditDepartment, PermissionKeys.CanDeleteDepartment], route: "/organization/departments", order: 1),
+                new(PermissionSubmodules.WorkingDays, [PermissionKeys.CanViewWorkingDays, PermissionKeys.CanCreateWorkingDays, PermissionKeys.CanResetWorkingDays], route: "/organization/working-days", order: 2),
+                new(PermissionSubmodules.Holidays, [PermissionKeys.CanViewHolidays, PermissionKeys.CanCreateHoliday, PermissionKeys.CanEditHoliday, PermissionKeys.CanDeleteHoliday], route: "/organization/holidays", order: 3),
+                new(PermissionSubmodules.ShiftsType, [PermissionKeys.CanViewShiftTypes, PermissionKeys.CanCreateShiftType, PermissionKeys.CanEditShiftType, PermissionKeys.CanDeleteShiftType], name: "Shift Types", route: "/organization/shift-types", order: 4),
+                new(PermissionSubmodules.ShiftsSchedule, [PermissionKeys.CanViewShiftSchedule, PermissionKeys.CanCreateShiftSchedule, PermissionKeys.CanEditShiftSchedule, PermissionKeys.CanDeleteShiftSchedule], name: "Shift Schedules", route: "/organization/shift-schedules", order: 5)
+            ]
+        ),
+
+        // Order 12: IT Support
+        new(
+            name: "IT Support",
+            module: PermissionModules.ItSupport,
+            requiredPermissionKey: [],
+            route: "/it/user-management",
+            icon: "it-support",
+            order: 12,
+            children:
+            [
+                new(PermissionSubmodules.UserManagement, [PermissionKeys.CanViewUserDirectory, PermissionKeys.CanCreateUser, PermissionKeys.CanEditUser, PermissionKeys.CanBlockUser], route: "/it/user-management", order: 1),
+                new(PermissionSubmodules.AuditTrail, [PermissionKeys.CanViewAuditTrail, PermissionKeys.CanFilterAuditTrailByUser, PermissionKeys.CanFilterAuditTrailByDepartment, PermissionKeys.CanExportAuditTrail], route: "/it/audit-trail", order: 2),
+                new(PermissionSubmodules.ManageRoles, [PermissionKeys.CanViewRoles, PermissionKeys.CanCreateRole, PermissionKeys.CanEditRole, PermissionKeys.CanDeleteARole], route: "/it/manage-roles", order: 3),
+                new(PermissionSubmodules.ManagePermissions, [PermissionKeys.CanViewPermissions, PermissionKeys.CanUpdateExistingPermission, PermissionKeys.CanResetPermission], route: "/it/manage-permissions", order: 4)
+            ]
+        ),
+
+        // Order 13: Settings
+        new(
+            name: "Settings",
+            module: PermissionModules.Settings,
+            requiredPermissionKey: [],
+            route: "/settings/system-settings",
+            icon: "settings",
+            order: 13,
+            children:
+            [
+                new(PermissionSubmodules.SystemSettings, [PermissionKeys.CanViewGeneralSettingsConfigurations], route: "/settings/system-settings", order: 1),
+                new(PermissionSubmodules.ProductsCategory, [PermissionKeys.CanViewProductCategories, PermissionKeys.CanCreateProductCategory, PermissionKeys.CanEditProductCategory, PermissionKeys.CanDeleteProductCategory], route: "/settings/product-categories", order: 2),
+                new(PermissionSubmodules.Products, [PermissionKeys.CanViewRawCategories, PermissionKeys.CanCreateRawCategory, PermissionKeys.CanEditRawCategory, PermissionKeys.CanDeleteRawCategory, PermissionKeys.CanViewPackageCategories, PermissionKeys.CanCreatePackageCategory, PermissionKeys.CanEditPackageCategory, PermissionKeys.CanDeletePackageCategory, PermissionKeys.CanViewMaterialTypes, PermissionKeys.CanCreateMaterialType, PermissionKeys.CanEditMaterialType, PermissionKeys.CanDeleteMaterialType, PermissionKeys.CanViewPackageStyle, PermissionKeys.CanCreatePackageStyle, PermissionKeys.CanEditPackageStyle, PermissionKeys.CanDeletePackageStyle, PermissionKeys.CanViewProductState, PermissionKeys.CanCreateProductState, PermissionKeys.CanEditProductState, PermissionKeys.CanDeleteProductState], route: "/settings/products", order: 3),
+                new(PermissionSubmodules.Procedures, [PermissionKeys.CanViewResources, PermissionKeys.CanCreateResource, PermissionKeys.CanEditResource, PermissionKeys.CanDeleteResource, PermissionKeys.CanViewOperations, PermissionKeys.CanCreateOperation, PermissionKeys.CanEditOperation, PermissionKeys.CanDeleteOperation, PermissionKeys.CanViewWorkCenters, PermissionKeys.CanCreateWorkCenter, PermissionKeys.CanEditWorkCenter, PermissionKeys.CanDeleteWorkCenter], route: "/settings/procedures", order: 4),
+                new(PermissionSubmodules.CountryAddress, [PermissionKeys.CanViewCountries, PermissionKeys.CanCreateCountries, PermissionKeys.CanEditCountries, PermissionKeys.CanDeleteCountries], route: "/settings/country-address", order: 5),
+                new(PermissionSubmodules.Schedules, [PermissionKeys.CanViewShiftSchedules, PermissionKeys.CanCreateShiftSchedules, PermissionKeys.CanEditShiftSchedules, PermissionKeys.CanDeleteShiftSchedules], route: "/settings/schedules", order: 6),
+                new(PermissionSubmodules.TermsOfPayment, [PermissionKeys.CanViewPaymentTerms, PermissionKeys.CanCreatePaymentTerm, PermissionKeys.CanEditPaymentTerm, PermissionKeys.CanDeletePaymentTerm], route: "/settings/terms-of-payment", order: 7),
+                new(PermissionSubmodules.DeliveryMode, [PermissionKeys.CanViewDeliveryModes, PermissionKeys.CanCreateDeliveryMode, PermissionKeys.CanEditDeliveryMode, PermissionKeys.CanDeleteDeliveryMode], route: "/settings/delivery-mode", order: 8),
+                new(PermissionSubmodules.Charges, [PermissionKeys.CanViewCharges, PermissionKeys.CanCreateCharges, PermissionKeys.CanEditCharges, PermissionKeys.CanDeleteCharges], route: "/settings/charges", order: 9),
+                new(PermissionSubmodules.CodeSettings, [PermissionKeys.CanViewCodeSettings, PermissionKeys.CanCreateNewCodes, PermissionKeys.CanEditCodeSettings, PermissionKeys.CanDeleteCodeSettings], route: "/settings/code-settings", order: 10),
+                new(PermissionSubmodules.WorkflowBuilder, [PermissionKeys.CanViewQuestions, PermissionKeys.CanCreateQuestions, PermissionKeys.CanEditQuestions, PermissionKeys.CanDeleteQuestions, PermissionKeys.CanViewTemplate, PermissionKeys.CanCreateTemplate, PermissionKeys.CanEditTemplate, PermissionKeys.CanDeleteTemplate], route: "/settings/workflow-builder", order: 11),
+                new(PermissionSubmodules.AlertsNotifications, [PermissionKeys.CanViewAlerts, PermissionKeys.CanCreateNewAlerts, PermissionKeys.CanEditAlerts, PermissionKeys.CanEnableDisableAlerts, PermissionKeys.CanDeleteAlerts], route: "/settings/alerts-notifications", order: 12),
+                new(PermissionSubmodules.Approvals, [PermissionKeys.CanViewApprovals, PermissionKeys.CanCreateNewApproval, PermissionKeys.CanEditApprovalWorkflow, PermissionKeys.CanDeleteApprovals], route: "/settings/approvals", order: 13),
+                new(PermissionSubmodules.SignatureSettings, [PermissionKeys.CanViewSignatureSettings, PermissionKeys.CanCreateSignatureSettings], route: "/settings/signature-settings", order: 14),
+                new(PermissionSubmodules.ChangePassword, [PermissionKeys.CanChangePassword], route: "/settings/change-password", order: 15)
+            ]
+        )
+    ];
+}
