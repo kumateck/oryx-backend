@@ -93,7 +93,7 @@ public class UserTableSeeders : ISeeder
             LastName = lastName,
             EmailConfirmed = true,
             PhoneNumberConfirmed = true,
-            DepartmentId = dbContext.Departments.FirstOrDefault(d => d.Name == "SYRUP Department")?.Id, 
+            DepartmentId = dbContext.Departments.FirstOrDefault(d => d.Name == "SYRUP")?.Id, 
             CreatedAt = DateTime.UtcNow
         };
 
