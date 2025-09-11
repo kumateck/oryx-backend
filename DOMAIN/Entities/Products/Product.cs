@@ -44,7 +44,6 @@ public class Product : BaseEntity
     public List<Route> Routes { get; set; } = [];
     public decimal Price => Prices.OrderByDescending(p => p.Date).FirstOrDefault()?.Price ?? 0;
     public Division Division { get; set; }
-    public int PackPerShipper { get; set; }
     public List<ProductPrices>  Prices { get; set; } = [];
     public decimal ExpectedYield { get; set; }
     public List<ProductPacking> Packings { get; set; } = [];
@@ -64,6 +63,7 @@ public class ProductPacking : BaseEntity
     public Product Product { get; set; }
     [StringLength(10000)] public string Name { get; set; }
     [StringLength(10000)] public string Description { get; set; }
+    public int PackPerShipper { get; set; }
     public List<ProductPackingList> PackingLists { get; set; } = [];
 }
 
