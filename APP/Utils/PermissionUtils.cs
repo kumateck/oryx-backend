@@ -21,101 +21,101 @@ public static class PermissionModules
 public static class PermissionSubmodules
 {
     // Procurement
-    public const string PurchaseRequisition = "PurchaseRequisition";
-    public const string QuotationsRequest = "QuotationsRequest";
-    public const string QuotationsResponses = "QuotationsResponses";
-    public const string PriceComparison = "PriceComparison";
-    public const string ProformaRequest = "ProformaRequest";
-    public const string ProformaResponses = "ProformaResponses";
-    public const string CreatePurchaseOrdersPage = "CreatePurchaseOrdersPage";
-    public const string PurchaseOrderListPage = "PurchaseOrderListPage";
-    public const string MaterialDistribution = "MaterialDistribution";
+    public const string PurchaseRequisition = "Purchase Requisition";
+    public const string QuotationsRequest = "Quotations Request";
+    public const string QuotationsResponses = "Quotations Responses";
+    public const string PriceComparison = "Price Comparison";
+    public const string ProformaRequest = "Proforma Request";
+    public const string ProformaResponses = "Proforma Responses";
+    public const string CreatePurchaseOrdersPage = "Create PurchaseOrders Page";
+    public const string PurchaseOrderListPage = "PurchaseOrder List Page";
+    public const string MaterialDistribution = "Material Distribution";
 
     // Logistics
-    public const string ShipmentInvoice = "ShipmentInvoice";
-    public const string ShipmentDocument = "ShipmentDocument";
-    public const string BillingSheet = "BillingSheet";
+    public const string ShipmentInvoice = "Shipment Invoice";
+    public const string ShipmentDocument = "Shipment Document";
+    public const string BillingSheet = "Billing Sheet";
     public const string Waybill = "Waybill";
-    public const string AvailableStock = "AvailableStock";
+    public const string AvailableStock = "Available Stock";
 
     // Warehouse
-    public const string ReceivingArea = "ReceivingArea";
-    public const string QuarantineAreaGrn = "QuarantineAreaGrn";
-    public const string LinkedMaterials = "LinkedMaterials";
-    public const string UnlinkedMaterials = "UnlinkedMaterials";
+    public const string ReceivingArea = "Receiving Area";
+    public const string QuarantineAreaGrn = "Quarantine Area Grn";
+    public const string LinkedMaterials = "Linked Materials";
+    public const string UnlinkedMaterials = "Unlinked Materials";
     public const string Materials = "Materials";
-    public const string ApprovedMaterials = "ApprovedMaterials";
-    public const string RejectedMaterials = "RejectedMaterials";
-    public const string IssueStockRequisitions = "IssueStockRequisitions";
-    public const string StockTransferIssues = "StockTransferIssues";
-    public const string LocationChartRecord = "LocationChartRecord";
+    public const string ApprovedMaterials = "Approved Materials";
+    public const string RejectedMaterials = "Rejected Materials";
+    public const string IssueStockRequisitions = "Issue Stock Requisitions";
+    public const string StockTransferIssues = "Stock Transfer Issues";
+    public const string LocationChartRecord = "Location Chart Record";
 
     // Production
     public const string Requisitions = "Requisitions";
-    public const string CreatePurchaseRequisitions = "CreatePurchaseRequisitions";
+    public const string CreatePurchaseRequisitions = "Create Purchase Requisitions";
     public const string Planning = "Planning";
-    public const string StockTransferRequests = "StockTransferRequests";
-    public const string ProductSchedule = "ProductSchedule";
+    public const string StockTransferRequests = "Stock Transfer Requests";
+    public const string ProductSchedule = "Product Schedule";
 
     // Quality Control
-    public const string GoodsReceiptNote = "GoodsReceiptNote";
-    public const string AnalyticalTestRequestProducts = "AnalyticalTestRequestProducts";
-    public const string MaterialStp = "MaterialStp";
-    public const string MaterialSpecification = "MaterialSpecification";
-    public const string MaterialArd = "MaterialArd";
-    public const string ProductStp = "ProductStp";
-    public const string ProductArd = "ProductArd";
-    public const string ProductSpecification = "ProductSpecification";
+    public const string GoodsReceiptNote = "Goods Receipt Note";
+    public const string AnalyticalTestRequestProducts = "Analytical Test Request Products";
+    public const string MaterialStp = "Material Stp";
+    public const string MaterialSpecification = "Material Specification";
+    public const string MaterialArd = "Material Ard";
+    public const string ProductStp = "Product Stp";
+    public const string ProductArd = "Product Ard";
+    public const string ProductSpecification = "Product Specification";
 
     // Quality Assurance
-    public const string IssueBmr = "IssueBmr";
-    public const string AnalyticalTestRequests = "AnalyticalTestRequests";
-    public const string PendingApprovals = "PendingApprovals";
+    public const string IssueBmr = "Issue Bmr";
+    public const string AnalyticalTestRequests = "Analytical Test Requests";
+    public const string PendingApprovals = "Pending Approvals";
 
     // Finished Goods Warehouse
-    public const string CustomerManagement = "CustomerManagement";
-    public const string ProductionOrders = "ProductionOrders";
-    public const string PackingList = "PackingList";
-    public const string ProformaInvoice = "ProformaInvoice";
+    public const string CustomerManagement = "Customer Management";
+    public const string ProductionOrders = "Production Orders";
+    public const string PackingList = "Packing List";
+    public const string ProformaInvoice = "Proforma Invoice";
     public const string Invoice = "Invoice";
     public const string WaybillFgw = "WaybillFgw";
 
     // Human Resources
-    public const string EmployeeManagement = "EmployeeManagement";
-    public const string DepartmentEmployeeExport = "DepartmentEmployeeExport";
-    public const string DesignationManagement = "DesignationManagement";
-    public const string LeaveManagement = "LeaveManagement";
-    public const string LeaveTypeConfiguration = "LeaveTypeConfiguration";
-    public const string StaffRequisition = "StaffRequisition";
-    public const string AttendanceReportUpload = "AttendanceReportUpload";
-    public const string ShiftScheduleReportUpload = "ShiftScheduleReportUpload";
-    public const string OvertimeManagement = "OvertimeManagement";
+    public const string EmployeeManagement = "Employee Management";
+    public const string DepartmentEmployeeExport = "Department Employee Export";
+    public const string DesignationManagement = "Designation Management";
+    public const string LeaveManagement = "Leave Management";
+    public const string LeaveTypeConfiguration = "LeaveType Configuration";
+    public const string StaffRequisition = "Staff Requisition";
+    public const string AttendanceReportUpload = "Attendance Report Upload";
+    public const string ShiftScheduleReportUpload = "ShiftSchedule Report Upload";
+    public const string OvertimeManagement = "Overtime Management";
 
     // IT SUPPORT
-    public const string UserManagement = "UserManagement";
-    public const string AuditTrail = "AuditTrail";
-    public const string AccessManagement = "AccessManagement";
-    public const string ManageRoles = "ManageRoles";
-    public const string ManagePermissions = "ManagePermissions";
+    public const string UserManagement = "User Management";
+    public const string AuditTrail = "Audit Trail";
+    public const string AccessManagement = "Access Management";
+    public const string ManageRoles = "Manage Roles";
+    public const string ManagePermissions = "Manage Permissions";
 
     // Settings
-    public const string SystemSettings = "SystemSettings";
-    public const string ProductsCategory = "ProductsCategory";
+    public const string SystemSettings = "System Settings";
+    public const string ProductsCategory = "Products Category";
     public const string Products = "Products";
     public const string Procedures = "Procedures";
-    public const string CountryAddress = "CountryAddress";
+    public const string CountryAddress = "Country Address";
     public const string Schedules = "Schedules";
     public const string Payments = "Payments";
-    public const string TermsOfPayment = "TermsOfPayment";
-    public const string DeliveryMode = "DeliveryMode";
+    public const string TermsOfPayment = "Terms Of Payment";
+    public const string DeliveryMode = "Delivery Mode";
     public const string Charges = "Charges";
-    public const string CodeSettings = "CodeSettings";
-    public const string WorkflowBuilder = "WorkflowBuilder";
-    public const string AlertsNotifications = "AlertsNotifications";
-    public const string UserAccountManagement = "UserAccountManagement";
+    public const string CodeSettings = "Code Settings";
+    public const string WorkflowBuilder = "Workflow Builder";
+    public const string AlertsNotifications = "Alerts Notifications";
+    public const string UserAccountManagement = "User Account Management";
     public const string Approvals = "Approvals";
-    public const string SignatureSettings = "SignatureSettings";
-    public const string ChangePassword = "ChangePassword";
+    public const string SignatureSettings = "Signature Settings";
+    public const string ChangePassword = "Change Password";
 
     // Inventory Management
     public const string Manufacturers = "Manufacturers";
@@ -125,14 +125,14 @@ public static class PermissionSubmodules
     public const string Racks = "Racks";
     public const string Shelves = "Shelves";
     public const string Equipment = "Equipment";
-    public const string UnitOfMeasure = "UnitOfMeasure";
+    public const string UnitOfMeasure = "Unit Of Measure";
 
     // Organizational Structure
     public const string Departments = "Departments";
-    public const string WorkingDays = "WorkingDays";
+    public const string WorkingDays = "Working Days";
     public const string Holidays = "Holidays";
-    public const string ShiftsType = "ShiftsType";
-    public const string ShiftsSchedule = "ShiftsSchedule";
+    public const string ShiftsType = "Shifts Type";
+    public const string ShiftsSchedule = "Shifts Schedule";
 }
 
 public static class PermissionKeys
@@ -522,7 +522,7 @@ public static class PermissionKeys
           string GenerateDisplayName(string key) => Regex.Replace(key, "(\\B[A-Z])", " $1");
 
             // Helper function to generate a basic description.
-          string CreateDescription(string name) => $"Allows the user to {char.ToLower(name[0])}";
+            string CreateDescription(string name) => $"Allows the user to {char.ToLower(name[0]) + name.Substring(1)}.";
 
             var permissions = new List<PermissionDto>();
 
