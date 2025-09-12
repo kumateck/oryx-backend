@@ -522,7 +522,7 @@ public static class PermissionKeys
           string GenerateDisplayName(string key) => Regex.Replace(key, "(\\B[A-Z])", " $1");
 
             // Helper function to generate a basic description.
-            string CreateDescription(string name) => $"Allows the user to {char.ToLower(name[0]) + name.Substring(1)}.";
+            string CreateDescription(string name) => $"Allows the user to {name[1..].ToLower()}.";
 
             var permissions = new List<PermissionDto>();
 
