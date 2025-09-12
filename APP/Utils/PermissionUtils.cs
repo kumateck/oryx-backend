@@ -8,14 +8,14 @@ public static class PermissionModules
     public const string Logistics = "Logistics";
     public const string Warehouse = "Warehouse";
     public const string Production = "Production";
-    public const string QualityControl = "QualityControl";
-    public const string QualityAssurance = "QualityAssurance";
-    public const string FinishedGoodsWarehouse = "FinishedGoodsWarehouse";
-    public const string HumanResources = "HumanResources";
-    public const string ItSupport = "ITSupport";
+    public const string QualityControl = "Quality Control";
+    public const string QualityAssurance = "Quality Assurance";
+    public const string FinishedGoodsWarehouse = "Finished GoodsWarehouse";
+    public const string HumanResources = "Human Resources";
+    public const string ItSupport = "IT Support";
     public const string Settings = "Settings";
-    public const string InventoryManagement = "InventoryManagement";
-    public const string OrganizationalStructure = "OrganizationalStructure";
+    public const string InventoryManagement = "Inventory Management";
+    public const string OrganizationalStructure = "Organizational Structure";
 }
 
 public static class PermissionSubmodules
@@ -78,17 +78,17 @@ public static class PermissionSubmodules
     public const string PackingList = "Packing List";
     public const string ProformaInvoice = "Proforma Invoice";
     public const string Invoice = "Invoice";
-    public const string WaybillFgw = "WaybillFgw";
+    public const string WaybillFgw = "Waybill FGW";
 
     // Human Resources
     public const string EmployeeManagement = "Employee Management";
     public const string DepartmentEmployeeExport = "Department Employee Export";
     public const string DesignationManagement = "Designation Management";
     public const string LeaveManagement = "Leave Management";
-    public const string LeaveTypeConfiguration = "LeaveType Configuration";
+    public const string LeaveTypeConfiguration = "Leave Type Configuration";
     public const string StaffRequisition = "Staff Requisition";
     public const string AttendanceReportUpload = "Attendance Report Upload";
-    public const string ShiftScheduleReportUpload = "ShiftSchedule Report Upload";
+    public const string ShiftScheduleReportUpload = "Shift Schedule Report Upload";
     public const string OvertimeManagement = "Overtime Management";
 
     // IT SUPPORT
@@ -522,7 +522,7 @@ public static class PermissionKeys
           string GenerateDisplayName(string key) => Regex.Replace(key, "(\\B[A-Z])", " $1");
 
             // Helper function to generate a basic description.
-            string CreateDescription(string name) => $"Allows the user to {name[1..].ToLower()}.";
+            string CreateDescription(string name) => $"Allows the user to {name[3..].ToLower()}.";
 
             var permissions = new List<PermissionDto>();
 
