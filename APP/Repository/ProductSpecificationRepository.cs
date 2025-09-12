@@ -77,7 +77,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             
     }
 
-    public async Task<Result<ProductSpecificationDto>> GetProductSpecificationByProductId(Guid productId)
+    public async Task<Result<List<ProductSpecificationDto>>> GetProductSpecificationByProductId(Guid productId)
     {
         var productSpec = await context.ProductSpecifications
             .IgnoreQueryFilters()
@@ -94,11 +94,10 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Include(m => m.Response)
             .ThenInclude(r => r.FormResponses)
             .ThenInclude(r => r.FormField)
-            .Where(ps => !ps.DeletedAt.HasValue)
-            .FirstOrDefaultAsync(ps => ps.ProductId == productId);
-        return productSpec is null ? 
-            Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
-            : mapper.Map<ProductSpecificationDto>(productSpec);
+            .Where(ps => ps.ProductId == productId)
+            .ToListAsync();
+        
+        return mapper.Map<List<ProductSpecificationDto>>(productSpec);
     }
 
     public async Task<Result> UpdateProductSpecification(Guid id, CreateProductSpecificationRequest request)
