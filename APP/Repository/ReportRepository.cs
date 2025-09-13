@@ -748,11 +748,20 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var approvedManufacturers = context.Manufacturers.AsQueryable();
         var products = context.Products.AsQueryable();
         var materials = context.Materials.AsQueryable();
-        var bmrRequests = context.BatchManufacturingRecords.AsQueryable();
+        var bmrRequests = context.BatchManufacturingRecords
+            .AsSplitQuery()
+            .Include(b => b.ProductionScheduleProduct)
+            .ThenInclude(b => b.Product)
+            .AsQueryable();
         var billingSheetApprovals = context.BillingSheetApprovals.AsQueryable();
         var leaveRequestApprovals = context.LeaveRequestApprovals.AsQueryable();
         var purchaseOrderApprovals = context.PurchaseOrderApprovals.AsQueryable();
-        var requisitionApprovals = context.RequisitionApprovals.AsQueryable();
+        var requisitionApprovals = context.RequisitionApprovals
+            .AsSplitQuery()
+            .Include(r => r.Requisition)
+            .ThenInclude(r => r.ProductionScheduleProduct)
+            .ThenInclude(r => r.Product)
+            .AsQueryable();
         var responseApprovals = context.ResponseApprovals.AsQueryable();
         var staffRequisitionApprovals = context.StaffRequisitionApprovals.AsQueryable();
         
@@ -791,8 +800,12 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         {
             analyticalTestRequests = analyticalTestRequests.Where(lr => lr.ProductId == productId);
             products = products.Where(lr => lr.Id == productId);
-            bmrRequests = bmrRequests.Where(lr => lr.ProductId == productId);
-            requisitionApprovals = requisitionApprovals.Where(lr => lr.Requisition.ProductId == productId);
+            bmrRequests = bmrRequests.Where(lr => 
+                lr.ProductionScheduleProduct != null &&
+                lr.ProductionScheduleProduct.ProductId == productId);
+            requisitionApprovals = requisitionApprovals.Where(lr =>
+                lr.Requisition.ProductionScheduleProduct != null &&
+                lr.Requisition.ProductionScheduleProduct.ProductId == productId);
         }
 
         return new QaDashboardDto

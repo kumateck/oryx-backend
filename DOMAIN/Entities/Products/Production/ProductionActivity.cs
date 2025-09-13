@@ -12,10 +12,8 @@ namespace DOMAIN.Entities.Products.Production;
 public class ProductionActivity : BaseEntity
 {
     [StringLength(100)] public string Code { get; set; }
-    public Guid ProductionScheduleId { get; set; }
-    public ProductionSchedule ProductionSchedule { get; set; }
-    public Guid ProductId { get; set; }
-    public Product Product { get; set; }
+    public Guid ProductionScheduleProductId { get; set; }
+    public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
     public List<ProductionActivityStep> Steps { get; set; } = [];
     public ProductionStatus Status { get; set; } = ProductionStatus.New;
     public DateTime StartedAt { get; set; }
@@ -85,8 +83,7 @@ public class ProductionActivityDto : ProductionActivityListDto
 
 public class ProductionActivityListDto : BaseDto
 {
-    public CollectionItemDto ProductionSchedule { get; set; }
-    public CollectionItemDto Product { get; set; }
+    public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     public List<ProductionActivityStepDto> Steps { get; set; } = [];
     public ProductionStatus Status { get; set; }
     public DateTime StartedAt { get; set; }
@@ -101,8 +98,7 @@ public class ProductionActivityListDto : BaseDto
 
 public class ProductionActivityGroupDto : BaseDto
 {
-    public CollectionItemDto ProductionSchedule { get; set; }
-    public ProductListDto Product { get; set; }
+    public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     public ProductionStatus Status { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }

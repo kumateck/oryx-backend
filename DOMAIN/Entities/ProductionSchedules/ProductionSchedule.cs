@@ -66,10 +66,8 @@ public class CreateProductionExtraPacking
 
 public class ProductionExtraPacking : BaseEntity
 {
-    public Guid ProductionScheduleId { get; set; }
-    public ProductionSchedule ProductionSchedule { get; set; }
-    public Guid ProductId { get; set; }
-    public Product Product { get; set; }
+    public Guid ProductionScheduleProductId { get; set; }
+    public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid UoMId { get; set; }
@@ -90,8 +88,7 @@ public enum ProductionExtraPackingStatus
 
 public class ProductionExtraPackingDto : BaseDto
 {
-    public CollectionItemDto ProductionSchedule { get; set; }
-    public CollectionItemDto Product { get; set; }
+    public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public ProductionExtraPackingStatus Status  { get; set; }

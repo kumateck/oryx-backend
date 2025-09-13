@@ -1221,21 +1221,21 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return totalQuantityInWarehouse;
     }
     
-    public async Task<Result<decimal>> GetProductStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
+    public async Task<Result<decimal>> GetProductStockInWarehouseByBatch(Guid productId, Guid warehouseId)
     {
         // Sum of quantities moved to this location (incoming batches)
         var batchesInLocation = await context.FinishedProductBatchMovements
-            .Include(m => m.Batch)
+            .Include(m => m.Product)
             .Include(m => m.ToWarehouse)
-            .Where(m => m.BatchId == batchId
+            .Where(m => m.ProductId == productId
                         && m.ToWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
         // Sum of quantities moved out of this location (outgoing batches)
         var batchesMovedOut = await context.FinishedProductBatchMovements
-            .Include(m => m.Batch)
+            .Include(m => m.Product)
             .Include(m => m.FromWarehouse)
-            .Where(m => m.BatchId == batchId
+            .Where(m => m.ProductId == productId
                         && m.FromWarehouse != null && m.FromWarehouseId == warehouseId)
             .SumAsync(m => m.Quantity);
     
@@ -1595,8 +1595,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result> ReserveQuantityFromBatchForProduction(
         Guid batchId,
         Guid warehouseId,
-        Guid productionScheduleId,
-        Guid productId,
+        Guid productionScheduleProductId,
         decimal quantity,
         Guid? uoMId,
         Guid? warehouseLocationShelfId)
@@ -1624,8 +1623,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             MaterialBatchId = batchId,
             WarehouseId = warehouseId,
-            ProductionScheduleId = productionScheduleId,
-            ProductId = productId,
+            ProductionScheduleProductId = productionScheduleProductId,
             Quantity = quantity,
             UoMId = uoMId,
             WarehouseLocationShelfId = warehouseLocationShelfId
@@ -1640,7 +1638,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
 
-    public async Task<List<MaterialBatchReservedQuantityDto>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, Guid productionScheduleId, Guid productId)
+    public async Task<List<MaterialBatchReservedQuantityDto>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, Guid productionScheduleProductId)
     {
         return 
             mapper.Map<List<MaterialBatchReservedQuantityDto>>(await context.MaterialBatchReservedQuantities
@@ -1649,7 +1647,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(b => b.Material)
                 .Include(b => b.WarehouseLocationShelf)
                 .Where(r => r.MaterialBatch.MaterialId == materialId && 
-                            r.WarehouseId == warehouseId && r.ProductionScheduleId == productionScheduleId && r.ProductId == productId)
+                            r.WarehouseId == warehouseId && r.ProductionScheduleProductId == productionScheduleProductId)
                 .ToListAsync());
     }
 

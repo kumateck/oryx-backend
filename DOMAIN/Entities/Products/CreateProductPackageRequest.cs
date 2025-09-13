@@ -13,5 +13,6 @@ public class CreateProductPackageRequest
     public decimal UnitCapacity { get; set; } 
     public Guid? DirectLinkMaterialId { get; set; }
     public decimal PackingExcessMargin { get; set; }
-    public decimal BatchQuantity { get; set; }
+    public decimal PrescribedQuantity { get; set; }
+    public decimal Loose { get; set; }
 }
