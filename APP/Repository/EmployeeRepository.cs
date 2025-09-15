@@ -125,7 +125,7 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)
     {
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Email == request.Email);
+            .FirstOrDefaultAsync(e => e.Email ==request.Email || e.PhoneNumber == request.PhoneNumber);
 
         if (existingEmployee != null)
         {

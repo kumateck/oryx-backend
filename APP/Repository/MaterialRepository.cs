@@ -1628,7 +1628,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             UoMId = uoMId,
             WarehouseLocationShelfId = warehouseLocationShelfId
         };
-
+        
         await context.MaterialBatchReservedQuantities.AddAsync(reservation);
 
         // 3️⃣ Save changes

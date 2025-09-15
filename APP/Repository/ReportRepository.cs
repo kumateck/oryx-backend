@@ -197,7 +197,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.Type == employeeType.Value));
         }
 
-
         if (gender.HasValue)
         {
             employees = employees.Where(e => e.Gender == gender.Value);

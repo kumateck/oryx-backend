@@ -92,6 +92,28 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             : mapper.Map<MaterialSpecificationDto>(materialSpec);
     }
 
+    public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(Guid materialId)
+    {
+        var materialSpec = await context.MaterialSpecifications
+            .AsSplitQuery()
+            .Include(ms => ms.Material)
+            .Include(ms => ms.Form)
+            .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
+            .ThenInclude(ps => ps.Fields)
+            .ThenInclude(ps => ps.Question).ThenInclude(q => q.Options)
+            .Include(ps => ps.Form)
+            .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
+            .ThenInclude(ps => ps.Instrument)
+            .Include(ms => ms.CreatedBy)
+            .Include(m => m.Response)
+            .ThenInclude(r => r.FormResponses)
+            .ThenInclude(r => r.FormField)
+            .FirstOrDefaultAsync(ps => ps.MaterialId == materialId);
+        return materialSpec is null ? 
+            Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
+            : mapper.Map<MaterialSpecificationDto>(materialSpec);
+    }
+
     public async Task<Result> UpdateMaterialSpecification(Guid id, CreateMaterialSpecificationRequest request)
     {
         var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);

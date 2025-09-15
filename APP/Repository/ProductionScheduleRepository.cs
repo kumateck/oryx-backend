@@ -585,6 +585,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps)
                 .ThenInclude(s => s.ResponsibleUsers) 
             .AsNoTracking()
+            .Where(pa => pa.ProductionSchedule.Products
+                .Any(ps => ps.ProductId == pa.ProductId && !ps.Cancelled))
             .ToListAsync();
 
         // Process CurrentStep in memory
@@ -836,6 +838,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 .Include(productionSchedule => productionSchedule.Products)
                 .Include(p => p.CreatedBy)
                 .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductionScheduleId);
+                
         if(productionSchedule is null)
             return ProductErrors.NotFound(productionScheduleProduct.ProductionScheduleId);
         

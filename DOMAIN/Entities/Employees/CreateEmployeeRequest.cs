@@ -48,7 +48,7 @@ public class CreateEmployeeRequest
 
     [StringLength(15)] public string StaffNumber { get; set; }
     
-    [Required] [EmailAddress] public string Email { get; set; }
+    [EmailAddress] public string Email { get; set; }
     
     [Required] public PersonDto Mother { get; set; }
     
