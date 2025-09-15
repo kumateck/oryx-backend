@@ -14,4 +14,5 @@ public class ProductPackageDto
     public decimal PackingExcessMargin { get; set; }
     public decimal PrescribedQuantity { get; set; }
     public decimal Loose { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
 }

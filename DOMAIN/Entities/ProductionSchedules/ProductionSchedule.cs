@@ -50,6 +50,8 @@ public class ProductionScheduleProduct
     public decimal Quantity { get; set; }
     public bool Cancelled { get; set; }
     [StringLength(20000)] public string ReasonForCancellation { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
 }
 
 public class MarketType : BaseEntity

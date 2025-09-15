@@ -19,6 +19,8 @@ public class ProductPackage : BaseEntity
     public decimal PackingExcessMargin { get; set; }
     public decimal PrescribedQuantity { get; set; }
     public decimal Loose { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
 }
 
 public class PackageType : BaseEntity

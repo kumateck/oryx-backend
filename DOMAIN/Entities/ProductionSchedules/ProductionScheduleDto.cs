@@ -62,6 +62,7 @@ public class ProductionScheduleProductDto
     public CustomerDto MarketType { get; set; } 
     public bool Cancelled { get; set; }
    public string ReasonForCancellation { get; set; }
+   public ProductPackingDto ProductPacking { get; set; }
 }
 
 public enum MaterialRequisitionStatus

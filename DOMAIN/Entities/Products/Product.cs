@@ -64,6 +64,7 @@ public class ProductPacking : BaseEntity
     public UnitOfMeasure BasePackingUoM { get; set; }
     public decimal BasePackingQuantity { get; set; } 
     public decimal ExpectedYield { get; set; }
+    public bool IsDefault { get; set; }
     public List<ProductPackingList> PackingLists { get; set; } = [];
 }
 

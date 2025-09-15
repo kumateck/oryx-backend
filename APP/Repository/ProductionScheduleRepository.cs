@@ -55,6 +55,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var productionSchedule = await context.ProductionSchedules
             .AsSplitQuery()
             .Include(s => s.Products).ThenInclude(s => s.Product)
+            .Include(s => s.Products).ThenInclude(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
         return productionSchedule is null ? Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found") : mapper.Map<ProductionScheduleDto>(productionSchedule);
@@ -90,6 +91,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .AsSplitQuery()
             .Include(s => s.Products.Where(p => p.Product.DepartmentId == departmentId))
             .ThenInclude(p => p.Product)
+            .Include(s => s.Products).ThenInclude(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .Where(s => s.Products.Any(p => p.Product.DepartmentId == departmentId))
             .AsQueryable();
         
@@ -585,8 +587,6 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(pa => pa.Steps)
                 .ThenInclude(s => s.ResponsibleUsers) 
             .AsNoTracking()
-            .Where(pa => pa.ProductionSchedule.Products
-                .Any(ps => ps.ProductId == pa.ProductId && !ps.Cancelled))
             .ToListAsync();
 
         // Process CurrentStep in memory

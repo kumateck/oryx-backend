@@ -397,6 +397,7 @@ namespace APP.Repository;
             .AsSplitQuery()
             .Include(p => p.Product)
             .Include(p => p.Material)
+            .Include(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
 
         if (productPackage == null)
@@ -411,6 +412,7 @@ namespace APP.Repository;
         var query = await context.ProductPackages
             .AsSplitQuery()
             .Include(p => p.Material)
+            .Include(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
         
@@ -707,7 +709,7 @@ namespace APP.Repository;
 
             var category = await context.ProductCategories.FirstOrDefaultAsync(c => c.Name != null &&  c.Name.ToLower() == categoryName);
             var baseUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == baseUomName);
-            var basePackingUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
+            //var basePackingUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
             var equipment = await context.Equipments.FirstOrDefaultAsync(e => e.Name != null && e.Name.ToLower() == equipmentName);
             var department = await context.Departments.FirstOrDefaultAsync(d => d.Code == departmentCode);
             
