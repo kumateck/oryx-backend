@@ -1061,7 +1061,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Supplier>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<SupplierManufacturer>().HasQueryFilter(a => !a.Supplier.DeletedAt.HasValue);
         modelBuilder.Entity<Manufacturer>().HasQueryFilter(a => !a.DeletedAt.HasValue);
-        modelBuilder.Entity<ManufacturerMaterial>().HasQueryFilter(a => !a.Manufacturer.DeletedAt.HasValue);
+        modelBuilder.Entity<ManufacturerMaterial>().HasQueryFilter(a => !a.DeletedAt.HasValue);
 
         #endregion
 
