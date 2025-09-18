@@ -11,11 +11,9 @@ public class AnalyticalTestRequest : BaseEntity
 {
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
-    public Guid ProductId { get; set; }
-    public Product Product { get; set; }
-    public Guid ProductionScheduleId { get; set; }
-    public ProductionSchedule ProductionSchedule { get; set; }
-    public Guid? ProductionActivityStepId { get; set; }
+    public Guid ProductionScheduleProductId { get; set; }
+    public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
+    public Guid ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public DateTime ManufacturingDate { get; set; }
     public DateTime ExpiryDate { get; set; }

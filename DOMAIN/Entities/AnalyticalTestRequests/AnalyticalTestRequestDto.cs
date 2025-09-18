@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 using SHARED;
@@ -8,8 +9,7 @@ namespace DOMAIN.Entities.AnalyticalTestRequests;
 public class AnalyticalTestRequestDto : BaseDto
 {
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
-    public CollectionItemDto Product { get; set; }
-    public CollectionItemDto ProductionSchedule { get; set; }
+    public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     public ProductionActivityStepDto ProductionActivityStep { get; set; }
     public DateTime ManufacturingDate { get; set; }
     

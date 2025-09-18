@@ -16,8 +16,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         
         if(await context.AnalyticalTestRequests.AnyAsync(a => 
-               a.BatchManufacturingRecordId == request.BatchManufacturingRecordId && a.ProductionActivityStepId == request.ProductionActivityStepId
-               && a.ProductionScheduleId == request.ProductionScheduleId && a.ProductId == request.ProductId))
+               a.BatchManufacturingRecordId == request.BatchManufacturingRecordId && a.ProductionScheduleProductId == request.ProductionScheduleProductId))
             return Error.Validation("Atr", "This atr already exists"); 
         
         var test = mapper.Map<AnalyticalTestRequest>(request);
@@ -30,8 +29,10 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         var query = context.AnalyticalTestRequests
             .AsSplitQuery()
-            .Include(s => s.Product)
-            .Include(s => s.ProductionSchedule)
+            .Include(p => p.ProductionScheduleProduct)
+            .ThenInclude(s => s.Product)
+            .Include(p => p.ProductionScheduleProduct)
+            .ThenInclude(s => s.ProductionSchedule)
             .Include(s => s.ProductionActivityStep)
             .Include(s => s.BatchManufacturingRecord)
             .Include(s => s.CreatedBy)
@@ -56,8 +57,10 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         var test = await context.AnalyticalTestRequests
             .AsSplitQuery()
-            .Include(s => s.Product)
-            .Include(s => s.ProductionSchedule)
+            .Include(p => p.ProductionScheduleProduct)
+            .ThenInclude(s => s.Product)
+            .Include(p => p.ProductionScheduleProduct)
+            .ThenInclude(s => s.ProductionSchedule)
             .Include(s => s.ProductionActivityStep)
             .Include(s => s.BatchManufacturingRecord)
             .Include(s => s.CreatedBy)

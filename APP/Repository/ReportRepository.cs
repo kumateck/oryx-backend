@@ -743,7 +743,10 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
     public async Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter, Guid? productId)
     {
-        var analyticalTestRequests = context.AnalyticalTestRequests.AsQueryable();
+        var analyticalTestRequests = context.AnalyticalTestRequests
+            .AsSplitQuery()
+            .Include(p => p.ProductionScheduleProduct)
+            .AsQueryable();
         var approvedManufacturers = context.Manufacturers.AsQueryable();
         var products = context.Products.AsQueryable();
         var materials = context.Materials.AsQueryable();
@@ -797,7 +800,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         if (productId.HasValue)
         {
-            analyticalTestRequests = analyticalTestRequests.Where(lr => lr.ProductId == productId);
+            analyticalTestRequests = analyticalTestRequests.Where(lr => lr.ProductionScheduleProduct.ProductId == productId);
             products = products.Where(lr => lr.Id == productId);
             bmrRequests = bmrRequests.Where(lr => 
                 lr.ProductionScheduleProduct != null &&
