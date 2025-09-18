@@ -38,7 +38,7 @@ public class Employee : BaseEntity
     
     [StringLength(100)] public string Email { get; set; }
     
-    [StringLength(10)] public string PhoneNumber { get; set; }
+    [StringLength(20)] public string PhoneNumber { get; set; }
     
     [StringLength(100)] public string BankAccountNumber { get; set; }
     
