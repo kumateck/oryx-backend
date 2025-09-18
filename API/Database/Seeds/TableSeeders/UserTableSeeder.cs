@@ -1,3 +1,4 @@
+/*
 using System.Diagnostics;
 using System.Security.Claims;
 using IdentityModel;
@@ -40,7 +41,7 @@ public class UserTableSeeders : ISeeder
         // Seed second user
         CreateUserIfNotExists(userManager, dbContext, 
             "douglassboakye22@gmail.com", "Doug", "Afford", "Pass123$1",
-            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [RoleUtils.AppRoleSuper],
             [
                 new Claim(JwtClaimTypes.Name, "Dog"),
                 new Claim(JwtClaimTypes.GivenName, "Affordable"),
@@ -49,7 +50,7 @@ public class UserTableSeeders : ISeeder
         
         CreateUserIfNotExists(userManager, dbContext, 
             "adujoel7@gmail.com", "Adu", "Joel", "Pass123$1",
-            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [RoleUtils.AppRoleSuper],
             [
                 new Claim(JwtClaimTypes.Name, "Adu"),
                 new Claim(JwtClaimTypes.GivenName, "Joel"),
@@ -58,7 +59,7 @@ public class UserTableSeeders : ISeeder
         
         CreateUserIfNotExists(userManager, dbContext, 
             "eugenedumoga@gmail.com", "Eugene", "Dumoga", "Pass123$1",
-            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [RoleUtils.AppRoleSuper],
             [
                 new Claim(JwtClaimTypes.Name, "Eugene"),
                 new Claim(JwtClaimTypes.GivenName, "Dumoga"),
@@ -67,7 +68,7 @@ public class UserTableSeeders : ISeeder
         
         CreateUserIfNotExists(userManager, dbContext, 
             "gyan@kumateck.com", "Anthony", "Gyan", "Pass123$1",
-            [RoleUtils.AppRoleSuper, RoleUtils.AppRoleAdmin],
+            [RoleUtils.AppRoleSuper],
             [
                 new Claim(JwtClaimTypes.Name, "Anthony"),
                 new Claim(JwtClaimTypes.GivenName, "Gyan"),
@@ -147,3 +148,4 @@ public class UserTableSeeders : ISeeder
         }
     }
 }
+*/
