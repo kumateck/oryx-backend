@@ -8,8 +8,7 @@ namespace DOMAIN.Entities.ProductionSchedules.Packing;
 
 public class CreateFinalPacking
 {
-    public Guid ProductionScheduleId { get; set; }
-    public Guid ProductId { get; set; }
+    public Guid ProductionScheduleProductId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public List<CreateFinalPackingMaterial> Materials { get; set; } = [];
     public decimal NumberOfBottlesPerShipper { get; set; }
