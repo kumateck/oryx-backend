@@ -130,7 +130,7 @@ COPY public."Customers" ("Id", "Name", "Email", "Phone", "Address", "CreatedAt",
 -- Data for Name: ProductionOrders; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ProductionOrders" ("Id", "Code", "CustomerId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "Approved", "DeliveredAt", "Status") FROM stdin;
+COPY public."ProductionOrders" ("Id", "Code", "CustomerId", "Status", "Approved", "DeliveredAt", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -138,24 +138,7 @@ COPY public."ProductionOrders" ("Id", "Code", "CustomerId", "CreatedAt", "Update
 -- Data for Name: AllocateProductionOrders; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."AllocateProductionOrders" ("Id", "ProductionOrderId", "Approved", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "DeliveredAt") FROM stdin;
-\.
-
-
---
--- Data for Name: Approvals; Type: TABLE DATA; Schema: public; Owner: root
---
-
-COPY public."Approvals" ("Id", "ItemType", "EscalationDuration", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
-01992f36-fbf4-7e8d-90f8-5bf3972ffca9	Stock	00:00:00	2025-09-09 16:02:36.841367+00	\N	\N	\N	\N	\N
-\.
-
-
---
--- Data for Name: AllocateProductionOrderApprovals; Type: TABLE DATA; Schema: public; Owner: root
---
-
-COPY public."AllocateProductionOrderApprovals" ("Id", "AllocateProductionOrderId", "ApprovalId", "UserId", "RoleId", "Required", "Order", "StageStartTime", "Status", "ApprovalTime", "ApprovedById", "CreatedAt", "ActivatedAt", "Comments") FROM stdin;
+COPY public."AllocateProductionOrders" ("Id", "ProductionOrderId", "Approved", "DeliveredAt", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -163,17 +146,17 @@ COPY public."AllocateProductionOrderApprovals" ("Id", "AllocateProductionOrderId
 -- Data for Name: UnitOfMeasures; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."UnitOfMeasures" ("Id", "Name", "Symbol", "Description", "IsScalable", "IsRawMaterial", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "Category", "Type") FROM stdin;
-01992f37-03f8-7e93-9976-10b8589eb580	Milligram	mg	Base unit of mass in the metric system	t	t	2025-09-09 16:02:38.948167+00	\N	\N	\N	\N	\N	0	0
-01992f37-04ce-75fa-a764-fe50c72b029b	Meter	m	Base unit of length in the metric system	t	f	2025-09-09 16:02:38.948166+00	\N	\N	\N	\N	\N	0	0
-01992f37-04ce-7c56-b37b-36f32267efec	Milliliter	ml	Base unit of volume in the metric system	t	t	2025-09-09 16:02:38.948166+00	\N	\N	\N	\N	\N	0	0
-01992f37-04cf-7020-89d7-a5d0ac426b7e	Pack	pack	Unit for counting packs of items	f	f	2025-09-09 16:02:38.948164+00	\N	\N	\N	\N	\N	0	0
-01992f37-04cf-7124-8d99-5ed147223e91	Cubic Meter	m³	Unit of volume in the metric system	t	f	2025-09-09 16:02:38.948161+00	\N	\N	\N	\N	\N	0	0
-01992f37-04cf-725b-a6c6-f00f04cda680	Box	box	Unit for counting boxes of items	f	f	2025-09-09 16:02:38.948164+00	\N	\N	\N	\N	\N	0	0
-01992f37-04cf-739b-8dd0-f3a5fbf53b6b	Square Meter	m²	Unit of area in the metric system	f	f	2025-09-09 16:02:38.948162+00	\N	\N	\N	\N	\N	0	0
-01992f37-04cf-785a-8529-c4bafc1f8897	Piece	piece	Unit for counting individual items	f	f	2025-09-09 16:02:38.948165+00	\N	\N	\N	\N	\N	0	0
-01992f37-04cf-7eb9-bedb-6f1cde56c36b	Tablet	tablet	Unit for counting tablets	f	f	2025-09-09 16:02:38.948165+00	\N	\N	\N	\N	\N	0	0
-01992f37-04cf-7eec-8ccf-d5c56a87b547	Bottle	bottle	Unit for counting bottles of liquid	f	f	2025-09-09 16:02:38.948163+00	\N	\N	\N	\N	\N	0	0
+COPY public."UnitOfMeasures" ("Id", "Name", "Symbol", "Description", "IsScalable", "IsRawMaterial", "Type", "Category", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+01992f37-03f8-7e93-9976-10b8589eb580	Milligram	mg	Base unit of mass in the metric system	t	t	0	0	2025-09-09 16:02:38.948167+00	\N	\N	\N	\N	\N
+01992f37-04ce-75fa-a764-fe50c72b029b	Meter	m	Base unit of length in the metric system	t	f	0	0	2025-09-09 16:02:38.948166+00	\N	\N	\N	\N	\N
+01992f37-04ce-7c56-b37b-36f32267efec	Milliliter	ml	Base unit of volume in the metric system	t	t	0	0	2025-09-09 16:02:38.948166+00	\N	\N	\N	\N	\N
+01992f37-04cf-7020-89d7-a5d0ac426b7e	Pack	pack	Unit for counting packs of items	f	f	0	0	2025-09-09 16:02:38.948164+00	\N	\N	\N	\N	\N
+01992f37-04cf-7124-8d99-5ed147223e91	Cubic Meter	m³	Unit of volume in the metric system	t	f	0	0	2025-09-09 16:02:38.948161+00	\N	\N	\N	\N	\N
+01992f37-04cf-725b-a6c6-f00f04cda680	Box	box	Unit for counting boxes of items	f	f	0	0	2025-09-09 16:02:38.948164+00	\N	\N	\N	\N	\N
+01992f37-04cf-739b-8dd0-f3a5fbf53b6b	Square Meter	m²	Unit of area in the metric system	f	f	0	0	2025-09-09 16:02:38.948162+00	\N	\N	\N	\N	\N
+01992f37-04cf-785a-8529-c4bafc1f8897	Piece	piece	Unit for counting individual items	f	f	0	0	2025-09-09 16:02:38.948165+00	\N	\N	\N	\N	\N
+01992f37-04cf-7eb9-bedb-6f1cde56c36b	Tablet	tablet	Unit for counting tablets	f	f	0	0	2025-09-09 16:02:38.948165+00	\N	\N	\N	\N	\N
+01992f37-04cf-7eec-8ccf-d5c56a87b547	Bottle	bottle	Unit for counting bottles of liquid	f	f	0	0	2025-09-09 16:02:38.948163+00	\N	\N	\N	\N	\N
 \.
 
 
@@ -182,6 +165,36 @@ COPY public."UnitOfMeasures" ("Id", "Name", "Symbol", "Description", "IsScalable
 --
 
 COPY public."Equipments" ("Id", "Name", "MachineId", "IsStorage", "CapacityQuantity", "UoMId", "RelevanceCheck", "DepartmentId", "StorageLocation", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+\.
+
+
+--
+-- Data for Name: ProductCategories; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."ProductCategories" ("Id", "Name", "Description", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+01993433-4c9c-7944-b2d3-6e7bd6f99bff	Tablet	\N	2025-09-10 15:16:41.295151+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+01993433-7777-7abc-b563-37c5143c23fa	Syrupd	\N	2025-09-10 15:16:52.215969+00	2025-09-10 15:17:13.075489+00	01992f37-0e94-7c6e-99f0-d72cec4812f6	01992f37-0e94-7c6e-99f0-d72cec4812f6	2025-09-10 15:17:13.06914+00	01992f37-0e94-7c6e-99f0-d72cec4812f6
+019938d8-cc27-7ac1-8165-3f9f18c77424	Syrup	\N	2025-09-11 12:55:56.199779+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+019938d9-1407-7fff-b47e-b213ffeb0689	Ointment	\N	2025-09-11 12:56:14.599483+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+019938d9-4686-7cf9-970b-8a1ea1ed0730	Dry Powder	\N	2025-09-11 12:56:27.526536+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+019938d9-9538-7d85-ab36-bea3f57b5bc4	Capsules	\N	2025-09-11 12:56:47.672609+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: Products; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."Products" ("Id", "Code", "Name", "GenericName", "StorageCondition", "PackageStyle", "FilledWeight", "ShelfLife", "ActionUse", "Description", "FdaRegistrationNumber", "MasterFormulaNumber", "PrimaryPackDescription", "SecondaryPackDescription", "TertiaryPackDescription", "LabelClaim", "CategoryId", "BaseQuantity", "BaseUomId", "EquipmentId", "DepartmentId", "FullBatchSize", "Division", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+\.
+
+
+--
+-- Data for Name: AllocateProductionOrderProduct; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."AllocateProductionOrderProduct" ("AllocateProductionOrderId", "Id", "ProductId") FROM stdin;
 \.
 
 
@@ -218,16 +231,10 @@ COPY public."Operations" ("Id", "Name", "Description", "Order", "Action", "Creat
 
 
 --
--- Data for Name: ProductCategories; Type: TABLE DATA; Schema: public; Owner: root
+-- Data for Name: ProductPackings; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ProductCategories" ("Id", "Name", "Description", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
-01993433-4c9c-7944-b2d3-6e7bd6f99bff	Tablet	\N	2025-09-10 15:16:41.295151+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
-01993433-7777-7abc-b563-37c5143c23fa	Syrupd	\N	2025-09-10 15:16:52.215969+00	2025-09-10 15:17:13.075489+00	01992f37-0e94-7c6e-99f0-d72cec4812f6	01992f37-0e94-7c6e-99f0-d72cec4812f6	2025-09-10 15:17:13.06914+00	01992f37-0e94-7c6e-99f0-d72cec4812f6
-019938d8-cc27-7ac1-8165-3f9f18c77424	Syrup	\N	2025-09-11 12:55:56.199779+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
-019938d9-1407-7fff-b47e-b213ffeb0689	Ointment	\N	2025-09-11 12:56:14.599483+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
-019938d9-4686-7cf9-970b-8a1ea1ed0730	Dry Powder	\N	2025-09-11 12:56:27.526536+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
-019938d9-9538-7d85-ab36-bea3f57b5bc4	Capsules	\N	2025-09-11 12:56:47.672609+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+COPY public."ProductPackings" ("Id", "ProductId", "Name", "Description", "PackPerShipper", "BasePackingUomId", "BasePackingQuantity", "ExpectedYield", "IsDefault", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -240,10 +247,10 @@ COPY public."ProductionSchedules" ("Id", "Code", "ScheduledStartTime", "Schedule
 
 
 --
--- Data for Name: Products; Type: TABLE DATA; Schema: public; Owner: root
+-- Data for Name: ProductionScheduleProducts; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."Products" ("Id", "Code", "Name", "GenericName", "StorageCondition", "PackageStyle", "FilledWeight", "ShelfLife", "ActionUse", "Description", "FdaRegistrationNumber", "MasterFormulaNumber", "PrimaryPackDescription", "SecondaryPackDescription", "TertiaryPackDescription", "LabelClaim", "CategoryId", "BaseQuantity", "BasePackingQuantity", "BaseUomId", "BasePackingUomId", "EquipmentId", "DepartmentId", "FullBatchSize", "Division", "PackPerShipper", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "ExpectedYield") FROM stdin;
+COPY public."ProductionScheduleProducts" ("Id", "ProductionScheduleId", "ProductId", "BatchNumber", "BatchSize", "MarketTypeId", "Quantity", "Cancelled", "ReasonForCancellation", "ProductPackingId") FROM stdin;
 \.
 
 
@@ -251,7 +258,7 @@ COPY public."Products" ("Id", "Code", "Name", "GenericName", "StorageCondition",
 -- Data for Name: ProductionActivities; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ProductionActivities" ("Id", "Code", "ProductionScheduleId", "ProductId", "Status", "StartedAt", "CompletedAt", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."ProductionActivities" ("Id", "Code", "ProductionScheduleProductId", "Status", "StartedAt", "CompletedAt", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -267,7 +274,73 @@ COPY public."ProductionActivitySteps" ("Id", "ProductionActivityId", "OperationI
 -- Data for Name: BatchManufacturingRecords; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."BatchManufacturingRecords" ("Id", "ProductId", "ProductionScheduleId", "ProductionActivityStepId", "BatchNumber", "ManufacturingDate", "ExpiryDate", "BatchQuantity", "SampledQuantity", "Status", "IssuedById", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "IssuedDate") FROM stdin;
+COPY public."BatchManufacturingRecords" ("Id", "ProductionScheduleProductId", "ProductionActivityStepId", "BatchNumber", "ManufacturingDate", "ExpiryDate", "BatchQuantity", "SampledQuantity", "Status", "IssuedById", "IssuedDate", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+\.
+
+
+--
+-- Data for Name: PackageStyles; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."PackageStyles" ("Id", "Name", "Description", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+019938de-0d8d-7987-ae5f-d9232bc51e0d	Bags	\N	2025-09-11 13:01:40.657609+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+019938de-1dba-77fc-8a41-b95604d8a565	Shipper	\N	2025-09-11 13:01:44.762457+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+019938de-30ec-7fe6-a4f6-fa4836182dcc	Drums	\N	2025-09-11 13:01:49.677058+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: Warehouses; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."Warehouses" ("Id", "Name", "DepartmentId", "Description", "Type", "IsBeta", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+33ee8e93-6924-42ab-90dc-e6b645ddd5a1	Beta Finished Goods Warehouse	\N	The  beta finished goods warehouse	2	t	2025-09-09 16:02:38.284818+00	\N	\N	\N	\N	\N
+99a9c6ec-3f36-42fb-a2c1-f1f2947d7fb5	Non Beta Finished Goods Warehouse	\N	The  non beta finished goods warehouse	2	f	2025-09-09 16:02:38.284817+00	\N	\N	\N	\N	\N
+1035d829-20b7-48ec-ae2c-817273477053	OINTMENT Production Floor	01992f37-0224-7ad8-b571-baf57278dd3b	The OINTMENT production materials	3	\N	2025-09-09 16:02:38.284825+00	\N	\N	\N	\N	\N
+2cc8f519-198f-46f6-8d61-d1f1500957e9	SYRUP Production Floor	01992f37-014d-73f6-b01a-4279fc2b4895	The SYRUP production materials	3	\N	2025-09-09 16:02:38.284827+00	\N	\N	\N	\N	\N
+2cfc47ee-4dc2-4f9e-9dbe-e54f11e726c2	BETA Package Warehouse	01992f37-022b-7805-a196-b1f23fd760db	The BETA packaged materials storage warehouse	1	\N	2025-09-09 16:02:38.28482+00	\N	\N	\N	\N	\N
+2eaa0084-0578-4fa9-a0d6-3ade18a48758	OINTMENT Package Warehouse	01992f37-0224-7ad8-b571-baf57278dd3b	The OINTMENT packaged materials storage warehouse	1	\N	2025-09-09 16:02:38.284824+00	\N	\N	\N	\N	\N
+34e13675-c6ba-41e1-a5ec-f3b11209bdea	TABLET Raw Warehouse	01992f37-0228-7214-a916-7673e957c27d	The TABLET raw materials storage warehouse	0	\N	2025-09-09 16:02:38.284822+00	\N	\N	\N	\N	\N
+36d026d6-7bbf-441f-83ee-a2ee4d67fcff	OINTMENT Raw Warehouse	01992f37-0224-7ad8-b571-baf57278dd3b	The OINTMENT raw materials storage warehouse	0	\N	2025-09-09 16:02:38.284824+00	\N	\N	\N	\N	\N
+44e9e9ae-fdfd-4c2b-939f-c6ada1a9049a	TABLET Package Warehouse	01992f37-0228-7214-a916-7673e957c27d	The TABLET packaged materials storage warehouse	1	\N	2025-09-09 16:02:38.284822+00	\N	\N	\N	\N	\N
+45ca9be5-5716-4ff1-a448-776b5ca3ace3	BETA Production Floor	01992f37-022b-7805-a196-b1f23fd760db	The BETA production materials	3	\N	2025-09-09 16:02:38.284821+00	\N	\N	\N	\N	\N
+909811c9-e09b-433e-871d-6b3ee7ce11ac	BETA Raw Warehouse	01992f37-022b-7805-a196-b1f23fd760db	The BETA raw materials storage warehouse	0	\N	2025-09-09 16:02:38.284819+00	\N	\N	\N	\N	\N
+babda239-94ed-4d08-8eaf-c9716902a288	TABLET Production Floor	01992f37-0228-7214-a916-7673e957c27d	The TABLET production materials	3	\N	2025-09-09 16:02:38.284823+00	\N	\N	\N	\N	\N
+f19fbbba-110e-4fe4-b178-b7a49e9b6e83	SYRUP Package Warehouse	01992f37-014d-73f6-b01a-4279fc2b4895	The SYRUP packaged materials storage warehouse	1	\N	2025-09-09 16:02:38.284826+00	\N	\N	\N	\N	\N
+fe29c81f-d14e-4c3a-9f28-b5d9725d392a	SYRUP Raw Warehouse	01992f37-014d-73f6-b01a-4279fc2b4895	The SYRUP raw materials storage warehouse	0	\N	2025-09-09 16:02:38.284826+00	\N	\N	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: FinishedGoodsTransferNotes; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."FinishedGoodsTransferNotes" ("Id", "TransferNoteNumber", "FromWarehouseId", "ToWarehouseId", "QuantityPerPack", "PackageStyleId", "UoMId", "IsApproved", "TotalQuantity", "QuantityReceived", "Notes", "QarNumber", "BatchManufacturingRecordId", "ProductionActivityStepId", "Loose", "AllocatedQuantity", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+\.
+
+
+--
+-- Data for Name: AllocateProductQuantity; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."AllocateProductQuantity" ("AllocateProductionOrderProductAllocateProductionOrderId", "AllocateProductionOrderProductId", "Id", "FinishedGoodsTransferNoteId", "Quantity") FROM stdin;
+\.
+
+
+--
+-- Data for Name: Approvals; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."Approvals" ("Id", "ItemType", "EscalationDuration", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+01992f36-fbf4-7e8d-90f8-5bf3972ffca9	Stock	00:00:00	2025-09-09 16:02:36.841367+00	\N	\N	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: AllocateProductionOrderApprovals; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."AllocateProductionOrderApprovals" ("Id", "AllocateProductionOrderId", "ApprovalId", "UserId", "RoleId", "Required", "Order", "StageStartTime", "Status", "ApprovalTime", "ApprovedById", "CreatedAt", "ActivatedAt", "Comments") FROM stdin;
 \.
 
 
@@ -289,7 +362,7 @@ COPY public."ProductStates" ("Id", "Name", "CreatedAt", "UpdatedAt", "CreatedByI
 -- Data for Name: AnalyticalTestRequests; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."AnalyticalTestRequests" ("Id", "BatchManufacturingRecordId", "ProductId", "ProductionScheduleId", "ProductionActivityStepId", "ManufacturingDate", "ExpiryDate", "ReleasedAt", "ReleasedById", "Filled", "SampledQuantity", "Stage", "StateId", "NumberOfContainers", "SampledById", "AcknowledgedById", "AcknowledgedAt", "SampledAt", "Status", "TestedById", "TestedAt", "ArNumber", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."AnalyticalTestRequests" ("Id", "BatchManufacturingRecordId", "ProductionScheduleProductId", "ProductionActivityStepId", "ManufacturingDate", "ExpiryDate", "ReleasedAt", "ReleasedById", "Filled", "SampledQuantity", "Stage", "StateId", "NumberOfContainers", "SampledById", "AcknowledgedById", "AcknowledgedAt", "SampledAt", "Status", "TestedById", "TestedAt", "ArNumber", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -877,18 +950,10 @@ COPY public."BatchItem" ("Id", "BatchNumber", "PurchaseOrderInvoiceId", "Manufac
 
 
 --
--- Data for Name: ProductPackings; Type: TABLE DATA; Schema: public; Owner: root
---
-
-COPY public."ProductPackings" ("Id", "ProductId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "Description", "Name") FROM stdin;
-\.
-
-
---
 -- Data for Name: BatchPackagingRecords; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."BatchPackagingRecords" ("Id", "ProductId", "ProductionScheduleId", "ProductionActivityStepId", "BatchNumber", "ManufacturingDate", "ExpiryDate", "BatchQuantity", "IssuedById", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "ProductPackingId", "IssuedDate") FROM stdin;
+COPY public."BatchPackagingRecords" ("Id", "ProductionScheduleProductId", "ProductionActivityStepId", "BatchNumber", "ManufacturingDate", "ExpiryDate", "BatchQuantity", "IssuedById", "ProductPackingId", "IssuedDate", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -2694,18 +2759,7 @@ COPY public."Materials" ("Id", "Code", "Name", "Description", "Pharmacopoeia", "
 -- Data for Name: BillOfMaterialItems; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."BillOfMaterialItems" ("Id", "BillOfMaterialId", "MaterialId", "MaterialTypeId", "Grade", "CasNumber", "Function", "Order", "IsSubstitutable", "BaseQuantity", "BaseUoMId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
-\.
-
-
---
--- Data for Name: PackageStyles; Type: TABLE DATA; Schema: public; Owner: root
---
-
-COPY public."PackageStyles" ("Id", "Name", "Description", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
-019938de-0d8d-7987-ae5f-d9232bc51e0d	Bags	\N	2025-09-11 13:01:40.657609+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
-019938de-1dba-77fc-8a41-b95604d8a565	Shipper	\N	2025-09-11 13:01:44.762457+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
-019938de-30ec-7fe6-a4f6-fa4836182dcc	Drums	\N	2025-09-11 13:01:49.677058+00	\N	01992f37-0e94-7c6e-99f0-d72cec4812f6	\N	\N	\N
+COPY public."BillOfMaterialItems" ("Id", "BillOfMaterialId", "MaterialId", "MaterialTypeId", "Grade", "CasNumber", "Function", "Order", "IsSubstitutable", "BaseQuantity", "BaseUoMId", "PrescribedQuantity", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -2737,7 +2791,7 @@ COPY public."BillingSheetApprovals" ("Id", "BillingSheetId", "ApprovalId", "User
 -- Data for Name: Requisitions; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."Requisitions" ("Id", "Code", "RequestedById", "DepartmentId", "RequisitionType", "Status", "Comments", "ExpectedDelivery", "ProductId", "ProductionScheduleId", "ProductionActivityStepId", "Approved", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."Requisitions" ("Id", "Code", "RequestedById", "DepartmentId", "RequisitionType", "Status", "Comments", "ExpectedDelivery", "ProductionScheduleProductId", "ProductionActivityStepId", "Approved", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -2746,28 +2800,6 @@ COPY public."Requisitions" ("Id", "Code", "RequestedById", "DepartmentId", "Requ
 --
 
 COPY public."RequisitionItems" ("Id", "RequisitionId", "MaterialId", "UoMId", "Quantity", "QuantityReceived", "Status", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
-\.
-
-
---
--- Data for Name: Warehouses; Type: TABLE DATA; Schema: public; Owner: root
---
-
-COPY public."Warehouses" ("Id", "Name", "DepartmentId", "Description", "Type", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "IsBeta") FROM stdin;
-33ee8e93-6924-42ab-90dc-e6b645ddd5a1	Beta Finished Goods Warehouse	\N	The  beta finished goods warehouse	2	2025-09-09 16:02:38.284818+00	\N	\N	\N	\N	\N	t
-99a9c6ec-3f36-42fb-a2c1-f1f2947d7fb5	Non Beta Finished Goods Warehouse	\N	The  non beta finished goods warehouse	2	2025-09-09 16:02:38.284817+00	\N	\N	\N	\N	\N	f
-1035d829-20b7-48ec-ae2c-817273477053	OINTMENT Production Floor	01992f37-0224-7ad8-b571-baf57278dd3b	The OINTMENT production materials	3	2025-09-09 16:02:38.284825+00	\N	\N	\N	\N	\N	\N
-2cc8f519-198f-46f6-8d61-d1f1500957e9	SYRUP Production Floor	01992f37-014d-73f6-b01a-4279fc2b4895	The SYRUP production materials	3	2025-09-09 16:02:38.284827+00	\N	\N	\N	\N	\N	\N
-2cfc47ee-4dc2-4f9e-9dbe-e54f11e726c2	BETA Package Warehouse	01992f37-022b-7805-a196-b1f23fd760db	The BETA packaged materials storage warehouse	1	2025-09-09 16:02:38.28482+00	\N	\N	\N	\N	\N	\N
-2eaa0084-0578-4fa9-a0d6-3ade18a48758	OINTMENT Package Warehouse	01992f37-0224-7ad8-b571-baf57278dd3b	The OINTMENT packaged materials storage warehouse	1	2025-09-09 16:02:38.284824+00	\N	\N	\N	\N	\N	\N
-34e13675-c6ba-41e1-a5ec-f3b11209bdea	TABLET Raw Warehouse	01992f37-0228-7214-a916-7673e957c27d	The TABLET raw materials storage warehouse	0	2025-09-09 16:02:38.284822+00	\N	\N	\N	\N	\N	\N
-36d026d6-7bbf-441f-83ee-a2ee4d67fcff	OINTMENT Raw Warehouse	01992f37-0224-7ad8-b571-baf57278dd3b	The OINTMENT raw materials storage warehouse	0	2025-09-09 16:02:38.284824+00	\N	\N	\N	\N	\N	\N
-44e9e9ae-fdfd-4c2b-939f-c6ada1a9049a	TABLET Package Warehouse	01992f37-0228-7214-a916-7673e957c27d	The TABLET packaged materials storage warehouse	1	2025-09-09 16:02:38.284822+00	\N	\N	\N	\N	\N	\N
-45ca9be5-5716-4ff1-a448-776b5ca3ace3	BETA Production Floor	01992f37-022b-7805-a196-b1f23fd760db	The BETA production materials	3	2025-09-09 16:02:38.284821+00	\N	\N	\N	\N	\N	\N
-909811c9-e09b-433e-871d-6b3ee7ce11ac	BETA Raw Warehouse	01992f37-022b-7805-a196-b1f23fd760db	The BETA raw materials storage warehouse	0	2025-09-09 16:02:38.284819+00	\N	\N	\N	\N	\N	\N
-babda239-94ed-4d08-8eaf-c9716902a288	TABLET Production Floor	01992f37-0228-7214-a916-7673e957c27d	The TABLET production materials	3	2025-09-09 16:02:38.284823+00	\N	\N	\N	\N	\N	\N
-f19fbbba-110e-4fe4-b178-b7a49e9b6e83	SYRUP Package Warehouse	01992f37-014d-73f6-b01a-4279fc2b4895	The SYRUP packaged materials storage warehouse	1	2025-09-09 16:02:38.284826+00	\N	\N	\N	\N	\N	\N
-fe29c81f-d14e-4c3a-9f28-b5d9725d392a	SYRUP Raw Warehouse	01992f37-014d-73f6-b01a-4279fc2b4895	The SYRUP raw materials storage warehouse	0	2025-09-09 16:02:38.284826+00	\N	\N	\N	\N	\N	\N
 \.
 
 
@@ -2807,7 +2839,7 @@ COPY public."Grns" ("Id", "CarrierName", "VehicleNumber", "Remarks", "GrnNumber"
 -- Data for Name: StockTransfers; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."StockTransfers" ("Id", "Code", "MaterialId", "UoMId", "Reason", "RequiredQuantity", "ProductId", "ProductionScheduleId", "ProductionActivityStepId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."StockTransfers" ("Id", "Code", "MaterialId", "UoMId", "Reason", "RequiredQuantity", "ProductionScheduleProductId", "ProductionActivityStepId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -2823,7 +2855,7 @@ COPY public."StockTransferSources" ("Id", "StockTransferId", "FromDepartmentId",
 -- Data for Name: MaterialBatches; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."MaterialBatches" ("Id", "MaterialId", "ChecklistId", "BatchNumber", "GrnId", "StockTransferSourceId", "NumberOfContainers", "ContainerPackageStyleId", "QuantityPerContainer", "QuantityAssigned", "TotalQuantity", "ConsumedQuantity", "SampledQuantity", "UoMId", "Status", "DateReceived", "DateApproved", "DateRejected", "ExpiryDate", "ManufacturingDate", "RetestDate", "WarehouseArrivalLocationId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "ReturnDate") FROM stdin;
+COPY public."MaterialBatches" ("Id", "MaterialId", "ChecklistId", "BatchNumber", "GrnId", "StockTransferSourceId", "NumberOfContainers", "ContainerPackageStyleId", "QuantityPerContainer", "QuantityAssigned", "TotalQuantity", "ConsumedQuantity", "SampledQuantity", "UoMId", "Status", "DateReceived", "DateApproved", "DateRejected", "ExpiryDate", "ManufacturingDate", "RetestDate", "ReturnDate", "WarehouseArrivalLocationId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -2831,7 +2863,7 @@ COPY public."MaterialBatches" ("Id", "MaterialId", "ChecklistId", "BatchNumber",
 -- Data for Name: BinCardInformation; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."BinCardInformation" ("Id", "MaterialBatchId", "Description", "WayBill", "ArNumber", "QuantityReceived", "QuantityIssued", "BalanceQuantity", "UoMId", "ProductId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "WarehouseId") FROM stdin;
+COPY public."BinCardInformation" ("Id", "MaterialBatchId", "Description", "WayBill", "ArNumber", "QuantityReceived", "QuantityIssued", "BalanceQuantity", "UoMId", "ProductId", "WarehouseId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -3010,14 +3042,6 @@ COPY public."DesignationLeaveType" ("DesignationsId", "LeaveTypesId") FROM stdin
 
 
 --
--- Data for Name: FinishedGoodsTransferNotes; Type: TABLE DATA; Schema: public; Owner: root
---
-
-COPY public."FinishedGoodsTransferNotes" ("Id", "TransferNoteNumber", "FromWarehouseId", "ToWarehouseId", "QuantityPerPack", "PackageStyleId", "UoMId", "IsApproved", "TotalQuantity", "QuantityReceived", "Notes", "QarNumber", "BatchManufacturingRecordId", "ProductionActivityStepId", "Loose", "AllocatedQuantity", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
-\.
-
-
---
 -- Data for Name: DistributedFinishedProducts; Type: TABLE DATA; Schema: public; Owner: root
 --
 
@@ -3047,7 +3071,7 @@ COPY public."EmploymentHistories" ("Id", "CompanyName", "StartDate", "EndDate", 
 -- Data for Name: FinalPackings; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."FinalPackings" ("Id", "ProductionScheduleId", "ProductId", "ProductionActivityStepId", "NumberOfBottlesPerShipper", "NUmberOfFullShipperPacked", "LeftOver", "BatchSize", "AverageVolumeFilledPerBottle", "PackSize", "ExpectedYield", "TotalQuantityPacked", "QualityControlAnalyticalSample", "RetainedSamples", "StabilitySamples", "TotalNumberOfBottles", "YieldTotalQuantityPacked", "TotalGainOrLoss", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."FinalPackings" ("Id", "ProductionScheduleProductId", "ProductionActivityStepId", "NumberOfBottlesPerShipper", "NUmberOfFullShipperPacked", "LeftOver", "BatchSize", "AverageVolumeFilledPerBottle", "PackSize", "ExpectedYield", "TotalQuantityPacked", "QualityControlAnalyticalSample", "RetainedSamples", "StabilitySamples", "TotalNumberOfBottles", "YieldTotalQuantityPacked", "TotalGainOrLoss", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -3063,7 +3087,7 @@ COPY public."FinalPackingMaterials" ("Id", "FinalPackingId", "MaterialId", "Rece
 -- Data for Name: FinishedProductBatchEvents; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."FinishedProductBatchEvents" ("Id", "BatchId", "Quantity", "UserId", "Type", "ConsumptionWarehouseId", "ConsumedAt", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."FinishedProductBatchEvents" ("Id", "ProductId", "Quantity", "UserId", "Type", "ConsumptionWarehouseId", "ConsumedAt", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -3071,7 +3095,7 @@ COPY public."FinishedProductBatchEvents" ("Id", "BatchId", "Quantity", "UserId",
 -- Data for Name: FinishedProductBatchMovements; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."FinishedProductBatchMovements" ("Id", "BatchId", "FromWarehouseId", "ToWarehouseId", "Quantity", "MovedAt", "MovedById", "MovementType", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."FinishedProductBatchMovements" ("Id", "ProductId", "FromWarehouseId", "ToWarehouseId", "Quantity", "MovedAt", "MovedById", "MovementType", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -3191,7 +3215,7 @@ COPY public."InventoryPurchaseRequisitionItems" ("Id", "InventoryPurchaseRequisi
 -- Data for Name: ProformaInvoices; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ProformaInvoices" ("Id", "AllocateProductionOrderId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "Approved", "Status", "Code") FROM stdin;
+COPY public."ProformaInvoices" ("Id", "Code", "AllocateProductionOrderId", "Status", "Approved", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -3199,7 +3223,7 @@ COPY public."ProformaInvoices" ("Id", "AllocateProductionOrderId", "CreatedAt", 
 -- Data for Name: Invoices; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."Invoices" ("Id", "ProformaInvoiceId", "Status", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "CustomerId") FROM stdin;
+COPY public."Invoices" ("Id", "ProformaInvoiceId", "CustomerId", "Status", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -3239,7 +3263,7 @@ COPY public."ItemInventoryTransactions" ("Id", "Date", "MemoId", "BatchNumber", 
 -- Data for Name: ItemStockRequisitionItems; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ItemStockRequisitionItems" ("Id", "ItemStockRequisitionId", "ItemId", "QuantityRequested", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."ItemStockRequisitionItems" ("Id", "ItemStockRequisitionId", "ItemId", "QuantityRequested") FROM stdin;
 \.
 
 
@@ -4534,7 +4558,7 @@ COPY public."WarehouseLocationShelves" ("Id", "WarehouseLocationRackId", "Code",
 -- Data for Name: MaterialBatchReservedQuantities; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."MaterialBatchReservedQuantities" ("Id", "MaterialBatchId", "WarehouseId", "ProductionScheduleId", "ProductId", "UoMId", "Quantity", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "WarehouseLocationShelfId") FROM stdin;
+COPY public."MaterialBatchReservedQuantities" ("Id", "MaterialBatchId", "WarehouseId", "WarehouseLocationShelfId", "ProductionScheduleProductId", "UoMId", "Quantity", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -4574,7 +4598,7 @@ COPY public."MaterialRejects" ("Id", "MaterialBatchId", "ResponseId", "Reason", 
 -- Data for Name: MaterialReturnNotes; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."MaterialReturnNotes" ("Id", "ReturnDate", "ProductionScheduleId", "ProductId", "BatchNumber", "Status", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."MaterialReturnNotes" ("Id", "ReturnDate", "ProductionScheduleProductId", "BatchNumber", "Status", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -4582,7 +4606,7 @@ COPY public."MaterialReturnNotes" ("Id", "ReturnDate", "ProductionScheduleId", "
 -- Data for Name: MaterialReturnNoteFullReturns; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."MaterialReturnNoteFullReturns" ("Id", "MaterialReturnNoteId", "MaterialBatchReservedQuantityId", "DestinationWarehouseId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "Returned", "SourceWarehouseLocationShelfId") FROM stdin;
+COPY public."MaterialReturnNoteFullReturns" ("Id", "MaterialReturnNoteId", "MaterialBatchReservedQuantityId", "DestinationWarehouseId", "SourceWarehouseLocationShelfId", "Returned", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -4590,7 +4614,7 @@ COPY public."MaterialReturnNoteFullReturns" ("Id", "MaterialReturnNoteId", "Mate
 -- Data for Name: MaterialReturnNotePartialReturns; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."MaterialReturnNotePartialReturns" ("Id", "MaterialReturnNoteId", "MaterialId", "Quantity", "UoMId", "DestinationWarehouseId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "MaterialBatchId", "Returned", "SourceWarehouseLocationShelfId") FROM stdin;
+COPY public."MaterialReturnNotePartialReturns" ("Id", "MaterialReturnNoteId", "MaterialId", "MaterialBatchId", "Quantity", "UoMId", "DestinationWarehouseId", "SourceWarehouseLocationShelfId", "Returned", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -5356,7 +5380,23 @@ COPY public."ProductBinCardInformation" ("Id", "BatchId", "Description", "WayBil
 -- Data for Name: ProductPackages; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ProductPackages" ("Id", "ProductId", "MaterialId", "MaterialThickness", "OtherStandards", "BaseQuantity", "UnitCapacity", "DirectLinkMaterialId", "PackingExcessMargin", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."ProductPackages" ("Id", "ProductId", "MaterialId", "MaterialThickness", "OtherStandards", "BaseQuantity", "UnitCapacity", "DirectLinkMaterialId", "PackingExcessMargin", "PrescribedQuantity", "Loose", "ProductPackingId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+\.
+
+
+--
+-- Data for Name: ProductPackingList; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."ProductPackingList" ("ProductPackingId", "Id", "UomId", "Quantity", "Order") FROM stdin;
+\.
+
+
+--
+-- Data for Name: ProductPrices; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."ProductPrices" ("ProductId", "Id", "Price", "Date") FROM stdin;
 \.
 
 
@@ -5436,7 +5476,7 @@ COPY public."ProductionActivityStepWorkCenters" ("Id", "ProductionActivityStepId
 -- Data for Name: ProductionExtraPackings; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ProductionExtraPackings" ("Id", "ProductionScheduleId", "ProductId", "MaterialId", "UoMId", "Quantity", "Status", "IssuedAt", "IssuedById", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."ProductionExtraPackings" ("Id", "ProductionScheduleProductId", "MaterialId", "UoMId", "Quantity", "Status", "IssuedAt", "IssuedById", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -5449,18 +5489,26 @@ COPY public."ProductionOrderApprovals" ("Id", "ProductionOrderId", "ApprovalId",
 
 
 --
--- Data for Name: ProductionScheduleItems; Type: TABLE DATA; Schema: public; Owner: root
+-- Data for Name: ProductionOrderProducts; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ProductionScheduleItems" ("Id", "ProductionScheduleId", "UomId", "MaterialId", "Quantity", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
+COPY public."ProductionOrderProducts" ("ProductionOrderId", "Id", "ProductId", "TotalOrderQuantity", "VolumePerPiece", "Fulfilled") FROM stdin;
 \.
 
 
 --
--- Data for Name: ProductionScheduleProducts; Type: TABLE DATA; Schema: public; Owner: root
+-- Data for Name: ProductionOrderProductQuantity; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ProductionScheduleProducts" ("Id", "ProductionScheduleId", "ProductId", "BatchNumber", "BatchSize", "MarketTypeId", "Quantity", "Cancelled", "ReasonForCancellation") FROM stdin;
+COPY public."ProductionOrderProductQuantity" ("ProductionOrderProductsProductionOrderId", "ProductionOrderProductsId", "Id", "FinishedGoodsTransferNoteId", "Quantity") FROM stdin;
+\.
+
+
+--
+-- Data for Name: ProductionScheduleItems; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."ProductionScheduleItems" ("Id", "ProductionScheduleId", "UomId", "MaterialId", "Quantity", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -5516,7 +5564,7 @@ COPY public."PurchaseOrderCharge" ("Id", "PurchaseOrderInvoiceId", "Description"
 -- Data for Name: PurchaseOrderItems; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."PurchaseOrderItems" ("Id", "PurchaseOrderId", "MaterialId", "UoMId", "Quantity", "Price", "CurrencyId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "QuantityInvoiced") FROM stdin;
+COPY public."PurchaseOrderItems" ("Id", "PurchaseOrderId", "MaterialId", "UoMId", "Quantity", "QuantityInvoiced", "Price", "CurrencyId", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -5597,7 +5645,7 @@ COPY public."ResponseApprovals" ("Id", "ResponseId", "ApprovalId", "UserId", "Ro
 -- Data for Name: RevisedPurchaseOrder; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."RevisedPurchaseOrder" ("Id", "Type", "PurchaseOrderItemId", "MaterialId", "UoMId", "Quantity", "Price", "CurrencyId", "UoMBeforeId", "QuantityBefore", "PriceBefore", "CurrencyBeforeId", "MaterialBeforeId", "RevisionNumber", "PurchaseOrderId", "RevisionDate") FROM stdin;
+COPY public."RevisedPurchaseOrder" ("Id", "Type", "PurchaseOrderItemId", "MaterialId", "UoMId", "Quantity", "Price", "CurrencyId", "UoMBeforeId", "QuantityBefore", "PriceBefore", "CurrencyBeforeId", "MaterialBeforeId", "RevisionNumber", "RevisionDate", "PurchaseOrderId") FROM stdin;
 \.
 
 
@@ -5770,7 +5818,7 @@ COPY public."ShiftScheduleShiftType" ("ShiftSchedulesId", "ShiftTypesId") FROM s
 -- Data for Name: ShipmentDocuments; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public."ShipmentDocuments" ("Id", "Code", "ShipmentInvoiceId", "ArrivedAt", "ClearedAt", "TransitStartedAt", "Type", "CompletedDistributionAt", "Status", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById", "Approved", "AtPortAt") FROM stdin;
+COPY public."ShipmentDocuments" ("Id", "Code", "ShipmentInvoiceId", "ArrivedAt", "ClearedAt", "TransitStartedAt", "AtPortAt", "Type", "CompletedDistributionAt", "Status", "Approved", "CreatedAt", "UpdatedAt", "CreatedById", "LastUpdatedById", "DeletedAt", "LastDeletedById") FROM stdin;
 \.
 
 
@@ -5803,6 +5851,14 @@ COPY public."ShipmentDiscrepancyItem" ("Id", "ShipmentDiscrepancyId", "MaterialI
 --
 
 COPY public."ShipmentDocumentApprovals" ("Id", "ShipmentDocumentId", "ApprovalId", "UserId", "RoleId", "Required", "Order", "StageStartTime", "Status", "ApprovalTime", "ApprovedById", "CreatedAt", "ActivatedAt", "Comments") FROM stdin;
+\.
+
+
+--
+-- Data for Name: Sibling; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public."Sibling" ("EmployeeId", "Id", "FullName", "Contact", "Gender") FROM stdin;
 \.
 
 
@@ -8808,6 +8864,8 @@ COPY public."VendorItems" ("Id", "VendorId", "ItemId", "CreatedAt", "UpdatedAt",
 --
 
 COPY public."__EFMigrationsHistory" ("MigrationId", "ProductVersion") FROM stdin;
+20250915232706_Initial	9.0.3
+20250918114118_UpdateAnalyticalTestRequest	9.0.3
 20250819065003_Initial	9.0.3
 20250820131036_RemoveItemBatchRequirements	9.0.3
 20250820204501_AddMaterialBatchToPartialReturn	9.0.3
@@ -8831,6 +8889,22 @@ COPY public."__EFMigrationsHistory" ("MigrationId", "ProductVersion") FROM stdin
 
 
 --
+-- Data for Name: roleclaims; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.roleclaims ("Id", "RoleId", "ClaimType", "ClaimValue") FROM stdin;
+\.
+
+
+--
+-- Data for Name: userclaims; Type: TABLE DATA; Schema: public; Owner: root
+--
+
+COPY public.userclaims ("Id", "UserId", "ClaimType", "ClaimValue") FROM stdin;
+\.
+
+
+--
 -- Data for Name: userlogins; Type: TABLE DATA; Schema: public; Owner: root
 --
 
@@ -8845,13 +8919,9 @@ COPY public.userlogins ("LoginProvider", "ProviderKey", "ProviderDisplayName", "
 COPY public.userroles ("UserId", "RoleId") FROM stdin;
 01992f37-0747-792e-9e3c-279bbe1a20ea	01992f37-051d-7c1f-b46c-7eee3a6105c1
 01992f37-0e94-7c6e-99f0-d72cec4812f6	01992f37-051d-7c1f-b46c-7eee3a6105c1
-01992f37-0e94-7c6e-99f0-d72cec4812f6	01992f37-0536-78ce-82cb-2ae0acd51266
 01992f37-0fef-7c74-9d08-203e7403bb06	01992f37-051d-7c1f-b46c-7eee3a6105c1
-01992f37-0fef-7c74-9d08-203e7403bb06	01992f37-0536-78ce-82cb-2ae0acd51266
 01992f37-1108-762f-9723-91445feb13b0	01992f37-051d-7c1f-b46c-7eee3a6105c1
-01992f37-1108-762f-9723-91445feb13b0	01992f37-0536-78ce-82cb-2ae0acd51266
 01992f37-12a2-71eb-9de4-695da1037e59	01992f37-051d-7c1f-b46c-7eee3a6105c1
-01992f37-12a2-71eb-9de4-695da1037e59	01992f37-0536-78ce-82cb-2ae0acd51266
 01993450-1f78-7dc3-a5c1-f4f6a9a920e0	01992f37-051d-7c1f-b46c-7eee3a6105c1
 \.
 
@@ -8862,6 +8932,69 @@ COPY public.userroles ("UserId", "RoleId") FROM stdin;
 
 COPY public.usertokens ("UserId", "LoginProvider", "Name", "Value") FROM stdin;
 \.
+
+
+--
+-- Name: AllocateProductQuantity_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public."AllocateProductQuantity_Id_seq"', 1, false);
+
+
+--
+-- Name: AllocateProductionOrderProduct_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public."AllocateProductionOrderProduct_Id_seq"', 1, false);
+
+
+--
+-- Name: ProductPackingList_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public."ProductPackingList_Id_seq"', 1, false);
+
+
+--
+-- Name: ProductPrices_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public."ProductPrices_Id_seq"', 1, false);
+
+
+--
+-- Name: ProductionOrderProductQuantity_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public."ProductionOrderProductQuantity_Id_seq"', 1, false);
+
+
+--
+-- Name: ProductionOrderProducts_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public."ProductionOrderProducts_Id_seq"', 1, false);
+
+
+--
+-- Name: Sibling_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public."Sibling_Id_seq"', 1, false);
+
+
+--
+-- Name: roleclaims_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public."roleclaims_Id_seq"', 1, false);
+
+
+--
+-- Name: userclaims_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: root
+--
+
+SELECT pg_catalog.setval('public."userclaims_Id_seq"', 1, false);
 
 
 --
