@@ -1,4 +1,4 @@
-using DOMAIN.Entities.Countries;
+/*using DOMAIN.Entities.Countries;
 using INFRASTRUCTURE.Context;
 
 namespace API.Database.Seeds.TableSeeders;
@@ -36,4 +36,4 @@ public class CountrySeeder : ISeeder
         dbContext.Countries.AddRange(countries);
         dbContext.SaveChanges();
     }
-}
+}*/

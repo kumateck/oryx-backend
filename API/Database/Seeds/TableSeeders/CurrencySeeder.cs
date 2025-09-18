@@ -1,4 +1,4 @@
-using APP.Utils;
+/*using APP.Utils;
 using DOMAIN.Entities.Currencies;
 using INFRASTRUCTURE.Context;
 
@@ -29,4 +29,4 @@ public class CurrencySeeder : ISeeder
         dbContext.Currencies.AddRange(currencies);
         dbContext.SaveChanges();
     }
-}
+}*/
