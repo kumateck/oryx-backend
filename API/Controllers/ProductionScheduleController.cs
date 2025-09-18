@@ -77,16 +77,14 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Retrieves the details of a specific product in a Production Schedule.
     /// </summary>
-    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
-    /// <param name="productId">The ID of the Product.</param>
     /// <returns>Returns the details of the product in the Production Schedule.</returns>
-    [HttpGet("{productionScheduleId}/product/{productId}")]
+    [HttpGet("production-schedule-product/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionScheduleProductDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProductDetailsInProductionSchedule(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetProductDetailsInProductionSchedule([FromRoute] Guid productionScheduleProductId)
     {
-        var result = await repository.GetProductDetailsInProductionSchedule(productionScheduleId, productId);
+        var result = await repository.GetProductDetailsInProductionSchedule(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -170,67 +168,62 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    [HttpGet("material-stock/{productionScheduleId}/{productId}")]
+    [HttpGet("material-stock/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetRequiredMaterialStock(Guid productionScheduleId, Guid productId, [FromQuery] MaterialRequisitionStatus? status = null)
+    public async Task<IResult> GetRequiredMaterialStock([FromRoute] Guid productionScheduleProductId, [FromQuery] MaterialRequisitionStatus? status = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status);
+        var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productionScheduleProductId, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
-    [HttpGet("package-material-stock/{productionScheduleId}/{productId}")]
+    [HttpGet("package-material-stock/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementPackageDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetRequiredPackageMaterialStock(Guid productionScheduleId, Guid productId, [FromQuery] MaterialRequisitionStatus? status = null)
+    public async Task<IResult> GetRequiredPackageMaterialStock(Guid productionScheduleProductId, [FromQuery] MaterialRequisitionStatus? status = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleId, productId, status);
+        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleProductId, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-        /// <summary>
+
+    /// <summary>
     /// Retrieves materials with insufficient stock for a given production schedule and product.
     /// </summary>
-    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
-    /// <param name="productId">The ID of the Product.</param>
+    /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <returns>Returns a list of materials with insufficient stock.</returns>
-    [HttpGet("{productionScheduleId}/materials-with-insufficient-stock/{productId}")]
+    [HttpGet("{productionScheduleProductId}/materials-with-insufficient-stock")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetMaterialsWithInsufficientStock(Guid productionScheduleProductId)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
-        var result = await repository.GetMaterialsWithInsufficientStock(productionScheduleId, productId, Guid.Parse(userId));
+        var result = await repository.GetMaterialsWithInsufficientStock(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
     /// Retrieves packaging materials with insufficient stock for a given production schedule and product.
     /// </summary>
-    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
-    /// <param name="productId">The ID of the Product.</param>
+    /// <param name="productionScheduleProductId">The production schdeule product Id</param>
     /// <returns>Returns a list of packaging materials with insufficient stock.</returns>
-    [HttpGet("{productionScheduleId}/package-materials-with-insufficient-stock/{productId}")]
+    [HttpGet("{productionScheduleProductId}/package-materials-with-insufficient-stock")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementPackageDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetPackageMaterialsWithInsufficientStock([FromRoute] Guid productionScheduleProductId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetPackageMaterialsWithInsufficientStock(productionScheduleId, productId, Guid.Parse(userId));
+        var result = await repository.GetPackageMaterialsWithInsufficientStock(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -239,22 +232,21 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     
      #region Production Activities
 
-    /// <summary>
-    /// Starts a Production Activity for a given Production Schedule and Product.
-    /// </summary>
-    /// <param name="productionScheduleId">The Production Schedule ID.</param>
-    /// <param name="productId">The Product ID.</param>
-    /// <returns>Returns the ID of the started Production Activity.</returns>
-    [HttpPost("activity/start/{productionScheduleId}/{productId}")]
+     /// <summary>
+     /// Starts a Production Activity for a given Production Schedule and Product.
+     /// </summary>
+     /// <param name="productionScheduleProductId">the production schedule product id</param>
+     /// <returns>Returns the ID of the started Production Activity.</returns>
+     [HttpPost("activity/start/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> StartProductionActivity(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> StartProductionActivity([FromRoute] Guid productionScheduleProductId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         
-        var result = await repository.StartProductionActivity(productionScheduleId, productId, Guid.Parse(userId));
+        var result = await repository.StartProductionActivity(productionScheduleProductId,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -290,16 +282,15 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Retrieves a specific Production Activity by production schedule id and product id.
     /// </summary>
-    /// <param name="productionScheduleId">The Production Schedule ID.</param>
-    /// <param name="productId">The Product ID.</param>
+    /// <param name="productionScheduleProductId">The production schedule prdocut</param>
     /// <returns>Returns the details of the Production Activity.</returns>
-    [HttpGet("activity/{productionScheduleId}/{productId}")]
+    [HttpGet("activity/product/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionActivityDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProductionActivityByProductionScheduleAndProductId(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetProductionActivityByProductionScheduleAndProductId([FromRoute] Guid productionScheduleProductId)
     {
-        var result = await repository.GetProductionActivityByProductionScheduleIdAndProductId(productionScheduleId, productId);
+        var result = await repository.GetProductionActivityByProductionScheduleProduct(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -425,13 +416,13 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
        
-    [HttpGet("manufacturing/{productionId}/{productionScheduleId}")]
+    [HttpGet("manufacturing/product/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchManufacturingRecordDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionId, Guid productionScheduleId)
+    public async Task<IResult> GetBatchManufacturingRecordByProductionAndScheduleId([FromRoute] Guid productionScheduleProductId)
     {
-        var result = await repository.GetBatchManufacturingRecordByProductionAndScheduleId(productionId, productionScheduleId);
+        var result = await repository.GetBatchManufacturingRecordByProductionAndScheduleId(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
@@ -817,16 +808,15 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Retrieves a Final Packing using Production Schedule ID and Product ID.
     /// </summary>
-    /// <param name="productionScheduleId">The Production Schedule ID.</param>
-    /// <param name="productId">The Product ID.</param>
+    /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <returns>Returns the Final Packing details.</returns>
-    [HttpGet("final-packing/{productionScheduleId}/{productId}")]
+    [HttpGet("final-packing/product/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinalPackingDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFinalPackingByScheduleAndProduct(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetFinalPackingByScheduleAndProduct(Guid productionScheduleProductId)
     {
-        var result = await repository.GetFinalPackingByScheduleAndProduct(productionScheduleId, productId);
+        var result = await repository.GetFinalPackingByScheduleProduct(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -880,36 +870,34 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.DeleteFinalPacking(finalPackingId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a Stock Requisition for Packaging based on Production Schedule and Product ID.
     /// </summary>
-    /// <param name="productionScheduleId">The Production Schedule ID.</param>
-    /// <param name="productId">The Product ID.</param>
+    /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <returns>Returns the Stock Requisition for Packaging.</returns>
-    [HttpGet("stock-requisition/raw/{productionScheduleId}/{productId}")]
+    [HttpGet("stock-requisition/raw/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetStockRequisitionForRaw(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetStockRequisitionForRaw(Guid productionScheduleProductId)
     {
-        var result = await repository.GetStockRequisitionForRaw(productionScheduleId, productId);
+        var result = await repository.GetStockRequisitionForRaw(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a Stock Requisition for Packaging based on Production Schedule and Product ID.
     /// </summary>
-    /// <param name="productionScheduleId">The Production Schedule ID.</param>
-    /// <param name="productId">The Product ID.</param>
+    /// <param name="productionScheduleProductId">The production schedule prdouct id</param>
     /// <returns>Returns the Stock Requisition for Packaging.</returns>
-    [HttpGet("stock-requisition/package/{productionScheduleId}/{productId}")]
+    [HttpGet("stock-requisition/package/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetStockRequisitionForPackaging(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetStockRequisitionForPackaging(Guid productionScheduleProductId)
     {
-        var result = await repository.GetStockRequisitionForPackaging(productionScheduleId, productId);
+        var result = await repository.GetStockRequisitionForPackaging(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -920,34 +908,32 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Returns unused materials before production begins.
     /// </summary>
-    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
-    /// <param name="productId">The ID of the Product.</param>
+    /// <param name="productionScheduleProductId">The prdocution schedlue product id</param>
     /// <param name="reason">The reason for cancelling the production</param>
     /// <returns>Returns a success result if materials were returned successfully.</returns>
     [HttpPost("return-before-production")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> ReturnBeforeProduction([FromQuery] Guid productionScheduleId, [FromQuery] Guid productId, [FromQuery] string reason)
+    public async Task<IResult> ReturnBeforeProduction([FromQuery] Guid productionScheduleProductId, [FromQuery] string reason)
     {
-        var result = await repository.ReturnStockBeforeProductionBegins(productionScheduleId, productId, reason);
+        var result = await repository.ReturnStockBeforeProductionBegins(productionScheduleProductId, reason);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
     /// Returns leftover materials after production ends.
     /// </summary>
-    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
-    /// <param name="productId">The ID of the Product.</param>
+    /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <param name="returns">The list of partially used materials to return.</param>
     /// <returns>Returns a success result if leftovers were recorded successfully.</returns>
     [HttpPost("return-after-production")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> ReturnAfterProduction([FromQuery] Guid productionScheduleId, [FromQuery] Guid productId, [FromBody] List<PartialMaterialToReturn> returns)
+    public async Task<IResult> ReturnAfterProduction([FromQuery] Guid productionScheduleProductId, [FromBody] List<PartialMaterialToReturn> returns)
     {
-        var result = await repository.ReturnLeftOverStockAfterProductionEnds(productionScheduleId, productId, returns);
+        var result = await repository.ReturnLeftOverStockAfterProductionEnds(productionScheduleProductId ,returns);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -1004,17 +990,16 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Creates new Extra Packing entries for a given Production Schedule and Product.
     /// </summary>
-    /// <param name="productionScheduleId">The ID of the Production Schedule.</param>
-    /// <param name="productId">The ID of the Product.</param>
+    /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <param name="extraPackings">List of Extra Packing details to create.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("extra-packing/{productionScheduleId}/{productId}")]
+    [HttpPost("extra-packing/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateExtraPacking(Guid productionScheduleId, Guid productId, [FromBody] List<CreateProductionExtraPacking> extraPackings)
+    public async Task<IResult> CreateExtraPacking(Guid productionScheduleProductId, [FromBody] List<CreateProductionExtraPacking> extraPackings)
     {
-        var result = await repository.CreateExtraPacking(productionScheduleId, productId, extraPackings);
+        var result = await repository.CreateExtraPacking(productionScheduleProductId, extraPackings);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -1052,16 +1037,15 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Retrieves a specific Extra Packing entry by ID, including associated batches.
     /// </summary>
-    /// <param name="productionScheduleId">The production schedule Id linked to the extra packing></param>
-    /// <param name="productId">The product Id linked to the extra paccking</param>
+    /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <returns>Returns the Extra Packing with batches.</returns>
-    [HttpGet("extra-packing/by-product/{productionScheduleId}/{productId}")]
+    [HttpGet("extra-packing/by-product/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionExtraPackingWithBatchesDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProductionExtraPackingByProduct(Guid productionScheduleId, Guid productId)
+    public async Task<IResult> GetProductionExtraPackingByProduct(Guid productionScheduleProductId)
     {
-        var result = await repository.GetProductionExtraPackingByProduct(productionScheduleId, productId);
+        var result = await repository.GetProductionExtraPackingByProduct(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

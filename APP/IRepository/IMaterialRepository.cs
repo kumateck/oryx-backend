@@ -66,9 +66,9 @@ public interface IMaterialRepository
     Task<Result<decimal>> GetProductStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
     Task<Result<List<BatchToSupply>>> GetFrozenBatchesForRequisitionItem(Guid materialId, Guid warehouseId,
         decimal requestedQuantity);
-    Task<Result> ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleId, Guid productId, decimal quantity, Guid? uomId, Guid? warehouseLocationShelfId);
+    Task<Result> ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleProductId, decimal quantity, Guid? uomId, Guid? warehouseLocationShelfId);
     Task<List<MaterialBatchReservedQuantityDto>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, 
-        Guid warehouseId, Guid productionScheduleId, Guid productId);
+        Guid warehouseId, Guid productionScheduleProductId);
 
     Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
     Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments,

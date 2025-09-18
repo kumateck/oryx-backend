@@ -11,10 +11,8 @@ namespace DOMAIN.Entities.Materials;
 public class MaterialReturnNote : BaseEntity
 {
     public DateTime ReturnDate { get; set; }
-    public Guid ProductionScheduleId { get; set; }
-    public ProductionSchedule ProductionSchedule { get; set; }
-    public Guid ProductId { get; set; }
-    public Product Product { get; set; }
+    public Guid ProductionScheduleProductId { get; set; }
+    public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
     [StringLength(100)] public string BatchNumber { get; set; }
     public MaterialReturnStatus Status { get; set; }
     public List<MaterialReturnNoteFullReturn> FullReturns { get; set; } = [];
@@ -57,8 +55,7 @@ public class MaterialReturnNoteDto : BaseDto
 {
     public DateTime ReturnDate { get; set; }
     public string BatchNumber { get; set; }
-    public CollectionItemDto ProductionSchedule { get; set; }
-    public CollectionItemDto Product { get; set; }
+    public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     public MaterialReturnStatus Status { get; set; }
     public List<MaterialReturnNoteFullReturnDto> FullReturns { get; set; } = [];
     public List<MaterialReturnNotePartialReturnDto> PartialReturns { get; set; } = [];

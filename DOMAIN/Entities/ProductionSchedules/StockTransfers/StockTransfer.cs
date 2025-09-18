@@ -18,10 +18,8 @@ public class StockTransfer : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     [StringLength(1000)] public string Reason { get; set; }
     public decimal RequiredQuantity { get; set; }
-    public Guid? ProductId { get; set; }
-    public Product Product { get; set; }
-    public Guid? ProductionScheduleId { get; set; }
-    public ProductionSchedule ProductionSchedule { get; set; }
+    public Guid? ProductionScheduleProductId { get; set; }
+    public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public List<StockTransferSource> Sources { get; set; } = [];
@@ -59,8 +57,7 @@ public class StockTransferDto : BaseDto
     public string Code { get; set; }
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
-    public CollectionItemDto Product { get; set; }
-    public CollectionItemDto ProductionSchedule { get; set; }
+    public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     [StringLength(1000)] public string Reason { get; set; }
     public decimal RequiredQuantity { get; set; }
     public StockTransferStatus Status { get; set; }

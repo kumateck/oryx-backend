@@ -28,6 +28,7 @@ public class ProductionScheduleProcurementDto
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto BaseUoM { get; set; }
     public decimal BaseQuantity { get; set; }
+    public decimal PrescribedQuantity { get; set; }
     public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
     public MaterialRequisitionStatus Status { get; set; }
@@ -41,6 +42,7 @@ public class ProductionScheduleProcurementPackageDto
     public MaterialDto DirectLinkMaterial { get; set; }
     public UnitOfMeasureDto BaseUoM { get; set; }
     public decimal BaseQuantity { get; set; }
+    public decimal PrescribedQuantity { get; set; }
     public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
     public decimal UnitCapacity { get; set; }
@@ -52,6 +54,7 @@ public class ProductionScheduleProcurementPackageDto
 
 public class ProductionScheduleProductDto
 {
+    public CollectionItemDto ProductionSchedule { get; set; }
     public ProductListDto Product { get; set; }
     public decimal Quantity { get; set; }
     public string BatchNumber { get; set; }
@@ -59,6 +62,7 @@ public class ProductionScheduleProductDto
     public CustomerDto MarketType { get; set; } 
     public bool Cancelled { get; set; }
    public string ReasonForCancellation { get; set; }
+   public ProductPackingDto ProductPacking { get; set; }
 }
 
 public enum MaterialRequisitionStatus

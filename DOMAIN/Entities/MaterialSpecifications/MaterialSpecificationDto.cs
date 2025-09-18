@@ -22,3 +22,9 @@ public class MaterialSpecificationDto : BaseDto
     public MaterialDto Material { get; set; }
     public ResponseDto Response { get; set; }
 }
+
+public class MaterialSpecificationReducedDto
+{
+    public Guid Id { get; set; }
+    public string SpecificationNumber { get; set; }
+}

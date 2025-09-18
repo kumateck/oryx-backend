@@ -68,6 +68,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
             : mapper.Map<MaterialSpecificationDto>(materialSpec);
     }
+    
 
     public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(Guid materialId)
     {
@@ -90,6 +91,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
             : mapper.Map<MaterialSpecificationDto>(materialSpec);
     }
+    
 
     public async Task<Result> UpdateMaterialSpecification(Guid id, CreateMaterialSpecificationRequest request)
     {

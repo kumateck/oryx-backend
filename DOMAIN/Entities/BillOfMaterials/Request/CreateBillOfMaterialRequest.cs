@@ -18,5 +18,5 @@ public class CreateBoMItemsRequest
     public decimal BaseQuantity { get; set; } 
     public Guid? BaseUoMId { get; set; } 
     public int Order { get; set; }
-    public decimal BatchQuantity { get; set; }
+    public decimal PrescribedQuantity { get; set; }
 }

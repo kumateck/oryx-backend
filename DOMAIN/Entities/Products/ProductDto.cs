@@ -30,6 +30,10 @@ public class CreateProductPacking
     public string Name { get; set; }
     public string Description { get; set; }
     public int PackPerShipper { get; set; }
+    public Guid? BasePackingUomId { get; set; }
+    public decimal BasePackingQuantity { get; set; } 
+    public decimal ExpectedYield { get; set; }
+    public bool IsDefault { get; set; }
     public List<CreateProductPackingList> PackingLists { get; set; } = [];
 }
 
@@ -44,6 +48,10 @@ public class ProductPackingDto : BaseDto
     public string Name { get; set; }
     public string Description { get; set; }
     public int PackPerShipper { get; set; }
+    public UnitOfMeasureDto BasePackingUoM { get; set; }
+    public decimal BasePackingQuantity { get; set; } 
+    public decimal ExpectedYield { get; set; }
+    public bool IsDefault { get; set; }
     public List<ProductPackingListDto> PackingLists { get; set; } = [];
 }
 

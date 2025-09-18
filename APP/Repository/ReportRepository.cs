@@ -197,7 +197,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.Type == employeeType.Value));
         }
 
-
         if (gender.HasValue)
         {
             employees = employees.Where(e => e.Gender == gender.Value);
@@ -744,15 +743,27 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
     public async Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter, Guid? productId)
     {
-        var analyticalTestRequests = context.AnalyticalTestRequests.AsQueryable();
+        var analyticalTestRequests = context.AnalyticalTestRequests
+            .AsSplitQuery()
+            .Include(p => p.ProductionScheduleProduct)
+            .AsQueryable();
         var approvedManufacturers = context.Manufacturers.AsQueryable();
         var products = context.Products.AsQueryable();
         var materials = context.Materials.AsQueryable();
-        var bmrRequests = context.BatchManufacturingRecords.AsQueryable();
+        var bmrRequests = context.BatchManufacturingRecords
+            .AsSplitQuery()
+            .Include(b => b.ProductionScheduleProduct)
+            .ThenInclude(b => b.Product)
+            .AsQueryable();
         var billingSheetApprovals = context.BillingSheetApprovals.AsQueryable();
         var leaveRequestApprovals = context.LeaveRequestApprovals.AsQueryable();
         var purchaseOrderApprovals = context.PurchaseOrderApprovals.AsQueryable();
-        var requisitionApprovals = context.RequisitionApprovals.AsQueryable();
+        var requisitionApprovals = context.RequisitionApprovals
+            .AsSplitQuery()
+            .Include(r => r.Requisition)
+            .ThenInclude(r => r.ProductionScheduleProduct)
+            .ThenInclude(r => r.Product)
+            .AsQueryable();
         var responseApprovals = context.ResponseApprovals.AsQueryable();
         var staffRequisitionApprovals = context.StaffRequisitionApprovals.AsQueryable();
         
@@ -789,10 +800,14 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         if (productId.HasValue)
         {
-            analyticalTestRequests = analyticalTestRequests.Where(lr => lr.ProductId == productId);
+            analyticalTestRequests = analyticalTestRequests.Where(lr => lr.ProductionScheduleProduct.ProductId == productId);
             products = products.Where(lr => lr.Id == productId);
-            bmrRequests = bmrRequests.Where(lr => lr.ProductId == productId);
-            requisitionApprovals = requisitionApprovals.Where(lr => lr.Requisition.ProductId == productId);
+            bmrRequests = bmrRequests.Where(lr => 
+                lr.ProductionScheduleProduct != null &&
+                lr.ProductionScheduleProduct.ProductId == productId);
+            requisitionApprovals = requisitionApprovals.Where(lr =>
+                lr.Requisition.ProductionScheduleProduct != null &&
+                lr.Requisition.ProductionScheduleProduct.ProductId == productId);
         }
 
         return new QaDashboardDto

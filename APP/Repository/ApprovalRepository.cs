@@ -719,6 +719,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     .Include(lr => lr.Approvals)
                     .Include(response => response.MaterialBatch)
                     .Include(response => response.BatchManufacturingRecord)
+                    .ThenInclude(b => b.ProductionScheduleProduct)
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
                 
                 if (response is null)
@@ -790,7 +791,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         var productAnalyticalRawData = await context.ProductAnalyticalRawData
                             .AsSplitQuery()
                             .Include(p => p.ProductStandardTestProcedure)
-                            .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == response.BatchManufacturingRecord.ProductId);
+                            .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == response.BatchManufacturingRecord.ProductionScheduleProduct.ProductId);
                         
                         if (productAnalyticalRawData is null) return 
                             Error.NotFound("Response.ProductAnalyticalRawDataNotFound", $"Response {response.BatchManufacturingRecordId} not found.");
@@ -1336,6 +1337,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     .Include(lr => lr.Approvals)
                     .Include(response => response.MaterialBatch)
                     .Include(response => response.BatchManufacturingRecord)
+                    .ThenInclude(b => b.ProductionScheduleProduct)
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
                 
                 if (response is null)
@@ -1409,7 +1411,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     var productAnalyticalRawData = await context.ProductAnalyticalRawData
                         .AsSplitQuery()
                         .Include(p => p.ProductStandardTestProcedure)
-                        .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == response.BatchManufacturingRecord.ProductId);
+                        .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == response.BatchManufacturingRecord.ProductionScheduleProduct.ProductId);
                         
                     if (productAnalyticalRawData is null) return 
                         Error.NotFound("Response.ProductAnalyticalRawDataNotFound", $"Response {response.BatchManufacturingRecordId} not found.");

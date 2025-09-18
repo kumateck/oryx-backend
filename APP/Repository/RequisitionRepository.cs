@@ -34,12 +34,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
 
-        if (request.ProductionScheduleId.HasValue && request.ProductId.HasValue)
+        if (request.ProductionScheduleProductId.HasValue)
         {
             var existingRequisition = await context.Requisitions
                 .AsSplitQuery()
                 .Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
-                r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
+                r.ProductionScheduleProductId == request.ProductionScheduleProductId &&
                 r.RequisitionType == request.RequisitionType);
 
             if (existingRequisition is { RequisitionType: RequisitionType.Stock })
@@ -154,8 +154,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var requisition = await context.Requisitions
             .IgnoreQueryFilters()
             .AsSplitQuery()
-            .Include(r => r.ProductionSchedule)
-            .Include(r => r.Product)
+            .Include(r => r.ProductionScheduleProduct)
+            .ThenInclude(r => r.ProductionSchedule)
+            .Include(r => r.ProductionScheduleProduct)
+            .ThenInclude(r => r.Product)
             .Include(r => r.RequestedBy)
             .Include(r => r.Items).ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
@@ -256,11 +258,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
-            Debug.Assert(stockRequisition.ProductId != null, "stockRequisition.ProductId != null");
-            Debug.Assert(stockRequisition.ProductionScheduleId != null, "stockRequisition.ProductionScheduleId != null");
+            Debug.Assert(stockRequisition.ProductionScheduleProductId != null, "stockRequisition.ProductionScheduleProductId != null");
             var batchesToConsume =
                 await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
-                    productionWarehouse.Id, stockRequisition.ProductionScheduleId.Value, stockRequisition.ProductId.Value);
+                    productionWarehouse.Id, stockRequisition.ProductionScheduleProductId.Value);
             
             foreach (var batch in batchesToConsume)
             {

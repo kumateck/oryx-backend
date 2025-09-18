@@ -898,10 +898,12 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid productId)
     {
         var query = context.ProductBinCardInformation
+            .AsSplitQuery()
             .Include(bci => bci.Batch)
-            .ThenInclude(bci => bci.Product)
+            .ThenInclude(bci => bci.ProductionScheduleProduct)
+            .ThenInclude(p => p.Product)
             .Include(bci => bci.UoM)
-            .Where(bci => bci.Batch.ProductId == productId)
+            .Where(bci => bci.Batch.ProductionScheduleProduct.ProductId == productId)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

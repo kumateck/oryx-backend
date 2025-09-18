@@ -47,7 +47,6 @@ namespace APP.Repository;
              .AsSplitQuery()
              .Include(p => p.BaseUoM)
              .Include(p => p.Equipment)
-             .Include(p => p.BasePackingUoM)
              .Include(p => p.BillOfMaterials)
              .ThenInclude(p => p.BillOfMaterial)
              .ThenInclude(p => p.Items.OrderBy(i => i.Order))
@@ -59,6 +58,7 @@ namespace APP.Repository;
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleRoles)
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.Resources)
              .Include(p => p.Packings).ThenInclude(p => p.PackingLists.OrderBy(r => r.Order)).ThenInclude(p  => p.Uom)
+             .Include(p => p.Packings).ThenInclude(p => p.BasePackingUoM)
              .Include(p =>p.CreatedBy)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -397,6 +397,7 @@ namespace APP.Repository;
             .AsSplitQuery()
             .Include(p => p.Product)
             .Include(p => p.Material)
+            .Include(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
 
         if (productPackage == null)
@@ -411,6 +412,7 @@ namespace APP.Repository;
         var query = await context.ProductPackages
             .AsSplitQuery()
             .Include(p => p.Material)
+            .Include(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
         
@@ -507,6 +509,7 @@ namespace APP.Repository;
             .AsSplitQuery()
             .Include(p => p.PackingLists.OrderBy(pp => pp.Order))
             .ThenInclude(p => p.Uom)
+            .Include(p => p.BasePackingUoM)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
         
@@ -680,7 +683,7 @@ namespace APP.Repository;
         var requiredHeaders = new[]
         {
             "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "BASE QUANTITY",
-            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT CODE", "LABEL CLAIMS"
+             "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT CODE", "LABEL CLAIMS"
         };
 
         foreach (var header in requiredHeaders)
@@ -706,7 +709,7 @@ namespace APP.Repository;
 
             var category = await context.ProductCategories.FirstOrDefaultAsync(c => c.Name != null &&  c.Name.ToLower() == categoryName);
             var baseUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == baseUomName);
-            var basePackingUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
+            //var basePackingUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
             var equipment = await context.Equipments.FirstOrDefaultAsync(e => e.Name != null && e.Name.ToLower() == equipmentName);
             var department = await context.Departments.FirstOrDefaultAsync(d => d.Code == departmentCode);
             
@@ -727,11 +730,9 @@ namespace APP.Repository;
                 TertiaryPackDescription = "",
                 CategoryId = category?.Id,
                 BaseUomId = baseUom?.Id,
-                BasePackingUomId = basePackingUom?.Id,
                 EquipmentId = equipment?.Id,
                 DepartmentId = department?.Id,
                 BaseQuantity = decimal.TryParse(getCell("BASE QUANTITY"), out var bq) ? bq : 0,
-                BasePackingQuantity = decimal.TryParse(getCell("BASE PACKING QUANTITY"), out var bpq) ? bpq : 0,
                 FullBatchSize = decimal.TryParse(getCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
                 LabelClaim = getCell("LABEL CLAIMS"),
             };

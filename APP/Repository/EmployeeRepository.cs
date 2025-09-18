@@ -82,16 +82,16 @@ public class EmployeeRepository(ApplicationDbContext context,
                     try 
                     {
                         emailService.SendMail(employee.Name,employee.Email, "Welcome to the team", emailBody, []);
-                        logger.LogInformation($"Email sent to {employee.Email}");
+                        logger.LogInformation("Email sent to {EmployeeEmail}", employee.Email);
                         sent = true;
                     }
                     catch (Exception ex)
                     {
                         attempts++;
-                        logger.LogWarning($"Failed attempt {attempts} for {employee.Email}: {ex.Message}");
+                        logger.LogWarning("Failed attempt {Attempts} for {EmployeeEmail}: {ExMessage}", attempts, employee.Email, ex.Message);
 
                         if (attempts == maxRetries)
-                            logger.LogError($"Giving up on {employee.Email} after {maxRetries} attempts.");
+                            logger.LogError("Giving up on {EmployeeEmail} after {MaxRetries} attempts.", employee.Email, maxRetries);
                     }
                 }
             }
