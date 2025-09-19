@@ -12,8 +12,8 @@ services:
       - redisConnectionString=redis:6379,abortConnect=false
       - RUN_TEST_SEEDS=ON
       - MINIO_ENDPOINT=minio
-      - MINIO_ACCESS_KEY=${ACCESS_KEY}
-      - MINIO_SECRET_KEY=${SECRET_KEY}
+      - MINIO_ACCESS_KEY=root
+      - MINIO_SECRET_KEY=entrance@10
       - MINIO_PORT=9000
       - REDIS_HOST=redis
       - REDIS_PORT=6379
