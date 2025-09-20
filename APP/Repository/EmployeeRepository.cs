@@ -420,22 +420,20 @@ public class EmployeeRepository(ApplicationDbContext context,
             }
         }
         
-        // ensuring consistency with employee users
-        var user = await userManager.FindByEmailAsync(employee.Email);
-        if (user != null)
-        {
-            user.DepartmentId = employee.DepartmentId;
-            user.Department = employee.Department;
-            
-            await userManager.UpdateAsync(user);
-            await context.SaveChangesAsync();
-        }
-        
         mapper.Map(request, employee);
 
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
-
+        
+        // ensuring consistency with employee users
+        var user = await userManager.FindByEmailAsync(employee.Email);
+        if (user == null) return Result.Success();
+        
+        user.DepartmentId = employee.DepartmentId;
+        user.Department = employee.Department;
+            
+        await userManager.UpdateAsync(user);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
