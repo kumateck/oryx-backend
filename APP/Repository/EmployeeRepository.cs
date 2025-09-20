@@ -426,8 +426,11 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             employee.DepartmentId = user.DepartmentId;
             employee.Department = user.Department;
+            
+            await userManager.UpdateAsync(user);
+            await context.SaveChangesAsync();
         }
-
+        
         mapper.Map(request, employee);
 
         context.Employees.Update(employee);

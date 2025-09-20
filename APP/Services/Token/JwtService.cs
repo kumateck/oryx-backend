@@ -100,7 +100,7 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id); 
         if (user != null)
         {
-            return await Authenticate(user, clientId);
+            return await  Authenticate(user, clientId);
         }
 
         return Result.Failure<LoginResponse>(Error.NotFound("User.NotFound", "User with {id} not found"));

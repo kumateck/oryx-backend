@@ -14,6 +14,6 @@ public class AssignEmployeeDto
     
     public DateTime StartDate { get; set; }
     
-    [Required] public Guid ReportingManagerId {get; set;}
+    public Guid ReportingManagerId {get; set;}
     
 }
