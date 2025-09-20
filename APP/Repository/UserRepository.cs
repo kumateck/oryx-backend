@@ -90,7 +90,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
     public async Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize,
         string searchQuery, bool? isDisabled)
     {
-        var query = context.Users.AsQueryable();
+        var query = context.Users.IgnoreQueryFilters().AsQueryable();
         
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -203,6 +203,12 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         if (user == null) return UserErrors.NotFound(userId);
         
         user.IsDisabled = !user.IsDisabled;
+        if (!user.IsDisabled)
+        {
+           user.DeletedAt = null;
+           user.LastDeletedById = null;
+        }
+        
         user.LastDeletedById = userId;
         context.Users.Update(user);
         await context.SaveChangesAsync();

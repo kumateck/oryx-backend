@@ -158,10 +158,10 @@ public class UserController(IUserRepository repo) : ControllerBase
     }
     
     //[Authorize("permission.user." + PermissionUtils.PermSuffixDelete)]
-    [HttpGet("toggle-disable/{id}")]
+    [HttpPut("toggle-disable/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DisableUser(Guid id)
+    public async Task<IResult> DisableUser([FromRoute] Guid id)
     {
         try
         {  

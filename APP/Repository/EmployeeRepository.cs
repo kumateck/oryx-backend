@@ -404,7 +404,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
     public async Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request)
     {
-        var employee = await context.Employees
+        var employee = await context.Employees.Include(employee => employee.Department)
             .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
@@ -420,19 +420,20 @@ public class EmployeeRepository(ApplicationDbContext context,
             }
         }
         
-        // ensuring consistency with employee users
-        var user = await userManager.FindByEmailAsync(employee.Email);
-        if (user != null)
-        {
-            employee.DepartmentId = user.DepartmentId;
-            employee.Department = user.Department;
-        }
-
         mapper.Map(request, employee);
 
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
-
+        
+        // ensuring consistency with employee users
+        var user = await userManager.FindByEmailAsync(employee.Email);
+        if (user == null) return Result.Success();
+        
+        user.DepartmentId = employee.DepartmentId;
+        user.Department = employee.Department;
+            
+        await userManager.UpdateAsync(user);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
@@ -471,6 +472,11 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             return Error.NotFound("Department.NotFound", "Department not found");
         }
+
+        if (employee.Type == EmployeeType.Permanent && !employeeDto.Level.HasValue)
+        {
+            return Error.Validation("Employee.Level", "Permanent employees must have a level assigned");
+        }
         
         mapper.Map(employeeDto, employee);
         employee.DepartmentId = employeeDto.DepartmentId;
@@ -479,6 +485,15 @@ public class EmployeeRepository(ApplicationDbContext context,
         employee.Status = EmployeeStatus.Active;
 
         context.Employees.Update(employee);
+        await context.SaveChangesAsync();
+        
+        var user = await userManager.FindByEmailAsync(employee.Email);
+        if (user == null) return Result.Success();
+        
+        user.DepartmentId = employee.DepartmentId;
+        user.Department = department;
+        
+        await userManager.UpdateAsync(user);
         await context.SaveChangesAsync();
 
         const string templatePath = "wwwroot/email/EmployeeAcceptance.html";
