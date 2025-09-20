@@ -303,6 +303,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         var query = context.PurchaseOrders
             .AsSplitQuery()
             .Include(po => po.Supplier)
+            .ThenInclude(s => s.AssociatedManufacturers)
+            .ThenInclude(sm => sm.Manufacturer)
             .Include(po=>po.TermsOfPayment)
             .Include(po=>po.DeliveryMode)
             .OrderByDescending(p => p.CreatedAt)
