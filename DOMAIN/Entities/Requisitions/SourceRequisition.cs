@@ -58,7 +58,7 @@ public class SupplierQuotation : BaseEntity
 public class SupplierQuotationDto 
 { 
     public Guid Id { get; set; }
-    public SupplierDto Supplier { get; set; } 
+    public SupplierListDto Supplier { get; set; } 
     public List<SupplierQuotationItemDto> Items { get; set; } = [];
     public bool ReceivedQuotation { get; set; }
 }
@@ -89,6 +89,7 @@ public class SupplierQuotationItemDto
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
+    public ManufacturerListDto DefaultManufacturer { get; set; }
     public decimal Quantity { get; set; }
     public decimal? QuotedPrice { get; set; }
 }

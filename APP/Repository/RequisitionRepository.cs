@@ -967,7 +967,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
             .FirstOrDefaultAsync(sr => sr.SupplierId == supplierId && !sr.SentQuotationRequestAt.HasValue);
         
-        return mapper.Map<SupplierQuotationRequest>(query);
+        return query != null ?
+            mapper.Map<SupplierQuotationRequest>(query) : null;
     }
 
     

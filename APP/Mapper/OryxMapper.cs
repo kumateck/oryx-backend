@@ -527,7 +527,10 @@ public class OryxMapper : Profile
         #region Supplier Quotation
 
         CreateMap<SupplierQuotation, SupplierQuotationDto>();
-        CreateMap<SupplierQuotationItem, SupplierQuotationItemDto>();
+        CreateMap<SupplierQuotationItem, SupplierQuotationItemDto>()
+            .ForMember(dest => dest.DefaultManufacturer,
+                opt => opt.MapFrom(src => 
+                    src.SupplierQuotation.Supplier.AssociatedManufacturers.FirstOrDefault(m => m.MaterialId == src.MaterialId && m.Default).Manufacturer));
 
         #endregion
 
