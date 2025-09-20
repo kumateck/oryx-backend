@@ -90,7 +90,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
     public async Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize,
         string searchQuery, bool? isDisabled)
     {
-        var query = context.Users.AsQueryable();
+        var query = context.Users.IgnoreQueryFilters().AsQueryable();
         
         if (!string.IsNullOrEmpty(searchQuery))
         {
