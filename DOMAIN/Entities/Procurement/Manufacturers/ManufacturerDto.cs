@@ -16,6 +16,16 @@ public class ManufacturerDto : BaseDto
     public List<ManufacturerMaterialDto> Materials { get; set; } = [];
 }
 
+public class ManufacturerListDto : BaseDto
+{ 
+    public string Name { get; set; }
+    public string Address { get; set; }
+    public string Email { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public DateTime? ValidityDate { get; set; }
+    public CountryDto Country { get; set; }
+}
+
 public class ManufacturerMaterialDto 
 {
     public MaterialDto Material { get; set; }

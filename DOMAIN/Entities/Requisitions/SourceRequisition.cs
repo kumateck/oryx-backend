@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using SHARED;
@@ -97,6 +98,7 @@ public class SourceRequisitionItemDto
     public Guid Id { get; set; }
     public CollectionItemDto SourceRequisition { get; set; }
     public MaterialDto Material { get; set; }
+    public ManufacturerListDto DefaultManufacturer { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public ProcurementSource Source { get; set; }
@@ -130,6 +132,7 @@ public class SupplierPrice
     public SupplierDto Supplier { get; set; }
     public CollectionItemDto SourceRequisition { get; set; }
     public SupplierQuotationItemStatus? Status { get; set; }
+    public ManufacturerListDto DefaultManufacturer { get; set; }
     public decimal? Price { get; set; }
 }
 

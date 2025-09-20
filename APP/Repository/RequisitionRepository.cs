@@ -15,6 +15,7 @@ using SHARED;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Notifications;
+using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
@@ -961,7 +962,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         // Base query
         var query = await context.SourceRequisitions
             .AsSplitQuery()
-            .Include(sr => sr.Supplier)
+            .Include(sr => sr.Supplier).ThenInclude(s => s.AssociatedManufacturers).ThenInclude(m => m.Manufacturer)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
             .FirstOrDefaultAsync(sr => sr.SupplierId == supplierId && !sr.SentQuotationRequestAt.HasValue);
@@ -1055,7 +1056,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .AsSplitQuery()
             .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Items).ThenInclude(s => s.UoM)
-            .Include(s => s.Supplier)
+            .Include(sr => sr.Supplier).ThenInclude(s => s.AssociatedManufacturers).ThenInclude(m => m.Manufacturer)
             .FirstOrDefaultAsync(s => s.Id == supplierQuotationId));
     }
     
@@ -1118,6 +1119,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     {
                         Supplier = mapper.Map<SupplierDto>(s.SupplierQuotation.Supplier),
                         SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
+                        DefaultManufacturer = mapper.Map<ManufacturerListDto>(s.SupplierQuotation.
+                            Supplier.AssociatedManufacturers.First(m => m.MaterialId == item.Key.Material.Id && m.Default).Manufacturer),
                         Status = s.Status,
                         Price = s.QuotedPrice
                     }).ToList()
