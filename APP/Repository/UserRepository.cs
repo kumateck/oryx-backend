@@ -203,6 +203,12 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         if (user == null) return UserErrors.NotFound(userId);
         
         user.IsDisabled = !user.IsDisabled;
+        if (!user.IsDisabled)
+        {
+           user.DeletedAt = null;
+           user.LastDeletedById = null;
+        }
+        
         user.LastDeletedById = userId;
         context.Users.Update(user);
         await context.SaveChangesAsync();
