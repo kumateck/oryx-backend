@@ -473,7 +473,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             return Error.NotFound("Department.NotFound", "Department not found");
         }
 
-        if (employee.Type == EmployeeType.Permanent && !employee.Level.HasValue)
+        if (employee.Type == EmployeeType.Permanent && !employeeDto.Level.HasValue)
         {
             return Error.Validation("Employee.Level", "Permanent employees must have a level assigned");
         }
