@@ -404,7 +404,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
     public async Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request)
     {
-        var employee = await context.Employees
+        var employee = await context.Employees.Include(employee => employee.Department)
             .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
@@ -424,8 +424,8 @@ public class EmployeeRepository(ApplicationDbContext context,
         var user = await userManager.FindByEmailAsync(employee.Email);
         if (user != null)
         {
-            employee.DepartmentId = user.DepartmentId;
-            employee.Department = user.Department;
+            user.DepartmentId = employee.DepartmentId;
+            user.Department = employee.Department;
             
             await userManager.UpdateAsync(user);
             await context.SaveChangesAsync();
