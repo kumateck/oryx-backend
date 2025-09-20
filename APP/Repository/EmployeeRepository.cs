@@ -481,6 +481,15 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
+        
+        var user = await userManager.FindByEmailAsync(employee.Email);
+        if (user == null) return Result.Success();
+        
+        user.DepartmentId = employee.DepartmentId;
+        user.Department = department;
+        
+        await userManager.UpdateAsync(user);
+        await context.SaveChangesAsync();
 
         const string templatePath = "wwwroot/email/EmployeeAcceptance.html";
         Console.WriteLine(templatePath);
