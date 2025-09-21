@@ -2,6 +2,6 @@ namespace SHARED;
 
 public enum DepartmentType
 {
-    Production,
-    NonProduction
+    Production = 0,
+    NonProduction = 1
 }

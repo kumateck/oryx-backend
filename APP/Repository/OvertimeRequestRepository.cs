@@ -120,6 +120,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
             .AsSplitQuery()
             .Include(o => o.Department)
             .Include(o => o.Employees)
+            .ThenInclude(o => o.Designation)
             .Include(o => o.CreatedBy)
             .FirstOrDefaultAsync(ot => ot.Id == id);
         

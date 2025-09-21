@@ -53,7 +53,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Retrieves the details of a product specification by its product ID.
     /// </summary>
     [HttpGet("product/{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSpecificationDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductSpecificationDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductSpecificationByProductId([FromRoute] Guid id)
     {

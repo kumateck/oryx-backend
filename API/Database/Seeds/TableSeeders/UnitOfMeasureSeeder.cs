@@ -1,4 +1,4 @@
-using APP.Utils;
+/*using APP.Utils;
 using DOMAIN.Entities.Base;
 using INFRASTRUCTURE.Context;
 
@@ -33,4 +33,4 @@ public class UnitOfMeasureSeeder : ISeeder
         dbContext.UnitOfMeasures.AddRange(uom);
         dbContext.SaveChanges();
     }
-}
+}*/

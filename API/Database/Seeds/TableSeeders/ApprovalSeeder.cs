@@ -1,4 +1,4 @@
-using DOMAIN.Entities.Approvals;
+/*using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Requisitions;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -44,4 +44,4 @@ public class ApprovalSeeder : ISeeder
         dbContext.Approvals.Add(approval);
         dbContext.SaveChanges();
     }
-}
+}*/

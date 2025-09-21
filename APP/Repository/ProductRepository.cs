@@ -47,7 +47,6 @@ namespace APP.Repository;
              .AsSplitQuery()
              .Include(p => p.BaseUoM)
              .Include(p => p.Equipment)
-             .Include(p => p.BasePackingUoM)
              .Include(p => p.BillOfMaterials)
              .ThenInclude(p => p.BillOfMaterial)
              .ThenInclude(p => p.Items.OrderBy(i => i.Order))
@@ -59,6 +58,7 @@ namespace APP.Repository;
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleRoles)
              .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.Resources)
              .Include(p => p.Packings).ThenInclude(p => p.PackingLists.OrderBy(r => r.Order)).ThenInclude(p  => p.Uom)
+             .Include(p => p.Packings).ThenInclude(p => p.BasePackingUoM)
              .Include(p =>p.CreatedBy)
              .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -397,6 +397,7 @@ namespace APP.Repository;
             .AsSplitQuery()
             .Include(p => p.Product)
             .Include(p => p.Material)
+            .Include(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
 
         if (productPackage == null)
@@ -411,6 +412,7 @@ namespace APP.Repository;
         var query = await context.ProductPackages
             .AsSplitQuery()
             .Include(p => p.Material)
+            .Include(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
         
@@ -507,6 +509,7 @@ namespace APP.Repository;
             .AsSplitQuery()
             .Include(p => p.PackingLists.OrderBy(pp => pp.Order))
             .ThenInclude(p => p.Uom)
+            .Include(p => p.BasePackingUoM)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
         
@@ -680,7 +683,7 @@ namespace APP.Repository;
         var requiredHeaders = new[]
         {
             "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "BASE QUANTITY",
-            "BASE PACKING UOM", "BASE PACKING QUANTITY", "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT CODE", "LABEL CLAIMS"
+            "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT CODE", "LABEL CLAIMS"
         };
 
         foreach (var header in requiredHeaders)
@@ -689,69 +692,75 @@ namespace APP.Repository;
                 return UploadErrors.MissingRequiredHeader(header);
         }
 
+        // 📌 Prefetch lookups
+        var categories = await context.ProductCategories
+            .AsNoTracking()
+            .ToDictionaryAsync(c => c.Name.ToLower(), c => c.Id);
+
+        var uoms = await context.UnitOfMeasures
+            .AsNoTracking()
+            .ToDictionaryAsync(u => u.Name.ToLower(), u => u.Id);
+
+        var equipments = await context.Equipments
+            .AsNoTracking()
+            .ToDictionaryAsync(e => e.Name.ToLower(), e => e.Id);
+
+        var departments = await context.Departments
+            .AsNoTracking()
+            .ToDictionaryAsync(d => d.Code, d => d.Id);
+
+        var existingCodes = await context.Products
+            .IgnoreQueryFilters()
+            .Select(p => p.Code)
+            .ToHashSetAsync();
+
+        // 📌 Process rows
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            var row1 = row;
-            var getCell = (string header) => worksheet.Cells[row1, headers[header]].Text.Trim();
+            string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
 
-            var categoryName = getCell("CATEGORY").ToLower();
-            var baseUomName = getCell("BASE UOM").ToLower();
-            var basePackingUomName = getCell("BASE PACKING UOM").ToLower();
-            var equipmentName = getCell("EQUIPMENT").ToLower();
-            var departmentCode = getCell("DEPARTMENT CODE");
-            var productCode = getCell("PRODUCT CODE");
-            
-            var existingProduct = await context.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code != null && p.Code == productCode);
-            if (existingProduct is not null) continue;
+            var productCode = GetCell("PRODUCT CODE");
+            if (string.IsNullOrWhiteSpace(productCode) || existingCodes.Contains(productCode))
+                continue;
 
-            var category = await context.ProductCategories.FirstOrDefaultAsync(c => c.Name != null &&  c.Name.ToLower() == categoryName);
-            var baseUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == baseUomName);
-            var basePackingUom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name != null && u.Name.ToLower() == basePackingUomName);
-            var equipment = await context.Equipments.FirstOrDefaultAsync(e => e.Name != null && e.Name.ToLower() == equipmentName);
-            var department = await context.Departments.FirstOrDefaultAsync(d => d.Code == departmentCode);
-            
+            var categoryName = GetCell("CATEGORY").ToLower();
+            var baseUomName = GetCell("BASE UOM").ToLower();
+            var equipmentName = GetCell("EQUIPMENT").ToLower();
+            var departmentCode = GetCell("DEPARTMENT CODE");
+
             var product = new Product
             {
-                Name = getCell("PRODUCT NAME"),
+                Name = GetCell("PRODUCT NAME"),
                 Code = productCode,
-                GenericName = getCell("GENERIC NAME"),
-                StorageCondition = getCell("STORAGE CONDITION"),
-                PackageStyle = getCell("PACK STYLE"),
-                FilledWeight = getCell("FILLED VOLUME"),
-                ShelfLife = getCell("SHELF LIFE"),
-                ActionUse = getCell("ACTION AND USE"),
-                FdaRegistrationNumber = "", // Not provided in headers
-                MasterFormulaNumber = "",   // Not provided in headers
+                GenericName = GetCell("GENERIC NAME"),
+                StorageCondition = GetCell("STORAGE CONDITION"),
+                PackageStyle = GetCell("PACK STYLE"),
+                FilledWeight = GetCell("FILLED VOLUME"),
+                ShelfLife = GetCell("SHELF LIFE"),
+                ActionUse = GetCell("ACTION AND USE"),
+                FdaRegistrationNumber = "", 
+                MasterFormulaNumber = "",   
                 PrimaryPackDescription = "",
                 SecondaryPackDescription = "",
                 TertiaryPackDescription = "",
-                CategoryId = category?.Id,
-                BaseUomId = baseUom?.Id,
-                BasePackingUomId = basePackingUom?.Id,
-                EquipmentId = equipment?.Id,
-                DepartmentId = department?.Id,
-                BaseQuantity = decimal.TryParse(getCell("BASE QUANTITY"), out var bq) ? bq : 0,
-                BasePackingQuantity = decimal.TryParse(getCell("BASE PACKING QUANTITY"), out var bpq) ? bpq : 0,
-                FullBatchSize = decimal.TryParse(getCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
-                LabelClaim = getCell("LABEL CLAIMS"),
+                CategoryId = categories.GetValueOrDefault(categoryName),
+                BaseUomId = uoms.GetValueOrDefault(baseUomName),
+                EquipmentId = equipments.GetValueOrDefault(equipmentName),
+                DepartmentId = departments.GetValueOrDefault(departmentCode),
+                BaseQuantity = decimal.TryParse(GetCell("BASE QUANTITY"), out var bq) ? bq : 0,
+                FullBatchSize = decimal.TryParse(GetCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
+                LabelClaim = GetCell("LABEL CLAIMS"),
             };
 
             products.Add(product);
+            existingCodes.Add(productCode); // ✅ Prevent duplicate inserts in same file
         }
-        
-        var existingCodes = await context.Products
-            .IgnoreQueryFilters()
-            .Where(p => products.Select(np => np.Code).Contains(p.Code))
-            .Select(p => p.Code)
-            .ToListAsync();
 
-        var newProducts = products
-            .Where(p => !existingCodes.Contains(p.Code))
-            .DistinctBy(p => p.Code) 
-            .ToList();
-        
-        await context.Products.AddRangeAsync(newProducts);
-        await context.SaveChangesAsync();
+        if (products.Any())
+        {
+            await context.Products.AddRangeAsync(products);
+            await context.SaveChangesAsync();
+        }
 
         return Result.Success();
     }
@@ -802,14 +811,14 @@ namespace APP.Repository;
             var uomName = GetCell("UOM");
             var materialTypeName = GetCell("MATERIAL TYPE");
 
-            var product = await context.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code == productCode);
+            var product = await context.Products.AsNoTracking().IgnoreAutoIncludes().IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code == productCode);
             if (product == null) continue;
 
-            var material = context.Materials.FirstOrDefault(m => m.Code == materialCode);
+            var material = context.Materials.AsNoTracking().IgnoreAutoIncludes().FirstOrDefault(m => m.Code == materialCode);
             if (material == null) continue;
 
             var uom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name.ToLower() == uomName.ToLower());
-            var materialType = await context.MaterialTypes.FirstOrDefaultAsync(mt => mt.Name.ToLower() == materialTypeName.ToLower());
+            var materialType = await context.MaterialTypes.AsNoTracking().IgnoreAutoIncludes().FirstOrDefaultAsync(mt => mt.Name.ToLower() == materialTypeName.ToLower());
 
             if (!bomMap.TryGetValue(productCode, out var billOfMaterial))
             {

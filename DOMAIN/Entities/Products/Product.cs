@@ -28,11 +28,8 @@ public class Product : BaseEntity
     public Guid? CategoryId { get; set; }
     public ProductCategory Category { get; set; }
     public decimal BaseQuantity { get; set; } 
-    public decimal BasePackingQuantity { get; set; } 
     public Guid? BaseUomId { get; set; }
     public UnitOfMeasure BaseUoM { get; set; }
-    public Guid? BasePackingUomId { get; set; }
-    public UnitOfMeasure BasePackingUoM { get; set; }
     public Guid? EquipmentId { get; set; }
     public Equipment Equipment { get; set; }
     public Guid? DepartmentId { get; set; }
@@ -44,9 +41,7 @@ public class Product : BaseEntity
     public List<Route> Routes { get; set; } = [];
     public decimal Price => Prices.OrderByDescending(p => p.Date).FirstOrDefault()?.Price ?? 0;
     public Division Division { get; set; }
-    public int PackPerShipper { get; set; }
     public List<ProductPrices>  Prices { get; set; } = [];
-    public decimal ExpectedYield { get; set; }
     public List<ProductPacking> Packings { get; set; } = [];
 }
 
@@ -64,6 +59,12 @@ public class ProductPacking : BaseEntity
     public Product Product { get; set; }
     [StringLength(10000)] public string Name { get; set; }
     [StringLength(10000)] public string Description { get; set; }
+    public int PackPerShipper { get; set; }
+    public Guid? BasePackingUomId { get; set; }
+    public UnitOfMeasure BasePackingUoM { get; set; }
+    public decimal BasePackingQuantity { get; set; } 
+    public decimal ExpectedYield { get; set; }
+    public bool IsDefault { get; set; }
     public List<ProductPackingList> PackingLists { get; set; } = [];
 }
 

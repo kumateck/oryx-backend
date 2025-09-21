@@ -392,7 +392,7 @@ public class InventoryProcurementRepository(
 
         try
         {
-            emailService.SendMail(sourceRequisition.Vendor.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
+            emailService.SendMail(sourceRequisition.Vendor.Name, sourceRequisition.Vendor.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
         }
         catch (Exception e)
         {

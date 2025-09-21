@@ -1,3 +1,4 @@
+/*
 using APP.Utils;
 using DOMAIN.Entities.Base;
 using INFRASTRUCTURE.Context;
@@ -48,3 +49,4 @@ public class OperationSeeder : ISeeder
         dbContext.SaveChanges();
     }
 }
+*/

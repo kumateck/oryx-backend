@@ -7,7 +7,7 @@ namespace APP.Services.Email;
 
 public class EmailService(ILogger<EmailService> logger) : IEmailService
 {
-    public void SendMail(string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
+    public void SendMail(string name, string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
         var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "emailapikey";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
@@ -16,7 +16,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
         {
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("Kumateck LTD", "noreply@kumateck.com"));
-            message.To.Add(new MailboxAddress("", to));
+            message.To.Add(new MailboxAddress(name, to));
             message.Subject = subject;
             
             var bodyPart = new TextPart("html")
@@ -65,7 +65,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
         foreach (var user in data.Recipients)
         {
             var encode = data.Message;
-            SendMail(user.Email, subject, encode, []);
+            SendMail(user.FirstName, user.Email, subject, encode, []);
         }
     }
 }

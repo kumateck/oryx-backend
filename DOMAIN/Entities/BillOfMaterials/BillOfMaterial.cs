@@ -32,4 +32,5 @@ public class BillOfMaterialItem : BaseEntity
     public decimal BaseQuantity { get; set; } 
     public Guid? BaseUoMId { get; set; } 
     public UnitOfMeasure BaseUoM { get; set; }
+    public decimal PrescribedQuantity { get; set; }
 }

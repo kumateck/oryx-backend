@@ -856,6 +856,45 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ItemTransactionLogs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    TransactionType = table.Column<string>(type: "text", nullable: true),
+                    ItemCode = table.Column<string>(type: "text", nullable: true),
+                    Credit = table.Column<decimal>(type: "numeric", nullable: false),
+                    Debit = table.Column<decimal>(type: "numeric", nullable: false),
+                    ShadowHold = table.Column<decimal>(type: "numeric", nullable: true),
+                    TotalBalance = table.Column<decimal>(type: "numeric", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ItemTransactionLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ItemTransactionLogs_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ItemTransactionLogs_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ItemTransactionLogs_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "LeaveEntitlements",
                 columns: table => new
                 {
@@ -1792,6 +1831,8 @@ namespace INFRASTRUCTURE.Migrations
                     Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     IsScalable = table.Column<bool>(type: "boolean", nullable: false),
                     IsRawMaterial = table.Column<bool>(type: "boolean", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    Category = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1913,6 +1954,7 @@ namespace INFRASTRUCTURE.Migrations
                     DepartmentId = table.Column<Guid>(type: "uuid", nullable: true),
                     Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Type = table.Column<int>(type: "integer", nullable: false),
+                    IsBeta = table.Column<bool>(type: "boolean", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -2260,6 +2302,9 @@ namespace INFRASTRUCTURE.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Code = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     CustomerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Approved = table.Column<bool>(type: "boolean", nullable: false),
+                    DeliveredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -2960,7 +3005,6 @@ namespace INFRASTRUCTURE.Migrations
                     Code = table.Column<string>(type: "text", nullable: true),
                     Classification = table.Column<int>(type: "integer", nullable: false),
                     UnitOfMeasureId = table.Column<Guid>(type: "uuid", nullable: false),
-                    HasBatch = table.Column<bool>(type: "boolean", nullable: false),
                     MinimumLevel = table.Column<int>(type: "integer", nullable: false),
                     MaximumLevel = table.Column<int>(type: "integer", nullable: false),
                     ReorderLevel = table.Column<int>(type: "integer", nullable: false),
@@ -3258,6 +3302,7 @@ namespace INFRASTRUCTURE.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ProductionOrderId = table.Column<Guid>(type: "uuid", nullable: false),
                     Approved = table.Column<bool>(type: "boolean", nullable: false),
+                    DeliveredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -3292,40 +3337,52 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProformaInvoices",
+                name: "ProductionOrderApprovals",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ProductionOrderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ApprovalId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Required = table.Column<bool>(type: "boolean", nullable: false),
+                    Order = table.Column<int>(type: "integer", nullable: false),
+                    StageStartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    ApprovalTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ApprovedById = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                    ActivatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Comments = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProformaInvoices", x => x.Id);
+                    table.PrimaryKey("PK_ProductionOrderApprovals", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ProformaInvoices_ProductionOrders_ProductionOrderId",
+                        name: "FK_ProductionOrderApprovals_Approvals_ApprovalId",
+                        column: x => x.ApprovalId,
+                        principalTable: "Approvals",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionOrderApprovals_ProductionOrders_ProductionOrderId",
                         column: x => x.ProductionOrderId,
                         principalTable: "ProductionOrders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ProformaInvoices_users_CreatedById",
-                        column: x => x.CreatedById,
+                        name: "FK_ProductionOrderApprovals_roles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "roles",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionOrderApprovals_users_ApprovedById",
+                        column: x => x.ApprovedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_ProformaInvoices_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProformaInvoices_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
+                        name: "FK_ProductionOrderApprovals_users_UserId",
+                        column: x => x.UserId,
                         principalTable: "users",
                         principalColumn: "Id");
                 });
@@ -3977,15 +4034,11 @@ namespace INFRASTRUCTURE.Migrations
                     LabelClaim = table.Column<string>(type: "character varying(1000000)", maxLength: 1000000, nullable: true),
                     CategoryId = table.Column<Guid>(type: "uuid", nullable: true),
                     BaseQuantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    BasePackingQuantity = table.Column<decimal>(type: "numeric", nullable: false),
                     BaseUomId = table.Column<Guid>(type: "uuid", nullable: true),
-                    BasePackingUomId = table.Column<Guid>(type: "uuid", nullable: true),
                     EquipmentId = table.Column<Guid>(type: "uuid", nullable: true),
                     DepartmentId = table.Column<Guid>(type: "uuid", nullable: true),
                     FullBatchSize = table.Column<decimal>(type: "numeric", nullable: false),
-                    Price = table.Column<decimal>(type: "numeric", nullable: false),
                     Division = table.Column<int>(type: "integer", nullable: false),
-                    PackPerShipper = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -4010,11 +4063,6 @@ namespace INFRASTRUCTURE.Migrations
                         name: "FK_Products_ProductCategories_CategoryId",
                         column: x => x.CategoryId,
                         principalTable: "ProductCategories",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Products_UnitOfMeasures_BasePackingUomId",
-                        column: x => x.BasePackingUomId,
-                        principalTable: "UnitOfMeasures",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Products_UnitOfMeasures_BaseUomId",
@@ -4142,13 +4190,7 @@ namespace INFRASTRUCTURE.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ItemStockRequisitionId = table.Column<Guid>(type: "uuid", nullable: false),
                     ItemId = table.Column<Guid>(type: "uuid", nullable: false),
-                    QuantityRequested = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                    QuantityRequested = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -4165,21 +4207,6 @@ namespace INFRASTRUCTURE.Migrations
                         principalTable: "Items",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ItemStockRequisitionItems_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ItemStockRequisitionItems_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ItemStockRequisitionItems_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -4430,9 +4457,11 @@ namespace INFRASTRUCTURE.Migrations
                     ArrivedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     ClearedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     TransitStartedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    AtPortAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     CompletedDistributionAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
+                    Approved = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -4794,13 +4823,14 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Invoices",
+                name: "ProformaInvoices",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProformaInvoiceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CustomerPoNumber = table.Column<string>(type: "text", nullable: true),
+                    Code = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    AllocateProductionOrderId = table.Column<Guid>(type: "uuid", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
+                    Approved = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -4810,25 +4840,25 @@ namespace INFRASTRUCTURE.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Invoices", x => x.Id);
+                    table.PrimaryKey("PK_ProformaInvoices", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Invoices_ProformaInvoices_ProformaInvoiceId",
-                        column: x => x.ProformaInvoiceId,
-                        principalTable: "ProformaInvoices",
+                        name: "FK_ProformaInvoices_AllocateProductionOrders_AllocateProductio~",
+                        column: x => x.AllocateProductionOrderId,
+                        principalTable: "AllocateProductionOrders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Invoices_users_CreatedById",
+                        name: "FK_ProformaInvoices_users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Invoices_users_LastDeletedById",
+                        name: "FK_ProformaInvoices_users_LastDeletedById",
                         column: x => x.LastDeletedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Invoices_users_LastUpdatedById",
+                        name: "FK_ProformaInvoices_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
@@ -5011,7 +5041,7 @@ namespace INFRASTRUCTURE.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    BatchId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     Quantity = table.Column<decimal>(type: "numeric", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
@@ -5028,8 +5058,8 @@ namespace INFRASTRUCTURE.Migrations
                 {
                     table.PrimaryKey("PK_FinishedProductBatchEvents", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_FinishedProductBatchEvents_Products_BatchId",
-                        column: x => x.BatchId,
+                        name: "FK_FinishedProductBatchEvents_Products_ProductId",
+                        column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -5066,7 +5096,7 @@ namespace INFRASTRUCTURE.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    BatchId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     FromWarehouseId = table.Column<Guid>(type: "uuid", nullable: true),
                     ToWarehouseId = table.Column<Guid>(type: "uuid", nullable: true),
                     Quantity = table.Column<decimal>(type: "numeric", nullable: false),
@@ -5084,8 +5114,8 @@ namespace INFRASTRUCTURE.Migrations
                 {
                     table.PrimaryKey("PK_FinishedProductBatchMovements", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_FinishedProductBatchMovements_Products_BatchId",
-                        column: x => x.BatchId,
+                        name: "FK_FinishedProductBatchMovements_Products_ProductId",
+                        column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -5217,174 +5247,6 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MaterialReturnNotes",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ReturnDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BatchNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MaterialReturnNotes", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_MaterialReturnNotes_ProductionSchedules_ProductionScheduleId",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_MaterialReturnNotes_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_MaterialReturnNotes_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_MaterialReturnNotes_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_MaterialReturnNotes_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductionActivities",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Code = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    StartedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionActivities", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivities_ProductionSchedules_ProductionSchedule~",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivities_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivities_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivities_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivities_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductionExtraPackings",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaterialId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UoMId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Quantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    IssuedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IssuedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionExtraPackings", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProductionExtraPackings_Materials_MaterialId",
-                        column: x => x.MaterialId,
-                        principalTable: "Materials",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionExtraPackings_ProductionSchedules_ProductionSched~",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionExtraPackings_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionExtraPackings_UnitOfMeasures_UoMId",
-                        column: x => x.UoMId,
-                        principalTable: "UnitOfMeasures",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionExtraPackings_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionExtraPackings_users_IssuedById",
-                        column: x => x.IssuedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionExtraPackings_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionExtraPackings_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ProductionOrderProducts",
                 columns: table => new
                 {
@@ -5414,54 +5276,18 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProductionScheduleProducts",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BatchNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    BatchSize = table.Column<int>(type: "integer", nullable: false),
-                    MarketTypeId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Quantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    Cancelled = table.Column<bool>(type: "boolean", nullable: false),
-                    ReasonForCancellation = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionScheduleProducts", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProductionScheduleProducts_Customers_MarketTypeId",
-                        column: x => x.MarketTypeId,
-                        principalTable: "Customers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionScheduleProducts_ProductionSchedules_ProductionSc~",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionScheduleProducts_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductPackages",
+                name: "ProductPackings",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaterialId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaterialThickness = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    OtherStandards = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    BaseQuantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    UnitCapacity = table.Column<decimal>(type: "numeric", nullable: false),
-                    DirectLinkMaterialId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PackingExcessMargin = table.Column<decimal>(type: "numeric", nullable: false),
+                    Name = table.Column<string>(type: "character varying(10000)", maxLength: 10000, nullable: true),
+                    Description = table.Column<string>(type: "character varying(10000)", maxLength: 10000, nullable: true),
+                    PackPerShipper = table.Column<int>(type: "integer", nullable: false),
+                    BasePackingUomId = table.Column<Guid>(type: "uuid", nullable: true),
+                    BasePackingQuantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    ExpectedYield = table.Column<decimal>(type: "numeric", nullable: false),
+                    IsDefault = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -5471,39 +5297,54 @@ namespace INFRASTRUCTURE.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProductPackages", x => x.Id);
+                    table.PrimaryKey("PK_ProductPackings", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ProductPackages_Materials_DirectLinkMaterialId",
-                        column: x => x.DirectLinkMaterialId,
-                        principalTable: "Materials",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductPackages_Materials_MaterialId",
-                        column: x => x.MaterialId,
-                        principalTable: "Materials",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductPackages_Products_ProductId",
+                        name: "FK_ProductPackings_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ProductPackages_users_CreatedById",
+                        name: "FK_ProductPackings_UnitOfMeasures_BasePackingUomId",
+                        column: x => x.BasePackingUomId,
+                        principalTable: "UnitOfMeasures",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductPackings_users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_ProductPackages_users_LastDeletedById",
+                        name: "FK_ProductPackings_users_LastDeletedById",
                         column: x => x.LastDeletedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_ProductPackages_users_LastUpdatedById",
+                        name: "FK_ProductPackings_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductPrices",
+                columns: table => new
+                {
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Price = table.Column<decimal>(type: "numeric", nullable: false),
+                    Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductPrices", x => new { x.ProductId, x.Id });
+                    table.ForeignKey(
+                        name: "FK_ProductPrices_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -5541,53 +5382,6 @@ namespace INFRASTRUCTURE.Migrations
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ProductStandardTestProcedures_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProformaInvoiceProducts",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProformaInvoiceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Quantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProformaInvoiceProducts", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProformaInvoiceProducts_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProformaInvoiceProducts_ProformaInvoices_ProformaInvoiceId",
-                        column: x => x.ProformaInvoiceId,
-                        principalTable: "ProformaInvoices",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProformaInvoiceProducts_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProformaInvoiceProducts_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProformaInvoiceProducts_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
@@ -5645,93 +5439,6 @@ namespace INFRASTRUCTURE.Migrations
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DamagedStockBatch",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    BatchNumber = table.Column<string>(type: "text", nullable: true),
-                    Quantity = table.Column<int>(type: "integer", nullable: false),
-                    DamagedStockId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DamagedStockBatch", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_DamagedStockBatch_DamagedStocks_DamagedStockId",
-                        column: x => x.DamagedStockId,
-                        principalTable: "DamagedStocks",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_DamagedStockBatch_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_DamagedStockBatch_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_DamagedStockBatch_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DamagedStocksLogs",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DamagedStockId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TimeStamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DamagedStocksLogs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_DamagedStocksLogs_DamagedStocks_DamagedStockId",
-                        column: x => x.DamagedStockId,
-                        principalTable: "DamagedStocks",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_DamagedStocksLogs_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_DamagedStocksLogs_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_DamagedStocksLogs_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_DamagedStocksLogs_users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -5968,6 +5675,57 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ShipmentDocumentApprovals",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ShipmentDocumentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ApprovalId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Required = table.Column<bool>(type: "boolean", nullable: false),
+                    Order = table.Column<int>(type: "integer", nullable: false),
+                    StageStartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    ApprovalTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ApprovedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ActivatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Comments = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ShipmentDocumentApprovals", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ShipmentDocumentApprovals_Approvals_ApprovalId",
+                        column: x => x.ApprovalId,
+                        principalTable: "Approvals",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ShipmentDocumentApprovals_ShipmentDocuments_ShipmentDocumen~",
+                        column: x => x.ShipmentDocumentId,
+                        principalTable: "ShipmentDocuments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ShipmentDocumentApprovals_roles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "roles",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ShipmentDocumentApprovals_users_ApprovedById",
+                        column: x => x.ApprovedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ShipmentDocumentApprovals_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PurchaseOrderApprovals",
                 columns: table => new
                 {
@@ -6067,6 +5825,7 @@ namespace INFRASTRUCTURE.Migrations
                     MaterialId = table.Column<Guid>(type: "uuid", nullable: false),
                     UoMId = table.Column<Guid>(type: "uuid", nullable: false),
                     Quantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    QuantityInvoiced = table.Column<decimal>(type: "numeric", nullable: false),
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
                     CurrencyId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -6320,6 +6079,151 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Invoices",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProformaInvoiceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CustomerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Invoices", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Invoices_Customers_CustomerId",
+                        column: x => x.CustomerId,
+                        principalTable: "Customers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Invoices_ProformaInvoices_ProformaInvoiceId",
+                        column: x => x.ProformaInvoiceId,
+                        principalTable: "ProformaInvoices",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Invoices_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Invoices_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Invoices_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProformaInvoiceApprovals",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProformaInvoiceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ApprovalId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Required = table.Column<bool>(type: "boolean", nullable: false),
+                    Order = table.Column<int>(type: "integer", nullable: false),
+                    StageStartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    ApprovalTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ApprovedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ActivatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Comments = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProformaInvoiceApprovals", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceApprovals_Approvals_ApprovalId",
+                        column: x => x.ApprovalId,
+                        principalTable: "Approvals",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceApprovals_ProformaInvoices_ProformaInvoiceId",
+                        column: x => x.ProformaInvoiceId,
+                        principalTable: "ProformaInvoices",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceApprovals_roles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "roles",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceApprovals_users_ApprovedById",
+                        column: x => x.ApprovedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceApprovals_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProformaInvoiceProducts",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProformaInvoiceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Quantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProformaInvoiceProducts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceProducts_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceProducts_ProformaInvoices_ProformaInvoiceId",
+                        column: x => x.ProformaInvoiceId,
+                        principalTable: "ProformaInvoices",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceProducts_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceProducts_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProformaInvoiceProducts_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "BillOfMaterialItems",
                 columns: table => new
                 {
@@ -6334,6 +6238,7 @@ namespace INFRASTRUCTURE.Migrations
                     IsSubstitutable = table.Column<bool>(type: "boolean", nullable: false),
                     BaseQuantity = table.Column<decimal>(type: "numeric", nullable: false),
                     BaseUoMId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PrescribedQuantity = table.Column<decimal>(type: "numeric", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -6484,15 +6389,63 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MaterialReturnNotePartialReturns",
+                name: "ProductionScheduleProducts",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaterialReturnNoteId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaterialId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BatchNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    BatchSize = table.Column<int>(type: "integer", nullable: false),
+                    MarketTypeId = table.Column<Guid>(type: "uuid", nullable: true),
                     Quantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    UoMId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DestinationWarehouseId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Cancelled = table.Column<bool>(type: "boolean", nullable: false),
+                    ReasonForCancellation = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: true),
+                    ProductPackingId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductionScheduleProducts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductionScheduleProducts_Customers_MarketTypeId",
+                        column: x => x.MarketTypeId,
+                        principalTable: "Customers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionScheduleProducts_ProductPackings_ProductPackingId",
+                        column: x => x.ProductPackingId,
+                        principalTable: "ProductPackings",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionScheduleProducts_ProductionSchedules_ProductionSc~",
+                        column: x => x.ProductionScheduleId,
+                        principalTable: "ProductionSchedules",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionScheduleProducts_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductPackages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaterialId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaterialThickness = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    OtherStandards = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    BaseQuantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    UnitCapacity = table.Column<decimal>(type: "numeric", nullable: false),
+                    DirectLinkMaterialId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PackingExcessMargin = table.Column<decimal>(type: "numeric", nullable: false),
+                    PrescribedQuantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    Loose = table.Column<decimal>(type: "numeric", nullable: false),
+                    ProductPackingId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -6502,148 +6455,72 @@ namespace INFRASTRUCTURE.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MaterialReturnNotePartialReturns", x => x.Id);
+                    table.PrimaryKey("PK_ProductPackages", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MaterialReturnNotePartialReturns_MaterialReturnNotes_Materi~",
-                        column: x => x.MaterialReturnNoteId,
-                        principalTable: "MaterialReturnNotes",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        name: "FK_ProductPackages_Materials_DirectLinkMaterialId",
+                        column: x => x.DirectLinkMaterialId,
+                        principalTable: "Materials",
+                        principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_MaterialReturnNotePartialReturns_Materials_MaterialId",
+                        name: "FK_ProductPackages_Materials_MaterialId",
                         column: x => x.MaterialId,
                         principalTable: "Materials",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MaterialReturnNotePartialReturns_UnitOfMeasures_UoMId",
-                        column: x => x.UoMId,
+                        name: "FK_ProductPackages_ProductPackings_ProductPackingId",
+                        column: x => x.ProductPackingId,
+                        principalTable: "ProductPackings",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductPackages_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductPackages_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductPackages_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductPackages_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductPackingList",
+                columns: table => new
+                {
+                    ProductPackingId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UomId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Quantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    Order = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductPackingList", x => new { x.ProductPackingId, x.Id });
+                    table.ForeignKey(
+                        name: "FK_ProductPackingList_ProductPackings_ProductPackingId",
+                        column: x => x.ProductPackingId,
+                        principalTable: "ProductPackings",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductPackingList_UnitOfMeasures_UomId",
+                        column: x => x.UomId,
                         principalTable: "UnitOfMeasures",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_MaterialReturnNotePartialReturns_Warehouses_DestinationWare~",
-                        column: x => x.DestinationWarehouseId,
-                        principalTable: "Warehouses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_MaterialReturnNotePartialReturns_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_MaterialReturnNotePartialReturns_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_MaterialReturnNotePartialReturns_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductionActivityLogs",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionActivityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Message = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionActivityLogs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityLogs_ProductionActivities_ProductionActiv~",
-                        column: x => x.ProductionActivityId,
-                        principalTable: "ProductionActivities",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityLogs_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityLogs_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityLogs_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityLogs_users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductionActivitySteps",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionActivityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    OperationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    WorkflowId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Order = table.Column<int>(type: "integer", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    StartedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionActivitySteps", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivitySteps_Forms_WorkflowId",
-                        column: x => x.WorkflowId,
-                        principalTable: "Forms",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivitySteps_Operations_OperationId",
-                        column: x => x.OperationId,
-                        principalTable: "Operations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivitySteps_ProductionActivities_ProductionActi~",
-                        column: x => x.ProductionActivityId,
-                        principalTable: "ProductionActivities",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivitySteps_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivitySteps_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivitySteps_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -7016,6 +6893,7 @@ namespace INFRASTRUCTURE.Migrations
                     CurrencyBeforeId = table.Column<Guid>(type: "uuid", nullable: true),
                     MaterialBeforeId = table.Column<Guid>(type: "uuid", nullable: true),
                     RevisionNumber = table.Column<int>(type: "integer", nullable: false),
+                    RevisionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     PurchaseOrderId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
@@ -7115,307 +6993,14 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "BatchManufacturingRecords",
+                name: "MaterialReturnNotes",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BatchNumber = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    ManufacturingDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    BatchQuantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    SampledQuantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    IssuedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_BatchManufacturingRecords", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_BatchManufacturingRecords_ProductionActivitySteps_Productio~",
-                        column: x => x.ProductionActivityStepId,
-                        principalTable: "ProductionActivitySteps",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_BatchManufacturingRecords_ProductionSchedules_ProductionSch~",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_BatchManufacturingRecords_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_BatchManufacturingRecords_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_BatchManufacturingRecords_users_IssuedById",
-                        column: x => x.IssuedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_BatchManufacturingRecords_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_BatchManufacturingRecords_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "BatchPackagingRecords",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReturnDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ProductionScheduleProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     BatchNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    ManufacturingDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    BatchQuantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    IssuedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_BatchPackagingRecords", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_BatchPackagingRecords_ProductionActivitySteps_ProductionAct~",
-                        column: x => x.ProductionActivityStepId,
-                        principalTable: "ProductionActivitySteps",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_BatchPackagingRecords_ProductionSchedules_ProductionSchedul~",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_BatchPackagingRecords_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_BatchPackagingRecords_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_BatchPackagingRecords_users_IssuedById",
-                        column: x => x.IssuedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_BatchPackagingRecords_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_BatchPackagingRecords_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "FinalPackings",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: true),
-                    NumberOfBottlesPerShipper = table.Column<decimal>(type: "numeric", nullable: false),
-                    NUmberOfFullShipperPacked = table.Column<decimal>(type: "numeric", nullable: false),
-                    LeftOver = table.Column<decimal>(type: "numeric", nullable: false),
-                    BatchSize = table.Column<decimal>(type: "numeric", nullable: false),
-                    AverageVolumeFilledPerBottle = table.Column<decimal>(type: "numeric", nullable: false),
-                    PackSize = table.Column<decimal>(type: "numeric", nullable: false),
-                    ExpectedYield = table.Column<decimal>(type: "numeric", nullable: false),
-                    TotalQuantityPacked = table.Column<decimal>(type: "numeric", nullable: false),
-                    QualityControlAnalyticalSample = table.Column<decimal>(type: "numeric", nullable: false),
-                    RetainedSamples = table.Column<decimal>(type: "numeric", nullable: false),
-                    StabilitySamples = table.Column<decimal>(type: "numeric", nullable: false),
-                    TotalNumberOfBottles = table.Column<decimal>(type: "numeric", nullable: false),
-                    YieldTotalQuantityPacked = table.Column<decimal>(type: "numeric", nullable: false),
-                    TotalGainOrLoss = table.Column<decimal>(type: "numeric", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_FinalPackings", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_FinalPackings_ProductionActivitySteps_ProductionActivitySte~",
-                        column: x => x.ProductionActivityStepId,
-                        principalTable: "ProductionActivitySteps",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_FinalPackings_ProductionSchedules_ProductionScheduleId",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_FinalPackings_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_FinalPackings_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_FinalPackings_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_FinalPackings_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductionActivityStepResources",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ResourceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionActivityStepResources", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepResources_ProductionActivitySteps_Pro~",
-                        column: x => x.ProductionActivityStepId,
-                        principalTable: "ProductionActivitySteps",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepResources_Resources_ResourceId",
-                        column: x => x.ResourceId,
-                        principalTable: "Resources",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepResources_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepResources_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepResources_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductionActivityStepWorkCenters",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
-                    WorkCenterId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionActivityStepWorkCenters", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepWorkCenters_ProductionActivitySteps_P~",
-                        column: x => x.ProductionActivityStepId,
-                        principalTable: "ProductionActivitySteps",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepWorkCenters_WorkCenters_WorkCenterId",
-                        column: x => x.WorkCenterId,
-                        principalTable: "WorkCenters",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepWorkCenters_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepWorkCenters_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepWorkCenters_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Requisitions",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Code = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    RequestedById = table.Column<Guid>(type: "uuid", nullable: false),
-                    DepartmentId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RequisitionType = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    Comments = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    ExpectedDelivery = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Approved = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -7425,64 +7010,40 @@ namespace INFRASTRUCTURE.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Requisitions", x => x.Id);
+                    table.PrimaryKey("PK_MaterialReturnNotes", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Requisitions_Departments_DepartmentId",
-                        column: x => x.DepartmentId,
-                        principalTable: "Departments",
+                        name: "FK_MaterialReturnNotes_ProductionScheduleProducts_ProductionSc~",
+                        column: x => x.ProductionScheduleProductId,
+                        principalTable: "ProductionScheduleProducts",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Requisitions_ProductionActivitySteps_ProductionActivityStep~",
-                        column: x => x.ProductionActivityStepId,
-                        principalTable: "ProductionActivitySteps",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Requisitions_ProductionSchedules_ProductionScheduleId",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Requisitions_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Requisitions_users_CreatedById",
+                        name: "FK_MaterialReturnNotes_users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Requisitions_users_LastDeletedById",
+                        name: "FK_MaterialReturnNotes_users_LastDeletedById",
                         column: x => x.LastDeletedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Requisitions_users_LastUpdatedById",
+                        name: "FK_MaterialReturnNotes_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Requisitions_users_RequestedById",
-                        column: x => x.RequestedById,
-                        principalTable: "users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "StockTransfers",
+                name: "ProductionActivities",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Code = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    MaterialId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UoMId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Reason = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    RequiredQuantity = table.Column<decimal>(type: "numeric", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProductionScheduleProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    StartedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -7492,101 +7053,90 @@ namespace INFRASTRUCTURE.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_StockTransfers", x => x.Id);
+                    table.PrimaryKey("PK_ProductionActivities", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_StockTransfers_Materials_MaterialId",
+                        name: "FK_ProductionActivities_ProductionScheduleProducts_ProductionS~",
+                        column: x => x.ProductionScheduleProductId,
+                        principalTable: "ProductionScheduleProducts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivities_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivities_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivities_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductionExtraPackings",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionScheduleProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaterialId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UoMId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Quantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    IssuedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IssuedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductionExtraPackings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductionExtraPackings_Materials_MaterialId",
                         column: x => x.MaterialId,
                         principalTable: "Materials",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_StockTransfers_ProductionActivitySteps_ProductionActivitySt~",
-                        column: x => x.ProductionActivityStepId,
-                        principalTable: "ProductionActivitySteps",
-                        principalColumn: "Id");
+                        name: "FK_ProductionExtraPackings_ProductionScheduleProducts_Producti~",
+                        column: x => x.ProductionScheduleProductId,
+                        principalTable: "ProductionScheduleProducts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_StockTransfers_ProductionSchedules_ProductionScheduleId",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_StockTransfers_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_StockTransfers_UnitOfMeasures_UoMId",
+                        name: "FK_ProductionExtraPackings_UnitOfMeasures_UoMId",
                         column: x => x.UoMId,
                         principalTable: "UnitOfMeasures",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_StockTransfers_users_CreatedById",
+                        name: "FK_ProductionExtraPackings_users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_StockTransfers_users_LastDeletedById",
+                        name: "FK_ProductionExtraPackings_users_IssuedById",
+                        column: x => x.IssuedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionExtraPackings_users_LastDeletedById",
                         column: x => x.LastDeletedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_StockTransfers_users_LastUpdatedById",
+                        name: "FK_ProductionExtraPackings_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductionActivityStepUsers",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductAnalyticalRawDataId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Action = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionActivityStepUsers", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepUsers_ProductAnalyticalRawData_Produc~",
-                        column: x => x.ProductAnalyticalRawDataId,
-                        principalTable: "ProductAnalyticalRawData",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepUsers_ProductionActivitySteps_Product~",
-                        column: x => x.ProductionActivityStepId,
-                        principalTable: "ProductionActivitySteps",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepUsers_users_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepUsers_users_LastDeletedById",
-                        column: x => x.LastDeletedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepUsers_users_LastUpdatedById",
-                        column: x => x.LastUpdatedById,
-                        principalTable: "users",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ProductionActivityStepUsers_users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -7819,6 +7369,559 @@ namespace INFRASTRUCTURE.Migrations
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_RevisedPurchaseOrderItem_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductionActivityLogs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionActivityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Message = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductionActivityLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityLogs_ProductionActivities_ProductionActiv~",
+                        column: x => x.ProductionActivityId,
+                        principalTable: "ProductionActivities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityLogs_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityLogs_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityLogs_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityLogs_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductionActivitySteps",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionActivityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OperationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkflowId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Order = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    StartedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductionActivitySteps", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivitySteps_Forms_WorkflowId",
+                        column: x => x.WorkflowId,
+                        principalTable: "Forms",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivitySteps_Operations_OperationId",
+                        column: x => x.OperationId,
+                        principalTable: "Operations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivitySteps_ProductionActivities_ProductionActi~",
+                        column: x => x.ProductionActivityId,
+                        principalTable: "ProductionActivities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivitySteps_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivitySteps_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivitySteps_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "BatchManufacturingRecords",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionScheduleProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BatchNumber = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    ManufacturingDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    BatchQuantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    SampledQuantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    IssuedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    IssuedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BatchManufacturingRecords", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_BatchManufacturingRecords_ProductionActivitySteps_Productio~",
+                        column: x => x.ProductionActivityStepId,
+                        principalTable: "ProductionActivitySteps",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_BatchManufacturingRecords_ProductionScheduleProducts_Produc~",
+                        column: x => x.ProductionScheduleProductId,
+                        principalTable: "ProductionScheduleProducts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_BatchManufacturingRecords_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_BatchManufacturingRecords_users_IssuedById",
+                        column: x => x.IssuedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_BatchManufacturingRecords_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_BatchManufacturingRecords_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "BatchPackagingRecords",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionScheduleProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BatchNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    ManufacturingDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    BatchQuantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    IssuedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProductPackingId = table.Column<Guid>(type: "uuid", nullable: true),
+                    IssuedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BatchPackagingRecords", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_BatchPackagingRecords_ProductPackings_ProductPackingId",
+                        column: x => x.ProductPackingId,
+                        principalTable: "ProductPackings",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_BatchPackagingRecords_ProductionActivitySteps_ProductionAct~",
+                        column: x => x.ProductionActivityStepId,
+                        principalTable: "ProductionActivitySteps",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_BatchPackagingRecords_ProductionScheduleProducts_Production~",
+                        column: x => x.ProductionScheduleProductId,
+                        principalTable: "ProductionScheduleProducts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_BatchPackagingRecords_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_BatchPackagingRecords_users_IssuedById",
+                        column: x => x.IssuedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_BatchPackagingRecords_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_BatchPackagingRecords_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FinalPackings",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionScheduleProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: true),
+                    NumberOfBottlesPerShipper = table.Column<decimal>(type: "numeric", nullable: false),
+                    NUmberOfFullShipperPacked = table.Column<decimal>(type: "numeric", nullable: false),
+                    LeftOver = table.Column<decimal>(type: "numeric", nullable: false),
+                    BatchSize = table.Column<decimal>(type: "numeric", nullable: false),
+                    AverageVolumeFilledPerBottle = table.Column<decimal>(type: "numeric", nullable: false),
+                    PackSize = table.Column<decimal>(type: "numeric", nullable: false),
+                    ExpectedYield = table.Column<decimal>(type: "numeric", nullable: false),
+                    TotalQuantityPacked = table.Column<decimal>(type: "numeric", nullable: false),
+                    QualityControlAnalyticalSample = table.Column<decimal>(type: "numeric", nullable: false),
+                    RetainedSamples = table.Column<decimal>(type: "numeric", nullable: false),
+                    StabilitySamples = table.Column<decimal>(type: "numeric", nullable: false),
+                    TotalNumberOfBottles = table.Column<decimal>(type: "numeric", nullable: false),
+                    YieldTotalQuantityPacked = table.Column<decimal>(type: "numeric", nullable: false),
+                    TotalGainOrLoss = table.Column<decimal>(type: "numeric", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FinalPackings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FinalPackings_ProductionActivitySteps_ProductionActivitySte~",
+                        column: x => x.ProductionActivityStepId,
+                        principalTable: "ProductionActivitySteps",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_FinalPackings_ProductionScheduleProducts_ProductionSchedule~",
+                        column: x => x.ProductionScheduleProductId,
+                        principalTable: "ProductionScheduleProducts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_FinalPackings_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_FinalPackings_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_FinalPackings_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductionActivityStepResources",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResourceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductionActivityStepResources", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepResources_ProductionActivitySteps_Pro~",
+                        column: x => x.ProductionActivityStepId,
+                        principalTable: "ProductionActivitySteps",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepResources_Resources_ResourceId",
+                        column: x => x.ResourceId,
+                        principalTable: "Resources",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepResources_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepResources_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepResources_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductionActivityStepUsers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductAnalyticalRawDataId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Action = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductionActivityStepUsers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepUsers_ProductAnalyticalRawData_Produc~",
+                        column: x => x.ProductAnalyticalRawDataId,
+                        principalTable: "ProductAnalyticalRawData",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepUsers_ProductionActivitySteps_Product~",
+                        column: x => x.ProductionActivityStepId,
+                        principalTable: "ProductionActivitySteps",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepUsers_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepUsers_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepUsers_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepUsers_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductionActivityStepWorkCenters",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkCenterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductionActivityStepWorkCenters", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepWorkCenters_ProductionActivitySteps_P~",
+                        column: x => x.ProductionActivityStepId,
+                        principalTable: "ProductionActivitySteps",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepWorkCenters_WorkCenters_WorkCenterId",
+                        column: x => x.WorkCenterId,
+                        principalTable: "WorkCenters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepWorkCenters_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepWorkCenters_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ProductionActivityStepWorkCenters_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Requisitions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Code = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    RequestedById = table.Column<Guid>(type: "uuid", nullable: false),
+                    DepartmentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RequisitionType = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Comments = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    ExpectedDelivery = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ProductionScheduleProductId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Approved = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Requisitions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Requisitions_Departments_DepartmentId",
+                        column: x => x.DepartmentId,
+                        principalTable: "Departments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Requisitions_ProductionActivitySteps_ProductionActivityStep~",
+                        column: x => x.ProductionActivityStepId,
+                        principalTable: "ProductionActivitySteps",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Requisitions_ProductionScheduleProducts_ProductionScheduleP~",
+                        column: x => x.ProductionScheduleProductId,
+                        principalTable: "ProductionScheduleProducts",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Requisitions_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Requisitions_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Requisitions_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Requisitions_users_RequestedById",
+                        column: x => x.RequestedById,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "StockTransfers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Code = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    MaterialId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UoMId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Reason = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    RequiredQuantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    ProductionScheduleProductId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProductionActivityStepId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StockTransfers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_StockTransfers_Materials_MaterialId",
+                        column: x => x.MaterialId,
+                        principalTable: "Materials",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_StockTransfers_ProductionActivitySteps_ProductionActivitySt~",
+                        column: x => x.ProductionActivityStepId,
+                        principalTable: "ProductionActivitySteps",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_StockTransfers_ProductionScheduleProducts_ProductionSchedul~",
+                        column: x => x.ProductionScheduleProductId,
+                        principalTable: "ProductionScheduleProducts",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_StockTransfers_UnitOfMeasures_UoMId",
+                        column: x => x.UoMId,
+                        principalTable: "UnitOfMeasures",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_StockTransfers_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_StockTransfers_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_StockTransfers_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
@@ -8676,6 +8779,7 @@ namespace INFRASTRUCTURE.Migrations
                     ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     ManufacturingDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     RetestDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ReturnDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     WarehouseArrivalLocationId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -8754,6 +8858,7 @@ namespace INFRASTRUCTURE.Migrations
                     BalanceQuantity = table.Column<decimal>(type: "numeric", nullable: false),
                     UoMId = table.Column<Guid>(type: "uuid", nullable: true),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: true),
+                    WarehouseId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -8778,6 +8883,11 @@ namespace INFRASTRUCTURE.Migrations
                         name: "FK_BinCardInformation_UnitOfMeasures_UoMId",
                         column: x => x.UoMId,
                         principalTable: "UnitOfMeasures",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_BinCardInformation_Warehouses_WarehouseId",
+                        column: x => x.WarehouseId,
+                        principalTable: "Warehouses",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_BinCardInformation_users_CreatedById",
@@ -8965,8 +9075,8 @@ namespace INFRASTRUCTURE.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     MaterialBatchId = table.Column<Guid>(type: "uuid", nullable: false),
                     WarehouseId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    WarehouseLocationShelfId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProductionScheduleProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     UoMId = table.Column<Guid>(type: "uuid", nullable: true),
                     Quantity = table.Column<decimal>(type: "numeric", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -8986,21 +9096,20 @@ namespace INFRASTRUCTURE.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MaterialBatchReservedQuantities_ProductionSchedules_Product~",
-                        column: x => x.ProductionScheduleId,
-                        principalTable: "ProductionSchedules",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_MaterialBatchReservedQuantities_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
+                        name: "FK_MaterialBatchReservedQuantities_ProductionScheduleProducts_~",
+                        column: x => x.ProductionScheduleProductId,
+                        principalTable: "ProductionScheduleProducts",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_MaterialBatchReservedQuantities_UnitOfMeasures_UoMId",
                         column: x => x.UoMId,
                         principalTable: "UnitOfMeasures",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaterialBatchReservedQuantities_WarehouseLocationShelves_Wa~",
+                        column: x => x.WarehouseLocationShelfId,
+                        principalTable: "WarehouseLocationShelves",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MaterialBatchReservedQuantities_Warehouses_WarehouseId",
@@ -9020,6 +9129,79 @@ namespace INFRASTRUCTURE.Migrations
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MaterialBatchReservedQuantities_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MaterialReturnNotePartialReturns",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaterialReturnNoteId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaterialId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaterialBatchId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Quantity = table.Column<decimal>(type: "numeric", nullable: false),
+                    UoMId = table.Column<Guid>(type: "uuid", nullable: true),
+                    DestinationWarehouseId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SourceWarehouseLocationShelfId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Returned = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MaterialReturnNotePartialReturns", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNotePartialReturns_MaterialBatches_MaterialBa~",
+                        column: x => x.MaterialBatchId,
+                        principalTable: "MaterialBatches",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNotePartialReturns_MaterialReturnNotes_Materi~",
+                        column: x => x.MaterialReturnNoteId,
+                        principalTable: "MaterialReturnNotes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNotePartialReturns_Materials_MaterialId",
+                        column: x => x.MaterialId,
+                        principalTable: "Materials",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNotePartialReturns_UnitOfMeasures_UoMId",
+                        column: x => x.UoMId,
+                        principalTable: "UnitOfMeasures",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNotePartialReturns_WarehouseLocationShelves_S~",
+                        column: x => x.SourceWarehouseLocationShelfId,
+                        principalTable: "WarehouseLocationShelves",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNotePartialReturns_Warehouses_DestinationWare~",
+                        column: x => x.DestinationWarehouseId,
+                        principalTable: "Warehouses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNotePartialReturns_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNotePartialReturns_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNotePartialReturns_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
@@ -9300,6 +9482,8 @@ namespace INFRASTRUCTURE.Migrations
                     MaterialReturnNoteId = table.Column<Guid>(type: "uuid", nullable: false),
                     MaterialBatchReservedQuantityId = table.Column<Guid>(type: "uuid", nullable: false),
                     DestinationWarehouseId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SourceWarehouseLocationShelfId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Returned = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -9322,6 +9506,11 @@ namespace INFRASTRUCTURE.Migrations
                         principalTable: "MaterialReturnNotes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MaterialReturnNoteFullReturns_WarehouseLocationShelves_Sour~",
+                        column: x => x.SourceWarehouseLocationShelfId,
+                        principalTable: "WarehouseLocationShelves",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MaterialReturnNoteFullReturns_Warehouses_DestinationWarehou~",
                         column: x => x.DestinationWarehouseId,
@@ -9893,19 +10082,14 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BatchManufacturingRecords_ProductId",
-                table: "BatchManufacturingRecords",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_BatchManufacturingRecords_ProductionActivityStepId",
                 table: "BatchManufacturingRecords",
                 column: "ProductionActivityStepId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BatchManufacturingRecords_ProductionScheduleId",
+                name: "IX_BatchManufacturingRecords_ProductionScheduleProductId",
                 table: "BatchManufacturingRecords",
-                column: "ProductionScheduleId");
+                column: "ProductionScheduleProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BatchPackagingRecords_CreatedById",
@@ -9928,19 +10112,19 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BatchPackagingRecords_ProductId",
-                table: "BatchPackagingRecords",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_BatchPackagingRecords_ProductionActivityStepId",
                 table: "BatchPackagingRecords",
                 column: "ProductionActivityStepId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BatchPackagingRecords_ProductionScheduleId",
+                name: "IX_BatchPackagingRecords_ProductionScheduleProductId",
                 table: "BatchPackagingRecords",
-                column: "ProductionScheduleId");
+                column: "ProductionScheduleProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BatchPackagingRecords_ProductPackingId",
+                table: "BatchPackagingRecords",
+                column: "ProductPackingId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BillingSheetApprovals_ApprovalId",
@@ -10081,6 +10265,11 @@ namespace INFRASTRUCTURE.Migrations
                 name: "IX_BinCardInformation_UoMId",
                 table: "BinCardInformation",
                 column: "UoMId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BinCardInformation_WarehouseId",
+                table: "BinCardInformation",
+                column: "WarehouseId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Charges_BillingSheetId",
@@ -10228,26 +10417,6 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DamagedStockBatch_CreatedById",
-                table: "DamagedStockBatch",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DamagedStockBatch_DamagedStockId",
-                table: "DamagedStockBatch",
-                column: "DamagedStockId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DamagedStockBatch_LastDeletedById",
-                table: "DamagedStockBatch",
-                column: "LastDeletedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DamagedStockBatch_LastUpdatedById",
-                table: "DamagedStockBatch",
-                column: "LastUpdatedById");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_DamagedStocks_CreatedById",
                 table: "DamagedStocks",
                 column: "CreatedById");
@@ -10266,31 +10435,6 @@ namespace INFRASTRUCTURE.Migrations
                 name: "IX_DamagedStocks_LastUpdatedById",
                 table: "DamagedStocks",
                 column: "LastUpdatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DamagedStocksLogs_CreatedById",
-                table: "DamagedStocksLogs",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DamagedStocksLogs_DamagedStockId",
-                table: "DamagedStocksLogs",
-                column: "DamagedStockId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DamagedStocksLogs_LastDeletedById",
-                table: "DamagedStocksLogs",
-                column: "LastDeletedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DamagedStocksLogs_LastUpdatedById",
-                table: "DamagedStocksLogs",
-                column: "LastUpdatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DamagedStocksLogs_UserId",
-                table: "DamagedStocksLogs",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DeliveryModes_CreatedById",
@@ -10533,19 +10677,14 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FinalPackings_ProductId",
-                table: "FinalPackings",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_FinalPackings_ProductionActivityStepId",
                 table: "FinalPackings",
                 column: "ProductionActivityStepId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FinalPackings_ProductionScheduleId",
+                name: "IX_FinalPackings_ProductionScheduleProductId",
                 table: "FinalPackings",
-                column: "ProductionScheduleId");
+                column: "ProductionScheduleProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FinishedGoodsTransferNotes_BatchManufacturingRecordId",
@@ -10593,11 +10732,6 @@ namespace INFRASTRUCTURE.Migrations
                 column: "UoMId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FinishedProductBatchEvents_BatchId",
-                table: "FinishedProductBatchEvents",
-                column: "BatchId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_FinishedProductBatchEvents_ConsumptionWarehouseId",
                 table: "FinishedProductBatchEvents",
                 column: "ConsumptionWarehouseId");
@@ -10618,14 +10752,14 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
+                name: "IX_FinishedProductBatchEvents_ProductId",
+                table: "FinishedProductBatchEvents",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_FinishedProductBatchEvents_UserId",
                 table: "FinishedProductBatchEvents",
                 column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_FinishedProductBatchMovements_BatchId",
-                table: "FinishedProductBatchMovements",
-                column: "BatchId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FinishedProductBatchMovements_CreatedById",
@@ -10651,6 +10785,11 @@ namespace INFRASTRUCTURE.Migrations
                 name: "IX_FinishedProductBatchMovements_MovedById",
                 table: "FinishedProductBatchMovements",
                 column: "MovedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FinishedProductBatchMovements_ProductId",
+                table: "FinishedProductBatchMovements",
+                column: "ProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FinishedProductBatchMovements_ToWarehouseId",
@@ -10948,6 +11087,11 @@ namespace INFRASTRUCTURE.Migrations
                 column: "CreatedById");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Invoices_CustomerId",
+                table: "Invoices",
+                column: "CustomerId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Invoices_LastDeletedById",
                 table: "Invoices",
                 column: "LastDeletedById");
@@ -11043,11 +11187,6 @@ namespace INFRASTRUCTURE.Migrations
                 column: "UnitOfMeasureId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ItemStockRequisitionItems_CreatedById",
-                table: "ItemStockRequisitionItems",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ItemStockRequisitionItems_ItemId",
                 table: "ItemStockRequisitionItems",
                 column: "ItemId");
@@ -11056,16 +11195,6 @@ namespace INFRASTRUCTURE.Migrations
                 name: "IX_ItemStockRequisitionItems_ItemStockRequisitionId",
                 table: "ItemStockRequisitionItems",
                 column: "ItemStockRequisitionId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ItemStockRequisitionItems_LastDeletedById",
-                table: "ItemStockRequisitionItems",
-                column: "LastDeletedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ItemStockRequisitionItems_LastUpdatedById",
-                table: "ItemStockRequisitionItems",
-                column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ItemStockRequisitions_CreatedById",
@@ -11091,6 +11220,21 @@ namespace INFRASTRUCTURE.Migrations
                 name: "IX_ItemStockRequisitions_RequestedById",
                 table: "ItemStockRequisitions",
                 column: "RequestedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ItemTransactionLogs_CreatedById",
+                table: "ItemTransactionLogs",
+                column: "CreatedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ItemTransactionLogs_LastDeletedById",
+                table: "ItemTransactionLogs",
+                column: "LastDeletedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ItemTransactionLogs_LastUpdatedById",
+                table: "ItemTransactionLogs",
+                column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_JobRequests_CreatedById",
@@ -11503,14 +11647,9 @@ namespace INFRASTRUCTURE.Migrations
                 column: "MaterialBatchId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaterialBatchReservedQuantities_ProductId",
+                name: "IX_MaterialBatchReservedQuantities_ProductionScheduleProductId",
                 table: "MaterialBatchReservedQuantities",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MaterialBatchReservedQuantities_ProductionScheduleId",
-                table: "MaterialBatchReservedQuantities",
-                column: "ProductionScheduleId");
+                column: "ProductionScheduleProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MaterialBatchReservedQuantities_UoMId",
@@ -11521,6 +11660,11 @@ namespace INFRASTRUCTURE.Migrations
                 name: "IX_MaterialBatchReservedQuantities_WarehouseId",
                 table: "MaterialBatchReservedQuantities",
                 column: "WarehouseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaterialBatchReservedQuantities_WarehouseLocationShelfId",
+                table: "MaterialBatchReservedQuantities",
+                column: "WarehouseLocationShelfId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MaterialCategories_CreatedById",
@@ -11633,6 +11777,11 @@ namespace INFRASTRUCTURE.Migrations
                 column: "MaterialReturnNoteId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MaterialReturnNoteFullReturns_SourceWarehouseLocationShelfId",
+                table: "MaterialReturnNoteFullReturns",
+                column: "SourceWarehouseLocationShelfId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MaterialReturnNotePartialReturns_CreatedById",
                 table: "MaterialReturnNotePartialReturns",
                 column: "CreatedById");
@@ -11653,6 +11802,11 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MaterialReturnNotePartialReturns_MaterialBatchId",
+                table: "MaterialReturnNotePartialReturns",
+                column: "MaterialBatchId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MaterialReturnNotePartialReturns_MaterialId",
                 table: "MaterialReturnNotePartialReturns",
                 column: "MaterialId");
@@ -11661,6 +11815,11 @@ namespace INFRASTRUCTURE.Migrations
                 name: "IX_MaterialReturnNotePartialReturns_MaterialReturnNoteId",
                 table: "MaterialReturnNotePartialReturns",
                 column: "MaterialReturnNoteId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaterialReturnNotePartialReturns_SourceWarehouseLocationShe~",
+                table: "MaterialReturnNotePartialReturns",
+                column: "SourceWarehouseLocationShelfId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MaterialReturnNotePartialReturns_UoMId",
@@ -11683,14 +11842,9 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaterialReturnNotes_ProductId",
+                name: "IX_MaterialReturnNotes_ProductionScheduleProductId",
                 table: "MaterialReturnNotes",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MaterialReturnNotes_ProductionScheduleId",
-                table: "MaterialReturnNotes",
-                column: "ProductionScheduleId");
+                column: "ProductionScheduleProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Materials_CreatedById",
@@ -12103,14 +12257,9 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductionActivities_ProductId",
+                name: "IX_ProductionActivities_ProductionScheduleProductId",
                 table: "ProductionActivities",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ProductionActivities_ProductionScheduleId",
-                table: "ProductionActivities",
-                column: "ProductionScheduleId");
+                column: "ProductionScheduleProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductionActivityLogs_CreatedById",
@@ -12273,19 +12422,39 @@ namespace INFRASTRUCTURE.Migrations
                 column: "MaterialId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductionExtraPackings_ProductId",
+                name: "IX_ProductionExtraPackings_ProductionScheduleProductId",
                 table: "ProductionExtraPackings",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ProductionExtraPackings_ProductionScheduleId",
-                table: "ProductionExtraPackings",
-                column: "ProductionScheduleId");
+                column: "ProductionScheduleProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductionExtraPackings_UoMId",
                 table: "ProductionExtraPackings",
                 column: "UoMId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionOrderApprovals_ApprovalId",
+                table: "ProductionOrderApprovals",
+                column: "ApprovalId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionOrderApprovals_ApprovedById",
+                table: "ProductionOrderApprovals",
+                column: "ApprovedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionOrderApprovals_ProductionOrderId",
+                table: "ProductionOrderApprovals",
+                column: "ProductionOrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionOrderApprovals_RoleId",
+                table: "ProductionOrderApprovals",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionOrderApprovals_UserId",
+                table: "ProductionOrderApprovals",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductionOrderProductQuantity_FinishedGoodsTransferNoteId",
@@ -12363,6 +12532,11 @@ namespace INFRASTRUCTURE.Migrations
                 column: "ProductionScheduleId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProductionScheduleProducts_ProductPackingId",
+                table: "ProductionScheduleProducts",
+                column: "ProductPackingId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProductionSchedules_CreatedById",
                 table: "ProductionSchedules",
                 column: "CreatedById");
@@ -12433,9 +12607,39 @@ namespace INFRASTRUCTURE.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Products_BasePackingUomId",
-                table: "Products",
+                name: "IX_ProductPackages_ProductPackingId",
+                table: "ProductPackages",
+                column: "ProductPackingId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductPackingList_UomId",
+                table: "ProductPackingList",
+                column: "UomId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductPackings_BasePackingUomId",
+                table: "ProductPackings",
                 column: "BasePackingUomId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductPackings_CreatedById",
+                table: "ProductPackings",
+                column: "CreatedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductPackings_LastDeletedById",
+                table: "ProductPackings",
+                column: "LastDeletedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductPackings_LastUpdatedById",
+                table: "ProductPackings",
+                column: "LastUpdatedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductPackings_ProductId",
+                table: "ProductPackings",
+                column: "ProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Products_BaseUomId",
@@ -12563,6 +12767,31 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProformaInvoiceApprovals_ApprovalId",
+                table: "ProformaInvoiceApprovals",
+                column: "ApprovalId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProformaInvoiceApprovals_ApprovedById",
+                table: "ProformaInvoiceApprovals",
+                column: "ApprovedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProformaInvoiceApprovals_ProformaInvoiceId",
+                table: "ProformaInvoiceApprovals",
+                column: "ProformaInvoiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProformaInvoiceApprovals_RoleId",
+                table: "ProformaInvoiceApprovals",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProformaInvoiceApprovals_UserId",
+                table: "ProformaInvoiceApprovals",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProformaInvoiceProducts_CreatedById",
                 table: "ProformaInvoiceProducts",
                 column: "CreatedById");
@@ -12588,6 +12817,11 @@ namespace INFRASTRUCTURE.Migrations
                 column: "ProformaInvoiceId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProformaInvoices_AllocateProductionOrderId",
+                table: "ProformaInvoices",
+                column: "AllocateProductionOrderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProformaInvoices_CreatedById",
                 table: "ProformaInvoices",
                 column: "CreatedById");
@@ -12601,11 +12835,6 @@ namespace INFRASTRUCTURE.Migrations
                 name: "IX_ProformaInvoices_LastUpdatedById",
                 table: "ProformaInvoices",
                 column: "LastUpdatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ProformaInvoices_ProductionOrderId",
-                table: "ProformaInvoices",
-                column: "ProductionOrderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PurchaseOrderApprovals_ApprovalId",
@@ -12893,19 +13122,14 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Requisitions_ProductId",
-                table: "Requisitions",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Requisitions_ProductionActivityStepId",
                 table: "Requisitions",
                 column: "ProductionActivityStepId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Requisitions_ProductionScheduleId",
+                name: "IX_Requisitions_ProductionScheduleProductId",
                 table: "Requisitions",
-                column: "ProductionScheduleId");
+                column: "ProductionScheduleProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Requisitions_RequestedById",
@@ -13464,6 +13688,31 @@ namespace INFRASTRUCTURE.Migrations
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ShipmentDocumentApprovals_ApprovalId",
+                table: "ShipmentDocumentApprovals",
+                column: "ApprovalId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ShipmentDocumentApprovals_ApprovedById",
+                table: "ShipmentDocumentApprovals",
+                column: "ApprovedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ShipmentDocumentApprovals_RoleId",
+                table: "ShipmentDocumentApprovals",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ShipmentDocumentApprovals_ShipmentDocumentId",
+                table: "ShipmentDocumentApprovals",
+                column: "ShipmentDocumentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ShipmentDocumentApprovals_UserId",
+                table: "ShipmentDocumentApprovals",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ShipmentDocuments_CreatedById",
                 table: "ShipmentDocuments",
                 column: "CreatedById");
@@ -13794,19 +14043,14 @@ namespace INFRASTRUCTURE.Migrations
                 column: "MaterialId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_StockTransfers_ProductId",
-                table: "StockTransfers",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_StockTransfers_ProductionActivityStepId",
                 table: "StockTransfers",
                 column: "ProductionActivityStepId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_StockTransfers_ProductionScheduleId",
+                name: "IX_StockTransfers_ProductionScheduleProductId",
                 table: "StockTransfers",
-                column: "ProductionScheduleId");
+                column: "ProductionScheduleProductId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_StockTransfers_UoMId",
@@ -14381,10 +14625,7 @@ namespace INFRASTRUCTURE.Migrations
                 name: "Configurations");
 
             migrationBuilder.DropTable(
-                name: "DamagedStockBatch");
-
-            migrationBuilder.DropTable(
-                name: "DamagedStocksLogs");
+                name: "DamagedStocks");
 
             migrationBuilder.DropTable(
                 name: "DepartmentDesignation");
@@ -14439,6 +14680,9 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.DropTable(
                 name: "ItemStockRequisitionItems");
+
+            migrationBuilder.DropTable(
+                name: "ItemTransactionLogs");
 
             migrationBuilder.DropTable(
                 name: "JobRequests");
@@ -14528,13 +14772,13 @@ namespace INFRASTRUCTURE.Migrations
                 name: "ProductionExtraPackings");
 
             migrationBuilder.DropTable(
+                name: "ProductionOrderApprovals");
+
+            migrationBuilder.DropTable(
                 name: "ProductionOrderProductQuantity");
 
             migrationBuilder.DropTable(
                 name: "ProductionScheduleItems");
-
-            migrationBuilder.DropTable(
-                name: "ProductionScheduleProducts");
 
             migrationBuilder.DropTable(
                 name: "ProductionSteps");
@@ -14543,10 +14787,19 @@ namespace INFRASTRUCTURE.Migrations
                 name: "ProductPackages");
 
             migrationBuilder.DropTable(
+                name: "ProductPackingList");
+
+            migrationBuilder.DropTable(
+                name: "ProductPrices");
+
+            migrationBuilder.DropTable(
                 name: "ProductSamplings");
 
             migrationBuilder.DropTable(
                 name: "ProductSpecifications");
+
+            migrationBuilder.DropTable(
+                name: "ProformaInvoiceApprovals");
 
             migrationBuilder.DropTable(
                 name: "ProformaInvoiceProducts");
@@ -14609,6 +14862,9 @@ namespace INFRASTRUCTURE.Migrations
                 name: "ShipmentDiscrepancyItem");
 
             migrationBuilder.DropTable(
+                name: "ShipmentDocumentApprovals");
+
+            migrationBuilder.DropTable(
                 name: "Sibling");
 
             migrationBuilder.DropTable(
@@ -14664,9 +14920,6 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.DropTable(
                 name: "BillingSheets");
-
-            migrationBuilder.DropTable(
-                name: "DamagedStocks");
 
             migrationBuilder.DropTable(
                 name: "FinalPackings");
@@ -14750,9 +15003,6 @@ namespace INFRASTRUCTURE.Migrations
                 name: "Services");
 
             migrationBuilder.DropTable(
-                name: "WarehouseLocationShelves");
-
-            migrationBuilder.DropTable(
                 name: "ShiftCategories");
 
             migrationBuilder.DropTable(
@@ -14783,9 +15033,6 @@ namespace INFRASTRUCTURE.Migrations
                 name: "roles");
 
             migrationBuilder.DropTable(
-                name: "AllocateProductionOrders");
-
-            migrationBuilder.DropTable(
                 name: "FormSections");
 
             migrationBuilder.DropTable(
@@ -14796,6 +15043,9 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.DropTable(
                 name: "LeaveTypes");
+
+            migrationBuilder.DropTable(
+                name: "WarehouseLocationShelves");
 
             migrationBuilder.DropTable(
                 name: "MarketRequisitions");
@@ -14810,6 +15060,9 @@ namespace INFRASTRUCTURE.Migrations
                 name: "ProductStates");
 
             migrationBuilder.DropTable(
+                name: "AllocateProductionOrders");
+
+            migrationBuilder.DropTable(
                 name: "BatchManufacturingRecords");
 
             migrationBuilder.DropTable(
@@ -14822,13 +15075,7 @@ namespace INFRASTRUCTURE.Migrations
                 name: "ProductStandardTestProcedures");
 
             migrationBuilder.DropTable(
-                name: "WarehouseLocationRacks");
-
-            migrationBuilder.DropTable(
                 name: "ShipmentDocuments");
-
-            migrationBuilder.DropTable(
-                name: "ProductionOrders");
 
             migrationBuilder.DropTable(
                 name: "Instruments");
@@ -14843,10 +15090,16 @@ namespace INFRASTRUCTURE.Migrations
                 name: "ShiftSchedules");
 
             migrationBuilder.DropTable(
+                name: "WarehouseLocationRacks");
+
+            migrationBuilder.DropTable(
                 name: "InventoryPurchaseRequisitionItems");
 
             migrationBuilder.DropTable(
                 name: "SourceInventoryRequisitions");
+
+            migrationBuilder.DropTable(
+                name: "ProductionOrders");
 
             migrationBuilder.DropTable(
                 name: "Checklists");
@@ -14865,9 +15118,6 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.DropTable(
                 name: "WarehouseLocations");
-
-            migrationBuilder.DropTable(
-                name: "Customers");
 
             migrationBuilder.DropTable(
                 name: "Items");
@@ -14940,6 +15190,15 @@ namespace INFRASTRUCTURE.Migrations
 
             migrationBuilder.DropTable(
                 name: "ProductionActivities");
+
+            migrationBuilder.DropTable(
+                name: "ProductionScheduleProducts");
+
+            migrationBuilder.DropTable(
+                name: "Customers");
+
+            migrationBuilder.DropTable(
+                name: "ProductPackings");
 
             migrationBuilder.DropTable(
                 name: "ProductionSchedules");

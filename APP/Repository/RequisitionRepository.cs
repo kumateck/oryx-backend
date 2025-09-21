@@ -15,6 +15,7 @@ using SHARED;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Notifications;
+using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
@@ -34,12 +35,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
 
-        if (request.ProductionScheduleId.HasValue && request.ProductId.HasValue)
+        if (request.ProductionScheduleProductId.HasValue)
         {
             var existingRequisition = await context.Requisitions
                 .AsSplitQuery()
                 .Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
-                r.ProductionScheduleId == request.ProductionScheduleId && r.ProductId == request.ProductId &&
+                r.ProductionScheduleProductId == request.ProductionScheduleProductId &&
                 r.RequisitionType == request.RequisitionType);
 
             if (existingRequisition is { RequisitionType: RequisitionType.Stock })
@@ -154,8 +155,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var requisition = await context.Requisitions
             .IgnoreQueryFilters()
             .AsSplitQuery()
-            .Include(r => r.ProductionSchedule)
-            .Include(r => r.Product)
+            .Include(r => r.ProductionScheduleProduct)
+            .ThenInclude(r => r.ProductionSchedule)
+            .Include(r => r.ProductionScheduleProduct)
+            .ThenInclude(r => r.Product)
             .Include(r => r.RequestedBy)
             .Include(r => r.Items).ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
@@ -256,11 +259,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
-            Debug.Assert(stockRequisition.ProductId != null, "stockRequisition.ProductId != null");
-            Debug.Assert(stockRequisition.ProductionScheduleId != null, "stockRequisition.ProductionScheduleId != null");
+            Debug.Assert(stockRequisition.ProductionScheduleProductId != null, "stockRequisition.ProductionScheduleProductId != null");
             var batchesToConsume =
                 await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
-                    productionWarehouse.Id, stockRequisition.ProductionScheduleId.Value, stockRequisition.ProductId.Value);
+                    productionWarehouse.Id, stockRequisition.ProductionScheduleProductId.Value);
             
             foreach (var batch in batchesToConsume)
             {
@@ -863,6 +865,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var query = context.SourceRequisitions
             .AsSplitQuery()
             .Include(sr => sr.Supplier)
+            .ThenInclude(sr => sr.AssociatedManufacturers)
+            .ThenInclude(sr => sr.Manufacturer)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
             .AsQueryable();
@@ -958,12 +962,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         // Base query
         var query = await context.SourceRequisitions
             .AsSplitQuery()
-            .Include(sr => sr.Supplier)
+            .Include(sr => sr.Supplier).ThenInclude(s => s.AssociatedManufacturers).ThenInclude(m => m.Manufacturer)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
             .FirstOrDefaultAsync(sr => sr.SupplierId == supplierId && !sr.SentQuotationRequestAt.HasValue);
         
-        return mapper.Map<SupplierQuotationRequest>(query);
+        return query != null ?
+            mapper.Map<SupplierQuotationRequest>(query) : null;
     }
 
     
@@ -996,7 +1001,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         try
         {
-            emailService.SendMail(supplierQuotationDto.Supplier.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
+            emailService.SendMail(supplierQuotationDto.Supplier.Name, supplierQuotationDto.Supplier.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
         }
         catch (Exception e)
         {
@@ -1052,7 +1057,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .AsSplitQuery()
             .Include(s => s.Items).ThenInclude(s => s.Material)
             .Include(s => s.Items).ThenInclude(s => s.UoM)
-            .Include(s => s.Supplier)
+            .Include(sr => sr.Supplier).ThenInclude(s => s.AssociatedManufacturers).ThenInclude(m => m.Manufacturer)
             .FirstOrDefaultAsync(s => s.Id == supplierQuotationId));
     }
     
@@ -1115,6 +1120,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     {
                         Supplier = mapper.Map<SupplierDto>(s.SupplierQuotation.Supplier),
                         SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
+                        DefaultManufacturer = mapper.Map<ManufacturerListDto>(s.SupplierQuotation.
+                            Supplier.AssociatedManufacturers.First(m => m.MaterialId == item.Key.Material.Id && m.Default).Manufacturer),
                         Status = s.Status,
                         Price = s.QuotedPrice
                     }).ToList()

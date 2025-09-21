@@ -77,6 +77,19 @@ public enum PurchaseOrderStatus
     Linked = 6,
 }
 
+/*public enum PurchaseOrderStatus
+{
+    New = 0,
+    Pending = 1,
+    Delivered = 2,
+    Attached = 3,
+    PendingCheck = 4,
+    Checked = 5,
+    Completed = 6,
+    PartiallyLinked = 7,
+    Linked = 8,
+}*/
+
 public enum PurchaseOrderAttachmentStatus
 {
     None,

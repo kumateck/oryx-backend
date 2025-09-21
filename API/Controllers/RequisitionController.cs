@@ -271,7 +271,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <returns>Returns a supplier with their requisition items.</returns>
     [HttpGet("source/supplier/{supplierId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationRequest))]
     public async Task<IResult> GetSuppliersWithSourceRequisitionItems(Guid supplierId)
     {
         var result = await repository.GetSuppliersWithSourceRequisitionItems(supplierId);

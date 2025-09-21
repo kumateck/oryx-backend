@@ -1,4 +1,6 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.MaterialSpecifications;
+using SHARED;
 
 namespace DOMAIN.Entities.Materials;
 
@@ -12,6 +14,7 @@ public class MaterialDto
     public string Alphabet { get; set; }
     public MaterialKind Kind { get; set; }
     public MaterialCategoryDto MaterialCategory { get; set; }
+    public MaterialSpecificationReducedDto Specification { get; set; }
     public decimal TotalStock { get; set; }
 }
 

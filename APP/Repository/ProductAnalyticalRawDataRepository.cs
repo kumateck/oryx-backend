@@ -114,6 +114,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         var bmr = await context.BatchManufacturingRecords
             .AsSplitQuery()
             .Include(batchManufacturingRecord => batchManufacturingRecord.IssuedBy)
+            .Include(b => b.ProductionScheduleProduct)
             .FirstOrDefaultAsync(m => m.Id == batchManufacturingRecordId);
         
         if(bmr is null) return Error.NotFound("Bmr.NotFound", "Bmr not found.");
@@ -127,7 +128,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         var productArd = await context.ProductAnalyticalRawData
             .AsSplitQuery()
             .Include(p => p.ProductStandardTestProcedure)
-            .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == bmr.ProductId);
+            .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == bmr.ProductionScheduleProduct.ProductId);
 
         
         return new ProductBatchArd

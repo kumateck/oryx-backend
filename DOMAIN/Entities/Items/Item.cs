@@ -36,8 +36,9 @@ public enum InventoryClassification
     NonRecoverable
 }
 
-public class ItemStockRequisitionItem : BaseEntity
+public class ItemStockRequisitionItem
 {
+    public Guid Id { get; set; }
 
     public Guid ItemStockRequisitionId { get; set; }
     public ItemStockRequisition ItemStockRequisition { get; set; }

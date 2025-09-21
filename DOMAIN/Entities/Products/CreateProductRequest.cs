@@ -30,6 +30,5 @@ public class CreateProductRequest
     [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
     public decimal Price { get; set; }
     public Division Division { get; set; }
-    public int PackPerShipper { get; set; }
     public decimal ExpectedYield { get; set; }
 }

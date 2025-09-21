@@ -12,30 +12,37 @@ public class ShiftScheduleService(IServiceScopeFactory scopeFactory) : Backgroun
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = scopeFactory.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            var today = DateTime.UtcNow;
-
-            var shiftSchedules = await dbContext.ShiftSchedules
-                .Where(s => s.ScheduleStatus != ScheduleStatus.Expired)
-                .ToListAsync(stoppingToken);
-
-            foreach (var shiftSchedule in shiftSchedules)
+            try
             {
-                if (shiftSchedule.EndDate < today)
+                using var scope = scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                var today = DateTime.UtcNow;
+
+                var shiftSchedules = await dbContext.ShiftSchedules
+                    .Where(s => s.ScheduleStatus != ScheduleStatus.Expired)
+                    .ToListAsync(stoppingToken);
+
+                foreach (var shiftSchedule in shiftSchedules)
                 {
-                    shiftSchedule.ScheduleStatus = ScheduleStatus.Expired;
+                    if (shiftSchedule.EndDate < today)
+                    {
+                        shiftSchedule.ScheduleStatus = ScheduleStatus.Expired;
+                    }
+                    else if (shiftSchedule.StartDate <= today && shiftSchedule.EndDate >= today)
+                    {
+                        shiftSchedule.ScheduleStatus = ScheduleStatus.InProgress;
+                    }
                 }
-                else if (shiftSchedule.StartDate <= today && shiftSchedule.EndDate >= today)
-                {
-                    shiftSchedule.ScheduleStatus = ScheduleStatus.InProgress;
-                }
+
+                await dbContext.SaveChangesAsync(stoppingToken);
+
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
-
-            await dbContext.SaveChangesAsync(stoppingToken);
-
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
     }
 }

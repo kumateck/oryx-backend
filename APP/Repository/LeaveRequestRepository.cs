@@ -31,7 +31,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         var leaveType = await context.LeaveTypes
             .FirstOrDefaultAsync(l => l.Id == request.LeaveTypeId);
 
-        if (leaveType is null)
+        if (leaveType is null && request.RequestCategory is not( RequestCategory.OfficialDuty or RequestCategory.ExitPassRequest) )
             return Error.NotFound("LeaveType.NotFound", "Leave type not found.");
 
         // Check if a request already exists for the same period

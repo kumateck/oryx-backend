@@ -166,13 +166,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("NumberOfContainers")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductionActivityStepId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductionScheduleId")
+                    b.Property<Guid>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("ReleasedAt")
@@ -220,11 +217,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("ProductionActivityStepId");
 
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.HasIndex("ReleasedById");
 
@@ -991,6 +986,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<int>("Order")
                         .HasColumnType("integer");
+
+                    b.Property<decimal>("PrescribedQuantity")
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1759,8 +1757,8 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("PhoneNumber")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Region")
                         .HasMaxLength(100)
@@ -2830,44 +2828,20 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<Guid>("ItemId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ItemStockRequisitionId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("QuantityRequested")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
 
                     b.HasIndex("ItemId");
 
                     b.HasIndex("ItemStockRequisitionId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
 
                     b.ToTable("ItemStockRequisitionItems");
                 });
@@ -3847,9 +3821,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("ConsumedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3871,6 +3842,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
 
@@ -3885,8 +3859,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
-
                     b.HasIndex("ConsumptionWarehouseId");
 
                     b.HasIndex("CreatedById");
@@ -3894,6 +3866,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProductId");
 
                     b.HasIndex("UserId");
 
@@ -3904,9 +3878,6 @@ namespace INFRASTRUCTURE.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BatchId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -3936,6 +3907,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("MovementType")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
 
@@ -3947,8 +3921,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
-
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("FromWarehouseId");
@@ -3958,6 +3930,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("MovedById");
+
+                    b.HasIndex("ProductId");
 
                     b.HasIndex("ToWarehouseId");
 
@@ -4227,10 +4201,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialBatchId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductionScheduleId")
+                    b.Property<Guid>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Quantity")
@@ -4258,9 +4229,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialBatchId");
 
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.HasIndex("UoMId");
 
@@ -4654,10 +4623,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductionScheduleId")
+                    b.Property<Guid>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("ReturnDate")
@@ -4677,9 +4643,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.ToTable("MaterialReturnNotes");
                 });
@@ -5974,13 +5938,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("PackSize")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProductionScheduleId")
+                    b.Property<Guid>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("QualityControlAnalyticalSample")
@@ -6015,11 +5976,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("ProductionActivityStepId");
 
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.ToTable("FinalPackings");
                 });
@@ -6126,10 +6085,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductionScheduleId")
+                    b.Property<Guid>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Quantity")
@@ -6156,9 +6112,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialId");
 
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.HasIndex("UoMId");
 
@@ -6292,6 +6246,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ProductPackingId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("ProductionScheduleId")
                         .HasColumnType("uuid");
 
@@ -6307,6 +6264,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("MarketTypeId");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("ProductPackingId");
 
                     b.HasIndex("ProductionScheduleId");
 
@@ -6341,13 +6300,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductionScheduleId")
+                    b.Property<Guid?>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Reason")
@@ -6373,11 +6329,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialId");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("ProductionActivityStepId");
 
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.HasIndex("UoMId");
 
@@ -6637,12 +6591,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<decimal>("BasePackingQuantity")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid?>("BasePackingUomId")
-                        .HasColumnType("uuid");
-
                     b.Property<decimal>("BaseQuantity")
                         .HasColumnType("numeric");
 
@@ -6678,9 +6626,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("EquipmentId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("ExpectedYield")
-                        .HasColumnType("numeric");
-
                     b.Property<string>("FdaRegistrationNumber")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
@@ -6714,9 +6659,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<int>("PackPerShipper")
-                        .HasColumnType("integer");
-
                     b.Property<string>("PackageStyle")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
@@ -6745,8 +6687,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("BasePackingUomId");
 
                     b.HasIndex("BaseUomId");
 
@@ -6892,6 +6832,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("Loose")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
 
@@ -6906,7 +6849,13 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("PackingExcessMargin")
                         .HasColumnType("numeric");
 
+                    b.Property<decimal>("PrescribedQuantity")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProductPackingId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("UnitCapacity")
@@ -6929,6 +6878,8 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ProductId");
 
+                    b.HasIndex("ProductPackingId");
+
                     b.ToTable("ProductPackages");
                 });
 
@@ -6936,6 +6887,12 @@ namespace INFRASTRUCTURE.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("BasePackingQuantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid?>("BasePackingUomId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -6951,6 +6908,12 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(10000)
                         .HasColumnType("character varying(10000)");
 
+                    b.Property<decimal>("ExpectedYield")
+                        .HasColumnType("numeric");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -6961,6 +6924,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(10000)
                         .HasColumnType("character varying(10000)");
 
+                    b.Property<int>("PackPerShipper")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
@@ -6968,6 +6934,8 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BasePackingUomId");
 
                     b.HasIndex("CreatedById");
 
@@ -7020,13 +6988,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("ManufacturingDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProductionScheduleId")
+                    b.Property<Guid>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("SampledQuantity")
@@ -7048,11 +7013,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("ProductionActivityStepId");
 
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.ToTable("BatchManufacturingRecords");
                 });
@@ -7097,16 +7060,13 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("ManufacturingDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ProductPackingId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProductionScheduleId")
+                    b.Property<Guid>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -7122,13 +7082,11 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("ProductPackingId");
 
                     b.HasIndex("ProductionActivityStepId");
 
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.ToTable("BatchPackagingRecords");
                 });
@@ -7161,10 +7119,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductionScheduleId")
+                    b.Property<Guid>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("StartedAt")
@@ -7184,9 +7139,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.ToTable("ProductionActivities");
                 });
@@ -8402,13 +8355,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductionScheduleId")
+                    b.Property<Guid?>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("RequestedById")
@@ -8433,11 +8383,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("ProductionActivityStepId");
 
-                    b.HasIndex("ProductionScheduleId");
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.HasIndex("RequestedById");
 
@@ -11401,19 +11349,15 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
+                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("ProductionActivityStepId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductionActivityStepId");
-
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
-                        .WithMany()
-                        .HasForeignKey("ProductionScheduleId")
+                        .HasForeignKey("ProductionScheduleProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -11445,11 +11389,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("Product");
-
                     b.Navigation("ProductionActivityStep");
 
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
 
                     b.Navigation("ReleasedBy");
 
@@ -13110,10 +13052,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Items.ItemStockRequisitionItem", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
                     b.HasOne("DOMAIN.Entities.Items.Item", "Item")
                         .WithMany()
                         .HasForeignKey("ItemId")
@@ -13126,23 +13064,9 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.Navigation("CreatedBy");
-
                     b.Navigation("Item");
 
                     b.Navigation("ItemStockRequisition");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Items.Requisitions.InventoryPurchaseRequisition", b =>
@@ -13753,12 +13677,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchEvent", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "ConsumptionWarehouse")
                         .WithMany()
                         .HasForeignKey("ConsumptionWarehouseId");
@@ -13775,13 +13693,17 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("DOMAIN.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Batch");
 
                     b.Navigation("ConsumptionWarehouse");
 
@@ -13791,17 +13713,13 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
+                    b.Navigation("Product");
+
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchMovement", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Batch")
-                        .WithMany()
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -13824,11 +13742,15 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "ToWarehouse")
                         .WithMany()
                         .HasForeignKey("ToWarehouseId");
-
-                    b.Navigation("Batch");
 
                     b.Navigation("CreatedBy");
 
@@ -13839,6 +13761,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("MovedBy");
+
+                    b.Navigation("Product");
 
                     b.Navigation("ToWarehouse");
                 });
@@ -14018,15 +13942,9 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
-                        .WithMany()
-                        .HasForeignKey("ProductionScheduleId")
+                        .HasForeignKey("ProductionScheduleProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -14052,9 +13970,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("MaterialBatch");
 
-                    b.Navigation("Product");
-
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
 
                     b.Navigation("UoM");
 
@@ -14308,15 +14224,9 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
-                        .WithMany()
-                        .HasForeignKey("ProductionScheduleId")
+                        .HasForeignKey("ProductionScheduleProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -14326,9 +14236,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("Product");
-
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialReturnNoteFullReturn", b =>
@@ -15260,19 +15168,13 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
                         .HasForeignKey("ProductionActivityStepId");
 
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductionScheduleId")
+                        .HasForeignKey("ProductionScheduleProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -15282,11 +15184,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("Product");
-
                     b.Navigation("ProductionActivityStep");
 
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.Packing.FinalPackingMaterial", b =>
@@ -15350,15 +15250,9 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
-                        .WithMany()
-                        .HasForeignKey("ProductionScheduleId")
+                        .HasForeignKey("ProductionScheduleProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -15378,9 +15272,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("Material");
 
-                    b.Navigation("Product");
-
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
 
                     b.Navigation("UoM");
                 });
@@ -15461,6 +15353,10 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Products.ProductPacking", "ProductPacking")
+                        .WithMany()
+                        .HasForeignKey("ProductPackingId");
+
                     b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
                         .WithMany("Products")
                         .HasForeignKey("ProductionScheduleId")
@@ -15470,6 +15366,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("MarketType");
 
                     b.Navigation("Product");
+
+                    b.Navigation("ProductPacking");
 
                     b.Navigation("ProductionSchedule");
                 });
@@ -15494,17 +15392,13 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId");
-
                     b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
                         .HasForeignKey("ProductionActivityStepId");
 
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductionScheduleId");
+                        .HasForeignKey("ProductionScheduleProductId");
 
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
@@ -15518,11 +15412,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("Material");
 
-                    b.Navigation("Product");
-
                     b.Navigation("ProductionActivityStep");
 
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
 
                     b.Navigation("UoM");
                 });
@@ -15681,10 +15573,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Product", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "BasePackingUoM")
-                        .WithMany()
-                        .HasForeignKey("BasePackingUomId");
-
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "BaseUoM")
                         .WithMany()
                         .HasForeignKey("BaseUomId");
@@ -15737,8 +15625,6 @@ namespace INFRASTRUCTURE.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("ProductId");
                         });
-
-                    b.Navigation("BasePackingUoM");
 
                     b.Navigation("BaseUoM");
 
@@ -15845,6 +15731,10 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Products.ProductPacking", "ProductPacking")
+                        .WithMany()
+                        .HasForeignKey("ProductPackingId");
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("DirectLinkMaterial");
@@ -15856,10 +15746,16 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Material");
 
                     b.Navigation("Product");
+
+                    b.Navigation("ProductPacking");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.ProductPacking", b =>
                 {
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "BasePackingUoM")
+                        .WithMany()
+                        .HasForeignKey("BasePackingUomId");
+
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -15916,6 +15812,8 @@ namespace INFRASTRUCTURE.Migrations
                             b1.Navigation("Uom");
                         });
 
+                    b.Navigation("BasePackingUoM");
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("LastDeletedBy");
@@ -15945,21 +15843,15 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
                         .HasForeignKey("ProductionActivityStepId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductionScheduleId")
+                        .HasForeignKey("ProductionScheduleProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -15971,11 +15863,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("Product");
-
                     b.Navigation("ProductionActivityStep");
 
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.BatchPackagingRecord", b =>
@@ -15996,12 +15886,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("DOMAIN.Entities.Products.ProductPacking", "ProductPacking")
                         .WithMany()
                         .HasForeignKey("ProductPackingId");
@@ -16012,9 +15896,9 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductionScheduleId")
+                        .HasForeignKey("ProductionScheduleProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -16026,13 +15910,11 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("Product");
-
                     b.Navigation("ProductPacking");
 
                     b.Navigation("ProductionActivityStep");
 
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivity", b =>
@@ -16049,15 +15931,9 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
-                        .WithMany()
-                        .HasForeignKey("ProductionScheduleId")
+                        .HasForeignKey("ProductionScheduleProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -16067,9 +15943,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("Product");
-
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivityLog", b =>
@@ -16864,17 +16738,13 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId");
-
                     b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
                         .HasForeignKey("ProductionActivityStepId");
 
-                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", "ProductionSchedule")
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
                         .WithMany()
-                        .HasForeignKey("ProductionScheduleId");
+                        .HasForeignKey("ProductionScheduleProductId");
 
                     b.HasOne("DOMAIN.Entities.Users.User", "RequestedBy")
                         .WithMany()
@@ -16890,11 +16760,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("LastUpdatedBy");
 
-                    b.Navigation("Product");
-
                     b.Navigation("ProductionActivityStep");
 
-                    b.Navigation("ProductionSchedule");
+                    b.Navigation("ProductionScheduleProduct");
 
                     b.Navigation("RequestedBy");
                 });

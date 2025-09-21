@@ -10,6 +10,7 @@ using APP.Utils;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using DOMAIN.Entities.Auth;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Users;
@@ -19,6 +20,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using OfficeOpenXml;
 using SHARED;
 using SHARED.Requests;
 
@@ -81,17 +83,17 @@ public class EmployeeRepository(ApplicationDbContext context,
                 {
                     try 
                     {
-                        emailService.SendMail(employee.Email, "Welcome to the team", emailBody, []);
-                        logger.LogInformation($"Email sent to {employee.Email}");
+                        emailService.SendMail(employee.Name,employee.Email, "Welcome to the team", emailBody, []);
+                        logger.LogInformation("Email sent to {EmployeeEmail}", employee.Email);
                         sent = true;
                     }
                     catch (Exception ex)
                     {
                         attempts++;
-                        logger.LogWarning($"Failed attempt {attempts} for {employee.Email}: {ex.Message}");
+                        logger.LogWarning("Failed attempt {Attempts} for {EmployeeEmail}: {ExMessage}", attempts, employee.Email, ex.Message);
 
                         if (attempts == maxRetries)
-                            logger.LogError($"Giving up on {employee.Email} after {maxRetries} attempts.");
+                            logger.LogError("Giving up on {EmployeeEmail} after {MaxRetries} attempts.", employee.Email, maxRetries);
                     }
                 }
             }
@@ -125,7 +127,7 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)
     {
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Email == request.Email);
+            .FirstOrDefaultAsync(e => e.Email ==request.Email || e.PhoneNumber == request.PhoneNumber);
 
         if (existingEmployee != null)
         {
@@ -253,7 +255,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             {
                 try
                 {
-                    emailService.SendMail(newUser.Email, "Password Setup", emailBody, []);
+                    emailService.SendMail(newUser.FirstName, newUser.Email, "Password Setup", emailBody, []);
                     sent = true;
                     logger.LogInformation("Password setup email sent to {Email}", newUser.Email);
                 }
@@ -404,7 +406,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
     public async Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request)
     {
-        var employee = await context.Employees
+        var employee = await context.Employees.Include(employee => employee.Department)
             .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
@@ -420,19 +422,20 @@ public class EmployeeRepository(ApplicationDbContext context,
             }
         }
         
-        // ensuring consistency with employee users
-        var user = await userManager.FindByEmailAsync(employee.Email);
-        if (user != null)
-        {
-            employee.DepartmentId = user.DepartmentId;
-            employee.Department = user.Department;
-        }
-
         mapper.Map(request, employee);
 
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
-
+        
+        // ensuring consistency with employee users
+        var user = await userManager.FindByEmailAsync(employee.Email);
+        if (user == null) return Result.Success();
+        
+        user.DepartmentId = employee.DepartmentId;
+        user.Department = employee.Department;
+            
+        await userManager.UpdateAsync(user);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
@@ -471,6 +474,11 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             return Error.NotFound("Department.NotFound", "Department not found");
         }
+
+        if (employee.Type == EmployeeType.Permanent && !employeeDto.Level.HasValue)
+        {
+            return Error.Validation("Employee.Level", "Permanent employees must have a level assigned");
+        }
         
         mapper.Map(employeeDto, employee);
         employee.DepartmentId = employeeDto.DepartmentId;
@@ -479,6 +487,15 @@ public class EmployeeRepository(ApplicationDbContext context,
         employee.Status = EmployeeStatus.Active;
 
         context.Employees.Update(employee);
+        await context.SaveChangesAsync();
+        
+        var user = await userManager.FindByEmailAsync(employee.Email);
+        if (user == null) return Result.Success();
+        
+        user.DepartmentId = employee.DepartmentId;
+        user.Department = department;
+        
+        await userManager.UpdateAsync(user);
         await context.SaveChangesAsync();
 
         const string templatePath = "wwwroot/email/EmployeeAcceptance.html";
@@ -502,7 +519,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             try
             {
-                emailService.SendMail(employee.Email, "Welcome to the Company", body, []);
+                emailService.SendMail(employee.FirstName, employee.Email, "Welcome to the Company", body, []);
                 logger.LogInformation($"Email sent to {employee.Email}");
                 sent = true;
             }
@@ -545,4 +562,96 @@ public class EmployeeRepository(ApplicationDbContext context,
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> ImportEmployeesFromExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        var employees = new List<Employee>();
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
+
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            var header = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrEmpty(header))
+                headers[header] = col;
+        }
+
+        var requiredHeaders = new[]
+        {
+            "First Name", "Last Name", "Department Code", "Department", "Employee Type", "Email"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
+
+        var departments = await context.Departments
+            .AsNoTracking()
+            .IgnoreAutoIncludes()
+            .ToListAsync();
+
+        var departmentLookup = departments
+            .SelectMany(d => new[]
+            {
+                new { Key = d.Code?.Trim().ToLower(), Value = d },
+                new { Key = d.Name?.Trim().ToLower(), Value = d }
+            })
+            .Where(x => !string.IsNullOrEmpty(x.Key))
+            .GroupBy(x => x.Key)
+            .ToDictionary(g => g.Key, g => g.First().Value);
+
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
+
+            var departmentCode = GetCell("Department Code")?.ToLower();
+            var departmentName = GetCell("Department")?.ToLower();
+
+            Department department = null;
+            if (!string.IsNullOrEmpty(departmentCode) && departmentLookup.TryGetValue(departmentCode, out var depByCode))
+                department = depByCode;
+            else if (!string.IsNullOrEmpty(departmentName) && departmentLookup.TryGetValue(departmentName, out var depByName))
+                department = depByName;
+
+            EmployeeType employeeType = EmployeeType.Casual;
+            var employeeTypeText = GetCell("Employee Type");
+            if (!string.IsNullOrEmpty(employeeTypeText) &&
+                Enum.TryParse<EmployeeType>(employeeTypeText, true, out var parsedType))
+            {
+                employeeType = parsedType;
+            }
+
+            var employee = new Employee
+            {
+                FirstName = GetCell("First Name"),
+                LastName = GetCell("Last Name"),
+                Email = GetCell("Email"),
+                DepartmentId = department?.Id,
+                Type = employeeType,
+                Status = EmployeeStatus.New,
+            };
+
+            employees.Add(employee);
+        }
+
+        await context.Employees.AddRangeAsync(employees);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
 }

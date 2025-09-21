@@ -337,7 +337,9 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.TotalStock,
                 opt => opt.MapFrom(src => src.Batches
                     .SelectMany(b => b.ShelfMaterialBatches)
-                    .Sum(smb => smb.Quantity)));
+                    .Sum(smb => smb.Quantity)))
+            .ForMember(dest => dest.Specification,
+                opt => opt.MapFrom<MaterialSpecificationResolver>());
 
         CreateMap<Material, MaterialWithWarehouseStockDto>()
             .ForMember(dest => dest.TotalStock,
@@ -405,6 +407,10 @@ public class OryxMapper : Profile
                         Id = g.First().Id,  // Keep the first ID (arbitrary, can be changed)
                         SourceRequisition = context.Mapper.Map<CollectionItemDto>(g.First().SourceRequisition),
                         Material = context.Mapper.Map<MaterialDto>(g.First().Material),
+                        DefaultManufacturer = context.Mapper.Map<ManufacturerListDto>(g.First()
+                            .SourceRequisition.Supplier.AssociatedManufacturers
+                            .First(m => m.MaterialId == g.First().MaterialId && m.Default)
+                            .Manufacturer),
                         UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
                         Quantity = g.Sum(i => i.Quantity), // Sum quantities
                         Source = g.First().Source,
@@ -426,6 +432,10 @@ public class OryxMapper : Profile
                         Id = g.First().Id,  // Keep the first ID (arbitrary, can be changed)
                         SourceRequisition = context.Mapper.Map<CollectionItemDto>(g.First().SourceRequisition),
                         Material = context.Mapper.Map<MaterialDto>(g.First().Material),
+                        DefaultManufacturer = context.Mapper.Map<ManufacturerListDto>(g.First()
+                            .SourceRequisition.Supplier.AssociatedManufacturers
+                            .First(m => m.MaterialId == g.First().MaterialId && m.Default)
+                            .Manufacturer),
                         UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
                         Quantity = g.Sum(i => i.Quantity), // Sum quantities
                         Source = g.First().Source,
@@ -452,12 +462,14 @@ public class OryxMapper : Profile
         //supplier
         CreateMap<CreateSupplierRequest, Supplier>();
         CreateMap<Supplier, SupplierDto>();
+        CreateMap<Supplier, SupplierListDto>();
         CreateMap<CreateSupplierManufacturerRequest, SupplierManufacturer>();
         CreateMap<SupplierManufacturer, SupplierManufacturerDto>();
         
         //manufacturer
         CreateMap<CreateManufacturerRequest, Manufacturer>();
         CreateMap<Manufacturer, ManufacturerDto>();
+        CreateMap<Manufacturer, ManufacturerListDto>();
         CreateMap<CreateManufacturerMaterialRequest, ManufacturerMaterial>();
         CreateMap<ManufacturerMaterial, ManufacturerMaterialDto>();
         
@@ -515,7 +527,10 @@ public class OryxMapper : Profile
         #region Supplier Quotation
 
         CreateMap<SupplierQuotation, SupplierQuotationDto>();
-        CreateMap<SupplierQuotationItem, SupplierQuotationItemDto>();
+        CreateMap<SupplierQuotationItem, SupplierQuotationItemDto>()
+            .ForMember(dest => dest.DefaultManufacturer,
+                opt => opt.MapFrom(src => 
+                    src.SupplierQuotation.Supplier.AssociatedManufacturers.FirstOrDefault(m => m.MaterialId == src.MaterialId && m.Default).Manufacturer));
 
         #endregion
 

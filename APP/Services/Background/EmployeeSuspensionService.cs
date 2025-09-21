@@ -12,15 +12,23 @@ public class EmployeeSuspensionService(IServiceScopeFactory scopeFactory) : Back
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = scopeFactory.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             
-            await dbContext.Employees
-                .Where(e => e.Status == EmployeeStatus.Inactive && e.SuspensionEndDate < DateTime.UtcNow)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(e => e.Status, EmployeeStatus.Active), cancellationToken: stoppingToken);
+                await dbContext.Employees
+                    .Where(e => e.Status == EmployeeStatus.Inactive && e.SuspensionEndDate < DateTime.UtcNow)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.Status, EmployeeStatus.Active), cancellationToken: stoppingToken);
             
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            
         }
     }
 }

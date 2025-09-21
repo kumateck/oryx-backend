@@ -103,7 +103,7 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
 
         var url = $"{partialUrl}/reset-password?key={key}";
 
-        emailService.SendMail(user.Email, "Password Reset", url,[]);
+        emailService.SendMail(user.FirstName, user.Email, "Password Reset", url,[]);
         return Result.Success();
     }
     

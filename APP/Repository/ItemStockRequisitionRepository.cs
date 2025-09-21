@@ -43,7 +43,7 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
         }
 
         var itemStockReq = mapper.Map<ItemStockRequisition>(request);
-        await context.ItemStockRequisitions.AddAsync(itemStockReq);
+        await context.AddAsync(itemStockReq);
         await context.SaveChangesAsync();
 
         var itemsToAdd = request.StockItems.Select(s => new ItemStockRequisitionItem

@@ -99,8 +99,8 @@ public class MaterialBatchEvent : BaseEntity
 
 public class FinishedProductBatchEvent : BaseEntity
 {
-    public Guid BatchId { get; set; }            
-    public Product Batch { get; set; }     
+    public Guid ProductId { get; set; }            
+    public Product Product { get; set; }     
     public decimal Quantity { get; set; }     
     public Guid UserId { get; set; }       
     public User User { get; set; } 
@@ -135,8 +135,8 @@ public class MassMaterialBatchMovement : BaseEntity
 
 public class FinishedProductBatchMovement : BaseEntity
 {
-    public Guid BatchId { get; set; }
-    public Product Batch { get; set; }
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
     public Warehouse FromWarehouse { get; set; }
     public Guid? FromWarehouseId { get; set; }
     public Warehouse ToWarehouse { get; set; }
@@ -223,10 +223,8 @@ public class MaterialBatchReservedQuantity : BaseEntity
     public Warehouse Warehouse { get; set; }
     public Guid? WarehouseLocationShelfId { get; set; }
     public WarehouseLocationShelf WarehouseLocationShelf { get; set; }
-    public Guid ProductionScheduleId { get; set; }
-    public ProductionSchedule ProductionSchedule { get; set; }
-    public Guid ProductId { get; set; }
-    public Product Product { get; set; }
+    public Guid ProductionScheduleProductId { get; set; }
+    public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
