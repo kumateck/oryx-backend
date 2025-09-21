@@ -643,7 +643,6 @@ public class EmployeeRepository(ApplicationDbContext context,
                 DepartmentId = department?.Id,
                 Type = employeeType,
                 Status = EmployeeStatus.New,
-                DateEmployed = DateTime.UtcNow
             };
 
             employees.Add(employee);
