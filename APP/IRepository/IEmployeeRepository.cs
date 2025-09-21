@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Employees;
+using Microsoft.AspNetCore.Http;
 using SHARED;
 using SHARED.Requests;
 
@@ -21,4 +22,5 @@ public interface IEmployeeRepository
    Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto);
    Task<Result> ChangeEmployeeType(Guid id, EmployeeType employeeType);
    Task<Result> DeleteEmployee(Guid id, Guid userId);
+   Task<Result> ImportEmployeesFromExcel(IFormFile file);
 }
