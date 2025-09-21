@@ -420,6 +420,16 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.DeletePurchaseOrder(purchaseOrderId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    [HttpPut("purchase-order/check/{purchaseOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CheckPurchaseOrder(Guid purchaseOrderId)
+    {
+        var result = await repository.CheckPurchaseOrder(purchaseOrderId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     // ************* PurchaseOrderInvoice Endpoints *************
 

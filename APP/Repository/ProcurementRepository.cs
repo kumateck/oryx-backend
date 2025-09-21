@@ -530,13 +530,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
         }
-    
-        // var revisedPurchaseOrder = mapper.Map<RevisedPurchaseOrder>(request);
-        // revisedPurchaseOrder.CreatedById = userId;
-        // existingOrder.RevisedPurchaseOrders.Add(revisedPurchaseOrder);
-    
+        
         mapper.Map(request, existingOrder);
         existingOrder.LastUpdatedById = userId;
+        existingOrder.Status = PurchaseOrderStatus.PendingCheck;
     
         context.PurchaseOrders.Update(existingOrder);
         await context.SaveChangesAsync();
@@ -576,6 +573,27 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         context.PurchaseOrders.Update(purchaseOrder);
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> CheckPurchaseOrder(Guid purchaseOrderId)
+    {
+        var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+        if (purchaseOrder is null)
+        {
+            return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        }
+        
+        if (purchaseOrder.Status == PurchaseOrderStatus.Linked)
+        {
+            return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
+        }
+
+        purchaseOrder.Status = PurchaseOrderStatus.Checked;
+        context.PurchaseOrders.Update(purchaseOrder);
+        await context.SaveChangesAsync();
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(PurchaseOrder), purchaseOrderId);
         return Result.Success();
     }
     

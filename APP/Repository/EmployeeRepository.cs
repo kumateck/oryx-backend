@@ -617,6 +617,10 @@ public class EmployeeRepository(ApplicationDbContext context,
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
+            
+            var isRowEmpty = requiredHeaders.All(header => string.IsNullOrWhiteSpace(GetCell(header)));
+            if (isRowEmpty)
+                continue;
 
             var departmentCode = GetCell("Department Code")?.ToLower();
             var departmentName = GetCell("Department")?.ToLower();

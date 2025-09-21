@@ -72,23 +72,13 @@ public enum PurchaseOrderStatus
     Pending = 1,
     Delivered = 2,
     Attached = 3,
-    Completed = 4,
-    PartiallyLinked = 5,
-    Linked = 6,
-}
-
-/*public enum PurchaseOrderStatus
-{
-    New = 0,
-    Pending = 1,
-    Delivered = 2,
-    Attached = 3,
     PendingCheck = 4,
     Checked = 5,
-    Completed = 6,
-    PartiallyLinked = 7,
-    Linked = 8,
-}*/
+    Approved = 6,
+    Completed = 7,
+    PartiallyLinked = 8,
+    Linked = 9,
+}
 
 public enum PurchaseOrderAttachmentStatus
 {

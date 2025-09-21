@@ -7,7 +7,6 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Forms;
-using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
@@ -145,10 +144,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Comments = item.Comments
             }).ToList();
 
-            var currentApprovals = GetCurrentApprovalStage(approvalStages);
+            var currentApprovals = GetCurrentApprovalStage(approvalStages, userId, roleIds[0]);
 
-            var approvableStage = currentApprovals.FirstOrDefault(stage =>
-                stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+            var approvableStage = currentApprovals.FirstOrDefault();
 
             if (approvableStage == null)
             {
@@ -205,9 +203,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Comments = item.Comments
                 }).ToList();
 
-                var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                    .Where(s => !requisition.Approvals.First(ra =>
-                        (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages,userId, roleIds[0])
+                    .Where(s => !s.ActivatedAt.HasValue)
                     .ToList();
 
                 foreach (var stageToActivate in newlyActiveStages)
@@ -251,10 +248,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Comments = item.Comments
                 }).ToList();
 
-                var purchaseOrderCurrentApprovals = GetCurrentApprovalStage(purchaseOrderApprovalStages);
+                var purchaseOrderCurrentApprovals = GetCurrentApprovalStage(purchaseOrderApprovalStages, userId, roleIds[0]);
 
-                var purchaseOrderApprovingStage = purchaseOrderCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var purchaseOrderApprovingStage = purchaseOrderCurrentApprovals.FirstOrDefault();
 
                 if (purchaseOrderApprovingStage == null)
                 {
@@ -280,7 +276,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 if (allRequiredPoApproved)
                 {
                     purchaseOrder.Approved = true;
-                    purchaseOrder.Status = PurchaseOrderStatus.Pending;
+                    purchaseOrder.Status = PurchaseOrderStatus.Approved;
+                    purchaseOrder.Approved = true;
                     context.PurchaseOrders.Update(purchaseOrder);
                 }
                 await context.SaveChangesAsync();
@@ -305,9 +302,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         Comments = item.Comments
                     }).ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                        .Where(s => !purchaseOrder.Approvals.First(ra =>
-                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
 
                     foreach (var stageToActivate in newlyActiveStages)
@@ -347,10 +343,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Comments = item.Comments
                 }).ToList();
 
-                var billingSheetCurrentApprovals = GetCurrentApprovalStage(billingSheetApprovalStages);
+                var billingSheetCurrentApprovals = GetCurrentApprovalStage(billingSheetApprovalStages, userId, roleIds[0]);
 
-                var billingSheetApprovingStage = billingSheetCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var billingSheetApprovingStage = billingSheetCurrentApprovals.FirstOrDefault();
 
                 if (billingSheetApprovingStage == null)
                 {
@@ -401,9 +396,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         Comments = item.Comments
                     }).ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                        .Where(s => !billingSheet.Approvals.First(ra =>
-                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
 
                     foreach (var stageToActivate in newlyActiveStages)
@@ -445,10 +439,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var staffRequisitionCurrentApprovals = GetCurrentApprovalStage(staffRequisitionApprovalStages);
+                var staffRequisitionCurrentApprovals = GetCurrentApprovalStage(staffRequisitionApprovalStages, userId, roleIds[0]);
                 
-                var staffRequisitionApprovingStage = staffRequisitionCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var staffRequisitionApprovingStage = staffRequisitionCurrentApprovals.FirstOrDefault();
                 
                 if (staffRequisitionApprovingStage == null)
                 {
@@ -498,9 +491,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         Comments = item.Comments
                     }).ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                        .Where(s => !staffRequisition.Approvals.First(ra =>
-                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
 
                     foreach (var stageToActivate in newlyActiveStages)
@@ -541,10 +533,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var leaveRequestCurrentApprovals = GetCurrentApprovalStage(leaveRequestApprovalStages);
+                var leaveRequestCurrentApprovals = GetCurrentApprovalStage(leaveRequestApprovalStages, userId, roleIds[0]);
                 
-                var leaveRequestApprovingStage = leaveRequestCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var leaveRequestApprovingStage = leaveRequestCurrentApprovals.FirstOrDefault();
                 
                 if (leaveRequestApprovingStage == null)
                 {
@@ -594,9 +585,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         Comments = item.Comments
                     }).ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                        .Where(s => !leaveRequest.Approvals.First(ra =>
-                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
 
                     foreach (var stageToActivate in newlyActiveStages)
@@ -637,10 +627,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var overtimeRequestCurrentApprovals = GetCurrentApprovalStage(overtimeRequestApprovalStages);
+                var overtimeRequestCurrentApprovals = GetCurrentApprovalStage(overtimeRequestApprovalStages, userId, roleIds[0]);
                 
-                var overtimeRequestApprovingStage = overtimeRequestCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var overtimeRequestApprovingStage = overtimeRequestCurrentApprovals.FirstOrDefault();
                 
                 if (overtimeRequestApprovingStage == null)
                 {
@@ -690,9 +679,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         Comments = item.Comments
                     }).ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                        .Where(s => !overtimeRequest.Approvals.First(ra =>
-                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
 
                     foreach (var stageToActivate in newlyActiveStages)
@@ -737,10 +725,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var responseCurrentApprovals = GetCurrentApprovalStage(responseApprovalStages);
+                var responseCurrentApprovals = GetCurrentApprovalStage(responseApprovalStages, userId, roleIds[0]);
                 
-                var responseApprovingStage = responseCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var responseApprovingStage = responseCurrentApprovals.FirstOrDefault();
                 
                 if (responseApprovingStage == null)
                 {
@@ -841,9 +828,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         Comments = item.Comments
                     }).ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                        .Where(s => !response.Approvals.First(ra =>
-                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
 
                     foreach (var stageToActivate in newlyActiveStages)
@@ -887,10 +873,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var allocationCurrentApprovals = GetCurrentApprovalStage(allocateProductionOrderApprovalStages);
+                var allocationCurrentApprovals = GetCurrentApprovalStage(allocateProductionOrderApprovalStages, userId, roleIds[0]);
                 
-                var allocationApprovingStage = allocationCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var allocationApprovingStage = allocationCurrentApprovals.FirstOrDefault();
                 
                 if (allocationApprovingStage == null)
                 {
@@ -943,9 +928,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         Comments = item.Comments
                     }).ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                        .Where(s => !proformaInvoice.Approvals.First(ra =>
-                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
 
                     foreach (var stageToActivate in newlyActiveStages)
@@ -988,10 +972,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var shipmentDocumentCurrentApprovals = GetCurrentApprovalStage(shipmentDocumentOrderApprovalStages);
+                var shipmentDocumentCurrentApprovals = GetCurrentApprovalStage(shipmentDocumentOrderApprovalStages, userId, roleIds[0]);
                 
-                var shipmentDocumentApprovingStage = shipmentDocumentCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var shipmentDocumentApprovingStage = shipmentDocumentCurrentApprovals.FirstOrDefault();
                 
                 if (shipmentDocumentApprovingStage == null)
                 {
@@ -1043,9 +1026,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         Comments = item.Comments
                     }).ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages)
-                        .Where(s => !shipmentDocument.Approvals.First(ra =>
-                            (ra.UserId == s.UserId && s.UserId.HasValue) || (ra.RoleId == s.RoleId && s.RoleId.HasValue)).ActivatedAt.HasValue)
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
 
                     foreach (var stageToActivate in newlyActiveStages)
@@ -1104,10 +1086,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Comments = item.Comments
             }).ToList();
 
-            var currentApprovals = GetCurrentApprovalStage(approvalStages);
+            var currentApprovals = GetCurrentApprovalStage(approvalStages, userId, roleIds[0]);
 
-            var approvableStage = currentApprovals.FirstOrDefault(stage =>
-                stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+            var approvableStage = currentApprovals.FirstOrDefault();
 
             if (approvableStage == null)
             {
@@ -1115,7 +1096,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     "You are not authorized to approve this resource at this time.");
             }
 
-            // Approve the stage in the actual tracked list (not the mapped one)
+            // Reject the stage in the actual tracked list (not the mapped one)
             var stageToApprove = requisition.Approvals.First(stage =>
                 (stage.UserId == approvableStage.UserId && stage.UserId == userId) ||
                 (stage.RoleId == approvableStage.RoleId && approvableStage.RoleId.HasValue && roleIds.Contains(approvableStage.RoleId.Value)));
@@ -1156,10 +1137,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Comments = item.Comments
                 }).ToList();
 
-                var purchaseOrderCurrentApprovals = GetCurrentApprovalStage(purchaseOrderApprovalStages);
+                var purchaseOrderCurrentApprovals = GetCurrentApprovalStage(purchaseOrderApprovalStages, userId, roleIds[0]);
 
-                var purchaseOrderApprovingStage = purchaseOrderCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var purchaseOrderApprovingStage = purchaseOrderCurrentApprovals.FirstOrDefault();
 
                 if (purchaseOrderApprovingStage == null)
                 {
@@ -1204,10 +1184,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Comments = item.Comments
                 }).ToList();
 
-                var billingSheetCurrentApprovals = GetCurrentApprovalStage(billingSheetApprovalStages);
+                var billingSheetCurrentApprovals = GetCurrentApprovalStage(billingSheetApprovalStages, userId, roleIds[0]);
 
-                var billingSheetApprovingStage = billingSheetCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var billingSheetApprovingStage = billingSheetCurrentApprovals.FirstOrDefault();
 
                 if (billingSheetApprovingStage == null)
                 {
@@ -1253,10 +1232,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var leaveRequestCurrentApprovals = GetCurrentApprovalStage(leaveRequestApprovalStages);
+                var leaveRequestCurrentApprovals = GetCurrentApprovalStage(leaveRequestApprovalStages, userId, roleIds[0]);
                 
-                var leaveRequestApprovingStage = leaveRequestCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var leaveRequestApprovingStage = leaveRequestCurrentApprovals.FirstOrDefault();
                 
                 if (leaveRequestApprovingStage == null)
                 {
@@ -1302,10 +1280,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var overtimeRequestCurrentApprovals = GetCurrentApprovalStage(overtimeRequestApprovalStages);
+                var overtimeRequestCurrentApprovals = GetCurrentApprovalStage(overtimeRequestApprovalStages, userId, roleIds[0]);
                 
-                var overtimeRequestApprovingStage = overtimeRequestCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var overtimeRequestApprovingStage = overtimeRequestCurrentApprovals.FirstOrDefault();
                 
                 if (overtimeRequestApprovingStage == null)
                 {
@@ -1355,10 +1332,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var responseCurrentApprovals = GetCurrentApprovalStage(responseApprovalStages);
+                var responseCurrentApprovals = GetCurrentApprovalStage(responseApprovalStages, userId, roleIds[0]);
                 
-                var responseApprovingStage = responseCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var responseApprovingStage = responseCurrentApprovals.FirstOrDefault();
                 
                 if (responseApprovingStage == null)
                 {
@@ -1447,10 +1423,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var allocationCurrentApprovals = GetCurrentApprovalStage(allocationApprovalStages);
+                var allocationCurrentApprovals = GetCurrentApprovalStage(allocationApprovalStages,userId, roleIds[0]);
                 
-                var allocationApprovingStage = allocationCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var allocationApprovingStage = allocationCurrentApprovals.FirstOrDefault();
                 
                 if (allocationApprovingStage == null)
                 {
@@ -1498,10 +1473,9 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                         
                     }).ToList();
                 
-                var shipmentDocumentCurrentApprovals = GetCurrentApprovalStage(shipmentDocumentApprovalStages);
+                var shipmentDocumentCurrentApprovals = GetCurrentApprovalStage(shipmentDocumentApprovalStages,userId, roleIds[0]);
                 
-                var shipmentDocumentApprovingStage = shipmentDocumentCurrentApprovals.FirstOrDefault(stage =>
-                    stage.UserId == userId || (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)));
+                var shipmentDocumentApprovingStage = shipmentDocumentCurrentApprovals.FirstOrDefault();
                 
                 if (shipmentDocumentApprovingStage == null)
                 {
@@ -1896,7 +1870,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         }
     }
     
-    public List<ResponsibleApprovalStage> GetCurrentApprovalStage(List<ResponsibleApprovalStage> stages)
+    public List<ResponsibleApprovalStage> GetCurrentApprovalStage(List<ResponsibleApprovalStage> stages, Guid userId, Guid roleId)
     {
         var result = new List<ResponsibleApprovalStage>();
 
@@ -1904,14 +1878,17 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         var sortedStages = stages.OrderBy(s => s.Order).ToList();
 
         // Find the next required unapproved stage
-        var nextRequired = sortedStages.FirstOrDefault(s => s.Required && s.Status != ApprovalStatus.Approved);
+        var nextRequired = sortedStages.
+            FirstOrDefault(s => 
+                s.Required && s.Status != ApprovalStatus.Approved && (s.UserId == userId || s.RoleId == roleId));
 
         if (nextRequired == null)
         {
             // If there's no more required stages, return any unapproved unrequired ones
             result.AddRange(
                 sortedStages
-                    .Where(s => !s.Required && s.Status != ApprovalStatus.Approved)
+                    .Where(s => !s.Required && s.Status != ApprovalStatus.Approved
+                                            && (s.UserId == userId || s.RoleId == roleId))
             );
             return result;
         }
@@ -1981,7 +1958,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(r => r.Id == modelId);
                     if (purchaseOrder != null)
                     {
-                        purchaseOrder.Status = PurchaseOrderStatus.Pending;
+                        purchaseOrder.Status = PurchaseOrderStatus.Approved;
                         purchaseOrder.Approved = true;
                         context.PurchaseOrders.Update(purchaseOrder);
                         await context.SaveChangesAsync();
@@ -2253,7 +2230,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             .ToList();
     }
     
-    public async Task ProcessApprovalEscalations()
+    public async Task ProcessApprovalEscalations(Guid userId, Guid roleId)
     {
         var cacheKey = "ApprovalsWithEscalation";
         if (!cache.TryGetValue(cacheKey, out List<Approval> approvalsWithEscalation))
@@ -2306,28 +2283,28 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     var requisition = unapprovedRequisitions.FirstOrDefault(r => r.Approvals.Any(a => a.ApprovalId == approval.Id));
                     if (requisition != null)
                     {
-                        await ProcessRequisitionEscalations(requisition, approval.EscalationDuration);
+                        await ProcessRequisitionEscalations(requisition, approval.EscalationDuration, userId, roleId);
                     }
                     break;
                 case "BillingSheet":
                     var billingSheet = unapprovedBillingSheets.FirstOrDefault(bs => bs.Approvals.Any(a => a.ApprovalId == approval.Id));
                     if (billingSheet != null)
                     {
-                        await ProcessBillingSheetEscalations(billingSheet, approval.EscalationDuration);
+                        await ProcessBillingSheetEscalations(billingSheet, approval.EscalationDuration, userId, roleId);
                     }
                     break;
                 case "PurchaseOrder":
                     var purchaseOrder = unapprovedPurchaseOrders.FirstOrDefault(po => po.Approvals.Any(a => a.ApprovalId == approval.Id));
                     if (purchaseOrder != null)
                     {
-                        await ProcessPurchaseOrderEscalations(purchaseOrder, approval.EscalationDuration);
+                        await ProcessPurchaseOrderEscalations(purchaseOrder, approval.EscalationDuration, userId, roleId);
                     }
                     break;
                 case nameof(LeaveRequest):
                     var leaveRequest = unapprovedLeaveRequests.FirstOrDefault(po => po.Approvals.Any(a => a.ApprovalId == approval.Id));
                     if (leaveRequest != null)
                     {
-                        await ProcessLeaveRequestEscalations(leaveRequest, approval.EscalationDuration);
+                        await ProcessLeaveRequestEscalations(leaveRequest, approval.EscalationDuration, userId, roleId);
                     }
                     break;
                 
@@ -2335,7 +2312,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     var overtimeRequest = unapprovedOverTimeRequests.FirstOrDefault(po => po.Approvals.Any(a => a.ApprovalId == approval.Id));
                     if (overtimeRequest != null)
                     {
-                        await ProcessOvertimeRequestEscalations(overtimeRequest, approval.EscalationDuration);
+                        await ProcessOvertimeRequestEscalations(overtimeRequest, approval.EscalationDuration, userId, roleId);
                     }
                     break;
             }
@@ -2349,7 +2326,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         return user.Result == null ? Error.NotFound("User.Invalid", "User not found") : Result.Success();
     }
 
-    private async Task ProcessRequisitionEscalations(Requisition requisition, TimeSpan escalationDuration)
+    private async Task ProcessRequisitionEscalations(Requisition requisition, TimeSpan escalationDuration, Guid userId, Guid roleId)
     {
         if (requisition is null || requisition.Approvals.Count == 0) return;
 
@@ -2360,7 +2337,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             Order = a.Order,
             CreatedAt = a.CreatedAt,
             ActivatedAt = a.ActivatedAt // Include ActivatedAt
-        }).ToList());
+        }).ToList(), userId, roleId);
 
         if (currentApprovalStages.Count <= 1) return;
 
@@ -2393,7 +2370,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             await context.SaveChangesAsync();
         }
     }
-    private async Task ProcessBillingSheetEscalations(BillingSheet billingSheet, TimeSpan escalationDuration)
+    private async Task ProcessBillingSheetEscalations(BillingSheet billingSheet, TimeSpan escalationDuration, Guid userId, Guid roleId)
     {
         if (billingSheet is null || billingSheet.Approvals.Count == 0) return;
 
@@ -2404,7 +2381,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             Order = a.Order,
             CreatedAt = a.CreatedAt,
             ActivatedAt = a.ActivatedAt
-        }).ToList());
+        }).ToList(), userId, roleId);
 
         if (currentApprovalStages.Count <= 1) return;
 
@@ -2436,7 +2413,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         }
     }
 
-    private async Task ProcessPurchaseOrderEscalations(PurchaseOrder purchaseOrder, TimeSpan escalationDuration)
+    private async Task ProcessPurchaseOrderEscalations(PurchaseOrder purchaseOrder, TimeSpan escalationDuration, Guid userId, Guid roleId)
     {
         if (purchaseOrder is null || purchaseOrder.Approvals.Count == 0) return;
 
@@ -2448,7 +2425,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Order = a.Order,
                 CreatedAt = a.CreatedAt,
                 ActivatedAt = a.ActivatedAt
-            }).ToList());
+            }).ToList(), userId, roleId);
 
         if (currentApprovalStages.Count <= 1) return;
 
@@ -2480,7 +2457,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         }
     }
     
-    private async Task ProcessLeaveRequestEscalations(LeaveRequest leaveRequest, TimeSpan escalationDuration)
+    private async Task ProcessLeaveRequestEscalations(LeaveRequest leaveRequest, TimeSpan escalationDuration, Guid userId, Guid roleId)
     {
         if (leaveRequest is null || leaveRequest.Approvals.Count == 0) return;
 
@@ -2492,7 +2469,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Order = a.Order,
                 CreatedAt = a.CreatedAt,
                 ActivatedAt = a.ActivatedAt
-            }).ToList());
+            }).ToList(), userId, roleId);
 
         if (currentApprovalStages.Count <= 1) return;
 
@@ -2524,7 +2501,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         }
     }
     
-    private async Task ProcessOvertimeRequestEscalations(OvertimeRequest overtimeRequest, TimeSpan escalationDuration)
+    private async Task ProcessOvertimeRequestEscalations(OvertimeRequest overtimeRequest, TimeSpan escalationDuration, Guid userId, Guid roleId)
     {
         if (overtimeRequest is null || overtimeRequest.Approvals.Count == 0) return;
 
@@ -2536,7 +2513,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Order = a.Order,
                 CreatedAt = a.CreatedAt,
                 ActivatedAt = a.ActivatedAt
-            }).ToList());
+            }).ToList(), userId, roleId);
 
         if (currentApprovalStages.Count <= 1) return;
 
