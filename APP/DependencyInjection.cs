@@ -131,7 +131,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IMessagingService, MessagingService>();
         services.AddScoped<INotificationService, NotificationService>();
-        services.AddHostedService<ApprovalEscalationService>();
+        //services.AddHostedService<ApprovalEscalationService>();
         services.AddHostedService<LeaveExpiryService>();
         services.AddHostedService<ServiceExpiryService>();
         services.AddHostedService<MaterialStockService>();

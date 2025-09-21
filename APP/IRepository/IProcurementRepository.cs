@@ -42,6 +42,7 @@ public interface IProcurementRepository
     Task<Result> UpdatePurchaseOrder(UpdatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId);
     Task<Result<Guid>> GetRequisitionIdForPurchaseOrderAndMaterial(Guid purchaseOrderId, Guid materialId);
     Task<Result> DeletePurchaseOrder(Guid purchaseOrderId, Guid userId);
+    Task<Result> CheckPurchaseOrder(Guid purchaseOrderId);
 
     // ************* PurchaseOrderInvoice *************
     Task<Result<Guid>> CreatePurchaseOrderInvoice(CreatePurchaseOrderInvoiceRequest request, Guid userId);
