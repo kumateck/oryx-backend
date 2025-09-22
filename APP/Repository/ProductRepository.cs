@@ -743,7 +743,7 @@ namespace APP.Repository;
                 TertiaryPackDescription = "",
                 CategoryId = categories.TryGetValue(categoryName, out var categoryId) ? categoryId : null,
                 BaseUomId = uoms.TryGetValue(baseUomName, out var baseUom) ? baseUom : null,
-                EquipmentId = equipments.GetValueOrDefault(equipmentName),
+                EquipmentId = equipments.TryGetValue(equipmentName,  out var equipmentId) ? equipmentId : null,
                 DepartmentId = departments.TryGetValue(departmentCode, out var departmentId) ? departmentId : null,
                 BaseQuantity = decimal.TryParse(GetCell("COMPOSITION UNIT QTY"), out var bq) ? bq : 0,
                 FullBatchSize = decimal.TryParse(GetCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
