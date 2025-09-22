@@ -565,15 +565,25 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return groupedData;
     }
     
-     public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation()
+     public async Task<Result<List<ProductionActivityGroupResultDto>>> GetProductionActivityGroupedByOperation(Guid? departmentId)
     {
         // Fetch all unique operation names in the correct order
-        var allOperations = await context.Operations
-            .OrderBy(o => o.Order) 
+        
+         var allOperations = departmentId.HasValue ? 
+             await context.Operations
+            .OrderBy(o => o.Order)
+            .Where(o =>  o.DepartmentId == departmentId)
             .Select(o => new OperationDto
                 { Id = o.Id, Name = o.Name, Description =  o.Description , Order =  o.Order })
             .AsNoTracking()
-            .ToListAsync();
+            .ToListAsync() : 
+             
+             await context.Operations
+             .OrderBy(o => o.Order) 
+             .Select(o => new OperationDto
+                 { Id = o.Id, Name = o.Name, Description =  o.Description , Order =  o.Order })
+             .AsNoTracking()
+             .ToListAsync();
 
         // Fetch production activities with only necessary data
         var productionActivities = await context.ProductionActivities
