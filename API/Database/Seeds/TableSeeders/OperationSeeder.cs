@@ -1,4 +1,3 @@
-/*
 using APP.Utils;
 using DOMAIN.Entities.Base;
 using INFRASTRUCTURE.Context;
@@ -10,43 +9,56 @@ public class OperationSeeder : ISeeder
     public void Handle(IServiceScope scope)
     {
         var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
-
-        //if (dbContext.Operations.Any()) return;
-
         SeedOperations(dbContext);
     }
 
     private static void SeedOperations(ApplicationDbContext dbContext)
     {
-        var allOps = OperationUtils.All().ToList();
+        var departments = dbContext.Departments.ToList();
 
-        foreach (var op in allOps)
+        var allOpsByDepartment = OperationUtils.All();
+
+        foreach (var departmentEntry in allOpsByDepartment)
         {
-            var existing = dbContext.Operations.FirstOrDefault(o => o.Name == op.Name);
+            var departmentName = departmentEntry.Key;
+            var operations = departmentEntry.Value;
 
-            if (existing != null)
+            var department = departments.FirstOrDefault(d => d.Name.StartsWith(departmentName));
+
+            if (department == null)
             {
-                // Update existing operation with new Action (if needed)
-                existing.Action = op.Action;
-                existing.Description = op.Description; // Optional: update description if changed
-                existing.Order = op.Order;             // Optional: update order if changed
-                dbContext.Operations.Update(existing);
+                continue;
             }
-            else
+            
+            var newOperations = new List<Operation>();
+
+            foreach (var op in operations)
             {
-                // Add new operation
-                var newOperation = new Operation
+                var existing = dbContext.Operations.FirstOrDefault(o => o.Name == op.Name);
+
+                if (existing != null)
                 {
-                    Name = op.Name,
-                    Description = op.Description,
-                    Order = op.Order,
-                    Action = op.Action
-                };
-
-                dbContext.Operations.Add(newOperation);
+                    // Update existing operation
+                    existing.Description = op.Description;
+                    existing.Order = op.Order;
+                    existing.DepartmentId = department.Id;
+                    dbContext.Operations.Update(existing);
+                }
+                else
+                {
+                    // Add new operation
+                    var newOperation = new Operation
+                    {
+                        Name = op.Name,
+                        Description = op.Description,
+                        Order = op.Order,
+                        DepartmentId = department.Id
+                    };
+                    newOperations.Add(newOperation);
+                }
             }
+            dbContext.Operations.AddRangeAsync(newOperations);
         }
         dbContext.SaveChanges();
     }
 }
-*/

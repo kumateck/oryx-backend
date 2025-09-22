@@ -829,6 +829,20 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         );
     }
     
+    public async Task<Result<IEnumerable<OperationDto>>> GetOperations(Guid? departmentId)
+    {
+        var query = context.Operations
+            .OrderBy(o => o.Order)
+            .AsQueryable();
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(q => q.DepartmentId == departmentId);
+        }
+        
+        return mapper.Map<List<OperationDto>>(await query.ToListAsync());
+    }
+    
     public async Task<Result<UnitOfMeasureDto>> GetUoM(Guid uomId)
     {
        return mapper.Map<UnitOfMeasureDto>(

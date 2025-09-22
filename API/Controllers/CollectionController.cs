@@ -159,6 +159,20 @@ public class CollectionController(ICollectionRepository repository) : Controller
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Retrieves operations in the system
+    /// </summary>
+    /// <returns>Returns a collection of uom items.</returns>
+    [HttpGet("operations")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<OperationDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetOperations([FromQuery] Guid? departmentId)
+    {
+        var result = await repository.GetOperations(departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     
     /// <summary>
     /// Retrieves a unit of measure by its id
