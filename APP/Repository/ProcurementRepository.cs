@@ -270,8 +270,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         await context.PurchaseOrders.AddAsync(purchaseOrder);
         await context.SaveChangesAsync();
         
-        await approvalRepository.CreateInitialApprovalsAsync(nameof(PurchaseOrder), purchaseOrder.Id);
-
         return purchaseOrder.Id;
     }
 
