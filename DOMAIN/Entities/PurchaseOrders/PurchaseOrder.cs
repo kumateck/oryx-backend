@@ -77,7 +77,7 @@ public enum PurchaseOrderStatus
     Approved = 6,
     Completed = 7,
     PartiallyLinked = 8,
-    Linked = 9,
+    Linked = 9
 }
 
 public enum PurchaseOrderAttachmentStatus
