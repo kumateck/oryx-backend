@@ -692,7 +692,6 @@ namespace APP.Repository;
                 return UploadErrors.MissingRequiredHeader(header);
         }
 
-        // 📌 Prefetch lookups
         var categories = await context.ProductCategories
             .AsNoTracking()
             .ToDictionaryAsync(c => c.Name.ToLower(), c => c.Id);
@@ -714,7 +713,6 @@ namespace APP.Repository;
             .Select(p => p.Code)
             .ToHashSetAsync();
 
-        // 📌 Process rows
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
@@ -743,10 +741,10 @@ namespace APP.Repository;
                 PrimaryPackDescription = "",
                 SecondaryPackDescription = "",
                 TertiaryPackDescription = "",
-                CategoryId = categories.GetValueOrDefault(categoryName),
-                BaseUomId = uoms.GetValueOrDefault(baseUomName),
-                EquipmentId = equipments.GetValueOrDefault(equipmentName),
-                DepartmentId = departments.GetValueOrDefault(departmentCode),
+                CategoryId = categories.TryGetValue(categoryName, out var categoryId) ? categoryId : null,
+                BaseUomId = uoms.TryGetValue(baseUomName, out var baseUom) ? baseUom : null,
+                EquipmentId = equipments.TryGetValue(equipmentName,  out var equipmentId) ? equipmentId : null,
+                DepartmentId = departments.TryGetValue(departmentCode, out var departmentId) ? departmentId : null,
                 BaseQuantity = decimal.TryParse(GetCell("COMPOSITION UNIT QTY"), out var bq) ? bq : 0,
                 FullBatchSize = decimal.TryParse(GetCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
                 LabelClaim = GetCell("LABEL CLAIMS"),
