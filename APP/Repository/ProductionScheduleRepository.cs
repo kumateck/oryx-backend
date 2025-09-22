@@ -571,7 +571,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var allOperations = await context.Operations
             .OrderBy(o => o.Order) 
             .Select(o => new OperationDto
-                { Id = o.Id, Name = o.Name, Description =  o.Description , Order =  o.Order , Action = o.Action})
+                { Id = o.Id, Name = o.Name, Description =  o.Description , Order =  o.Order })
             .AsNoTracking()
             .ToListAsync();
 

@@ -17,6 +17,7 @@ public interface ICollectionRepository
     Task<Result<IEnumerable<PackageStyleDto>>> GetPackageStyles();
     Task<Result> CreateUoM(CreateUnitOfMeasure request);
     Task<Result<UnitOfMeasureDto>> GetUoM(Guid uomId);
+    Task<Result<IEnumerable<OperationDto>>> GetOperations(Guid? departmentId);
     Task<Result> UpdateUoM(CreateUnitOfMeasure request, Guid id);
     Task<Result> DeleteUoM(Guid uomId);
     Task<Result<Paginateable<IEnumerable<UnitOfMeasureDto>>>> GetUoM(FilterUnitOfMeasure filter);

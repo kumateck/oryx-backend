@@ -698,7 +698,7 @@ namespace APP.Repository;
 
         var uoms = await context.UnitOfMeasures
             .AsNoTracking()
-            .ToDictionaryAsync(u => u.Name.ToLower(), u => u.Id);
+            .ToDictionaryAsync(u => u.Symbol.ToLower(), u => u.Id);
 
         var equipments = await context.Equipments
             .AsNoTracking()

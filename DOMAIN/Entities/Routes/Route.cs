@@ -62,11 +62,12 @@ public class RouteWorkCenter : BaseEntity
 public enum OperationAction
 {
     BmrAndBprRequisition = 0,
-    StockRequisition = 1,   
-    FullReturn = 2,
-    AdditionalStockRequest = 3,
-    FinalPackingOrPartialReturn = 4,
-    FinishedGoodsTransferNote = 5,
-    Dispatch = 6,
-    Atr = 7,
+    BmrAndBprCancellation = 1,
+    StockRequisition = 2,
+    FullReturn = 3,
+    AdditionalStockRequest = 4,
+    FinalPackingOrPartialReturn = 5,
+    FinishedGoodsTransferNote = 6,
+    Dispatch = 7,
+    Atr = 8,
 }
