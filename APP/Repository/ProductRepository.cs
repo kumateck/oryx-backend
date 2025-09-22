@@ -682,7 +682,7 @@ namespace APP.Repository;
 
         var requiredHeaders = new[]
         {
-            "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "BASE QUANTITY",
+            "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "COMPOSITION UNIT QTY",
             "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT CODE", "LABEL CLAIMS"
         };
 
@@ -735,11 +735,11 @@ namespace APP.Repository;
                 GenericName = GetCell("GENERIC NAME"),
                 StorageCondition = GetCell("STORAGE CONDITION"),
                 PackageStyle = GetCell("PACK STYLE"),
-                FilledWeight = GetCell("FILLED VOLUME"),
+                FilledWeight = GetCell("FILLED WEIGHT/VOLUME"),
                 ShelfLife = GetCell("SHELF LIFE"),
                 ActionUse = GetCell("ACTION AND USE"),
-                FdaRegistrationNumber = "", 
-                MasterFormulaNumber = "",   
+                FdaRegistrationNumber = GetCell("FDA REGISTRATION NUMBER"), 
+                MasterFormulaNumber = GetCell("MASTER FORMULA NUMBER"),   
                 PrimaryPackDescription = "",
                 SecondaryPackDescription = "",
                 TertiaryPackDescription = "",
@@ -747,16 +747,16 @@ namespace APP.Repository;
                 BaseUomId = uoms.GetValueOrDefault(baseUomName),
                 EquipmentId = equipments.GetValueOrDefault(equipmentName),
                 DepartmentId = departments.GetValueOrDefault(departmentCode),
-                BaseQuantity = decimal.TryParse(GetCell("BASE QUANTITY"), out var bq) ? bq : 0,
+                BaseQuantity = decimal.TryParse(GetCell("COMPOSITION UNIT QTY"), out var bq) ? bq : 0,
                 FullBatchSize = decimal.TryParse(GetCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
                 LabelClaim = GetCell("LABEL CLAIMS"),
             };
 
             products.Add(product);
-            existingCodes.Add(productCode); // ✅ Prevent duplicate inserts in same file
+            existingCodes.Add(productCode);
         }
 
-        if (products.Any())
+        if (products.Count != 0)
         {
             await context.Products.AddRangeAsync(products);
             await context.SaveChangesAsync();
