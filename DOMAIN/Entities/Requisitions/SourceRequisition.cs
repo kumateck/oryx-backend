@@ -107,7 +107,7 @@ public class SourceRequisitionItemDto
 }
 public class SupplierQuotationRequest
 {
-    public SupplierDto Supplier { get; set; }
+    public SupplierListDto Supplier { get; set; }
     public DateTime? SentQuotationRequestAt { get; set; }
     public bool SentQuotationRequest => SentQuotationRequestAt is not null;
     public List<SourceRequisitionItemDto> Items { get; set; } = [];

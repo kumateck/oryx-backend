@@ -939,7 +939,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         // Base query
         var query = context.SourceRequisitions
             .AsSplitQuery()
-            .Include(sr => sr.Supplier)
+            .Include(sr => sr.Supplier).ThenInclude(s => s.AssociatedManufacturers).ThenInclude(s => s.Manufacturer)
             .Include(sr => sr.Items).ThenInclude(item => item.Material)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
             .Where(sr => sr.Supplier.Type == source)
