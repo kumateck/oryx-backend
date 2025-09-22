@@ -9,7 +9,11 @@ public class OperationSeeder : ISeeder
     public void Handle(IServiceScope scope)
     {
         var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
-        SeedOperations(dbContext);
+
+        if (!dbContext.Operations.Any())
+        {
+            SeedOperations(dbContext);
+        }
     }
 
     private static void SeedOperations(ApplicationDbContext dbContext)
