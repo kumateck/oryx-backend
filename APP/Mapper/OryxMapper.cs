@@ -409,7 +409,7 @@ public class OryxMapper : Profile
                         Material = context.Mapper.Map<MaterialDto>(g.First().Material),
                         DefaultManufacturer = context.Mapper.Map<ManufacturerListDto>(g.First()
                             .SourceRequisition.Supplier.AssociatedManufacturers
-                            .First(m => m.MaterialId == g.First().MaterialId && m.Default)
+                            .FirstOrDefault(m => m.MaterialId == g.First().MaterialId && m.Default)?
                             .Manufacturer),
                         UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
                         Quantity = g.Sum(i => i.Quantity), // Sum quantities
@@ -434,7 +434,7 @@ public class OryxMapper : Profile
                         Material = context.Mapper.Map<MaterialDto>(g.First().Material),
                         DefaultManufacturer = context.Mapper.Map<ManufacturerListDto>(g.First()
                             .SourceRequisition.Supplier.AssociatedManufacturers
-                            .First(m => m.MaterialId == g.First().MaterialId && m.Default)
+                            .FirstOrDefault(m => m.MaterialId == g.First().MaterialId && m.Default)?
                             .Manufacturer),
                         UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
                         Quantity = g.Sum(i => i.Quantity), // Sum quantities

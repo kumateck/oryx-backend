@@ -254,7 +254,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <returns>Returns a paginated list of suppliers with their requisition items.</returns>
     [HttpGet("source/supplier")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationRequest>>))]
     public async Task<IResult> GetSuppliersWithSourceRequisitionItems([FromQuery] SupplierType source,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
