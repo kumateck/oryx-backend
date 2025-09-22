@@ -314,9 +314,9 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [HttpGet("activity/operation-grouped")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionActivityGroupResultDto>))]
-    public async Task<IResult> GetProductionActivityGroupedByOperation()
+    public async Task<IResult> GetProductionActivityGroupedByOperation([FromQuery] Guid? departmentId)
     {
-        var result = await repository.GetProductionActivityGroupedByOperation();
+        var result = await repository.GetProductionActivityGroupedByOperation(departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
