@@ -479,6 +479,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                         poItem.Quantity = revision.Quantity.Value;
                         poItem.Price = revision.Price.Value;
                         context.PurchaseOrderItems.Update(poItem);
+                        existingOrder.Status = PurchaseOrderStatus.Revised;
                     }
                     break;
 
@@ -493,6 +494,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
                         var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(i  => i.Id == revision.PurchaseOrderItemId);
                         context.PurchaseOrderItems.Remove(poItemToDelete);
+                        existingOrder.Status = PurchaseOrderStatus.Revised;
                     }
                     break;
             }
@@ -513,10 +515,38 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    
+    public async Task<Result> UpdatePurchaseOrderSFirstStep(UpdatePurchaseOrderFirstStep request, Guid purchaseOrderId, Guid userId)
+    {
+        var existingOrder = await context.PurchaseOrders
+            .AsSplitQuery()
+            .Include(po => po.RevisedPurchaseOrders)
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+        if (existingOrder is null)
+        {
+            return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        }
+        
+        if (existingOrder.Status == PurchaseOrderStatus.Linked)
+        {
+            return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
+        }
+        
+        existingOrder.ProFormaInvoiceNumber = request.ProFormaInvoiceNumber;
+        existingOrder.DeliveryModeId =  request.DeliveryModeId;
+        existingOrder.TermsOfPaymentId =  request.TermsOfPaymentId;
+        existingOrder.EstimatedDeliveryDate = request.EstimatedDeliveryDate;
+        existingOrder.LastUpdatedById = userId;
+        context.PurchaseOrders.Update(existingOrder);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
     public async Task<Result> UpdatePurchaseOrder(UpdatePurchaseOrderRequest request, Guid purchaseOrderId, Guid userId)
     {
         var existingOrder = await context.PurchaseOrders
+            .AsSplitQuery()
             .Include(po => po.RevisedPurchaseOrders)
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         if (existingOrder is null)
@@ -533,6 +563,22 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         existingOrder.LastUpdatedById = userId;
         existingOrder.Status = PurchaseOrderStatus.PendingCheck;
     
+        context.PurchaseOrders.Update(existingOrder);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> CancelPurchaseOrder(Guid purchaseOrderId, Guid userId)
+    {
+        var existingOrder = await context.PurchaseOrders
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+        if (existingOrder is null)
+        {
+            return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        }
+        
+        existingOrder.LastUpdatedById = userId;
+        existingOrder.Status = PurchaseOrderStatus.Cancelled;
         context.PurchaseOrders.Update(existingOrder);
         await context.SaveChangesAsync();
         return Result.Success();

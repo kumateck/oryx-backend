@@ -362,6 +362,26 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.SendProformaInvoiceToSupplier(purchaseOrderId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates a specific purchase order by its ID.
+    /// </summary>
+    /// <param name="request">The UpdatePurchaseOrderRequest object.</param>
+    /// <param name="purchaseOrderId">The ID of the purchase order to update.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("purchase-order/first-step/{purchaseOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdatePurchaseOrderFirstStep([FromBody] UpdatePurchaseOrderFirstStep request, Guid purchaseOrderId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdatePurchaseOrderSFirstStep(request, purchaseOrderId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates a specific purchase order by its ID.
@@ -380,6 +400,25 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.UpdatePurchaseOrder(request, purchaseOrderId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Cancels a specific purchase order by its ID.
+    /// </summary>
+    /// <param name="purchaseOrderId">The ID of the purchase order to update.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpDelete("purchase-order/{purchaseOrderId}/cancel")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CancelPurchaseOrder(Guid purchaseOrderId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CancelPurchaseOrder(purchaseOrderId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

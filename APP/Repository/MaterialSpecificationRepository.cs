@@ -49,6 +49,8 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecification(Guid id)
     {
         var materialSpec = await context.MaterialSpecifications
+            .IgnoreAutoIncludes()
+            .AsNoTracking()
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
@@ -73,6 +75,8 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(Guid materialId)
     {
         var materialSpec = await context.MaterialSpecifications
+            .IgnoreAutoIncludes()
+            .AsNoTracking()
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
