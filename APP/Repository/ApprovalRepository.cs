@@ -156,9 +156,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
 
             // Approve the stage in the actual tracked list (not the mapped one)
             var stageToApprove = requisition.Approvals.First(stage =>
-                (stage.UserId == approvableStage.UserId && stage.UserId == userId) ||
-                (stage.RoleId == approvableStage.RoleId && approvableStage.RoleId.HasValue && roleIds.Contains(approvableStage.RoleId.Value)));
-
+                stage.Status != ApprovalStatus.Approved && stage.Order == approvableStage.Order);
+            
             stageToApprove.Status = ApprovalStatus.Approved;
             stageToApprove.ApprovalTime = DateTime.UtcNow;
             stageToApprove.Comments = comments;
@@ -210,7 +209,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 foreach (var stageToActivate in newlyActiveStages)
                 {
                     var actualStage = requisition.Approvals.First(ra =>
-                        (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                        ra.Status != ApprovalStatus.Approved &&
+                        (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                     actualStage.ActivatedAt = DateTime.UtcNow;
                     context.RequisitionApprovals.Update(actualStage);
                 }
@@ -260,8 +260,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
 
                 // Approve the purchase order stage in the actual tracked list
                 var stageToApprovePo = purchaseOrder.Approvals.First(stage =>
-                    (stage.UserId == purchaseOrderApprovingStage.UserId && stage.UserId == userId) ||
-                    (stage.RoleId == purchaseOrderApprovingStage.RoleId && purchaseOrderApprovingStage.RoleId.HasValue && roleIds.Contains(purchaseOrderApprovingStage.RoleId.Value)));
+                    stage.Status != ApprovalStatus.Approved && stage.Order == purchaseOrderApprovingStage.Order);
 
                 stageToApprovePo.Status = ApprovalStatus.Approved;
                 stageToApprovePo.ApprovalTime = DateTime.UtcNow;
@@ -309,7 +308,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = purchaseOrder.Approvals.First(ra =>
-                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                            ra.Status != ApprovalStatus.Approved &&
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                         actualStage.ActivatedAt = DateTime.UtcNow;
                         context.PurchaseOrderApprovals.Update(actualStage);
                     }
@@ -355,8 +355,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
 
                 // Approve the billing sheet stage in the actual tracked list
                 var stageToApproveBs = billingSheet.Approvals.First(stage =>
-                    (stage.UserId == billingSheetApprovingStage.UserId && stage.UserId == userId) ||
-                    (stage.RoleId == billingSheetApprovingStage.RoleId && billingSheetApprovingStage.RoleId.HasValue && roleIds.Contains(billingSheetApprovingStage.RoleId.Value)));
+                    stage.Status != ApprovalStatus.Approved && stage.Order == billingSheetApprovingStage.Order);
 
                 stageToApproveBs.Status = ApprovalStatus.Approved;
                 stageToApproveBs.ApprovalTime = DateTime.UtcNow;
@@ -403,7 +402,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = billingSheet.Approvals.First(ra =>
-                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                            ra.Status != ApprovalStatus.Approved &&
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                         actualStage.ActivatedAt = DateTime.UtcNow;
                         context.BillingSheetApprovals.Update(actualStage);
                     }
@@ -450,9 +450,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 }
                 
                 // Approve the leave request stage in the actual tracked list
-                var stageToApproveSr = staffRequisition.Approvals.First(
-                    stage => (stage.UserId == staffRequisitionApprovingStage.UserId && stage.UserId == userId) ||
-                    (stage.RoleId == staffRequisitionApprovingStage.RoleId && staffRequisitionApprovingStage.RoleId.HasValue && roleIds.Contains(staffRequisitionApprovingStage.RoleId.Value)));
+                var stageToApproveSr = staffRequisition.Approvals.First(stage => 
+                    stage.Status != ApprovalStatus.Approved && stage.Order == staffRequisitionApprovingStage.Order);
 
                 stageToApproveSr.Status = ApprovalStatus.Approved;
                 stageToApproveSr.ApprovalTime = DateTime.UtcNow;
@@ -498,7 +497,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = staffRequisition.Approvals.First(ra =>
-                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                            ra.Status != ApprovalStatus.Approved &&
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                         actualStage.ActivatedAt = DateTime.UtcNow;
                         context.StaffRequisitionApprovals.Update(actualStage);
                     }
@@ -544,9 +544,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 }
                 
                 // Approve the leave request stage in the actual tracked list
-                var stageToApproveLr = leaveRequest.Approvals.First(
-                    stage => (stage.UserId == leaveRequestApprovingStage.UserId && stage.UserId == userId) ||
-                    (stage.RoleId == leaveRequestApprovingStage.RoleId && leaveRequestApprovingStage.RoleId.HasValue && roleIds.Contains(leaveRequestApprovingStage.RoleId.Value)));
+                var stageToApproveLr = leaveRequest.Approvals.First(stage =>
+                    stage.Status != ApprovalStatus.Approved && stage.Order == leaveRequestApprovingStage.Order);
 
                 stageToApproveLr.Status = ApprovalStatus.Approved;
                 stageToApproveLr.ApprovalTime = DateTime.UtcNow;
@@ -592,7 +591,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = leaveRequest.Approvals.First(ra =>
-                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                            ra.Status != ApprovalStatus.Approved &&
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                         actualStage.ActivatedAt = DateTime.UtcNow;
                         context.LeaveRequestApprovals.Update(actualStage);
                     }
@@ -638,9 +638,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 }
                 
                 // Approve the overtime request stage in the actual tracked list
-                var stageToApproveOr = overtimeRequest.Approvals.First(
-                    stage => (stage.UserId == overtimeRequestApprovingStage.UserId && stage.UserId == userId) ||
-                    (stage.RoleId == overtimeRequestApprovingStage.RoleId && overtimeRequestApprovingStage.RoleId.HasValue && roleIds.Contains(overtimeRequestApprovingStage.RoleId.Value)));
+                var stageToApproveOr = overtimeRequest.Approvals.First(stage => 
+                    stage.Status != ApprovalStatus.Approved && stage.Order == overtimeRequestApprovingStage.Order);
 
                 stageToApproveOr.Status = ApprovalStatus.Approved;
                 stageToApproveOr.ApprovalTime = DateTime.UtcNow;
@@ -686,7 +685,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = overtimeRequest.Approvals.First(ra =>
-                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                            ra.Status != ApprovalStatus.Approved &&
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                         actualStage.ActivatedAt = DateTime.UtcNow;
                         context.OvertimeRequestApprovals.Update(actualStage);
                     }
@@ -736,9 +736,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 }
                 
                 // Approve the leave request stage in the actual tracked list
-                var stageToApproveRe = response.Approvals.First(
-                    stage => (stage.UserId == responseApprovingStage.UserId && stage.UserId == userId) ||
-                    (stage.RoleId == responseApprovingStage.RoleId && responseApprovingStage.RoleId.HasValue && roleIds.Contains(responseApprovingStage.RoleId.Value)));
+                var stageToApproveRe = response.Approvals.First(stage => 
+                    stage.Status != ApprovalStatus.Approved && stage.Order == responseApprovingStage.Order);
 
                 stageToApproveRe.Status = ApprovalStatus.Approved;
                 stageToApproveRe.ApprovalTime = DateTime.UtcNow;
@@ -835,7 +834,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = response.Approvals.First(ra =>
-                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                            ra.Status != ApprovalStatus.Approved &&
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                         actualStage.ActivatedAt = DateTime.UtcNow;
                         context.ResponseApprovals.Update(actualStage);
                     }
@@ -884,9 +884,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 }
                 
                 // Approve the leave request stage in the actual tracked list
-                var stageToApproveAl = proformaInvoice.Approvals.First(
-                    stage => (stage.UserId == allocationApprovingStage.UserId && stage.UserId == userId) ||
-                    (stage.RoleId == allocationApprovingStage.RoleId && allocationApprovingStage.RoleId.HasValue && roleIds.Contains(allocationApprovingStage.RoleId.Value)));
+                var stageToApproveAl = proformaInvoice.Approvals.First(stage =>
+                    stage.Status != ApprovalStatus.Approved && stage.Order == allocationApprovingStage.Order);
 
                 stageToApproveAl.Status = ApprovalStatus.Approved;
                 stageToApproveAl.ApprovalTime = DateTime.UtcNow;
@@ -935,7 +934,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = proformaInvoice.Approvals.First(ra =>
-                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                            ra.Status != ApprovalStatus.Approved &&
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                         actualStage.ActivatedAt = DateTime.UtcNow;
                         context.ProformaInvoiceApprovals.Update(actualStage);
                     }
@@ -983,9 +983,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 }
                 
                 // Approve the leave request stage in the actual tracked list
-                var stageToApproveSd = shipmentDocument.Approvals.First(
-                    stage => (stage.UserId == shipmentDocumentApprovingStage.UserId && stage.UserId == userId) ||
-                    (stage.RoleId == shipmentDocumentApprovingStage.RoleId && shipmentDocumentApprovingStage.RoleId.HasValue && roleIds.Contains(shipmentDocumentApprovingStage.RoleId.Value)));
+                var stageToApproveSd = shipmentDocument.Approvals.First(stage => 
+                    stage.Status != ApprovalStatus.Approved && stage.Order == shipmentDocumentApprovingStage.Order);
 
                 stageToApproveSd.Status = ApprovalStatus.Approved;
                 stageToApproveSd.ApprovalTime = DateTime.UtcNow;
@@ -1033,7 +1032,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = shipmentDocument.Approvals.First(ra =>
-                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue) || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue));
+                            ra.Status != ApprovalStatus.Approved &&
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                         actualStage.ActivatedAt = DateTime.UtcNow;
                         context.ShipmentDocumentApprovals.Update(actualStage);
                     }

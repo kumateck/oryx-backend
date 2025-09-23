@@ -40,7 +40,7 @@ public class ResponsibleApprovalStage : CurrentApprovalStage
     public DateTime? ApprovalTime { get; set; }    
     public Guid? ApprovedById { get; set; }
     public User ApprovedBy { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ActivatedAt { get; set; }
     [StringLength(1000)] public string Comments { get; set; } 
 }
