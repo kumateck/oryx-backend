@@ -21,17 +21,21 @@ public class CreatePurchaseOrderRequest
     public DateTime? EstimatedDeliveryDate { get; set; }
 }
 
-public class UpdatePurchaseOrderRequest
+public class UpdatePurchaseOrderFirstStep
 {
     public string ProFormaInvoiceNumber { get; set; }
     public Guid? DeliveryModeId { get; set; }
     public Guid? TermsOfPaymentId { get; set; }
+    public DateTime? EstimatedDeliveryDate { get; set; }
+}
+
+public class UpdatePurchaseOrderRequest
+{
     public decimal TotalFobValue { get; set; }
     public decimal TotalCifValue { get; set; }
     public decimal SeaFreight { get; set; }
     public decimal Insurance { get; set; }
     public string AmountInFigures { get; set; }
-    public DateTime? EstimatedDeliveryDate { get; set; }
 }
 
 public class CreatePurchaseOrderItemRequest 
