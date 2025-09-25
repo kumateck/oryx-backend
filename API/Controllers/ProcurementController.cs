@@ -648,7 +648,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
     
     /// <summary>
-    /// Updates a specific billing sheet by its ID.
+    /// Marks charges within a billing sheet
     /// </summary>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("billing-sheet/charge")]
@@ -656,7 +656,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateBillingSheet([FromBody] List<Guid> billingSheetChargeIds)
+    public async Task<IResult> MarkBillingSheetChargeAsPaid([FromBody] List<Guid> billingSheetChargeIds)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
