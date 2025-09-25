@@ -64,6 +64,7 @@ public interface IProcurementRepository
     Task<Result<Paginateable<IEnumerable<BillingSheetDto>>>> GetBillingSheets(int page, int pageSize,
         string searchQuery, BillingSheetStatus? status);
     Task<Result> UpdateBillingSheet(CreateBillingSheetRequest request, Guid billingSheetId, Guid userId);
+     Task<Result> MarkBillingSheetChargeAsPaid(List<Guid> billingSheetChargeIds, Guid userId);
     Task<Result> DeleteBillingSheet(Guid billingSheetId, Guid userId);
         
     //************* Shipment Document ************

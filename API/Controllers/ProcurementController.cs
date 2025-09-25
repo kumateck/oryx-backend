@@ -646,6 +646,24 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.UpdateBillingSheet(request, billingSheetId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Marks charges within a billing sheet
+    /// </summary>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("billing-sheet/charge")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MarkBillingSheetChargeAsPaid([FromBody] List<Guid> billingSheetChargeIds)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.MarkBillingSheetChargeAsPaid(billingSheetChargeIds, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Deletes a specific billing sheet by its ID.

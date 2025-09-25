@@ -912,6 +912,28 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
     
+    public async Task<Result> MarkBillingSheetChargeAsPaid(List<Guid> billingSheetChargeIds, Guid userId)
+    {
+        var existingCharges = await context.Charges
+            .Where(bs => billingSheetChargeIds.Contains(bs.Id))
+            .ToListAsync();
+        
+        if (existingCharges.Count == 0)
+        {
+            return Error.NotFound("Charge.NotFound", "Billing sheet charge not found");
+        }
+
+        await context.Charges
+            .Where(bs => billingSheetChargeIds.Contains(bs.Id))
+            .ExecuteUpdateAsync(setters =>
+                setters
+                    .SetProperty(e => e.Paid, true)
+                    .SetProperty(p => p.LastUpdatedById, userId));
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
      public async Task<Result<Guid>> CreateShipmentDocument(CreateShipmentDocumentRequest request, Guid userId)
     {
         var shipmentDocument = mapper.Map<ShipmentDocument>(request);
