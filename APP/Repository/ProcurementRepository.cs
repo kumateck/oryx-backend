@@ -820,6 +820,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(i => i.Items)
             .ThenInclude(ii => ii.PurchaseOrder)
             .Include(bs => bs.Charges)
+            .ThenInclude(c => c.Charge)
+            .Include(bs => bs.Charges)
+            .ThenInclude(c => c.Currency)
             .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
         
         return billingSheet is null
@@ -846,6 +849,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(i => i.Items)
             .ThenInclude(ii => ii.PurchaseOrder)
             .Include(bs => bs.Charges)
+            .ThenInclude(c => c.Charge)
+            .Include(bs => bs.Charges)
+            .ThenInclude(c => c.Currency)
             .FirstOrDefaultAsync(bs => bs.InvoiceId == invoiceId);
         
         return billingSheet is null
