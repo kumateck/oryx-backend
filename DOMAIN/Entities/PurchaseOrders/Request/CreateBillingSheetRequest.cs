@@ -12,11 +12,21 @@ public class CreateBillingSheetRequest
     public DateTime FreeTimeExpiryDate { get; set; }
     public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
-    public List<AssignChargeRequest> Charges { get; set; } = [];
+    public List<CreateBillingSheetCharge> Charges { get; set; } = [];
     
     //container information
     public string ContainerNumber { get; set; }
     public string NumberOfPackages { get; set; } 
     public string PackageDescription { get; set; }
     public Guid? ContainerPackageStyleId { get; set; }
+}
+
+public class CreateBillingSheetCharge
+{
+    public Guid ChargeId { get; set; }
+}
+
+public class MarkBillingSheetCharge
+{
+    public List<Guid> BillingSheetChargeIds { get; set; } = [];
 }

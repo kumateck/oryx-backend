@@ -12,7 +12,6 @@ public class Charge : BaseEntity
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
     public decimal Amount { get; set; }
-    public bool Paid { get; set; }
 }
 
 public class ChargeDto 

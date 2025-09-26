@@ -1,4 +1,4 @@
-using AutoMapper;
+/*using AutoMapper;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
@@ -6,15 +6,21 @@ using INFRASTRUCTURE.Context;
 
 namespace APP.Mapper.Resolvers;
 
-public class AssignChargesResolver(ApplicationDbContext context)
-    : IValueResolver<CreateBillingSheetRequest, BillingSheet, List<Charge>>
+public class AssignBillingSheetChargesResolver(ApplicationDbContext context)
+    : IValueResolver<CreateBillingSheetRequest, BillingSheet, List<BillingSheetCharge>>
 {
-    public List<Charge> Resolve(CreateBillingSheetRequest source, BillingSheet destination, List<Charge> destMember, ResolutionContext context1)
+    public List<BillingSheetCharge> Resolve(
+        CreateBillingSheetRequest source,
+        BillingSheet destination,
+        List<BillingSheetCharge> destMember,
+        ResolutionContext context1)
     {
-        var charges = new List<Charge>();
+        var billingSheetCharges = new List<BillingSheetCharge>();
+
         foreach (var chargeRequest in source.Charges)
         {
             Charge charge;
+
             if (chargeRequest.Id != null)
             {
                 charge = context.Charges.Find(chargeRequest.Id);
@@ -23,19 +29,30 @@ public class AssignChargesResolver(ApplicationDbContext context)
                     charge.Amount = chargeRequest.Amount;
                     charge.Description = chargeRequest.Description;
                     charge.CurrencyId = chargeRequest.CurrencyId;
-                    charges.Add(charge);
+
+                    billingSheetCharges.Add(new BillingSheetCharge
+                    {
+                        ChargeId = charge.Id,
+                        Charge = charge
+                    });
+
                     continue;
                 }
             }
-            
+
             charge = new Charge
             {
                 Amount = chargeRequest.Amount,
                 Description = chargeRequest.Description,
                 CurrencyId = chargeRequest.CurrencyId
             };
-            charges.Add(charge);
+
+            billingSheetCharges.Add(new BillingSheetCharge
+            {
+                Charge = charge
+            });
         }
-        return charges;
+
+        return billingSheetCharges;
     }
-}
+}*/
