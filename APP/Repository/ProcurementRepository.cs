@@ -886,7 +886,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         );
     }
 
-    public async Task<Result> UpdateBillingSheet(CreateBillingSheetRequest request, Guid billingSheetId, Guid userId)
+    public async Task<Result> UpdateBillingSheet(UpdateBillingSheetRequest request, Guid billingSheetId, Guid userId)
     {
         var existingBillingSheet = await context.BillingSheets.FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
         if (existingBillingSheet is null)
@@ -897,6 +897,25 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         mapper.Map(request, existingBillingSheet);
         existingBillingSheet.LastUpdatedById = userId;
 
+        context.BillingSheets.Update(existingBillingSheet);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    
+    public async Task<Result> AddChargesToBillingSheet(List<CreateBillingSheetCharge> request, Guid billingSheetId, Guid userId)
+    {
+        var existingBillingSheet = await context.BillingSheets.AsSplitQuery()
+            .Include(billingSheet => billingSheet.Charges)
+            .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
+        
+        if (existingBillingSheet is null)
+        {
+            return Error.NotFound("BillingSheet.NotFound", "Billing sheet not found");
+        }
+        
+        existingBillingSheet.Charges.AddRange(mapper.Map<List<BillingSheetCharge>>(request));
+        existingBillingSheet.LastUpdatedById = userId;
         context.BillingSheets.Update(existingBillingSheet);
         await context.SaveChangesAsync();
         return Result.Success();

@@ -2,7 +2,12 @@ using DOMAIN.Entities.Charges;
 
 namespace DOMAIN.Entities.PurchaseOrders.Request;
 
-public class CreateBillingSheetRequest
+public class CreateBillingSheetRequest : UpdateBillingSheetRequest
+{
+    public List<CreateBillingSheetCharge> Charges { get; set; } = [];
+}
+
+public class UpdateBillingSheetRequest
 {
     public string Code { get; set; }
     public string BillOfLading { get; set; }
@@ -12,8 +17,6 @@ public class CreateBillingSheetRequest
     public DateTime FreeTimeExpiryDate { get; set; }
     public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
-    public List<CreateBillingSheetCharge> Charges { get; set; } = [];
-    
     //container information
     public string ContainerNumber { get; set; }
     public string NumberOfPackages { get; set; } 

@@ -638,7 +638,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateBillingSheet([FromBody] CreateBillingSheetRequest request, Guid billingSheetId)
+    public async Task<IResult> UpdateBillingSheet([FromBody] UpdateBillingSheetRequest request, Guid billingSheetId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -662,6 +662,24 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.MarkBillingSheetChargeAsPaid(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Marks charges within a billing sheet
+    /// </summary>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPost("billing-sheet/charge/{billingSheetId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddChargeToBillingSheet([FromBody] List<CreateBillingSheetCharge> request, [FromRoute] Guid billingSheetId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.AddChargesToBillingSheet(request, billingSheetId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
