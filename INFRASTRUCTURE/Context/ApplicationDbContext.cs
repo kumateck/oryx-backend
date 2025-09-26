@@ -322,6 +322,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; }
     public DbSet<PurchaseOrderInvoice> PurchaseOrderInvoices { get; set; }
     public DbSet<BillingSheet> BillingSheets { get; set; }
+    public DbSet<BillingSheetCharge> BillingSheetCharges { get; set; }
     public DbSet<BillingSheetApproval> BillingSheetApprovals { get; set; }
 
 

@@ -912,10 +912,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
     
-    public async Task<Result> MarkBillingSheetChargeAsPaid(List<Guid> billingSheetChargeIds, Guid userId)
+    public async Task<Result> MarkBillingSheetChargeAsPaid(MarkBillingSheetCharge request, Guid userId)
     {
-        var existingCharges = await context.Charges
-            .Where(bs => billingSheetChargeIds.Contains(bs.Id))
+        var existingCharges = await context.BillingSheetCharges
+            .Where(bs => request.BillingSheetChargeIds.Contains(bs.Id))
             .ToListAsync();
         
         if (existingCharges.Count == 0)
@@ -923,12 +923,13 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return Error.NotFound("Charge.NotFound", "Billing sheet charge not found");
         }
 
-        await context.Charges
-            .Where(bs => billingSheetChargeIds.Contains(bs.Id))
+        await context.BillingSheetCharges
+            .Where(bs => request.BillingSheetChargeIds.Contains(bs.Id))
             .ExecuteUpdateAsync(setters =>
                 setters
                     .SetProperty(e => e.Paid, true)
-                    .SetProperty(p => p.LastUpdatedById, userId));
+                    .SetProperty(p => p.LastUpdatedById, userId)
+                    .SetProperty(p => p.LastUpdatedOn, DateTime.UtcNow));
 
         await context.SaveChangesAsync();
         return Result.Success();

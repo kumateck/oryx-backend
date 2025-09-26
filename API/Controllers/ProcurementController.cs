@@ -656,12 +656,12 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> MarkBillingSheetChargeAsPaid([FromBody] List<Guid> billingSheetChargeIds)
+    public async Task<IResult> MarkBillingSheetChargeAsPaid([FromBody] MarkBillingSheetCharge request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.MarkBillingSheetChargeAsPaid(billingSheetChargeIds, Guid.Parse(userId));
+        var result = await repository.MarkBillingSheetChargeAsPaid(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
