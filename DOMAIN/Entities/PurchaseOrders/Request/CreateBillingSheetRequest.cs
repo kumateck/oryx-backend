@@ -24,6 +24,8 @@ public class CreateBillingSheetRequest
 public class CreateBillingSheetCharge
 {
     public Guid ChargeId { get; set; }
+    public Guid? CurrencyId { get; set; }
+    public decimal Amount { get; set; }
 }
 
 public class MarkBillingSheetCharge

@@ -54,6 +54,7 @@ public class ProductionScheduleProcurementPackageDto
 
 public class ProductionScheduleProductDto
 {
+    public Guid Id { get; set; }
     public CollectionItemDto ProductionSchedule { get; set; }
     public ProductListDto Product { get; set; }
     public decimal Quantity { get; set; }

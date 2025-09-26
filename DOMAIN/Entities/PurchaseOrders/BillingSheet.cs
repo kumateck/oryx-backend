@@ -3,6 +3,7 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Charges;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
@@ -42,6 +43,9 @@ public class BillingSheetCharge
     public Guid BillingSheetId { get; set; }
     public BillingSheet BillingSheet { get; set; }
     public bool Paid { get; set; }
+    public Guid? CurrencyId { get; set; }
+    public Currency Currency { get; set; }
+    public decimal Amount { get; set; }
     public Guid? LastUpdatedById { get; set; }
     public User LastUpdatedBy { get; set; }
     public DateTime? LastUpdatedOn { get; set; }
@@ -87,5 +91,7 @@ public class BillingSheetChargeDto
 {
     public Guid Id { get; set; }
     public ChargeDto Charge { get; set; }
+    public CurrencyDto Currency { get; set; }
+    public decimal Amount { get; set; }
     public bool Paid { get; set; }
 }
