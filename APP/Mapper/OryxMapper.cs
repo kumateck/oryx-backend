@@ -565,6 +565,7 @@ public class OryxMapper : Profile
         CreateMap<Charge,ChargeDto>();
         CreateMap<CreateChargeRequest, Charge>();
         CreateMap<CreateBillingSheetRequest, BillingSheet>();
+        CreateMap<UpdateBillingSheetRequest, BillingSheet>();
         CreateMap<CreateBillingSheetCharge, BillingSheetCharge>();
         CreateMap<BillingSheet, BillingSheetDto>()
             .ForMember(dest => dest.Attachments,
