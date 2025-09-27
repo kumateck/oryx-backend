@@ -24,4 +24,5 @@ public class BillOfMaterialItemDto
     public decimal BaseQuantity { get; set; } 
     public UnitOfMeasureDto BaseUoM { get; set; }
     public int Order { get; set; }
+    public decimal PrescribedQuantity { get; set; }
 }
