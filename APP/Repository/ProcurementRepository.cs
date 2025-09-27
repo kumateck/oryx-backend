@@ -1983,7 +1983,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     {
         try
         {
-            var invoices = await context.ShipmentInvoices
+            var invoice = await context.ShipmentInvoices
                 .AsSplitQuery()
                 .Include(s=>s.Items.Where(i=>!i.Distributed))
                 .ThenInclude(item=>item.Material)
@@ -1994,9 +1994,16 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .ThenInclude(s => s.PurchaseOrder).ThenInclude(p => p.SourceRequisition).ThenInclude(sr => sr.Items)
                 .FirstOrDefaultAsync(s => s.Id == shipmentInvoiceId);
             
+            if (invoice != null)
+            {
+                invoice.Items = invoice.Items
+                    .Where(i => !i.Distributed)
+                    .ToList();
+            }
+            
             var materialDistribution = new MaterialDistributionDto();
 
-            var distributionShipmentInvoiceItems = await GroupInvoiceItemsBasedOnMaterial(invoices);
+            var distributionShipmentInvoiceItems = await GroupInvoiceItemsBasedOnMaterial(invoice);
 
             foreach (var item in distributionShipmentInvoiceItems)
             {
@@ -2018,7 +2025,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                           && (r.Quantity - r.QuantityReceived) != 0
                           && sd.Id == shipmentDocumentId // Ensuring linkage to the shipment document
                     select r
-                ).Distinct().ToListAsync();
+                ).IgnoreQueryFilters().Distinct().ToListAsync();
 
                 if (requisitionMaterialRequests.Count == 0)
                 {
