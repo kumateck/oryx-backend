@@ -846,7 +846,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             await context.ProductionSchedules
                 .AsSplitQuery()
                 .Include(productionSchedule => productionSchedule.Products)
-                .Include(p => p.CreatedBy)
+                .Include(p => p.CreatedBy).ThenInclude(u => u.Department)
                 .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductionScheduleId);
                 
         if(productionSchedule is null)
@@ -1010,8 +1010,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (bmr is null)
             return RequisitionErrors.NotFound(request.BatchManufacturingRecordId);
         
-        var user = await context.Users.Include(user => user.Department).ThenInclude(department => department.Warehouses)
-            .ThenInclude(warehouse => warehouse.ArrivalLocation).FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await context.Users
+            .AsSplitQuery()
+            .Include(user => user.Department)
+            .ThenInclude(department => department.Warehouses)
+            .ThenInclude(warehouse => warehouse.ArrivalLocation)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        
         if (user is null)
             return UserErrors.NotFound(userId);
         

@@ -68,7 +68,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     public async Task<IResult> GetProductionSchedules([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var departmentId = (string)HttpContext.Items["Department"];
-        if (departmentId == null) return TypedResults.Unauthorized();
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
         
         var result = await repository.GetProductionSchedules(page, pageSize, searchQuery, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
