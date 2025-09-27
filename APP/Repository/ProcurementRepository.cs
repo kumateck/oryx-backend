@@ -1904,8 +1904,13 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         {
             var shipmentDocument = await context.ShipmentDocuments
                 .AsSplitQuery()
-                .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
+                .FirstOrDefaultAsync(s => s.Id == shipmentDocumentId);
 
+            if (shipmentDocument is null)
+            {
+                return Error.NotFound("ShipmentDoc.NotFound", "Shipment document not found");
+            }
+            
             var invoices = await context.ShipmentInvoices
                 .AsSplitQuery()
                 .Include(s=>s.Items.Where(i=>!i.Distributed))
@@ -1916,6 +1921,78 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 .Include(s=>s.Items.Where(i=>!i.Distributed))
                 .ThenInclude(s => s.PurchaseOrder).ThenInclude(p => p.SourceRequisition).ThenInclude(sr => sr.Items)
                 .FirstOrDefaultAsync(s => s.Id == shipmentDocument.ShipmentInvoiceId);
+            
+            var materialDistribution = new MaterialDistributionDto();
+
+            var distributionShipmentInvoiceItems = await GroupInvoiceItemsBasedOnMaterial(invoices);
+
+            foreach (var item in distributionShipmentInvoiceItems)
+            {
+                var materialDistributionSection = new MaterialDistributionSection
+                {
+                    Material = mapper.Map<MaterialDto>(item.Material),
+                    TotalQuantity = item.ReceivedQuantity,
+                    UoM = mapper.Map<UnitOfMeasureDto>(item.UoM)
+                };
+                
+                var requisitionMaterialRequests = await (
+                    from r in context.RequisitionItems
+                    join si in context.ShipmentInvoiceItems on r.MaterialId equals item.MaterialId
+                    join po in context.PurchaseOrders on si.PurchaseOrderId equals po.Id
+                    join sr in context.SourceRequisitionItems on po.SourceRequisitionId equals sr.SourceRequisitionId
+                    join sd in context.ShipmentDocuments on si.ShipmentInvoiceId equals sd.ShipmentInvoiceId
+                    where sr.RequisitionId == r.RequisitionId
+                          && r.MaterialId == item.MaterialId
+                          && (r.Quantity - r.QuantityReceived) != 0
+                          && sd.Id == shipmentDocumentId // Ensuring linkage to the shipment document
+                    select r
+                ).Distinct().ToListAsync();
+
+                if (requisitionMaterialRequests.Count == 0)
+                {
+                    return Error.Validation("Shipment.Document", "No requisitions found for this shipment doc");
+                }
+
+                foreach (var requisitionItem in requisitionMaterialRequests)
+                {
+                    var department = await GetRequisitionDepartment(requisitionItem.RequisitionId);
+                    var distributionRequisitionItem = new DistributionRequisitionItem
+                    {
+                        Department = mapper.Map<DepartmentDto>(department),
+                        RequisitionItem = mapper.Map<RequisitionItemDto>(requisitionItem),
+                        QuantityRequested = requisitionItem.Quantity
+                    };
+
+                    materialDistributionSection.Items.Add(distributionRequisitionItem);
+                }
+
+                ProcessMaterialDistributions(materialDistributionSection, mapper.Map<List<ShipmentInvoiceItemDto>>(item.ShipmentInvoiceItems.ToList()));
+                materialDistribution.Sections.Add(materialDistributionSection);
+            }
+
+            return materialDistribution;
+
+        }
+        catch(Exception ex )
+        {
+            return Error.Failure("500",ex.Message);
+        }
+    }
+    
+    private async Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId, Guid? shipmentInvoiceId)
+    {
+        try
+        {
+            var invoices = await context.ShipmentInvoices
+                .AsSplitQuery()
+                .Include(s=>s.Items.Where(i=>!i.Distributed))
+                .ThenInclude(item=>item.Material)
+                .Include(s=>s.Items.Where(i=>!i.Distributed))
+                .ThenInclude(items=>items.Manufacturer)
+                .Include(s=>s.Supplier)
+                .Include(s=>s.Items.Where(i=>!i.Distributed))
+                .ThenInclude(s => s.PurchaseOrder).ThenInclude(p => p.SourceRequisition).ThenInclude(sr => sr.Items)
+                .FirstOrDefaultAsync(s => s.Id == shipmentInvoiceId);
             
             var materialDistribution = new MaterialDistributionDto();
 
@@ -2004,10 +2081,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
         }
         
-        var materialDistributionResult = await GetMaterialDistribution(shipmentDocumentId);
+        var materialDistributionResult = await GetMaterialDistribution(shipmentDocumentId, shipmentDocument.ShipmentInvoiceId);
         if (!materialDistributionResult.IsSuccess)
         {
-            return Error.NotFound("MaterialDistribution.NotFound", "Material distribution not found for this shipment document.");
+            return materialDistributionResult.Error;
         }
 
         var materialDistribution = materialDistributionResult.Value.Sections.First(s => s.Material.Id == materialId);
@@ -2110,7 +2187,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
         }
 
-        var materialDistributionResult = await GetMaterialDistribution(shipmentDocumentId);
+        var materialDistributionResult = await GetMaterialDistribution(shipmentDocumentId, shipmentDocument.ShipmentInvoiceId);
         if (!materialDistributionResult.IsSuccess)
         {
             return Error.NotFound("MaterialDistribution.NotFound", "Material distribution not found for this shipment document.");
