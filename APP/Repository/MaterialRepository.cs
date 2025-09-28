@@ -2126,7 +2126,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     public async Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(int page,
-        int pageSize, string searchQuery, bool withProcessed, Guid userId, MaterialKind? kind)
+        int pageSize, string searchQuery, bool withProcessed, Guid departmentId, MaterialKind? kind)
     {
         var query = context.HoldingMaterialTransfers
             .AsSplitQuery()
@@ -2139,7 +2139,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(b => b.SourceWarehouse)
             .Include(m => m.Batches)
                 .ThenInclude(b => b.DestinationWarehouse)
-            .Where(q => q.Batches.Select(b => b.DestinationWarehouse.DepartmentId).Contains(userId))            
+            .Where(q => q.Batches.Select(b => b.DestinationWarehouse.DepartmentId).Contains(departmentId))            
             .AsQueryable();
         
         query = withProcessed ? query : query.Where(q => q.Status == HoldingMaterialTransferStatus.Pending);
