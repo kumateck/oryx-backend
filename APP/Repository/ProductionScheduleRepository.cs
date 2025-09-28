@@ -903,7 +903,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
         
-        var materialDetails = product.Packages.Select(item =>
+        var materialDetails = product.Packages
+            .Where(p => p.ProductPackingId == productionScheduleProduct.ProductPackingId || !p.ProductPackingId.HasValue)
+            .Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
             var quantityNeeded = batchSize == BatchSize.Full ? item.PrescribedQuantity + item.Loose : item.PrescribedQuantity / 2 + item.Loose;

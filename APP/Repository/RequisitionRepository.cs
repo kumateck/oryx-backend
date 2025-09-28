@@ -104,7 +104,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 var requisition = mapper.Map<Requisition>(request);
                 requisition.Code = $"{prefix}/{beta}/{year}/{count:D3}";
                 requisition.RequestedById = userId;
-                requisition.DepartmentId = user.DepartmentId.Value;
+                requisition.DepartmentId = department.Id;
                 requisition.Items = mapper.Map<List<RequisitionItem>>(items);
                 await context.Requisitions.AddAsync(requisition);
                 return requisition.Id;
