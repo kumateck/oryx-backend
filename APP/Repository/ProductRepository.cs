@@ -502,7 +502,7 @@ namespace APP.Repository;
                 existing.ProductId = productId;
 
                 // Remove old packing lists and replace with new
-                context.RemoveRange(existing.PackingLists);
+                existing.PackingLists.Clear();
 
                 existing.PackingLists = incomingPacking.PackingLists
                     .Select(mapper.Map<ProductPackingList>)
