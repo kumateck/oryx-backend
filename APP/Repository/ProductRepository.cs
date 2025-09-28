@@ -485,20 +485,52 @@ namespace APP.Repository;
         {
             return ProductErrors.NotFound(productId);
         }
-        
-        
-        if (product.Packings.Count != 0)
+
+        // Existing packings for the product
+        var existingPackings = product.Packings.ToList();
+
+        // Packings from request grouped by name
+        foreach (var incomingPacking in request)
         {
-            context.ProductPackings.RemoveRange(product.Packings);
+            var existing = existingPackings.FirstOrDefault(p => 
+                p.Name.Equals(incomingPacking.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
+            {
+                // Update properties
+                mapper.Map(incomingPacking, existing); 
+                existing.ProductId = productId;
+
+                // Remove old packing lists and replace with new
+                context.RemoveRange(existing.PackingLists);
+
+                existing.PackingLists = incomingPacking.PackingLists
+                    .Select(mapper.Map<ProductPackingList>)
+                    .ToList();
+
+                // Mark as updated
+                context.ProductPackings.Update(existing);
+            }
+            else
+            {
+                // Add new packing
+                var productPacking = mapper.Map<ProductPacking>(incomingPacking);
+                productPacking.ProductId = productId;
+                await context.ProductPackings.AddAsync(productPacking);
+            }
         }
 
-        foreach (var packing in request)
+        // Delete packings not present in the new request
+        var incomingNames = request.Select(r => r.Name.ToLower()).ToHashSet();
+        var toRemove = existingPackings
+            .Where(p => !incomingNames.Contains(p.Name.ToLower()))
+            .ToList();
+
+        if (toRemove.Count > 0)
         {
-            var productPacking = mapper.Map<ProductPacking>(packing);
-            productPacking.ProductId = productId;
-            await context.ProductPackings.AddAsync(productPacking);
+            context.ProductPackings.RemoveRange(toRemove);
         }
-        
+
         await context.SaveChangesAsync();
         return product.Id;
     }

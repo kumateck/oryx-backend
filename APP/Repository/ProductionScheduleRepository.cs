@@ -39,6 +39,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         {
             return Error.Validation("ProductionSchedule.Validation", "Scheduled end time cannot be before current time");
         }
+
+        if (await context.ProductionSchedules.AnyAsync(p => p.Code.ToLower() == request.Code.ToLower()))
+        {
+            return Error.Validation("ProductionSchedule.ProductionSchedule", "Code is already in use");
+        }
         
         var productionSchedule = mapper.Map<ProductionSchedule>(request);
         var user = await context.Users.FirstOrDefaultAsync(u  => u.Id == userId);
@@ -59,7 +64,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var productionSchedule = await context.ProductionSchedules
             .AsSplitQuery()
             .Include(s => s.Products).ThenInclude(s => s.Product)
-            .Include(s => s.Products).ThenInclude(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
+            .Include(s => s.Products)
+            .ThenInclude(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
         return productionSchedule is null ? Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found") : mapper.Map<ProductionScheduleDto>(productionSchedule);
@@ -1743,6 +1749,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransfers
+            .IgnoreQueryFilters()
             .Include(st => st.Sources).ThenInclude(s => s.FromDepartment)
             .Include(st => st.Sources).ThenInclude(s => s.ToDepartment)
             .Include(st => st.Material)
@@ -1787,6 +1794,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransferSources
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(s => s.FromDepartment)
             .Include(s => s.ToDepartment)
@@ -1828,6 +1836,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransferSources
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(s => s.FromDepartment)
             .Include(s => s.ToDepartment)

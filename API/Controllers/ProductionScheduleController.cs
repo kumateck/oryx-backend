@@ -661,6 +661,25 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Retrieves a list of Stock Transfers with optional filters.
     /// </summary>
+    [HttpGet("stock-transfer/user")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StockTransferDto>>))]
+    public async Task<IResult> GetStockTransfersForUserDepartment([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null, 
+        [FromQuery] StockTransferStatus? status = null, 
+        [FromQuery] Guid? toDepartmentId = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetStockTransfersForUserDepartment(Guid.Parse(userId),page, pageSize, searchQuery, status);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of Stock Transfers with optional filters.
+    /// </summary>
     [HttpGet("stock-transfer/in-bound")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentStockTransferDto>>))]
