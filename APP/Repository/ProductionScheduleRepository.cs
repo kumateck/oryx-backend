@@ -1743,6 +1743,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransfers
+            .IgnoreQueryFilters()
             .Include(st => st.Sources).ThenInclude(s => s.FromDepartment)
             .Include(st => st.Sources).ThenInclude(s => s.ToDepartment)
             .Include(st => st.Material)
@@ -1787,6 +1788,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransferSources
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(s => s.FromDepartment)
             .Include(s => s.ToDepartment)
@@ -1828,6 +1830,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return UserErrors.NotFound(userId);
         
         var query = context.StockTransferSources
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(s => s.FromDepartment)
             .Include(s => s.ToDepartment)
