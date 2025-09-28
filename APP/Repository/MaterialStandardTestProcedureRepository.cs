@@ -69,6 +69,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
     public async Task<Result<MaterialStandardTestProcedureDto>> GetMaterialStandardTestProcedure(Guid id)
     {
         var procedure = await context.MaterialStandardTestProcedures
+            .AsSplitQuery()
             .Include(stp => stp.Material)
             .FirstOrDefaultAsync(stp => stp.Id == id);
         
@@ -76,6 +77,19 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found") : 
             mapper.Map<MaterialStandardTestProcedureDto>(procedure
             , opts => {opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure);});
+    }
+    
+    public async Task<Result<MaterialStandardTestProcedureDto>> GetMaterialStandardTestProcedureByMaterial(Guid id)
+    {
+        var procedure = await context.MaterialStandardTestProcedures
+            .AsSplitQuery()
+            .Include(stp => stp.Material)
+            .FirstOrDefaultAsync(stp => stp.MaterialId == id);
+        
+        return procedure is null ? 
+            Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found") : 
+            mapper.Map<MaterialStandardTestProcedureDto>(procedure
+                , opts => {opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure);});
     }
     
     public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotUsedInStandardTestProcedure(int page, int pageSize, string searchQuery, MaterialKind kind)

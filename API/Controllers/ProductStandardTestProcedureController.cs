@@ -49,6 +49,18 @@ public class ProductStandardTestProcedureController(IProductStandardTestProcedur
     }
     
     /// <summary>
+    /// Retrieves the details of a specific standard test procedure by its ID.
+    /// </summary>
+    [HttpGet("{productId:guid}/product")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductStandardTestProcedureDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStandardTestProcedureByProduct([FromRoute] Guid productId)
+    {
+        var result = await repository.GetProductStandardTestProcedureByProduct(productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Updates the details of an existing standard test procedure.
     /// </summary>
     [HttpPut("{id:guid}")]

@@ -50,6 +50,18 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     }
     
     /// <summary>
+    /// Retrieves the details of a specific material standard test procedure by its ID.
+    /// </summary>
+    [HttpGet("{materialId:guid}/material")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialStandardTestProcedureDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStandardTestProcedureByMaterial([FromRoute] Guid materialId)
+    {
+        var result = await repository.GetMaterialStandardTestProcedureByMaterial(materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Updates the details of an existing material standard test procedure.
     /// </summary>
     [HttpPut("{id:guid}")]
