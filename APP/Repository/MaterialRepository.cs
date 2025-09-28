@@ -2129,6 +2129,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         int pageSize, string searchQuery, bool withProcessed, Guid departmentId, MaterialKind? kind)
     {
         var query = context.HoldingMaterialTransfers
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(m => m.Batches)
                 .ThenInclude(b => b.MaterialBatch)
