@@ -60,6 +60,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     public async Task<Result<ProductStandardTestProcedureDto>> GetProductStandardTestProcedure(Guid id)
     {
         var procedure = await context.ProductStandardTestProcedures
+            .AsSplitQuery()
             .Include(stp => stp.Product)
             .FirstOrDefaultAsync(stp => stp.Id == id);
         
@@ -67,6 +68,19 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             Error.NotFound("ProductStandardTestProcedure.NotFound", "Product Standard test procedure not found") : 
             mapper.Map<ProductStandardTestProcedureDto>(procedure
             , opts => {opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure);});
+    }
+    
+    public async Task<Result<ProductStandardTestProcedureDto>> GetProductStandardTestProcedureByProduct(Guid id)
+    {
+        var procedure = await context.ProductStandardTestProcedures
+            .AsSplitQuery()
+            .Include(stp => stp.Product)
+            .FirstOrDefaultAsync(stp => stp.ProductId == id);
+        
+        return procedure is null ? 
+            Error.NotFound("ProductStandardTestProcedure.NotFound", "Product Standard test procedure not found") : 
+            mapper.Map<ProductStandardTestProcedureDto>(procedure
+                , opts => {opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure);});
     }
     
     public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProductsNotUsedInStandardTestProcedure(int page, int pageSize, string searchQuery)
