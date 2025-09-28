@@ -631,10 +631,10 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? kind = null)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
         
-        var result = await repository.GetHoldingMaterialTransfers(page, pageSize, searchQuery, withProcessed, Guid.Parse(userId), kind);
+        var result = await repository.GetHoldingMaterialTransfers(page, pageSize, searchQuery, withProcessed, Guid.Parse(departmentId), kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
