@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Background;
@@ -9,7 +8,6 @@ using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Notifications;
-using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -27,7 +25,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMaterialRepository materialRepository, IBackgroundWorkerService backgroundWorkerService, IApprovalRepository approvalRepository) 
+public class ProductionScheduleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMaterialRepository materialRepository, IBackgroundWorkerService backgroundWorkerService) 
     : IProductionScheduleRepository
 {
     public async Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId) 
@@ -42,7 +40,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.Validation("ProductionSchedule.Validation", "Scheduled end time cannot be before current time");
         }
         
-        var productionSchedule = mapper.Map<ProductionSchedule>(request); 
+        var productionSchedule = mapper.Map<ProductionSchedule>(request);
+        var user = await context.Users.FirstOrDefaultAsync(u  => u.Id == userId);
+        if(user is null) return UserErrors.NotFound(userId);
+        
+        if(user.DepartmentId is null) return UserErrors.DepartmentNotFound;
+        
+        productionSchedule.DepartmentId = user.DepartmentId;
         productionSchedule.CreatedById = userId;
         await context.ProductionSchedules.AddAsync(productionSchedule); 
         await context.SaveChangesAsync();
@@ -716,7 +720,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             await context.ProductionSchedules
                 .AsSplitQuery()
                 .Include(productionSchedule => productionSchedule.Products)
-                .Include(p => p.CreatedBy)
+                .Include(p => p.Department).Include(baseEntity => baseEntity.CreatedBy)
                 .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductionScheduleId);
         if(productionSchedule is null)
             return ProductErrors.NotFound(productionScheduleProduct.ProductionScheduleId);
@@ -731,14 +735,15 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("Product.BoM", "No active bom found for this product");
 
         var user = productionSchedule.CreatedBy;
-        if (user is null)
-            return Error.NotFound("Product.CreatedBy", "No user found for this production scheduled");
+        var department = productionSchedule.Department ?? user.Department;
+        if (department is null)
+            return Error.NotFound("Product.Department", "No department found for this production scheduled");
         
         var stockLevels = new Dictionary<Guid, decimal>();
-        if (user.Department == null)
+        if (department == null)
             return Error.NotFound("User.Department", "User has no association to any department");
         
-        if(user.Department.Warehouses.Count == 0)
+        if(department.Warehouses.Count == 0)
             return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
         
         var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.RawMaterialStorage);
@@ -846,25 +851,23 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             await context.ProductionSchedules
                 .AsSplitQuery()
                 .Include(productionSchedule => productionSchedule.Products)
-                .Include(p => p.CreatedBy)
+                .Include(p => p.CreatedBy).ThenInclude(u => u.Department)
+                .Include(productionSchedule => productionSchedule.Department)
                 .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductionScheduleId);
                 
         if(productionSchedule is null)
             return ProductErrors.NotFound(productionScheduleProduct.ProductionScheduleId);
         
-        var user = productionSchedule.CreatedBy;
-        if (user is null)
-            return Error.NotFound("Product.CreatedBy", "No user found for this production scheduled");
-
-        //var quantityRequired = productionSchedule.Products.First(p => p.ProductId == productId).Quantity;
-
         var batchSize = productionScheduleProduct.BatchSize;
-        
         var stockLevels = new Dictionary<Guid, decimal>();
-        if (user.Department == null)
-            return Error.NotFound("User.Department", "User has no association to any department");
         
-        if(user.Department.Warehouses.Count == 0)
+        var user = productionSchedule.CreatedBy;
+        var department = productionSchedule.Department ?? user.Department;
+        
+        if (department is null)
+            return Error.NotFound("Product.Department", "No department found for this production scheduled");
+        
+        if(department.Warehouses.Count == 0)
             return Error.NotFound("User.Warehouse", "No package material warehouse is associated with current user");
         
         var warehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.PackagedStorage);
@@ -929,12 +932,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return materialDetails;
     }
     
-    private static decimal CalculateRequiredItemQuantity(decimal targetProductQuantity, decimal itemBaseQuantity, decimal productBaseQuantity)
-    {
-        return Math.Round(targetProductQuantity * itemBaseQuantity / productBaseQuantity, 2);
-    }
+    // private static decimal CalculateRequiredItemQuantity(decimal targetProductQuantity, decimal itemBaseQuantity, decimal productBaseQuantity)
+    // {
+    //     return Math.Round(targetProductQuantity * itemBaseQuantity / productBaseQuantity, 2);
+    // }
     
-    private decimal GetQuantityNeeded(ProductPackage item, List<ProductPackage> allPackages, decimal quantityRequired, decimal basePackingQuantity, HashSet<Guid> visitedMaterials = null)
+    /*private decimal GetQuantityNeeded(ProductPackage item, List<ProductPackage> allPackages, decimal quantityRequired, decimal basePackingQuantity, HashSet<Guid> visitedMaterials = null)
     {
         visitedMaterials ??= [];
 
@@ -963,7 +966,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
         // Recursively calculate, now with a visited set to prevent infinite loops
         return GetQuantityNeeded(linkedPackage, allPackages, quantityRequired, basePackingQuantity, visitedMaterials) / item.UnitCapacity;
-    }
+    }*/
     
      public async Task<Result<Guid>> CreateBatchManufacturingRecord(CreateBatchManufacturingRecord request)
     {
@@ -1010,8 +1013,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (bmr is null)
             return RequisitionErrors.NotFound(request.BatchManufacturingRecordId);
         
-        var user = await context.Users.Include(user => user.Department).ThenInclude(department => department.Warehouses)
-            .ThenInclude(warehouse => warehouse.ArrivalLocation).FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await context.Users
+            .AsSplitQuery()
+            .Include(user => user.Department)
+            .ThenInclude(department => department.Warehouses)
+            .ThenInclude(warehouse => warehouse.ArrivalLocation)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        
         if (user is null)
             return UserErrors.NotFound(userId);
         

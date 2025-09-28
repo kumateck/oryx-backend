@@ -707,7 +707,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }
     }
 
-    public bool ShouldNotFilterProducts => currentUserService.DepartmentType == DepartmentType.NonProduction.ToString();
+    public bool ShouldNotFilterProducts => currentUserService.DepartmentType == nameof(DepartmentType.NonProduction);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

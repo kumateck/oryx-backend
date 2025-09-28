@@ -25,7 +25,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     public async Task<IResult> GetProductionReport([FromQuery] ReportFilter filter)
     {
         var departmentId = (string)HttpContext.Items["Department"];
-        if (departmentId == null) return TypedResults.Unauthorized();
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
         
         var result = await repository.GetProductionReport(filter, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -40,7 +40,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     public async Task<IResult> GetMaterialsBelowMinimumStockLevel()
     {
         var departmentId = (string)HttpContext.Items["Department"];
-        if (departmentId == null) return TypedResults.Unauthorized();
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
         
         var result = await repository.GetMaterialsBelowMinimumStockLevel(Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -55,7 +55,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     public async Task<IResult> GetWarehouseReport([FromQuery] ReportFilter filter)
     {
         var departmentId = (string)HttpContext.Items["Department"];
-        if (departmentId == null) return TypedResults.Unauthorized();
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
         var result = await repository.GetWarehouseReport(filter, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -85,7 +85,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     public async Task<IResult> GetReservedMaterialBatches([FromQuery] ReportFilter filter)
     {
         var departmentId = (string)HttpContext.Items["Department"];
-        if (departmentId == null) return TypedResults.Unauthorized();
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
         var result = await repository.GetReservedMaterialBatchesForDepartment(filter, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -192,7 +192,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     public async Task<IResult> GetMaterialsReadyForAssignment([FromQuery] ReportFilter filter)
     {
         var departmentId = (string)HttpContext.Items["Department"];
-        if (departmentId == null) return TypedResults.Unauthorized();
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
         var result = await repository.GetMaterialsReadyForAssignment(filter, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

@@ -71,7 +71,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null, [FromQuery] MaterialKind? kind = null)
     {
         var departmentId = (string)HttpContext.Items["Department"];
-        if (departmentId == null) return TypedResults.Unauthorized();
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
         
         var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, Guid.Parse(departmentId), kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

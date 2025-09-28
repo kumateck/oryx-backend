@@ -77,7 +77,7 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"), 
             new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-            new("department", user.DepartmentId?.ToString() ?? ""),
+            new("department", user.DepartmentId.ToString()),
             new("environment",  Environment.GetEnvironmentVariable("Environment") ?? "dev"),
             new("departmentType", mainRole?.Type.ToString() ?? "")
         }; 

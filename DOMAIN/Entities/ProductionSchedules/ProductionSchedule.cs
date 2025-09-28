@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
@@ -16,6 +17,8 @@ public class ProductionSchedule : BaseEntity
     public DateTime ScheduledEndTime { get; set; }
     public ProductionStatus Status { get; set; } 
     [StringLength(1000)] public string Remarks { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public Department Department { get; set; }
     public List<ProductionScheduleProduct> Products { get; set; } = [];
 }
 
