@@ -19,6 +19,7 @@ public class CreatePurchaseOrderRequest
     public decimal Insurance { get; set; }
     public string AmountInFigures { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
+    public Guid? DepartmentId { get; set; }
 }
 
 public class UpdatePurchaseOrderFirstStep

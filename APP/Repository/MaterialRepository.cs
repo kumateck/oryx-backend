@@ -1,3 +1,4 @@
+using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -2043,7 +2044,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.ReOrderLevel.ToString(), q => q.Material.Name);
+            query = query.WhereSearch(searchQuery, q => q.ReOrderLevel.ToString(CultureInfo.InvariantCulture), q => q.Material.Name);
         }
 
         if (!user.DepartmentId.HasValue)
@@ -2085,7 +2086,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 return Error.NotFound("Warehouse", "Warehouse not found");
             }
 
-            var warehouseStockResult = await GetMassMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
+            var warehouseStockResult = await GetShelfMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
             if (warehouseStockResult.IsFailure) continue;
 
             result.WarehouseStock = warehouseStockResult.Value;

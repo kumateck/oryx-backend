@@ -1581,6 +1581,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         // Combine and select distinct suppliers
         var suppliers = notLinkedPurchaseOrders
             .Concat(partiallyUsedPurchaseOrders)
+            .Where(p => p.Status == PurchaseOrderStatus.Completed)
             .Select(po => po.Supplier)
             .DistinctBy(s => s.Id)
             .ToList();

@@ -3,6 +3,7 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Requisitions;
@@ -38,6 +39,8 @@ public class PurchaseOrder : BaseEntity, IRequireApproval
     [StringLength(100)] public string AmountInFigures { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
     public List<PurchaseOrderApproval>  Approvals { get; set; } = [];
+    public Guid? DepartmentId { get; set; }
+    public Department Department { get; set; }
     public bool Approved { get; set; }
 }
 
