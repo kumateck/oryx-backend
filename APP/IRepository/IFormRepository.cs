@@ -20,7 +20,7 @@ public interface IFormRepository
    Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId);
    Task<Result<QuestionDto>> GetQuestion(Guid questionId);
    Task<Result<Paginateable<IEnumerable<QuestionDto>>>>
-       GetQuestions(List<FormFilter> filter);
+       GetQuestions(FormFilter filter);
    Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId);
    Task<Result> DeleteQuestion(Guid id, Guid userId);
    Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId);

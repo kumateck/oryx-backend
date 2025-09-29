@@ -61,9 +61,10 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             query = query.WhereSearch(filter.SearchQuery, f => f.Name, f => f.CreatedBy.FirstName, f => f.CreatedBy.LastName);
         }
 
-        if (filter.Type.HasValue)
+        if (filter.Type != null && filter.Type.Count != 0)
         {
-            query = query.Where(q => q.Type == filter.Type);
+            var typesToFilter = filter.Type.Where(t => t.HasValue).Select(t => t.Value).ToList();
+            query = query.Where(q => typesToFilter.Contains(q.Type));
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -483,20 +484,32 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     {
         return mapper.Map<QuestionDto>(await context.Questions.FirstOrDefaultAsync(q => q.Id == questionId));
     }
-    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(List<FormFilter> filters)
+    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(FormFilter filter)
     {
         var query = context.Questions
             .AsSplitQuery()
             .OrderByDescending(f => f.CreatedAt)
             .AsQueryable();
-        
-        query = filters.Where(filter => !string.IsNullOrEmpty(filter.SearchQuery)).Aggregate(query, (current, filter) => current.WhereSearch(filter.SearchQuery, q => q.Label, q => q.CreatedBy.FirstName, q => q.CreatedBy.LastName));
-        
-        var paginationFilter = filters.FirstOrDefault() ?? new FormFilter();
+
+        if (!string.IsNullOrEmpty(filter.SearchQuery))
+        {
+            query = query.WhereSearch(filter.SearchQuery, q => q.Label, q => q.CreatedBy.FirstName, q => q.CreatedBy.LastName);
+        }
+
+        if (filter.Type == null || filter.Type.Count == 0)
+            return await PaginationHelper.GetPaginatedResultAsync(
+                query,
+                filter,
+                mapper.Map<QuestionDto>
+            );
+        {
+            var typesToFilter = filter.Type.Where(t => t.HasValue).Select(t => t.Value).ToList();
+            query = query.Where(q => typesToFilter.Contains((FormType)q.Type));
+        }
 
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
-            paginationFilter,
+            filter,
             mapper.Map<QuestionDto>
         );
     }
