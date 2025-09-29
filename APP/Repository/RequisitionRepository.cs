@@ -1187,11 +1187,15 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             {
                 return Error.Validation("SourceRequisition.Materials", "Quotation contains materials that are not in the source requisition.");
             }
+            
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user is null) return UserErrors.NotFound(userId);
 
             var poId = (await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
             {
                 Code = await GeneratePurchaseOrderCode(),
                 SupplierId = quotation.SupplierId,
+                DepartmentId = user.DepartmentId,
                 SourceRequisitionId = quotation.SourceRequisitionId,
                 RequestDate = DateTime.UtcNow,
                 Items = quotation.Items
