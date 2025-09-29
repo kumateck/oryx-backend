@@ -67,6 +67,7 @@ public class Response : BaseEntity, IRequireApproval
     public User CheckedBy { get; set; }
     public DateTime? CheckedAt { get; set; }
     public bool Approved { get; set; }
+    public bool Rejected { get; set; }
 }
 
 public class FormResponse : BaseEntity
