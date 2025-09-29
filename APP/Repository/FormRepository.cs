@@ -61,12 +61,15 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             query = query.WhereSearch(filter.SearchQuery, f => f.Name, f => f.CreatedBy.FirstName, f => f.CreatedBy.LastName);
         }
 
-        if (filter.Type != null && filter.Type.Count != 0)
-        {
-            var typesToFilter = filter.Type.Where(t => t.HasValue).Select(t => t.Value).ToList();
-            query = query.Where(q => typesToFilter.Contains(q.Type));
-        }
-        
+        if (filter.Type == null || filter.Type.Count == 0)
+            return await PaginationHelper.GetPaginatedResultAsync(
+                query,
+                filter,
+                mapper.Map<FormDto>
+            );
+        var typesToFilter = filter.Type.Where(t => t.HasValue).Select(t => t.Value).ToList();
+        query = query.Where(q => typesToFilter.Contains((QuestionType) q.Type));
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             filter,
@@ -504,7 +507,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             );
         {
             var typesToFilter = filter.Type.Where(t => t.HasValue).Select(t => t.Value).ToList();
-            query = query.Where(q => typesToFilter.Contains((FormType)q.Type));
+            query = query.Where(q => typesToFilter.Contains((QuestionType)q.Type));
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
