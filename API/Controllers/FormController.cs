@@ -185,7 +185,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     [HttpGet("question")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<QuestionDto>>))]
-    public async Task<IResult> GetQuestions([FromQuery] FormFilter filter)
+    public async Task<IResult> GetQuestions([FromQuery] List<FormFilter> filter)
     {
         var result = await repository.GetQuestions(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
