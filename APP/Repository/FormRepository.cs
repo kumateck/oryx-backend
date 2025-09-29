@@ -495,12 +495,18 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             query = query.WhereSearch(filter.SearchQuery, q => q.Label, q => q.CreatedBy.FirstName, q => q.CreatedBy.LastName);
         }
 
-        if (filter.Type == null || filter.Type.Count == 0)
-            return await PaginationHelper.GetPaginatedResultAsync(
-                query,
-                filter,
-                mapper.Map<QuestionDto>
-            );
+        if (filter.FormType.HasValue)
+        {
+            query = filter.FormType.Value switch
+            {
+                FormType.Default => query.Where(q => q.Type != QuestionType.Specification),
+                FormType.Specification => query.Where(q => q.Type == QuestionType.Specification),
+                _ => query
+            };
+        }
+
+
+        if (filter.Type.Count != 0)
         {
             var typesToFilter = filter.Type.Where(t => t.HasValue).Select(t => t.Value).ToList();
             query = query.Where(q => typesToFilter.Contains(q.Type));
