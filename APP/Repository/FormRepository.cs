@@ -483,8 +483,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     {
         return mapper.Map<QuestionDto>(await context.Questions.FirstOrDefaultAsync(q => q.Id == questionId));
     }
-
-    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(FormFilter filter)
+    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(QuestionFilter filter)
     {
         var query = context.Questions
             .AsSplitQuery()
@@ -495,7 +494,18 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         {
             query = query.WhereSearch(filter.SearchQuery, q => q.Label, q => q.CreatedBy.FirstName, q => q.CreatedBy.LastName);
         }
-        
+
+        if (filter.Type == null || filter.Type.Count == 0)
+            return await PaginationHelper.GetPaginatedResultAsync(
+                query,
+                filter,
+                mapper.Map<QuestionDto>
+            );
+        {
+            var typesToFilter = filter.Type.Where(t => t.HasValue).Select(t => t.Value).ToList();
+            query = query.Where(q => typesToFilter.Contains(q.Type));
+        }
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             filter,
