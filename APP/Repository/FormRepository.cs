@@ -288,10 +288,13 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
         
-    public async Task<Result<ResponseDto>> GetFormResponse(Guid formResponseId)
+    public async Task<Result<ResponseDetailDto>> GetFormResponse(Guid formResponseId)
     {
         var formResponse = await context.Responses
             .AsSplitQuery()
+            .Include(fr => fr.BatchManufacturingRecord)
+            .Include(fr => fr.MaterialBatch)
+            .Include(fr => fr.CheckedBy)
             .Include(fr => fr.Form)
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.FormResponses)
@@ -303,7 +306,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         if (formResponse == null)
             return FormErrors.NotFound(formResponseId);
 
-        return mapper.Map<ResponseDto>(formResponse);
+        return mapper.Map<ResponseDetailDto>(formResponse);
     }
     
     public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(Guid materialBatchId)

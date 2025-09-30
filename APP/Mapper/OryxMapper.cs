@@ -149,7 +149,9 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocation, CollectionItemDto>();
         CreateMap<WarehouseLocationRack, CollectionItemDto>();
         CreateMap<WarehouseLocationShelf, CollectionItemDto>();
-        CreateMap<MaterialBatch, CollectionItemDto>();
+        CreateMap<MaterialBatch, CollectionItemDto>()
+            .ForMember(dest => dest.Code,
+                opt => opt.MapFrom(src => src.BatchNumber));
         CreateMap<SourceRequisition, CollectionItemDto>();
         CreateMap<Requisition, CollectionItemDto>();
         CreateMap<Currency, CollectionItemDto>();
@@ -182,7 +184,9 @@ public class OryxMapper : Profile
         CreateMap<Customer, CollectionItemDto>();
         CreateMap<ItemCategory, CollectionItemDto>();
         CreateMap<ProductionOrder, CollectionItemDto>();
-        
+        CreateMap<BatchManufacturingRecord, CollectionItemDto>()
+            .ForMember(dest => dest.Code,
+                opt => opt.MapFrom(src => src.BatchNumber));
         #endregion
 
         #region Operation
@@ -639,6 +643,9 @@ public class OryxMapper : Profile
         CreateMap<FormSection, FormSectionDto>();
         CreateMap<FormField, FormFieldDto>();
         CreateMap<Response, ResponseDto>()
+            .ForMember(dest => dest.FormResponses,
+                opt => opt.MapFrom<FormResponseAttachmentResolver>());
+        CreateMap<Response, ResponseDetailDto>()
             .ForMember(dest => dest.FormResponses,
                 opt => opt.MapFrom<FormResponseAttachmentResolver>());
         CreateMap<FormResponse, FormResponseDto>()

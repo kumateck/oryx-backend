@@ -41,6 +41,14 @@ public class ResponseDto : BaseDto
     public CollectionItemDto Form { get; set; }
     public List<FormResponseDto> FormResponses { get; set; } = [];
 }
+public class ResponseDetailDto : ResponseDto
+{
+    public CollectionItemDto BatchManufacturingRecord { get; set; }
+    public CollectionItemDto MaterialBatch { get; set; }
+    public UserDto CheckedBy { get; set; }
+    public DateTime? CheckedAt { get; set; }
+}
+
 
 public class FormResponseDto :  WithAttachment
 {
