@@ -15,7 +15,7 @@ public class MaterialBatchDto
     public CollectionItemDto Material { get; set; }
     public string BatchNumber { get; set; }
     public BatchChecklistDto Checklist { get; set; }
-    public MaterialBatchStockTransferSourceDto StockTransferSource { get; set; }
+    public MaterialBatchStockTransferDto StockTransfer { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public int NumberOfContainers { get; set; }
     public PackageStyleDto ContainerPackageStyle { get; set; }

@@ -2230,7 +2230,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
             
-            materialBatch.StockTransferSourceId = holdingMaterial.StockTransferId;
+            materialBatch.StockTransferId = holdingMaterial.StockTransferId;
             
             context.MaterialBatches.Update(materialBatch);
 
