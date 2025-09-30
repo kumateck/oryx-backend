@@ -1703,38 +1703,37 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId)
     {
         // Get all movements for this material
-        var batchMovements = await context.MassMaterialBatchMovements
+        var shelfMaterialBatches = await context.ShelfMaterialBatches
             .IgnoreQueryFilters()
-            .Where(m => m.Batch.MaterialId == materialId)
-            .Include(m => m.ToWarehouse)
-            .Include(m => m.FromWarehouse)
+            .AsSplitQuery()
+            .Include(m => m.MaterialBatch).Include(shelfMaterialBatch => shelfMaterialBatch.WarehouseLocationShelf)
+            .ThenInclude(warehouseLocationShelf => warehouseLocationShelf.WarehouseLocationRack)
+            .ThenInclude(warehouseLocationRack => warehouseLocationRack.WarehouseLocation)
+            .Where(m => m.MaterialBatch.MaterialId == materialId && !m.DeletedAt.HasValue)
             .ToListAsync();
 
         // All unique warehouses
-        var warehouseIds = batchMovements
-            .SelectMany(m => new[] { m.ToWarehouseId, m.FromWarehouseId })
-            .Where(id => id.HasValue)
+        var warehouseIds = shelfMaterialBatches
+            .Select(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId)
             .Distinct()
             .ToList();
+        
+        var warehouses = await context.Warehouses
+            .Where(w =>  warehouseIds.Contains(w.Id))
+            .ToListAsync();
 
         var warehouseStockList = new List<WarehouseStockDto>();
 
-        foreach (var warehouseId in warehouseIds.Where(id => id.HasValue))
+        foreach (var warehouse in warehouses)
         {
-            var warehouse = await context.Warehouses
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(w => w.Id == warehouseId.Value);
-
-            if (warehouse == null) continue;
-
             // 1️⃣ Get raw stock in warehouse
-            var stockResult = await GetShelfMaterialStockInWarehouse(materialId, warehouseId.Value);
+            var stockResult = await GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
             if (!stockResult.IsSuccess) continue;
             var grossStock = stockResult.Value;
 
             // 2️⃣ Add reserved if this is a production warehouse
             var reservedQty = await context.MaterialBatchReservedQuantities
-                .Where(r => r.WarehouseId == warehouseId.Value && r.MaterialBatch.MaterialId == materialId)
+                .Where(r => r.WarehouseId == warehouse.Id && r.MaterialBatch.MaterialId == materialId)
                 .SumAsync(r => r.Quantity);
 
             var finalStock = grossStock;
