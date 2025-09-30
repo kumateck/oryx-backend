@@ -2180,6 +2180,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var holdingMaterial =
             await context.HoldingMaterialTransfers
                 .AsSplitQuery()
+                .IgnoreQueryFilters()
                 .Include(holdingMaterialTransfer => holdingMaterialTransfer.Batches)
                 .ThenInclude(holdingMaterialTransferBatch => holdingMaterialTransferBatch.SourceWarehouse)
                 .Include(holdingMaterialTransfer => holdingMaterialTransfer.Batches)

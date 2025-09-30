@@ -136,7 +136,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns the form response details.</returns>
     [HttpGet("responses/{formResponseId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDetailDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetFormResponse(Guid formResponseId)
     {
