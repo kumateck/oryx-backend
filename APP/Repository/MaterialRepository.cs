@@ -1719,6 +1719,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ToList();
         
         var warehouses = await context.Warehouses
+            .IgnoreQueryFilters()
             .Where(w =>  warehouseIds.Contains(w.Id))
             .ToListAsync();
 
