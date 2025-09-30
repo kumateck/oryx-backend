@@ -625,7 +625,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("holding")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<HoldingMaterialTransferDto>>))]
     public async Task<IResult> GetMaterialDepartments([FromQuery] bool withProcessed =  false,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
         [FromQuery] string searchQuery = null,
