@@ -2234,16 +2234,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             
             context.MaterialBatches.Update(materialBatch);
 
-            toWarehouse.ArrivalLocation ??= new WarehouseArrivalLocation
-            {
-                WarehouseId = toWarehouse.Id,
-                Name = "Default Arrival Location",
-                FloorName = "Ground Floor",
-                Description = "Automatically created arrival location"
-            };
-
-            await context.WarehouseArrivalLocations.AddAsync(toWarehouse.ArrivalLocation);
-                
             var newShelfMaterialBatch = new ShelfMaterialBatch
             {
                 WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
