@@ -82,11 +82,9 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
         int page,
         int pageSize, string searchQuery, bool withProcessed, Guid materialId, MaterialKind? kind);
-    Task<Result> MoveMaterialBatchToWarehouseFromHolding(Guid holdingMaterialId, 
-        MoveShelfMaterialBatchRequest request, Guid userId);
+    Task<Result> MoveMaterialBatchToWarehouseFromHolding(SupplyMaterialBatchFromHoldingRequest request, Guid userId);
    Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId);
   Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(MaterialFilter filter);
-
   Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind);
   Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(int page, int pageSize, string searchQuery, MaterialKind? kind);
 }

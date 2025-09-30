@@ -1,4 +1,3 @@
-using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -15,7 +14,6 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
-using MassTransit.Initializers;
 using Microsoft.AspNetCore.Http;
 using OfficeOpenXml;
 using SHARED.Requests;
@@ -1511,9 +1509,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             // Look at the shelf-level quantities
             var shelfBatches = batch.ShelfMaterialBatches
                 .Where(smb => smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId)
-                .OrderBy(smb => batch.ReturnDate == null)   // returned batches first
-                .ThenBy(smb => batch.ReturnDate)            // earliest return date first
-                .ThenBy(smb => batch.ExpiryDate)            // then by expiry
+                .OrderBy(_ => batch.ReturnDate == null)   // returned batches first
+                .ThenBy(_ => batch.ReturnDate)            // earliest return date first
+                .ThenBy(_ => batch.ExpiryDate)            // then by expiry
                 .ToList();
 
 
@@ -1929,7 +1927,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         
         if (materialDepartments.Select(m => m.MaterialId).Distinct().Count() != materialDepartments.Count)
         {
-            return Error.Validation("MaterialDepartment.Validation", "Cant have more than one of the same amterial Id in the list");
+            return Error.Validation("MaterialDepartment.Validation", "Cant have more than one of the same material Id in the list");
         }
         
         var existingMaterialDepartments = await context.MaterialDepartments.Where(m => m.DepartmentId == user.DepartmentId).ToListAsync();
@@ -2044,7 +2042,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.ReOrderLevel.ToString(CultureInfo.InvariantCulture), q => q.Material.Name);
+            query = query.WhereSearch(searchQuery, q => q.Material.Name);
         }
 
         if (!user.DepartmentId.HasValue)
@@ -2162,20 +2160,19 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         );
     }
 
-    public async Task<Result> MoveMaterialBatchToWarehouseFromHolding(Guid holdingMaterialId, MoveShelfMaterialBatchRequest request, Guid userId)
+    public async Task<Result> MoveMaterialBatchToWarehouseFromHolding(SupplyMaterialBatchFromHoldingRequest request, Guid userId)
     {
-        var shelfMaterialBatch = await context.ShelfMaterialBatches
-            .FirstOrDefaultAsync(b => b.Id == request.ShelfMaterialBatchId);
+        var materialBatch = await context.MaterialBatches
+            .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
 
-        if (shelfMaterialBatch is null)
+        if (materialBatch == null)
         {
-            return MaterialErrors.NotFound(request.ShelfMaterialBatchId);
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
         }
         
-        // Calculate the total quantity to be moved
-        var totalQuantityToMove = request.MovedShelfBatchMaterials.Sum(m => m.Quantity);
+        var totalQuantityToAssign = request.ShelfMaterialBatches.Sum(s => s.Quantity);
 
-        if (totalQuantityToMove > shelfMaterialBatch.Quantity)
+        if (totalQuantityToAssign > materialBatch.QuantityUnassigned)
         {
             return MaterialErrors.InsufficientStock; // Not enough stock in source shelf to move
         }
@@ -2190,34 +2187,28 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(warehouse => warehouse.ArrivalLocation)
                 .Include(holdingMaterialTransfer => holdingMaterialTransfer.Batches)
                 .ThenInclude(holdingMaterialTransferBatch => holdingMaterialTransferBatch.MaterialBatch)
-                .FirstOrDefaultAsync(m => m.Id == holdingMaterialId);
+                .FirstOrDefaultAsync(m => m.Id == request.HoldingMaterialId);
         
-        if(holdingMaterial is null) return MaterialErrors.NotFound(holdingMaterialId);
+        if(holdingMaterial is null) return Error.NotFound("HoldingMaterial.NotFound", "HoldingMaterial not found"); 
         
-        foreach (var movedBatch in request.MovedShelfBatchMaterials)
+        foreach (var movedBatch in request.ShelfMaterialBatches)
         {
             var fromWarehouse = holdingMaterial
-                .Batches.FirstOrDefault(b => b.MaterialBatchId == shelfMaterialBatch.MaterialBatchId)?.SourceWarehouse;
+                .Batches.FirstOrDefault(b => b.MaterialBatchId == materialBatch.Id)?.SourceWarehouse;
             
             if (fromWarehouse is null)
                 return Error.Validation("HoldingMaterial.FromWarehouse", "No source warehouse associated with holding material");
             
             var toWarehouse = holdingMaterial
-                .Batches.FirstOrDefault(b => b.MaterialBatchId == shelfMaterialBatch.MaterialBatchId)?.DestinationWarehouse;
+                .Batches.FirstOrDefault(b => b.MaterialBatchId == materialBatch.Id)?.DestinationWarehouse;
             
             if (toWarehouse is null)
                 return Error.Validation("HoldingMaterial.ToWarehouse", "No destination warehouse associated with holding material");
             
-            var materialBatch = holdingMaterial
-                .Batches.FirstOrDefault(b => b.MaterialBatchId == shelfMaterialBatch.MaterialBatchId)?.MaterialBatch;
-            
-            if (materialBatch is null)
-                return Error.Validation("HoldingMaterial.MaterialBatch", "No material batch associated with holding material");
-
 
             var movement = new MassMaterialBatchMovement
             {
-                BatchId = shelfMaterialBatch.MaterialBatchId,
+                BatchId = materialBatch.Id,
                 FromWarehouseId = fromWarehouse.Id,
                 ToWarehouseId = toWarehouse.Id,
                 Quantity = movedBatch.Quantity,
@@ -2229,7 +2220,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             
             var materialBatchEvent = new MaterialBatchEvent
             {
-                BatchId = shelfMaterialBatch.MaterialBatchId,
+                BatchId = materialBatch.Id,
                 Quantity = movedBatch.Quantity,
                 Type = EventType.Moved,  
                 UserId = userId,
@@ -2237,40 +2228,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             };
 
             await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
-            
-            /*
-            var toBinCardEvent =new BinCardInformation
-            {
-                MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
-                Description = fromWarehouse.Name,
-                WayBill = "N/A",
-                ArNumber = "N/A",
-                QuantityReceived = 0,
-                QuantityIssued = movedBatch.Quantity,
-                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(materialBatch.MaterialId, fromWarehouse.Id)).Value,
-                UoMId = holdingMaterial.Batches.FirstOrDefault(b => b.MaterialBatchId == shelfMaterialBatch.MaterialBatchId)?.UoMId,
-                CreatedAt = DateTime.UtcNow,
-                CreatedById = userId
-            };
-
-            await context.BinCardInformation.AddAsync(toBinCardEvent);
-
-            var fromBinCardEvent =new BinCardInformation
-            {
-                MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
-                Description = toWarehouse.Name,
-                WayBill = "N/A",
-                ArNumber = "N/A",
-                QuantityReceived = movedBatch.Quantity,
-                QuantityIssued = 0,
-                BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouse(materialBatch.MaterialId, toWarehouse.Id)).Value,
-                UoMId = materialBatch.UoMId,
-                CreatedAt = DateTime.UtcNow,
-                CreatedById = userId
-            };
-
-            await context.BinCardInformation.AddAsync(fromBinCardEvent);
-            */
             
             materialBatch.StockTransferSourceId = holdingMaterial.StockTransferId;
             
@@ -2289,7 +2246,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var newShelfMaterialBatch = new ShelfMaterialBatch
             {
                 WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
-                MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
+                MaterialBatchId = materialBatch.Id,
                 Quantity = movedBatch.Quantity,
                 UoMId = movedBatch.UomId,
                 Note = movedBatch.Note,
@@ -2298,20 +2255,17 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             await context.ShelfMaterialBatches.AddAsync(newShelfMaterialBatch);
 
-            shelfMaterialBatch.Quantity -= movedBatch.Quantity;
+            materialBatch.QuantityAssigned += movedBatch.Quantity;
 
-            if (shelfMaterialBatch.Quantity == 0)
+            if (materialBatch.QuantityAssigned >= totalQuantityToAssign)
             {
-                context.ShelfMaterialBatches.Remove(shelfMaterialBatch);
-            }
-            else
-            {
-                context.ShelfMaterialBatches.Update(shelfMaterialBatch);
+                materialBatch.Status = BatchStatus.Available;
             }
         }
 
         holdingMaterial.Status = HoldingMaterialTransferStatus.Transferred;
         context.HoldingMaterialTransfers.Update(holdingMaterial);
+        context.MaterialBatches.Update(materialBatch);
         await context.SaveChangesAsync();
         return Result.Success();
     }
