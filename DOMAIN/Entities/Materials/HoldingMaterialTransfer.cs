@@ -43,6 +43,7 @@ public enum HoldingMaterialTransferStatus
 
 public class HoldingMaterialTransferDto
 {
+    public Guid Id { get; set; }
     public HoldingMaterialTransferStatus Status { get; set; }
     public List<HoldingMaterialTransferBatchDto> Batches { get; set; } = [];
 }
