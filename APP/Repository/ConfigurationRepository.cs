@@ -269,15 +269,15 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                    .CountAsync();
            
            case "MaterialSpecNumber":
-               return await context.MaterialAnalyticalRawData
+               return await context.MaterialSpecifications
                    .IgnoreQueryFilters()
-                   .Where(m => m.SpecNumber.StartsWith(prefix))
+                   .Where(m => m.SpecificationNumber.StartsWith(prefix))
                    .CountAsync();
            
            case "ProductSpecNumber":
-               return await context.ProductAnalyticalRawData
+               return await context.ProductSpecifications
                    .IgnoreQueryFilters()
-                   .Where(m => m.SpecNumber.StartsWith(prefix))
+                   .Where(m => m.SpecificationNumber.StartsWith(prefix))
                    .CountAsync();
            
            case nameof(ProformaInvoice):
