@@ -22,8 +22,8 @@ public class MaterialBatch : BaseEntity
     [StringLength(10000)] public string BatchNumber { get; set; }
     public Guid? GrnId { get; set; }
     public Grn Grn { get; set; }
-    public Guid? StockTransferSourceId { get; set; }
-    public StockTransferSource StockTransferSource { get; set; } 
+    public Guid? StockTransferId { get; set; }
+    public StockTransfer StockTransfer { get; set; } 
     public int NumberOfContainers { get; set; }
     public Guid? ContainerPackageStyleId { get; set; }
     public PackageStyle ContainerPackageStyle { get; set; }
