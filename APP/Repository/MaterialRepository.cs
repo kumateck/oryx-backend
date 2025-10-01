@@ -1303,6 +1303,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Sum of all quantities for shelves in the given warehouse for the given material
         var totalQuantity = await context.ShelfMaterialBatches
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(s => s.MaterialBatch)
             .Include(s => s.WarehouseLocationShelf)
             .ThenInclude(wls => wls.WarehouseLocationRack)
