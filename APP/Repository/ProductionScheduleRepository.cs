@@ -1466,6 +1466,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 .Include(b => b.CreatedBy)
                 .Include(p => p.ProductionActivityStep)
                 .Include(p => p.ProductionScheduleProduct)
+                .ThenInclude(p => p.Product)
                 .FirstOrDefaultAsync(b => b.Id == id));
     }
 
