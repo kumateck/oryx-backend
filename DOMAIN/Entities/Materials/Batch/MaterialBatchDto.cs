@@ -44,7 +44,6 @@ public class MaterialBatchListDto
 {
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
-    public string Code { get; set; }
     public string BatchNumber { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public int NumberOfContainers { get; set; }
