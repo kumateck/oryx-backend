@@ -1702,25 +1702,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId)
     {
-        // Get all movements for this material
-        var shelfMaterialBatches = await context.ShelfMaterialBatches
-            .IgnoreQueryFilters()
-            .AsSplitQuery()
-            .Include(m => m.MaterialBatch).Include(shelfMaterialBatch => shelfMaterialBatch.WarehouseLocationShelf)
-            .ThenInclude(warehouseLocationShelf => warehouseLocationShelf.WarehouseLocationRack)
-            .ThenInclude(warehouseLocationRack => warehouseLocationRack.WarehouseLocation)
-            .Where(m => m.MaterialBatch.MaterialId == materialId && !m.DeletedAt.HasValue)
-            .ToListAsync();
-
-        // All unique warehouses
-        var warehouseIds = shelfMaterialBatches
-            .Select(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId)
-            .Distinct()
-            .ToList();
-        
         var warehouses = await context.Warehouses
             .IgnoreQueryFilters()
-            .Where(w =>  warehouseIds.Contains(w.Id))
             .ToListAsync();
 
         var warehouseStockList = new List<WarehouseStockDto>();
@@ -1749,6 +1732,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 // Other warehouses = gross stock - reserved (because those materials left the shelf)
                 finalStock -= reservedQty;
             }
+            
+            if(finalStock <= 0) continue;
 
             warehouseStockList.Add(new WarehouseStockDto
             {
@@ -1757,6 +1742,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             });
         }
 
+        warehouseStockList = warehouseStockList.OrderByDescending(w => w.StockQuantity).ToList();
         return Result.Success(warehouseStockList);
     }
     
