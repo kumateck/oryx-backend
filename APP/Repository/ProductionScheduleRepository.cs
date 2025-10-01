@@ -1975,7 +1975,20 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
             batch.QuantityAssigned = 0;
             var shelfMaterialBatches =
-                await context.ShelfMaterialBatches.Where(sb => sb.MaterialBatchId == batch.Id).ToListAsync();
+                await context.ShelfMaterialBatches
+                    .IgnoreQueryFilters()
+                    .Where(sb => sb.MaterialBatchId == batch.Id 
+                                 && sb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == stockTransferSource.FromDepartmentId
+                                 && !sb.DeletedAt.HasValue)
+                    .ToListAsync();
+            
+            var totalAvailable = shelfMaterialBatches.Sum(sb => sb.Quantity);
+
+            if (totalAvailable < batchRequest.Quantity)
+            {
+                return Error.Failure("Batch.InsufficientStock", $"Not enough stock in batch {batchRequest.BatchId}");
+            }
+
             context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
             
             remainingQuantity -= batchRequest.Quantity;

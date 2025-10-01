@@ -272,9 +272,13 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 materialBatch.QuantityAssigned = 0;
                 context.MaterialBatches.Update(materialBatch);
 
-                var shelfMaterialBatches = await context.ShelfMaterialBatches
-                    .Where(sb => sb.MaterialBatchId == batch.MaterialBatch.Id)
-                    .ToListAsync();
+                var shelfMaterialBatches =
+                    await context.ShelfMaterialBatches
+                        .IgnoreQueryFilters()
+                        .Where(sb => sb.MaterialBatchId == batch.MaterialBatch.Id 
+                                     && sb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == appropriateWarehouse.Id
+                                     && !sb.DeletedAt.HasValue)
+                        .ToListAsync();
                 context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
 
                 var movement = new MassMaterialBatchMovement
