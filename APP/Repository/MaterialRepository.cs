@@ -1310,7 +1310,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ThenInclude(w => w.WarehouseLocation)
             .ThenInclude(wl => wl.Warehouse)
             .Where(s => s.MaterialBatch.MaterialId == materialId &&
-                        s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId)
+                        s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId && !s.DeletedAt.HasValue)
             .SumAsync(s => s.Quantity);
 
         return Math.Max(totalQuantity, 0);
