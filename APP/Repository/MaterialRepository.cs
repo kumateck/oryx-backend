@@ -1209,12 +1209,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId)
     {
         var totalQuantityInWarehouse = await context.ShelfMaterialBatches
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(smb => smb.WarehouseLocationShelf)
             .ThenInclude(shelf => shelf.WarehouseLocationRack)
             .ThenInclude(rack => rack.WarehouseLocation)
             .Where(smb => smb.MaterialBatchId == batchId 
-                          && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId)
+                          && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId && !smb.DeletedAt.HasValue)
             .SumAsync(smb => smb.Quantity);
 
         return totalQuantityInWarehouse;
