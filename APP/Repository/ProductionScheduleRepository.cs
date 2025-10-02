@@ -802,6 +802,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
            
             var quantityNeeded = batchSize == BatchSize.Full ? item.PrescribedQuantity : item.PrescribedQuantity / 2;
+            
+            var materialDepartment = materialDepartments.GetValueOrDefault(item.MaterialId);
 
             return new ProductionScheduleProcurementDto
             {
@@ -815,12 +817,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 ProductionWarehouseId = productionWarehouse.Id,
                 MaterialDepartment = new MaterialDepartmentDetails
                 {
-                    Department = mapper.Map<CollectionItemDto>(materialDepartments[item.MaterialId]?.Department),
-                    UoM = mapper.Map<UnitOfMeasureDto>(materialDepartments[item.MaterialId]?.UoM),
-                    ReOrderLevel = materialDepartments[item.MaterialId].ReOrderLevel,
-                    MaximumStockLevel = materialDepartments[item.MaterialId].MaximumStockLevel,
-                    MinimumStockLevel = materialDepartments[item.MaterialId].MinimumStockLevel,
-                }
+                    Department = mapper.Map<CollectionItemDto>(materialDepartment?.Department),
+                    UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
+                    ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
+                    MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
+                    MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
+                }        
             };
         }).ToList();
 
@@ -944,6 +946,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
             var quantityNeeded = batchSize == BatchSize.Full ? item.PrescribedQuantity + item.Loose : item.PrescribedQuantity / 2 + item.Loose;
 
+            var materialDepartment = materialDepartments.GetValueOrDefault(item.MaterialId);
+
             return new ProductionScheduleProcurementPackageDto
             {
                 Material = mapper.Map<MaterialDto>(item.Material),
@@ -959,11 +963,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 ProductionWarehouseId = productionWarehouse.Id,
                 MaterialDepartment = new MaterialDepartmentDetails
                 {
-                    Department = mapper.Map<CollectionItemDto>(materialDepartments[item.MaterialId]?.Department),
-                    UoM = mapper.Map<UnitOfMeasureDto>(materialDepartments[item.MaterialId]?.UoM),
-                    ReOrderLevel = materialDepartments[item.MaterialId].ReOrderLevel,
-                    MaximumStockLevel = materialDepartments[item.MaterialId].MaximumStockLevel,
-                    MinimumStockLevel = materialDepartments[item.MaterialId].MinimumStockLevel,
+                    Department = mapper.Map<CollectionItemDto>(materialDepartment?.Department),
+                    UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
+                    ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
+                    MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
+                    MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
                 }                
             };
         }).ToList();
