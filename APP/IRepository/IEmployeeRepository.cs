@@ -22,5 +22,6 @@ public interface IEmployeeRepository
    Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto);
    Task<Result> ChangeEmployeeType(Guid id, EmployeeType employeeType);
    Task<Result> DeleteEmployee(Guid id, Guid userId);
+   Task<Result> UpdateEmployeeEmail(Guid id, string email);
    Task<Result> ImportEmployeesFromExcel(IFormFile file);
 }

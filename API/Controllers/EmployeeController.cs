@@ -187,6 +187,21 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     }
     
     /// <summary>
+    /// Deletes a specific employee by its ID.
+    /// </summary>
+    [HttpPut("email/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateEmployeeEmail([FromRoute] Guid id, [FromQuery] string email)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.UpdateEmployeeEmail(id, email);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
     /// Imports employee from an Excel file.
     /// </summary>
     /// <param name="file">The uploaded Excel file containing employee data.</param>

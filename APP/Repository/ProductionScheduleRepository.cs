@@ -793,11 +793,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(m => m.UoM)
             .Include(m => m.Material)
             .Include(m => m.Department)
-            .Where(m => activeBoM.BillOfMaterial.Items.Select(i => i.MaterialId).Distinct().Contains(m.Id) 
+            .Where(m => activeBoM.BillOfMaterial.Items.Select(i => i.MaterialId).Distinct().Contains(m.MaterialId) 
                         && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
         
-        var materialDetails = activeBoM.BillOfMaterial.Items.Select(item =>
+        var materialDetails = activeBoM.BillOfMaterial.Items
+            .Where(i =>  materialDepartments.ContainsKey(i.MaterialId))
+            .Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
            
@@ -935,12 +937,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(m => m.UoM)
             .Include(m => m.Material)
             .Include(m => m.Department)
-            .Where(m => product.Packages.Select(i => i.MaterialId).Distinct().Contains(m.Id) 
+            .Where(m => product.Packages.Select(i => i.MaterialId).Distinct().Contains(m.MaterialId) 
                         && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
         
         var materialDetails = product.Packages
-            .Where(p => p.ProductPackingId == productionScheduleProduct.ProductPackingId || !p.ProductPackingId.HasValue)
+            .Where(p => 
+                p.ProductPackingId == productionScheduleProduct.ProductPackingId || !p.ProductPackingId.HasValue && materialDepartments.ContainsKey(p.MaterialId))
             .Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
