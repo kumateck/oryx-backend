@@ -38,6 +38,8 @@ public class MaterialBatchDto
     public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity { get; set; }
     public DateTime? ReturnDate { get; set; }
+    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
+    public bool Expired => DateTime.UtcNow >= ExpiryDate;
 }
 
 public class MaterialBatchListDto
@@ -62,6 +64,8 @@ public class MaterialBatchListDto
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
     public MaterialBatchChecklistDto Checklist { get; set; }
+    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
+    public bool Expired => DateTime.UtcNow >= ExpiryDate;
 }
 
 public class MaterialBatchReducedDto
@@ -86,6 +90,8 @@ public class MaterialBatchReducedDto
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
+    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
+    public bool Expired => DateTime.UtcNow >= ExpiryDate;
 }
 
 public class DistributedMaterialBatchDto

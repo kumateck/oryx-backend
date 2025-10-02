@@ -704,4 +704,20 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialRejected(page, pageSize, searchQuery, materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Retrieves the total stock of a material in a specific warehouse.
+    /// </summary>
+    /// <param name="materialId">The ID of the material.</param>
+    /// <param name="departmentId">Optional department Id</param>
+    /// <returns>Returns the total stock quantity of the material in the specified warehouse.</returns>
+    [HttpGet("{materialId}/shelf")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShelfMaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShelfMaterialsAcrossWarehouses([FromRoute] Guid materialId, [FromQuery] Guid? departmentId = null)
+    {
+        var result = await repository.GetShelfMaterialsAcrossWarehouses(materialId, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

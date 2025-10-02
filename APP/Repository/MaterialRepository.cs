@@ -1316,6 +1316,30 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return Math.Max(totalQuantity, 0);
     }
+    
+    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId, Guid? departmentId)
+    {
+        var shelfMaterialBatch = await context.ShelfMaterialBatches
+            .AsSplitQuery()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Include(s => s.MaterialBatch)
+            .Include(s => s.WarehouseLocationShelf)
+            .ThenInclude(wls => wls.WarehouseLocationRack)
+            .ThenInclude(w => w.WarehouseLocation)
+            .ThenInclude(wl => wl.Warehouse)
+            .Where(s => s.MaterialBatch.MaterialId == materialId &&
+                        !s.DeletedAt.HasValue)
+            .ToListAsync();
+
+        if (departmentId.HasValue)
+        {
+            shelfMaterialBatch = shelfMaterialBatch.Where(s =>
+                s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId ==
+                departmentId).ToList();
+        }
+        return mapper.Map<List<ShelfMaterialBatchDto>>(shelfMaterialBatch);
+    }
 
     
     public async Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
