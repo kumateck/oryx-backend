@@ -1905,38 +1905,62 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments, Guid userId)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null) return UserErrors.NotFound(userId);
+        var user = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId);
 
-        if (!user.DepartmentId.HasValue)
-        {
+        if (user == null) 
+            return UserErrors.NotFound(userId);
+
+        if (!user.DepartmentId.HasValue) 
             return UserErrors.DepartmentNotFound;
-        }
-        
+
+        // prevent duplicates in request
         if (materialDepartments.Select(m => m.MaterialId).Distinct().Count() != materialDepartments.Count)
-        {
             return Error.Validation("MaterialDepartment.Validation", "Cant have more than one of the same material Id in the list");
-        }
-        
-        var existingMaterialDepartments = await context.MaterialDepartments.Where(m => m.DepartmentId == user.DepartmentId).ToListAsync();
-        if (existingMaterialDepartments.Count != 0)
+
+        var departmentId = user.DepartmentId.Value;
+        var materialIds = materialDepartments.Select(m => m.MaterialId).ToList();
+
+        // fetch existing once
+        var existingMaterialDepartments = await context.MaterialDepartments
+            .Where(m => m.DepartmentId == departmentId && materialIds.Contains(m.MaterialId))
+            .ToDictionaryAsync(m => m.MaterialId, m => m);
+
+        var newEntities = new List<MaterialDepartment>();
+
+        foreach (var dto in materialDepartments)
         {
-            context.MaterialDepartments.RemoveRange(existingMaterialDepartments);
+            if (existingMaterialDepartments.TryGetValue(dto.MaterialId, out var existing))
+            {
+                // update existing
+                existing.ReOrderLevel = dto.ReOrderLevel;
+                existing.MinimumStockLevel = dto.MinimumStockLevel;
+                existing.MaximumStockLevel = dto.MaximumStockLevel;
+                existing.UoMId = dto.UoMId;
+            }
+            else
+            {
+                // create new
+                newEntities.Add(new MaterialDepartment
+                {
+                    MaterialId = dto.MaterialId,
+                    DepartmentId = departmentId,
+                    ReOrderLevel = dto.ReOrderLevel,
+                    MaximumStockLevel = dto.MaximumStockLevel,
+                    MinimumStockLevel = dto.MinimumStockLevel,
+                    UoMId = dto.UoMId
+                });
+            }
         }
-        
-        await context.MaterialDepartments.AddRangeAsync(materialDepartments.Select(m => new MaterialDepartment()
-        {
-            MaterialId = m.MaterialId,
-            DepartmentId = user.DepartmentId.Value,
-            ReOrderLevel = m.ReOrderLevel,
-            MaximumStockLevel = m.MaximumStockLevel,
-            MinimumStockLevel = m.MinimumStockLevel,
-            UoMId = m.UoMId
-        }));
-        
+
+        if (newEntities.Count > 0)
+            await context.MaterialDepartments.AddRangeAsync(newEntities);
+
         await context.SaveChangesAsync();
         return Result.Success();
     }
+
     
     public async Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId)
     {
