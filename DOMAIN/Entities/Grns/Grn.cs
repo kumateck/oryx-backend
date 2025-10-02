@@ -11,6 +11,7 @@ public class Grn:BaseEntity
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
     [StringLength(10000)]public string GrnNumber { get; set; }
+    [StringLength(10000)]public string DeclarationNumber { get; set; }
     public Status Status { get; set; }
     public List<MaterialBatch> MaterialBatches { get; set; }
 }
@@ -27,6 +28,7 @@ public class CreateGrnRequest
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
     [StringLength(10000)]public string GrnNumber { get; set; }
+    [StringLength(10000)]public string DeclarationNumber { get; set; }
     public Guid? DepartmentId { get; set; }
     public List<Guid> MaterialBatchIds { get; set; }
 }
@@ -42,6 +44,7 @@ public class GrnListDto
     [StringLength(10000)]public string GrnNumber { get; set; }
     public List<CollectionItemDto> MaterialBatches { get; set; } = [];
     public Status Status { get; set; }
+    [StringLength(10000)]public string DeclarationNumber { get; set; }
 }
 public class GrnDto
 {
@@ -52,4 +55,5 @@ public class GrnDto
     [StringLength(10000)]public string Remarks { get; set; }
     [StringLength(10000)]public string GrnNumber { get; set; }
     public List<MaterialBatchListDto> MaterialBatches { get; set; } = [];
+    [StringLength(10000)]public string DeclarationNumber { get; set; }
 }
