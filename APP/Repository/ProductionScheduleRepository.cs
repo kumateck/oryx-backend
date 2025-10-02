@@ -797,7 +797,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                         && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
         
-        var materialDetails = activeBoM.BillOfMaterial.Items.Select(item =>
+        var materialDetails = activeBoM.BillOfMaterial.Items
+            .Where(i =>  materialDepartments.ContainsKey(i.MaterialId))
+            .Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
            
@@ -940,7 +942,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .ToDictionaryAsync(k => k.MaterialId, v => v);
         
         var materialDetails = product.Packages
-            .Where(p => p.ProductPackingId == productionScheduleProduct.ProductPackingId || !p.ProductPackingId.HasValue)
+            .Where(p => 
+                p.ProductPackingId == productionScheduleProduct.ProductPackingId || !p.ProductPackingId.HasValue && materialDepartments.ContainsKey(p.MaterialId))
             .Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);

@@ -563,6 +563,20 @@ public class EmployeeRepository(ApplicationDbContext context,
         return Result.Success();
     }
     
+    public async Task<Result> UpdateEmployeeEmail(Guid id, string email)
+    {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
+
+        if (employee == null)
+        {
+            return Error.NotFound("Employee.NotFound", "Employee not found");
+        }
+        employee.Email = email;
+        context.Employees.Update(employee);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
     public async Task<Result> ImportEmployeesFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
