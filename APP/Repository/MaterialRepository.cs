@@ -58,7 +58,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description);
+            query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description, m => m.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -2030,7 +2030,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Material.Name);
+            query = query.WhereSearch(searchQuery, q => q.Material.Name, q => q.Material.Code);
         }
 
         if (!user.DepartmentId.HasValue)

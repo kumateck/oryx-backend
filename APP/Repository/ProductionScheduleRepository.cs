@@ -793,7 +793,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(m => m.UoM)
             .Include(m => m.Material)
             .Include(m => m.Department)
-            .Where(m => activeBoM.BillOfMaterial.Items.Select(i => i.MaterialId).Distinct().Contains(m.Id) 
+            .Where(m => activeBoM.BillOfMaterial.Items.Select(i => i.MaterialId).Distinct().Contains(m.MaterialId) 
                         && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
         
@@ -937,7 +937,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(m => m.UoM)
             .Include(m => m.Material)
             .Include(m => m.Department)
-            .Where(m => product.Packages.Select(i => i.MaterialId).Distinct().Contains(m.Id) 
+            .Where(m => product.Packages.Select(i => i.MaterialId).Distinct().Contains(m.MaterialId) 
                         && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
         
