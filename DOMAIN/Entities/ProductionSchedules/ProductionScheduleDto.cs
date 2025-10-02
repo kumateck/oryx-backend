@@ -34,13 +34,13 @@ public class ProductionScheduleProcurementDto
     public MaterialRequisitionStatus Status { get; set; }
     public Guid StorageWarehouseId { get; set; }
     public Guid ProductionWarehouseId { get; set; }
+    public MaterialDepartmentDetails MaterialDepartment { get; set; }
 }
 
 public class ProductionScheduleProcurementPackageDto 
 {
     public MaterialDto Material { get; set; }
     public MaterialDto DirectLinkMaterial { get; set; }
-    public UnitOfMeasureDto BaseUoM { get; set; }
     public decimal BaseQuantity { get; set; }
     public decimal PrescribedQuantity { get; set; }
     public decimal QuantityNeeded { get; set; }
@@ -50,6 +50,16 @@ public class ProductionScheduleProcurementPackageDto
     public decimal PackingExcessMargin { get; set; }
     public Guid StorageWarehouseId { get; set; }
     public Guid ProductionWarehouseId { get; set; }
+    public MaterialDepartmentDetails MaterialDepartment { get; set; }
+}
+
+public class MaterialDepartmentDetails
+{
+    public CollectionItemDto Department { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public decimal ReOrderLevel { get; set; }
+    public decimal MinimumStockLevel { get; set; }
+    public decimal MaximumStockLevel { get; set; }
 }
 
 public class ProductionScheduleProductDto

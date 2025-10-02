@@ -63,9 +63,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     { 
         var productionSchedule = await context.ProductionSchedules
             .AsSplitQuery()
+            .Include(s => s.Products).ThenInclude(s => s.ProductPacking).ThenInclude(p => p.BasePackingUoM)
             .Include(s => s.Products).ThenInclude(s => s.Product)
             .Include(s => s.Products)
-            .ThenInclude(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
+            .ThenInclude(s => s.ProductPacking).ThenInclude(p => p.PackingLists).ThenInclude(p => p.Uom)
             .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
         return productionSchedule is null ? Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found") : mapper.Map<ProductionScheduleDto>(productionSchedule);
@@ -785,12 +786,24 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var stockLevel = await materialRepository.GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
             stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
+
+        var materialDepartments = await context.MaterialDepartments
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(m => m.UoM)
+            .Include(m => m.Material)
+            .Include(m => m.Department)
+            .Where(m => activeBoM.BillOfMaterial.Items.Select(i => i.MaterialId).Distinct().Contains(m.Id) 
+                        && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
+            .ToDictionaryAsync(k => k.MaterialId, v => v);
         
         var materialDetails = activeBoM.BillOfMaterial.Items.Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
            
             var quantityNeeded = batchSize == BatchSize.Full ? item.PrescribedQuantity : item.PrescribedQuantity / 2;
+            
+            var materialDepartment = materialDepartments.GetValueOrDefault(item.MaterialId);
 
             return new ProductionScheduleProcurementDto
             {
@@ -801,7 +814,15 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 QuantityOnHand = quantityOnHand,
                 Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                 StorageWarehouseId = warehouse.Id,
-                ProductionWarehouseId = productionWarehouse.Id
+                ProductionWarehouseId = productionWarehouse.Id,
+                MaterialDepartment = new MaterialDepartmentDetails
+                {
+                    Department = mapper.Map<CollectionItemDto>(materialDepartment?.Department),
+                    UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
+                    ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
+                    MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
+                    MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
+                }        
             };
         }).ToList();
 
@@ -841,8 +862,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     {
         var productionScheduleProduct = await 
             context.ProductionScheduleProducts.FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
-        if (productionScheduleProduct == null)  return ProductErrors.NotFound(productionScheduleProductId);
-
+        if (productionScheduleProduct is null)  return ProductErrors.NotFound(productionScheduleProductId);
         
         var product = await context.Products
             .AsSplitQuery()
@@ -909,12 +929,24 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
         
+        var materialDepartments = await context.MaterialDepartments
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(m => m.UoM)
+            .Include(m => m.Material)
+            .Include(m => m.Department)
+            .Where(m => product.Packages.Select(i => i.MaterialId).Distinct().Contains(m.Id) 
+                        && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
+            .ToDictionaryAsync(k => k.MaterialId, v => v);
+        
         var materialDetails = product.Packages
             .Where(p => p.ProductPackingId == productionScheduleProduct.ProductPackingId || !p.ProductPackingId.HasValue)
             .Select(item =>
         {
             var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
             var quantityNeeded = batchSize == BatchSize.Full ? item.PrescribedQuantity + item.Loose : item.PrescribedQuantity / 2 + item.Loose;
+
+            var materialDepartment = materialDepartments.GetValueOrDefault(item.MaterialId);
 
             return new ProductionScheduleProcurementPackageDto
             {
@@ -928,7 +960,15 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 QuantityOnHand = quantityOnHand,
                 PackingExcessMargin = item.PackingExcessMargin,
                 StorageWarehouseId = warehouse.Id,
-                ProductionWarehouseId = productionWarehouse.Id
+                ProductionWarehouseId = productionWarehouse.Id,
+                MaterialDepartment = new MaterialDepartmentDetails
+                {
+                    Department = mapper.Map<CollectionItemDto>(materialDepartment?.Department),
+                    UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
+                    ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
+                    MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
+                    MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
+                }                
             };
         }).ToList();
         
