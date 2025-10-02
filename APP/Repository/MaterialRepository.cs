@@ -1317,9 +1317,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Math.Max(totalQuantity, 0);
     }
     
-    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId, Guid? departmentId)
+    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId, Guid? departmentId,
+        bool? onlyAboutToExpire)
     {
-        var shelfMaterialBatch = await context.ShelfMaterialBatches
+        var shelfMaterialBatches = await context.ShelfMaterialBatches
             .AsSplitQuery()
             .AsNoTracking()
             .IgnoreQueryFilters()
@@ -1334,11 +1335,27 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (departmentId.HasValue)
         {
-            shelfMaterialBatch = shelfMaterialBatch.Where(s =>
+            shelfMaterialBatches = shelfMaterialBatches.Where(s =>
                 s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId ==
                 departmentId).ToList();
         }
-        return mapper.Map<List<ShelfMaterialBatchDto>>(shelfMaterialBatch);
+        var shelfMaterialBatchesDto = mapper.Map<List<ShelfMaterialBatchDto>>(shelfMaterialBatches);
+        
+        shelfMaterialBatchesDto = shelfMaterialBatchesDto.
+            OrderByDescending(s => s.MaterialBatch.AboutToExpire)
+            .ThenByDescending(s => s.MaterialBatch.Expired)
+            .ThenByDescending(s => s.MaterialBatch.ExpiryDate)
+            .ToList();
+
+        if (onlyAboutToExpire.HasValue)
+        {
+            if (onlyAboutToExpire.Value)
+            {
+                shelfMaterialBatchesDto = shelfMaterialBatchesDto.Where(s => s.MaterialBatch.AboutToExpire).ToList();
+            }
+        }
+
+        return shelfMaterialBatchesDto;
     }
 
     
