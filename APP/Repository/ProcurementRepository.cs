@@ -2243,9 +2243,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         );
     }
 
-    public async Task<Result<DistributeMaterialDto>> GetDistributeMaterial(Guid distributedRequisitionMaterialId)
+    public async Task<Result<DistributeMaterialDto>> GetDistributeMaterial(Guid distributeMaterialId)
     {
-        var distributeMaterial = await context.DistributeMaterials.FirstOrDefaultAsync(d => d.Id == distributedRequisitionMaterialId);
+        var distributeMaterial = await context.DistributeMaterials.FirstOrDefaultAsync(d => d.Id == distributeMaterialId);
         if (distributeMaterial is null)
             return Error.NotFound("DistributedRequisitionMaterial.NotFound", "DistributedRequisitionMaterial not found");
         
