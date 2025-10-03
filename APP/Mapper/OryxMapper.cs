@@ -499,11 +499,16 @@ public class OryxMapper : Profile
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>()
             .ForMember(dest => dest.Department,
                 opt => opt.MapFrom(src => src.WarehouseArrivalLocation.Warehouse.Department));
+        CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialListDto>()
+            .ForMember(dest => dest.Department,
+                opt => opt.MapFrom(src => src.WarehouseArrivalLocation.Warehouse.Department));
         CreateMap<DistributedFinishedProduct, DistributedFinishedProductDto>();
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<MaterialItemDistribution, MaterialItemDistributionDto>();
         CreateMap<Warehouse, WarehouseWithoutLocationDto>();
+        CreateMap<DistributeMaterialRequest, DistributeMaterial>();
+        CreateMap<DistributeMaterial, DistributeMaterialDto>();
         #endregion
 
         #region BinCardInformation
@@ -599,6 +604,9 @@ public class OryxMapper : Profile
         CreateMap<ShipmentInvoice, ShipmentInvoiceDto>()
             .ForMember(dest => dest.IsUsed,
                 opt => opt.MapFrom<ShipmentInvoiceStatusResolver>());
+        CreateMap<ShipmentInvoice, ShipmentInvoiceListDto>()
+            .ForMember(dest => dest.IsUsed,
+                opt => opt.MapFrom<ShipmentInvoiceListStatusResolver>());
         CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>()
             .ForMember(dest => dest.Price,
                 opt => opt.MapFrom(src => src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).Price));
@@ -613,6 +621,7 @@ public class OryxMapper : Profile
         #region Checklist
 
         CreateMap<Checklist, ChecklistDto>();
+        CreateMap<Checklist, CheckListDto>();
         CreateMap<Checklist, MaterialBatchChecklistDto>();
         CreateMap<Checklist, DistributedChecklistDto>();
         CreateMap<Checklist, BatchChecklistDto>();
@@ -624,7 +633,9 @@ public class OryxMapper : Profile
         
         #region Grn
         CreateMap<CreateGrnRequest, Grn>();
-        CreateMap<Grn, GrnDto>();
+        CreateMap<Grn, GrnDto>()
+            .ForMember(dest => dest.CheckLists,
+                opt => opt.MapFrom(src => src.MaterialBatches.Select(c => c.Checklist)));
         CreateMap<Grn, GrnListDto>();
         #endregion
         

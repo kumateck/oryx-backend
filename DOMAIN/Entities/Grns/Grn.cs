@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Materials.Batch;
 using SHARED;
 
@@ -54,6 +55,7 @@ public class GrnDto
     [StringLength(10000)]public string VehicleNumber { get; set; }
     [StringLength(10000)]public string Remarks { get; set; }
     [StringLength(10000)]public string GrnNumber { get; set; }
+    public List<CheckListDto> CheckLists { get; set; } = [];
     public List<MaterialBatchListDto> MaterialBatches { get; set; } = [];
     [StringLength(10000)]public string DeclarationNumber { get; set; }
 }

@@ -213,10 +213,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         var stockRequisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == stockRequisitionId);
 
-        if (stockRequisition is null)
-            return RequisitionErrors.NotFound(stockRequisitionId);
-
-        return Result.Success();
+        return stockRequisition is null ? RequisitionErrors.NotFound(stockRequisitionId) : Result.Success();
     }
     
     public async Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId)
@@ -275,11 +272,27 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 var shelfMaterialBatches =
                     await context.ShelfMaterialBatches
                         .IgnoreQueryFilters()
+                        .OrderBy(s => s.Quantity)
                         .Where(sb => sb.MaterialBatchId == batch.MaterialBatch.Id 
                                      && sb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == appropriateWarehouse.Id
                                      && !sb.DeletedAt.HasValue)
                         .ToListAsync();
-                context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
+                
+                var quantityToDeduct = batch.Quantity;
+
+                foreach (var shelfMaterialBatch in shelfMaterialBatches)
+                {
+                    if (quantityToDeduct <= 0) break;
+
+                    var deductAmount = Math.Min(shelfMaterialBatch.Quantity, quantityToDeduct);
+                    shelfMaterialBatch.Quantity -= deductAmount;
+                    quantityToDeduct -= deductAmount;
+
+                    if (shelfMaterialBatch.Quantity <= 0)
+                    {
+                        context.ShelfMaterialBatches.Remove(shelfMaterialBatch);
+                    }
+                }
 
                 var movement = new MassMaterialBatchMovement
                 {

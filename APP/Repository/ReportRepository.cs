@@ -1103,7 +1103,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .Include(drm=>drm.MaterialItemDistributions)
             .Include(sr=>sr.CheckLists)
             .ThenInclude(cl=>cl.MaterialBatches)
-            .Where(drm => drm.Status == DistributedRequisitionMaterialStatus.Distributed)
+            .Where(drm => drm.Status == DistributedRequisitionMaterialStatus.Pending)
             .AsQueryable();
 
         query = filter.MaterialKind == MaterialKind.Raw

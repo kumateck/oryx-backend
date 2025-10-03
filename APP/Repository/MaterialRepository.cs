@@ -2314,6 +2314,86 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
     
+    public async Task<Result> MoveMaterialBatchToWarehouseFromDistribute(SupplyMaterialBatchFromHMaterialDistribute request, Guid userId)
+    {
+        var materialBatch = await context.MaterialBatches
+            .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
+
+        if (materialBatch == null)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
+        }
+        
+        var totalQuantityToAssign = request.ShelfMaterialBatches.Sum(s => s.Quantity);
+
+        if (totalQuantityToAssign > materialBatch.QuantityUnassigned)
+        {
+            return MaterialErrors.InsufficientStock; // Not enough stock in source shelf to move
+        }
+        
+        var distributeMaterial =
+            await context.DistributeMaterials
+                .AsSplitQuery()
+                .IgnoreQueryFilters().Include(distributeMaterial => distributeMaterial.DistributedRequisitionMaterial)
+                .ThenInclude(distributedRequisitionMaterial => distributedRequisitionMaterial.RequisitionItem)
+                .FirstOrDefaultAsync(m => m.Id == request.DistributeMaterialId);
+        
+        if(distributeMaterial is null) return Error.NotFound("DistributeMaterial.NotFound", "DistributeMaterial not found"); 
+        
+        foreach (var movedBatch in request.ShelfMaterialBatches)
+        {
+
+            var movement = new MassMaterialBatchMovement
+            {
+                BatchId = materialBatch.Id,
+                ToWarehouseId = distributeMaterial.WarehouseId,
+                Quantity = movedBatch.Quantity,
+                MovedAt = DateTime.UtcNow,
+                MovedById = userId
+            };
+            
+            await context.MassMaterialBatchMovements.AddAsync(movement);
+            
+            var materialBatchEvent = new MaterialBatchEvent
+            {
+                BatchId = materialBatch.Id,
+                Quantity = movedBatch.Quantity,
+                Type = EventType.Moved,  
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
+
+            var newShelfMaterialBatch = new ShelfMaterialBatch
+            {
+                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
+                MaterialBatchId = materialBatch.Id,
+                Quantity = movedBatch.Quantity,
+                UoMId = movedBatch.UomId,
+                Note = movedBatch.Note,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await context.ShelfMaterialBatches.AddAsync(newShelfMaterialBatch);
+
+            materialBatch.QuantityAssigned += movedBatch.Quantity;
+
+            if (materialBatch.QuantityAssigned >= totalQuantityToAssign)
+            {
+                materialBatch.Status = BatchStatus.Available;
+            }
+        }
+
+        distributeMaterial.DistributedRequisitionMaterial.Status = DistributedRequisitionMaterialStatus.Distributed;
+        distributeMaterial.DistributedRequisitionMaterial.RequisitionItem.QuantityReceived +=
+            request.ShelfMaterialBatches.Sum(b => b.Quantity);
+        context.DistributeMaterials.Update(distributeMaterial);
+        context.MaterialBatches.Update(materialBatch);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
     public async Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId)
     {
         if (file == null || file.Length == 0)

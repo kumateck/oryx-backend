@@ -33,6 +33,18 @@ public class ShipmentInvoiceDto : BaseDto
     public bool IsUsed { get; set; }
 }
 
+public class ShipmentInvoiceListDto : BaseDto
+{ 
+    public string Code { get; set; }
+    public SupplierListDto Supplier { get; set; }
+    //public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
+    public decimal TotalCost { get; set; }
+    public CurrencyDto Currency { get; set; }
+    public DateTime? PaidAt { get; set; } 
+    public bool IsUsed { get; set; }
+}
+
+
 public class ShipmentInvoiceItemDto : BaseDto
 {
     public MaterialDto Material { get; set; }
