@@ -82,7 +82,7 @@ public class DistributedRequisitionMaterialListDto
 {
     public Guid Id { get; set; }
     public MaterialDto Material { get; set; }
-    public ShipmentInvoiceListDto ShipmentInvoice { get; set; }
+    //public ShipmentInvoiceListDto ShipmentInvoice { get; set; }
     public decimal Quantity { get; set; }
     public DateTime? ArrivedAt { get; set; }
     public DateTime? CheckedAt { get; set; }
@@ -90,14 +90,14 @@ public class DistributedRequisitionMaterialListDto
     public DateTime? GrnGeneratedAt { get; set; }
     //public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; } = [];
     public DistributedRequisitionMaterialStatus Status { get; set; }
-    public DepartmentDto Department { get; set; }
+    public DepartmentListDto Department { get; set; }
     public List<DistributedRequisitionItemDto> DistributedRequisitionItems { get; set; } = [];
 }
 
 public class DistributedRequisitionItemDto
 {
     public Guid Id { get; set; }
-    public RequisitionItemDto RequisitionItem { get; set; }
+    public RequisitionItemListDto RequisitionItem { get; set; }
     public UnitOfMeasureDto Uom { get; set; }
     public decimal Quantity { get; set; }
     

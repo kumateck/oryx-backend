@@ -34,6 +34,16 @@ public class RequisitionItemDto
     public List<BatchToSupply> Batches { get; set; } = [];
 }
 
+
+public class RequisitionItemListDto 
+{
+    public Guid Id { get; set; }
+    public CollectionItemDto Material { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public decimal Quantity { get; set; }
+    public RequestStatus Status { get; set; }  
+}
+
 public class MaterialBatchLocationsDto
 {
     public MaterialBatchDto MaterialBatch { get; set; }
