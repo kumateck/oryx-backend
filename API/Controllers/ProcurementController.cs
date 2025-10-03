@@ -1285,15 +1285,15 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <summary>
     /// Retrieves a specific distributed material by its ID.
     /// </summary>
-    /// <param name="distributedRequisitionMaterialId">The ID of the distributed requisition material.</param>
+    /// <param name="distributeMaterialId">The ID of the distributed material.</param>
     /// <returns>Returns the distributed material details.</returns>
-    [HttpGet("distribute-material/{distributedRequisitionMaterialId}")]
+    [HttpGet("distribute-material/{distributeMaterialId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DistributeMaterialDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetDistributeMaterial(Guid distributedRequisitionMaterialId)
+    public async Task<IResult> GetDistributeMaterial(Guid distributeMaterialId)
     {
-        var result = await repository.GetDistributeMaterial(distributedRequisitionMaterialId);
+        var result = await repository.GetDistributeMaterial(distributeMaterialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

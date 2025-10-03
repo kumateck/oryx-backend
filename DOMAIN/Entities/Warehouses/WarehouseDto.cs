@@ -88,7 +88,7 @@ public class DistributedRequisitionMaterialListDto
     public DateTime? CheckedAt { get; set; }
     public DateTime? DistributedAt { get; set; }
     public DateTime? GrnGeneratedAt { get; set; }
-    public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; } = [];
+    //public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; } = [];
     public DistributedRequisitionMaterialStatus Status { get; set; }
     public DepartmentDto Department { get; set; }
     public List<DistributedRequisitionItemDto> DistributedRequisitionItems { get; set; } = [];
