@@ -88,4 +88,6 @@ public interface IMaterialRepository
   Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(MaterialFilter filter);
   Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind);
   Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(int page, int pageSize, string searchQuery, MaterialKind? kind);
+  Task<Result> MoveMaterialBatchToWarehouseFromDistribute(
+      SupplyMaterialBatchFromHMaterialDistribute request, Guid userId);
 }

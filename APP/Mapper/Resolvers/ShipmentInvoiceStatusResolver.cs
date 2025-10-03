@@ -12,3 +12,12 @@ public class ShipmentInvoiceStatusResolver(ApplicationDbContext dbContext) : IVa
         return dbContext.ShipmentDocuments.Any(s => s.ShipmentInvoiceId == source.Id);
     }
 }
+
+public class ShipmentInvoiceListStatusResolver(ApplicationDbContext dbContext) : IValueResolver<ShipmentInvoice, ShipmentInvoiceListDto, bool>
+{
+    public bool Resolve(ShipmentInvoice source, ShipmentInvoiceListDto destination, bool destMember,
+        ResolutionContext context)
+    {
+        return dbContext.ShipmentDocuments.Any(s => s.ShipmentInvoiceId == source.Id);
+    }
+}

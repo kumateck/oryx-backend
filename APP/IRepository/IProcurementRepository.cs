@@ -8,6 +8,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
+using DOMAIN.Entities.Warehouses;
 
 namespace APP.IRepository;
 
@@ -110,8 +111,14 @@ public interface IProcurementRepository
     Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize,
         string searchQuery);
     Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId);
-    Task<Result> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId);
+    Task<Result> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId, Guid departmentId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId);
     Task<Result> UpdateSupplierStatus(Guid supplierId, SupplierStatus status, Guid userId);
     Task<List<Guid>> GetDepartmentIdsFromPurchaseOrder(Guid purchaseOrderId);
+    Task<Result> DistributeMaterialToWarehouse(Guid distributedRequisitionMaterialId,
+        DistributeMaterialRequest request);
+   Task<Result<Paginateable<IEnumerable<DistributeMaterialDto>>>> GetDistributeMaterials(int page,
+        int pageSize,
+        string searchQuery, DistributeMaterialStatus? status, Guid? departmentId);
+   Task<Result<DistributeMaterialDto>> GetDistributeMaterial(Guid distributedRequisitionMaterialId);
 }

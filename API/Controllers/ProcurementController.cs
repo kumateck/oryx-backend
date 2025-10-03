@@ -11,6 +11,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
+using DOMAIN.Entities.Warehouses;
 
 namespace API.Controllers;
 
@@ -1193,11 +1194,14 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// </summary>
     /// <param name="shipmentDocumentId">The shipment document id for which you want to approve distribution</param>
     /// <param name="materialId"></param>
+    /// <param name="departmentId">The department the material goes to</param>
     /// <returns>Returns success or failure.</returns>
-    [HttpPost("{shipmentDocumentId}/confirm-distribution/{materialId}")]
-    public async Task<IResult> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId)
+    [HttpPost("{shipmentDocumentId}/confirm-distribution/{materialId}/{departmentId}")]
+    public async Task<IResult> ConfirmDistribution([FromRoute] Guid shipmentDocumentId,
+        [FromRoute] Guid materialId, 
+        [FromRoute] Guid departmentId)
     {
-        var result = await repository.ConfirmDistribution(shipmentDocumentId,materialId);
+        var result = await repository.ConfirmDistribution(shipmentDocumentId,materialId, departmentId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     
@@ -1236,6 +1240,60 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     public async Task<IResult> GetSupplierManufacturersBySupplier([FromRoute]Guid supplierId)
     {
         var result = await repository.GetSupplierManufacturersBySupplier(supplierId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    // ************* DistributeMaterial Endpoints *************
+
+    /// <summary>
+    /// Distributes a requisition material to a warehouse.
+    /// </summary>
+    /// <param name="distributedRequisitionMaterialId">The ID of the distributed requisition material.</param>
+    /// <param name="request">The distribution details request.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPost("distribute-material/{distributedRequisitionMaterialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DistributeMaterialToWarehouse(Guid distributedRequisitionMaterialId, [FromBody] DistributeMaterialRequest request)
+    {
+        var result = await repository.DistributeMaterialToWarehouse(distributedRequisitionMaterialId, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of distributed materials.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="status">Filter by distribution status.</param>
+    /// <param name="departmentId">Filter by department ID.</param>
+    /// <returns>Returns a paginated list of distributed materials.</returns>
+    [HttpGet("distribute-material")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributeMaterialDto>>))]
+    public async Task<IResult> GetDistributeMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null, [FromQuery] DistributeMaterialStatus? status = null,
+        [FromQuery] Guid? departmentId = null)
+    {
+        var result = await repository.GetDistributeMaterials(page, pageSize, searchQuery, status, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific distributed material by its ID.
+    /// </summary>
+    /// <param name="distributedRequisitionMaterialId">The ID of the distributed requisition material.</param>
+    /// <returns>Returns the distributed material details.</returns>
+    [HttpGet("distribute-material/{distributedRequisitionMaterialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DistributeMaterialDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributeMaterial(Guid distributedRequisitionMaterialId)
+    {
+        var result = await repository.GetDistributeMaterial(distributedRequisitionMaterialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

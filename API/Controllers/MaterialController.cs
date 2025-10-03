@@ -723,4 +723,23 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetShelfMaterialsAcrossWarehouses(materialId, departmentId, onlyAboutToExpire);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Moves a material batch into the warehouse from a distributed material.
+    /// </summary>
+    /// <param name="request">The request containing batch supply details.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPost("distribute-material/move-batch")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MoveMaterialBatchToWarehouseFromDistribute([FromBody] SupplyMaterialBatchFromHMaterialDistribute request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.MoveMaterialBatchToWarehouseFromDistribute(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

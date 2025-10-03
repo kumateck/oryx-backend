@@ -135,6 +135,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MaterialSpecification> MaterialSpecifications { get; set; }
     
     public DbSet<MaterialReject> MaterialRejects { get; set; }
+    public DbSet<DistributeMaterial> DistributeMaterials { get; set; }
     
     #endregion
 
@@ -835,6 +836,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.UoM).AutoInclude();
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.ShelfMaterialBatches).AutoInclude();
+        modelBuilder.Entity<DistributedRequisitionMaterial>().Navigation(p => p.DistributedRequisitionItems).AutoInclude();
+        modelBuilder.Entity<DistributedRequisitionItem>().Navigation(p => p.UoM).AutoInclude();
+        
 
         #endregion
 
