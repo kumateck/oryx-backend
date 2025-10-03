@@ -1261,6 +1261,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return Error.Validation("Items.Count", "Purchase Order & material must be unique");
         }
 
+        if (await context.ShipmentInvoices.AnyAsync(i => i.Code == request.Code))
+        {
+            return Error.Validation("Code", "Purchase Order code already exists.");
+        }
+
         var shipmentInvoice = mapper.Map<ShipmentInvoice>(request);
         shipmentInvoice.CreatedById = userId;
         await context.ShipmentInvoices.AddAsync(shipmentInvoice);

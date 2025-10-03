@@ -2021,6 +2021,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var shelfMaterialBatches =
                 await context.ShelfMaterialBatches
                     .IgnoreQueryFilters()
+                    .OrderBy(s => s.Quantity)
                     .Where(sb => sb.MaterialBatchId == batch.Id 
                                  && sb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == stockTransferSource.FromDepartmentId
                                  && !sb.DeletedAt.HasValue)
@@ -2033,7 +2034,21 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 return Error.Failure("Batch.InsufficientStock", $"Not enough stock in batch {batchRequest.BatchId}");
             }
 
-            context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
+            var quantityToDeduct = batchRequest.Quantity;
+
+            foreach (var shelfMaterialBatch in shelfMaterialBatches)
+            {
+                if (quantityToDeduct <= 0) break;
+
+                var deductAmount = Math.Min(shelfMaterialBatch.Quantity, quantityToDeduct);
+                shelfMaterialBatch.Quantity -= deductAmount;
+                quantityToDeduct -= deductAmount;
+
+                if (shelfMaterialBatch.Quantity <= 0)
+                {
+                    context.ShelfMaterialBatches.Remove(shelfMaterialBatch);
+                }
+            }
             
             remainingQuantity -= batchRequest.Quantity;
             if (remainingQuantity <= 0) break;
