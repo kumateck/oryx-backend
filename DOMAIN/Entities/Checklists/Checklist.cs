@@ -45,7 +45,7 @@ public class ChecklistDto
 
 public class CheckListDto
 {
-    public DistributedRequisitionMaterialDto DistributedRequisitionMaterial { get; set; }
+    public DistributedRequisitionMaterialListDto DistributedRequisitionMaterial { get; set; }
     public MaterialDto Material { get; set; }
     public DateTime? CheckedAt { get; set; }
     public SupplierDto Supplier { get; set; }
