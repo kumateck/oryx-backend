@@ -812,6 +812,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     public async Task<Result<GrnDto>> GetGrn(Guid id)
     {
         var grn = await context.Grns
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(c => c.MaterialBatches)
             .ThenInclude(mb=>mb.Checklist)

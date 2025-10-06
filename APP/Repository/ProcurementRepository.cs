@@ -2200,17 +2200,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    public async Task<Result> DistributeMaterialToWarehouse(Guid distributedRequisitionMaterialId, DistributeMaterialRequest request)
+    public async Task<Result> DistributeMaterialToWarehouse(DistributeMaterialRequest request)
     {
-        var distributedRequisitionMaterial = await context.DistributedRequisitionMaterials.FirstOrDefaultAsync(i =>
-            i.Id == distributedRequisitionMaterialId);
-        
-        if(distributedRequisitionMaterial is null) return 
-            Error.NotFound("DistributedRequisitionMaterial.NotFound", 
-                "DistributedRequisitionMaterial not found");
-
         var distributeMaterial = mapper.Map<DistributeMaterial>(request);
-        distributeMaterial.DistributedRequisitionMaterialId = distributedRequisitionMaterialId;
         await context.DistributeMaterials.AddAsync(distributeMaterial);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -2223,6 +2215,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .AsSplitQuery()
             .AsNoTracking()
             .IgnoreQueryFilters()
+            .IgnoreAutoIncludes()
             .Include(w => w.Warehouse)
             .ThenInclude(w => w.Department)
             .Include(w => w.MaterialBatch)

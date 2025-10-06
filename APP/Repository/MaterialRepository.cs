@@ -2334,9 +2334,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var distributeMaterial =
             await context.DistributeMaterials
                 .AsSplitQuery()
-                .IgnoreQueryFilters().Include(distributeMaterial => distributeMaterial.DistributedRequisitionMaterial)
+                .IgnoreQueryFilters()
                 .Include(distributeMaterial => distributeMaterial.DistributedRequisitionItem)
                 .ThenInclude(distributedRequisitionItem => distributedRequisitionItem.RequisitionItem)
+                .Include(distributeMaterial => distributeMaterial.DistributedRequisitionItem)
+                .ThenInclude(distributedRequisitionItem => distributedRequisitionItem.DistributedRequisitionMaterial)
                 .FirstOrDefaultAsync(m => m.Id == request.DistributeMaterialId);
         
         if(distributeMaterial is null) return Error.NotFound("DistributeMaterial.NotFound", "DistributeMaterial not found"); 
@@ -2386,7 +2388,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             }
         }
 
-        distributeMaterial.DistributedRequisitionMaterial.Status = DistributedRequisitionMaterialStatus.Distributed;
+        distributeMaterial.DistributedRequisitionItem.DistributedRequisitionMaterial.Status = DistributedRequisitionMaterialStatus.Distributed;
         distributeMaterial.DistributedRequisitionItem.RequisitionItem.QuantityReceived +=
             request.ShelfMaterialBatches.Sum(b => b.Quantity);
         context.DistributeMaterials.Update(distributeMaterial);

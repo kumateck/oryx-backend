@@ -100,6 +100,7 @@ public class DistributedRequisitionItemDto
     public Guid Id { get; set; }
     public RequisitionItemListDto RequisitionItem { get; set; }
     public UnitOfMeasureDto Uom { get; set; }
+    public WarehouseWithoutLocationDto Warehouse { get; set; }
     public decimal Quantity { get; set; }
     
 }
