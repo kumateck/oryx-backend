@@ -2152,10 +2152,18 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                 ShipmentInvoiceItemId = d.ShipmentInvoiceItem.Id,
                 Quantity = d.Quantity,
             }).ToList(),
-            DistributedRequisitionItems = materialDistribution.Items.Select(i => new DistributedRequisitionItem()
+            DistributedRequisitionItems = materialDistribution.Items.Select(i => new DistributedRequisitionItem
             {
                 RequisitionItemId = i.RequisitionItem.Id, 
                 UoMId = i.RequisitionItem.UoM.Id,
+                WarehouseId = i.RequisitionItem.Material.Kind == MaterialKind.Raw ? context.Warehouses
+                        .IgnoreAutoIncludes()
+                        .IgnoreQueryFilters()
+                        .FirstOrDefault(w => w.DepartmentId == i.Department.Id && w.Type == WarehouseType.RawMaterialStorage)?.Id ?? throw new Exception("Warehouse for distribution not found")
+                    : context.Warehouses
+                        .IgnoreAutoIncludes()
+                        .IgnoreQueryFilters()
+                        .FirstOrDefault(w => w.DepartmentId == i.Department.Id && w.Type == WarehouseType.PackagedStorage)?.Id ?? throw new Exception("Warehouse for distribution not found"),
                 Quantity = i.QuantityAllocated,
             }).ToList(),
             WarehouseArrivalLocationId = departmentWarehouse.ArrivalLocation.Id
