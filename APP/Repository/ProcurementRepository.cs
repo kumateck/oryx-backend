@@ -2147,6 +2147,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             MaterialId = materialId,
             ShipmentInvoiceId = shipmentDocument.ShipmentInvoiceId,
             Status = DistributedRequisitionMaterialStatus.Pending,
+            UoMId = materialDistribution.Items.Select(i => i.RequisitionItem.UoM.Id).First(),
+            Quantity = materialDistribution.Items.Sum(i => i.QuantityAllocated),
             MaterialItemDistributions = materialDistribution.Items.SelectMany(i => i.Distributions).Select(d => new MaterialItemDistribution
             {
                 ShipmentInvoiceItemId = d.ShipmentInvoiceItem.Id,
@@ -2326,7 +2328,6 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     // Create distributed material record
                     var distributedRequisitionMaterial = new DistributedRequisitionMaterial
                     {
-                        RequisitionItemId = requisitionItem.Id,
                         MaterialId = requisitionItem.MaterialId,
                         ShipmentInvoiceId = shipmentDocument.ShipmentInvoiceId,
                         UoMId = requisitionItem.UoMId,
