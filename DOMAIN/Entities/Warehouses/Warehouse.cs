@@ -38,8 +38,6 @@ public class WarehouseArrivalLocation:BaseEntity
 
 public class DistributedRequisitionMaterial : BaseEntity
 {
-    public Guid? RequisitionItemId { get; set; }
-    public RequisitionItem RequisitionItem { get; set; }
     public Guid? WarehouseArrivalLocationId { get; set; }
     public WarehouseArrivalLocation WarehouseArrivalLocation { get; set; }
     public List<MaterialItemDistribution> MaterialItemDistributions { get; set; } = [];
@@ -170,6 +168,7 @@ public class DistributeMaterialRequest
     public Guid WarehouseId { get; set; }
     public Guid MaterialBatchId { get; set; }
     public Guid UoMId { get; set; }
+    public Guid DistributedRequisitionItemId { get; set; }
     public decimal Quantity { get; set; }
 }
 
@@ -184,6 +183,8 @@ public class DistributeMaterial : BaseEntity
     public decimal Quantity { get; set; }
     public Guid DistributedRequisitionMaterialId { get; set; }
     public DistributedRequisitionMaterial DistributedRequisitionMaterial { get; set; }
+    public Guid DistributedRequisitionItemId { get; set; }
+   public DistributedRequisitionItem DistributedRequisitionItem  { get; set; }
     public DistributeMaterialStatus  Status { get; set; }
 }
 

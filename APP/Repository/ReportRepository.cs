@@ -1098,7 +1098,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var query = context.DistributedRequisitionMaterials
             .Include(drm => drm.ShipmentInvoice)
             .Include(drm => drm.Material)
-            .Include(drm => drm.RequisitionItem)
             .Include(drm => drm.WarehouseArrivalLocation)
             .Include(drm=>drm.MaterialItemDistributions)
             .Include(sr=>sr.CheckLists)

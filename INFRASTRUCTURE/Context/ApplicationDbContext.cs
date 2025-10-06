@@ -1108,9 +1108,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region DistributedRequisitionMaterial Filters
 
-        modelBuilder.Entity<DistributedRequisitionMaterial>().HasQueryFilter(a =>
-            ShouldNotFilterProducts ||
-            (a.RequisitionItem.Requisition.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
+         modelBuilder.Entity<DistributedRequisitionMaterial>().HasQueryFilter(a =>
+             ShouldNotFilterProducts ||
+             (a.WarehouseArrivalLocation.Warehouse.DepartmentId == currentUserService.DepartmentId && !a.DeletedAt.HasValue));
         
         modelBuilder.Entity<Checklist>().HasQueryFilter(a => a.DistributedRequisitionMaterial != null);
 
