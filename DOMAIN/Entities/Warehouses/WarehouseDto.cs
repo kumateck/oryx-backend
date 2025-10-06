@@ -76,7 +76,7 @@ public class DistributedRequisitionMaterialDto
     public DistributedRequisitionMaterialStatus Status { get; set; }
     public List<DistributedChecklistDto> Checklists { get; set; }
     public List<DistributedRequisitionItemDto> DistributedRequisitionItems { get; set; } = [];
-    public DepartmentDto Department { get; set; }
+    public DepartmentListDto Department { get; set; }
 }
 
 public class DistributedRequisitionMaterialListDto

@@ -503,6 +503,7 @@ public class OryxMapper : Profile
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialListDto>()
             .ForMember(dest => dest.Department,
                 opt => opt.MapFrom(src => src.WarehouseArrivalLocation.Warehouse.Department));
+        CreateMap<DistributedRequisitionItem, DistributedRequisitionItemDto>();
         CreateMap<DistributedFinishedProduct, DistributedFinishedProductDto>();
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
