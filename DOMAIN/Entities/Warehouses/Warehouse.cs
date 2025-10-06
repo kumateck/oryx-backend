@@ -181,10 +181,8 @@ public class DistributeMaterial : BaseEntity
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
-    public Guid DistributedRequisitionMaterialId { get; set; }
-    public DistributedRequisitionMaterial DistributedRequisitionMaterial { get; set; }
     public Guid DistributedRequisitionItemId { get; set; }
-   public DistributedRequisitionItem DistributedRequisitionItem  { get; set; }
+    public DistributedRequisitionItem DistributedRequisitionItem  { get; set; }
     public DistributeMaterialStatus  Status { get; set; }
 }
 

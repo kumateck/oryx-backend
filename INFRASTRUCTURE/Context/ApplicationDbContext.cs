@@ -838,7 +838,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.ShelfMaterialBatches).AutoInclude();
         modelBuilder.Entity<DistributedRequisitionMaterial>().Navigation(p => p.DistributedRequisitionItems).AutoInclude();
         modelBuilder.Entity<DistributedRequisitionItem>().Navigation(p => p.UoM).AutoInclude();
-        
+        modelBuilder.Entity<DistributedRequisitionItem>().Navigation(p => p.RequisitionItem).AutoInclude();
+        modelBuilder.Entity<DistributedRequisitionItem>().Navigation(p => p.Warehouse).AutoInclude();
 
         #endregion
 

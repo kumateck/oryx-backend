@@ -1248,17 +1248,16 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <summary>
     /// Distributes a requisition material to a warehouse.
     /// </summary>
-    /// <param name="distributedRequisitionMaterialId">The ID of the distributed requisition material.</param>
     /// <param name="request">The distribution details request.</param>
     /// <returns>Returns success or failure.</returns>
-    [HttpPost("distribute-material/{distributedRequisitionMaterialId}")]
+    [HttpPost("distribute-material")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DistributeMaterialToWarehouse(Guid distributedRequisitionMaterialId, [FromBody] DistributeMaterialRequest request)
+    public async Task<IResult> DistributeMaterialToWarehouse([FromBody] DistributeMaterialRequest request)
     {
-        var result = await repository.DistributeMaterialToWarehouse(distributedRequisitionMaterialId, request);
+        var result = await repository.DistributeMaterialToWarehouse(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
