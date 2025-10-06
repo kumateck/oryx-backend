@@ -2147,6 +2147,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             MaterialId = materialId,
             ShipmentInvoiceId = shipmentDocument.ShipmentInvoiceId,
             Status = DistributedRequisitionMaterialStatus.Pending,
+            DistributedAt = DateTime.UtcNow,
             UoMId = materialDistribution.Items.Select(i => i.RequisitionItem.UoM.Id).First(),
             Quantity = materialDistribution.Items.Sum(i => i.QuantityAllocated),
             MaterialItemDistributions = materialDistribution.Items.SelectMany(i => i.Distributions).Select(d => new MaterialItemDistribution
