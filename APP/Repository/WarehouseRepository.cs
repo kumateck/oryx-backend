@@ -1026,7 +1026,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         if (user is null)
             return UserErrors.NotFound(userId);
 
-        var warehouses = await context.Warehouses.AsSplitQuery().Where(w => w.DepartmentId == user.DepartmentId).ToListAsync();
+        var warehouses = await context.Warehouses.IgnoreQueryFilters().AsSplitQuery().Where(w => w.DepartmentId == user.DepartmentId).ToListAsync();
 
         var rawMaterialWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.RawMaterialStorage);
 
