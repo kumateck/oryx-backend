@@ -118,6 +118,6 @@ public interface IProcurementRepository
     Task<Result> DistributeMaterialToWarehouse(List<DistributeMaterialRequest> request);
    Task<Result<Paginateable<IEnumerable<DistributeMaterialDto>>>> GetDistributeMaterials(int page,
         int pageSize,
-        string searchQuery, DistributeMaterialStatus? status, Guid? departmentId);
+        string searchQuery, DistributeMaterialStatus? status, Guid? departmentId, MaterialKind? kind);
    Task<Result<DistributeMaterialDto>> GetDistributeMaterial(Guid distributedRequisitionMaterialId);
 }

@@ -2225,7 +2225,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     public async Task<Result<Paginateable<IEnumerable<DistributeMaterialDto>>>> GetDistributeMaterials(int page, int pageSize,
-        string searchQuery, DistributeMaterialStatus? status, Guid? departmentId)
+        string searchQuery, DistributeMaterialStatus? status, Guid? departmentId, MaterialKind? kind)
     {
         var query = context.DistributeMaterials
             .AsSplitQuery()
@@ -2253,6 +2253,11 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         if (departmentId.HasValue)
         {
             query = query.Where(q => q.Warehouse.DepartmentId == departmentId.Value);
+        }
+
+        if (kind.HasValue)
+        {
+            query = query.Where(q => q.MaterialBatch.Material.Kind == kind.Value);
         }
         
         return await PaginationHelper.GetPaginatedResultAsync(
