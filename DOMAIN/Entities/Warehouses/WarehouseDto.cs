@@ -109,7 +109,7 @@ public class DistributedRequisitionItemDto
 public class DistributedFinishedProductDto
 {
     public Guid Id { get; set; }
-    public ProductDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public UnitOfMeasureDto Uom { get; set; }
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public FinishedGoodsTransferNoteDto TransferNote { get; set; }

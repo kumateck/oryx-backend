@@ -2202,8 +2202,24 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result> DistributeMaterialToWarehouse(List<DistributeMaterialRequest> request)
     {
+        var batchIds = request.Select(r => r.MaterialBatchId).Distinct().ToList();
+        var materialBatches = await context.MaterialBatches
+            .Where(m => batchIds.Contains(m.Id))
+            .ToListAsync();
+        
+        var batchDict = materialBatches.ToDictionary(m => m.Id, m => m);
+        
+        foreach (var req in request)
+        {
+            if (!batchDict.TryGetValue(req.MaterialBatchId, out var batch))
+                return Error.NotFound("MaterialBatch.NotFound", $"Batch {req.MaterialBatchId} not found");
+
+            batch.QuantityDistributed += req.Quantity;
+        }
+        
         var distributeMaterials = mapper.Map<List<DistributeMaterial>>(request);
         await context.DistributeMaterials.AddRangeAsync(distributeMaterials);
+        context.MaterialBatches.UpdateRange(batchDict.Values);
         await context.SaveChangesAsync();
         return Result.Success();
     }
