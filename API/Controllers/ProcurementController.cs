@@ -1269,15 +1269,17 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="status">Filter by distribution status.</param>
     /// <param name="departmentId">Filter by department ID.</param>
+    /// <param name="kind">The material kind</param>
     /// <returns>Returns a paginated list of distributed materials.</returns>
     [HttpGet("distribute-material")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributeMaterialDto>>))]
     public async Task<IResult> GetDistributeMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] DistributeMaterialStatus? status = null,
-        [FromQuery] Guid? departmentId = null)
+        [FromQuery] Guid? departmentId = null,
+        [FromQuery] MaterialKind? kind = null)
     {
-        var result = await repository.GetDistributeMaterials(page, pageSize, searchQuery, status, departmentId);
+        var result = await repository.GetDistributeMaterials(page, pageSize, searchQuery, status, departmentId, kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
