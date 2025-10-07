@@ -2389,6 +2389,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         distributeMaterial.DistributedRequisitionItem.DistributedRequisitionMaterial.Status = DistributedRequisitionMaterialStatus.Distributed;
+        distributeMaterial.Status = DistributeMaterialStatus.Distributed;
         distributeMaterial.DistributedRequisitionItem.RequisitionItem.QuantityReceived +=
             request.ShelfMaterialBatches.Sum(b => b.Quantity);
         context.DistributeMaterials.Update(distributeMaterial);
