@@ -103,9 +103,7 @@ public class DistributedRequisitionItemDto
     public WarehouseWithoutLocationDto Warehouse { get; set; }
     public decimal Quantity { get; set; }
     public decimal QuantityDistributed  { get; set; }
-    public decimal QuantityAssigned { get; set; }
-    public bool IsDistributed => Quantity == QuantityDistributed;
-    public bool IsAssigned => Quantity ==  QuantityAssigned;
+    public bool FullyDistributed => Quantity == QuantityDistributed;
 }
 
 public class DistributedFinishedProductDto
