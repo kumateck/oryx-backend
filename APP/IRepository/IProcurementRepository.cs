@@ -115,7 +115,7 @@ public interface IProcurementRepository
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId);
     Task<Result> UpdateSupplierStatus(Guid supplierId, SupplierStatus status, Guid userId);
     Task<List<Guid>> GetDepartmentIdsFromPurchaseOrder(Guid purchaseOrderId);
-    Task<Result> DistributeMaterialToWarehouse(DistributeMaterialRequest request);
+    Task<Result> DistributeMaterialToWarehouse(List<DistributeMaterialRequest> request);
    Task<Result<Paginateable<IEnumerable<DistributeMaterialDto>>>> GetDistributeMaterials(int page,
         int pageSize,
         string searchQuery, DistributeMaterialStatus? status, Guid? departmentId);
