@@ -2394,6 +2394,35 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             request.ShelfMaterialBatches.Sum(b => b.Quantity);
         context.DistributeMaterials.Update(distributeMaterial);
         context.MaterialBatches.Update(materialBatch);
+        
+        var grn = await context.Grns
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(g => g.MaterialBatches)
+            .FirstOrDefaultAsync(g => g.MaterialBatches.Any(mb => mb.Id == request.MaterialBatchId));
+
+        if (grn != null)
+        {
+            var batches = grn.MaterialBatches;
+
+            if (batches == null || batches.Count == 0)
+            {
+                grn.Status = Status.Pending;
+            }
+            else if (batches.All(b => b.Status == BatchStatus.Available))
+            {
+                grn.Status = Status.Completed;
+            }
+            else if (batches.Any(b => b.Status == BatchStatus.Available))
+            {
+                grn.Status = Status.Partial;
+            }
+            else
+            {
+                grn.Status = Status.Pending;
+            }
+        }
+        
         await context.SaveChangesAsync();
         return Result.Success();
     }
