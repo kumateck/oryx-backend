@@ -29,6 +29,7 @@ public class MaterialBatchDto
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity { get; set; }
     public decimal SampledQuantity { get; set; }
+    public decimal QuantityDistributed {get; set;}
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
@@ -60,6 +61,7 @@ public class MaterialBatchListDto
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity { get; set; }
     public decimal SampledQuantity { get; set; }
+    public decimal QuantityDistributed {get; set;}
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
@@ -87,6 +89,7 @@ public class MaterialBatchReducedDto
     public decimal ConsumedQuantity { get; set; }  
     public decimal RemainingQuantity { get; set; }
     public decimal SampledQuantity { get; set; }
+    public decimal QuantityDistributed {get; set;}
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
@@ -115,6 +118,7 @@ public class DistributedMaterialBatchDto
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
+    public decimal QuantityDistributed {get; set;}
     //public List<MaterialBatchEventDto> Events { get; set; } = [];
     //public List<MaterialBatchMovementDto> Movements { get; set; } = [];
     public List<SrDto> SampleWeights { get; set; } = [];
