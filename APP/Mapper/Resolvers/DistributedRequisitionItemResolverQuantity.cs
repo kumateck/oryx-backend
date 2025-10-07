@@ -14,14 +14,3 @@ public class DistributedRequisitionItemResolverDistributedQuantity(ApplicationDb
             .Sum(d => d.Quantity);
     }
 }
-
-public class DistributedRequisitionItemResolverAssignedQuantity(ApplicationDbContext dbContext) : IValueResolver<DistributedRequisitionItem, DistributedRequisitionItemDto, decimal>
-{
-    public decimal Resolve(DistributedRequisitionItem source, DistributedRequisitionItemDto destination, decimal destMember,
-        ResolutionContext context)
-    {
-        return dbContext.DistributeMaterials
-            .Where(d => d.DistributedRequisitionItemId == source.Id && d.Status == DistributeMaterialStatus.Distributed)
-            .Sum(d => d.Quantity);
-    }
-}
