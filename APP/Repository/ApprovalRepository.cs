@@ -1719,8 +1719,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 ApprovalLogs = GetApprovalLogs(shipmentDocument.Id)
             });
         }
-
-        return entitiesRequiringApproval;
+        
+        return entitiesRequiringApproval.OrderByDescending(a => a.CreatedAt).ToList();
     }
 
     public async Task<Result<ApprovalEntity>> GetEntityRequiringApproval(string modelType,
