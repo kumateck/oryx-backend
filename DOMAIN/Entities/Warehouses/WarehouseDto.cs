@@ -102,7 +102,10 @@ public class DistributedRequisitionItemDto
     public UnitOfMeasureDto Uom { get; set; }
     public WarehouseWithoutLocationDto Warehouse { get; set; }
     public decimal Quantity { get; set; }
-    
+    public decimal QuantityDistributed  { get; set; }
+    public decimal QuantityAssigned { get; set; }
+    public bool IsDistributed => Quantity == QuantityDistributed;
+    public bool IsAssigned => Quantity ==  QuantityAssigned;
 }
 
 public class DistributedFinishedProductDto
