@@ -2200,10 +2200,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    public async Task<Result> DistributeMaterialToWarehouse(DistributeMaterialRequest request)
+    public async Task<Result> DistributeMaterialToWarehouse(List<DistributeMaterialRequest> request)
     {
-        var distributeMaterial = mapper.Map<DistributeMaterial>(request);
-        await context.DistributeMaterials.AddAsync(distributeMaterial);
+        var distributeMaterials = mapper.Map<List<DistributeMaterial>>(request);
+        await context.DistributeMaterials.AddRangeAsync(distributeMaterials);
         await context.SaveChangesAsync();
         return Result.Success();
     }

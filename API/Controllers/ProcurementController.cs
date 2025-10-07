@@ -1255,7 +1255,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DistributeMaterialToWarehouse([FromBody] DistributeMaterialRequest request)
+    public async Task<IResult> DistributeMaterialToWarehouse([FromBody] List<DistributeMaterialRequest> request)
     {
         var result = await repository.DistributeMaterialToWarehouse(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
