@@ -730,4 +730,93 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
 
     #endregion
     
+    /// <summary>
+    /// Creates a new warehouse swap request.
+    /// </summary>
+    /// <param name="request">The swap request details.</param>
+    /// <returns>A result indicating success or failure of the operation.</returns>
+    [HttpPost("swap")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateSwapRequest([FromBody] CreateSwapRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.CreateSwapRequest(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of all swap requests.
+    /// </summary>
+    /// <param name="page">The page number to retrieve.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">An optional search query to filter swap requests.</param>
+    /// <returns>A paginated list of swap requests.</returns>
+    [HttpGet("swap")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SwapRequestDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetAllSwapRequests([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetSwapRequests(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the details of a specific swap request.
+    /// </summary>
+    /// <param name="id">The unique identifier of the swap request.</param>
+    /// <returns>The swap request details.</returns>
+    [HttpGet("swap/{id}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SwapRequestDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetSwapRequestById([FromRoute] Guid id)
+    {
+        var result = await repository.GetSwapRequestDetails(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Approves a warehouse swap request.
+    /// </summary>
+    /// <param name="id">The unique identifier of the swap request to approve.</param>
+    /// <returns>A result indicating success or failure of the operation.</returns>
+    [HttpPut("swap/{id}/approve")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ApproveSwapRequest([FromRoute] Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.ApproveSwapRequest(id,  Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Rejects a warehouse swap request.
+    /// </summary>
+    /// <param name="id">The unique identifier of the swap request to reject.</param>
+    /// <param name="reason">An optional reason for rejection.</param>
+    /// <returns>A result indicating success or failure of the operation.</returns>
+    [HttpPut("swap/{id}/reject")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> RejectSwapRequest([FromRoute] Guid id, [FromQuery] string reason)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.RejectSwapRequest(id, Guid.Parse(userId), reason);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

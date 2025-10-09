@@ -1171,6 +1171,265 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             mapper.Map<MaterialBatchDto>
         );
     }
+    
+    public async Task<Result> CreateSwapRequest(CreateSwapRequest request, Guid userId)
+    {
+        // Validate quantity balance
+        if (!request.QuantityIsValid)
+            return Error.Validation("Swap.QuantityMismatch", "The total quantity to swap between warehouses must be equal.");
+
+        // Validate warehouse existence
+        var warehouses = await context.Warehouses
+            .IgnoreQueryFilters()
+            .Where(w => w.Id == request.FirstWarehouseId || w.Id == request.SecondWarehouseId)
+            .ToListAsync();
+
+        if (warehouses.Count != 2)
+            return Error.NotFound("Warehouse.NotFound", "One or both warehouses do not exist.");
+
+        // Validate shelf material batches exist
+        var allShelfBatchIds = request.FirstSwapShelfMaterialBatches
+            .Select(m => m.ShelfMaterialBatchId)
+            .Concat(request.SecondSwapShelfMaterialBatches.Select(m => m.ShelfMaterialBatchId))
+            .ToList();
+
+        var existingShelfBatches = await context.ShelfMaterialBatches
+            .Where(b => allShelfBatchIds.Contains(b.Id))
+            .ToListAsync();
+
+        if (existingShelfBatches.Count != allShelfBatchIds.Count)
+            return Error.Validation("Swap.InvalidBatch", "Some provided shelf material batches could not be found.");
+
+        // Create entity
+        var swapRequest = new SwapRequest
+        {
+            FirstWarehouseId = request.FirstWarehouseId,
+            SecondWarehouseId = request.SecondWarehouseId,
+            FirstSwapShelfMaterialBatches = request.FirstSwapShelfMaterialBatches.Select(m => new SwapShelfMaterialBatch
+            {
+                ShelfMaterialBatchId = m.ShelfMaterialBatchId,
+                MaterialBatchId = m.MaterialBatchId,
+                UoMId = m.UoMId,
+                Quantity = m.Quantity
+            }).ToList(),
+            SecondSwapShelfMaterialBatches = request.SecondSwapShelfMaterialBatches.Select(m => new SwapShelfMaterialBatch
+            {
+                ShelfMaterialBatchId = m.ShelfMaterialBatchId,
+                MaterialBatchId = m.MaterialBatchId,
+                UoMId = m.UoMId,
+                Quantity = m.Quantity
+            }).ToList()
+        };
+
+        await context.SwapRequests.AddAsync(swapRequest);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+    
+    public async Task<Result<Paginateable<IEnumerable<SwapRequestDto>>>> GetSwapRequests(int page, int pageSize, string searchQuery)
+    {
+        var query = context.SwapRequests
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(s => s.FirstWarehouse)
+            .Include(s => s.SecondWarehouse)
+            .Include(s => s.FirstSwapShelfMaterialBatches)
+            .ThenInclude(b => b.MaterialBatch)
+            .Include(s => s.FirstSwapShelfMaterialBatches)
+            .ThenInclude(b => b.UoM)
+            .Include(s => s.SecondSwapShelfMaterialBatches)
+            .ThenInclude(b => b.MaterialBatch)
+            .Include(s => s.SecondSwapShelfMaterialBatches)
+            .ThenInclude(b => b.UoM)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, s =>
+                    s.FirstWarehouse.Name,
+                s => s.SecondWarehouse.Name
+            );
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query.OrderByDescending(s => s.CreatedAt),
+            page,
+            pageSize,
+            mapper.Map<SwapRequestDto>
+        );
+    }
+    
+    public async Task<Result<SwapRequestDto>> GetSwapRequestDetails(Guid swapRequestId)
+    {
+        var swapRequest = await context.SwapRequests
+            .AsSplitQuery()
+            .Include(s => s.FirstWarehouse)
+            .Include(s => s.SecondWarehouse)
+            .Include(s => s.FirstSwapShelfMaterialBatches)
+            .ThenInclude(b => b.MaterialBatch)
+            .Include(s => s.FirstSwapShelfMaterialBatches)
+            .ThenInclude(b => b.UoM)
+            .Include(s => s.SecondSwapShelfMaterialBatches)
+            .ThenInclude(b => b.MaterialBatch)
+            .Include(s => s.SecondSwapShelfMaterialBatches)
+            .ThenInclude(b => b.UoM)
+            .Include(b => b.ActionedBy)
+            .FirstOrDefaultAsync(s => s.Id == swapRequestId);
+
+        if (swapRequest is null)
+            return Error.NotFound("Swap.NotFound", "The requested swap could not be found.");
+
+        return mapper.Map<SwapRequestDto>(swapRequest);
+    }
+    
+    public async Task<Result> ApproveSwapRequest(Guid swapRequestId, Guid approverId)
+    {
+        var swapRequest = await context.SwapRequests
+            .IgnoreQueryFilters()
+            .Include(s => s.FirstWarehouse)
+            .Include(s => s.SecondWarehouse)
+            .Include(s => s.FirstSwapShelfMaterialBatches)
+            .Include(s => s.SecondSwapShelfMaterialBatches)
+            .FirstOrDefaultAsync(s => s.Id == swapRequestId);
+
+        if (swapRequest is null)
+            return Error.NotFound("Swap.NotFound", "Swap request not found.");
+
+        if (swapRequest.Status == SwapRequestStatus.Approved)
+            return Error.Validation("Swap.AlreadyApproved", "This swap request has already been approved.");
+
+        if (swapRequest.FirstSwapShelfMaterialBatches.Sum(x => x.Quantity) !=
+            swapRequest.SecondSwapShelfMaterialBatches.Sum(x => x.Quantity))
+            return Error.Validation("Swap.QuantityMismatch", "The total quantities to swap do not match.");
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+
+        try
+        {
+            string firstWarehouseName = swapRequest.FirstWarehouse?.Name ?? "Unknown Warehouse";
+            string secondWarehouseName = swapRequest.SecondWarehouse?.Name ?? "Unknown Warehouse";
+
+            // --- Process First Warehouse → Second Warehouse
+            var firstShelfBatchIds = swapRequest.FirstSwapShelfMaterialBatches
+                .Select(x => x.ShelfMaterialBatchId)
+                .ToList();
+
+            var firstShelfBatches = await context.ShelfMaterialBatches
+                .Where(x => firstShelfBatchIds.Contains(x.Id))
+                .Include(x => x.WarehouseLocationShelf)
+                .ToDictionaryAsync(x => x.Id);
+
+            foreach (var batch in swapRequest.FirstSwapShelfMaterialBatches)
+            {
+                var shelfBatch = firstShelfBatches[batch.ShelfMaterialBatchId];
+                if (shelfBatch.Quantity < batch.Quantity)
+                    return Error.Validation("Swap.InsufficientQuantity", $"Not enough stock in shelf batch {shelfBatch.Id}");
+
+                shelfBatch.Quantity -= batch.Quantity;
+
+                //  Match by MaterialBatchId to find target shelf in the second warehouse side
+                var targetShelfId = swapRequest.SecondSwapShelfMaterialBatches
+                    .FirstOrDefault(x => x.MaterialBatchId == batch.MaterialBatchId)
+                    ?.ShelfMaterialBatch.WarehouseLocationShelfId;
+
+                if (targetShelfId == null)
+                    return Error.Validation("Swap.MissingTargetShelf", $"No matching shelf found in second warehouse for material batch {batch.MaterialBatchId}");
+
+                await context.ShelfMaterialBatches.AddAsync(new ShelfMaterialBatch
+                {
+                    WarehouseLocationShelfId = targetShelfId.Value,
+                    MaterialBatchId = batch.MaterialBatchId,
+                    Quantity = batch.Quantity,
+                    UoMId = batch.UoMId,
+                    Note = $"Swapped from {firstWarehouseName} → {secondWarehouseName}"
+                });
+            }
+
+
+            // --- Process Second Warehouse → First Warehouse
+            var secondShelfBatchIds = swapRequest.SecondSwapShelfMaterialBatches
+                .Select(x => x.ShelfMaterialBatchId)
+                .ToList();
+
+            var secondShelfBatches = await context.ShelfMaterialBatches
+                .Where(x => secondShelfBatchIds.Contains(x.Id))
+                .Include(x => x.WarehouseLocationShelf)
+                .ToDictionaryAsync(x => x.Id);
+
+            foreach (var batch in swapRequest.SecondSwapShelfMaterialBatches)
+            {
+                var shelfBatch = secondShelfBatches[batch.ShelfMaterialBatchId];
+                if (shelfBatch.Quantity < batch.Quantity)
+                    return Error.Validation("Swap.InsufficientQuantity", $"Not enough stock in shelf batch {shelfBatch.Id}");
+
+                shelfBatch.Quantity -= batch.Quantity;
+
+                //  Match by MaterialBatchId to find target shelf in the first warehouse side
+                var targetShelfId = swapRequest.FirstSwapShelfMaterialBatches
+                    .FirstOrDefault(x => x.MaterialBatchId == batch.MaterialBatchId)
+                    ?.ShelfMaterialBatch.WarehouseLocationShelfId;
+
+                if (targetShelfId == null)
+                    return Error.Validation("Swap.MissingTargetShelf", $"No matching shelf found in first warehouse for material batch {batch.MaterialBatchId}");
+
+                await context.ShelfMaterialBatches.AddAsync(new ShelfMaterialBatch
+                {
+                    WarehouseLocationShelfId = targetShelfId.Value,
+                    MaterialBatchId = batch.MaterialBatchId,
+                    Quantity = batch.Quantity,
+                    UoMId = batch.UoMId,
+                    Note = $"Swapped from {secondWarehouseName} → {firstWarehouseName}"
+                });
+            }
+
+
+            // --- Mark as approved
+            swapRequest.Status = SwapRequestStatus.Approved;
+            swapRequest.ActionedById = approverId;
+            swapRequest.ActionedAt = DateTime.UtcNow;
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Error.Failure("Swap.ApproveFailed", ex.Message);
+        }
+    }
+    
+    public async Task<Result> RejectSwapRequest(Guid swapRequestId, Guid approverId, string reason = null)
+    {
+        var swapRequest = await context.SwapRequests
+            .FirstOrDefaultAsync(s => s.Id == swapRequestId);
+
+        if (swapRequest is null)
+            return Error.NotFound("Swap.NotFound", "Swap request not found.");
+
+        if (swapRequest.Status == SwapRequestStatus.Approved)
+            return Error.Validation("Swap.AlreadyApproved", "Cannot reject an already approved swap request.");
+
+        if (swapRequest.Status == SwapRequestStatus.Rejected)
+            return Error.Validation("Swap.AlreadyRejected", "This swap request has already been rejected.");
+
+        swapRequest.Status = SwapRequestStatus.Rejected;
+        swapRequest.ActionedById = approverId;
+        swapRequest.ActionedAt = DateTime.UtcNow;
+        swapRequest.ActionNote = reason ?? "No reason provided.";
+
+        try
+        {
+            await context.SaveChangesAsync();
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            return Error.Failure("Swap.RejectFailed", ex.Message);
+        }
+    }
 }
     
     
