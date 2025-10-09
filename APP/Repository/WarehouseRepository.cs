@@ -1264,6 +1264,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     {
         var swapRequest = await context.SwapRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(s => s.FirstWarehouse)
             .Include(s => s.SecondWarehouse)
             .Include(s => s.FirstSwapShelfMaterialBatches)
