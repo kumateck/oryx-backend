@@ -1154,5 +1154,14 @@ public class OryxMapper : Profile
         CreateMap<ItemTransactionLog, ItemTransactionLogDto>();
 
         #endregion
+
+        #region Swap Request
+
+        CreateMap<CreateSwapRequest, SwapRequest>();
+        CreateMap<CreateSwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
+        CreateMap<SwapRequest, SwapRequestDto>();
+        CreateMap<SwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
+
+        #endregion
     }
 }
