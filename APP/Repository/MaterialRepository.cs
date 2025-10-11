@@ -2005,24 +2005,26 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
     public async Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null) return UserErrors.NotFound(userId);
+        var user = await context.Users
+            .AsNoTracking()
+            .Select(u => new { u.Id, u.DepartmentId })
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null)
+            return UserErrors.NotFound(userId);
 
         if (!user.DepartmentId.HasValue)
-        {
             return UserErrors.DepartmentNotFound;
-        }
 
-        var materialDepartment = await context.MaterialDepartments
-            .FirstOrDefaultAsync(m => m.DepartmentId == user.DepartmentId.Value && m.MaterialId == materialId);
+        var rowsAffected = await context.Database.ExecuteSqlRawAsync("""
 
-        if (materialDepartment == null)
-        {
+                                                                             DELETE FROM MaterialDepartments
+                                                                             WHERE DepartmentId = {0} AND MaterialId = {1}
+                                                                     """,
+            user.DepartmentId.Value, materialId);
+
+        if (rowsAffected == 0)
             return Error.NotFound("MaterialDepartment.NotFound", "Material not assigned to this department");
-        }
-
-        context.MaterialDepartments.Remove(materialDepartment);
-        await context.SaveChangesAsync();
 
         return Result.Success();
     }

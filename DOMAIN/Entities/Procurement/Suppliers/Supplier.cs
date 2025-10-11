@@ -4,6 +4,7 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
+using Microsoft.EntityFrameworkCore;
 
 namespace DOMAIN.Entities.Procurement.Suppliers;
 
@@ -44,6 +45,16 @@ public class SupplierManufacturer : BaseEntity
     public Manufacturer Manufacturer { get; set; }
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
-    public decimal QuantityPerPack { get; set; }
+    public QuantityType QuantityType { get; set; }
+    public QuantityPerPackOption QuantityPerPackOption { get; set; }
     public bool Default { get; set; }
+}
+
+[Owned]
+public class QuantityPerPackOption
+{
+    public QuantityType Type { get; set; }
+    public decimal? Min { get; set; }
+    public decimal? Max { get; set; }
+    public List<decimal> Values { get; set; } = [];
 }
