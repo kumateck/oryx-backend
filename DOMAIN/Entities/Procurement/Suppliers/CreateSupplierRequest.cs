@@ -19,6 +19,7 @@ public class CreateSupplierManufacturerRequest
 {
     public Guid ManufacturerId { get; set; }
     public Guid? MaterialId { get; set; }
+    public Guid? UoMId { get; set; }
     public QuantityType QuantityType { get; set; }
     public CreateQuantityPerPackOption QuantityPerPackOption { get; set; }
     public bool Default { get; set; }

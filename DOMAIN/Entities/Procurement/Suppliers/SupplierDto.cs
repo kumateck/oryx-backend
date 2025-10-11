@@ -25,6 +25,7 @@ public class SupplierManufacturerDto : BaseDto
     public ManufacturerDto Manufacturer { get; set; }
     public MaterialDto Material { get; set; }
     public QuantityType QuantityType { get; set; }
+    public UnitOfMeasureDto UoM{ get; set; }
     public QuantityPerPackOption QuantityPerPackOption { get; set; }
     public bool Default { get; set; }
 }

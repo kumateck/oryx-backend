@@ -535,7 +535,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new material department.
+    /// Deletes a new material department.
     /// </summary>
     /// <param name="materialId">The material you want to unlink from your department</param>
     /// <returns>Returns the result of the creation process.</returns>
