@@ -2015,6 +2015,30 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!user.DepartmentId.HasValue)
             return UserErrors.DepartmentNotFound;
+        
+        var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
+        if (material == null) return MaterialErrors.NotFound(materialId);
+
+        var warehouse = material.Kind == MaterialKind.Raw
+            ? await context.Warehouses
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(w =>
+                    w.DepartmentId == user.DepartmentId && w.Type == WarehouseType.RawMaterialStorage)
+            : await context.Warehouses
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(w =>
+                    w.DepartmentId == user.DepartmentId && w.Type == WarehouseType.PackagedStorage);
+        
+        if (warehouse == null) return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
+
+        var warehouseStock = await GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
+        if(warehouseStock.IsFailure) return warehouseStock.Error;
+
+        if (warehouseStock.Value == 0)
+        {
+            return Error.Validation("Material.Department",
+                "Cannot unlink material, stock for material exists in the warehosue");
+        }
 
         var rowsAffected = await context.Database.ExecuteSqlRawAsync("""
 

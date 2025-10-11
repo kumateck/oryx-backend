@@ -848,6 +848,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<Supplier>().Navigation(p => p.Country).AutoInclude();
         modelBuilder.Entity<Supplier>().Navigation(p => p.Currency).AutoInclude();
+        modelBuilder.Entity<SupplierManufacturer>().Navigation(p => p.UoM).AutoInclude();
 
         #endregion
 

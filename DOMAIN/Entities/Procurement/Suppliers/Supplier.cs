@@ -45,6 +45,8 @@ public class SupplierManufacturer : BaseEntity
     public Manufacturer Manufacturer { get; set; }
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
     public QuantityType QuantityType { get; set; }
     public QuantityPerPackOption QuantityPerPackOption { get; set; }
     public bool Default { get; set; }
