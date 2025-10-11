@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace DOMAIN.Entities.Procurement.Suppliers;
 
 public class CreateSupplierRequest
@@ -17,6 +19,22 @@ public class CreateSupplierManufacturerRequest
 {
     public Guid ManufacturerId { get; set; }
     public Guid? MaterialId { get; set; }
-    public decimal QuantityPerPack { get; set; }
+    public QuantityType QuantityType { get; set; }
+    public CreateQuantityPerPackOption QuantityPerPackOption { get; set; }
     public bool Default { get; set; }
+}
+
+public class CreateQuantityPerPackOption
+{
+    public QuantityType Type { get; set; }
+    public decimal? Min { get; set; }
+    public decimal? Max { get; set; }
+    public List<decimal> Values { get; set; } = [];
+}
+
+public enum QuantityType
+{
+    Single = 0,
+    Range = 1,
+    List = 2
 }

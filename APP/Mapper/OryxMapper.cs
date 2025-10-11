@@ -470,6 +470,7 @@ public class OryxMapper : Profile
         CreateMap<Supplier, SupplierListDto>();
         CreateMap<CreateSupplierManufacturerRequest, SupplierManufacturer>();
         CreateMap<SupplierManufacturer, SupplierManufacturerDto>();
+        CreateMap<CreateQuantityPerPackOption, QuantityPerPackOption>();
         
         //manufacturer
         CreateMap<CreateManufacturerRequest, Manufacturer>();
