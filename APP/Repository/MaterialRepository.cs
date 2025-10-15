@@ -1520,6 +1520,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Fetch batches in the given warehouse, sorted by return date (if any) and expiry (FIFO)
         var batches = await context.MaterialBatches
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(b => b.UoM)
             .Include(b => b.ShelfMaterialBatches)
