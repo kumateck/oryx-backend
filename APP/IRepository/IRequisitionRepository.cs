@@ -45,4 +45,5 @@ public interface IRequisitionRepository
       SupplierType supplierType, Guid materialId, Guid purchaseOrderId, SupplierQuotationItemStatus? status);
   Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, SupplierType type,
       Guid userId);
+  Task<bool> CheckIfSupplierHasPendingPriceComparison(Guid supplierId);
 }

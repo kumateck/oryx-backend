@@ -277,6 +277,19 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var result = await repository.GetSuppliersWithSourceRequisitionItems(supplierId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Checks if a supplier has pending price comparison
+    /// </summary>
+    /// <param name="supplierId">The id of the supplier.</param>
+    /// <returns>Returns a boolean whether a supplier has a pending price comparison</returns>
+    [HttpGet("pending/{supplierId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
+    public async Task<IResult> CheckIfSupplierHasPendingPriceComparison(Guid supplierId)
+    {
+       return TypedResults.Ok(await repository.CheckIfSupplierHasPendingPriceComparison(supplierId));
+    }
 
     /// <summary>
     /// Send Quotation request email to supplier.
