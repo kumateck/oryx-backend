@@ -227,7 +227,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (stockRequisition is null)
             return RequisitionErrors.NotFound(stockRequisitionId);
         
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await context.Users
+            .AsSplitQuery()
+            .Include(u => u.Department)
+            .ThenInclude(d => d.Warehouses)
+            .FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
             return UserErrors.NotFound(userId);
         
