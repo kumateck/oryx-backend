@@ -119,12 +119,7 @@ public class DistributedMaterialBatchDto
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
     public decimal QuantityDistributed {get; set;}
-    //public List<MaterialBatchEventDto> Events { get; set; } = [];
-    //public List<MaterialBatchMovementDto> Movements { get; set; } = [];
     public List<SrDto> SampleWeights { get; set; } = [];
-    //public List<MassMaterialBatchMovementDto> MassMovements { get; set; } = [];
-    //public List<CurrentLocationDto> Locations { get; set; } = [];
-    //public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity { get; set; }
 }
 

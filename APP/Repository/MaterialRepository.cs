@@ -220,19 +220,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
         
         var batches = mapper.Map<List<MaterialBatch>>(request);
-    
-        foreach (var batch in batches)
-        {
-            batch.CreatedById = userId;
-        }
 
-        // Add batches to the database
         await context.MaterialBatches.AddRangeAsync(batches);
-        await context.SaveChangesAsync();
-
-        // Now create initial movements for each batch
-
-        // Save changes to the database
         await context.SaveChangesAsync();
 
         return Result.Success();

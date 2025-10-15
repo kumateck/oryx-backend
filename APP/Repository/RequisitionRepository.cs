@@ -1002,6 +1002,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             return Error.Validation("Supplier.Quotation", "No items found to mark as quotation sent for the specified supplier.");
         }
+
+        if (await CheckIfSupplierHasPendingPriceComparison(supplierId))
+        {
+            return Error.Validation("Supplier.Quotation",
+                "This supplier is in a pending price comparison, process that before proceeding");
+        }
         
         var supplierQuotationDto = mapper.Map<SupplierQuotationRequest>(sourceRequisition);
 
@@ -1044,6 +1050,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         // Save changes to the database
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<bool> CheckIfSupplierHasPendingPriceComparison(Guid supplierId)
+    {
+        return await context.SupplierQuotations.AnyAsync(s =>
+            s.SupplierId == supplierId && s.Items.Any(si => si.Status == SupplierQuotationItemStatus.NotProcessed));
     }
     
     public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, int pageSize, SupplierType supplierType, bool received)
@@ -1220,6 +1232,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             foreach (var processSupplierQuote in quotation.Items)
             {
+                //Process for the supplier
                 var supplierQuotationItem = await context.SupplierQuotationItems
                     .FirstOrDefaultAsync(s => s.SupplierQuotation.SupplierId == quotation.SupplierId && 
                                               s.MaterialId == processSupplierQuote.MaterialId && s.Status == SupplierQuotationItemStatus.NotProcessed);
@@ -1232,6 +1245,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 }
                 await context.SaveChangesAsync();
                 
+                //Process for everyone else
                 var supplierQuotationItems = await context.SupplierQuotationItems
                     .AsSplitQuery()
                     .Include(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
@@ -1247,19 +1261,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     context.SupplierQuotationItems.Update(supplierQuotation);
                 }
             }
-
-            /*await context.SaveChangesAsync();
             
-            var updateSupplierQuotationItems = await context.SupplierQuotationItems
-                .Include(s => s.SupplierQuotation)
-                .Where(s => s.SupplierQuotation.SourceRequisitionId == quotation.SourceRequisitionId)
-                .ToListAsync();
-            
-            foreach (var updateSupplierQuotationItem in updateSupplierQuotationItems)
-            {
-                updateSupplierQuotationItem.PurchaseOrderId = poId;
-                context.SupplierQuotationItems.Update(updateSupplierQuotationItem);
-            }*/
             await context.SaveChangesAsync();
         }
         
