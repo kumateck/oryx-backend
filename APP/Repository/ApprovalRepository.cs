@@ -1670,6 +1670,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
                 CreatedAt = bs.CreatedAt,
                 RequestedBy = mapper.Map<CollectionItemDto>(bs.CreatedBy),
+                MaterialBatchId = bs.MaterialBatchId,
+                BatchManufacturingRecordId = bs.BatchManufacturingRecordId,
                 ApprovalLogs = GetApprovalLogs(bs.Id)
             });
         }
@@ -1828,6 +1830,8 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     CreatedAt = response.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(response.CreatedBy?.Department),
                     RequestedBy = mapper.Map<CollectionItemDto>(response.CreatedBy),
+                    MaterialBatchId = response.MaterialBatchId,
+                    BatchManufacturingRecordId = response.BatchManufacturingRecordId,
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
             
