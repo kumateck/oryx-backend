@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
@@ -19,8 +20,7 @@ public class RequisitionDto
     public bool Approved { get; set; }
     public DateTime? ExpectedDelivery { get; set; }
     public DateTime CreatedAt { get; set; }
-    public CollectionItemDto ProductionSchedule { get; set; }
-    public CollectionItemDto Product { get; set; }
+    public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     public string Comments { get; set; }
 }
 

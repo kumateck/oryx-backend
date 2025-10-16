@@ -59,6 +59,8 @@ public class ApprovalEntity
     public DepartmentDto  Department { get; set; }
     public List<ApprovalLog>  ApprovalLogs { get; set; }
     public DateTime CreatedAt { get; set; } 
+    public Guid? MaterialBatchId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
     public CollectionItemDto RequestedBy { get; set; }
 }
 
