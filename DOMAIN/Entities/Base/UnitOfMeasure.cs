@@ -19,6 +19,7 @@ public enum UnitOfMeasureType
     Raw = 0,
     Packing = 1,
     Shipping = 2,
+    Value = 3
 }
 
 public enum UnitOfMeasureCategory
