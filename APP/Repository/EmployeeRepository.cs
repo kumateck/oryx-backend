@@ -30,7 +30,7 @@ namespace APP.Repository;
 public class EmployeeRepository(ApplicationDbContext context,
     ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper,
     IConfiguration configuration, UserManager<User> userManager, IBlobStorageService blobStorage,
-    IHttpContextAccessor httpContextAccessor, AuthRepository authRepository) : IEmployeeRepository
+    IHttpContextAccessor httpContextAccessor, IAuthRepository authRepository) : IEmployeeRepository
 {
 
     public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
