@@ -823,6 +823,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .ThenInclude(c => c.Charge)
             .Include(bs => bs.Charges)
             .ThenInclude(c => c.Currency)
+            .Include(bs => bs.CreatedBy)
             .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
         
         return billingSheet is null
