@@ -723,6 +723,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
         ConfigureRelationships(modelBuilder);
+        ConfigureConstraints(modelBuilder);
     }
 
     private void ConfigureTableMappings(ModelBuilder modelBuilder)
@@ -1410,6 +1411,54 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
 
         #endregion
+    }
+
+    private void ConfigureConstraints(ModelBuilder modelBuilder)
+    {
+        // Requisition Approvals
+        modelBuilder.Entity<RequisitionApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.RequisitionId, a.Order, a.UserId, a.RoleId })
+            .IsUnique();
+
+        // Billing Sheet Approvals
+        modelBuilder.Entity<BillingSheetApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.BillingSheetId, a.Order, a.UserId, a.RoleId })
+            .IsUnique();
+
+        // Purchase Order Approvals
+        modelBuilder.Entity<PurchaseOrderApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.PurchaseOrderId, a.Order, a.UserId, a.RoleId })
+            .IsUnique();
+
+        // Leave Request Approvals
+        modelBuilder.Entity<LeaveRequestApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.LeaveRequestId, a.Order, a.UserId, a.RoleId })
+            .IsUnique();
+
+        // Overtime Request Approvals
+        modelBuilder.Entity<OvertimeRequestApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.OvertimeRequestId, a.Order, a.UserId, a.RoleId })
+            .IsUnique();
+
+        // Response Approvals
+        modelBuilder.Entity<ResponseApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.ResponseId, a.Order, a.UserId, a.RoleId })
+            .IsUnique();
+
+        // Production Order Approvals
+        modelBuilder.Entity<ProductionOrderApprovals>()
+            .HasIndex(a => new { a.ApprovalId, a.ProductionOrderId, a.Order, a.UserId, a.RoleId })
+            .IsUnique();
+
+        // Shipment Document Approvals
+        modelBuilder.Entity<ShipmentDocumentApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.ShipmentDocumentId, a.Order, a.UserId, a.RoleId })
+            .IsUnique();
+
+        // Proforma Invoice Approvals
+        modelBuilder.Entity<ProformaInvoiceApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.ProformaInvoiceId, a.Order, a.UserId, a.RoleId })
+            .IsUnique();
     }
 
     private void ConfigureRelationships(ModelBuilder modelBuilder)

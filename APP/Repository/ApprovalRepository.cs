@@ -2041,8 +2041,12 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
         }
     }
 
-    private async Task CreateRequisitionApprovals(Guid requisitionId,  List<ApprovalStage> stages, Approval approval)
+    private async Task CreateRequisitionApprovals(Guid requisitionId, List<ApprovalStage> stages, Approval approval)
     {
+        var exists = await context.RequisitionApprovals
+            .AnyAsync(a => a.RequisitionId == requisitionId && a.ApprovalId == approval.Id);
+        if (exists) return;
+
         var approvals = stages.Select(stage => new RequisitionApproval
         {
             Required = stage.Required,
@@ -2061,6 +2065,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
 
     private async Task CreateBillingSheetApprovals(Guid sheetId, List<ApprovalStage> stages, Approval approval)
     {
+        var exists = await context.BillingSheetApprovals
+            .AnyAsync(a => a.BillingSheetId == sheetId && a.ApprovalId == approval.Id);
+        if (exists) return;
+
         var approvals = stages.Select(stage => new BillingSheetApproval
         {
             Required = stage.Required,
@@ -2070,7 +2078,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             ApprovalId = approval.Id,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
         }).ToList();
 
         await context.BillingSheetApprovals.AddRangeAsync(approvals);
@@ -2079,6 +2087,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
 
     private async Task CreatePurchaseOrderApprovals(Guid orderId, List<ApprovalStage> stages, Approval approval)
     {
+        var exists = await context.PurchaseOrderApprovals
+            .AnyAsync(a => a.PurchaseOrderId == orderId && a.ApprovalId == approval.Id);
+        if (exists) return;
+
         var approvals = stages.Select(stage => new PurchaseOrderApproval
         {
             Required = stage.Required,
@@ -2088,15 +2100,19 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             ApprovalId = approval.Id,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
         }).ToList();
 
         await context.PurchaseOrderApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
-    
+
     private async Task CreateLeaveRequestApprovals(Guid leaveRequestId, List<ApprovalStage> stages, Approval approval)
     {
+        var exists = await context.LeaveRequestApprovals
+            .AnyAsync(a => a.LeaveRequestId == leaveRequestId && a.ApprovalId == approval.Id);
+        if (exists) return;
+
         var approvals = stages.Select(stage => new LeaveRequestApproval
         {
             Required = stage.Required,
@@ -2106,15 +2122,19 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             ApprovalId = approval.Id,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
         }).ToList();
 
         await context.LeaveRequestApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
-    
+
     private async Task CreateOvertimeRequestApprovals(Guid overtimeRequestId, List<ApprovalStage> stages, Approval approval)
     {
+        var exists = await context.OvertimeRequestApprovals
+            .AnyAsync(a => a.OvertimeRequestId == overtimeRequestId && a.ApprovalId == approval.Id);
+        if (exists) return;
+
         var approvals = stages.Select(stage => new OvertimeRequestApproval
         {
             Required = stage.Required,
@@ -2124,15 +2144,19 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             ApprovalId = approval.Id,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
         }).ToList();
 
         await context.OvertimeRequestApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
-    
+
     private async Task CreateResponseApprovals(Guid responseId, List<ApprovalStage> stages, Approval approval)
     {
+        var exists = await context.ResponseApprovals
+            .AnyAsync(a => a.ResponseId == responseId && a.ApprovalId == approval.Id);
+        if (exists) return;
+
         var approvals = stages.Select(stage => new ResponseApproval
         {
             Required = stage.Required,
@@ -2142,16 +2166,19 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             ApprovalId = approval.Id,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
         }).ToList();
 
         await context.ResponseApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
-    
-    
+
     private async Task CreateProductionOrderApprovals(Guid productionOrderId, List<ApprovalStage> stages, Approval approval)
     {
+        var exists = await context.ProductionOrderApprovals
+            .AnyAsync(a => a.ProductionOrderId == productionOrderId && a.ApprovalId == approval.Id);
+        if (exists) return;
+
         var approvals = stages.Select(stage => new ProductionOrderApprovals
         {
             Required = stage.Required,
@@ -2161,15 +2188,19 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             ApprovalId = approval.Id,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
         }).ToList();
 
         await context.ProductionOrderApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
-    
+
     private async Task CreateShipmentDocumentApprovals(Guid shipmentDocumentId, List<ApprovalStage> stages, Approval approval)
     {
+        var exists = await context.ShipmentDocumentApprovals
+            .AnyAsync(a => a.ShipmentDocumentId == shipmentDocumentId && a.ApprovalId == approval.Id);
+        if (exists) return;
+
         var approvals = stages.Select(stage => new ShipmentDocumentApproval
         {
             Required = stage.Required,
@@ -2179,15 +2210,19 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             ApprovalId = approval.Id,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
         }).ToList();
 
         await context.ShipmentDocumentApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
-    
+
     private async Task CreateProformaInvoiceApprovals(Guid proformaInvoiceId, List<ApprovalStage> stages, Approval approval)
     {
+        var exists = await context.ProformaInvoiceApprovals
+            .AnyAsync(a => a.ProformaInvoiceId == proformaInvoiceId && a.ApprovalId == approval.Id);
+        if (exists) return;
+
         var approvals = stages.Select(stage => new ProformaInvoiceApproval
         {
             Required = stage.Required,
@@ -2197,12 +2232,13 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             ApprovalId = approval.Id,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null 
+            ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null
         }).ToList();
 
         await context.ProformaInvoiceApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
+
     
     private async Task AddApprovalLogs(CreateApprovalLog log)
     {
