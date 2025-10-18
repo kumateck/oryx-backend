@@ -45,7 +45,7 @@ public class CreatePurchaseOrderItemRequest
     public Guid UomId { get; set; }
     public Guid? CurrencyId { get; set; }
     public decimal Quantity { get; set; }
-    [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
+    [Range(0.0001, double.MaxValue, ErrorMessage = "Price must be greater than 0.0001")]
     public decimal Price { get; set; }
 }
 
