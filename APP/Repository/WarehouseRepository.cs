@@ -870,6 +870,54 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         );
     }
     
+    public async Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrnsForQc(int page, int pageSize, string searchQuery,
+        MaterialKind? kind, Status? status, bool? onlyApproved)
+    {
+        var query = context.Grns
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(c => c.MaterialBatches)
+            .Include(c => c.CreatedBy)
+            .AsQueryable();
+
+        if (kind.HasValue)
+        {
+            query = query.Where(q => q.MaterialBatches.Any(b => b.Material.Kind == kind));
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(q => q.MaterialBatches.Any(b => b.Grn.Status == status));
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, w => w.GrnNumber, w => w.CarrierName);
+        }
+
+        if (onlyApproved.HasValue)
+        {
+            if (onlyApproved.Value)
+            {
+                query = query.Where(q => q.MaterialBatches.All(m => m.Status == BatchStatus.Approved
+                                                                    || m.Status == BatchStatus.Available));
+            }
+        }
+        else
+        {
+            query = query.Where(q => !q.MaterialBatches.All(m =>
+                m.Status == BatchStatus.Approved ||
+                m.Status == BatchStatus.Available));
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<GrnListDto>
+        );
+    }
+    
     public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
     {
         var query = context.BinCardInformation

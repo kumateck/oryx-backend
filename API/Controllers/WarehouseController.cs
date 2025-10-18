@@ -696,9 +696,29 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [HttpGet("grns")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnListDto>>))]
-    public async Task<IResult> GetGrns([FromQuery] Status? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, MaterialKind? kind = null)
+    public async Task<IResult> GetGrns([FromQuery] Status? status,
+        [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+       [FromQuery] MaterialKind? kind = null)
     {
         var result = await repository.GetGrns(page, pageSize, searchQuery,kind, status);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of GRNs based on search criteria.
+    /// </summary>
+    [HttpGet("grns/qc")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnListDto>>))]
+    public async Task<IResult> GetGrnsForQc([FromQuery] Status? status, [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MaterialKind? kind = null,
+        [FromQuery] bool? onlyApproved = null)
+    {
+        var result = await repository.GetGrnsForQc(page, pageSize, searchQuery,kind, status, onlyApproved);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
