@@ -61,7 +61,7 @@ public class ApprovalEntity
     public DateTime CreatedAt { get; set; } 
     public Guid? MaterialBatchId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
-    public CollectionItemDto RequestedBy { get; set; }
+    public UserDto RequestedBy { get; set; }
 }
 
 public class ApprovalRequestBody

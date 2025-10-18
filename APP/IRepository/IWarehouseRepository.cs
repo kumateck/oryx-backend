@@ -58,6 +58,8 @@ public interface IWarehouseRepository
     Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds);
     Task<Result<GrnDto>> GetGrn(Guid id);
     Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(int page, int pageSize, string searchQuery, MaterialKind? kind, Status? status);
+    Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrnsForQc(int page, int pageSize, string searchQuery,
+        MaterialKind? kind, Status? status, bool? onlyApproved);
 
     Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize,
         string searchQuery, Guid materialId);

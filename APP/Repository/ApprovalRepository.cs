@@ -1533,7 +1533,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 CreatedAt = po.CreatedAt,
                 Department = mapper.Map<DepartmentDto>(po.CreatedBy?.Department),
                 Code = po.Code,
-                RequestedBy = mapper.Map<CollectionItemDto>(po.CreatedBy),
+                RequestedBy = mapper.Map<UserDto>(po.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(po.Id)
             });
         }
@@ -1561,7 +1561,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     CreatedAt = r.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
                     Code = r.Code,
-                    RequestedBy = mapper.Map<CollectionItemDto>(r.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(r.Id)
                 });
             }
@@ -1574,7 +1574,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     CreatedAt = r.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
                     Code = r.Code,
-                    RequestedBy = mapper.Map<CollectionItemDto>(r.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
                 });
             }
         }
@@ -1598,7 +1598,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Code = bs.Code,
                 Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
                 CreatedAt = bs.CreatedAt,
-                RequestedBy = mapper.Map<CollectionItemDto>(bs.CreatedBy),
+                RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(bs.Id)
             });
         }
@@ -1621,7 +1621,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Code = "",
                 Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
                 CreatedAt = bs.CreatedAt,
-                RequestedBy = mapper.Map<CollectionItemDto>(bs.CreatedBy),
+                RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(bs.Id)
             });
         }
@@ -1646,7 +1646,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Code = "",
                 Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
                 CreatedAt = bs.CreatedAt,
-                RequestedBy = mapper.Map<CollectionItemDto>(bs.CreatedBy),
+                RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(bs.Id)
             });
         }
@@ -1669,7 +1669,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Code = "",
                 Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
                 CreatedAt = bs.CreatedAt,
-                RequestedBy = mapper.Map<CollectionItemDto>(bs.CreatedBy),
+                RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
                 MaterialBatchId = bs.MaterialBatchId,
                 BatchManufacturingRecordId = bs.BatchManufacturingRecordId,
                 ApprovalLogs = GetApprovalLogs(bs.Id)
@@ -1694,7 +1694,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Code = "",
                 Department = mapper.Map<DepartmentDto>(proformaInvoice.CreatedBy?.Department),
                 CreatedAt = proformaInvoice.CreatedAt,
-                RequestedBy = mapper.Map<CollectionItemDto>(proformaInvoice.CreatedBy),
+                RequestedBy = mapper.Map<UserDto>(proformaInvoice.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(proformaInvoice.Id)
             });
         }
@@ -1717,7 +1717,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 Code = shipmentDocument.Code,
                 Department = mapper.Map<DepartmentDto>(shipmentDocument.CreatedBy?.Department),
                 CreatedAt = shipmentDocument.CreatedAt,
-                RequestedBy = mapper.Map<CollectionItemDto>(shipmentDocument.CreatedBy),
+                RequestedBy = mapper.Map<UserDto>(shipmentDocument.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(shipmentDocument.Id)
             });
         }
@@ -1744,7 +1744,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Code = requisition.Code,
                     CreatedAt = requisition.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(requisition.CreatedBy?.Department),
-                    RequestedBy = mapper.Map<CollectionItemDto>(requisition.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(requisition.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
 
@@ -1761,7 +1761,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Code = billingSheet.Code,
                     CreatedAt = billingSheet.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(billingSheet.CreatedBy?.Department),
-                    RequestedBy = mapper.Map<CollectionItemDto>(billingSheet.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(billingSheet.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
 
@@ -1778,7 +1778,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Code = purchaseOrder.Code,
                     CreatedAt = purchaseOrder.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(purchaseOrder.CreatedBy?.Department),
-                    RequestedBy = mapper.Map<CollectionItemDto>(purchaseOrder.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(purchaseOrder.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
 
@@ -1795,7 +1795,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Code = "",
                     CreatedAt = leaveRequest.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(leaveRequest.CreatedBy?.Department),
-                    RequestedBy = mapper.Map<CollectionItemDto>(leaveRequest.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(leaveRequest.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
             
@@ -1812,7 +1812,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Code = overtimeRequest.Code,
                     CreatedAt = overtimeRequest.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(overtimeRequest.CreatedBy?.Department),
-                    RequestedBy = mapper.Map<CollectionItemDto>(overtimeRequest.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(overtimeRequest.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
             
@@ -1829,7 +1829,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Code = "",
                     CreatedAt = response.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(response.CreatedBy?.Department),
-                    RequestedBy = mapper.Map<CollectionItemDto>(response.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(response.CreatedBy),
                     MaterialBatchId = response.MaterialBatchId,
                     BatchManufacturingRecordId = response.BatchManufacturingRecordId,
                     ApprovalLogs = GetApprovalLogs(modelId)
@@ -1848,7 +1848,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Code = "",
                     CreatedAt = proformaInvoice.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(proformaInvoice.CreatedBy?.Department),
-                    RequestedBy = mapper.Map<CollectionItemDto>(proformaInvoice.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(proformaInvoice.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
             
@@ -1865,7 +1865,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                     Code = shipmentDoc.Code,
                     CreatedAt = shipmentDoc.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(shipmentDoc.CreatedBy?.Department),
-                    RequestedBy = mapper.Map<CollectionItemDto>(shipmentDoc.CreatedBy),
+                    RequestedBy = mapper.Map<UserDto>(shipmentDoc.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId)
                 };
 

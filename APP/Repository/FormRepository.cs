@@ -35,8 +35,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
     {
         var form = await context.Forms
             .AsSplitQuery()
-            .Include(f => f.Sections)
-            .ThenInclude(s => s.Fields)
+            .Include(f => f.Sections.OrderBy(s => s.Order))
+            .ThenInclude(s => s.Fields.OrderBy(f => f.Rank))
             .ThenInclude(f => f.Question)
             .ThenInclude(q => q.Options)
             .FirstOrDefaultAsync(f => f.Id == formId);
