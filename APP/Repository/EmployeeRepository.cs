@@ -30,7 +30,7 @@ namespace APP.Repository;
 public class EmployeeRepository(ApplicationDbContext context,
     ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper,
     IConfiguration configuration, UserManager<User> userManager, IBlobStorageService blobStorage,
-    IHttpContextAccessor httpContextAccessor) : IEmployeeRepository
+    IHttpContextAccessor httpContextAccessor, AuthRepository authRepository) : IEmployeeRepository
 {
 
     public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
@@ -563,19 +563,60 @@ public class EmployeeRepository(ApplicationDbContext context,
         return Result.Success();
     }
     
-    public async Task<Result> UpdateEmployeeEmail(Guid id, string email)
+    public async Task<Result> UpdateEmployeeEmail(Guid id, string newEmail)
     {
         var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
-
         if (employee == null)
-        {
             return Error.NotFound("Employee.NotFound", "Employee not found");
+
+        if (employee.Email == newEmail)
+            return Result.Success();
+
+        var emailExists = await context.Employees.AnyAsync(e => e.Email == newEmail && e.Id != id)
+                          || await context.Users.AnyAsync(u => u.Email == newEmail);
+        if (emailExists)
+            return Error.Validation("Employee.Email", "Email already exists");
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            var oldEmail = employee.Email;
+            employee.Email = newEmail;
+            context.Employees.Update(employee);
+            await context.SaveChangesAsync();
+
+            // Find the linked Identity user by the OLD email
+            var user = await userManager.FindByEmailAsync(oldEmail);
+            if (user != null)
+            {
+                var emailResult = await userManager.SetEmailAsync(user, newEmail);
+                if (!emailResult.Succeeded)
+                    return Error.Validation("User.Email", string.Join("; ", emailResult.Errors.Select(e => e.Description)));
+
+                var usernameResult = await userManager.SetUserNameAsync(user, newEmail);
+                if (!usernameResult.Succeeded)
+                    return Error.Validation("User.UserName", string.Join("; ", usernameResult.Errors.Select(e => e.Description)));
+
+                var updateResult = await userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                    return Error.Validation("User.Update", string.Join("; ", updateResult.Errors.Select(e => e.Description)));
+
+                await authRepository.ForgotPassword(new ForgotPasswordRequest
+                {
+                    Email = newEmail
+                });
+            }
+
+            await transaction.CommitAsync();
+            return Result.Success();
         }
-        employee.Email = email;
-        context.Employees.Update(employee);
-        await context.SaveChangesAsync();
-        return Result.Success();
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Error.Failure("Employee.UpdateEmail", $"Failed to update email: {ex.Message}");
+        }
     }
+
     
     public async Task<Result> ImportEmployeesFromExcel(IFormFile file)
     {
