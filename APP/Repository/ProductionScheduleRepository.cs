@@ -2663,35 +2663,56 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .ThenInclude(pp => pp.Department)
             .ThenInclude(p => p.Warehouses).ThenInclude(warehouse => warehouse.ArrivalLocation)
             .FirstOrDefaultAsync(p => p.Id == productionExtraPackingId);
-        if(productionExtraPacking is null) return Error.NotFound("ProductionExtraPacking", "ProductionExtraPacking not found");
+
+        if (productionExtraPacking is null)
+            return Error.NotFound("ProductionExtraPacking", "ProductionExtraPacking not found");
 
         var department = productionExtraPacking.ProductionScheduleProduct.Product.Department;
 
         var fromWarehouse = department.Warehouses.FirstOrDefault(q => q.Type == WarehouseType.PackagedStorage);
         if (fromWarehouse is null)
             return UserErrors.WarehouseNotFound(MaterialKind.Package);
-        
+
         var toWarehouse = department.Warehouses.FirstOrDefault(w => w.Type == WarehouseType.Production);
         if (toWarehouse is null)
             return Error.NotFound("Production.Warehouse", "Production.Warehouse not found");
-        
+
         var remainingQuantity = productionExtraPacking.Quantity;
-        
         var distributedBatches = new List<MaterialBatch>();
 
         foreach (var batchRequest in batches)
         {
             var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == batchRequest.BatchId);
-            
             if (batch == null || batch.RemainingQuantity < batchRequest.Quantity)
-            {
                 return Error.Failure("Batch.InsufficientStock", $"Not enough stock in batch {batchRequest.BatchId}");
-            }
 
             batch.QuantityAssigned = 0;
-            var shelfMaterialBatches =
-                await context.ShelfMaterialBatches.Where(sb => sb.MaterialBatchId == batch.Id).ToListAsync();
-            context.ShelfMaterialBatches.RemoveRange(shelfMaterialBatches);
+            context.MaterialBatches.Update(batch);
+
+            // ✅ New logic replacing direct delete
+            var shelfMaterialBatches = await context.ShelfMaterialBatches
+                .IgnoreQueryFilters()
+                .OrderBy(s => s.Quantity)
+                .Where(sb => sb.MaterialBatchId == batch.Id
+                             && sb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == fromWarehouse.Id
+                             && !sb.DeletedAt.HasValue)
+                .ToListAsync();
+
+            var quantityToDeduct = batchRequest.Quantity;
+
+            foreach (var shelfMaterialBatch in shelfMaterialBatches)
+            {
+                if (quantityToDeduct <= 0) break;
+
+                var deductAmount = Math.Min(shelfMaterialBatch.Quantity, quantityToDeduct);
+                shelfMaterialBatch.Quantity -= deductAmount;
+                quantityToDeduct -= deductAmount;
+
+                if (shelfMaterialBatch.Quantity <= 0)
+                {
+                    context.ShelfMaterialBatches.Remove(shelfMaterialBatch);
+                }
+            }
 
             var movement = new MassMaterialBatchMovement
             {
@@ -2702,9 +2723,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 MovedAt = DateTime.UtcNow,
                 MovedById = userId
             };
-            
             await context.MassMaterialBatchMovements.AddAsync(movement);
-            
+
             var batchEvent = new MaterialBatchEvent
             {
                 BatchId = batch.Id,
@@ -2713,10 +2733,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 UserId = userId
             };
             await context.MaterialBatchEvents.AddAsync(batchEvent);
-            
             await context.SaveChangesAsync();
-            
-            var toBinCardEvent =new BinCardInformation
+
+            var toBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = batch.Id,
                 Description = fromWarehouse.Name,
@@ -2730,10 +2749,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 CreatedAt = DateTime.UtcNow,
                 CreatedById = userId
             };
-
             await context.BinCardInformation.AddAsync(toBinCardEvent);
 
-            var fromBinCardEvent =new BinCardInformation
+            var fromBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = batch.Id,
                 Description = toWarehouse.Name,
@@ -2743,24 +2761,18 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 QuantityIssued = 0,
                 BalanceQuantity = (await materialRepository.GetMassMaterialStockInWarehouse(batch.MaterialId, toWarehouse.Id)).Value,
                 UoMId = batch.UoMId,
-                ProductId =  productionExtraPacking.ProductionScheduleProduct.ProductId,
+                ProductId = productionExtraPacking.ProductionScheduleProduct.ProductId,
                 CreatedAt = DateTime.UtcNow,
                 CreatedById = userId
             };
-
             await context.BinCardInformation.AddAsync(fromBinCardEvent);
-            //batch.StockTransferSourceId = id;
-            //context.MaterialBatches.Update(batch);
-            
             await context.SaveChangesAsync();
-            
-            distributedBatches.Add(batch);
-            
-            remainingQuantity -= batchRequest.Quantity;
 
+            distributedBatches.Add(batch);
+            remainingQuantity -= batchRequest.Quantity;
             if (remainingQuantity <= 0) break;
         }
-        
+
         if (toWarehouse.ArrivalLocation == null)
         {
             toWarehouse.ArrivalLocation = new WarehouseArrivalLocation
@@ -2772,21 +2784,21 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             };
             await context.WarehouseArrivalLocations.AddAsync(toWarehouse.ArrivalLocation);
         }
-            
+
         toWarehouse.ArrivalLocation.DistributedStockTransferBatches.AddRange(distributedBatches);
 
         if (remainingQuantity > 0)
-        {
             return Error.Failure("StockTransfer.InsufficientStock", "Not enough batches to fulfill the transfer");
-        }
 
         productionExtraPacking.IssuedAt = DateTime.UtcNow;
         productionExtraPacking.IssuedById = userId;
         productionExtraPacking.Status = ProductionExtraPackingStatus.Approved;
         context.ProductionExtraPackings.Update(productionExtraPacking);
         await context.SaveChangesAsync();
+
         return Result.Success();
     }
+
 
     public async Task<Result<IEnumerable<ProductionScheduleReportDto>>> GetProductionScheduleSummaryReport(ProductionScheduleReportFilter filter)
     {
