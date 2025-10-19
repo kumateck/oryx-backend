@@ -148,149 +148,167 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
     public async Task<Result<Guid>> StartProductionActivity(Guid productionScheduleProductId, Guid userId)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
 
-        if (context.ProductionActivities.Any(p =>
-                p.ProductionScheduleProductId == productionScheduleProductId))
+        try
         {
-            return Error.NotFound("ProductionActivity.AlreadyExist", "A production activity already exists for this product and schedule");
-        }
-        
-        var productionScheduleProduct =
-            await context.
-                ProductionScheduleProducts
+            if (context.ProductionActivities.Any(p =>
+                    p.ProductionScheduleProductId == productionScheduleProductId))
+            {
+                return Error.NotFound("ProductionActivity.AlreadyExist", 
+                    "A production activity already exists for this product and schedule");
+            }
+
+            var productionScheduleProduct = await context.ProductionScheduleProducts
                 .AsSplitQuery()
                 .Include(productionSchedule => productionSchedule.ProductionSchedule)
                 .FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
-        
-        var product = await context.Products
-            .AsSplitQuery()
-            .Include(product => product.Routes).ThenInclude(route => route.Resources)
-            .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
-            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)
-            .ThenInclude(routeResponsibleUser => routeResponsibleUser.ProductAnalyticalRawData)
-            .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles)
-            .ThenInclude(routeResponsibleRole => routeResponsibleRole.ProductAnalyticalRawData).FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductId);
-        
-        
-        if(productionScheduleProduct is null)
-            return Error.NotFound("ProductionScheduleProduct.NotFound", "Production schedule product not found");
 
-        if(product is null)
-            return Error.NotFound("Product.Validation", "Product was not found");
+            if (productionScheduleProduct is null)
+                return Error.NotFound("ProductionScheduleProduct.NotFound", 
+                    "Production schedule product not found");
 
-        if (product.Routes.Count == 0)
-            return Error.Validation("Product.Validation", "This product has no procedures defined hence a production activity cannot commence.");
-        
-        var users = product.Routes.SelectMany(r => r.ResponsibleUsers).Select(r => r.User).ToList();
+            var product = await context.Products
+                .AsSplitQuery()
+                .Include(product => product.Routes).ThenInclude(route => route.Resources)
+                .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
+                .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)
+                    .ThenInclude(routeResponsibleUser => routeResponsibleUser.ProductAnalyticalRawData)
+                .Include(product => product.Routes).ThenInclude(route => route.ResponsibleRoles)
+                    .ThenInclude(routeResponsibleRole => routeResponsibleRole.ProductAnalyticalRawData)
+                .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductId);
 
-        var roles = product.Routes.SelectMany(r => r.ResponsibleRoles).Select(r => r.Role).ToList();
+            if (product is null)
+                return Error.NotFound("Product.Validation", "Product was not found");
 
-        var usersInRole = new List<User>();
+            if (product.Routes.Count == 0)
+                return Error.Validation("Product.Validation", 
+                    "This product has no procedures defined hence a production activity cannot commence.");
 
-        foreach (var role in roles)
-        {
-            usersInRole.AddRange(await userManager.GetUsersInRoleAsync(role?.Name ?? ""));
-        }
-        
-        var quantity = productionScheduleProduct.Quantity;
+            var users = product.Routes.SelectMany(r => r.ResponsibleUsers).Select(r => r.User).ToList();
+            var roles = product.Routes.SelectMany(r => r.ResponsibleRoles).Select(r => r.Role).ToList();
+            var usersInRole = new List<User>();
 
-        await FreezeMaterialInProduction(productionScheduleProduct.Id);
-        
-        // Step 1: Build a dictionary of users and their associated actions
-        var userActionsMap = new Dictionary<(Guid userId, int order), (Guid? productArdId, OperationAction action)>();
-
-        // Add actions from RouteResponsibleUsers
-        foreach (var route in product.Routes)
-        {
-            foreach (var ru in route.ResponsibleUsers)
+            foreach (var role in roles)
             {
-                userActionsMap[(ru.UserId, route.Order)] = (ru.ProductAnalyticalRawDataId, ru.Action);
+                usersInRole.AddRange(await userManager.GetUsersInRoleAsync(role?.Name ?? ""));
             }
-        }
 
-        // Add actions from RouteResponsibleRoles
-        foreach (var route in product.Routes)
-        {
-            foreach (var rr in route.ResponsibleRoles)
+            var quantity = productionScheduleProduct.Quantity;
+
+            try
             {
-                var roleName = rr.Role?.Name ?? "";
-                var usersInThisRole = await userManager.GetUsersInRoleAsync(roleName);
-                foreach (var user in usersInThisRole)
+                await FreezeMaterialInProduction(productionScheduleProduct.Id);
+            }
+            catch (Exception e)
+            {
+                return Error.Failure("Reserve.Material", $"Failed reserving material for production: {e.Message}");
+            }
+
+            // Build user actions map
+            var userActionsMap = new Dictionary<(Guid userId, int order), (Guid? productArdId, OperationAction action)>();
+
+            foreach (var route in product.Routes)
+            {
+                foreach (var ru in route.ResponsibleUsers)
                 {
-                    if (userActionsMap.ContainsKey((userId, route.Order)))
-                        continue;
-                    userActionsMap[(user.Id, route.Order)] = (rr.ProductAnalyticalRawDataId, rr.Action);
+                    userActionsMap[(ru.UserId, route.Order)] = (ru.ProductAnalyticalRawDataId, ru.Action);
                 }
             }
-        }
 
-        // Final user list
-        var totalUsers = userActionsMap.Keys
-            .Select(k => k.userId)
-            .Distinct()
-            .Select(uId => users.FirstOrDefault(u => u.Id == uId) ?? usersInRole.FirstOrDefault(u => u.Id == uId))
-            .Where(u => u != null)
-            .Distinct()
-            .ToList();
-        
-        if (totalUsers.Count == 0)
-            return Error.Validation("Product.Validation", "This product has no users associated for procedures defined hence a production activity cannot commence.");
-        
-        var activity = new ProductionActivity
-        {
-            ProductionScheduleProductId = productionScheduleProductId,
-            Code = Guid.NewGuid().ToString(),
-            StartedAt = DateTime.UtcNow,
-            Steps = product.Routes.Select(r => new ProductionActivityStep
+            foreach (var route in product.Routes)
             {
-                OperationId = r.OperationId,
-                WorkflowId = r.WorkflowId,
-                Order = r.Order,
-                Resources = r.Resources.Select(re => new ProductionActivityStepResource
+                foreach (var rr in route.ResponsibleRoles)
                 {
-                    ResourceId = re.ResourceId
-                }).ToList(),
-                WorkCenters = r.WorkCenters.Select(re => new ProductionActivityStepWorkCenter
-                {
-                    WorkCenterId = re.WorkCenterId
-                }).ToList(),
-                ResponsibleUsers = userActionsMap
-                    .Where(kvp => kvp.Key.order == r.Order)
-                    .Select(kvp => new ProductionActivityStepUser
+                    var roleName = rr.Role?.Name ?? "";
+                    var usersInThisRole = await userManager.GetUsersInRoleAsync(roleName);
+                    foreach (var user in usersInThisRole)
                     {
-                        UserId = kvp.Key.userId,
-                        ProductAnalyticalRawDataId = kvp.Value.productArdId,
-                        Action = kvp.Value.action 
-                    }).ToList(),
-            }).ToList(),
-            ActivityLogs =
-            [
-                new ProductionActivityLog
-                {
-                    Message = "Production activity started.",
-                    UserId = userId, 
-                    Timestamp = DateTime.UtcNow
+                        if (userActionsMap.ContainsKey((user.Id, route.Order)))
+                            continue;
+                        userActionsMap[(user.Id, route.Order)] = (rr.ProductAnalyticalRawDataId, rr.Action);
+                    }
                 }
-            ]
-        };
+            }
 
-        await context.ProductionActivities.AddAsync(activity);
-        await context.SaveChangesAsync();
-        await CreateBatchManufacturingRecord(new CreateBatchManufacturingRecord
+            var totalUsers = userActionsMap.Keys
+                .Select(k => k.userId)
+                .Distinct()
+                .Select(uId => users.FirstOrDefault(u => u.Id == uId) ?? usersInRole.FirstOrDefault(u => u.Id == uId))
+                .Where(u => u != null)
+                .Distinct()
+                .ToList();
+
+            if (totalUsers.Count == 0)
+                return Error.Validation("Product.Validation", 
+                    "This product has no users associated for procedures defined hence a production activity cannot commence.");
+
+            var activity = new ProductionActivity
+            {
+                ProductionScheduleProductId = productionScheduleProductId,
+                Code = Guid.NewGuid().ToString(),
+                StartedAt = DateTime.UtcNow,
+                Steps = product.Routes.Select(r => new ProductionActivityStep
+                {
+                    OperationId = r.OperationId,
+                    WorkflowId = r.WorkflowId,
+                    Order = r.Order,
+                    Resources = r.Resources.Select(re => new ProductionActivityStepResource
+                    {
+                        ResourceId = re.ResourceId
+                    }).ToList(),
+                    WorkCenters = r.WorkCenters.Select(re => new ProductionActivityStepWorkCenter
+                    {
+                        WorkCenterId = re.WorkCenterId
+                    }).ToList(),
+                    ResponsibleUsers = userActionsMap
+                        .Where(kvp => kvp.Key.order == r.Order)
+                        .Select(kvp => new ProductionActivityStepUser
+                        {
+                            UserId = kvp.Key.userId,
+                            ProductAnalyticalRawDataId = kvp.Value.productArdId,
+                            Action = kvp.Value.action
+                        }).ToList(),
+                }).ToList(),
+                ActivityLogs =
+                [
+                    new ProductionActivityLog
+                    {
+                        Message = "Production activity started.",
+                        UserId = userId,
+                        Timestamp = DateTime.UtcNow
+                    }
+                ]
+            };
+
+            await context.ProductionActivities.AddAsync(activity);
+            await context.SaveChangesAsync();
+
+            await CreateBatchManufacturingRecord(new CreateBatchManufacturingRecord
+            {
+                ProductionScheduleProductId = productionScheduleProductId,
+                ProductionActivityStepId = activity.Steps.OrderBy(s => s.Order).First().Id,
+                BatchQuantity = quantity
+            });
+
+            await CreateBatchPackagingRecord(new CreateBatchPackagingRecord
+            {
+                ProductionScheduleProductId = productionScheduleProductId,
+                ProductionActivityStepId = activity.Steps.OrderBy(s => s.Order).First().Id,
+                BatchQuantity = quantity
+            });
+
+            await transaction.CommitAsync();
+
+            return activity.Id;
+        }
+        catch (Exception e)
         {
-            ProductionScheduleProductId = productionScheduleProductId,
-            ProductionActivityStepId = activity.Steps.OrderBy(s => s.Order).First().Id,
-            BatchQuantity = quantity
-        });
-        await CreateBatchPackagingRecord(new CreateBatchPackagingRecord
-        {
-            ProductionScheduleProductId = productionScheduleProductId,
-            ProductionActivityStepId = activity.Steps.OrderBy(s => s.Order).First().Id,
-            BatchQuantity = quantity
-        });
-        
-        return activity.Id;
+            await transaction.RollbackAsync();
+            return Error.Failure("Production.Start", $"Failed to start production activity: {e.Message}");
+        }
     }
+
 
     public async Task<Result> UpdateStatusOfProductionActivityStep(Guid productionStepId, ProductionStatus status, Guid userId)
     {
@@ -783,7 +801,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         // Fetch stock levels for each material ID individually
         foreach (var materialId in activeBoM.BillOfMaterial.Items.Select(item => item.MaterialId).Distinct())
         {
-            var stockLevel = await materialRepository.GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockLevel = await materialRepository.GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
             stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
 
@@ -927,7 +945,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         
         foreach (var materialId in product.Packages.Select(item => item.MaterialId).Distinct())
         {
-            var stockLevel = await materialRepository.GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockLevel = await materialRepository.GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
             stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
         
@@ -1705,8 +1723,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 var batches = batchResult.Value;
                 foreach (var batch in batches)
                 {
-                    await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleProductId,
+                    var result = await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleProductId,
                         batch.QuantityToTake, batch.Batch.UoM?.Id, batch.WarehouseLocationShelfId);
+                    if (result.IsFailure) throw new Exception($"Unable to freeze material in production schedule. Error: {result.Error.Description}");
                 }
             }
         }

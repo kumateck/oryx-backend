@@ -17,7 +17,7 @@ public class Route : BaseEntity
     public Guid? WorkflowId { get; set; }
     public Form WorkFlow { get; set; }
     public int Order { get; set; }
-    public List<RouteResource> Resources { get; set; }
+    public List<RouteResource> Resources { get; set; } = [];
     public List<RouteResponsibleUser> ResponsibleUsers { get; set; } = [];
     public List<RouteResponsibleRole> ResponsibleRoles { get; set; } = [];
     public List<RouteWorkCenter> WorkCenters { get; set; } = [];
