@@ -1636,6 +1636,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (warehouseLocationShelfId.HasValue)
         {
             var shelfBatch = await context.ShelfMaterialBatches
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(smb => smb.MaterialBatchId == batchId 
                                             && smb.WarehouseLocationShelfId == warehouseLocationShelfId.Value);
 
@@ -1644,10 +1645,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             if (shelfBatch.Quantity < quantity)
                 return Error.Validation("ShelfMaterialBatch", "Not enough stock on the shelf to reserve.");
-        
-            // Deduct from shelf stock
-            shelfBatch.Quantity -= quantity;
-            context.ShelfMaterialBatches.Update(shelfBatch);
         }
 
         // 2️⃣ Create the reservation entry
