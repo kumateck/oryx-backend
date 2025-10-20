@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: deploy.Dockerfile
     restart: always
     image: oryx-api
     ports:
@@ -10,15 +10,13 @@ services:
     environment:
       - connectionString=Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=${DB_DATABASE}
       - redisConnectionString=redis:6379,abortConnect=false
-      - RUN_TEST_SEEDS=ON
       - MINIO_ENDPOINT=minio
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - MINIO_PORT=9000
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - DEFAULT_USER_PASSWORD=${DEFAULT_USER_PASSWORD}
-      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
