@@ -703,6 +703,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
             
             case nameof(Response):
                 var response = await context.Responses
+                    .IgnoreQueryFilters()
                     .AsSplitQuery()
                     .Include(lr => lr.Approvals)
                     .Include(response => response.MaterialBatch)
