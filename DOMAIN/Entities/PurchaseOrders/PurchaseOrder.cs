@@ -36,7 +36,7 @@ public class PurchaseOrder : BaseEntity, IRequireApproval
     public decimal TotalCifValue { get; set; }
     public decimal SeaFreight { get; set; }
     public decimal Insurance { get; set; }
-    [StringLength(100)] public string AmountInFigures { get; set; }
+    [StringLength(1000000)] public string AmountInFigures { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
     public List<PurchaseOrderApproval>  Approvals { get; set; } = [];
     public Guid? DepartmentId { get; set; }
