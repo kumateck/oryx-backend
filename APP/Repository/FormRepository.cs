@@ -236,6 +236,22 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
+    public async Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests)
+    {
+        var formSections = await context.FormSections
+            .Where(s => requests.Select(r => r.FormSectionId).Contains(s.Id))
+            .ToDictionaryAsync(k => k.Id, v => v);
+        
+        foreach (var request in requests)
+        {
+            if (!formSections.TryGetValue(request.FormSectionId, out var formSection)) continue;
+            formSection.Value = request.Value;
+        }
+        
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId)
     {
         var response = await context.Responses.FirstOrDefaultAsync(r =>

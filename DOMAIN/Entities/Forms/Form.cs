@@ -34,6 +34,7 @@ public class FormSection : BaseEntity
     public Instrument Instrument { get; set; }
     public int Order { get; set; }
     public List<FormField> Fields { get; set; }
+    [StringLength(1000000)] public string Value { get; set; }
 }
 
 public class FormField : BaseEntity

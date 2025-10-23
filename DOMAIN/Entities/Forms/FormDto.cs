@@ -23,6 +23,7 @@ public class FormSectionDto : BaseDto
     public CollectionItemDto Instrument { get; set; }
     public int Order { get; set; }
     public List<FormFieldDto> Fields { get; set; } = [];
+    public string Value { get; set; }
 }
 
 public class FormFieldDto : BaseDto
