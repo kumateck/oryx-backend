@@ -345,6 +345,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Form> Forms { get; set; }
     public DbSet<FormSection> FormSections { get; set; }
+    public DbSet<FormSectionValue> FormSectionValues { get; set; }
     public DbSet<FormField> FormFields { get; set; }
     public DbSet<Question> Questions { get; set; }
     public DbSet<QuestionOption> QuestionOptions { get; set; }
