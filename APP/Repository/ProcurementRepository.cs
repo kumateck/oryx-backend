@@ -2305,6 +2305,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             foreach (var item in section.Items)
             {
                 var requisitionItem = await context.RequisitionItems
+                    .IgnoreQueryFilters()
                     .Include(r => r.Material)
                     .FirstOrDefaultAsync(r => r.Id == item.RequisitionItem.Id);
 
@@ -2373,6 +2374,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         // Mark all invoice items as distributed
         var invoiceItems = await context.ShipmentInvoiceItems
+            .IgnoreQueryFilters()
             .Where(si => si.ShipmentInvoiceId == shipmentDocument.ShipmentInvoiceId && !si.Distributed)
             .ToListAsync();
 
@@ -2389,6 +2391,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         // If all items in the shipment invoice are distributed, mark the shipment as complete
         var shipmentInvoice = await context.ShipmentInvoices
+            .IgnoreQueryFilters()
             .Include(si => si.Items)
             .FirstOrDefaultAsync(si => si.Id == shipmentDocument.ShipmentInvoiceId);
         
