@@ -681,6 +681,7 @@ public class OryxMapper : Profile
         CreateMap<QuestionOption, QuestionOptionDto>();
         CreateMap<Formula, FormulaDto>();
         CreateMap<FormulaDto, Formula>();
+        CreateMap<FormSectionValue, FormSectionValueDto>();
 
         #endregion
 

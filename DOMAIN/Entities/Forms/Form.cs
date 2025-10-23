@@ -34,6 +34,23 @@ public class FormSection : BaseEntity
     public Instrument Instrument { get; set; }
     public int Order { get; set; }
     public List<FormField> Fields { get; set; }
+}
+
+public class FormSectionValue
+{
+    public Guid Id { get; set; }
+    public Guid FormSectionId { get; set; }
+    public FormSection FormSection { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
+    [StringLength(1000000)] public string Value { get; set; }
+}
+
+public class FormSectionValueDto
+{
+    public Guid Id { get; set; }
+    public FormSectionDto FormSection { get; set; }
+    public MaterialBatchReducedDto MaterialBatch { get; set; }
     [StringLength(1000000)] public string Value { get; set; }
 }
 

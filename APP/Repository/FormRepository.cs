@@ -236,20 +236,44 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
-    public async Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests)
+    public async Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests, Guid materialBatchId)
     {
-        var formSections = await context.FormSections
-            .Where(s => requests.Select(r => r.FormSectionId).Contains(s.Id))
+        var formSectionValues = await context.FormSectionValues
+            .Where(s => requests.Select(r => r.FormSectionId).Contains(s.Id) && s.MaterialBatchId == materialBatchId)
             .ToDictionaryAsync(k => k.Id, v => v);
         
         foreach (var request in requests)
         {
-            if (!formSections.TryGetValue(request.FormSectionId, out var formSection)) continue;
-            formSection.Value = request.Value;
+            if (!formSectionValues.TryGetValue(request.FormSectionId, out var formSection))
+            {
+                await context.FormSectionValues.AddAsync(new FormSectionValue
+                {
+                    MaterialBatchId = materialBatchId,
+                    FormSectionId = request.FormSectionId,
+                    Value = request.Value,
+                });
+            }
+            else
+            {
+                formSection.Value = request.Value;
+            }
         }
         
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<Result<IEnumerable<FormSectionValueDto>>> GetFormSectionValueByMaterialBatch(Guid materialBatchId)
+    {
+        return mapper.Map<List<FormSectionValueDto>>(await 
+            context.FormSectionValues
+                .AsSplitQuery()
+                .Include(f => f.FormSection)
+                .ThenInclude(s => s.Fields)
+                .ThenInclude(f => f.Question)
+                .Include(f => f.MaterialBatch)
+                .Where(s => s.MaterialBatchId == materialBatchId)
+                .ToListAsync());
     }
 
     public async Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId)

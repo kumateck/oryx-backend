@@ -15,7 +15,10 @@ public interface IFormRepository
     //Task<Result> ResetForm(Guid formId, Guid userId);
     Task<Result> DeleteForm(Guid formId, Guid userId);
     Task<Result> SubmitFormResponse(CreateResponseRequest request, Guid userId);
-    Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests);
+    Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests, Guid materialBatchId);
+
+    Task<Result<IEnumerable<FormSectionValueDto>>>
+        GetFormSectionValueByMaterialBatch(Guid materialBatchId);
     Task<Result<ResponseDetailDto>> GetFormResponse(Guid formResponseId);
 
    Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId);
