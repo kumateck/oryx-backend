@@ -2104,7 +2104,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             return materialDistributionResult.Error;
         }
 
-        var materialDistribution = materialDistributionResult.Value.Sections.First(s => s.Material.Id == materialId);
+        var materialDistribution = materialDistributionResult.Value.Sections.FirstOrDefault(s => s.Material.Id == materialId);
+        if(materialDistribution is null) return Error.NotFound("Material.Distribution.NotFound", "Material.Distribution not found");
 
         foreach (var item in materialDistribution.Items)
         {
@@ -2176,6 +2177,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         
         var distributions = materialDistribution.Items.SelectMany(i => i.Distributions).ToList();
         var invoiceItems = await context.ShipmentInvoiceItems
+            .IgnoreQueryFilters()
             .Where(si => distributions.Select(d => d.ShipmentInvoiceItem.Id).Contains(si.Id) && !si.Distributed)
             .ToListAsync();
         
@@ -2189,6 +2191,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
         
         var allItemsDistributed = (await context.ShipmentDocuments
+            .IgnoreQueryFilters()
             .Include(s => s.ShipmentInvoice).ThenInclude(si => si.Items)
             .FirstOrDefaultAsync(s => s.Id == shipmentDocumentId))?.ShipmentInvoice?.Items.All(item => item.Distributed);
 
@@ -2392,6 +2395,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         // If all items in the shipment invoice are distributed, mark the shipment as complete
         var shipmentInvoice = await context.ShipmentInvoices
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(si => si.Items)
             .FirstOrDefaultAsync(si => si.Id == shipmentDocument.ShipmentInvoiceId);
         
