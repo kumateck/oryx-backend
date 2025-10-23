@@ -118,7 +118,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("responses")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SubmitFormResponse([FromBody] CreateResponseRequest request)
     {
@@ -126,7 +126,25 @@ public class FormController(IFormRepository repository) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.SubmitFormResponse(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Submits a response to a form section.
+    /// </summary>
+    /// <param name="request">The CreateResponseRequest object containing response data.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("responses/section")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> SubmitFormSectionResponse([FromBody] List<SubmitFormSectionValue> request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.SubmitFormSectionValue(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>

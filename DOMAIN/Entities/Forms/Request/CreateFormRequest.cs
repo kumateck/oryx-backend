@@ -56,3 +56,9 @@ public class CreateFormReviewerRequest
 {
     public Guid UserId { get; set; }
 }
+
+public class SubmitFormSectionValue
+{
+    public Guid FormSectionId { get; set; }
+    public string Value { get; set; }
+}
