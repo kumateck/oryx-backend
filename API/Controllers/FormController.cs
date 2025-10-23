@@ -150,11 +150,11 @@ public class FormController(IFormRepository repository) : ControllerBase
     }
     
     /// <summary>
-    /// Gets form response by material batch ID.
+    /// Gets form section response by material batch ID.
     /// </summary>
     /// <param name="materialBatchId">The ID of the material batch.</param>
     /// <returns>Returns the form response.</returns>
-    [HttpGet("section/material-batch/{materialBatchId}")]
+    [HttpGet("responses/section/{materialBatchId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FormSectionValueDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
