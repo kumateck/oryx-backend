@@ -139,29 +139,13 @@ public class FormController(IFormRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> SubmitFormSectionResponse([FromBody] List<SubmitFormSectionValue> request,
-    [FromQuery] Guid materialBatchId)
+    public async Task<IResult> SubmitFormSectionResponse([FromBody] List<SubmitFormSectionValue> request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.SubmitFormSectionValue(request,  materialBatchId);
+        var result = await repository.SubmitFormSectionValue(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    }
-    
-    /// <summary>
-    /// Gets form section response by material batch ID.
-    /// </summary>
-    /// <param name="materialBatchId">The ID of the material batch.</param>
-    /// <returns>Returns the form response.</returns>
-    [HttpGet("responses/section/{materialBatchId}")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FormSectionValueDto>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFormSectionValueByMaterialBatch(Guid materialBatchId)
-    {
-        var result = await repository.GetFormSectionValueByMaterialBatch(materialBatchId);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
