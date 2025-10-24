@@ -796,6 +796,15 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
 
     public async Task<Result> CreateUoM(CreateUnitOfMeasure request)
     {
+        if (await context.UnitOfMeasures.AnyAsync(u => u.Symbol == request.Symbol))
+        {
+            return Error.Validation("Symbol", "Symbol already exists");
+        }
+
+        if (await context.UnitOfMeasures.AnyAsync(u => u.Name == request.Name))
+        {
+            return Error.Validation("Name", "Name already exists");
+        }
         var uom = mapper.Map<UnitOfMeasure>(request);
         await context.UnitOfMeasures.AddAsync(uom);
         await context.SaveChangesAsync();
@@ -855,6 +864,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         var uom = await context.UnitOfMeasures.
             FirstOrDefaultAsync(u => u.Id == id);
         if(uom is null) return Error.NotFound("Uom", "Uom not found");
+        
+        if (await context.UnitOfMeasures.AnyAsync(u => u.Symbol == request.Symbol))
+        {
+            return Error.Validation("Symbol", "Symbol already exists");
+        }
+
+        if (await context.UnitOfMeasures.AnyAsync(u => u.Name == request.Name))
+        {
+            return Error.Validation("Name", "Name already exists");
+        }
         
         mapper.Map(request, uom);
         
