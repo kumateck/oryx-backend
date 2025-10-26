@@ -327,7 +327,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description);
+            query = query.WhereSearch(searchQuery, 
+                m => m.Name, m => m.Description, m => m.Code);
         }
         
 
@@ -2069,7 +2070,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            unlinkedMaterials = unlinkedMaterials.WhereSearch(searchQuery, m => m.Name, m => m.Code);
+            unlinkedMaterials = unlinkedMaterials.WhereSearch(searchQuery, 
+                m => m.Name, m => m.Code);
         }
 
         var results = await PaginationHelper.GetPaginatedResultAsync(
