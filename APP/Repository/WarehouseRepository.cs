@@ -1110,7 +1110,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, drm => drm.Material.Name);
+            query = query.WhereSearch(searchQuery, drm => drm.Material.Name, drm => drm.Material.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
