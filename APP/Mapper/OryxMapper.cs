@@ -990,6 +990,11 @@ public class OryxMapper : Profile
         CreateMap<CreateMaterialSamplingRequest, MaterialSampling>();
         CreateMap<MaterialSampling, MaterialSamplingDto>().ForMember(dest => dest.GrnDto, opt => opt.MapFrom(src => src.Grn));
 
+        CreateMap<CreatePreSampleChecklistRequest, PreSampleChecklist>();
+        CreateMap<PreSampleChecklist, PreSampleChecklistDto>()
+            .ForMember(dest => dest.GrnGraNumber,
+                opt  => opt.MapFrom(src => src.Grn.GrnNumber));
+
         #endregion
 
         #region Customers

@@ -1,5 +1,6 @@
 using APP.IRepository;
 using AutoMapper;
+using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using INFRASTRUCTURE.Context;
@@ -44,5 +45,42 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
         return materialSampling == null ? 
             Error.Validation("MaterialSampling.NotFound", "Material Sampling not found") 
             : Result.Success(mapper.Map<MaterialSamplingDto>(materialSampling));
+    }
+
+    // ---------------------------------------------------------------------
+    // ✅ PRE-SAMPLE CHECKLIST METHODS
+    // ---------------------------------------------------------------------
+
+    public async Task<Result<Guid>> CreatePreSampleChecklist(CreatePreSampleChecklistRequest request)
+    {
+        var grn = await context.Grns.FirstOrDefaultAsync(g => g.Id == request.GrnId);
+        if (grn is null)
+            return Error.Validation("GRN.Invalid", "Invalid GRN");
+
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == request.MaterialBatchId);
+        if (batch is null)
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
+
+        var checklist = mapper.Map<PreSampleChecklist>(request);
+
+        await context.PreSampleChecklists.AddAsync(checklist);
+        await context.SaveChangesAsync();
+
+        return checklist.Id;
+    }
+
+    public async Task<Result<PreSampleChecklistDto>> GetPreSampleChecklistByGrnAndBatch(Guid grnId, Guid batchId)
+    {
+        var checklist = await context.PreSampleChecklists
+            .AsSplitQuery()
+            .Include(x => x.Grn)
+            .Include(x => x.MaterialBatch)
+            .FirstOrDefaultAsync(x => x.GrnId == grnId && x.MaterialBatchId == batchId);
+
+        if (checklist is null)
+            return Error.NotFound("PreSampleChecklist.NotFound", "Pre-sample checklist not found");
+
+        var dto = mapper.Map<PreSampleChecklistDto>(checklist);
+        return Result.Success(dto);
     }
 }
