@@ -52,7 +52,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     /// <summary>
     /// Retrieves the details of a material specification by material ID
     /// </summary>
-    [HttpGet("material{materialId:guid}")]
+    [HttpGet("material/{materialId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialSpecificationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialSpecificationByMaterial([FromRoute] Guid materialId)
