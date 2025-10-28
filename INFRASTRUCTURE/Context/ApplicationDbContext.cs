@@ -529,6 +529,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Sample Materials 
     
     public DbSet<MaterialSampling> MaterialSamplings { get; set; }
+    public DbSet<PreSampleChecklist> PreSampleChecklists { get; set; }
     #endregion
 
     #region Notification
