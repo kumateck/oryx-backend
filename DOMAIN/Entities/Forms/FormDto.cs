@@ -24,6 +24,7 @@ public class FormSectionDto : BaseDto
     public int Order { get; set; }
     public List<FormFieldDto> Fields { get; set; } = [];
     public string Value { get; set; }
+    public UserDto Assignee { get; set; }
 }
 
 public class FormFieldDto : BaseDto
