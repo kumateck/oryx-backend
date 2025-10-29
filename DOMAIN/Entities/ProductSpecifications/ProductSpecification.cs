@@ -27,4 +27,5 @@ public class ProductSpecification : BaseEntity
     public Product Product { get; set; }
     public Guid? ResponseId { get; set; }
     public Response Response { get; set; }
+    public List<FormSection> FormSections { get; set; } = [];
 }

@@ -26,4 +26,5 @@ public class ProductSpecificationDto : BaseDto
     public Guid ProductId { get; set; }
     public ProductDto Product { get; set; }
     public ResponseDto Response { get; set; }
+    public List<FormSectionDto> FormSections { get; set; } = [];
 }

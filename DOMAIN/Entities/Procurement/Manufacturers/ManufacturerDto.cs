@@ -29,4 +29,6 @@ public class ManufacturerListDto : BaseDto
 public class ManufacturerMaterialDto 
 {
     public MaterialDto Material { get; set; }
+    public QuantityType QuantityType { get; set; }
+    public QuantityPerPackOption QuantityPerPackOption { get; set; }
 }
