@@ -3,6 +3,7 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 
@@ -35,6 +36,10 @@ public class FormSection : BaseEntity
     public int Order { get; set; }
     public List<FormField> Fields { get; set; }
     [StringLength(1000000)] public string Value { get; set; }
+    public Guid? MaterialSpecificationId { get; set; }
+    public MaterialSpecification MaterialSpecification { get; set; }
+    public Guid? AssigneeId { get; set; }
+    public User Assignee { get; set; }
 }
 
 public class FormField : BaseEntity
