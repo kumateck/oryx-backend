@@ -341,7 +341,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     
     public async Task<Result<List<WarehouseLocationRackDto>>> GetWarehouseLocationRacks(MaterialKind kind, Guid userId)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await context.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
             return UserErrors.NotFound(userId);
 
@@ -351,6 +353,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             return UserErrors.WarehouseNotFound(kind);
         
         var query = await context.WarehouseLocationRacks
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(r => r.WarehouseLocation)
             .Include(r=>r.Shelves)
