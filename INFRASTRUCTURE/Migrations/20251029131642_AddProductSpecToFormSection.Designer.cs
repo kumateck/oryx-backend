@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251029131642_AddProductSpecToFormSection")]
+    partial class AddProductSpecToFormSection
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -5394,9 +5397,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("QuantityType")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5515,6 +5515,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("MaterialId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("QuantityType")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
@@ -15026,31 +15029,6 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("DOMAIN.Entities.Procurement.Manufacturers.QuantityPerPackOption", "QuantityPerPackOption", b1 =>
-                        {
-                            b1.Property<Guid>("ManufacturerMaterialId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<decimal?>("Max")
-                                .HasColumnType("numeric");
-
-                            b1.Property<decimal?>("Min")
-                                .HasColumnType("numeric");
-
-                            b1.Property<int>("Type")
-                                .HasColumnType("integer");
-
-                            b1.PrimitiveCollection<List<decimal>>("Values")
-                                .HasColumnType("numeric[]");
-
-                            b1.HasKey("ManufacturerMaterialId");
-
-                            b1.ToTable("ManufacturerMaterials");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ManufacturerMaterialId");
-                        });
-
                     b.Navigation("CreatedBy");
 
                     b.Navigation("LastDeletedBy");
@@ -15060,8 +15038,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Manufacturer");
 
                     b.Navigation("Material");
-
-                    b.Navigation("QuantityPerPackOption");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.Supplier", b =>
@@ -15131,6 +15107,31 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("UoMId");
 
+                    b.OwnsOne("DOMAIN.Entities.Procurement.Suppliers.QuantityPerPackOption", "QuantityPerPackOption", b1 =>
+                        {
+                            b1.Property<Guid>("SupplierManufacturerId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal?>("Max")
+                                .HasColumnType("numeric");
+
+                            b1.Property<decimal?>("Min")
+                                .HasColumnType("numeric");
+
+                            b1.Property<int>("Type")
+                                .HasColumnType("integer");
+
+                            b1.PrimitiveCollection<List<decimal>>("Values")
+                                .HasColumnType("numeric[]");
+
+                            b1.HasKey("SupplierManufacturerId");
+
+                            b1.ToTable("SupplierManufacturers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SupplierManufacturerId");
+                        });
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("LastDeletedBy");
@@ -15140,6 +15141,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Manufacturer");
 
                     b.Navigation("Material");
+
+                    b.Navigation("QuantityPerPackOption");
 
                     b.Navigation("Supplier");
 

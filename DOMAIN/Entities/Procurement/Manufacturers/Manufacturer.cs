@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Materials;
+using Microsoft.EntityFrameworkCore;
 
 namespace DOMAIN.Entities.Procurement.Manufacturers;
 
@@ -23,4 +24,15 @@ public class ManufacturerMaterial : BaseEntity
     public Manufacturer Manufacturer { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
+    public QuantityType QuantityType { get; set; }
+    public QuantityPerPackOption QuantityPerPackOption { get; set; }
+}
+
+[Owned]
+public class QuantityPerPackOption
+{
+    public QuantityType Type { get; set; }
+    public decimal? Min { get; set; }
+    public decimal? Max { get; set; }
+    public List<decimal> Values { get; set; } = [];
 }
