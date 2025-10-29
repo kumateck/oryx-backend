@@ -5,6 +5,7 @@ using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProductSpecifications;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Forms;
@@ -38,6 +39,8 @@ public class FormSection : BaseEntity
     [StringLength(1000000)] public string Value { get; set; }
     public Guid? MaterialSpecificationId { get; set; }
     public MaterialSpecification MaterialSpecification { get; set; }
+    public Guid? ProductSpecificationId { get; set; }
+    public ProductSpecification ProductSpecification { get; set; }
     public Guid? AssigneeId { get; set; }
     public User Assignee { get; set; }
 }

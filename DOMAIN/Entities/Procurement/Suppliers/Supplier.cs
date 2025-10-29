@@ -47,16 +47,6 @@ public class SupplierManufacturer : BaseEntity
     public Material Material { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
-    public QuantityType QuantityType { get; set; }
-    public QuantityPerPackOption QuantityPerPackOption { get; set; }
     public bool Default { get; set; }
 }
 
-[Owned]
-public class QuantityPerPackOption
-{
-    public QuantityType Type { get; set; }
-    public decimal? Min { get; set; }
-    public decimal? Max { get; set; }
-    public List<decimal> Values { get; set; } = [];
-}
