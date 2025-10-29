@@ -23,7 +23,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         var existingAnalyticalRawData = await context.MaterialAnalyticalRawData.FirstOrDefaultAsync(ad => ad.SpecNumber == request.SpecNumber);
         if (existingAnalyticalRawData is not null)
         {
-            return Error.Validation("MaterialAnalyticalRawData.Exists", "Analytical raw data already exists.");
+            return Error.Validation("MaterialAnalyticalRawData.Exists", $"Analytical raw data with this spec number {request.SpecNumber} already exists.");
         }
         
         var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId);

@@ -133,18 +133,19 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Submits a response to a form section.
     /// </summary>
     /// <param name="request">The CreateResponseRequest object containing response data.</param>
-    /// <param name="materialBatchId">The material batch id for which to  record a response for</param>
+    /// <param name="materialSpecificationId">The id of the material spec</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("responses/section")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> SubmitFormSectionResponse([FromBody] List<SubmitFormSectionValue> request)
+    public async Task<IResult> SubmitFormSectionResponse([FromBody] List<SubmitFormSectionValue> request,
+        [FromQuery] Guid? materialSpecificationId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.SubmitFormSectionValue(request);
+        var result = await repository.SubmitFormSectionValue(request, materialSpecificationId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

@@ -84,6 +84,11 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         {
             query = query.WhereSearch(filter.SearchQuery, f => f.Name, f => f.CreatedBy.FirstName, f => f.CreatedBy.LastName);
         }
+
+        if (filter.MaterialSpecificationId.HasValue)
+        {
+            query = query.Where(f => f.MaterialSpecificationId == filter.MaterialSpecificationId);
+        }
         
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
@@ -236,7 +241,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
-    public async Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests)
+    public async Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests, Guid? materialSpecificationId)
     {
         var formSections = await context.FormSections
             .Where(s => requests.Select(r => r.FormSectionId).Contains(s.Id))
@@ -246,6 +251,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         {
             if (!formSections.TryGetValue(request.FormSectionId, out var formSection)) continue;
             formSection.Value = request.Value;
+            formSection.MaterialSpecificationId = materialSpecificationId;
         }
 
         await context.SaveChangesAsync();
