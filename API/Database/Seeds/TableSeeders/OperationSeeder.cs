@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.Base;
 using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Database.Seeds.TableSeeders;
 
@@ -18,7 +19,7 @@ public class OperationSeeder : ISeeder
 
     private static void SeedOperations(ApplicationDbContext dbContext)
     {
-        var departments = dbContext.Departments.ToList();
+        var departments = dbContext.Departments.IgnoreQueryFilters().ToList();
 
         var allOpsByDepartment = OperationUtils.All();
 
