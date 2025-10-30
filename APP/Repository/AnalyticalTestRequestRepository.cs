@@ -16,8 +16,9 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         
         if(await context.AnalyticalTestRequests.AnyAsync(a => 
-               a.BatchManufacturingRecordId == request.BatchManufacturingRecordId && a.ProductionScheduleProductId == request.ProductionScheduleProductId))
-            return Error.Validation("Atr", "This atr already exists"); 
+               a.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
+               a.ProductionScheduleProductId == request.ProductionScheduleProductId && a.Stage == request.Stage))
+            return Error.Validation("Atr", $"This atr at stage {request.Stage} already exists"); 
         
         var test = mapper.Map<AnalyticalTestRequest>(request);
         await context.AddAsync(test);
