@@ -1101,10 +1101,15 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
         if (productionWarehouse is null)
             return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
-        
-        var finishedGoodsWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.FinishedGoodsStorage);
+
+        var isBeta = user.Department.Name == "Beta";
+        var finishedGoodsWarehouse =
+            await context.Warehouses
+                .IgnoreQueryFilters()
+                .Include(warehouse => warehouse.ArrivalLocation)
+                .FirstOrDefaultAsync(w => w.Type == WarehouseType.FinishedGoodsStorage && w.IsBeta == isBeta);
         if (finishedGoodsWarehouse is null)
-            return Error.NotFound("User.Warehouse", "No finished goods warehouse is associated with current user");
+            return Error.NotFound("User.Warehouse", "No finished goods warehouses found in the system");
         
         var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
         transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
