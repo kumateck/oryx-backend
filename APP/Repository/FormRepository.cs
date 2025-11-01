@@ -145,7 +145,169 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId)
+    {
+        var response = await context.Responses
+            .Include(r => r.FormResponses)
+            .FirstOrDefaultAsync(r => r.Id == request.ResponseId);
 
+        if (response is null)
+        {
+            // Create a new draft if not yet started
+            response = new Response
+            {
+                FormId = request.FormId,
+                MaterialBatchId = request.MaterialBatchId,
+                BatchManufacturingRecordId = request.BatchManufacturingRecordId,
+                ProductionActivityStepId = request.ProductionActivityStepId,
+                CreatedById = userId,
+                FormResponses = []
+            };
+            await context.Responses.AddAsync(response);
+        }
+
+        var formField = await context.FormFields
+            .AsSplitQuery()
+            .Include(f => f.Question)
+            .FirstOrDefaultAsync(f => f.Id == request.FormFieldId);
+
+        if (formField is null)
+            return Error.Validation("Response.FormField", $"FormField not found {request.FormFieldId}");
+
+        // Handle file-based questions
+        if (formField.Question.Type is QuestionType.Signature or QuestionType.FileUpload)
+        {
+            var values = request.Value.Split("|");
+            var formResponse = response.FormResponses.FirstOrDefault(fr => fr.FormFieldId == formField.Id);
+
+            if (formResponse == null)
+            {
+                formResponse = new FormResponse
+                {
+                    FormFieldId = formField.Id,
+                    Value = "form response attachment."
+                };
+                response.FormResponses.Add(formResponse);
+            }
+
+            foreach (var value in values)
+            {
+                var reference = Guid.NewGuid().ToString();
+                await fileRepository.SaveBlobItem(
+                    nameof(FormResponse).ToLower(),
+                    formResponse.Id,
+                    reference,
+                    value.ConvertFromBase64(),
+                    userId
+                );
+            }
+        }
+        else
+        {
+            // Update or insert text-based responses
+            var existingResponse = response.FormResponses.FirstOrDefault(fr => fr.FormFieldId == formField.Id);
+            if (existingResponse != null)
+            {
+                existingResponse.Value = request.Value;
+                context.FormResponses.Update(existingResponse);
+            }
+            else
+            {
+                response.FormResponses.Add(new FormResponse
+                {
+                    FormFieldId = formField.Id,
+                    Value = request.Value
+                });
+            }
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success(response.Id);
+    }
+    
+    public async Task<Result> SubmitFormResponseFinal(Guid responseId)
+    {
+        var response = await context.Responses
+            .Include(r => r.FormResponses)
+            .FirstOrDefaultAsync(r => r.Id == responseId);
+
+        if (response == null)
+            return Error.NotFound("Response.NotFound", "Response not found");
+
+        // Validate that all required fields are filled
+        var formFields = await context.FormFields
+            .Where(f => f.FormSection.FormId == response.FormId)
+            .ToListAsync();
+
+        var missingFields = formFields
+            .Where(f => f.Required && !response.FormResponses.Any(r => r.FormFieldId == f.Id))
+            .ToList();
+
+        if (missingFields.Any())
+        {
+            var missingList = string.Join(", ", missingFields.Select(f => f.Id));
+            return Error.Validation("Response.MissingFields", $"Missing required fields: {missingList}");
+        }
+
+        // Perform final entity updates
+        if (response.BatchManufacturingRecordId.HasValue || response.MaterialBatchId.HasValue)
+        {
+            if (response.MaterialBatchId.HasValue)
+            {
+                var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == response.MaterialBatchId);
+                if (batch != null)
+                {
+                    batch.Status = BatchStatus.TestTaken;
+                    context.MaterialBatches.Update(batch);
+                }
+            }
+            else if (response.BatchManufacturingRecordId.HasValue)
+            {
+                var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == response.BatchManufacturingRecordId);
+                if (bmr != null)
+                {
+                    bmr.Status = BatchManufacturingStatus.TestTaken;
+                    context.BatchManufacturingRecords.Update(bmr);
+                }
+            }
+        }
+
+        if (response.ProductionActivityStepId.HasValue)
+        {
+            var step = await context.ProductionActivitySteps
+                .FirstOrDefaultAsync(s => s.Id == response.ProductionActivityStepId);
+            if (step == null)
+                return Error.NotFound("ProductionActivityStep", $"Not found {response.ProductionActivityStepId}");
+
+            var atr = await context.AnalyticalTestRequests
+                .FirstOrDefaultAsync(a => a.ProductionActivityStepId == response.ProductionActivityStepId);
+            if (atr == null)
+                return Error.NotFound("ATR", $"ATR not found {response.ProductionActivityStepId}");
+
+            atr.Status = AnalyticalTestStatus.TestTaken;
+            context.AnalyticalTestRequests.Update(atr);
+        }
+
+        // Optional: Handle linking with Material/Product Specifications
+        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(s => s.ResponseId == response.Id);
+        if (materialSpec != null)
+        {
+            materialSpec.ResponseId = response.Id;
+            context.MaterialSpecifications.Update(materialSpec);
+        }
+
+        var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(s => s.ResponseId == response.Id);
+        if (productSpec != null)
+        {
+            productSpec.ResponseId = response.Id;
+            context.ProductSpecifications.Update(productSpec);
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success("Form successfully submitted and finalized.");
+    }
+    
     public async Task<Result> SubmitFormResponse(CreateResponseRequest request, Guid userId)
     {
         var newResponse = new Response

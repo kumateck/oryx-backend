@@ -14,6 +14,8 @@ public interface IFormRepository
     Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId);
     //Task<Result> ResetForm(Guid formId, Guid userId);
     Task<Result> DeleteForm(Guid formId, Guid userId);
+    Task<Result> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId);
+    Task<Result> SubmitFormResponseFinal(Guid responseId);
     Task<Result> SubmitFormResponse(CreateResponseRequest request, Guid userId);
     Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests, Guid? materialSpecificationId, Guid? productSpecificationId);
     Task<Result<ResponseDetailDto>> GetFormResponse(Guid formResponseId);

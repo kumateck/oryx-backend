@@ -110,6 +110,43 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.DeleteForm(formId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Saves or updates a single field response as a draft.
+    /// </summary>
+    /// <param name="request">The SaveResponseDraftRequest object containing field response data.</param>
+    /// <returns>Returns the ResponseId if successful, or a failure result.</returns>
+    [HttpPost("responses/draft")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> SaveFormResponseDraft([FromBody] SaveResponseDraftRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.SaveFormResponseDraft(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Finalizes a form response submission after all required fields have been filled.
+    /// </summary>
+    /// <param name="responseId">The unique identifier of the Response being finalized.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("responses/finalize/{responseId:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SubmitFormResponseFinal(Guid responseId)
+    {
+        var result = await repository.SubmitFormResponseFinal(responseId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
 
     /// <summary>
     /// Submits a response to a form.
