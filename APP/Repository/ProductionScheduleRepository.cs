@@ -2286,7 +2286,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         var product = await context.ProductionScheduleProducts
             .AsSplitQuery()
             .Include(p => p.Product)
-            .Where(p => p.ProductionScheduleId == productionScheduleProductId)
+            .Where(p => p.Id == productionScheduleProductId)
             .Select(p => mapper.Map<ProductionScheduleProductDto>(p))
             .FirstOrDefaultAsync();
 
