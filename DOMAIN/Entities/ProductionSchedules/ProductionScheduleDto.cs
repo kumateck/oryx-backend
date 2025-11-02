@@ -35,6 +35,7 @@ public class ProductionScheduleProcurementDto
     public Guid StorageWarehouseId { get; set; }
     public Guid ProductionWarehouseId { get; set; }
     public MaterialDepartmentDetails MaterialDepartment { get; set; }
+    public decimal FrozenQuantity { get; set; }
 }
 
 public class ProductionScheduleProcurementPackageDto 
@@ -51,6 +52,7 @@ public class ProductionScheduleProcurementPackageDto
     public Guid StorageWarehouseId { get; set; }
     public Guid ProductionWarehouseId { get; set; }
     public MaterialDepartmentDetails MaterialDepartment { get; set; }
+    public decimal FrozenQuantity { get; set; }
 }
 
 public class MaterialDepartmentDetails

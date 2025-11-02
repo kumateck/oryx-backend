@@ -1237,6 +1237,13 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
 
         if (warehouses.Count != 2)
             return Error.NotFound("Warehouse.NotFound", "One or both warehouses do not exist.");
+        
+        // Validate that both warehouses are of the same type
+        var firstWarehouse = warehouses.First(w => w.Id == request.FirstWarehouseId);
+        var secondWarehouse = warehouses.First(w => w.Id == request.SecondWarehouseId);
+
+        if (firstWarehouse.Type != secondWarehouse.Type)
+            return Error.Validation("Swap.WarehouseTypeMismatch", "Both warehouses must be of the same type to create a swap request.");
 
         // Validate shelf material batches exist
         var allShelfBatchIds = request.FirstSwapShelfMaterialBatches
@@ -1343,6 +1350,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(s => s.SecondWarehouse)
             .Include(s => s.FirstSwapShelfMaterialBatches)
             .Include(s => s.SecondSwapShelfMaterialBatches)
+            .ThenInclude(swapShelfMaterialBatch => swapShelfMaterialBatch.MaterialBatch)
+            .ThenInclude(materialBatch => materialBatch.Material)
             .FirstOrDefaultAsync(s => s.Id == swapRequestId);
 
         if (swapRequest is null)
@@ -1434,7 +1443,6 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
                     Note = $"Swapped from {secondWarehouseName} → {firstWarehouseName}"
                 });
             }
-
 
             // --- Mark as approved
             swapRequest.Status = SwapRequestStatus.Approved;

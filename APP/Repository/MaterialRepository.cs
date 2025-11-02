@@ -791,6 +791,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result> MoveMaterialBatchV2(MoveShelfMaterialBatchRequest request, Guid userId)
     {
         var shelfMaterialBatch = await context.ShelfMaterialBatches
+            .AsSplitQuery()
+            .Include(shelfMaterialBatch => shelfMaterialBatch.MaterialBatch)
+            .ThenInclude(materialBatch => materialBatch.Material)
             .FirstOrDefaultAsync(b => b.Id == request.ShelfMaterialBatchId);
 
         if (shelfMaterialBatch is null)
@@ -809,18 +812,46 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         foreach (var movedBatch in request.MovedShelfBatchMaterials)
         {
             
+            var targetShelf = await context.WarehouseLocationShelves
+                    .AsNoTracking()
+                    .AsSplitQuery()
+                    .IgnoreQueryFilters()
+                    .Include(w => w.WarehouseLocationRack)
+                    .ThenInclude(w => w.WarehouseLocation)
+                    .ThenInclude(w => w.Warehouse)
+                    .FirstOrDefaultAsync(w => w.Id == movedBatch.WarehouseLocationShelfId);
 
-            var newShelfMaterialBatch = new ShelfMaterialBatch
+            if (targetShelf == null)
+                    return Error.NotFound("Warehouse.Shelf",
+                        "No matching shelf found in first warehouse for material batch");
+                
+            var warehouseType = targetShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type;
+
+            var materialKind = shelfMaterialBatch.MaterialBatch.Material.Kind;
+
+            switch (warehouseType) 
             {
-                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
-                MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
-                Quantity = movedBatch.Quantity,
-                UoMId = movedBatch.UomId,
-                Note = movedBatch.Note,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await context.ShelfMaterialBatches.AddAsync(newShelfMaterialBatch);
+                case WarehouseType.RawMaterialStorage when materialKind != MaterialKind.Raw: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse and material do not belong together. Warehouse is raw whiles material is packaging");
+                case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw");
+                case WarehouseType.PackagedStorage or WarehouseType.Production: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse type does not allow shelf to be assigned");
+                default: 
+                    await context.ShelfMaterialBatches.AddAsync(new ShelfMaterialBatch 
+                    { 
+                        WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId, 
+                        MaterialBatchId = shelfMaterialBatch.MaterialBatchId, 
+                        Quantity = movedBatch.Quantity, 
+                        UoMId = movedBatch.UomId, 
+                        Note = movedBatch.Note, 
+                        CreatedAt = DateTime.UtcNow
+                    }); 
+                    break;
+            }
 
             shelfMaterialBatch.Quantity -= movedBatch.Quantity;
 
@@ -847,13 +878,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Save changes to the database
         await context.SaveChangesAsync();
-
         return Result.Success();
     }
 
     public async Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId)
     {
-        var materialBatch = await context.MaterialBatches
+        var materialBatch = await context.MaterialBatches.Include(materialBatch => materialBatch.Material)
             .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
 
         if (materialBatch == null)
@@ -871,6 +901,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         foreach (var shelfBatch in request.ShelfMaterialBatches)
         {
             var shelf = await context.WarehouseLocationShelves
+                .AsNoTracking()
                 .IgnoreQueryFilters()
                 .AsSplitQuery()
                 .Include(warehouseLocationShelf => warehouseLocationShelf.WarehouseLocationRack)
@@ -882,11 +913,28 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             {
                 return Error.NotFound("Shelf.NotFound", $"Shelf with ID {shelfBatch.WarehouseLocationShelfId} not found");
             }
+            
+            var warehouseType = shelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type;
 
-            var shelfMaterialBatch = mapper.Map<ShelfMaterialBatch>(shelfBatch);
-            shelfMaterialBatch.MaterialBatchId = request.MaterialBatchId;
+            var materialKind = materialBatch.Material.Kind;
 
-            await context.ShelfMaterialBatches.AddAsync(shelfMaterialBatch);
+            switch (warehouseType) 
+            {
+                case WarehouseType.RawMaterialStorage when materialKind != MaterialKind.Raw: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse and material do not belong together. Warehouse is raw whiles material is packaging");
+                case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw");
+                case WarehouseType.PackagedStorage or WarehouseType.Production: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse type does not allow shelf to be assigned");
+                default: 
+                    var shelfMaterialBatch = mapper.Map<ShelfMaterialBatch>(shelfBatch);
+                    shelfMaterialBatch.MaterialBatchId = request.MaterialBatchId;
+                    await context.ShelfMaterialBatches.AddAsync(shelfMaterialBatch); 
+                    break;
+            }
             
             var movement = new MassMaterialBatchMovement
             {
@@ -2230,7 +2278,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result> MoveMaterialBatchToWarehouseFromHolding(SupplyMaterialBatchFromHoldingRequest request, Guid userId)
     {
-        var materialBatch = await context.MaterialBatches
+        var materialBatch = await context.MaterialBatches.Include(materialBatch => materialBatch.Material)
             .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
 
         if (materialBatch == null)
@@ -2301,19 +2349,48 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             materialBatch.StockTransferId = holdingMaterial.StockTransferId;
             
             context.MaterialBatches.Update(materialBatch);
+            
+            var targetShelf = await context.WarehouseLocationShelves
+                    .AsNoTracking()
+                    .AsSplitQuery()
+                    .IgnoreQueryFilters()
+                    .Include(w => w.WarehouseLocationRack)
+                    .ThenInclude(w => w.WarehouseLocation)
+                    .ThenInclude(w => w.Warehouse)
+                    .FirstOrDefaultAsync(w => w.Id == movedBatch.WarehouseLocationShelfId);
 
-            var newShelfMaterialBatch = new ShelfMaterialBatch
+            if (targetShelf == null)
+                    return Error.NotFound("Warehouse.Shelf",
+                        "No matching shelf found in first warehouse for material batch");
+                
+            var warehouseType = targetShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type;
+
+            var materialKind = materialBatch.Material.Kind;
+
+            switch (warehouseType) 
             {
-                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
-                MaterialBatchId = materialBatch.Id,
-                Quantity = movedBatch.Quantity,
-                UoMId = movedBatch.UomId,
-                Note = movedBatch.Note,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await context.ShelfMaterialBatches.AddAsync(newShelfMaterialBatch);
-
+                case WarehouseType.RawMaterialStorage when materialKind != MaterialKind.Raw: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse and material do not belong together. Warehouse is raw whiles material is packaging");
+                case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw");
+                case WarehouseType.PackagedStorage or WarehouseType.Production: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse type does not allow shelf to be assigned");
+                default: 
+                    await context.ShelfMaterialBatches.AddAsync(new ShelfMaterialBatch 
+                    { 
+                        WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId, 
+                        MaterialBatchId = materialBatch.Id, 
+                        Quantity = movedBatch.Quantity, 
+                        UoMId = movedBatch.UomId, 
+                        Note = movedBatch.Note, 
+                        CreatedAt = DateTime.UtcNow
+                    }); 
+                    break;
+            }
+                
             materialBatch.QuantityAssigned += movedBatch.Quantity;
 
             if (materialBatch.QuantityAssigned >= totalQuantityToAssign)
@@ -2332,6 +2409,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result> MoveMaterialBatchToWarehouseFromDistribute(SupplyMaterialBatchFromHMaterialDistribute request, Guid userId)
     {
         var materialBatch = await context.MaterialBatches
+            .AsSplitQuery()
+            .Include(materialBatch => materialBatch.Material)
             .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
 
         if (materialBatch == null)
@@ -2382,18 +2461,47 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             };
 
             await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
+            
+            var targetShelf = await context.WarehouseLocationShelves
+                    .AsNoTracking()
+                    .AsSplitQuery()
+                    .IgnoreQueryFilters()
+                    .Include(w => w.WarehouseLocationRack)
+                    .ThenInclude(w => w.WarehouseLocation)
+                    .ThenInclude(w => w.Warehouse)
+                    .FirstOrDefaultAsync(w => w.Id == movedBatch.WarehouseLocationShelfId);
 
-            var newShelfMaterialBatch = new ShelfMaterialBatch
+            if (targetShelf == null)
+                    return Error.NotFound("Warehouse.Shelf",
+                        "No matching shelf found in first warehouse for material batch");
+                
+            var warehouseType = targetShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type;
+
+            var materialKind = materialBatch.Material.Kind;
+
+            switch (warehouseType) 
             {
-                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
-                MaterialBatchId = materialBatch.Id,
-                Quantity = movedBatch.Quantity,
-                UoMId = movedBatch.UomId,
-                Note = movedBatch.Note,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await context.ShelfMaterialBatches.AddAsync(newShelfMaterialBatch);
+                case WarehouseType.RawMaterialStorage when materialKind != MaterialKind.Raw: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse and material do not belong together. Warehouse is raw whiles material is packaging");
+                case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw");
+                case WarehouseType.PackagedStorage or WarehouseType.Production: 
+                    return Error.Validation("Warehouse.Shelf.Material.Kind",
+                            "Warehouse type does not allow shelf to be assigned");
+                default: 
+                    await context.ShelfMaterialBatches.AddAsync(new ShelfMaterialBatch 
+                    { 
+                        WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId, 
+                        MaterialBatchId = materialBatch.Id, 
+                        Quantity = movedBatch.Quantity, 
+                        UoMId = movedBatch.UomId, 
+                        Note = movedBatch.Note, 
+                        CreatedAt = DateTime.UtcNow
+                    }); 
+                    break;
+            }
 
             materialBatch.QuantityAssigned += movedBatch.Quantity;
 

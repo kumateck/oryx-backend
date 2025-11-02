@@ -824,6 +824,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var quantityNeeded = batchSize == BatchSize.Full ? item.PrescribedQuantity : item.PrescribedQuantity / 2;
             
             var materialDepartment = materialDepartments.GetValueOrDefault(item.MaterialId);
+            
+            var reservedQuantityBatches = 
+                materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
+                    productionWarehouse.Id, productionScheduleProduct.Id).Result;
+
+            var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
 
             return new ProductionScheduleProcurementDto
             {
@@ -832,7 +838,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 BaseQuantity = item.BaseQuantity,
                 QuantityNeeded = quantityNeeded,
                 QuantityOnHand = quantityOnHand,
-                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                Status = quantityOnHand >= quantityNeeded || reservedQuantity > 0 ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                 StorageWarehouseId = warehouse.Id,
                 ProductionWarehouseId = productionWarehouse.Id,
                 MaterialDepartment = new MaterialDepartmentDetails
@@ -842,7 +848,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                     ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
                     MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
                     MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
-                }        
+                },
+                FrozenQuantity = reservedQuantity
             };
         }).ToList();
 
@@ -968,6 +975,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             var quantityNeeded = batchSize == BatchSize.Full ? item.PrescribedQuantity + item.Loose : item.PrescribedQuantity / 2 + item.Loose;
 
             var materialDepartment = materialDepartments.GetValueOrDefault(item.MaterialId);
+            
+            var reservedQuantityBatches = 
+                materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
+                    productionWarehouse.Id, productionScheduleProduct.Id).Result;
+
+            var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
 
             return new ProductionScheduleProcurementPackageDto
             {
@@ -975,7 +988,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 DirectLinkMaterial = mapper.Map<MaterialDto>(item.DirectLinkMaterial),
                 BaseQuantity = item.BaseQuantity,
                 UnitCapacity = item.UnitCapacity,
-                Status = quantityOnHand >= quantityNeeded ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
+                Status = quantityOnHand >= quantityNeeded || reservedQuantity > 0 ? MaterialRequisitionStatus.InHouse : GetStatusOfProductionMaterial(stockTransfers, stockRequisition?.Items ?? [], purchaseRequisition.SelectMany(p => p.Items).ToList(),  sourceRequisitionItems, item.MaterialId),
                 PrescribedQuantity = item.PrescribedQuantity,
                 QuantityNeeded = quantityNeeded,
                 QuantityOnHand = quantityOnHand,
@@ -989,7 +1002,8 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                     ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
                     MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
                     MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
-                }                
+                },
+                FrozenQuantity = reservedQuantity
             };
         }).ToList();
         
