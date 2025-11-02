@@ -59,6 +59,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(MarketType) => mapper.Map<List<CollectionItemDto>>(await context.MarketTypes.OrderBy(c => c.Name).ToListAsync()),
             nameof(Instrument) => mapper.Map<List<CollectionItemDto>>(await context.Instruments.OrderBy(c => c.Name).ToListAsync()),
             nameof(ItemCategory) => mapper.Map<List<CollectionItemDto>>(await context.ItemCategories.OrderBy(c => c.Name).ToListAsync()),
+            nameof(WarehouseLocationName) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationNames.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -217,6 +218,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var itemCategory = await context.ItemCategories.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(itemCategory);
                     break; 
+                
+                case nameof(WarehouseLocationName):
+                    var warehouseLocationNames = await context.WarehouseLocationNames.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationNames);
+                    break; 
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -270,7 +276,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(FinishedGoodsTransferNote),
             nameof(MarketType),
             nameof(Instrument),
-            nameof(ItemCategory)
+            nameof(ItemCategory),
+            nameof(WarehouseLocationName),
         };
     }
     
@@ -397,6 +404,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.ItemCategories.AddAsync(itemCategory);
                 await context.SaveChangesAsync();
                 return itemCategory.Id;
+            
+            case nameof(WarehouseLocationName):
+                var warehouseLocationName = mapper.Map<WarehouseLocationName>(request);
+                await context.WarehouseLocationNames.AddAsync(warehouseLocationName);
+                await context.SaveChangesAsync();
+                return warehouseLocationName.Id;
             
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -559,6 +572,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.ItemCategories.Update(itemCategory);
                 await context.SaveChangesAsync();
                 return itemCategory.Id;
+            
+            case nameof(WarehouseLocationName):
+                var warehouseLocationName = await context.WarehouseLocationNames.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, warehouseLocationName);
+                context.WarehouseLocationNames.Update(warehouseLocationName);
+                await context.SaveChangesAsync();
+                return warehouseLocationName.Id;
         
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -589,6 +609,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(MarketType) => await context.MarketTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Instrument) => await context.Instruments.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(ItemCategory) => await context.ItemCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(WarehouseLocationName) => await context.WarehouseLocationNames.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -782,12 +803,20 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             case nameof(ItemCategory):
                 var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(p => p.Id == itemId);
                 if (itemCategory == null)
-                    return Error.Validation("Charge", "Not found");
+                    return Error.Validation("Item", "Not found");
                 itemCategory.DeletedAt = currentTime;
                 itemCategory.LastDeletedById = userId;
                 context.ItemCategories.Update(itemCategory);
                 await context.SaveChangesAsync();
                 return Result.Success();  
+            
+            case nameof(WarehouseLocationName):
+                var warehouseLocationName = await context.WarehouseLocationNames.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (warehouseLocationName == null)
+                    return Error.Validation("WarehouseName", "Not found");
+                context.WarehouseLocationNames.Remove(warehouseLocationName);
+                await context.SaveChangesAsync();
+                return Result.Success();
             
             default:
                 return Error.Validation("Item", "Invalid item type");

@@ -273,6 +273,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ShelfMaterialBatch> ShelfMaterialBatches { get; set; } 
     public DbSet<WarehouseArrivalLocation> WarehouseArrivalLocations { get; set; }
     public DbSet<SwapRequest> SwapRequests { get; set; }
+    public DbSet<WarehouseLocationName> WarehouseLocationNames => Set<WarehouseLocationName>();
 
     #endregion
 

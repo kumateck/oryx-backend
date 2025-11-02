@@ -200,3 +200,9 @@ public class DistributeMaterialDto : BaseDto
     public decimal Quantity { get; set; }
     public DistributeMaterialStatus  Status { get; set; }
 }
+
+public class WarehouseLocationName
+{
+    public Guid Id { get; set; }
+    [StringLength(1000000)]public string Name { get; set; }
+}
