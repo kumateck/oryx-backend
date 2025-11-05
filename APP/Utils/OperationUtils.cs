@@ -69,6 +69,44 @@ public static class OperationUtils
                     ("Inspection and release by QA.", "Inspecting and releasing items for the next phase.", 19),
                     ("Dispatch.", "Dispatching finished goods to customers or destinations.", 20)
                 }
+            },
+            {"Oral Solid-Tablet (Ben Botwe)", new List<(string, string, int)>
+                {
+                    ("Requisition of BMR to Quality Assurance (QA). Issue of BMR by QA.", "Managing requisitions and issuing Batch Manufacturing Records.", 1),
+                    ("Indent of Raw Material (R.M.) and Packing Material (P.M.) Requisitions by Production as per BMR.", "Requesting Raw Materials and Packing Materials.", 2),
+                    ("Dispensing of Raw Material and issue of Packing Materials in the presence of Production, QA, and a Store person.", "Dispensing materials for production.", 3),
+                    ("Equipment & Area Clearance by QA.", "Ensuring equipment and areas are ready and cleared for use.", 4),
+                    ("Product Preparation", "Preparation for the production process.", 5),
+                    ("Intermediate granules sampling and release by QA. Testing by QC.", "Sampling and releasing intermediate granules after QA approval and QC testing.", 6),
+                    ("Line Clearance by QA for Filling and Capping / Compression Activity", "Clearing the line for filling or compression operations.", 7),
+                    ("Filling and Capping / Compression Activity", "Performing the filling or compression process.", 8),
+                    ("Primary packing.", "Carrying out the primary packaging process.", 10),
+                    ("Leak test checking.", "Checking for leaks after primary packaging.", 11),
+                    ("Secondary packing activity.", "Conducting the secondary packaging operations.", 12),
+                    ("Finished product Sampling, Collection of Retain Samples, Testing by QA.", "Sampling and testing finished products, and collecting retain samples for QA.", 13),
+                    ("Finished Product Transfer slip issued by approved personnel to the Finished Goods Quarantine Store (FGQS).", "Transferring finished goods to the storage area.", 14),
+                    ("Inspection & release by QA.", "Inspecting and releasing products for dispatch.", 15),
+                    ("Dispatch.", "Dispatching finished goods to customers or destinations.", 16)
+                }
+            },
+            {"TABLET", new List<(string, string, int)>
+                {
+                    ("Requisition of BMR to Quality Assurance (QA). Issue of BMR by QA.", "Managing requisitions and issuing Batch Manufacturing Records.", 1),
+                    ("Indent of Raw Material (R.M.) and Packing Material (P.M.) Requisitions by Production as per BMR.", "Requesting Raw Materials and Packing Materials.", 2),
+                    ("Dispensing of Raw Material and issue of Packing Materials in the presence of Production, QA, and a Store person.", "Dispensing materials for production.", 3),
+                    ("Equipment & Area Clearance by QA.", "Ensuring equipment and areas are ready and cleared for use.", 4),
+                    ("Product Preparation", "Preparation for the production process.", 5),
+                    ("Intermediate granules sampling and release by QA. Testing by QC.", "Sampling and releasing intermediate granules after QA approval and QC testing.", 6),
+                    ("Line Clearance by QA for Filling and Capping / Compression Activity", "Clearing the line for filling or compression operations.", 7),
+                    ("Filling and Capping / Compression Activity", "Performing the filling or compression process.", 8),
+                    ("Primary packing.", "Carrying out the primary packaging process.", 10),
+                    ("Leak test checking.", "Checking for leaks after primary packaging.", 11),
+                    ("Secondary packing activity.", "Conducting the secondary packaging operations.", 12),
+                    ("Finished product Sampling, Collection of Retain Samples, Testing by QA.", "Sampling and testing finished products, and collecting retain samples for QA.", 13),
+                    ("Finished Product Transfer slip issued by approved personnel to the Finished Goods Quarantine Store (FGQS).", "Transferring finished goods to the storage area.", 14),
+                    ("Inspection & release by QA.", "Inspecting and releasing products for dispatch.", 15),
+                    ("Dispatch.", "Dispatching finished goods to customers or destinations.", 16)
+                }
             }
         };
     }

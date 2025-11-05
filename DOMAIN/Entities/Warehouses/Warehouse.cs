@@ -8,7 +8,6 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
-using SHARED;
 
 namespace DOMAIN.Entities.Warehouses;
 
