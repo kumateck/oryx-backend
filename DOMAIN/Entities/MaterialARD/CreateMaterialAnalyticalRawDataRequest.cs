@@ -5,11 +5,8 @@ namespace DOMAIN.Entities.MaterialARD;
 public class CreateMaterialAnalyticalRawDataRequest
 {
     public string SpecNumber { get; set; }
-    
     public string Description { get; set; }
-    
     [Required] public Guid StpId { get; set; }
-    
     [Required] public Guid FormId { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public Guid? UniformityOfWeightId { get; set; }
