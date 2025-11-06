@@ -11,10 +11,7 @@ public class OperationSeeder : ISeeder
     {
         var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
 
-        if (!dbContext.Operations.Any())
-        {
-            SeedOperations(dbContext);
-        }
+        SeedOperations(dbContext);
     }
 
     private static void SeedOperations(ApplicationDbContext dbContext)
