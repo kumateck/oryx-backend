@@ -1395,7 +1395,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .ThenInclude(b => b.Product)
             .ThenInclude(p => p.Packings).ThenInclude(p => p.PackingLists)
             .Include(tn => tn.PackageStyle)
-            .Where(p => /*p.IsApproved &&*/ p.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == productId)
+            .Where(p => p.IsApproved && p.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == productId)
             .ToListAsync();
 
         if (products.Count == 0)
