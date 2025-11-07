@@ -29,14 +29,14 @@ public class OperationSeeder : ISeeder
             var operations = departmentEntry.Value;
 
             var departmentValid = departments.TryGetValue(departmentName, out var department);
-            
+
             if (!departmentValid) continue;
 
             if (department == null)
             {
                 continue;
             }
-            
+
             var newOperations = new List<Operation>();
 
             foreach (var op in operations)

@@ -7,10 +7,10 @@ public class DamagedStock : BaseEntity
 {
     public Guid ItemId { get; set; }
     public Item Item { get; set; }
-    public DamageStatus DamageStatus {get; set;}
+    public DamageStatus DamageStatus { get; set; }
     public int QuantityDamaged { get; set; }
-    public string Remarks {get; set;}
-    
+    public string Remarks { get; set; }
+
 }
 
 public enum DamageStatus

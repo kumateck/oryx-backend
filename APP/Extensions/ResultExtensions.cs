@@ -11,7 +11,7 @@ public static class ResultExtensions
         {
             throw new InvalidOperationException("Problem Details cannot have a success results");
         }
-        
+
         var errors = result.Errors.Count != 0 ? result.Errors : [result.Error];
 
         return Results.Problem(
@@ -22,7 +22,7 @@ public static class ResultExtensions
             {
                 { "errors", errors.Select(e => new { e.Code, e.Description }).ToArray() }
             });
-        
+
         static int GetStatusCode(ErrorType errorType) =>
             errorType switch
             {
@@ -41,7 +41,7 @@ public static class ResultExtensions
                 ErrorType.Conflict => "Conflict",
                 _ => "Server Failure"
             };
-        
+
         static string GetType(ErrorType errorType) =>
             errorType switch
             {

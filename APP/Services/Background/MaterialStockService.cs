@@ -22,7 +22,7 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
                 using var scope = scopeFactory.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var materialRepository = scope.ServiceProvider.GetRequiredService<IMaterialRepository>();
-                
+
                 var materialDepartments = await context.MaterialDepartments.AsSplitQuery()
                     .Include(materialDepartment => materialDepartment.Material).ToListAsync(cancellationToken: stoppingToken);
 
@@ -67,7 +67,7 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
                         materialAtReorderStockLevel.Add(materialDepartment);
                     }
                 }*/
-                
+
                 /*foreach (var material in materialBelowMinimumStockLevel)
                 {
                     notificationQueue.Enqueue(($"Material {material.Material.Code} is below minimum stock level", NotificationType.MaterialBelowMinStock, material.DepartmentId, []));
@@ -87,7 +87,7 @@ public class MaterialStockService(IServiceScopeFactory scopeFactory, ConcurrentQ
             {
                 Console.WriteLine(e);
             }
-            
+
             await Task.Delay(TimeSpan.FromHours(8), stoppingToken);
         }
     }

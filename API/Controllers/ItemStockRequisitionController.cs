@@ -74,11 +74,11 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteItemStockRequisition(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Issues a stock against an item stock requisition
     /// </summary>
@@ -91,7 +91,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
         var result = await repository.IssueStockRequisition(stockRequisitionId, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Issues an outstanding for a partial item stock requisition
     /// </summary>

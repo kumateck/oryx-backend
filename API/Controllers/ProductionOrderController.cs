@@ -40,7 +40,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.GetProductionOrders(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a production order by its ID.
     /// </summary>
@@ -52,7 +52,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.GetProductionOrder(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates a production order by its ID.
     /// </summary>
@@ -65,7 +65,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.UpdateProductionOrder(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes a production order by its ID.
     /// </summary>
@@ -76,7 +76,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteProductionOrder(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -96,7 +96,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.CreateProformaInvoice(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Sends the proforma invoice to the customer
     /// </summary>
@@ -107,7 +107,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.SendProformaInvoiceToCustomer(proformaInvoiceId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -166,7 +166,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.DeleteProformaInvoice(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates an invoice.
     /// </summary>
@@ -229,8 +229,8 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.DeleteInvoice(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Allocates stock to a production order
     /// </summary>
@@ -242,7 +242,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.CreateProductOrderAllocation(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Get product allocations
     /// </summary>
@@ -250,35 +250,35 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<List<AllocateProductionOrderDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetProductAllocations(
-        [FromQuery] int page = 1, 
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
-        [FromQuery]  Guid? productionOrderId = null,
+        [FromQuery] Guid? productionOrderId = null,
         [FromQuery] bool? onlyApproved = null)
     {
         var result = await repository.GetProductAllocations(onlyApproved, page, pageSize, searchQuery, productionOrderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Get product allocation by id
     /// </summary>
     [HttpGet("allocate/{allocatedProductId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AllocateProductionOrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetAllocatedProduct([FromRoute]  Guid allocatedProductId)
+    public async Task<IResult> GetAllocatedProduct([FromRoute] Guid allocatedProductId)
     {
         var result = await repository.GetProductAllocation(allocatedProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Mark a production order as delivered
     /// </summary>
     [HttpPut("deliver/{allocateProductionOrderId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> MarkProductAllocationAsDelivered([FromRoute]  Guid allocateProductionOrderId)
+    public async Task<IResult> MarkProductAllocationAsDelivered([FromRoute] Guid allocateProductionOrderId)
     {
         var result = await repository.MarkAllocationProductionOrderAsDelivered(allocateProductionOrderId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();

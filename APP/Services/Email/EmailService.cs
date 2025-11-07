@@ -11,14 +11,14 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
     {
         var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "emailapikey";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
-        
+
         try
         {
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("Kumateck LTD", "noreply@kumateck.com"));
             message.To.Add(new MailboxAddress(name, to));
             message.Subject = subject;
-            
+
             var bodyPart = new TextPart("html")
             {
                 Text = body
@@ -42,7 +42,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
                 }
             }
             message.Body = multipart;
-            
+
             var client = new SmtpClient();
             client.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
             client.Connect("smtp.zeptomail.com", 587, false);
@@ -58,7 +58,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
             throw new Exception($"Error sending email: {ex.Message}");
         }
     }
-    
+
     public void ProcessNotificationData(NotificationDto data)
     {
         const string subject = "New Notification";

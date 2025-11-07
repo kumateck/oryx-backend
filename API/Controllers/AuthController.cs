@@ -20,7 +20,7 @@ public class AuthController(IAuthRepository repo) : ControllerBase
         var response = await repo.Login(request);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
-    
+
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LoginResponse))]
     [AllowAnonymous]
     [HttpPost("login-with-refresh-token")]
@@ -29,7 +29,7 @@ public class AuthController(IAuthRepository repo) : ControllerBase
         var response = await repo.LoginWithRefreshToken(request);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
-    
+
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PasswordChangeResponse))]
     [AllowAnonymous]
     [HttpPost("set-password")]
@@ -69,7 +69,7 @@ public class AuthController(IAuthRepository repo) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repo.ChangePassword(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }

@@ -13,9 +13,9 @@ public class MaterialSpecificationDto : BaseDto
     public string SupersedesNumber { get; set; }
     public DateTime EffectiveDate { get; set; }
     public DateTime ReviewDate { get; set; }
-    public FormDto Form { get; set; } 
-    public DateTime DueDate {get;set;}
-    public string Description {get;set;}
+    public FormDto Form { get; set; }
+    public DateTime DueDate { get; set; }
+    public string Description { get; set; }
     public Guid UserId { get; set; }
     public UserDto User { get; set; }
     public MaterialAnalyticalRawDataDto MaterialAnalyticalRawData { get; set; }

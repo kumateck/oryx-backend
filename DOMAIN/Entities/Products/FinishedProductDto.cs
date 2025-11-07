@@ -4,7 +4,7 @@ using SHARED;
 namespace DOMAIN.Entities.Products;
 
 public class FinishedProductDto
-{ 
+{
     public string Name { get; set; }
     public CollectionItemDto Product { get; set; }
     public UnitOfMeasureDto UoM { get; set; }

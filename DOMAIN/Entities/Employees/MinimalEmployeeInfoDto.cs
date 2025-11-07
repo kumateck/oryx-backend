@@ -6,10 +6,10 @@ public class MinimalEmployeeInfoDto
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public string StaffNumber { get; set; }
-    
+
     public EmployeeLevel? Level { get; set; }
-    public string Type { get; set; } 
+    public string Type { get; set; }
     public string Department { get; set; }
     public string Designation { get; set; }
-    
+
 }

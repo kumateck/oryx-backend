@@ -26,7 +26,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetProductionReport(filter, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -41,7 +41,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetMaterialsBelowMinimumStockLevel(Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -60,7 +60,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetWarehouseReport(filter, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Gets the logistics reporting dashboard
     /// </summary>
@@ -98,10 +98,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HrDashboardDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetHumanResourceReport([FromQuery] MovementReportFilter filter,
-        [FromQuery] Guid? designationId, [FromQuery] EmployeeType? employeeType, 
+        [FromQuery] Guid? designationId, [FromQuery] EmployeeType? employeeType,
         [FromQuery] Gender? gender)
     {
-        var result = await repository.GetHumanResourceDashboardReport(filter, designationId,employeeType, gender);
+        var result = await repository.GetHumanResourceDashboardReport(filter, designationId, employeeType, gender);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -143,14 +143,14 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// </summary>
     /// <param name="filter"></param>
     /// <returns></returns>
-    [HttpGet("staff-gender-ratio-report")]  
+    [HttpGet("staff-gender-ratio-report")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffGenderRatioReport))]
     public async Task<IResult> GetStaffGenderRatioReport([FromQuery] MovementReportFilter filter)
     {
         var result = await repository.GetStaffGenderRatioReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
 
     [HttpGet("staff-leave-report")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffLeaveSummaryReportDto))]
@@ -159,7 +159,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetStaffLeaveSummaryReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     [HttpGet("staff-turnover-report")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffTurnoverReportDto))]
     public async Task<IResult> GetStaffTurnoverReport([FromQuery] MovementReportFilter filter)
@@ -205,10 +205,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetQaDashboardReport(filter, productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     [HttpGet("qc-dashboard")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QaDashboardDto))]
-    public async Task<IResult> GetQcDashboard([FromQuery] ReportFilter filter, 
+    public async Task<IResult> GetQcDashboard([FromQuery] ReportFilter filter,
         [FromQuery] Guid? productId, [FromQuery] Guid? materialId)
     {
         var result = await repository.GetQcDashboardReport(filter, productId, materialId);

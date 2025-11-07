@@ -21,7 +21,7 @@ public class SwaggerHeaderFilter : IOperationFilter
             Required = false,
             Example = new OpenApiString(nameof(Warehouse))
         };
-        
+
         var subModuleHeader = new OpenApiParameter
         {
             Name = AppConstants.SubModule,

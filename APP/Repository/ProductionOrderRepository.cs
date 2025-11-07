@@ -35,7 +35,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         {
             query = query.WhereSearch(searchQuery, q => q.Code);
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionOrderDto>);
     }
 
@@ -51,22 +51,22 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         if (productionOrder == null)
             return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
-        
+
         var productionOrderDto = mapper.Map<ProductionOrderDetailDto>(productionOrder);
-        
+
         productionOrderDto.Invoice =
             mapper.Map<ProductionOrderInvoiceDto>(await context.Invoices
                 .AsSplitQuery()
                 .Include(p => p.ProformaInvoice).ThenInclude(p => p.AllocateProductionOrder)
                 .FirstOrDefaultAsync(p => p.ProformaInvoice.AllocateProductionOrder.ProductionOrderId == productionOrderDto.Id));
-        
+
         return productionOrderDto;
     }
 
     public async Task<Result> UpdateProductionOrder(Guid id, CreateProductionOrderRequest request)
     {
         var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(p => p.Id == id);
-        if(productionOrder is null) return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
+        if (productionOrder is null) return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
 
         productionOrder.Products = mapper.Map<List<ProductionOrderProducts>>(request.Products);
         mapper.Map(request, productionOrder);
@@ -79,11 +79,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(po => po.Id == id);
         if (productionOrder == null) return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
-        
+
         productionOrder.DeletedAt = DateTime.Now;
         productionOrder.LastDeletedById = userId;
         context.ProductionOrders.Update(productionOrder);
-            
+
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -112,7 +112,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         };
         await context.ProformaInvoices.AddAsync(invoice);
         await context.SaveChangesAsync();
-        
+
         return invoice.Id;
     }
 
@@ -127,14 +127,14 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
     public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery, ProformaInvoiceStatus? status = null)
     {
         var query = context.ProformaInvoices
             .AsSplitQuery()
             .Include(p => p.AllocateProductionOrder)
             .ThenInclude(p => p.ProductionOrder)
-            .ThenInclude(p => p.Customer)     
+            .ThenInclude(p => p.Customer)
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
             .AsQueryable();
@@ -207,7 +207,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
     public async Task<Result<Guid>> CreateInvoice(CreateInvoice request)
     {
         var proformaExists = await context.ProformaInvoices.AnyAsync(p => p.Id == request.ProformaInvoiceId);
@@ -235,7 +235,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, 
+            query = query.WhereSearch(searchQuery,
                 i => i.Customer.Name, i => i.Customer.Address, i => i.Customer.Email);
         }
 
@@ -286,7 +286,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         return Result.Success();
     }
 
-     public async Task<Result> AllocateProduct(AllocateProductionOrderRequest request)
+    public async Task<Result> AllocateProduct(AllocateProductionOrderRequest request)
     {
         var productionOrder = await context.ProductionOrders
             .AsSplitQuery()
@@ -384,7 +384,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         await context.SaveChangesAsync();
         return Result.Success();
     }
-     
+
 
     public async Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id)
     {
@@ -397,7 +397,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
     public async Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request)
     {
         var validation = await ValidateProductAllocation(request);
@@ -497,7 +497,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(a => a.Products)
             .ThenInclude(p => p.Product)
             .AsQueryable();
-        
+
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, b => b.ProductionOrder.Code);
@@ -541,7 +541,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
                 .FirstOrDefaultAsync(p => p.Id == id)
         );
     }
-    
+
     public async Task<Result> ValidateProductAllocation(AllocateProductionOrderRequest request)
     {
         // 1) Load the production order + products (as no-tracking; we're not persisting here)

@@ -18,10 +18,10 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
         var issuer = await userManager.FindByIdAsync(request.IssuedById.ToString());
         if (issuer is null) return Error.Validation("User.Invalid", "User Invalid");
-        
+
         var equipment = await context.Equipments.AnyAsync(e => e.Id == request.EquipmentId);
         if (!equipment) return Error.Validation("Equipment.Invalid", "Invalid equipment");
-        
+
         var jobRequest = mapper.Map<JobRequest>(request);
         await context.JobRequests.AddAsync(jobRequest);
         await context.SaveChangesAsync();

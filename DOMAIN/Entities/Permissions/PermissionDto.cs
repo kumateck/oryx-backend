@@ -7,7 +7,7 @@ public class PermissionDto(string module, string submodule, string key, string n
     public string Key { get; set; } = key;
     public string Name { get; set; } = name;
     public string Description { get; set; } = description;
-    public bool HasOptions { get; set; } 
+    public bool HasOptions { get; set; }
     public List<string> Types { get; set; } = types ?? ["Access"];
 }
 

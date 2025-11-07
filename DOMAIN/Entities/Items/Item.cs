@@ -7,14 +7,14 @@ namespace DOMAIN.Entities.Items;
 public class Item : BaseEntity
 {
     public string Name { get; set; }
-    public string Code { get; set; } 
+    public string Code { get; set; }
     public InventoryClassification Classification { get; set; }
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasure UnitOfMeasure { get; set; }
     public int MinimumLevel { get; set; }
     public int MaximumLevel { get; set; }
     public int ReorderLevel { get; set; }
-    
+
     public Guid? ItemCategoryId { get; set; }
     public ItemCategory ItemCategory { get; set; }
     public Store Store { get; set; }
@@ -62,7 +62,7 @@ public class ItemStockRequisitionItemDto : BaseDto
 
     public Guid ItemId { get; set; }
     public ItemDto Item { get; set; }
-    
+
     public int QuantityRequested { get; set; }
 }
 

@@ -9,44 +9,44 @@ public class LeaveRequest : BaseEntity, IRequireApproval
 {
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    
+
     public string ContactPerson { get; set; } = string.Empty;
-    
+
     public string ContactPersonNumber { get; set; } = string.Empty;
 
     public string Justification { get; set; }
-    
+
     public DateTime RecallDate { get; set; }
-    
+
     public string RecallReason { get; set; }
 
     public RequestCategory RequestCategory { get; set; }
     public LeaveStatus LeaveStatus { get; set; }
     public int? UnpaidDays { get; set; }
-    
+
     public int? PaidDays { get; set; }
     public Guid EmployeeId { get; set; }
-    
+
     public Employee Employee { get; set; }
-    
+
     public Guid? LeaveTypeId { get; set; }
     public LeaveType LeaveType { get; set; }
 
     public List<LeaveRequestApproval> Approvals { get; set; } = [];
-    
+
     public bool Approved { get; set; }
 }
 
-public class LeaveRequestApproval: ResponsibleApprovalStage
+public class LeaveRequestApproval : ResponsibleApprovalStage
 {
     public Guid Id { get; set; }
-    
+
     public Guid LeaveRequestId { get; set; }
-    
+
     public LeaveRequest LeaveRequest { get; set; }
-    
+
     public Guid ApprovalId { get; set; }
-    
+
     public Approval Approval { get; set; }
 }
 

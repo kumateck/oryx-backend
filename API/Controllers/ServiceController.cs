@@ -23,14 +23,14 @@ public class ServiceController(IServiceRepository repository) : ControllerBase
         var result = await repository.CreateService(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of services
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ServiceDto>>))]
     public async Task<IResult> GetServices([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null, [FromQuery]  bool? isActive = true,[FromQuery] DateTime? startDate = null,
+        [FromQuery] string searchQuery = null, [FromQuery] bool? isActive = true, [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {
         var result = await repository.GetServices(page, pageSize, searchQuery, isActive, startDate, endDate);

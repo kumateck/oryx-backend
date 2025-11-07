@@ -23,7 +23,7 @@ public class UserController(IUserRepository repo) : ControllerBase
         var response = await repo.CreateUser(request);
         return response.IsSuccess ? TypedResults.Ok(response) : response.ToProblemDetails();
     }
-    
+
     [AllowAnonymous]
     [HttpPost("sign-up")]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -32,18 +32,18 @@ public class UserController(IUserRepository repo) : ControllerBase
         var response = await repo.CreateNewUser(request);
         return response.IsSuccess ? TypedResults.Created("", response.Value) : response.ToProblemDetails();
     }
-    
+
     [Authorize]
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserWithRoleDto>>))]
-    public async Task<IResult> GetUsers( [FromQuery(Name ="isActive")] bool? isDisabled, [FromQuery(Name = "page")] int page = 1,
+    public async Task<IResult> GetUsers([FromQuery(Name = "isActive")] bool? isDisabled, [FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 5,
         [FromQuery(Name = "searchQuery")] string searchQuery = null)
     {
         var response = await repo.GetUsers(page, pageSize, searchQuery, isDisabled);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
-    
+
     [Authorize]
     [HttpGet("authenticated")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserWithRoleDto))]
@@ -52,11 +52,11 @@ public class UserController(IUserRepository repo) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var response = await repo.GetUser(Guid.Parse(userId));
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
-    
+
     [Authorize]
     [HttpGet("role/{roleId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserWithRoleDto>))]
@@ -65,12 +65,12 @@ public class UserController(IUserRepository repo) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var response = await repo.GetUsersByRoleId(roleId);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
 
-    
+
     [Authorize]
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -79,11 +79,11 @@ public class UserController(IUserRepository repo) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var response = await repo.UpdateUser(request, id, Guid.Parse(userId));
         return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
     }
-    
+
     //[Authorize("permission.user." + PermissionUtils.PermSuffixUpdate)]
     [HttpPut("role/{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -104,10 +104,10 @@ public class UserController(IUserRepository repo) : ControllerBase
     public async Task<IResult> DeleteUser(Guid id)
     {
         try
-        {  
+        {
             var userId = (string)HttpContext.Items["Sub"];
             if (userId == null) return TypedResults.Unauthorized();
-            
+
             var response = await repo.DeleteUser(id, Guid.Parse(userId));
             return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
         }
@@ -116,7 +116,7 @@ public class UserController(IUserRepository repo) : ControllerBase
             return TypedResults.NotFound(e.Message);
         }
     }
-    
+
     [AllowAnonymous]
     [HttpPost("avatar/{id?}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -127,16 +127,16 @@ public class UserController(IUserRepository repo) : ControllerBase
         {
             var userId = (string)HttpContext.Items["Sub"];
             if (userId == null) return TypedResults.Unauthorized();
-        
+
             await repo.UploadAvatar(request, id ?? Guid.Parse(userId));
-            return  TypedResults.NoContent();
+            return TypedResults.NoContent();
         }
         catch (Exception)
         {
             return TypedResults.NoContent();
         }
     }
-    
+
     [AllowAnonymous]
     [HttpPost("signature/{id?}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -147,16 +147,16 @@ public class UserController(IUserRepository repo) : ControllerBase
         {
             var userId = (string)HttpContext.Items["Sub"];
             if (userId == null) return TypedResults.Unauthorized();
-        
+
             await repo.UploadSignature(request, id ?? Guid.Parse(userId));
-            return  TypedResults.NoContent();
+            return TypedResults.NoContent();
         }
         catch (Exception)
         {
             return TypedResults.NoContent();
         }
     }
-    
+
     //[Authorize("permission.user." + PermissionUtils.PermSuffixDelete)]
     [HttpPut("toggle-disable/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -164,10 +164,10 @@ public class UserController(IUserRepository repo) : ControllerBase
     public async Task<IResult> DisableUser([FromRoute] Guid id)
     {
         try
-        {  
+        {
             var userId = (string)HttpContext.Items["Sub"];
             if (userId == null) return TypedResults.Unauthorized();
-            
+
             var response = await repo.ToggleDisableUser(id, Guid.Parse(userId));
             return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
         }

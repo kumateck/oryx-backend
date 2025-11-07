@@ -18,17 +18,17 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         {
             return Error.Validation("Designation.Exists", "Designation already exists.");
         }
-        
+
         var designation = mapper.Map<Designation>(request);
-        
+
         var departments = await context.Departments
             .Where(d => request.DepartmentIds.Contains(d.Id)).ToListAsync();
-        
+
         designation.Departments = departments;
-        
+
         await context.Designations.AddAsync(designation);
         await context.SaveChangesAsync();
-        
+
         return designation.Id;
     }
 
@@ -57,7 +57,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
     {
         var designation = await context.Designations.
             FirstOrDefaultAsync(d => d.Id == id);
-        return designation is null ? 
+        return designation is null ?
             Error.NotFound("Designation.NotFound", "Designation not found") :
             Result.Success(mapper.Map<DesignationDto>(designation));
     }
@@ -76,7 +76,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
             .Where(e => e.DesignationId != null);
 
         var employees = await employeeQuery.ToListAsync();
-        
+
         var result = designations.Select(designation =>
         {
             var relatedEmployees = employees
@@ -114,20 +114,20 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
             return Error.NotFound("Designation.NotFound", "Designation not found");
         }
         mapper.Map(request, designation);
-        
+
         // Fetch the new Departments based on the request
         var departments = await context.Departments
             .Where(d => request.DepartmentIds.Contains(d.Id))
             .ToListAsync();
-        
+
         if (departments.Count != request.DepartmentIds.Count)
         {
             return Error.Validation("Designation.InvalidDepartments", "One or more department IDs are invalid.");
         }
-        
-        designation.Departments.Clear(); 
+
+        designation.Departments.Clear();
         designation.Departments = departments;
-        
+
         context.Designations.Update(designation);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -141,18 +141,18 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         {
             return Error.NotFound("Designation.NotFound", "Designation not found");
         }
-        
+
         var employees = await context.Employees
             .FirstOrDefaultAsync(e => e.DesignationId == id);
 
         if (employees is not null)
         {
-            return Error.Validation("Designation.InUse", "Designation is in use.");       
+            return Error.Validation("Designation.InUse", "Designation is in use.");
         }
-        
+
         designation.DeletedAt = DateTime.UtcNow;
         designation.LastDeletedById = userId;
-        
+
         context.Designations.Update(designation);
         await context.SaveChangesAsync();
         return Result.Success();

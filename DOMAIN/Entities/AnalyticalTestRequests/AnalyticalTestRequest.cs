@@ -20,7 +20,7 @@ public class AnalyticalTestRequest : BaseEntity
     public DateTime? ReleasedAt { get; set; }
     public Guid? ReleasedById { get; set; }
     public User ReleasedBy { get; set; }
-    public string Filled { get; set;}
+    public string Filled { get; set; }
     public string SampledQuantity { get; set; }
     public TestStage Stage { get; set; }
     public Guid StateId { get; set; }
@@ -45,9 +45,9 @@ public class ProductState : BaseEntity
 }
 public enum TestStage
 {
-     Intermediate,
-     Bulk,
-     Finished
+    Intermediate,
+    Bulk,
+    Finished
 }
 
 public enum AnalyticalTestStatus

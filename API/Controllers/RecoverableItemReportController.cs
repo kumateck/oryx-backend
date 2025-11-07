@@ -9,5 +9,5 @@ namespace API.Controllers;
 [Authorize]
 public class RecoverableItemReportController(IRecoverableItemReportRepository repository) : ControllerBase
 {
-    
+
 }

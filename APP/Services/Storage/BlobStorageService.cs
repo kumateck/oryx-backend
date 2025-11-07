@@ -141,7 +141,7 @@ public class BlobStorageService : IBlobStorageService
         var objectName = $"{modelId}/{reference}";
         return await GetBlobAsync(bucketName, objectName);
     }
-    
+
     public async Task<Result> UploadChunkAsync(string bucketName, IFormFile chunk, string objectName, int chunkIndex)
     {
         try
@@ -150,7 +150,7 @@ public class BlobStorageService : IBlobStorageService
             {
                 return StorageErrors.PortNotFound(nameof(port));
             }
-            
+
             var minioClient = new MinioClient()
                 .WithEndpoint(_endpoint, port)
                 .WithCredentials(_accessKey, _secretKey)
@@ -188,7 +188,7 @@ public class BlobStorageService : IBlobStorageService
             {
                 return StorageErrors.PortNotFound(nameof(port));
             }
-            
+
             var minioClient = new MinioClient()
                 .WithEndpoint(_endpoint, port)
                 .WithCredentials(_accessKey, _secretKey)

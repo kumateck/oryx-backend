@@ -7,7 +7,7 @@ namespace DOMAIN.Entities.BillOfMaterials;
 
 public class BillOfMaterial : BaseEntity
 {
-    public Guid ProductId { get; set; } 
+    public Guid ProductId { get; set; }
     public Product Product { get; set; }
     public int Version { get; set; }
     public bool IsActive { get; set; }
@@ -29,8 +29,8 @@ public class BillOfMaterialItem : BaseEntity
     [StringLength(255)] public string Function { get; set; }
     public int Order { get; set; }
     public bool IsSubstitutable { get; set; }
-    public decimal BaseQuantity { get; set; } 
-    public Guid? BaseUoMId { get; set; } 
+    public decimal BaseQuantity { get; set; }
+    public Guid? BaseUoMId { get; set; }
     public UnitOfMeasure BaseUoM { get; set; }
     public decimal PrescribedQuantity { get; set; }
 }

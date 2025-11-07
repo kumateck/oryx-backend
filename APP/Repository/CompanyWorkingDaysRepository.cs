@@ -18,7 +18,7 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
         {
             return Error.Validation("CompanyWorkingDays.Invalid", "At least one working day must be selected.");
         }
-        
+
 
         var existingDays = await context.CompanyWorkingDays.ToListAsync();
 
@@ -35,7 +35,7 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
                 {
                     return Error.Validation("Invalid.Time", "Invalid start or end time.");
                 }
-                
+
                 var existing = existingDays.FirstOrDefault(e => e.Day == request.Day);
                 if (existing != null)
                 {
@@ -57,12 +57,12 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
         catch (DbUpdateException ex)
         {
             var message = ex.InnerException?.Message ?? ex.Message;
-            
+
             if (message.Contains("String") && message.Contains("truncated", StringComparison.OrdinalIgnoreCase))
             {
                 return Error.Validation("CompanyWorkingDays.TimeTooLong", "StartTime or EndTime exceeds the allowed length.");
             }
-            
+
             logger.LogError(ex, "Error saving CompanyWorkingDays");
 
             return Error.Failure("CompanyWorkingDays.DatabaseError", "An error occurred while saving working days.");
@@ -70,7 +70,7 @@ public class CompanyWorkingDaysRepository(ApplicationDbContext context, IMapper 
 
         return Result.Success();
     }
-    
+
     private static bool IsValidStartTime(string input)
     {
         return DateTime.TryParseExact(

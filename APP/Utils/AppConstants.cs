@@ -9,32 +9,32 @@ public static class AppConstants
 
     public const int ErrorNumberForMysqlUniqueConstraintViolation = 1062;
     public const int ErrorNumberForForeignKeyConstraint = 1452;
-    
+
     public const string HorizontalLogo = "horizontal-logo";
     public const string VerticalLogo = "vertical-logo";
 
     public const string AppName = "App-Name";
-    
+
     //Organization Ids
     public const string DefaultTenantId = "Entrance";
     public const string And = "AND";
     public const string Or = "Or";
-    
+
     //Domains
     public const string DomainType = "A";
     public const string SShPort = "22";
-    
+
     //Permission
     public const string Permission = "permission";
-    
+
     //Mapper Context
     public const string Status = "Status";
     public const string FindingActions = "FindingActions";
     public const string ModelType = "ModelType";
     public const string IsAdmin = "IsAdmin";
     public const string UserId = "UserId";
-    
-    
+
+
     //Module
     public const string Module = "Module";
     public const string SubModule = "SubModule";

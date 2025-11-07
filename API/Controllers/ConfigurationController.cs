@@ -30,7 +30,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
         var result = await repository.CreateConfiguration(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a configuration by ID.
     /// </summary>
@@ -45,7 +45,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
         var result = await repository.GetConfiguration(configurationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a configuration by modelType.
     /// </summary>
@@ -60,7 +60,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
         var result = await repository.GetConfiguration(modelType);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of configurations.
     /// </summary>
@@ -96,7 +96,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
         var result = await repository.UpdateConfiguration(request, configurationId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes a configuration by ID.
     /// </summary>
@@ -150,7 +150,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetConfiguration([FromRoute ]string modelType, [FromQuery] string prefix)
+    public async Task<IResult> GetConfiguration([FromRoute] string modelType, [FromQuery] string prefix)
     {
         var result = await repository.GetCountForCodeConfiguration(modelType, prefix);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

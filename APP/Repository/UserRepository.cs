@@ -23,29 +23,29 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
     {
         var user = mapper.Map<User>(request);
         user.CreatedAt = DateTime.UtcNow;
-        
+
         if (!await EmailIsUnique(request.Email))
             return UserErrors.EmailNotUnique;
 
         var result = await userManager.CreateAsync(user, request.Password);
-            
+
         if (!result.Succeeded)
         {
             return Error.Failure("User.Create", result.Errors.First().Description);
         }
-            
+
         var roleName = context.Roles
             .Where(item => request.RoleNames.Contains(item.Name))
             .Select(item => item.Name)
             .ToList();
-            
+
         await userManager.AddToRolesAsync(user, roleName);
         await context.SaveChangesAsync();
-        
-        if (string.IsNullOrEmpty(request.Avatar))  return user.Id;
-        
+
+        if (string.IsNullOrEmpty(request.Avatar)) return user.Id;
+
         if (!request.Avatar.IsValidBase64String()) return UserErrors.InvalidAvatar;
-         
+
         var image = request.Avatar.ConvertFromBase64();
         var reference = $"{user.Id}.{image.FileName.Split(".").Last()}";
         var uploadResult = await blobStorage.UploadBlobAsync("avatar", image, reference);
@@ -55,7 +55,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             context.Users.Update(user);
             await context.SaveChangesAsync();
         }
-        
+
         return user.Id;
     }
 
@@ -69,12 +69,12 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             return UserErrors.EmailNotUnique;
 
         var result = await userManager.CreateAsync(user, request.Password);
-            
+
         if (!result.Succeeded)
         {
             return Result.Failure<LoginResponse>(Error.Failure("User.Create", result.Errors.First().Description));
         }
-            
+
         var roleName = context.Roles
             .Where(item => item.Name == RoleUtils.AppRoleSuper)
             .Select(item => item.Name)
@@ -91,7 +91,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         string searchQuery, bool? isDisabled)
     {
         var query = context.Users.IgnoreQueryFilters().AsQueryable();
-        
+
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.FirstName, q => q.LastName, q => q.Email);
@@ -99,17 +99,17 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
         if (isDisabled.HasValue)
         {
-            query = query.Where(q => q.IsDisabled == isDisabled.Value);       
+            query = query.Where(q => q.IsDisabled == isDisabled.Value);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
-            query, 
-            page, 
-            pageSize, 
+            query,
+            page,
+            pageSize,
             mapper.Map<UserWithRoleDto>
         );
     }
-    
+
     public async Task<Result<UserWithRoleDto>> GetUser(Guid userId)
     {
         var user = await context.Users
@@ -118,7 +118,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         if (user == null) return UserErrors.NotFound(userId);
         return mapper.Map<UserWithRoleDto>(user);
     }
-    
+
     public async Task<Result<IEnumerable<UserWithRoleDto>>> GetUsersByRoleId(Guid roleId)
     {
         var role = await context.Roles.FirstOrDefaultAsync(u => u.Id == roleId);
@@ -143,13 +143,13 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
             context.Users.Update(user);
             await context.SaveChangesAsync();
-            
+
             if (!string.IsNullOrEmpty(request.Avatar))
             {
                 var image = request.Avatar.ConvertFromBase64();
                 var reference = $"{user.Id}.{image.FileName.Split(".").Last()}";
                 await blobStorage.UploadBlobAsync("avatar", image, reference, user.Avatar);
-             
+
                 user.Avatar = reference;
                 context.Users.Update(user);
                 await context.SaveChangesAsync();
@@ -157,7 +157,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
             if (!string.IsNullOrEmpty(request.RoleName))
             {
-                var existingRoles =  await userManager.GetRolesAsync(user);
+                var existingRoles = await userManager.GetRolesAsync(user);
                 await userManager.RemoveFromRolesAsync(user, existingRoles);
                 await userManager.AddToRoleAsync(user, request.RoleName);
                 await context.SaveChangesAsync();
@@ -165,7 +165,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         }
         return Result.Success();
     }
-    
+
     public async Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id)
     {
         foreach (var roleName in request.RoleNames)
@@ -175,9 +175,9 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
                 return UserErrors.InvalidRoleName(roleName);
             }
         }
-        
+
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id);
-        var existingRoles =  await userManager.GetRolesAsync(user);
+        var existingRoles = await userManager.GetRolesAsync(user);
         await userManager.RemoveFromRolesAsync(user, existingRoles);
         await userManager.AddToRolesAsync(user, request.RoleNames);
         await context.SaveChangesAsync();
@@ -193,22 +193,22 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         user.LastDeletedById = userId;
         context.Users.Update(user);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
-    
+
     public async Task<Result> ToggleDisableUser(Guid id, Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id);
         if (user == null) return UserErrors.NotFound(userId);
-        
+
         user.IsDisabled = !user.IsDisabled;
         if (!user.IsDisabled)
         {
-           user.DeletedAt = null;
-           user.LastDeletedById = null;
+            user.DeletedAt = null;
+            user.LastDeletedById = null;
         }
-        
+
         user.LastDeletedById = userId;
         context.Users.Update(user);
         await context.SaveChangesAsync();
@@ -232,7 +232,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
         return result;
     }
-    
+
     public async Task<Result> UploadSignature(UploadFileRequest request, Guid userId)
     {
         var signature = request.File.ConvertFromBase64();
@@ -250,7 +250,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
         return result;
     }
-    
+
     private async Task<bool> EmailIsUnique(string email)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email);

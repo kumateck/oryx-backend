@@ -35,7 +35,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateProductionSchedule(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -69,11 +69,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetProductionSchedules(page, pageSize, searchQuery, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a specific product in a Production Schedule.
     /// </summary>
@@ -103,7 +103,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateProductionSchedule(request, scheduleId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -121,7 +121,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteProductionSchedule(scheduleId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -149,7 +149,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
 
         return TypedResults.Ok(types);
     }
-    
+
     /// <summary>
     /// Retrieves the details of a specific Production Schedule, including procurement information.
     /// </summary>
@@ -167,7 +167,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetProductionScheduleDetail(scheduleId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     [HttpGet("material-stock/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
@@ -180,7 +180,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.CheckMaterialStockLevelsForProductionSchedule(productionScheduleProductId, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     [HttpGet("package-material-stock/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementPackageDto>))]
@@ -227,17 +227,17 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    
-    #endregion
-    
-     #region Production Activities
 
-     /// <summary>
-     /// Starts a Production Activity for a given Production Schedule and Product.
-     /// </summary>
-     /// <param name="productionScheduleProductId">the production schedule product id</param>
-     /// <returns>Returns the ID of the started Production Activity.</returns>
-     [HttpPost("activity/start/{productionScheduleProductId}")]
+    #endregion
+
+    #region Production Activities
+
+    /// <summary>
+    /// Starts a Production Activity for a given Production Schedule and Product.
+    /// </summary>
+    /// <param name="productionScheduleProductId">the production schedule product id</param>
+    /// <returns>Returns the ID of the started Production Activity.</returns>
+    [HttpPost("activity/start/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -245,8 +245,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.StartProductionActivity(productionScheduleProductId,Guid.Parse(userId));
+
+        var result = await repository.StartProductionActivity(productionScheduleProductId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -306,7 +306,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetProductionActivityGroupedByStatus();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Groups Production Activities by their current step.
     /// </summary>
@@ -335,11 +335,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateStatusOfProductionActivityStep(Guid productionStepId,[FromQuery]ProductionStatus status)
+    public async Task<IResult> UpdateStatusOfProductionActivityStep(Guid productionStepId, [FromQuery] ProductionStatus status)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateStatusOfProductionActivityStep(productionStepId, status, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -385,7 +385,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetProductionActivityStepsGroupedByStatus();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Groups Production Activity Steps by their operation.
     /// </summary>
@@ -415,7 +415,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.CreateBatchManufacturingRecord(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-       
+
     [HttpGet("manufacturing/product/{productionScheduleProductId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchManufacturingRecordDto))]
@@ -425,7 +425,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetBatchManufacturingRecordByProductionAndScheduleId(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     [HttpPost("finished-goods-transfer-note")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
@@ -434,11 +434,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateFinishedGoodsTransferNote(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of finished good transfer notes
     /// </summary>
@@ -450,10 +450,13 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         int pageSize = 10,
         string searchQuery = null)
     {
-        var result = await repository.GetFinishedGoodsTransferNote(onlyApproved, page, pageSize, searchQuery);
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+
+        var result = await repository.GetFinishedGoodsTransferNote(Guid.Parse(departmentId), onlyApproved, page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a finished good transfer note
     /// </summary>
@@ -465,7 +468,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetFinishedGoodsTransferNote(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a finished good transfer note by product Id
     /// </summary>
@@ -477,7 +480,10 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetFinishedGoodsTransferNoteByProduct(page, pageSize, searchQuery, productId);
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+
+        var result = await repository.GetFinishedGoodsTransferNoteByProduct(Guid.Parse(departmentId), page, pageSize, searchQuery, productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -497,7 +503,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateFinishedGoodsTransferNote([FromRoute] Guid id, [FromBody] CreateFinishedGoodsTransferNoteRequest request)
     {
-        var result = await repository.UpdateTransferNote(id,request);
+        var result = await repository.UpdateTransferNote(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -539,7 +545,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.UpdateBatchManufacturingRecord(request, id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Issues a specific batch manufacturing record by its ID.
     /// </summary>
@@ -552,7 +558,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.IssueBatchManufacturingRecord(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -608,7 +614,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.UpdateBatchPackagingRecord(request, id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Issues a specific batch packing record by its ID.
     /// </summary>
@@ -621,7 +627,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.IssueBatchPackagingRecord(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -641,7 +647,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateStockTransfer(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -657,62 +663,62 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetStockTransfers(fromDepartmentId, toDepartmentId, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of Stock Transfers with optional filters.
     /// </summary>
     [HttpGet("stock-transfer/user")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StockTransferDto>>))]
-    public async Task<IResult> GetStockTransfersForUserDepartment([FromQuery] int page = 1, 
-        [FromQuery] int pageSize = 10, 
-        [FromQuery] string searchQuery = null, 
-        [FromQuery] StockTransferStatus? status = null, 
+    public async Task<IResult> GetStockTransfersForUserDepartment([FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] StockTransferStatus? status = null,
         [FromQuery] Guid? toDepartmentId = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.GetStockTransfersForUserDepartment(Guid.Parse(userId),page, pageSize, searchQuery, status);
+
+        var result = await repository.GetStockTransfersForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of Stock Transfers with optional filters.
     /// </summary>
     [HttpGet("stock-transfer/in-bound")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentStockTransferDto>>))]
-    public async Task<IResult> GetInBoundStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
-        [FromQuery] string searchQuery = null, 
-        [FromQuery] StockTransferStatus? status = null, 
+    public async Task<IResult> GetInBoundStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] StockTransferStatus? status = null,
         [FromQuery] Guid? toDepartmentId = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetIncomingStockTransferRequestForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, toDepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of Stock Transfers with optional filters.
     /// </summary>
     [HttpGet("stock-transfer/out-bound")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentStockTransferDto>>))]
-    public async Task<IResult> GetOutBoundStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
-        [FromQuery] string searchQuery = null, 
-        [FromQuery] StockTransferStatus? status = null, 
+    public async Task<IResult> GetOutBoundStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] StockTransferStatus? status = null,
         [FromQuery] Guid? fromDepartmentId = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetOutgoingStockTransferRequestForUserDepartment(Guid.Parse(userId), page, pageSize, searchQuery, status, fromDepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Get a Stock Transfer by ID.
     /// </summary>
@@ -724,11 +730,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetStockTransferSource(stockTransferId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Approves a Stock Transfer.
     /// </summary>
@@ -740,13 +746,13 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.ApproveStockTransfer(stockTransferId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
-        /// Rejects a Stock Transfer.
+    /// Rejects a Stock Transfer.
     /// </summary>
     [HttpPut("stock-transfer/reject/{stockTransferId}")]
     [Authorize]
@@ -756,11 +762,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.RejectStockTransfer(stockTransferId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Gets a list of material batches to fulfill a Stock Transfer.
     /// </summary>
@@ -785,14 +791,14 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.IssueStockTransfer(stockTransferId, batches,Guid.Parse(userId));
+
+        var result = await repository.IssueStockTransfer(stockTransferId, batches, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     #endregion
-    
-     #region Final Packing
+
+    #region Final Packing
 
     /// <summary>
     /// Creates a new Final Packing entry.
@@ -952,7 +958,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ReturnAfterProduction([FromQuery] Guid productionScheduleProductId, [FromBody] List<PartialMaterialToReturn> returns)
     {
-        var result = await repository.ReturnLeftOverStockAfterProductionEnds(productionScheduleProductId ,returns);
+        var result = await repository.ReturnLeftOverStockAfterProductionEnds(productionScheduleProductId, returns);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -986,7 +992,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetMaterialReturnNoteById(materialReturnNoteId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a specific Material Return Note by its ID.
     /// </summary>
@@ -1003,7 +1009,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     #endregion
-    
+
     #region Production Extra Packing
 
     /// <summary>
@@ -1102,7 +1108,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.ApproveProductionExtraPacking(productionExtraPackingId, batches, Guid.Parse(userIdStr));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of approved products
     /// </summary>
@@ -1115,7 +1121,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetApprovedProducts();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a single approved product
     /// </summary>
@@ -1128,8 +1134,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetApprovedProduct(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Retrieves details of an approved product
     /// </summary>
@@ -1142,7 +1148,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetApprovedProductDetails(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
 
     #endregion
 
@@ -1162,7 +1168,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetProductionScheduleSummaryReport(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a detailed report of Production Schedules.
     /// </summary>
@@ -1179,6 +1185,6 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     #endregion
-    
-    
+
+
 }

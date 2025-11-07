@@ -11,7 +11,7 @@ namespace API.Controllers;
 [Authorize]
 public class VendorController(IVendorRepository repository) : ControllerBase
 {
-     /// <summary>
+    /// <summary>
     /// Creates a vendor
     /// </summary>
     [HttpPost]
@@ -22,7 +22,7 @@ public class VendorController(IVendorRepository repository) : ControllerBase
         var result = await repository.CreateVendor(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of vendors 
     /// </summary>

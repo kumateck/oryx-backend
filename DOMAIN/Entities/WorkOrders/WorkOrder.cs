@@ -14,6 +14,6 @@ public class WorkOrder : BaseEntity
     public DateTime EndDate { get; set; } // Scheduled end date
     public ProductionStatus Status { get; set; } // Status of the work order (e.g., Planned, In Progress, Completed, Canceled)
     [StringLength(100)] public string BatchNumber { get; set; } // Unique identifier for batch tracking
-        
+
     public List<ProductionStep> Steps { get; set; } = new(); // Steps involved in the production
 }

@@ -13,7 +13,7 @@ public class Equipment : BaseEntity
     public decimal CapacityQuantity { get; set; }
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
-    public bool RelevanceCheck{ get; set; }
+    public bool RelevanceCheck { get; set; }
     public Guid DepartmentId { get; set; }
     public Department Department { get; set; }
     [StringLength(1000)] public string StorageLocation { get; set; }
@@ -26,7 +26,7 @@ public class EquipmentDto : BaseDto
     public bool IsStorage { get; set; }
     public decimal CapacityQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
-    public bool RelevanceCheck{ get; set; }
+    public bool RelevanceCheck { get; set; }
     public CollectionItemDto Department { get; set; }
     public string StorageLocation { get; set; }
 }

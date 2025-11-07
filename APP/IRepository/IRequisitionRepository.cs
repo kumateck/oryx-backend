@@ -8,42 +8,42 @@ using SHARED;
 namespace APP.IRepository;
 
 public interface IRequisitionRepository
-{ 
+{
     Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId);
     Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId);
 
-    Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities,Guid productId,
+    Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities, Guid productId,
         Guid userId);
     Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize,
-        string searchQuery,  RequestStatus? status, RequisitionType? requisitionType, Guid? departmentId, MaterialKind? kind);
+        string searchQuery, RequestStatus? status, RequisitionType? requisitionType, Guid? departmentId, MaterialKind? kind);
     Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId);
     Task<Result> ApproveRequisition(ApproveRequisitionRequest request, Guid requisitionId, Guid userId, List<Guid> roleIds);
-     //Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId);
-     Task<Result> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId);
+    //Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId);
+    Task<Result> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId);
     Task<Result<SourceRequisitionDto>> GetSourceRequisition(Guid sourceRequisitionId);
     Task<Result<Paginateable<IEnumerable<SourceRequisitionDto>>>> GetSourceRequisitions(int page,
         int pageSize, string searchQuery);
     Task<Result<Paginateable<IEnumerable<SourceRequisitionItemDto>>>> GetSourceRequisitionItems(int page,
-        int pageSize, ProcurementSource source); 
-    Task<Result> UpdateSourceRequisition(CreateSourceRequisitionRequest request, Guid sourceRequisitionId); 
+        int pageSize, ProcurementSource source);
+    Task<Result> UpdateSourceRequisition(CreateSourceRequisitionRequest request, Guid sourceRequisitionId);
     Task<Result> DeleteSourceRequisition(Guid sourceRequisitionId);
 
     Task<Result<Paginateable<IEnumerable<SupplierQuotationRequest>>>> GetSuppliersWithSourceRequisitionItems(int page,
         int pageSize, SupplierType source, bool sent);
 
-   Task<Result<SupplierQuotationRequest>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
+    Task<Result<SupplierQuotationRequest>> GetSuppliersWithSourceRequisitionItems(Guid supplierId);
 
-   Task<Result> SendQuotationToSupplier(Guid supplierId);
+    Task<Result> SendQuotationToSupplier(Guid supplierId);
 
-   Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, int pageSize,
-       SupplierType supplierType, bool received);
-  Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId);
-  Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse,
-      Guid supplierQuotationId);
-  Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType);
-  Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(
-      SupplierType supplierType, Guid materialId, Guid purchaseOrderId, SupplierQuotationItemStatus? status);
-  Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, SupplierType type,
-      Guid userId);
-  Task<bool> CheckIfSupplierHasPendingPriceComparison(Guid supplierId);
+    Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, int pageSize,
+        SupplierType supplierType, bool received);
+    Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId);
+    Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse,
+        Guid supplierQuotationId);
+    Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType);
+    Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(
+        SupplierType supplierType, Guid materialId, Guid purchaseOrderId, SupplierQuotationItemStatus? status);
+    Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations, SupplierType type,
+        Guid userId);
+    Task<bool> CheckIfSupplierHasPendingPriceComparison(Guid supplierId);
 }

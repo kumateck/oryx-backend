@@ -24,7 +24,7 @@ public static class CodeGenerator
     {
         var maxLength = Math.Max(1, config.MaximumNameLength - (config.Prefix.Length + 1)); // Ensure length is at least 1
         var random = new Random();
-    
+
         return string.Concat(Enumerable.Range(0, maxLength)
             .Select(_ => random.Next(0, 10).ToString()));
     }

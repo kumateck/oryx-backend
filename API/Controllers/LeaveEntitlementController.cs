@@ -21,13 +21,13 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveEntitlement([FromBody] LeaveEntitlementDto request)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.CreateLeaveEntitlement(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of leave entitlements based on search criteria.
     /// </summary>
@@ -35,9 +35,9 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveEntitlementDto>>))]
     public async Task<IResult> GetLeaveEntitlements(int page = 1, int pageSize = 10, string searchQuery = null)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetLeaveEntitlements(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -50,9 +50,9 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveEntitlement([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetLeaveEntitlement(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -66,9 +66,9 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateLeaveEntitlement([FromRoute] Guid id, [FromBody] LeaveEntitlementDto request)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateLeaveEntitlement(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -81,11 +81,11 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteLeaveEntitlement([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteLeaveEntitlement(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
 }

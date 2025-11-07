@@ -7,7 +7,7 @@ public class CreateEquipmentRequest
     public bool IsStorage { get; set; }
     public decimal CapacityQuantity { get; set; }
     public Guid UoMId { get; set; }
-    public bool RelevanceCheck{ get; set; }
+    public bool RelevanceCheck { get; set; }
     public Guid DepartmentId { get; set; }
     public string StorageLocation { get; set; }
 }

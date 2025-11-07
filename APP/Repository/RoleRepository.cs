@@ -11,24 +11,24 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, RoleManager<Role> roleManager , IPermissionRepository permissionRepository)
+public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, RoleManager<Role> roleManager, IPermissionRepository permissionRepository)
     : IRoleRepository
 {
     public async Task<Result<List<RoleDto>>> GetRoles()
     {
-        var roles =  await context.Roles.ToListAsync();
+        var roles = await context.Roles.ToListAsync();
         return roles.Select(mapper.Map<RoleDto>).ToList();
     }
-    
+
     public async Task<Result<Paginateable<IEnumerable<RoleDto>>>> GetRoles(int page, int pageSize, string searchQuery)
     {
-        var roles =  context.Roles.AsQueryable();
+        var roles = context.Roles.AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             roles = roles.WhereSearch(searchQuery, q => q.Name, q => q.DisplayName);
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(
             roles,
             page,
@@ -37,7 +37,7 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         );
     }
 
-    public async Task<Result<Paginateable<List<RolePermissionDto>>>> GetRolesWithPermissions(int page, int pageSize, 
+    public async Task<Result<Paginateable<List<RolePermissionDto>>>> GetRolesWithPermissions(int page, int pageSize,
         string searchQuery)
     {
         var result = await GetRoles(page, pageSize, searchQuery);
@@ -67,12 +67,12 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
             Type = request.Type,
             CreatedAt = DateTime.UtcNow
         };
-        
+
         if (!await IsValidRoleName(request.Name))
             return RoleErrors.InvalidRoleName(request.Name);
-        
+
         var result = await roleManager.CreateAsync(newRole);
-            
+
         if (!result.Succeeded)
         {
             return Error.Failure("Role.Create", $"{result.Errors.First()}");
@@ -84,7 +84,7 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
 
     public async Task<Result> UpdateRole(UpdateRoleRequest request, Guid id, Guid userid)
     {
-        var role =await context.Roles.FirstOrDefaultAsync(r => r.Id == id);
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == id);
         if (role == null) return RoleErrors.NotFound(id);
 
         if (role.IsManager) return RoleErrors.IsManager;
@@ -104,11 +104,11 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
     {
         var role = await context.Roles.FirstOrDefaultAsync(item => item.Id == id);
         if (role is null) RoleErrors.NotFound(id);
-        
+
         var usersWithRole = await userManager.GetUsersInRoleAsync(role.Name);
         return new { HasUsers = usersWithRole.Count != 0 };
     }
-    
+
     public async Task<Result> DeleteRole(Guid id, Guid userId)
     {
         var role = await context.Roles.FirstOrDefaultAsync(item => item.Id == id);
@@ -121,7 +121,7 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
 
         return Result.Success();
     }
-    
+
     private async Task<bool> IsValidRoleName(string roleName)
     {
         var role = await context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);

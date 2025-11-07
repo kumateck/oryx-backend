@@ -58,7 +58,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetForms(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of forms.
     /// </summary>
@@ -110,7 +110,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.DeleteForm(formId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Saves or updates a single field response as a draft.
     /// </summary>
@@ -201,7 +201,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormResponse(formResponseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new question.
     /// </summary>
@@ -316,12 +316,12 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GenerateCertificateOfAnalysisForProduct([FromRoute] Guid batchManufacturingRecordId,
-        [FromRoute]Guid productionActivityStepId)
+        [FromRoute] Guid productionActivityStepId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GenerateCertificateOfAnalysisForProduct(batchManufacturingRecordId, productionActivityStepId,Guid.Parse(userId));
+        var result = await repository.GenerateCertificateOfAnalysisForProduct(batchManufacturingRecordId, productionActivityStepId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -354,7 +354,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormResponseByBmr(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Gets form response by batch manufacturing record ID.
     /// </summary>
@@ -369,7 +369,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormResponseByMaterialSpecification(materialSpecificationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Gets form response by batch manufacturing record ID.
     /// </summary>
@@ -384,8 +384,8 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormResponseByProductSpecification(productSpecificationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Gets form with response by material batch ID.
     /// </summary>
@@ -415,7 +415,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormWithResponseByBmr(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /*/// <summary>
     /// Gets form with response by material batch ID.
     /// </summary>

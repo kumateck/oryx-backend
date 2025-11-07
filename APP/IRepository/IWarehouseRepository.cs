@@ -33,7 +33,7 @@ public interface IWarehouseRepository
         int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result<List<WarehouseLocationRackDto>>> GetWarehouseLocationRacks(MaterialKind kind, Guid userId);
     Task<Result> UpdateWarehouseLocationRack(CreateWarehouseLocationRackRequest request, Guid rackId,
-        Guid userId); 
+        Guid userId);
     Task<Result> DeleteWarehouseLocationRack(Guid rackId, Guid userId);
     Task<Result<Guid>> CreateWarehouseLocationShelf(CreateWarehouseLocationShelfRequest request,
         Guid warehouseLocationRackId, Guid userId);
@@ -51,7 +51,7 @@ public interface IWarehouseRepository
     Task<Result<Guid>> CreateArrivalLocation(CreateArrivalLocationRequest request);
     Task<Result> ConfirmArrival(Guid distributedMaterialId);
     Task<Result<ChecklistDto>> GetChecklist(Guid id);
-    Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request,Guid userId);
+    Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request, Guid userId);
     Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId);
     Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterials(List<Guid> distributedMaterialIds);
     Task<Result<ChecklistDto>> GetChecklistByDistributedMaterialId(Guid distributedMaterialId);
@@ -63,14 +63,14 @@ public interface IWarehouseRepository
 
     Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize,
         string searchQuery, Guid materialId);
-    
-    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialId);
-    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery,Guid warehouseId, Guid materialBatchId);
+
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery, Guid warehouseId, Guid materialId);
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery, Guid warehouseId, Guid materialBatchId);
 
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize,
         string searchQuery, Guid warehouseId);
     Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
-    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>>GetStockTransferDetails(int page, int pageSize, string searchQuery, MaterialKind kind,Guid userId);
+    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetStockTransferDetails(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
     Task<Result<Paginateable<IEnumerable<DistributedFinishedProductDto>>>> GetFinishedGoodsDetails(int page, int pageSize, string searchQuery, Guid userId);
     Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialsById(
         Guid distributedMaterialId);
@@ -79,7 +79,7 @@ public interface IWarehouseRepository
 
     Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize,
         string searchQuery, Guid productId);
-    
+
     /// <summary>
     /// Creates a new swap request between two warehouses.
     /// </summary>

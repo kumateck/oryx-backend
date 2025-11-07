@@ -12,12 +12,12 @@ public interface IShiftScheduleRepository
     Task<Result<Paginateable<IEnumerable<ShiftScheduleDto>>>> GetShiftSchedules(int page, int pageSize,
         string searchQuery, ScheduleStatus? status, ScheduleFrequency? frequency);
     Task<Result<ShiftScheduleDto>> GetShiftSchedule(Guid id);
-    
+
     Task<Result<List<ShiftScheduleDto>>> GetShiftScheduleByDepartment(Guid departmentId);
     Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleDayView(Guid shiftScheduleId, DateTime date);
-    
+
     Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleRangeView(Guid shiftScheduleId, DateTime startDate, DateTime endDate);
-    
+
     Task<Result> AssignEmployeesToShift(AssignShiftRequest request);
     Task<Result> UpdateShiftSchedule(Guid id, CreateShiftScheduleRequest request);
 

@@ -15,218 +15,218 @@ using SHARED.Requests;
 
 namespace APP.Repository;
 
- public class ProductRepository(ApplicationDbContext context, IMapper mapper) : IProductRepository
- {
-     public async Task<Result<Guid>> CreateProduct(CreateProductRequest request, Guid userId)
-     {
-         if (context.Products.IgnoreQueryFilters().Any(p => p.Name == request.Name))
-             return Error.Validation("Product.Name","Product with same name already exists");
-         
-         if (context.Products.IgnoreQueryFilters().Any(p => p.Code == request.Code))
-             return Error.Validation("Product.Code","Product with code already exists");
-         
-         if(request.Price < 0)
-             return Error.Validation("Product.Price","Product Price must be greater than 0");
-         
-         var product = mapper.Map<Product>(request);
-         product.CreatedById = userId;
-         product.Prices.Add(new ProductPrices
-         {
-             Price = request.Price,
-             Date = DateTime.UtcNow
-         });
-         await context.Products.AddAsync(product); 
-         await context.SaveChangesAsync();
+public class ProductRepository(ApplicationDbContext context, IMapper mapper) : IProductRepository
+{
+    public async Task<Result<Guid>> CreateProduct(CreateProductRequest request, Guid userId)
+    {
+        if (context.Products.IgnoreQueryFilters().Any(p => p.Name == request.Name))
+            return Error.Validation("Product.Name", "Product with same name already exists");
 
-         return product.Id;
-     }
-     
-     public async Task<Result<ProductDto>> GetProduct(Guid productId) 
-     { 
-         var product = await context.Products
-             .AsSplitQuery()
-             .Include(p => p.BaseUoM)
-             .Include(p => p.Equipment)
-             .Include(p => p.BillOfMaterials)
-             .ThenInclude(p => p.BillOfMaterial)
-             .ThenInclude(p => p.Items.OrderBy(i => i.Order))
-             .Include(p => p.Category)
-             .Include(p => p.FinishedProducts)
-             .Include(p => p.Packages)
-             .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.WorkCenters)
-             .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleUsers)
-             .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleRoles)
-             .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.Resources)
-             .Include(p => p.Packings).ThenInclude(p => p.PackingLists.OrderBy(r => r.Order)).ThenInclude(p  => p.Uom)
-             .Include(p => p.Packings).ThenInclude(p => p.BasePackingUoM)
-             .Include(p =>p.CreatedBy)
-             .FirstOrDefaultAsync(p => p.Id == productId);
+        if (context.Products.IgnoreQueryFilters().Any(p => p.Code == request.Code))
+            return Error.Validation("Product.Code", "Product with code already exists");
 
-         return product is null ? ProductErrors.NotFound(productId) : mapper.Map<ProductDto>(product);
-     }
+        if (request.Price < 0)
+            return Error.Validation("Product.Price", "Product Price must be greater than 0");
 
-     public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize, string searchQuery, Guid? departmentId)
-     {
-         var query = context.Products
-             .AsSplitQuery()
-             .AsQueryable();
+        var product = mapper.Map<Product>(request);
+        product.CreatedById = userId;
+        product.Prices.Add(new ProductPrices
+        {
+            Price = request.Price,
+            Date = DateTime.UtcNow
+        });
+        await context.Products.AddAsync(product);
+        await context.SaveChangesAsync();
 
-         if (!string.IsNullOrEmpty(searchQuery))
-         {
-             query = query.WhereSearch(searchQuery, f => f.Name);
-         }
+        return product.Id;
+    }
 
-         if (departmentId.HasValue)
-         {
-             query = query.Where(p => p.DepartmentId == departmentId);
-         }
+    public async Task<Result<ProductDto>> GetProduct(Guid productId)
+    {
+        var product = await context.Products
+            .AsSplitQuery()
+            .Include(p => p.BaseUoM)
+            .Include(p => p.Equipment)
+            .Include(p => p.BillOfMaterials)
+            .ThenInclude(p => p.BillOfMaterial)
+            .ThenInclude(p => p.Items.OrderBy(i => i.Order))
+            .Include(p => p.Category)
+            .Include(p => p.FinishedProducts)
+            .Include(p => p.Packages)
+            .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.WorkCenters)
+            .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleUsers)
+            .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleRoles)
+            .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.Resources)
+            .Include(p => p.Packings).ThenInclude(p => p.PackingLists.OrderBy(r => r.Order)).ThenInclude(p => p.Uom)
+            .Include(p => p.Packings).ThenInclude(p => p.BasePackingUoM)
+            .Include(p => p.CreatedBy)
+            .FirstOrDefaultAsync(p => p.Id == productId);
 
-         return await PaginationHelper.GetPaginatedResultAsync(
-             query,
-             page,
-             pageSize,
-             mapper.Map<ProductListDto>
-         );
-     }
+        return product is null ? ProductErrors.NotFound(productId) : mapper.Map<ProductDto>(product);
+    }
 
-     public async Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId)
-     {
-         var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-         if (existingProduct is null)
-         {
-             return ProductErrors.NotFound(productId);
-         }
+    public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize, string searchQuery, Guid? departmentId)
+    {
+        var query = context.Products
+            .AsSplitQuery()
+            .AsQueryable();
 
-         if (existingProduct.Price != request.Price)
-         {
-             existingProduct.Prices.Add(new ProductPrices
-             {
-                 Price = request.Price,
-                 Date = DateTime.UtcNow
-             });
-         }
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, f => f.Name);
+        }
 
-         mapper.Map(request, existingProduct);
-         existingProduct.LastUpdatedById = userId;
+        if (departmentId.HasValue)
+        {
+            query = query.Where(p => p.DepartmentId == departmentId);
+        }
 
-         context.Products.Update(existingProduct);
-         await context.SaveChangesAsync();
-         return Result.Success();
-     }
-     
-     public async Task<Result> UpdateProductPackageDescription(UpdateProductPackageDescriptionRequest request, Guid productId, Guid userId)
-     {
-         var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-         if (existingProduct is null)
-         {
-             return ProductErrors.NotFound(productId);
-         }
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<ProductListDto>
+        );
+    }
 
-         existingProduct.PrimaryPackDescription = request.PrimaryPackDescription;
-         existingProduct.SecondaryPackDescription = request.SecondaryPackDescription;
-         existingProduct.TertiaryPackDescription = request.TertiaryPackDescription;
-         existingProduct.LastUpdatedById = userId;
-         context.Products.Update(existingProduct);
-         await context.SaveChangesAsync();
-         return Result.Success();
-     }
+    public async Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId)
+    {
+        var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+        if (existingProduct is null)
+        {
+            return ProductErrors.NotFound(productId);
+        }
 
-     public async Task<Result> DeleteProduct(Guid productId, Guid userId)
-     {
-         var product = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-         if (product is null)
-         {
-             return ProductErrors.NotFound(productId);
-         }
+        if (existingProduct.Price != request.Price)
+        {
+            existingProduct.Prices.Add(new ProductPrices
+            {
+                Price = request.Price,
+                Date = DateTime.UtcNow
+            });
+        }
 
-         product.DeletedAt = DateTime.UtcNow;
-         product.LastDeletedById = userId;
-         context.Products.Update(product);
-         await context.SaveChangesAsync();
-         return Result.Success();
-     }
-     
-     public async Task<Result<Guid>> CreateBillOfMaterials(CreateProductBillOfMaterialRequest request, Guid productId) 
-     { 
-         var bom = mapper.Map<ProductBillOfMaterial>(request);
-         
-         await context.ProductBillOfMaterials.AddAsync(bom); 
-         await context.SaveChangesAsync(); 
-         return bom.Id;
-     }
-      
-     public async Task<Result> UpdateBillOfMaterials(CreateProductBillOfMaterialRequest request, Guid bomId) 
-     { 
-         var existingBom = await context.ProductBillOfMaterials.FirstOrDefaultAsync(p => p.Id == bomId);
-         
-         if (existingBom is null)
-         {
-             return Error.NotFound("ProductBoM.NotFound", "Could not find bom for this product");
-         }
+        mapper.Map(request, existingProduct);
+        existingProduct.LastUpdatedById = userId;
 
-         mapper.Map(request, existingBom);
+        context.Products.Update(existingProduct);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
-         context.ProductBillOfMaterials.Update(existingBom);
-         await context.SaveChangesAsync();
-         return Result.Success();
-     }
+    public async Task<Result> UpdateProductPackageDescription(UpdateProductPackageDescriptionRequest request, Guid productId, Guid userId)
+    {
+        var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+        if (existingProduct is null)
+        {
+            return ProductErrors.NotFound(productId);
+        }
 
-     public async Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId)
-     {
-         var bom = await context.ProductBillOfMaterials
-             .AsSplitQuery()
-             .Include(b => b.BillOfMaterial)
-             .OrderByDescending(p => p.EffectiveDate)
-             .FirstOrDefaultAsync(
-             p => p.ProductId == productId && p.IsActive);
+        existingProduct.PrimaryPackDescription = request.PrimaryPackDescription;
+        existingProduct.SecondaryPackDescription = request.SecondaryPackDescription;
+        existingProduct.TertiaryPackDescription = request.TertiaryPackDescription;
+        existingProduct.LastUpdatedById = userId;
+        context.Products.Update(existingProduct);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
-         if (bom is null)
-         {
-             return Error.NotFound("ProductBoM.NotFound", "Could not find bom for this product");
-         }
+    public async Task<Result> DeleteProduct(Guid productId, Guid userId)
+    {
+        var product = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+        if (product is null)
+        {
+            return ProductErrors.NotFound(productId);
+        }
 
-         return mapper.Map<ProductBillOfMaterialDto>(bom);
-     }
+        product.DeletedAt = DateTime.UtcNow;
+        product.LastDeletedById = userId;
+        context.Products.Update(product);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
-     public async Task<Result> DeleteBillOfMaterials(Guid bomId, Guid userId) 
-     { 
-         var bom = await context.ProductBillOfMaterials.FirstOrDefaultAsync(p => p.Id == bomId);
-         
-         if (bom is null)
-         {
-             return Error.NotFound("ProductBoM.NotFound", "Could not find bom for this product");
-         }
+    public async Task<Result<Guid>> CreateBillOfMaterials(CreateProductBillOfMaterialRequest request, Guid productId)
+    {
+        var bom = mapper.Map<ProductBillOfMaterial>(request);
 
-         bom.DeletedAt = DateTime.UtcNow;
-         bom.LastDeletedById = userId;
-         context.ProductBillOfMaterials.Update(bom);
-         await context.SaveChangesAsync();
-         return Result.Success(); 
-     }
-     
-      public async Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId)
-      {
-          var product = await context.Products
-              .AsSplitQuery()
-              .Include(product => product.Routes)
-              .FirstOrDefaultAsync(p => p.Id == productId);
-          if (product is null) return ProductErrors.NotFound(productId);
-          
-          if (product.Routes.Count != 0)
-          {
-              context.Routes.RemoveRange(product.Routes);
-          }
+        await context.ProductBillOfMaterials.AddAsync(bom);
+        await context.SaveChangesAsync();
+        return bom.Id;
+    }
 
-          var routes = new List<Route>();
-          
-          foreach (var routeRequest in request.DistinctBy(r => r.OperationId).ToList())
-          {
-              routes.Add(mapper.Map<Route>(routeRequest));
-          }
-          product.Routes.AddRange(routes);
-          await context.SaveChangesAsync();
-          return Result.Success();
-      }
+    public async Task<Result> UpdateBillOfMaterials(CreateProductBillOfMaterialRequest request, Guid bomId)
+    {
+        var existingBom = await context.ProductBillOfMaterials.FirstOrDefaultAsync(p => p.Id == bomId);
+
+        if (existingBom is null)
+        {
+            return Error.NotFound("ProductBoM.NotFound", "Could not find bom for this product");
+        }
+
+        mapper.Map(request, existingBom);
+
+        context.ProductBillOfMaterials.Update(existingBom);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId)
+    {
+        var bom = await context.ProductBillOfMaterials
+            .AsSplitQuery()
+            .Include(b => b.BillOfMaterial)
+            .OrderByDescending(p => p.EffectiveDate)
+            .FirstOrDefaultAsync(
+            p => p.ProductId == productId && p.IsActive);
+
+        if (bom is null)
+        {
+            return Error.NotFound("ProductBoM.NotFound", "Could not find bom for this product");
+        }
+
+        return mapper.Map<ProductBillOfMaterialDto>(bom);
+    }
+
+    public async Task<Result> DeleteBillOfMaterials(Guid bomId, Guid userId)
+    {
+        var bom = await context.ProductBillOfMaterials.FirstOrDefaultAsync(p => p.Id == bomId);
+
+        if (bom is null)
+        {
+            return Error.NotFound("ProductBoM.NotFound", "Could not find bom for this product");
+        }
+
+        bom.DeletedAt = DateTime.UtcNow;
+        bom.LastDeletedById = userId;
+        context.ProductBillOfMaterials.Update(bom);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId)
+    {
+        var product = await context.Products
+            .AsSplitQuery()
+            .Include(product => product.Routes)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+        if (product is null) return ProductErrors.NotFound(productId);
+
+        if (product.Routes.Count != 0)
+        {
+            context.Routes.RemoveRange(product.Routes);
+        }
+
+        var routes = new List<Route>();
+
+        foreach (var routeRequest in request.DistinctBy(r => r.OperationId).ToList())
+        {
+            routes.Add(mapper.Map<Route>(routeRequest));
+        }
+        product.Routes.AddRange(routes);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
 
     public async Task<Result<RouteDto>> GetRoute(Guid routeId)
     {
@@ -264,7 +264,7 @@ namespace APP.Repository;
             .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
             .Where(r => r.ProductId == productId)
             .ToListAsync();
-        
+
         return mapper.Map<List<RouteDto>>(query);
     }
 
@@ -280,15 +280,15 @@ namespace APP.Repository;
 
         if (route == null)
             return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
-        
+
         context.RouteResources.RemoveRange(route.Resources);
         context.RouteResponsibleRoles.RemoveRange(route.ResponsibleRoles);
         context.RouteResponsibleUsers.RemoveRange(route.ResponsibleUsers);
         context.RouteWorkCenters.RemoveRange(route.WorkCenters);
-        
+
         mapper.Map(request, route);
         route.LastUpdatedById = userId;
-        
+
         context.Routes.Update(route);
         await context.SaveChangesAsync();
 
@@ -312,7 +312,7 @@ namespace APP.Repository;
 
         return Result.Success();
     }
-    
+
     public async Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId)
     {
         var product = await context.Products
@@ -357,7 +357,7 @@ namespace APP.Repository;
         return product.Id;
     }
 
-    
+
     private bool HasCircularDependency(Guid materialId, Guid directLinkMaterialId, List<ProductPackage> existingPackages)
     {
         var visited = new HashSet<Guid>();  // Track visited materials
@@ -415,7 +415,7 @@ namespace APP.Repository;
             .Include(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
-        
+
         return mapper.Map<List<ProductPackageDto>>(query);
     }
 
@@ -472,7 +472,7 @@ namespace APP.Repository;
 
         return Result.Success();
     }
-    
+
     public async Task<Result<Guid>> CreateProductPacking(List<CreateProductPacking> request, Guid productId, Guid userId)
     {
         var product = await context.Products
@@ -492,13 +492,13 @@ namespace APP.Repository;
         // Packings from request grouped by name
         foreach (var incomingPacking in request)
         {
-            var existing = existingPackings.FirstOrDefault(p => 
+            var existing = existingPackings.FirstOrDefault(p =>
                 p.Name.Equals(incomingPacking.Name, StringComparison.OrdinalIgnoreCase));
 
             if (existing != null)
             {
                 // Update properties
-                mapper.Map(incomingPacking, existing); 
+                mapper.Map(incomingPacking, existing);
                 existing.ProductId = productId;
 
                 // Remove old packing lists and replace with new
@@ -544,10 +544,10 @@ namespace APP.Repository;
             .Include(p => p.BasePackingUoM)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
-        
+
         return mapper.Map<List<ProductPackingDto>>(query);
     }
-    
+
     public async Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId, Guid userId)
     {
         var product = await context.Products
@@ -558,7 +558,7 @@ namespace APP.Repository;
         {
             return ProductErrors.NotFound(productId);
         }
-         
+
         if (product.FinishedProducts.Count != 0)
         {
             context.FinishedProducts.RemoveRange(product.FinishedProducts);
@@ -569,20 +569,20 @@ namespace APP.Repository;
             newFinishedProduct.CreatedById = userId;
             product.FinishedProducts.Add(newFinishedProduct);
         }
-       
+
         await context.SaveChangesAsync();
 
         return product.Id;
     }
-    
-    public async Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId) 
-    { 
+
+    public async Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId)
+    {
         var product = await context.Products
             .AsSplitQuery()
             .Include(product => product.BillOfMaterials)
             .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null) return ProductErrors.NotFound(productId);
-        
+
         var bom = product.BillOfMaterials.FirstOrDefault(p => p.IsActive);
 
         if (bom is not null)
@@ -594,8 +594,8 @@ namespace APP.Repository;
 
         return Result.Success();
     }
-    
-     // Create Equipment
+
+    // Create Equipment
     public async Task<Result<Guid>> CreateEquipment(CreateEquipmentRequest request, Guid userId)
     {
         var equipment = mapper.Map<Equipment>(request);
@@ -686,7 +686,7 @@ namespace APP.Repository;
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
     public async Task<Result> ImportProductsFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -768,14 +768,14 @@ namespace APP.Repository;
                 FilledWeight = GetCell("FILLED WEIGHT/VOLUME"),
                 ShelfLife = GetCell("SHELF LIFE"),
                 ActionUse = GetCell("ACTION AND USE"),
-                FdaRegistrationNumber = GetCell("FDA REGISTRATION NUMBER"), 
-                MasterFormulaNumber = GetCell("MASTER FORMULA NUMBER"),   
+                FdaRegistrationNumber = GetCell("FDA REGISTRATION NUMBER"),
+                MasterFormulaNumber = GetCell("MASTER FORMULA NUMBER"),
                 PrimaryPackDescription = "",
                 SecondaryPackDescription = "",
                 TertiaryPackDescription = "",
                 CategoryId = categories.TryGetValue(categoryName, out var categoryId) ? categoryId : null,
                 BaseUomId = uoms.TryGetValue(baseUomName, out var baseUom) ? baseUom : null,
-                EquipmentId = equipments.TryGetValue(equipmentName,  out var equipmentId) ? equipmentId : null,
+                EquipmentId = equipments.TryGetValue(equipmentName, out var equipmentId) ? equipmentId : null,
                 DepartmentId = departments.TryGetValue(departmentCode, out var departmentId) ? departmentId : null,
                 BaseQuantity = decimal.TryParse(GetCell("COMPOSITION UNIT QTY"), out var bq) ? bq : 0,
                 FullBatchSize = decimal.TryParse(GetCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
@@ -794,7 +794,7 @@ namespace APP.Repository;
 
         return Result.Success();
     }
-    
+
     public async Task<Result> ImportProductBomFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -895,7 +895,7 @@ namespace APP.Repository;
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
     public async Task<Result> ImportProductPackagesFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
