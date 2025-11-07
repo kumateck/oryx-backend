@@ -29,7 +29,7 @@ public class NotificationService(IEmailService emailService, IPublishEndpoint pu
                     });
                     await context.SaveChangesAsync();
                     foreach (var recipient in notification.Recipients)
-                    { 
+                    {
                         await logRepository.RecordActivityAsync(new CreateActivityLog
                         {
                             UserId = recipient.Id,
@@ -41,7 +41,7 @@ public class NotificationService(IEmailService emailService, IPublishEndpoint pu
                         });
                     }
                     break;
-                
+
                 case AlertType.Email:
                     emailService.ProcessNotificationData(notification);
                     await context.Notifications.AddAsync(new Notification
@@ -55,7 +55,7 @@ public class NotificationService(IEmailService emailService, IPublishEndpoint pu
                     });
                     await context.SaveChangesAsync();
                     foreach (var recipient in notification.Recipients)
-                    { 
+                    {
                         await logRepository.RecordActivityAsync(new CreateActivityLog
                         {
                             UserId = recipient.Id,

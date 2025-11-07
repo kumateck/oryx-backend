@@ -12,7 +12,7 @@ public class MaterialSpecificationResolver(ApplicationDbContext dbContext) : IVa
     {
         var materialSpec = dbContext.MaterialSpecifications
             .FirstOrDefault(m => m.MaterialId == source.Id);
-        
+
         if (materialSpec == null) return null;
 
         return new MaterialSpecificationReducedDto

@@ -73,7 +73,7 @@ public class ItemController(IItemRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteItem(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

@@ -7,10 +7,10 @@ namespace DOMAIN.Entities.Charges;
 public class Charge : BaseEntity
 {
     [StringLength(100)] public string Name { get; set; }
-    [StringLength(100)]public string Description { get; set; }
+    [StringLength(100)] public string Description { get; set; }
 }
 
-public class ChargeDto 
+public class ChargeDto
 {
     public string Name { get; set; }
     public string Description { get; set; }

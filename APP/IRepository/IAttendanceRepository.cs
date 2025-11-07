@@ -6,11 +6,11 @@ namespace APP.IRepository;
 public interface IAttendanceRepository
 {
     Task<Result> UploadAttendance(CreateAttendanceRequest request);
-    
+
     Task<Result<List<AttendanceRecordDepartmentDto>>> DepartmentDailySummaryAttendance(string departmentName, DateTime date);
-    
+
     Task<Result<GeneralAttendanceReportResponse>> GeneralAttendanceReport();
-    
+
     Task<Result<FileExportResult>> ExportAttendanceSummary(FileFormat format);
-    
+
 }

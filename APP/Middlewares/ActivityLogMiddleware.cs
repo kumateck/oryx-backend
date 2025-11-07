@@ -43,7 +43,7 @@ public class ActivityLogMiddleware(RequestDelegate next)
             await next(context);
             return;
         }
-        
+
         // Skip excluded paths (unless it's an allowed GET request)
         if (request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
         {
@@ -51,7 +51,7 @@ public class ActivityLogMiddleware(RequestDelegate next)
             {
                 var model = GetModelFromPath(context.Request.Path);
                 backgroundService.EnqueuePrevStateCapture(new PrevStateCaptureRequest
-                { 
+                {
                     Method = request.Method,
                     Model = model?.ToLower(),
                     IpAddress = ipAddress,
@@ -62,13 +62,13 @@ public class ActivityLogMiddleware(RequestDelegate next)
             await next(context);
             return;
         }
-        
+
         if (_excludedPaths.Any(path => pathValue != null && pathValue.Contains(path)))
         {
             await next(context);
             return;
         }
-        
+
         // Replace response body to capture it
         var originalBodyStream = context.Response.Body;
         var responseBodyStream = new MemoryStream();
@@ -124,7 +124,7 @@ public class ActivityLogMiddleware(RequestDelegate next)
             if (!request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
             {
                 backgroundService.EnqueuePrevStateCapture(new PrevStateCaptureRequest
-                { 
+                {
                     Method = request.Method,
                     Model = modelPath,
                     IpAddress = ipAddress,
@@ -192,7 +192,7 @@ public class ActivityLogMiddleware(RequestDelegate next)
             return $"Deleted {submodule}";
         }
 
-        return method.Equals("POST", StringComparison.OrdinalIgnoreCase) ? $"Created {submodule}" 
+        return method.Equals("POST", StringComparison.OrdinalIgnoreCase) ? $"Created {submodule}"
             : $"{submodule} was interacted with {method}";
     }
 }

@@ -34,7 +34,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         }
 
         var attendanceRecords = new List<AttendanceRecords>();
-        
+
         var lastRow = worksheet.Dimension.End.Row;
         while (lastRow >= 2 && string.IsNullOrWhiteSpace(worksheet.Cells[lastRow, 1].Text))
         {
@@ -123,38 +123,38 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             .ToListAsync();
 
         return (from employee in employees
-            let records = dailyRecords
-                .Where(r => r.EmployeeId == employee.StaffNumber).ToList()
-            where records.Count != 0
-            let clockIn = records.Min(r => r.TimeStamp)
-            let clockOut = records.Max(r => r.TimeStamp)
-            let workHours = (clockOut - clockIn).TotalHours
-            let shift = employee.ShiftAssignments.FirstOrDefault(sa => sa.ScheduleDate.Date == date.Date)
-            select new AttendanceRecordDepartmentDto
-            {
-                StaffName = $"{employee.FirstName} {employee.LastName}",
-                EmployeeId = employee.StaffNumber,
-                ShiftName = shift.ShiftCategory.Name,
-                ClockInTime = clockIn.ToString("hh:mm tt"),
-                ClockOutTime = clockOut.ToString("hh:mm tt"),
-                WorkHours = Math.Round(workHours, 2)
-            }).ToList();
+                let records = dailyRecords
+                    .Where(r => r.EmployeeId == employee.StaffNumber).ToList()
+                where records.Count != 0
+                let clockIn = records.Min(r => r.TimeStamp)
+                let clockOut = records.Max(r => r.TimeStamp)
+                let workHours = (clockOut - clockIn).TotalHours
+                let shift = employee.ShiftAssignments.FirstOrDefault(sa => sa.ScheduleDate.Date == date.Date)
+                select new AttendanceRecordDepartmentDto
+                {
+                    StaffName = $"{employee.FirstName} {employee.LastName}",
+                    EmployeeId = employee.StaffNumber,
+                    ShiftName = shift.ShiftCategory.Name,
+                    ClockInTime = clockIn.ToString("hh:mm tt"),
+                    ClockOutTime = clockOut.ToString("hh:mm tt"),
+                    WorkHours = Math.Round(workHours, 2)
+                }).ToList();
     }
 
     public async Task<Result<GeneralAttendanceReportResponse>> GeneralAttendanceReport()
     {
         var today = DateTime.UtcNow.Date;
-        
+
         var dailyRecords = await context.AttendanceRecords
             .Where(a => a.TimeStamp.Date == today && a.WorkState == WorkState.CheckIn)
             .ToListAsync();
-        
+
         var allEmployees = await context.Employees
             .Include(e => e.Department)
             .ToListAsync();
 
         var employeeDbIds = allEmployees.Select(e => e.Id).ToList();
-        
+
         var shiftAssignments = await context.ShiftAssignments
             .AsSplitQuery()
             .Include(sa => sa.ShiftType)
@@ -169,7 +169,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         var shiftAssignmentMap = shiftAssignments
             .GroupBy(sa => sa.EmployeeId)
             .ToDictionary(g => g.Key, g => g.FirstOrDefault());
-        
+
         var approvedLeaves = await context.LeaveRequests
             .Where(l =>
                 l.Approved &&
@@ -209,14 +209,14 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 s.SuspensionStartDate <= today && s.SuspensionEndDate >= today)
             .Include(s => s.Department)
             .ToListAsync();
-        
+
         var attendanceMap = dailyRecords
             .GroupBy(r => r.EmployeeId)
             .ToDictionary(
-                g => g.Key, 
+                g => g.Key,
                 g => g.OrderBy(r => r.TimeStamp).First()
             );
-        
+
         var groupedByDepartment = allEmployees.GroupBy(e => e.Department?.Name ?? "Unassigned").ToList();
 
         var departmentReports = new List<GeneralAttendanceReportDto>();
@@ -274,14 +274,14 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                     summary.Absences++;
                 }
             }
-            
+
             summary.ApprovedLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == departmentName);
             summary.SickLeaves = sickLeaves.Count(l => l.Employee.Department?.Name == departmentName);
             summary.MaternityLeaves = maternityLeaves.Count(l => l.Employee.Department?.Name == departmentName);
 
             departmentReports.Add(summary);
         }
-        
+
         var departmentStats = groupedByDepartment.Select(group =>
         {
             var deptName = group.Key;
@@ -334,16 +334,16 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             }
         });
     }
-    
+
     public async Task<Result<FileExportResult>> ExportAttendanceSummary(FileFormat format)
     {
         var attendanceResult = await GeneralAttendanceReport();
         if (!attendanceResult.IsSuccess)
             return Error.Failure("Export.Failed", "Failed to generate attendance report.");
-        
+
         var report = attendanceResult.Value; // now contains DepartmentReports + SystemStatistics
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-        
+
         if (format.FileType == "csv")
         {
             var sb = new StringBuilder();
@@ -518,7 +518,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
     private async Task<int> NumberOfApprovedLeaves(DateTime today)
     {
         var leaveType = await context.LeaveTypes
-            .Where(t => t.Name != "Maternity Leave" 
+            .Where(t => t.Name != "Maternity Leave"
                         && t.Name != "Sick Leave")
             .Select(t => t.Id)
             .FirstOrDefaultAsync();

@@ -35,7 +35,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
         var result = await repository.GetAnalyticalTestRequests(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of an analytical test request by its ID.
     /// </summary>
@@ -60,7 +60,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
         var result = await repository.UpdateAnalyticalTestRequest(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the status of an analytical test request by its ID.
     /// </summary>
@@ -70,9 +70,9 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateAnalyticalTestRequest([FromRoute] Guid id, [FromBody] UpdateAnalyticalTestRequest request)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateAnalyticalTestRequest(id, request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -85,13 +85,13 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteAnalyticalTestRequest([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteAnalyticalTestRequest(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of an analytical test request by its activity step ID
     /// </summary>

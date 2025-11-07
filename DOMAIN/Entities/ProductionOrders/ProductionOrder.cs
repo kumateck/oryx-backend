@@ -40,13 +40,13 @@ public class ProductionOrderApprovals : ResponsibleApprovalStage
 [Owned]
 public class ProductionOrderProducts
 {
-    public Guid ProductId {get; set;}
+    public Guid ProductId { get; set; }
     public Product Product { get; set; }
     public int TotalOrderQuantity { get; set; }
     public decimal VolumePerPiece { get; set; }
     public decimal TotalVolume => TotalOrderQuantity * VolumePerPiece;
-    public decimal TotalBatches =>  Product?.FullBatchSize > 0 
-        ? TotalVolume / Product.FullBatchSize 
+    public decimal TotalBatches => Product?.FullBatchSize > 0
+        ? TotalVolume / Product.FullBatchSize
         : 0;
     public decimal TotalValue => TotalOrderQuantity * Product?.Price ?? 0;
     public bool Fulfilled { get; set; }
@@ -57,9 +57,9 @@ public class ProductionOrderProducts
 [Owned]
 public class ProductionOrderProductQuantity
 {
-    public Guid FinishedGoodsTransferNoteId {get; set;}
-    public FinishedGoodsTransferNote  FinishedGoodsTransferNote { get; set; }
-    public decimal Quantity {get; set;}
+    public Guid FinishedGoodsTransferNoteId { get; set; }
+    public FinishedGoodsTransferNote FinishedGoodsTransferNote { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 
@@ -85,7 +85,7 @@ public class AllocateProductionOrderProduct
 public class AllocateProductQuantity
 {
     public Guid FinishedGoodsTransferNoteId { get; set; }
-    public FinishedGoodsTransferNote  FinishedGoodsTransferNote { get; set; }
+    public FinishedGoodsTransferNote FinishedGoodsTransferNote { get; set; }
     public decimal Quantity { get; set; }
 }
 

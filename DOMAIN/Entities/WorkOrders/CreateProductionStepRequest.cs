@@ -4,8 +4,8 @@ using DOMAIN.Entities.Base;
 namespace DOMAIN.Entities.WorkOrders;
 
 public class CreateProductionStepRequest
-{ 
-    [StringLength(200, ErrorMessage = "Description must be 200 characters or less.")] 
+{
+    [StringLength(200, ErrorMessage = "Description must be 200 characters or less.")]
     public string Description { get; set; }
     public Guid ResourceId { get; set; } // e.g., Machine or Labor resource
     public TimeSpan Duration { get; set; } // Expected duration for the step

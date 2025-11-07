@@ -8,9 +8,9 @@ public class PurchaseOrderStatusResolver(ApplicationDbContext context)
     : IValueResolver<PurchaseOrder, PurchaseOrderDto, PurchaseOrderAttachmentStatus>
 {
     public PurchaseOrderAttachmentStatus Resolve(
-        PurchaseOrder source, 
+        PurchaseOrder source,
         PurchaseOrderDto destination,
-        PurchaseOrderAttachmentStatus destMember, 
+        PurchaseOrderAttachmentStatus destMember,
         ResolutionContext context1)
     {
         var totalItems = source.Items.Count;

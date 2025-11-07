@@ -20,23 +20,23 @@ public interface IFormRepository
     Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests, Guid? materialSpecificationId, Guid? productSpecificationId);
     Task<Result<ResponseDetailDto>> GetFormResponse(Guid formResponseId);
 
-   Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId);
-   Task<Result<QuestionDto>> GetQuestion(Guid questionId);
-   Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(QuestionFilter filter);
-   Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId);
-   Task<Result> DeleteQuestion(Guid id, Guid userId);
-   Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId);
-   Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId);
-   Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(Guid batchManufacturingRecordId);
-  //  Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(
-  //      Guid materialSpecificationId);
-  // Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByProductSpecification(
-  //      Guid productSpecificationId);
-   Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(Guid materialBatchId);
-   Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByBmr(Guid batchManufacturingRecordId);
+    Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId);
+    Task<Result<QuestionDto>> GetQuestion(Guid questionId);
+    Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(QuestionFilter filter);
+    Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId);
+    Task<Result> DeleteQuestion(Guid id, Guid userId);
+    Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId);
+    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId);
+    Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(Guid batchManufacturingRecordId);
+    //  Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(
+    //      Guid materialSpecificationId);
+    // Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByProductSpecification(
+    //      Guid productSpecificationId);
+    Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(Guid materialBatchId);
+    Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByBmr(Guid batchManufacturingRecordId);
     Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(
         Guid materialSpecificationId);
     Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(
         Guid productSpecificationId);
-   Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid productionActivityStepId, Guid userId);
+    Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid productionActivityStepId, Guid userId);
 }

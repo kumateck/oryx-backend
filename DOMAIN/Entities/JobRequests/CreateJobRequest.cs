@@ -10,9 +10,9 @@ public class CreateJobRequest
     public Guid EquipmentId { get; set; }
     public DateTime DateOfIssue { get; set; }
     public JobStatus Status { get; set; }
-    public string DescriptionOfWork { get; set;} 
+    public string DescriptionOfWork { get; set; }
 
     public DateTime PreferredCompletionDate { get; set; }
 
-    [Required] public Guid IssuedById {get; set; }
+    [Required] public Guid IssuedById { get; set; }
 }

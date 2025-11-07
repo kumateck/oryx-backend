@@ -20,7 +20,7 @@ public class DamagedStocksController(IDamagedStocksRepository repository) : Cont
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateDamagedStocks([FromBody] CreateDamagedStockRequest request)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         var result = await repository.CreateDamagedStocks(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -30,7 +30,7 @@ public class DamagedStocksController(IDamagedStocksRepository repository) : Cont
     /// Retrieves a paginated list of damaged stocks
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK,  Type = typeof(Paginateable<IEnumerable<DamagedStockDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DamagedStockDto>>))]
     public async Task<IResult> GetDamagedStocks([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
@@ -42,14 +42,14 @@ public class DamagedStocksController(IDamagedStocksRepository repository) : Cont
     /// Retrieves the details of a damaged stock by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK,  Type = typeof(DamagedStockDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DamagedStockDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDamagedStock([FromRoute] Guid id)
     {
         var result = await repository.GetDamagedStock(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the details of a damaged stock by its ID.
     /// </summary>
@@ -59,12 +59,12 @@ public class DamagedStocksController(IDamagedStocksRepository repository) : Cont
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateDamagedStock([FromRoute] Guid id, [FromBody] CreateDamagedStockRequest request)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         var result = await repository.UpdateDamagedStocks(id, request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes the details of a damaged stock by its ID.
     /// </summary>
@@ -73,9 +73,9 @@ public class DamagedStocksController(IDamagedStocksRepository repository) : Cont
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteDamagedStock([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteDamagedStocks(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

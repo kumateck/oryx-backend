@@ -16,7 +16,7 @@ namespace API.Controllers;
 public class InventoryProcurementController(IInventoryProcurementRepository repository) : ControllerBase
 {
     #region Inventory Purchase Requisition Management
-    
+
     /// <summary>
     /// Creates a new Inventory Purchase Requisition.
     /// </summary>
@@ -30,7 +30,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateInventoryPurchaseRequisition(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -80,7 +80,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.GetInventoryPurchaseRequisition(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of Inventory Purchase Requisitions.
     /// </summary>
@@ -98,10 +98,10 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     }
 
     #endregion
-    
-    
+
+
     #region Sourcing Logic
-    
+
     /// <summary>
     /// Creates a new Source Requisition for items from a purchase requisition, grouping them by vendor.
     /// </summary>
@@ -115,7 +115,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateSourceRequisition(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -133,11 +133,11 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateMarketRequisition(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of Market Requisitions.
     /// </summary>
@@ -152,7 +152,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.GetMarketRequisitions(page, pageSize);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of vendor price comparisons for items based on the sourcing method.
     /// </summary>
@@ -169,10 +169,10 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     }
 
     #endregion
-    
+
 
     #region Memo Creation Logic
-    
+
     /// <summary>
     /// Processes Open Market requisitions and creates memos for them.
     /// </summary>
@@ -204,7 +204,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.ProcessTrustedVendorMemo(memos, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -213,7 +213,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
 
 
     #region Trusted Vendor Specific
-    
+
     /// <summary>
     /// Sends a quotation request to a specified trusted vendor.
     /// </summary>
@@ -228,7 +228,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.SendQuotationToVendor(vendorId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of vendor quotations.
     /// </summary>
@@ -280,7 +280,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
 
 
     #region Open Market Specific
-    
+
     /// <summary>
     /// Retrieves a paginated list of vendors for open market requisitions.
     /// </summary>
@@ -311,7 +311,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.CreateMarketRequisitionVendor(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Confirms a vendor for an open market requisition.
     /// </summary>
@@ -326,7 +326,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.ConfirmMarketRequisitionVendor(marketRequisitionVendorId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     #endregion
 
     #region Memos
@@ -346,7 +346,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.GetMemos(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a specific memo by its ID.
     /// </summary>
@@ -361,7 +361,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.GetMemo(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Marks a memo item as paid.
     /// </summary>
@@ -379,7 +379,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     }
 
     #endregion
-    
+
     [HttpGet("purchased-items")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockEntryDto>))]
@@ -397,7 +397,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.ApproveItem(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     [HttpPost("items/{id:guid}/reject")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -408,7 +408,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     }
 
     #region Helper Methods
-    
+
     /// <summary>
     /// Generates a unique memo code.
     /// </summary>

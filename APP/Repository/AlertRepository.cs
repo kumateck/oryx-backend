@@ -30,7 +30,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         await context.SaveChangesAsync();
         return alert.Id;
     }
-    
+
     public async Task<Result<AlertDto>> GetAlert(Guid alertId)
     {
         var alert = await context.Alerts
@@ -38,7 +38,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
             .Include(a => a.Roles).ThenInclude(r => r.Role)
             .Include(a => a.Users).ThenInclude(u => u.User)
             .FirstOrDefaultAsync(item => item.Id == alertId);
-        
+
         return mapper.Map<AlertDto>(alert);
     }
 
@@ -55,16 +55,16 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         {
             query = query.Where(item => !item.IsDisabled);
         }
-            
+
         if (!string.IsNullOrEmpty(searchQuery))
         {
-           
+
             query = query.WhereSearch(searchQuery, q => q.Title, q => q.NotificationType.ToString());
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<AlertDto>);
     }
-    
+
     public async Task<Result> UpdateAlert(CreateAlertRequest request, Guid userId, Guid alertId)
     {
         var alert = await context.Alerts
@@ -72,8 +72,8 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
             .Include(alert => alert.Roles)
             .Include(alert => alert.Users).FirstOrDefaultAsync(alert => alert.Id == alertId);
         if (alert == null) return Result.Success();
-        
-        if(!alert.IsConfigurable) return Error.Validation("Alert.IsConfigurable", "This alert is not configurable");
+
+        if (!alert.IsConfigurable) return Error.Validation("Alert.IsConfigurable", "This alert is not configurable");
 
         context.AlertRoles.RemoveRange(alert.Roles);
         context.AlertUsers.RemoveRange(alert.Users);
@@ -93,7 +93,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
                 UserId = u
             }));
         }
-        
+
         alert.Title = request.Title;
         alert.TimeFrame = request.TimeFrame;
         alert.AlertTypes = request.AlertTypes;
@@ -101,7 +101,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
     public async Task<Result> ToggleDisable(Guid id)
     {
         var alert = await context.Alerts.FirstOrDefaultAsync(item => item.Id == id);
@@ -113,13 +113,13 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         }
         return Result.Success();
     }
-    
+
     public async Task<Result> DeleteAlert(Guid id, Guid userId)
     {
         var alert = await context.Alerts.FirstOrDefaultAsync(item => item.Id == id);
         if (alert != null)
         {
-            if(!alert.IsConfigurable) return Error.Validation("Alert.IsConfigurable", "You cannot delete a non configurable alert");
+            if (!alert.IsConfigurable) return Error.Validation("Alert.IsConfigurable", "You cannot delete a non configurable alert");
             alert.DeletedAt = DateTime.UtcNow;
             alert.LastDeletedById = userId;
             context.Alerts.Update(alert);
@@ -135,7 +135,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
             .Include(alert => alert.Roles).ThenInclude(alertRole => alertRole.Role)
             .Include(alert => alert.Users).ThenInclude(alertUser => alertUser.User)
             .FirstOrDefaultAsync(item => item.NotificationType == notificationType && !item.IsDisabled);
-        
+
         if (alert is null) return;
 
         List<User> users = [];
@@ -148,7 +148,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
             {
                 var roleDepartment = await context.RoleDepartments
                     .FirstOrDefaultAsync(r => r.DepartmentId == departmentId && r.RoleId == role.RoleId);
-                if(roleDepartment is null) continue;
+                if (roleDepartment is null) continue;
             }
             var user = await userManager.GetUsersInRoleAsync(role.Role.Name);
             users.AddRange(user);
@@ -164,11 +164,11 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         {
             users.AddRange(assignedUsers);
         }
-        
+
         users = users.Distinct().ToList();
-        
-        if(users.Count == 0) return;
-        
+
+        if (users.Count == 0) return;
+
         var notification = new NotificationDto
         {
             Id = Guid.NewGuid(),
@@ -209,7 +209,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
     public async Task<Result> MarkNotificationAsRead(Guid id, Guid userId)
     {
         var notification = await context.Notifications.FirstOrDefaultAsync(item => item.Id == id);
-        if(notification is null) return Error.NotFound("Notification", "Notification not found");
+        if (notification is null) return Error.NotFound("Notification", "Notification not found");
 
         if (!notification.Recipients.Contains(userId))
         {
@@ -227,7 +227,7 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
             UserId = userId,
             ReadAt = DateTime.UtcNow
         });
-        
+
         await context.SaveChangesAsync();
         return Result.Success();
     }

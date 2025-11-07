@@ -213,7 +213,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetWarehouseLocationRacks(page, pageSize, searchQuery, kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of racks in warehouse locations for logged-in user.
     /// </summary>
@@ -224,7 +224,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetWarehouseLocationRacks(kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -305,7 +305,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetWarehouseLocationShelves(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of shelves in warehouse locations by department.
     /// </summary>
@@ -316,7 +316,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetWarehouseLocationShelves(kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -353,7 +353,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.DeleteWarehouseLocationShelf(shelfId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of shelves in a warehouse by material ID.
     /// </summary>
@@ -379,7 +379,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetShelvesByMaterialBatchId(page, pageSize, searchQuery, warehouseId, materialBatchId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of shelves in a warehouse location rack.
     /// </summary>
@@ -407,7 +407,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     #endregion
-    
+
     #region Arrival Location CRUD
     /// <summary>
     /// Retrieves the arrival location details of a specific warehouse by its ID.
@@ -421,7 +421,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetArrivalLocationDetails(warehouseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /*/// <summary>
     /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
     /// </summary>
@@ -435,7 +435,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetDistributedRequisitionMaterials(warehouseId, page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }*/
-    
+
     /// <summary>
     /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
     /// </summary>
@@ -448,11 +448,11 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetDistributedRequisitionMaterials(page, pageSize, searchQuery, kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the finished goods details of a specific warehouse by its ID.
     /// </summary>
@@ -465,11 +465,11 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetFinishedGoodsDetails(page, pageSize, searchQuery, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the stock transfer details of a specific warehouse by its ID.
     /// </summary>
@@ -482,11 +482,11 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.GetStockTransferDetails(page, pageSize, searchQuery,  kind, Guid.Parse(userId));
+
+        var result = await repository.GetStockTransferDetails(page, pageSize, searchQuery, kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /*/// <summary>
     /// Retrieves a distributed requisition material by its id
     /// </summary>
@@ -502,7 +502,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetDistributedRequisitionMaterialById(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }*/
-    
+
     /// <summary>
     /// Retrieves the details of a specific distributed requisition material by its ID.
     /// </summary>
@@ -517,8 +517,8 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetDistributedRequisitionMaterialById(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Creates a new arrival location for a warehouse.
     /// </summary>
@@ -531,7 +531,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.CreateArrivalLocation(request);
         return result.IsSuccess ? TypedResults.Created($"/api/v1/warehouse/arrival-location/{result.Value}", result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates an existing arrival location.
     /// </summary>
@@ -544,7 +544,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.UpdateArrivalLocation(request);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Confirms the arrival of a distributed material.
     /// </summary>
@@ -558,7 +558,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
     #endregion
-    
+
     #region Checklist CRUD
 
     /// <summary>
@@ -577,10 +577,10 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateChecklist(request,Guid.Parse(userId));
+        var result = await repository.CreateChecklist(request, Guid.Parse(userId));
 
-        return result.IsSuccess 
-            ? TypedResults.Created($"/api/v1/warehouse/checklist/{result.Value}", result.Value) 
+        return result.IsSuccess
+            ? TypedResults.Created($"/api/v1/warehouse/checklist/{result.Value}", result.Value)
             : result.ToProblemDetails();
     }
 
@@ -595,11 +595,11 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var result = await repository.GetChecklist(id);
 
-        return result.IsSuccess 
-            ? TypedResults.Ok(result.Value) 
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
     }
-    
+
     #region MaterialBatch by DistributedRequisitionMaterial
 
     /// <summary>
@@ -617,7 +617,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the material batch details by distributed requisition material IDs.
     /// </summary>
@@ -625,7 +625,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialBatchByDistributedMaterials([FromBody]List<Guid> distributedMaterialIds)
+    public async Task<IResult> GetMaterialBatchByDistributedMaterials([FromBody] List<Guid> distributedMaterialIds)
     {
         var result = await repository.GetMaterialBatchByDistributedMaterials(distributedMaterialIds);
 
@@ -633,7 +633,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the checklist details by distributed material ID.
     /// </summary>
@@ -648,7 +648,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     #endregion
-        
+
     #region GRN CRUD
     /// <summary>
     /// Creates a new GRN and assigns it to the specified material batches.
@@ -673,7 +673,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             ? TypedResults.Created($"/api/v1/warehouse/grn/{result.Value}", result.Value)
             : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Gets a GRN by its ID.
     /// </summary>
@@ -689,7 +689,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of GRNs based on search criteria.
     /// </summary>
@@ -697,31 +697,31 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnListDto>>))]
     public async Task<IResult> GetGrns([FromQuery] Status? status,
-        [FromQuery] int page = 1, 
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
        [FromQuery] MaterialKind? kind = null)
     {
-        var result = await repository.GetGrns(page, pageSize, searchQuery,kind, status);
+        var result = await repository.GetGrns(page, pageSize, searchQuery, kind, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of GRNs based on search criteria.
     /// </summary>
     [HttpGet("grns/qc")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<GrnListDto>>))]
-    public async Task<IResult> GetGrnsForQc([FromQuery] Status? status, [FromQuery] int page = 1, 
-        [FromQuery] int pageSize = 10, 
+    public async Task<IResult> GetGrnsForQc([FromQuery] Status? status, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? kind = null,
         [FromQuery] bool? onlyApproved = null)
     {
-        var result = await repository.GetGrnsForQc(page, pageSize, searchQuery,kind, status, onlyApproved);
+        var result = await repository.GetGrnsForQc(page, pageSize, searchQuery, kind, status, onlyApproved);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     #endregion
 
     #region BinCardInformation
@@ -730,26 +730,26 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BinCardInformationDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetBinCardInformation([FromRoute] Guid materialId,[FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetBinCardInformation([FromRoute] Guid materialId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetBinCardInformation(page, pageSize, searchQuery,materialId);
+        var result = await repository.GetBinCardInformation(page, pageSize, searchQuery, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     [HttpGet("bincardinformation/{productId}/product")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BinCardInformationDto>>))]
-    public async Task<IResult> GetProductBinCardInformation([FromRoute] Guid productId,[FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
+    public async Task<IResult> GetProductBinCardInformation([FromRoute] Guid productId, [FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
         var result = await repository.GetProductBinCardInformation(page, pageSize, searchQuery, productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     #endregion
-    
+
 
     #endregion
-    
+
     /// <summary>
     /// Creates a new warehouse swap request.
     /// </summary>
@@ -763,7 +763,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateSwapRequest(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -783,7 +783,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetSwapRequests(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -816,8 +816,8 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.ApproveSwapRequest(id,  Guid.Parse(userId));
+
+        var result = await repository.ApproveSwapRequest(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -835,7 +835,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.RejectSwapRequest(id, Guid.Parse(userId), reason);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

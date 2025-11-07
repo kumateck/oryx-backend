@@ -4,5 +4,5 @@ namespace DOMAIN.Entities.Products;
 
 public class ProductDefinition : BaseEntity
 {
-    
+
 }

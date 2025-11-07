@@ -24,7 +24,6 @@ public class FormSectionDto : BaseDto
     public int Order { get; set; }
     public List<FormFieldDto> Fields { get; set; } = [];
     public string Value { get; set; }
-    public UserDto Assignee { get; set; }
 }
 
 public class FormFieldDto : BaseDto
@@ -33,9 +32,7 @@ public class FormFieldDto : BaseDto
     public QuestionDto Question { get; set; }
     public bool Required { get; set; }
     public string Description { get; set; }
-    public int Rank { get; set; } 
-    public CollectionItemDto Assignee { get; set; }
-    public CollectionItemDto Reviewer { get; set; }
+    public int Rank { get; set; }
 }
 
 public class ResponseDto : BaseDto
@@ -52,7 +49,7 @@ public class ResponseDetailDto : ResponseDto
 }
 
 
-public class FormResponseDto :  WithAttachment
+public class FormResponseDto : WithAttachment
 {
     public FormFieldDto FormField { get; set; }
     public string Value { get; set; }

@@ -23,10 +23,10 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         {
             return Error.Validation("MaterialSpecification.DueDate", "Due date must be greater than current date");
         }
-        
+
         var materialSpec = mapper.Map<MaterialSpecification>(request);
         await context.MaterialSpecifications.AddAsync(materialSpec);
-        
+
         await context.SaveChangesAsync();
         return materialSpec.Id;
     }
@@ -66,12 +66,12 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .ThenInclude(r => r.FormField)
             .Include(ms => ms.FormSections)
             .FirstOrDefaultAsync(ps => ps.Id == id);
-        
-        return materialSpec is null ? 
+
+        return materialSpec is null ?
             Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
             : mapper.Map<MaterialSpecificationDto>(materialSpec);
     }
-    
+
 
     public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(Guid materialId)
     {
@@ -93,23 +93,23 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .ThenInclude(r => r.FormField)
             .Include(ms => ms.FormSections)
             .FirstOrDefaultAsync(ps => ps.MaterialId == materialId);
-        return materialSpec is null ? 
+        return materialSpec is null ?
             Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
             : mapper.Map<MaterialSpecificationDto>(materialSpec);
     }
-    
+
 
     public async Task<Result> UpdateMaterialSpecification(Guid id, CreateMaterialSpecificationRequest request)
     {
         var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);
-        
+
         if (materialSpec is null)
         {
             return Error.NotFound("MaterialSpecification.NotFound", "Material specification not found");
         }
-        
+
         mapper.Map(request, materialSpec);
-        
+
         context.MaterialSpecifications.Update(materialSpec);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -118,15 +118,15 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     public async Task<Result> DeleteMaterialSpecification(Guid id, Guid userId)
     {
         var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);
-        
+
         if (materialSpec is null)
         {
             return Error.NotFound("MaterialSpecification.NotFound", "Material specification not found");
         }
-        
+
         materialSpec.LastDeletedById = userId;
         materialSpec.DeletedAt = DateTime.UtcNow;
-        
+
         context.MaterialSpecifications.Update(materialSpec);
         await context.SaveChangesAsync();
         return Result.Success();

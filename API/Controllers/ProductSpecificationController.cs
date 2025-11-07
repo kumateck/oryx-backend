@@ -36,7 +36,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
         var result = await repository.GetProductSpecifications(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a product specification by its ID.
     /// </summary>
@@ -48,7 +48,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
         var result = await repository.GetProductSpecification(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a product specification by its product ID.
     /// </summary>
@@ -85,7 +85,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
         var userId = (string)HttpContext.Items["Sub"];
 
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteProductSpecification(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

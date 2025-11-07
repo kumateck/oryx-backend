@@ -36,7 +36,7 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
         {
             return ConfigurationErrors.ModelTypeNotUnique;
         }
-        
+
         var configuration = mapper.Map<Configuration>(request);
         configuration.CreatedById = userId;
         await context.Configurations.AddAsync(configuration);
@@ -49,15 +49,15 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
         var configuration = await context.Configurations
             .FirstOrDefaultAsync(c => c.Id == configurationId);
 
-        return  Result.Success(mapper.Map<ConfigurationDto>(configuration));
+        return Result.Success(mapper.Map<ConfigurationDto>(configuration));
     }
-    
+
     public async Task<Result<ConfigurationDto>> GetConfiguration(string modelType)
     {
         var configuration = await context.Configurations
             .FirstOrDefaultAsync(c => c.ModelType == modelType);
 
-        return  Result.Success(mapper.Map<ConfigurationDto>(configuration));
+        return Result.Success(mapper.Map<ConfigurationDto>(configuration));
     }
 
     public async Task<Result<Paginateable<IEnumerable<ConfigurationDto>>>> GetConfigurations(int page, int pageSize, string searchQuery)
@@ -101,193 +101,193 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
 
-    public async Task<Result<int>> 
+    public async Task<Result<int>>
         GetCountForCodeConfiguration(string modelType, string prefix)
     {
 
         switch (modelType)
         {
-           case "RawMaterial":
-               return await context.Materials
-                   .Where(m => m.Kind == MaterialKind.Raw && m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case "PackageMaterial":
-               return await context.Materials
-                   .Where(m => m.Kind == MaterialKind.Package && m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(Product):
-               return await context.Products
-                   .IgnoreQueryFilters()
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(ProductionSchedule):
-               return await context.ProductionSchedules
-                   .IgnoreQueryFilters()
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(WorkOrder):
-               return await context.WorkOrders
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(Department):
-               return await context.Departments
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(Requisition):
-               return await context.Requisitions
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case "StockRequisition":
-               return await context.Requisitions
-                   .IgnoreQueryFilters()
-                   .Where(m => m.RequisitionType == RequisitionType.Stock && m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case "PurchaseRequisition":
-               return await context.Requisitions
-                   .IgnoreQueryFilters()
-                   .Where(m => m.RequisitionType == RequisitionType.Purchase && m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(SourceRequisition):
-               return await context.SourceRequisitions
-                   .IgnoreQueryFilters()
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(ShipmentDocument):
-               return await context.ShipmentDocuments
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(PurchaseOrder):
-               return await context.PurchaseOrders
-                   .IgnoreQueryFilters()
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case "GrnNumber":
-               return await context.Grns
-                   .IgnoreQueryFilters()
-                   .Where(m => m.GrnNumber.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(StockTransfer):
-               return await context.StockTransfers
-                   .IgnoreQueryFilters()
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(OvertimeRequest):
-               return await context.OvertimeRequests
-                   .IgnoreQueryFilters()
-                   .Where(m => m.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(Employee):
-               return await context.Employees
-                   .IgnoreQueryFilters()
-                   .Where(m => m.StaffNumber.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(ProductSampling):
-               return await context.ProductSamplings
-                   .IgnoreQueryFilters()
-                   .Where(m => m.ArNumber.StartsWith(prefix))
-                   .CountAsync();
-           
-           // case nameof(MaterialSampling):
-           //     return await context.MaterialSamplings
-           //         .IgnoreQueryFilters()
-           //         .Where(m => m.ArNumber.StartsWith(prefix))
-           //         .CountAsync();
-           
-           case nameof(FinishedGoodsTransferNote):
-               return await context.FinishedGoodsTransferNotes
-                   .IgnoreQueryFilters()
-                   .CountAsync();
-           
-           case "ArNumberMaterial":
-               return await context.MaterialSamplings
-                   .IgnoreQueryFilters()
-                   .Where(m => m.ArNumber.StartsWith(prefix))
-                   .CountAsync();
-           
-           case "ArNumberProduct":
-               return await context.AnalyticalTestRequests
-                   .IgnoreQueryFilters()
-                   .Where(m => m.ArNumber.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(ProductionOrder):
-               return await context.ProductionOrders
-                   .IgnoreQueryFilters()
-                   .Where(po => po.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(Service):
-               return await context.Services
-                   .IgnoreQueryFilters()
-                   .Where(s => s.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(ItemStockRequisition):
-               return await context.ItemStockRequisitions
-                   .IgnoreQueryFilters()
-                   .Where(s => s.Number.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(Item):
-               return await context.Items
-                   .IgnoreQueryFilters()
-                   .Where(s => s.Code.StartsWith(prefix))
-                   .CountAsync();
-           
-           case "ProductBatchNumber":
-               return await context.BatchManufacturingRecords
-                   .IgnoreQueryFilters()
-                   .Where(b => b.BatchNumber.StartsWith(prefix) && b.Status != BatchManufacturingStatus.Rejected)
-                   .CountAsync();
-           
-           case "MaterialSTPNumber":
-               return await context.MaterialStandardTestProcedures
-                   .IgnoreQueryFilters()
-                   .Where(m => m.StpNumber.StartsWith(prefix))
-                   .CountAsync();
-           
-           case "ProductSTPNumber":
-               return await context.ProductStandardTestProcedures
-                   .IgnoreQueryFilters()
-                   .Where(m => m.StpNumber.StartsWith(prefix))
-                   .CountAsync();
-           
-           case "MaterialSpecNumber":
-               return await context.MaterialSpecifications
-                   .IgnoreQueryFilters()
-                   .Where(m => m.SpecificationNumber.StartsWith(prefix))
-                   .CountAsync();
-           
-           case "ProductSpecNumber":
-               return await context.ProductSpecifications
-                   .IgnoreQueryFilters()
-                   .Where(m => m.SpecificationNumber.StartsWith(prefix))
-                   .CountAsync();
-           
-           case nameof(ProformaInvoice):
-               return await context.ProformaInvoices
-                   .IgnoreQueryFilters()
-                   .Where(p => p.Code.StartsWith(prefix))
-                   .CountAsync();
-               
-           default:
-               return Error.Validation("ModelType", "Invalid model type sent");
+            case "RawMaterial":
+                return await context.Materials
+                    .Where(m => m.Kind == MaterialKind.Raw && m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case "PackageMaterial":
+                return await context.Materials
+                    .Where(m => m.Kind == MaterialKind.Package && m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(Product):
+                return await context.Products
+                    .IgnoreQueryFilters()
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(ProductionSchedule):
+                return await context.ProductionSchedules
+                    .IgnoreQueryFilters()
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(WorkOrder):
+                return await context.WorkOrders
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(Department):
+                return await context.Departments
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(Requisition):
+                return await context.Requisitions
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case "StockRequisition":
+                return await context.Requisitions
+                    .IgnoreQueryFilters()
+                    .Where(m => m.RequisitionType == RequisitionType.Stock && m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case "PurchaseRequisition":
+                return await context.Requisitions
+                    .IgnoreQueryFilters()
+                    .Where(m => m.RequisitionType == RequisitionType.Purchase && m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(SourceRequisition):
+                return await context.SourceRequisitions
+                    .IgnoreQueryFilters()
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(ShipmentDocument):
+                return await context.ShipmentDocuments
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(PurchaseOrder):
+                return await context.PurchaseOrders
+                    .IgnoreQueryFilters()
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case "GrnNumber":
+                return await context.Grns
+                    .IgnoreQueryFilters()
+                    .Where(m => m.GrnNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(StockTransfer):
+                return await context.StockTransfers
+                    .IgnoreQueryFilters()
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(OvertimeRequest):
+                return await context.OvertimeRequests
+                    .IgnoreQueryFilters()
+                    .Where(m => m.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(Employee):
+                return await context.Employees
+                    .IgnoreQueryFilters()
+                    .Where(m => m.StaffNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(ProductSampling):
+                return await context.ProductSamplings
+                    .IgnoreQueryFilters()
+                    .Where(m => m.ArNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            // case nameof(MaterialSampling):
+            //     return await context.MaterialSamplings
+            //         .IgnoreQueryFilters()
+            //         .Where(m => m.ArNumber.StartsWith(prefix))
+            //         .CountAsync();
+
+            case nameof(FinishedGoodsTransferNote):
+                return await context.FinishedGoodsTransferNotes
+                    .IgnoreQueryFilters()
+                    .CountAsync();
+
+            case "ArNumberMaterial":
+                return await context.MaterialSamplings
+                    .IgnoreQueryFilters()
+                    .Where(m => m.ArNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            case "ArNumberProduct":
+                return await context.AnalyticalTestRequests
+                    .IgnoreQueryFilters()
+                    .Where(m => m.ArNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(ProductionOrder):
+                return await context.ProductionOrders
+                    .IgnoreQueryFilters()
+                    .Where(po => po.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(Service):
+                return await context.Services
+                    .IgnoreQueryFilters()
+                    .Where(s => s.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(ItemStockRequisition):
+                return await context.ItemStockRequisitions
+                    .IgnoreQueryFilters()
+                    .Where(s => s.Number.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(Item):
+                return await context.Items
+                    .IgnoreQueryFilters()
+                    .Where(s => s.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            case "ProductBatchNumber":
+                return await context.BatchManufacturingRecords
+                    .IgnoreQueryFilters()
+                    .Where(b => b.BatchNumber.StartsWith(prefix) && b.Status != BatchManufacturingStatus.Rejected)
+                    .CountAsync();
+
+            case "MaterialSTPNumber":
+                return await context.MaterialStandardTestProcedures
+                    .IgnoreQueryFilters()
+                    .Where(m => m.StpNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            case "ProductSTPNumber":
+                return await context.ProductStandardTestProcedures
+                    .IgnoreQueryFilters()
+                    .Where(m => m.StpNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            case "MaterialSpecNumber":
+                return await context.MaterialSpecifications
+                    .IgnoreQueryFilters()
+                    .Where(m => m.SpecificationNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            case "ProductSpecNumber":
+                return await context.ProductSpecifications
+                    .IgnoreQueryFilters()
+                    .Where(m => m.SpecificationNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(ProformaInvoice):
+                return await context.ProformaInvoices
+                    .IgnoreQueryFilters()
+                    .Where(p => p.Code.StartsWith(prefix))
+                    .CountAsync();
+
+            default:
+                return Error.Validation("ModelType", "Invalid model type sent");
         }
     }
 }

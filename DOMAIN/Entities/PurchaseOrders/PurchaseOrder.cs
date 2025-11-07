@@ -38,7 +38,7 @@ public class PurchaseOrder : BaseEntity, IRequireApproval
     public decimal Insurance { get; set; }
     [StringLength(1000000)] public string AmountInFigures { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
-    public List<PurchaseOrderApproval>  Approvals { get; set; } = [];
+    public List<PurchaseOrderApproval> Approvals { get; set; } = [];
     public Guid? DepartmentId { get; set; }
     public Department Department { get; set; }
     public bool Approved { get; set; }

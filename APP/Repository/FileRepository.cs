@@ -16,7 +16,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
         Guid? userId)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
-        
+
         var attachment = new Attachment
         {
             ModelId = modelId,
@@ -50,7 +50,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                         await context.SaveChangesAsync();
                     }
                     break;
-                
+
                 case nameof(ProformaInvoice):
                     var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item => item.Id == modelId);
                     if (proformaInvoice is not null)
@@ -71,7 +71,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
         return Result.Success();
     }
 
-    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, List<IFormFile> files, Guid?  userId)
+    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, List<IFormFile> files, Guid? userId)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
@@ -91,7 +91,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                 };
 
                 context.Attachments.Add(attachment);
-                references.Add(reference.ToString()); 
+                references.Add(reference.ToString());
             }
 
             await context.SaveChangesAsync();
@@ -100,7 +100,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             {
                 var reference = references[files.IndexOf(file)];
                 var result = await blobStorageService.UploadBlobAsync(modelType.ToLower(), file, $"{modelId}/{reference}");
-            
+
                 if (result.IsFailure)
                 {
                     await transaction.RollbackAsync();
@@ -119,8 +119,8 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                     context.PurchaseOrders.Update(purchaseOrder);
                 }
             }
-            
-            if(modelType ==  nameof(ProformaInvoice))
+
+            if (modelType == nameof(ProformaInvoice))
             {
                 var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item => item.Id == modelId);
                 if (proformaInvoice is not null)

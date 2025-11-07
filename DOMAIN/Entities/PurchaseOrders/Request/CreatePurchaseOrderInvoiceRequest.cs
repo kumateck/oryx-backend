@@ -8,14 +8,14 @@ public class CreatePurchaseOrderInvoiceRequest
     public List<CreatePurchaseOrderChargeRequest> Charges { get; set; } = [];
 }
 
-public class CreateBatchItemRequest 
-{ 
+public class CreateBatchItemRequest
+{
     public string BatchNumber { get; set; }
     public Guid ManufacturerId { get; set; }
     public int Quantity { get; set; }
 }
 
-public class CreatePurchaseOrderChargeRequest 
+public class CreatePurchaseOrderChargeRequest
 {
     public string Description { get; set; }
     public decimal Amount { get; set; }

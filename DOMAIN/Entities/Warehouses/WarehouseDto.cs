@@ -12,7 +12,7 @@ using SHARED;
 
 namespace DOMAIN.Entities.Warehouses;
 
-public class WarehouseDto 
+public class WarehouseDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; }
@@ -30,8 +30,8 @@ public class WarehouseWithoutLocationDto
     public WarehouseType Type { get; set; }
 }
 
-public class WarehouseLocationDto 
-{ 
+public class WarehouseLocationDto
+{
     public Guid Id { get; set; }
     public string Name { get; set; }
     public string FloorName { get; set; }
@@ -40,7 +40,7 @@ public class WarehouseLocationDto
     public List<WarehouseLocationRackDto> Racks { get; set; } = [];
 }
 
-public class WarehouseLocationRackDto 
+public class WarehouseLocationRackDto
 {
     public Guid Id { get; set; }
     public WareHouseLocationDto WarehouseLocation { get; set; }
@@ -102,7 +102,7 @@ public class DistributedRequisitionItemDto
     public UnitOfMeasureDto Uom { get; set; }
     public WarehouseWithoutLocationDto Warehouse { get; set; }
     public decimal Quantity { get; set; }
-    public decimal QuantityDistributed  { get; set; }
+    public decimal QuantityDistributed { get; set; }
     public bool FullyDistributed => Quantity == QuantityDistributed;
 }
 
@@ -144,7 +144,7 @@ public class WareHouseLocationDto
     public CollectionItemDto Warehouse { get; set; }
 }
 
-public class WareHouseLocationRackDto 
+public class WareHouseLocationRackDto
 {
     public Guid Id { get; set; }
     public WareHouseLocationDto WarehouseLocation { get; set; }

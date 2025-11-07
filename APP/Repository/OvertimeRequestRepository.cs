@@ -20,10 +20,10 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
         // Validate time format
         if (!IsValidStartTime(request.StartTime) || !IsValidStartTime(request.EndTime))
         {
-            return Error.Validation("OvertimeRequest.InvalidTimeFormat", 
+            return Error.Validation("OvertimeRequest.InvalidTimeFormat",
                 "Start time and end time must be in 12-hour format.");
         }
-        
+
         var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == request.DepartmentId);
         if (department == null)
         {
@@ -40,7 +40,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
             .Where(ot => ot.OvertimeDate == request.OvertimeDate)
             .SelectMany(ot => ot.Employees)
             .Where(emp => request.EmployeeIds.Contains(emp.Id))
-            .Select(emp => emp.Id) 
+            .Select(emp => emp.Id)
             .Distinct()
             .ToListAsync();
 
@@ -51,23 +51,23 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
                 .Select(e => $"{e.FirstName} {e.LastName}")
                 .ToList();
 
-            return Error.Validation("OvertimeRequest.DuplicateEntries", 
+            return Error.Validation("OvertimeRequest.DuplicateEntries",
                 $"Overtime request already exists for the following employees on {request.OvertimeDate:yyyy-MM-dd}: {string.Join(", ", duplicateNames)}");
         }
-        
+
         var overtimeRequestEntity = mapper.Map<OvertimeRequest>(request);
         overtimeRequestEntity.Employees = selectedEmployees;
 
         await context.OvertimeRequests.AddAsync(overtimeRequestEntity);
         await context.SaveChangesAsync();
-        
+
         await approvalRepository.CreateInitialApprovalsAsync(nameof(OvertimeRequest), overtimeRequestEntity.Id);
-        
+
         backgroundWorkerService.EnqueueNotification("New overtime request created", NotificationType.OvertimeRequest);
 
         return overtimeRequestEntity.Id;
     }
-    
+
 
     private static bool IsValidStartTime(string input)
     {
@@ -82,7 +82,7 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<Paginateable<IEnumerable<OvertimeRequestDto>>>> GetOvertimeRequests(int page, int pageSize, string searchQuery,
         OvertimeStatus? overtimeStatus = null, Guid? departmentId = null)
     {
-        var query =  context.OvertimeRequests
+        var query = context.OvertimeRequests
             .AsSplitQuery()
             .Include(o => o.Employees)
             .Include(o => o.Department)
@@ -92,12 +92,12 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
         {
             query = query.WhereSearch(searchQuery, ot => ot.StartTime);
         }
-        
+
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             if (Enum.TryParse<OvertimeStatus>(searchQuery, true, out var status))
             {
-                  query = query.Where(ot => ot.Status == status);
+                query = query.Where(ot => ot.Status == status);
             }
         }
 
@@ -108,9 +108,9 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
 
         if (overtimeStatus.HasValue)
         {
-            query = query.Where(ot => ot.Status == overtimeStatus.Value); 
+            query = query.Where(ot => ot.Status == overtimeStatus.Value);
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<OvertimeRequestDto>);
     }
 
@@ -123,9 +123,9 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
             .ThenInclude(o => o.Designation)
             .Include(o => o.CreatedBy)
             .FirstOrDefaultAsync(ot => ot.Id == id);
-        
-        return overtimeRequest is null ? 
-            Error.NotFound("OvertimeRequest.NotFound", "Overtime request is not found") : 
+
+        return overtimeRequest is null ?
+            Error.NotFound("OvertimeRequest.NotFound", "Overtime request is not found") :
             Result.Success(mapper.Map<OvertimeRequestDto>(overtimeRequest));
 
     }
@@ -138,13 +138,13 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
         {
             return Error.NotFound("OvertimeRequest.NotFound", "Overtime request is not found");
         }
-        
+
         mapper.Map(request, overtimeRequest);
-        
+
         context.OvertimeRequests.Update(overtimeRequest);
         await context.SaveChangesAsync();
         return Result.Success();
-        
+
     }
 
     public async Task<Result> DeleteOvertimeRequest(Guid id, Guid userId)
@@ -161,10 +161,10 @@ public class OvertimeRequestRepository(ApplicationDbContext context, IMapper map
             return Error.Validation("OvertimeRequest.InvalidStatus",
                 "Cannot delete an overtime request that has already been approved or rejected.");
         }
-        
+
         overtimeRequest.DeletedAt = DateTime.UtcNow;
         overtimeRequest.LastDeletedById = userId;
-        
+
         context.OvertimeRequests.Update(overtimeRequest);
         await context.SaveChangesAsync();
         return Result.Success();

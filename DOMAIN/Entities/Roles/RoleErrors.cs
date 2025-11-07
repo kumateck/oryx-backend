@@ -6,8 +6,8 @@ public static class RoleErrors
 {
     public static Error NotFound(Guid roleId) =>
         Error.NotFound("Roles.NotFound", $"The role with the Id: {roleId} was not found");
-    public static Error InvalidRoleName(string roleName) => 
+    public static Error InvalidRoleName(string roleName) =>
         Error.Validation("Roles.InvalidName", $"The role with name: {roleName} already exists.");
-    public static Error IsManager => 
+    public static Error IsManager =>
         Error.Validation("Roles.Manager", $"This role is a manager and cannot be updated.");
 }

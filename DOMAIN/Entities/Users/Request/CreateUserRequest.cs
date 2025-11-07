@@ -6,8 +6,9 @@ public class CreateUserRequest
 {
     [Required] public string FirstName { get; set; }
     [Required] public string LastName { get; set; }
-    [Required]public string UserName { get; set; }
-    [Required][EmailAddress]
+    [Required] public string UserName { get; set; }
+    [Required]
+    [EmailAddress]
     [RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", ErrorMessage = "Invalid email address.")]
     public string Email { get; set; }
     public DateTime? DateOfBirth { get; set; }

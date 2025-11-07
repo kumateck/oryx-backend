@@ -21,7 +21,7 @@ public class ProductSamplingController(IProductSamplingRepository repository) : 
     public async Task<IResult> CreateProductSampling([FromBody] CreateProductSamplingRequest request)
     {
         var result = await repository.CreateProductSampling(request);
-        return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>

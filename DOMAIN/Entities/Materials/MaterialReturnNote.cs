@@ -92,6 +92,6 @@ public class PartialMaterialToReturn
 
 public enum MaterialReturnStatus
 {
-    Pending = 0, 
+    Pending = 0,
     Completed = 1
 }

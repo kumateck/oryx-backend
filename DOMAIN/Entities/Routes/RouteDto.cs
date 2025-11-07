@@ -15,22 +15,23 @@ public class RouteDto : BaseDto
     public List<RouteWorkCenterDto> WorkCenters { get; set; } = [];
 }
 
-public class RouteResourceDto 
+public class RouteResourceDto
 {
     public CollectionItemDto Resource { get; set; }
 }
 
-public class RouteResponsibleUserDto 
+public class RouteResponsibleUserDto
 {
     public CollectionItemDto User { get; set; }
-    public ProductAnalyticalRawDataDto ProductAnalyticalRawData{ get; set; }
-    public OperationAction Action { get; set; }}
+    public ProductAnalyticalRawDataDto ProductAnalyticalRawData { get; set; }
+    public OperationAction Action { get; set; }
+}
 
 
 public class RouteResponsibleRoleDto
 {
     public CollectionItemDto Role { get; set; }
-    public ProductAnalyticalRawDataDto ProductAnalyticalRawData{ get; set; }
+    public ProductAnalyticalRawDataDto ProductAnalyticalRawData { get; set; }
     public OperationAction Action { get; set; }
 }
 

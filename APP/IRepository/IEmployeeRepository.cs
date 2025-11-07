@@ -8,20 +8,20 @@ namespace APP.IRepository;
 
 public interface IEmployeeRepository
 {
-   Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDto);
-   Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request);
-   Task<Result<Guid>> CreateEmployeeUser(EmployeeUserDto employeeUserDto);
-   Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId);
-   Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(EmployeeStatus? status,int page, int pageSize,
-      string searchQuery = null, string designation = null, string department = null, bool? isNotUser = null);
-   Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId);
-   Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date);
-   Task<Result<EmployeeDto>> GetEmployee(Guid id);
-   Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request);
-   Task<Result> UpdateEmployeeStatus(Guid employeeId, UpdateEmployeeStatus status);
-   Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto);
-   Task<Result> ChangeEmployeeType(Guid id, EmployeeType employeeType);
-   Task<Result> DeleteEmployee(Guid id, Guid userId);
-   Task<Result> UpdateEmployeeEmail(Guid id, string email);
-   Task<Result> ImportEmployeesFromExcel(IFormFile file);
+    Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDto);
+    Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request);
+    Task<Result<Guid>> CreateEmployeeUser(EmployeeUserDto employeeUserDto);
+    Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId);
+    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(EmployeeStatus? status, int page, int pageSize,
+       string searchQuery = null, string designation = null, string department = null, bool? isNotUser = null);
+    Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId);
+    Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date);
+    Task<Result<EmployeeDto>> GetEmployee(Guid id);
+    Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request);
+    Task<Result> UpdateEmployeeStatus(Guid employeeId, UpdateEmployeeStatus status);
+    Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto);
+    Task<Result> ChangeEmployeeType(Guid id, EmployeeType employeeType);
+    Task<Result> DeleteEmployee(Guid id, Guid userId);
+    Task<Result> UpdateEmployeeEmail(Guid id, string email);
+    Task<Result> ImportEmployeesFromExcel(IFormFile file);
 }

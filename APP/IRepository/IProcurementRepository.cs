@@ -34,7 +34,7 @@ public interface IProcurementRepository
         SupplierType type);
     Task<Result> UpdateSupplier(CreateSupplierRequest request, Guid supplierId, Guid userId);
     Task<Result> DeleteSupplier(Guid supplierId, Guid userId);
-        
+
     // ************* PurchaseOrder *************
     Task<Result<Guid>> CreatePurchaseOrder(CreatePurchaseOrderRequest request, Guid userId);
     Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId);
@@ -67,9 +67,9 @@ public interface IProcurementRepository
     Task<Result> UpdateBillingSheet(UpdateBillingSheetRequest request, Guid billingSheetId, Guid userId);
     Task<Result> AddChargesToBillingSheet(List<CreateBillingSheetCharge> request, Guid billingSheetId,
         Guid userId);
-     Task<Result> MarkBillingSheetChargeAsPaid(MarkBillingSheetCharge request, Guid userId);
+    Task<Result> MarkBillingSheetChargeAsPaid(MarkBillingSheetCharge request, Guid userId);
     Task<Result> DeleteBillingSheet(Guid billingSheetId, Guid userId);
-        
+
     //************* Shipment Document ************
     Task<Result<Guid>> CreateShipmentDocument(CreateShipmentDocumentRequest request, Guid userId);
     Task<Result<Guid>> CreateWayBill(CreateShipmentDocumentRequest request, Guid userId);
@@ -83,12 +83,12 @@ public interface IProcurementRepository
     Task<Result> UpdateShipmentDocument(CreateShipmentDocumentRequest request, Guid shipmentDocumentId,
         Guid userId);
     Task<Result> DeleteShipmentDocument(Guid shipmentDocumentId, Guid userId);
-    
+
     Task<Result<Guid>> CreateShipmentInvoice(CreateShipmentInvoice request, Guid userId);
     Task<Result<ShipmentInvoiceDto>> GetShipmentInvoice(Guid shipmentInvoiceId);
     Task<Result<ShipmentInvoiceDto>> GetShipmentInvoiceByShipmentDocument(Guid shipmentDocumentId);
     Task<Result<Paginateable<IEnumerable<ShipmentInvoiceDto>>>> GetShipmentInvoices(int page, int pageSize,
-        string searchQuery); 
+        string searchQuery);
     Task<Result<IEnumerable<ShipmentInvoiceDto>>> GetUnattachedShipmentInvoices();
     Task<Result> UpdateShipmentInvoice(CreateShipmentInvoice request, Guid shipmentInvoiceId, Guid userId);
     Task<Result> MarkShipmentInvoiceAsPaid(Guid shipmentInvoiceId, DateTime? paidAt, Guid userId);
@@ -116,8 +116,8 @@ public interface IProcurementRepository
     Task<Result> UpdateSupplierStatus(Guid supplierId, SupplierStatus status, Guid userId);
     Task<List<Guid>> GetDepartmentIdsFromPurchaseOrder(Guid purchaseOrderId);
     Task<Result> DistributeMaterialToWarehouse(List<DistributeMaterialRequest> request);
-   Task<Result<Paginateable<IEnumerable<DistributeMaterialDto>>>> GetDistributeMaterials(int page,
-        int pageSize,
-        string searchQuery, DistributeMaterialStatus? status, Guid? departmentId, MaterialKind? kind);
-   Task<Result<DistributeMaterialDto>> GetDistributeMaterial(Guid distributedRequisitionMaterialId);
+    Task<Result<Paginateable<IEnumerable<DistributeMaterialDto>>>> GetDistributeMaterials(int page,
+         int pageSize,
+         string searchQuery, DistributeMaterialStatus? status, Guid? departmentId, MaterialKind? kind);
+    Task<Result<DistributeMaterialDto>> GetDistributeMaterial(Guid distributedRequisitionMaterialId);
 }

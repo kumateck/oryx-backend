@@ -23,7 +23,7 @@ public class ServiceProviderController(IServiceProviderRepository repository) : 
         var result = await repository.CreateServiceProvider(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of service providers
     /// </summary>

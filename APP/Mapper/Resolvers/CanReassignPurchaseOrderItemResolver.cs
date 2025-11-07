@@ -10,7 +10,7 @@ public class CanReassignPurchaseOrderItemResolver(ApplicationDbContext dbContext
     public bool Resolve(PurchaseOrderItem source, PurchaseOrderItemDto destination, bool destMember, ResolutionContext context)
     {
         return dbContext.SupplierQuotationItems.Count(i =>
-            i.Status == SupplierQuotationItemStatus.NotUsed && i.MaterialId == source.MaterialId && i.Quantity == source.Quantity 
+            i.Status == SupplierQuotationItemStatus.NotUsed && i.MaterialId == source.MaterialId && i.Quantity == source.Quantity
             && i.UoMId == source.UoMId) > 0;
     }
 }

@@ -32,7 +32,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>))]
-    public async Task<IResult> GetAnalyticalRawData( [FromQuery] MaterialKind materialKind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetAnalyticalRawData([FromQuery] MaterialKind materialKind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetAnalyticalRawData(page, pageSize, searchQuery, materialKind);
@@ -50,7 +50,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
         var result = await repository.GetAnalyticalRawData(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves specific analytical raw data by is material ID.
     /// </summary>
@@ -62,7 +62,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
         var result = await repository.GetAnalyticalRawDataByMaterial(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves specific analytical raw data by is material batch ID.
     /// </summary>
@@ -74,7 +74,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
         var result = await repository.GetAnalyticalRawDataByMaterialBatch(materialBatchId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves specific analytical raw data by is material batch ID.
     /// </summary>
@@ -86,7 +86,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
         var result = await repository.GetRelevantMaterialInfoForArd(materialBatchId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates analytical raw data by its ID.
     /// </summary>
@@ -110,11 +110,11 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteAnalyticalRawData(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Starts test for material batch
     /// </summary>
@@ -126,8 +126,8 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
         var result = await repository.StartTestForMaterialBatch(materialBatchId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
-     /// <summary>
+
+    /// <summary>
     /// Creates a uniformity of weight record.
     /// </summary>
     [HttpPost("uniformity-of-weight")]
@@ -189,7 +189,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
         var result = await repository.DeleteUniformityOfWeight(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Submits a uniformity of weight response.
     /// </summary>

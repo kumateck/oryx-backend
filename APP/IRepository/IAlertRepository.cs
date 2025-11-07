@@ -7,7 +7,7 @@ using SHARED;
 namespace APP.IRepository;
 
 public interface IAlertRepository
-{ 
+{
     Task<Result<Guid>> CreateAlert(CreateAlertRequest request);
     Task<Result<AlertDto>> GetAlert(Guid alertId);
     Task<Result<Paginateable<IEnumerable<AlertDto>>>> GetAlerts(int page, int pageSize, string searchQuery,
@@ -17,5 +17,5 @@ public interface IAlertRepository
     Task<Result> DeleteAlert(Guid id, Guid userId);
     Task ProcessAlert(string message, NotificationType type, Guid? departmentId = null, List<User> assignedUsers = null);
     Task<Result> MarkNotificationAsRead(Guid id, Guid userId);
-   Task<Result<List<NotificationDto>>> GetNotificationsForUser(Guid userId, bool unreadOnly);
+    Task<Result<List<NotificationDto>>> GetNotificationsForUser(Guid userId, bool unreadOnly);
 }

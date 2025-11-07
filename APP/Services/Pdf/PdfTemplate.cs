@@ -132,13 +132,13 @@ public static class PdfTemplate
                       </tr>
                     </thead>
                     <tbody>");
-        
+
         foreach (var item in quotation.Items)
         {
-          var symbol = item.UoM?.Symbol ?? "";
-          var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
+            var symbol = item.UoM?.Symbol ?? "";
+            var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
 
-          content.AppendLine($@"
+            content.AppendLine($@"
             <tr>
               <td>{item.Material.Name}</td>
               <td>{scaledValue}</td>
@@ -160,7 +160,7 @@ public static class PdfTemplate
 
         return content.ToString();
     }
-    
+
     public static string QuotationRequestTemplateVendor(VendorQuotationRequest quotation)
     {
         var content = new StringBuilder();
@@ -284,13 +284,13 @@ public static class PdfTemplate
                       </tr>
                     </thead>
                     <tbody>");
-        
+
         foreach (var item in quotation.Items)
         {
-          var symbol = item.UoM?.Symbol ?? "";
-          var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
+            var symbol = item.UoM?.Symbol ?? "";
+            var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
 
-          content.AppendLine($@"
+            content.AppendLine($@"
             <tr>
               <td>{item.Item.Name}</td>
               <td>{scaledValue}</td>
@@ -316,7 +316,7 @@ public static class PdfTemplate
     public static string PurchaseOrderTemplate(PurchaseOrder purchaseOrder)
     {
         var content = new StringBuilder();
-        
+
         content.AppendLine($@"
           <!DOCTYPE html>
           <html lang=""en"">
@@ -441,11 +441,11 @@ public static class PdfTemplate
 
 
         foreach (var item in purchaseOrder.Items)
-        { 
-          var symbol = item.UoM?.Symbol ?? "";
-          var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
+        {
+            var symbol = item.UoM?.Symbol ?? "";
+            var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
 
-          content.AppendLine($@"
+            content.AppendLine($@"
               <tr>
                 <td>{item.Material.Name}</td>
                 <td>{scaledValue}</td>
@@ -469,9 +469,9 @@ public static class PdfTemplate
 
     public static string ProformaInvoiceTemplate(PurchaseOrder purchaseOrder)
     {
-      var content = new StringBuilder();
+        var content = new StringBuilder();
 
-      content.AppendLine($@"
+        content.AppendLine($@"
 
       <!DOCTYPE html>
     <html lang=""en"">
@@ -592,12 +592,12 @@ public static class PdfTemplate
               </thead>
           <tbody>");
 
-      foreach (var item in purchaseOrder.Items)
-      {
-        var symbol = item.UoM?.Symbol ?? "";
-        var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
+        foreach (var item in purchaseOrder.Items)
+        {
+            var symbol = item.UoM?.Symbol ?? "";
+            var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
 
-        content.AppendLine($@"
+            content.AppendLine($@"
             <tr>
               <td>{item.Material.Name}</td>
               <td>{scaledSymbol}</td>
@@ -605,9 +605,9 @@ public static class PdfTemplate
               <td>{purchaseOrder.Supplier?.Currency?.Symbol}{item.Price}</td>
               <td>{purchaseOrder.Supplier?.Currency?.Symbol}{Math.Round(item.Price * item.Quantity, 2)}</td>
             </tr>");
-      }
-      
-      content.AppendLine($@"
+        }
+
+        content.AppendLine($@"
                       </tbody>
                     </table>
                   </div>
@@ -617,7 +617,7 @@ public static class PdfTemplate
                 </div>
               </body>
             </html>");
-      
-      return content.ToString();
+
+        return content.ToString();
     }
 }

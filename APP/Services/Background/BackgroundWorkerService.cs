@@ -13,8 +13,8 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
     : IBackgroundWorkerService
 {
     // Method to enqueue logs for background processing
-    public void EnqueueLog(CreateActivityLog log) 
-    { 
+    public void EnqueueLog(CreateActivityLog log)
+    {
         logQueue.Enqueue(log);
     }
 
@@ -22,19 +22,19 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
     {
         notificationQueue.Enqueue((message, type, departmentId, users ?? []));
     }
-    
+
     public void EnqueuePrevStateCapture(PrevStateCaptureRequest prevStateCapture)
     {
         prevStateQueue.Enqueue(prevStateCapture);
     }
 
     // This method processes logs in the background
-    public async Task DoWork(CancellationToken stoppingToken) 
-    { 
-        while (!stoppingToken.IsCancellationRequested) 
-        { 
-            if (logQueue.TryDequeue(out var log)) 
-            { 
+    public async Task DoWork(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            if (logQueue.TryDequeue(out var log))
+            {
                 try
                 {
                     // Asynchronously log activity
@@ -45,7 +45,7 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
                     logger.LogError(ex, "Error processing activity log.");
                 }
             }
-            
+
             if (prevStateQueue.TryDequeue(out var request))
             {
                 try
@@ -74,7 +74,7 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
             await Task.Delay(10000, stoppingToken); // Poll every second for new logs
         }
     }
-    
+
     private async Task HandlePrevStateCaptureAsync(PrevStateCaptureRequest request)
     {
         if (request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase)) return;
@@ -101,8 +101,8 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
                 }
                 break;
 
-            // Add more models like this:
-            // case "inventory": ...
+                // Add more models like this:
+                // case "inventory": ...
         }
     }
 }

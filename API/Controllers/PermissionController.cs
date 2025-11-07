@@ -47,7 +47,7 @@ public class PermissionController(IPermissionRepository repo) : ControllerBase
     {
         var id = (string)HttpContext.Items["Sub"];
         if (id == null) return TypedResults.Unauthorized();
-        
+
         var result = await repo.GetAllPermissionForUser(userId ?? Guid.Parse(id));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -79,19 +79,19 @@ public class PermissionController(IPermissionRepository repo) : ControllerBase
         var result = await repo.UpdateRolePermissions(permissions, roleId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Gets filtered menu based on user role
     /// </summary>
     [HttpGet("menu")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof (List<MenuItem>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MenuItem>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetFilteredMenu()
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repo.GetFilteredMenu(Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }

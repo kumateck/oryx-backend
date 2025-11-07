@@ -10,7 +10,7 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/shift-type")]
 [Authorize]
-public class ShiftTypeController(IShiftTypeRepository repository): ControllerBase
+public class ShiftTypeController(IShiftTypeRepository repository) : ControllerBase
 {
     /// <summary>
     /// Creates a new shift type.
@@ -23,7 +23,7 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
         var result = await repository.CreateShiftType(shiftType);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of shift types based on search criteria.
     /// </summary>
@@ -61,7 +61,7 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
         var result = await repository.UpdateShiftType(id, shiftType);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes a specific shift type by its ID.
     /// </summary>
@@ -72,7 +72,7 @@ public class ShiftTypeController(IShiftTypeRepository repository): ControllerBas
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteShiftType(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

@@ -11,9 +11,9 @@ using DOMAIN.Entities.Warehouses;
 
 namespace API.Controllers;
 
-[Route("api/v{version:apiVersion}/material")] 
-[ApiController] 
-public class MaterialController(IMaterialRepository repository) : ControllerBase 
+[Route("api/v{version:apiVersion}/material")]
+[ApiController]
+public class MaterialController(IMaterialRepository repository) : ControllerBase
 {
     /// <summary>
     /// Creates a new material.
@@ -64,7 +64,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterials(page, pageSize, searchQuery, kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of all material categories.
     /// </summary>
@@ -78,7 +78,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialCategories(materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of all materials.
     /// </summary>
@@ -111,7 +111,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.UpdateMaterial(request, materialId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the ReOrderLevel of a specific material by its ID.
     /// </summary>
@@ -122,7 +122,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateReOrderLevel([FromRoute]Guid materialId, [FromBody] UpdateReOrderLevelRequest reOrderLevel)
+    public async Task<IResult> UpdateReOrderLevel([FromRoute] Guid materialId, [FromBody] UpdateReOrderLevelRequest reOrderLevel)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -147,7 +147,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
 
         var result = await repository.DeleteMaterial(materialId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    } 
+    }
 
     /// <summary>
     /// Checks the stock level of a specific material by its ID.
@@ -163,7 +163,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.CheckStockLevel(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of material batches by material ID.
     /// </summary>
@@ -178,7 +178,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialBatchesByMaterialId(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the stock of materials in transit.
     /// </summary>
@@ -257,11 +257,11 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.MoveMaterialBatchByMaterial(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     [HttpPut("batch/{batchId}/approve")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -290,7 +290,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMassMaterialStockInWarehouse(materialId, warehouseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Consumes a specified quantity of a material at a location.
     /// </summary>
@@ -338,7 +338,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetDepartmentsWithEnoughStock(materialId, quantity);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Imports materials from an Excel file.
     /// </summary>
@@ -360,7 +360,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         return result.IsSuccess
             ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the batch status of the specified material batches.
     /// </summary>
@@ -379,7 +379,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.UpdateBatchStatus(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Supplies a material batch to warehouse shelves.
     /// </summary>
@@ -398,7 +398,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.SupplyMaterialBatchToWarehouse(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Moves a shelf material batch from one shelf to another.
     /// </summary>
@@ -436,11 +436,11 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetApprovedMaterials(page, pageSize, searchQuery, kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of approved materials for a specific warehouse.
     /// </summary>
@@ -481,11 +481,11 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize,  materialId, Guid.Parse(userId));
+
+        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize, materialId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the stock of a material in different warehouses.
     /// </summary>
@@ -515,7 +515,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetStockByDepartment(materialId);
         return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
     }
-    
+
     /// <summary>
     /// Creates a new material department.
     /// </summary>
@@ -529,7 +529,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateMaterialDepartment(materialDepartments, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -547,11 +547,11 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.RemoveMaterialDepartment(Guid.Parse(userId), materialId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Returns a list of materials that have not been linked.
     /// </summary>
@@ -569,8 +569,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.GetMaterialsThatHaveNotBeenLinked(page, pageSize, searchQuery, kind,Guid.Parse(userId));
+
+        var result = await repository.GetMaterialsThatHaveNotBeenLinked(page, pageSize, searchQuery, kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -585,14 +585,14 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [HttpGet("department")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
-    public async Task<IResult> GetMaterialDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
+    public async Task<IResult> GetMaterialDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? kind = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.GetMaterialDepartments(page, pageSize, searchQuery, kind,Guid.Parse(userId));
+
+        var result = await repository.GetMaterialDepartments(page, pageSize, searchQuery, kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -609,8 +609,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await repository.GetUnitOfMeasureForMaterialDepartment(materialId,Guid.Parse(userId));
+
+        var result = await repository.GetUnitOfMeasureForMaterialDepartment(materialId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -626,14 +626,14 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [HttpGet("holding")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<HoldingMaterialTransferDto>>))]
-    public async Task<IResult> GetMaterialDepartments([FromQuery] bool withProcessed =  false,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, 
+    public async Task<IResult> GetMaterialDepartments([FromQuery] bool withProcessed = false,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? kind = null)
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetHoldingMaterialTransfers(page, pageSize, searchQuery, withProcessed, Guid.Parse(departmentId), kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -654,10 +654,10 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.MoveMaterialBatchToWarehouseFromHolding(request,Guid.Parse(userId));
+        var result = await repository.MoveMaterialBatchToWarehouseFromHolding(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
-    
+
     [HttpPost("batches/import")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -669,7 +669,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.ImportMaterialBatchesFromExcel(file, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a  list of material batches that have expired
     /// </summary>
@@ -691,13 +691,13 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterialsNotLinkedToSpec(materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    
+
+
     [HttpGet("rejects")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
     public async Task<IResult> GetMaterialRejects([FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10, 
+        [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? materialKind = null)
     {
@@ -723,7 +723,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetShelfMaterialsAcrossWarehouses(materialId, departmentId, onlyAboutToExpire);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Moves a material batch into the warehouse from a distributed material.
     /// </summary>
@@ -738,7 +738,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.MoveMaterialBatchToWarehouseFromDistribute(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

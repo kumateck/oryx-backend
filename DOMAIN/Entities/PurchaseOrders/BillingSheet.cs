@@ -23,7 +23,7 @@ public class BillingSheet : BaseEntity, IRequireApproval
     [StringLength(100)] public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
     public BillingSheetStatus Status { get; set; }
-    
+
     //container information
     [StringLength(100)] public string ContainerNumber { get; set; }
     [StringLength(1000)] public string NumberOfPackages { get; set; }
@@ -31,7 +31,7 @@ public class BillingSheet : BaseEntity, IRequireApproval
     public PackageStyle ContainerPackageStyle { get; set; }
     [StringLength(1000)] public string PackageDescription { get; set; }
     public List<BillingSheetCharge> Charges { get; set; } = [];
-    public List<BillingSheetApproval>  Approvals { get; set; } = [];
+    public List<BillingSheetApproval> Approvals { get; set; } = [];
     public bool Approved { get; set; }
 }
 

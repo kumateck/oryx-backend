@@ -16,11 +16,11 @@ public class Result
                 break;
         }
     }
-    
+
     protected Result(bool isSuccess, IEnumerable<Error> errors)
     {
         var errorList = errors.ToList();
-        
+
         switch (isSuccess)
         {
             case true when errorList.Count != 0:
@@ -40,21 +40,21 @@ public class Result
 
     public Error Error { get; }
     public List<Error> Errors { get; } = [];
-    
+
     public static Result Success() => new(true, Error.None);
 
     public static Result<TValue> Success<TValue>(TValue value) => new(value, true, Error.None);
 
     public static Result Failure(Error error) => new(false, error);
-    
+
     public static Result Failure(List<Error> errors) => new(false, errors);
 
     public static Result<TValue> Failure<TValue>(Error error) => new(default, false, error);
-    
+
     public static Result<TValue> Failure<TValue>(List<Error> errors) => new(default, false, errors);
 
     public static Result Create(bool condition) => condition ? Success() : Failure(Error.ConditionNotMet);
-    
+
     public static implicit operator Result(Error error) => Failure(error);
     public static implicit operator Result(List<Error> error) => Failure(error);
 
@@ -68,7 +68,7 @@ public class Result<TValue> : Result
     protected internal Result(TValue value, bool isSuccess, Error error)
         : base(isSuccess, error) =>
         _value = value;
-    
+
     protected internal Result(TValue value, bool isSuccess, List<Error> error)
         : base(isSuccess, error) =>
         _value = value;
@@ -79,6 +79,6 @@ public class Result<TValue> : Result
 
     public static implicit operator Result<TValue>(TValue value) => Create(value);
     public static implicit operator Result<TValue>(Error error) => Failure<TValue>(error);
-    
+
     public static implicit operator Result<TValue>(List<Error> error) => Failure<TValue>(error);
 }

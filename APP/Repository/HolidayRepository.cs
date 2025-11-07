@@ -18,15 +18,15 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
         {
             return Error.Validation("Holiday.Exists", "Holiday already exists.");
         }
-        
+
         var holidayEntity = mapper.Map<Holiday>(request);
-        
-        
+
+
         await context.Holidays.AddAsync(holidayEntity);
         await context.SaveChangesAsync();
-        
+
         return holidayEntity.Id;
-        
+
     }
 
     public async Task<Result<IEnumerable<HolidayDto>>> GetHolidays(string searchQuery)
@@ -50,9 +50,9 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
         var holiday = await context.Holidays
             .AsSplitQuery()
             .FirstOrDefaultAsync(h => h.Id == id);
-        
-        return holiday is null ? 
-            Error.NotFound("Holiday.NotFound", "Holiday not found") : 
+
+        return holiday is null ?
+            Error.NotFound("Holiday.NotFound", "Holiday not found") :
             Result.Success(mapper.Map<HolidayDto>(holiday));
     }
 
@@ -67,7 +67,7 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
         }
 
         mapper.Map(request, holiday);
-        
+
         context.Holidays.Update(holiday);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -76,15 +76,15 @@ public class HolidayRepository(ApplicationDbContext context, IMapper mapper) : I
     public async Task<Result> DeleteHoliday(Guid id, Guid userId)
     {
         var holiday = await context.Holidays.FirstOrDefaultAsync(h => h.Id == id);
-        
+
         if (holiday is null)
         {
             return Error.NotFound("Holiday.NotFound", "Holiday not found");
         }
-        
+
         holiday.DeletedAt = DateTime.UtcNow;
         holiday.LastDeletedById = userId;
-        
+
         context.Holidays.Update(holiday);
         await context.SaveChangesAsync();
         return Result.Success();

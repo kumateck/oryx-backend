@@ -12,5 +12,5 @@ public class StockEntryDto : BaseDto
     public Guid MemoId { get; set; }
     public MemoDto Memo { get; set; }
     public decimal Quantity { get; set; }
-    public ApprovalStatus Status { get; set; } 
+    public ApprovalStatus Status { get; set; }
 }

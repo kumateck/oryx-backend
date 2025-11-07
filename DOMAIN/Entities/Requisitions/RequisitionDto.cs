@@ -8,12 +8,12 @@ using SHARED;
 
 namespace DOMAIN.Entities.Requisitions;
 
-public class RequisitionDto 
+public class RequisitionDto
 {
     public Guid Id { get; set; }
     public string Code { get; set; }
     public RequisitionType RequisitionType { get; set; }
-    public RequestStatus Status { get; set; }  
+    public RequestStatus Status { get; set; }
     public CollectionItemDto RequestedBy { get; set; }
     public CollectionItemDto Department { get; set; }
     public List<RequisitionItemDto> Items { get; set; } = [];
@@ -24,26 +24,26 @@ public class RequisitionDto
     public string Comments { get; set; }
 }
 
-public class RequisitionItemDto 
+public class RequisitionItemDto
 {
     public Guid Id { get; set; }
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public decimal QuantityReceived { get; set; }
-    public RequestStatus Status { get; set; }  
+    public RequestStatus Status { get; set; }
     public List<BatchToSupply> Batches { get; set; } = [];
 }
 
 
-public class RequisitionItemListDto 
+public class RequisitionItemListDto
 {
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public decimal QuantityReceived { get; set; }
-    public RequestStatus Status { get; set; }  
+    public RequestStatus Status { get; set; }
 }
 
 public class MaterialBatchLocationsDto
@@ -62,9 +62,9 @@ public class RequisitionApprovalDto
 {
     public CollectionItemDto User { get; set; }
     public RoleDto Role { get; set; }
-    public bool Required { get; set; }    
-    public bool IsApproved { get; set; }              
-    public DateTime? ApprovalTime { get; set; }      
+    public bool Required { get; set; }
+    public bool IsApproved { get; set; }
+    public DateTime? ApprovalTime { get; set; }
     public string Comments { get; set; }
     public int Order { get; set; }
 }

@@ -17,6 +17,6 @@ public class ItemInventoryTransactionController(IItemInventoryTransactionReposit
     public async Task<IResult> GetItemInventoryTransactions([FromRoute] Guid memoId)
     {
         var result = await repository.ViewInventoryTransaction(memoId);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails() ;
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

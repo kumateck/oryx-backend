@@ -4,17 +4,17 @@ using DOMAIN.Entities.Employees;
 
 namespace DOMAIN.Entities.Designations;
 
-public class DesignationDto: BaseDto
+public class DesignationDto : BaseDto
 {
     public string Name { get; set; }
-    
+
     public string Description { get; set; }
-    
+
     public int MaximumLeaveDays { get; set; }
 
-    public List<DepartmentDto> Departments { get; set; } 
+    public List<DepartmentDto> Departments { get; set; }
     public List<EmployeeDto> Employees { get; set; }
-    
+
 }
 
 public class DesignationWithEmployeesDto
@@ -29,7 +29,7 @@ public class EmployeeWithManagerDto
     public Guid Id { get; set; }
     public string FullName { get; set; }
     public string Email { get; set; }
-    
+
     public ManagerDto Manager { get; set; }
 
 }

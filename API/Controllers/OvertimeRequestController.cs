@@ -12,7 +12,7 @@ namespace API.Controllers;
 [Authorize]
 public class OvertimeRequestController(IOvertimeRequestRepository repository) : ControllerBase
 {
-    
+
     /// <summary>
     /// Creates an overtime request.
     /// </summary>
@@ -36,7 +36,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
         var result = await repository.GetOvertimeRequests(page, pageSize, searchQuery, status, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a specific overtime request by its ID.
     /// </summary>
@@ -48,7 +48,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
         var result = await repository.GetOvertimeRequest(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates a specific overtime request by its ID.
     /// </summary>
@@ -61,7 +61,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
         var result = await repository.UpdateOvertimeRequest(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes a specific overtime request by its ID.
     /// </summary>
@@ -72,9 +72,9 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteOvertimeRequest(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
 }

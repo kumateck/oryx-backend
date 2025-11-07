@@ -5,7 +5,7 @@ using SHARED;
 
 namespace DOMAIN.Entities.Departments;
 
-public class Department 
+public class Department
 {
     public Guid Id { get; set; }
     [StringLength(100)] public string Code { get; set; }
@@ -21,7 +21,7 @@ public class Department
     public Guid? ParentDepartmentId { get; set; }
     public Department ParentDepartment { get; set; }
     public List<Warehouse> Warehouses { get; set; } = [];
-    
+
     public ICollection<Designation> Designations { get; set; } = new List<Designation>();
 }
 

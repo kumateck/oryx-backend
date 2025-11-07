@@ -22,7 +22,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateApproval(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -32,7 +32,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(DelegateApprovalDto))]
     public IResult DelegateApproval([FromBody] DelegateApproval approval)
     {
-        var result =  repository.DelegateApproval(approval);
+        var result = repository.DelegateApproval(approval);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -57,7 +57,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetEntityRequiringApproval(modelType, modelId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -86,7 +86,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateApproval(request, approvalId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -102,11 +102,11 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteApproval(approvalId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Approves an item (Requisition, PurchaseOrder, BillingSheet) by model type and ID.
     /// </summary>
@@ -118,14 +118,14 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     public async Task<IResult> ApproveItem(string modelType, Guid modelId, [FromBody] ApprovalRequestBody body)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        var roleIds =(List<Guid>)HttpContext.Items["Roles"];
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.ApproveItem(modelType, modelId, Guid.Parse(userId), roleIds, body.Comments);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Rejects an item (Requisition, PurchaseOrder, BillingSheet) by model type and ID.
     /// </summary>
@@ -137,7 +137,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     public async Task<IResult> RejectItem(string modelType, Guid modelId, [FromBody] ApprovalRequestBody body)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        var roleIds =(List<Guid>)HttpContext.Items["Roles"];
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -154,7 +154,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     public async Task<IResult> GetPendingApprovals()
     {
         var userId = (string)HttpContext.Items["Sub"];
-        var roleIds =(List<Guid>)HttpContext.Items["Roles"];
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
         if (userId == null) return TypedResults.Unauthorized();
 

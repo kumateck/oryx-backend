@@ -4,21 +4,21 @@ using DOMAIN.Entities.ShiftTypes;
 
 namespace DOMAIN.Entities.ShiftSchedules;
 
-public class ShiftScheduleDto: BaseDto
+public class ShiftScheduleDto : BaseDto
 {
-   public string ScheduleName { get; set; }
-   
-   public DateTime StartDate { get; set; }
-   
-   public DateTime EndDate { get; set; }
-   
-   public ScheduleFrequency Frequency { get; set; }
-   public List<ShiftTypeDto> ShiftType { get; set; }
-   
-   public Guid DepartmentId { get; set; }
-   
-   public ScheduleStatus ScheduleStatus { get; set; }
-   
-   public DepartmentDto Department { get; set; }
+    public string ScheduleName { get; set; }
+
+    public DateTime StartDate { get; set; }
+
+    public DateTime EndDate { get; set; }
+
+    public ScheduleFrequency Frequency { get; set; }
+    public List<ShiftTypeDto> ShiftType { get; set; }
+
+    public Guid DepartmentId { get; set; }
+
+    public ScheduleStatus ScheduleStatus { get; set; }
+
+    public DepartmentDto Department { get; set; }
 
 }

@@ -19,14 +19,14 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
             .AsSplitQuery()
             .Include(product => product.BillOfMaterials)
             .FirstOrDefaultAsync(p => p.Id == request.ProductId);
-        
+
         if (product is null) return ProductErrors.NotFound(request.ProductId);
 
         if (product.BillOfMaterials.Count != 0)
         {
             await context.Database.ExecuteSqlRawAsync(
                 "DELETE FROM \"ProductBillOfMaterials\" WHERE \"ProductId\" = {0}", request.ProductId);
-            
+
             var bomIds = product.BillOfMaterials.Select(p => p.BillOfMaterialId).ToList();
 
             if (bomIds.Count != 0)
@@ -35,10 +35,10 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
                     "DELETE FROM \"BillOfMaterials\" WHERE \"Id\" = ANY({0})", bomIds.ToArray());
             }
         }
-        
-        var billOfMaterial = mapper.Map<BillOfMaterial>(request); 
-        billOfMaterial.CreatedById = userId; 
-        
+
+        var billOfMaterial = mapper.Map<BillOfMaterial>(request);
+        billOfMaterial.CreatedById = userId;
+
         await context.BillOfMaterials.AddAsync(billOfMaterial);
 
         await context.ProductBillOfMaterials.AddAsync(new ProductBillOfMaterial
@@ -51,12 +51,12 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         });
 
         await context.SaveChangesAsync();
-        
+
         return billOfMaterial.Id;
     }
-    
-    public async Task<Result<BillOfMaterialDto>> GetBillOfMaterial(Guid billOfMaterialId) 
-    { 
+
+    public async Task<Result<BillOfMaterialDto>> GetBillOfMaterial(Guid billOfMaterialId)
+    {
         var billOfMaterial = await context.BillOfMaterials
             .AsSplitQuery()
             .Include(b => b.Items)
@@ -65,9 +65,9 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
         return billOfMaterial is null ? BillOfMaterialErrors.NotFound(billOfMaterialId) : mapper.Map<BillOfMaterialDto>(billOfMaterial);
     }
-    
-    public async Task<Result<Paginateable<IEnumerable<BillOfMaterialDto>>>> GetBillOfMaterials(int page, int pageSize, string searchQuery) 
-    { 
+
+    public async Task<Result<Paginateable<IEnumerable<BillOfMaterialDto>>>> GetBillOfMaterials(int page, int pageSize, string searchQuery)
+    {
         var query = context.BillOfMaterials
             .AsSplitQuery()
             .Include(b => b.Items).ThenInclude(i => i.Material)
@@ -76,7 +76,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
-        { 
+        {
             query = query.WhereSearch(searchQuery, f => f.Product.Name);
         }
 
@@ -87,13 +87,13 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
             mapper.Map<BillOfMaterialDto>
         );
     }
-    
-    public async Task<Result> UpdateBillOfMaterial(CreateProductBillOfMaterialRequest request, Guid billOfMaterialId, Guid userId) 
-    { 
+
+    public async Task<Result> UpdateBillOfMaterial(CreateProductBillOfMaterialRequest request, Guid billOfMaterialId, Guid userId)
+    {
         var existingBillOfMaterial = await context.BillOfMaterials
             .Include(b => b.Items)
             .FirstOrDefaultAsync(b => b.Id == billOfMaterialId);
-        
+
         if (existingBillOfMaterial is null)
         {
             return BillOfMaterialErrors.NotFound(billOfMaterialId);
@@ -110,14 +110,14 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
-    public async Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId) 
-    { 
+
+    public async Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId)
+    {
         var product = await context.Products.Include(product => product.BillOfMaterials)
             .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null) return ProductErrors.NotFound(productId);
-        
-        
+
+
         var bom = product.BillOfMaterials.FirstOrDefault(p => p.IsActive);
 
         if (bom is not null)
@@ -129,10 +129,10 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
         return Result.Success();
     }
-    
-    public async Task<Result> DeleteBillOfMaterial(Guid billOfMaterialId, Guid userId) 
-    { 
-        var billOfMaterial = await context.BillOfMaterials.FirstOrDefaultAsync(b => b.Id == billOfMaterialId); 
+
+    public async Task<Result> DeleteBillOfMaterial(Guid billOfMaterialId, Guid userId)
+    {
+        var billOfMaterial = await context.BillOfMaterials.FirstOrDefaultAsync(b => b.Id == billOfMaterialId);
         if (billOfMaterial is null)
         {
             return BillOfMaterialErrors.NotFound(billOfMaterialId);

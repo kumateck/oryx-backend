@@ -18,13 +18,13 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]  
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateStandardTestProcedure([FromBody] CreateMaterialStandardTestProcedureRequest request)
     {
         var result = await repository.CreateMaterialStandardTestProcedure(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of material standard test procedures.
     /// </summary>
@@ -36,7 +36,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
         var result = await repository.GetMaterialStandardTestProcedures(page, pageSize, searchQuery, materialKind, unused);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a specific material standard test procedure by its ID.
     /// </summary>
@@ -48,7 +48,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
         var result = await repository.GetMaterialStandardTestProcedure(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a specific material standard test procedure by its ID.
     /// </summary>
@@ -60,7 +60,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
         var result = await repository.GetMaterialStandardTestProcedureByMaterial(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the details of an existing material standard test procedure.
     /// </summary>
@@ -84,11 +84,11 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteMaterialStandardTestProcedure(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of materials that are not yet used in any standard test procedure.
     /// </summary>

@@ -9,7 +9,7 @@ public static class FormErrors
 
     public static Error MissingField(string questionLabel) =>
         Error.Validation("FormResponse.MissingField", $"The question '{questionLabel}' is required.");
-    
+
     public static Error SectionMissing() =>
         Error.Validation("Form.Section", "Form must have at least one section.");
 
@@ -21,7 +21,7 @@ public static class FormErrors
 
     public static Error MissingQuestionOptions(string questionLabel, string questionType) =>
         Error.Validation("Form.Question.Options", $"Question '{questionLabel}' of type '{questionType}' must have at least one option.");
-    
+
     public static Error InvalidQuestionType(string questionType) =>
         Error.Validation("FormResponse.InvalidQuestionType", $"The question type '{questionType}' is invalid.");
 
@@ -39,10 +39,10 @@ public static class FormErrors
 
     public static Error InvalidDateResponse(string questionLabel) =>
         Error.Validation("FormResponse.Date", $"The date for question '{questionLabel}' is not valid.");
-    
+
     public static Error PaymentComplete =>
         Error.NotFound("Form.PaymentComplete", $"Form response has already been paid for.");
-    
+
     public static Error InvalidAlphanumericResponse(string questionLabel) =>
         Error.Validation("FormResponse.Text.Alphanumeric", $"The response for question '{questionLabel}' must be alphanumeric.");
 

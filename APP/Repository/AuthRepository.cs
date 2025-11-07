@@ -17,8 +17,8 @@ using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
 namespace APP.Repository;
 
-public class AuthRepository(IEmailService emailService,ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService,
-    IPublishEndpoint publishEndpoint , IMapper mapper, IHttpContextAccessor httpContextAccessor) 
+public class AuthRepository(IEmailService emailService, ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService,
+    IPublishEndpoint publishEndpoint, IMapper mapper, IHttpContextAccessor httpContextAccessor)
     : IAuthRepository
 {
     public async Task<Result<LoginResponse>> Login(LoginRequest request)
@@ -32,32 +32,32 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
 
         if (user.IsDisabled)
         {
-            return Error.Failure("Login.Disabled", "You are not authorised to login. Please contact your administrator. ");       
+            return Error.Failure("Login.Disabled", "You are not authorised to login. Please contact your administrator. ");
         }
-        
+
         if (user.PasswordHash == null) return UserErrors.IncorrectCredentials;
         var verifyRes = userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         switch (verifyRes)
         {
             case PasswordVerificationResult.SuccessRehashNeeded:
-            {
-                var hashPassword = userManager.PasswordHasher.HashPassword(user, request.Password);
-                user.PasswordHash = hashPassword;
-                context.Users.Update(user);
-                await context.SaveChangesAsync();
-                break;
-            }
+                {
+                    var hashPassword = userManager.PasswordHasher.HashPassword(user, request.Password);
+                    user.PasswordHash = hashPassword;
+                    context.Users.Update(user);
+                    await context.SaveChangesAsync();
+                    break;
+                }
             case PasswordVerificationResult.Failed:
                 return UserErrors.IncorrectCredentials;
         }
-        
+
         try
         {
             await publishEndpoint.Publish(new NotificationDto
             {
                 Id = Guid.NewGuid(),
                 Message = "test notification",
-                Recipients =  mapper.Map<List<UserDto>>(await context.Users.Take(2).ToListAsync())
+                Recipients = mapper.Map<List<UserDto>>(await context.Users.Take(2).ToListAsync())
             });
             return await jwtService.Authenticate(user, "web");
         }
@@ -75,7 +75,7 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
             return Error.NotFound("Token.NotFound",
                 $"Refresh token {request.RefreshToken} was not found in the system");
 
-        return await jwtService.AuthenticateById(details.UserId, "web");  
+        return await jwtService.AuthenticateById(details.UserId, "web");
     }
 
     public async Task<Result> ForgotPassword(ForgotPasswordRequest request)
@@ -103,10 +103,10 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
 
         var url = $"{partialUrl}/reset-password?key={key}";
 
-        emailService.SendMail(user.FirstName, user.Email, "Password Reset", url,[]);
+        emailService.SendMail(user.FirstName, user.Email, "Password Reset", url, []);
         return Result.Success();
     }
-    
+
     public async Task<Result<PasswordChangeResponse>> SetPassword(SetPasswordRequest model)
     {
         var tokenDetails = await context.PasswordResets.FirstOrDefaultAsync(c => c.KeyName == model.Token);
@@ -115,7 +115,7 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
         {
             return AuthErrors.NotFound;
         }
-            
+
         if (tokenDetails.CreatedAt.AddDays(2) < DateTime.UtcNow)
         {
             return AuthErrors.TokenExpired;
@@ -124,9 +124,9 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
         var user = await userManager.FindByIdAsync(tokenDetails.UserId.ToString());
 
         if (user == null) return UserErrors.NotFound(tokenDetails.UserId);
-            
+
         var result = await userManager.ResetPasswordAsync(user, tokenDetails.Token, model.Password);
-            
+
         if (!result.Succeeded)
             return new PasswordChangeResponse
             {
@@ -174,10 +174,10 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
         {
             return Error.Validation("NewPassword.Invalid", "New Password must be at least 8 characters");
         }
-        
+
         var user = await userManager.FindByIdAsync(userId.ToString());
         if (user == null) return UserErrors.NotFound(userId);
-        
+
         var result = await userManager.ChangePasswordAsync(user, model.NewPassword, model.NewPassword);
 
         if (!result.Succeeded)
@@ -188,7 +188,7 @@ public class AuthRepository(IEmailService emailService,ApplicationDbContext cont
                 Errors = result.Errors.Select(item => item.Description)
             };
         }
-        
+
         return new PasswordChangeResponse
         {
             Success = true

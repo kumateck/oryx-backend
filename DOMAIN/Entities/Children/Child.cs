@@ -8,11 +8,11 @@ namespace DOMAIN.Entities.Children;
 public class Child
 {
     [StringLength(100)] public string FullName { get; set; }
-    
+
     [PastDate] public DateTime DateOfBirth { get; set; }
-    
+
     public Gender Gender { get; set; }
-    
+
 }
 
 
@@ -26,7 +26,7 @@ public class PastDateAttribute : ValidationAttribute
     public override bool IsValid(object value)
     {
         if (value == null)
-            return true; 
+            return true;
 
         if (DateTime.TryParse(value.ToString(), out var dateValue))
         {
