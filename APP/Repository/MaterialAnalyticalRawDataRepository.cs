@@ -133,6 +133,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
     {
         var materialBatch = await context.MaterialBatches
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(materialBatch => materialBatch.Grn)
             .Include(m => m.Material)
             .FirstOrDefaultAsync(m => m.Id == materialBatchId);
@@ -141,17 +142,20 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
 
         var materialSampling = await context.MaterialSamplings
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(m => m.CreatedBy)
             .FirstOrDefaultAsync(m => m.MaterialBatchId == materialBatchId);
 
         var checkList = await context.Checklists
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(checklist => checklist.Supplier)
             .Include(checklist => checklist.Manufacturer)
             .FirstOrDefaultAsync(c => c.Id == materialBatch.ChecklistId);
 
         var materialArd = await context.MaterialAnalyticalRawData
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(ad => ad.MaterialStandardTestProcedure)
             .FirstOrDefaultAsync(m => m.MaterialStandardTestProcedure.MaterialId == materialBatch.MaterialId);
 
