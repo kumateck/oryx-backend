@@ -21,24 +21,24 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.Validation("ShiftType.Exists", "Shift type already exists.");
         }
-        
+
         if (!DateTime.TryParseExact(request.StartTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) ||
             !DateTime.TryParseExact(request.EndTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
             return Error.Validation("ShiftType.InvalidTime", "Start and End times must be in 12-hour format (e.g., 08:30 AM).");
         }
 
-      
+
         if (request.ApplicableDays.Count == 0)
         {
             return Error.Validation("ShiftType.InvalidDays", "At least one day must be selected.");
         }
-        
+
         var shiftType = mapper.Map<ShiftType>(request);
- 
+
         await context.ShiftTypes.AddAsync(shiftType);
         await context.SaveChangesAsync();
-        
+
         return shiftType.Id;
     }
 
@@ -58,7 +58,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
                 query = query.Where(sr => sr.RotationType == parsedRotationType);
             }
         }
-        
+
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -67,7 +67,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
                 query = query.Where(q => q.ApplicableDays.Contains(day));
             }
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
@@ -90,12 +90,12 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
     {
         var shiftType = await context.ShiftTypes
             .FirstOrDefaultAsync(s => s.Id == id);
-        
+
         if (shiftType is null)
         {
             return Error.NotFound("ShiftType.NotFound", "Shift type is not found");
         }
-        
+
         if (!DateTime.TryParseExact(request.StartTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _) ||
             !DateTime.TryParseExact(request.EndTime, "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
@@ -103,7 +103,7 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         }
 
         mapper.Map(request, shiftType);
-        
+
         context.ShiftTypes.Update(shiftType);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -125,10 +125,10 @@ public class ShiftTypeRepository(ApplicationDbContext context, IMapper mapper) :
         {
             return Error.Validation("ShiftType.InUse", "Shift type is in use by a shift schedule.");
         }
-        
+
         shiftType.LastDeletedById = userId;
         shiftType.DeletedAt = DateTime.UtcNow;
-        
+
         context.ShiftTypes.Update(shiftType);
         await context.SaveChangesAsync();
         return Result.Success();

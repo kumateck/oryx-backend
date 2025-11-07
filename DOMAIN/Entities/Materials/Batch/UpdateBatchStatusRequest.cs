@@ -4,7 +4,7 @@ namespace DOMAIN.Entities.Materials.Batch;
 
 public class UpdateBatchStatusRequest
 {
-    [RegularExpression("^(Received|Quarantine|Testing|Available|Rejected|Retest)$", 
+    [RegularExpression("^(Received|Quarantine|Testing|Available|Rejected|Retest)$",
         ErrorMessage = "Invalid batch status.")]
     public string Status { get; set; }
 

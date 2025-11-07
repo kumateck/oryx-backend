@@ -22,7 +22,7 @@ public interface IProductionOrderRepository
     Task<Result<ProformaInvoiceDto>> GetProformaInvoice(Guid id);
     Task<Result> UpdateProformaInvoice(Guid id, CreateProformaInvoice request);
     Task<Result> DeleteProformaInvoice(Guid id, Guid userId);
-    
+
     // In IProductionOrderRepository
     Task<Result<Guid>> CreateInvoice(CreateInvoice request);
     Task<Result<Paginateable<IEnumerable<InvoiceDto>>>> GetInvoices(int page, int pageSize, string searchQuery);
@@ -30,11 +30,11 @@ public interface IProductionOrderRepository
     Task<Result> UpdateInvoice(Guid id, CreateInvoice request);
     Task<Result> DeleteInvoice(Guid id, Guid userId);
     Task<Result> AllocateProduct(AllocateProductionOrderRequest request);
-     Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id);
-     
-     Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
-     Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(
-         bool? onlyApproved, int page,
-         int pageSize, string searchQuery, Guid? productionOrderId);
-     Task<Result<AllocateProductionOrderDto>> GetProductAllocation(Guid id);
+    Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id);
+
+    Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
+    Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(
+        bool? onlyApproved, int page,
+        int pageSize, string searchQuery, Guid? productionOrderId);
+    Task<Result<AllocateProductionOrderDto>> GetProductAllocation(Guid id);
 }

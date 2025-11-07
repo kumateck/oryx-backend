@@ -23,11 +23,11 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateHoliday(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of holidays based on search criteria.
     /// </summary>
@@ -37,7 +37,7 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetHolidays(searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -53,7 +53,7 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetHoliday(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -70,10 +70,10 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.UpdateHoliday( request, id);
+        var result = await repository.UpdateHoliday(request, id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes a specific holiday by its ID.
     /// </summary>
@@ -84,8 +84,8 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteHoliday(id, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent(): result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

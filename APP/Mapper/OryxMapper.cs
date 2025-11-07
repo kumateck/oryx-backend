@@ -97,7 +97,7 @@ public class OryxMapper : Profile
     {
 
         #region CreateItemRequest
-        
+
         CreateMap<CreateItemRequest, Resource>();
         CreateMap<CreateItemRequest, ProductCategory>();
         CreateMap<CreateItemRequest, UnitOfMeasure>();
@@ -119,12 +119,12 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, ProductState>();
         CreateMap<CreateItemRequest, ItemCategory>();
         CreateMap<CreateItemRequest, WarehouseLocationName>();
-        
-        
+
+
         #endregion
-        
+
         #region CollectionItems
-        
+
         CreateMap<ProductCategory, CollectionItemDto>();
         CreateMap<UnitOfMeasure, CollectionItemDto>();
         CreateMap<Product, CollectionItemDto>();
@@ -175,7 +175,7 @@ public class OryxMapper : Profile
         CreateMap<ShipmentInvoice, CollectionItemDto>();
         CreateMap<Charge, CollectionItemDto>();
         CreateMap<Question, CollectionItemDto>();
-        CreateMap<ShiftCategory, CollectionItemDto>();       
+        CreateMap<ShiftCategory, CollectionItemDto>();
         CreateMap<ProductState, CollectionItemDto>();
         CreateMap<MarketType, CollectionItemDto>();
         CreateMap<Instrument, CollectionItemDto>();
@@ -214,10 +214,10 @@ public class OryxMapper : Profile
         #endregion
 
         #region Resource
-        
+
         CreateMap<Resource, ResourceDto>().ReverseMap();
         #endregion
-        
+
         #region UserMapper
         CreateMap<CreateUserRequest, User>();
         CreateMap<User, UserDto>()
@@ -225,10 +225,10 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom<AvatarResolver>())
             .ForMember(user => user.Signature,
                 opt => opt.MapFrom<SignatureResolver>());
-        
+
         CreateMap<User, BsonUserDto>();
         CreateMap<BsonUserDto, BsonUserDto>();
-        
+
         CreateMap<User, UserWithRoleDto>()
              .ForMember(user => user.Roles,
                  opt => opt.MapFrom<UserRoleResolver>())
@@ -236,11 +236,11 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom<AvatarResolver>())
             .ForMember(user => user.Signature,
                 opt => opt.MapFrom<SignatureResolver>());
-        
+
         #endregion
 
         #region RoleMapper
-        
+
         CreateMap<CreateRoleRequest, Role>();
         CreateMap<Role, RoleDto>().ReverseMap();
         CreateMap<RoleDto, RolePermissionDto>();
@@ -252,11 +252,11 @@ public class OryxMapper : Profile
         //         opt => opt.MapFrom(src => src.FormatPermissionDescriptionFromAction()))
         //     .ForMember(item => item.Action,
         //         opt => opt.MapFrom(src => src));
-        
+
         #endregion
 
         #region Product
-        
+
         CreateMap<CreateProductRequest, Product>();
         CreateMap<Product, ProductDto>()
             .ForMember(dest => dest.CurrentBillOfMaterial,
@@ -281,7 +281,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.LabelClaim, opt => opt.MapFrom(src => src.Product.LabelClaim))
             .ForMember(dest => dest.ShelfLife, opt => opt.MapFrom(src => src.Product.ShelfLife));
 
-        
+
         #endregion
 
         #region BoM
@@ -366,25 +366,25 @@ public class OryxMapper : Profile
         CreateMap<MaterialBatchReservedQuantity, MaterialBatchReservedQuantityDto>();
         CreateMap<MaterialDepartment, MaterialDepartmentDto>();
         CreateMap<MaterialDepartment, MaterialDepartmentWithWarehouseStockDto>();
-            // .ForMember(dest => dest.WarehouseStock,
-            //     opt => opt.MapFrom<>());
-            
-        
+        // .ForMember(dest => dest.WarehouseStock,
+        //     opt => opt.MapFrom<>());
+
+
         CreateMap<CreateSrRequest, Sr>();
         CreateMap<Sr, SrDto>();
 
         CreateMap<MaterialCategory, MaterialCategoryDto>();
-        
+
         CreateMap<MaterialReturnNote, MaterialReturnNoteDto>();
         CreateMap<MaterialReturnNoteFullReturn, MaterialReturnNoteFullReturnDto>();
         CreateMap<MaterialReturnNotePartialReturn, MaterialReturnNotePartialReturnDto>();
-        
+
         CreateMap<HoldingMaterialTransfer, HoldingMaterialTransferDto>();
         CreateMap<HoldingMaterialTransferBatch, HoldingMaterialTransferBatchDto>();
 
         CreateMap<CreateMaterialSpecificationRequest, MaterialSpecification>();
         CreateMap<MaterialSpecification, MaterialSpecificationDto>();
-            
+
         #endregion
 
         #region Requisition
@@ -466,7 +466,7 @@ public class OryxMapper : Profile
         #endregion
 
         #region Procurement
-        
+
         //supplier
         CreateMap<CreateSupplierRequest, Supplier>();
         CreateMap<Supplier, SupplierDto>();
@@ -474,14 +474,14 @@ public class OryxMapper : Profile
         CreateMap<CreateSupplierManufacturerRequest, SupplierManufacturer>();
         CreateMap<SupplierManufacturer, SupplierManufacturerDto>();
         CreateMap<CreateQuantityPerPackOption, QuantityPerPackOption>();
-        
+
         //manufacturer
         CreateMap<CreateManufacturerRequest, Manufacturer>();
         CreateMap<Manufacturer, ManufacturerDto>();
         CreateMap<Manufacturer, ManufacturerListDto>();
         CreateMap<CreateManufacturerMaterialRequest, ManufacturerMaterial>();
         CreateMap<ManufacturerMaterial, ManufacturerMaterialDto>();
-        
+
         //distribution
 
         #endregion
@@ -499,8 +499,8 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationRack, WarehouseLocationRackDto>();
         CreateMap<WarehouseLocationRack, WareHouseLocationRackDto>();
         CreateMap<WarehouseLocationShelf, WarehouseLocationShelfDto>();
-        CreateMap<WarehouseLocationShelf,MaterialWarehouseLocationShelfDto>();
-        CreateMap<WarehouseArrivalLocation,WarehouseArrivalLocationDto>();
+        CreateMap<WarehouseLocationShelf, MaterialWarehouseLocationShelfDto>();
+        CreateMap<WarehouseArrivalLocation, WarehouseArrivalLocationDto>();
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>()
             .ForMember(dest => dest.Department,
                 opt => opt.MapFrom(src => src.WarehouseArrivalLocation.Warehouse.Department));
@@ -509,7 +509,7 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom(src => src.WarehouseArrivalLocation.Warehouse.Department));
         CreateMap<DistributedRequisitionItem, DistributedRequisitionItemDto>()
             .ForMember(dest => dest.QuantityDistributed,
-                opt => opt.MapFrom<DistributedRequisitionItemResolverDistributedQuantity>()) ;
+                opt => opt.MapFrom<DistributedRequisitionItemResolverDistributedQuantity>());
         CreateMap<DistributedFinishedProduct, DistributedFinishedProductDto>();
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
@@ -527,7 +527,7 @@ public class OryxMapper : Profile
         #endregion
 
         #region Department
-        
+
         CreateMap<CreateDepartmentRequest, Department>();
         CreateMap<UpdateDepartmentRequest, Department>();
         CreateMap<Department, DepartmentDto>();
@@ -546,13 +546,13 @@ public class OryxMapper : Profile
         CreateMap<SupplierQuotation, SupplierQuotationDto>();
         CreateMap<SupplierQuotationItem, SupplierQuotationItemDto>()
             .ForMember(dest => dest.DefaultManufacturer,
-                opt => opt.MapFrom(src => 
+                opt => opt.MapFrom(src =>
                     src.SupplierQuotation.Supplier.AssociatedManufacturers.FirstOrDefault(m => m.MaterialId == src.MaterialId && m.Default).Manufacturer));
 
         #endregion
 
         #region Purchase Order
-        
+
         CreateMap<CreatePurchaseOrderRequest, PurchaseOrder>();
         CreateMap<UpdatePurchaseOrderRequest, PurchaseOrder>();
         CreateMap<CreatePurchaseOrderItemRequest, PurchaseOrderItem>();
@@ -566,7 +566,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Items,
                 opt => opt.MapFrom(src =>
                     src.Items.Where(item => item.DeletedAt == null)));
-        
+
         CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>()
             .ForMember(dest => dest.CanReassignSupplier,
                 opt => opt.MapFrom<CanReassignPurchaseOrderItemResolver>());
@@ -579,7 +579,7 @@ public class OryxMapper : Profile
         CreateMap<BatchItem, BatchItemDto>();
         CreateMap<PurchaseOrderCharge, PurchaseOrderChargeDto>();
 
-        CreateMap<Charge,ChargeDto>();
+        CreateMap<Charge, ChargeDto>();
         CreateMap<CreateChargeRequest, Charge>();
         CreateMap<CreateBillingSheetRequest, BillingSheet>();
         CreateMap<UpdateBillingSheetRequest, BillingSheet>();
@@ -625,7 +625,7 @@ public class OryxMapper : Profile
         CreateMap<ShipmentDiscrepancyItem, ShipmentDiscrepancyItemDto>();
 
         #endregion
-        
+
         #region Checklist
 
         CreateMap<Checklist, ChecklistDto>();
@@ -638,7 +638,7 @@ public class OryxMapper : Profile
                 opt => opt.Ignore());
 
         #endregion
-        
+
         #region Grn
         CreateMap<CreateGrnRequest, Grn>();
         CreateMap<Grn, GrnDto>()
@@ -646,7 +646,7 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom(src => src.MaterialBatches.Select(c => c.Checklist)));
         CreateMap<Grn, GrnListDto>();
         #endregion
-        
+
 
         #region Form
 
@@ -743,7 +743,7 @@ public class OryxMapper : Profile
         CreateMap<Equipment, EquipmentDto>();
 
         #endregion
-        
+
         #region Employee
 
         CreateMap<CreateEmployeeRequest, Employee>()
@@ -756,7 +756,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Siblings, opt => opt.MapFrom(src => src.Siblings))
             .ForMember(dest => dest.EducationBackground, opt => opt.MapFrom(src => src.EducationBackground))
             .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
-        
+
         CreateMap<UpdateEmployeeRequest, Employee>()
             .ForMember(dest => dest.Mother, opt => opt.MapFrom(src => src.Mother))
             .ForMember(dest => dest.Father, opt => opt.MapFrom(src => src.Father))
@@ -814,7 +814,7 @@ public class OryxMapper : Profile
         CreateMap<EmergencyContact, EmergencyContactDto>().ReverseMap();
 
         #endregion
-        
+
         #region Education
 
         CreateMap<Education, EducationDto>().ReverseMap();
@@ -860,7 +860,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateHolidayRequest, Holiday>();
         CreateMap<HolidayDto, Holiday>().ReverseMap();
-            
+
         #endregion
 
         #region Shift Schedules
@@ -870,18 +870,18 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.ShiftType, opts => opts.MapFrom(src => src.ShiftTypes));
         CreateMap<CreateShiftScheduleRequest, ShiftSchedule>()
             .ForMember(dest => dest.ShiftTypes, opts => opts.Ignore());
-        
+
         #endregion
 
         #region Shift Assignments
 
         CreateMap<ShiftAssignment, ShiftAssignmentDto>();
-        
+
         CreateMap<ShiftAssignmentDto, ShiftAssignment>()
             .ForMember(dest => dest.ShiftTypeId, opt => opt.Ignore());
-        
+
         #endregion
-        
+
         #region ActivityLog
 
         CreateMap<CreateActivityLog, ActivityLog>();
@@ -895,13 +895,13 @@ public class OryxMapper : Profile
         CreateMap<OvertimeRequestDto, OvertimeRequest>().ReverseMap();
 
         #endregion
-        
+
         #region Designations
 
         CreateMap<CreateDesignationRequest, Designation>();
         CreateMap<Designation, DesignationDto>();
         #endregion
-        
+
         #region Leave Entitlements
 
         CreateMap<LeaveEntitlementDto, LeaveEntitlement>();
@@ -916,13 +916,13 @@ public class OryxMapper : Profile
         CreateMap<OvertimeRequestDto, OvertimeRequest>()
             .ForMember(dest => dest.Employees, opt => opt.MapFrom(src => src.Employees));
         #endregion
-        
+
         #region Material Standard Test Procedures
 
         CreateMap<CreateMaterialStandardTestProcedureRequest, MaterialStandardTestProcedure>();
-        
+
         CreateMap<MaterialStandardTestProcedureDto, MaterialStandardTestProcedure>();
-        
+
         CreateMap<MaterialStandardTestProcedure, MaterialStandardTestProcedureDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
@@ -946,7 +946,7 @@ public class OryxMapper : Profile
 
         CreateMap<ProductAnalyticalRawData, ProductAnalyticalRawDataDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
-        
+
 
         #endregion
 
@@ -980,23 +980,23 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles.Select(r => r.Role).ToList()))
             .ForMember(dest => dest.Users, opt => opt.MapFrom(src => src.Users.Select(r => r.User).ToList()));
         #endregion
-        
+
         #region Product Sampling
-        
+
         CreateMap<CreateProductSamplingRequest, ProductSampling>();
         CreateMap<ProductSampling, ProductSamplingDto>().ForMember(dest => dest.AnalyticalTestRequest, opt => opt.MapFrom(src => src.AnalyticalTestRequest));
 
         #endregion
 
         #region Material Sampling
-        
+
         CreateMap<CreateMaterialSamplingRequest, MaterialSampling>();
         CreateMap<MaterialSampling, MaterialSamplingDto>().ForMember(dest => dest.GrnDto, opt => opt.MapFrom(src => src.Grn));
 
         CreateMap<CreatePreSampleChecklistRequest, PreSampleChecklist>();
         CreateMap<PreSampleChecklist, PreSampleChecklistDto>()
             .ForMember(dest => dest.GrnGraNumber,
-                opt  => opt.MapFrom(src => src.Grn.GrnNumber));
+                opt => opt.MapFrom(src => src.Grn.GrnNumber));
 
         #endregion
 
@@ -1004,9 +1004,9 @@ public class OryxMapper : Profile
 
         CreateMap<CreateCustomerRequest, Customer>();
         CreateMap<Customer, CustomerDto>();
-        
+
         #endregion
-        
+
         #region Production Orders
         CreateMap<CreateProductionOrderRequest, ProductionOrder>();
         CreateMap<CreateProductionOrderProduct, ProductionOrderProducts>();
@@ -1023,8 +1023,8 @@ public class OryxMapper : Profile
         CreateMap<AllocateProductionOrder, AllocateProductionOrderDto>()
             .ForMember(dest => dest.HasInvoice,
                 opt => opt.MapFrom<AllocateProductionOrderHasInvoice>());
-            /*.ForMember(dest => dest.Customer,
-                opt => opt.MapFrom(src => src.ProductionOrder.Customer))*/
+        /*.ForMember(dest => dest.Customer,
+            opt => opt.MapFrom(src => src.ProductionOrder.Customer))*/
         CreateMap<AllocateProductionOrderProduct, AllocateProductionOrderProductDto>();
         CreateMap<AllocateProductQuantity, AllocateProductQuantityDto>()
             .ForMember(dest => dest.BatchPackagingRecord,
@@ -1064,8 +1064,8 @@ public class OryxMapper : Profile
 
         CreateMap<VendorItem, VendorItemDto>();
 
-        
-        
+
+
         #endregion
 
         #region Items
@@ -1093,11 +1093,11 @@ public class OryxMapper : Profile
         #endregion
 
         #region Item Stock Requisitions
-        
+
         CreateMap<ItemStockRequisition, ItemStockRequisitionDto>();
         CreateMap<CreateItemStockRequisitionRequest, ItemStockRequisition>()
             .ForMember(dest => dest.RequisitionItems, opt => opt.Ignore());
-        
+
         CreateMap<StockItems, ItemStockRequisitionItem>()
             .ForMember(dest => dest.ItemStockRequisitionId, opt => opt.Ignore())
             .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.ItemId))
@@ -1135,20 +1135,20 @@ public class OryxMapper : Profile
         CreateMap<CreateDamagedStockRequest, DamagedStock>();
         CreateMap<DamagedStock, DamagedStockDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
-     
+
 
         #endregion
 
         #region Recoverable Item Damage Report
 
-        CreateMap<CreateRecoverableItemReportRequest,RecoverableItemReport>();
-        CreateMap<RecoverableItemReport,RecoverableItemReportDto>();
+        CreateMap<CreateRecoverableItemReportRequest, RecoverableItemReport>();
+        CreateMap<RecoverableItemReport, RecoverableItemReportDto>();
 
         #endregion
-        
+
         #region Stock Entries
         CreateMap<StockEntry, StockEntryDto>();
-        
+
         #endregion
 
         #region Job Requests

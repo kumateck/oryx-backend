@@ -41,8 +41,6 @@ public class FormSection : BaseEntity
     public MaterialSpecification MaterialSpecification { get; set; }
     public Guid? ProductSpecificationId { get; set; }
     public ProductSpecification ProductSpecification { get; set; }
-    public Guid? AssigneeId { get; set; }
-    public User Assignee { get; set; }
 }
 
 public class FormField : BaseEntity
@@ -53,11 +51,7 @@ public class FormField : BaseEntity
     public Question Question { get; set; }
     public bool Required { get; set; }
     [StringLength(1000)] public string Description { get; set; }
-    public int Rank { get; set; } 
-    public Guid? AssigneeId { get; set; }
-    public User Assignee { get; set; }
-    public Guid? ReviewerId { get; set; }
-    public User Reviewer { get; set; }
+    public int Rank { get; set; }
 }
 
 public class Response : BaseEntity, IRequireApproval
@@ -91,16 +85,16 @@ public class FormResponse : BaseEntity
 public class ResponseApproval : ResponsibleApprovalStage
 {
     public Guid Id { get; set; }
-    
+
     public Guid ResponseId { get; set; }
-    
+
     public Response Response { get; set; }
     public Guid ApprovalId { get; set; }
-    
+
     public Approval Approval { get; set; }
 }
 
-public class FormAssignee 
+public class FormAssignee
 {
     public Guid Id { get; set; }
     public Guid FormId { get; set; }

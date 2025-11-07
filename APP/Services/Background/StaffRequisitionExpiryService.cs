@@ -29,7 +29,7 @@ public class StaffRequisitionExpiryService(IServiceScopeFactory scopeFactory) : 
                 }
 
                 await dbContext.SaveChangesAsync(stoppingToken);
-            
+
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
             catch (Exception e)

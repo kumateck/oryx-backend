@@ -1998,9 +1998,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AssigneeId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2032,15 +2029,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<bool>("Required")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid?>("ReviewerId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AssigneeId");
 
                     b.HasIndex("CreatedById");
 
@@ -2051,8 +2043,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("QuestionId");
-
-                    b.HasIndex("ReviewerId");
 
                     b.ToTable("FormFields");
                 });
@@ -2138,9 +2128,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AssigneeId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2187,8 +2174,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("character varying(1000000)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AssigneeId");
 
                     b.HasIndex("CreatedById");
 
@@ -12908,10 +12893,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.FormField", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Assignee")
-                        .WithMany()
-                        .HasForeignKey("AssigneeId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -12936,12 +12917,6 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Users.User", "Reviewer")
-                        .WithMany()
-                        .HasForeignKey("ReviewerId");
-
-                    b.Navigation("Assignee");
-
                     b.Navigation("CreatedBy");
 
                     b.Navigation("FormSection");
@@ -12951,8 +12926,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Question");
-
-                    b.Navigation("Reviewer");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.FormResponse", b =>
@@ -13017,10 +12990,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.FormSection", b =>
                 {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Assignee")
-                        .WithMany()
-                        .HasForeignKey("AssigneeId");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
@@ -13050,8 +13019,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.ProductSpecifications.ProductSpecification", "ProductSpecification")
                         .WithMany("FormSections")
                         .HasForeignKey("ProductSpecificationId");
-
-                    b.Navigation("Assignee");
 
                     b.Navigation("CreatedBy");
 

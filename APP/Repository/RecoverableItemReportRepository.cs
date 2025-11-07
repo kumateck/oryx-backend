@@ -14,21 +14,21 @@ public class RecoverableItemReportRepository(ApplicationDbContext context, IMapp
     public async Task<Result<Guid>> CreateRecoverableItemReport(CreateRecoverableItemReportRequest request)
     {
         if (request.Quantity <= 0) return Error.Validation("Invalid.Quantity", "Quantity must be greater than 0.");
-        
+
         var item = await context.Items.FirstOrDefaultAsync(i => i.Id == request.ItemId);
         if (item is null) return Error.NotFound("Item", "Item not found.");
         if (item.Classification == InventoryClassification.NonRecoverable) return Error.Validation("Item.NotRecoverable", "Item is not recoverable.");
-        
+
         // item.AvailableQuantity -= request.Quantity;
         // context.Items.Update(item);
         // await context.SaveChangesAsync();
-        
+
         var itemTransaction = await context.ItemTransactionLogs
             .OrderByDescending(i => i.CreatedAt)
             .LastOrDefaultAsync(i => i.ItemCode == item.Code);
-            
+
         if (itemTransaction == null) return Error.Validation("Invalid.Action", "Item balance is not valid");
-        
+
         var itemTransactionLog = new ItemTransactionLog
         {
             Id = Guid.NewGuid(),
@@ -38,10 +38,10 @@ public class RecoverableItemReportRepository(ApplicationDbContext context, IMapp
             Debit = request.Quantity,
             TotalBalance = itemTransaction.TotalBalance - request.Quantity
         };
-            
+
         await context.ItemTransactionLogs.AddAsync(itemTransactionLog);
         await context.SaveChangesAsync();
-        
+
         var report = mapper.Map<RecoverableItemReport>(request);
         await context.RecoverableItemReports.AddAsync(report);
         await context.SaveChangesAsync();

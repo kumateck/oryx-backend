@@ -29,7 +29,7 @@ public partial class ReApplyOptionalParameterFilter : IOperationFilter
             }
         }
     }
-    
+
     private static readonly Regex OptionalParamRegex = MyRegex();
 
     [GeneratedRegex(@"\{(?<paramName>\w+)\?\}", RegexOptions.Compiled)]

@@ -12,8 +12,8 @@ public class ProductPackage : BaseEntity
     public Material Material { get; set; }
     [StringLength(255)] public string MaterialThickness { get; set; }
     [StringLength(255)] public string OtherStandards { get; set; }
-    public decimal BaseQuantity { get; set; } 
-    public decimal UnitCapacity { get; set; } 
+    public decimal BaseQuantity { get; set; }
+    public decimal UnitCapacity { get; set; }
     public Guid? DirectLinkMaterialId { get; set; }
     public Material DirectLinkMaterial { get; set; }
     public decimal PackingExcessMargin { get; set; }

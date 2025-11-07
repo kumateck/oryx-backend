@@ -75,7 +75,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.CreateItem(request, itemType);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates an existing item in the collection.
     /// </summary>
@@ -92,11 +92,11 @@ public class CollectionController(ICollectionRepository repository) : Controller
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateItem(request, itemId, itemType, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes an item.
     /// </summary>
@@ -115,8 +115,8 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.SoftDeleteItem(itemId, itemType, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Retrieves all available package styles.
     /// </summary>
@@ -130,7 +130,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.GetPackageStyles();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves all available package styles.
     /// </summary>
@@ -144,7 +144,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.CreateUoM(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a units of measures in the system.
     /// </summary>
@@ -158,7 +158,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.GetUoM(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves operations in the system
     /// </summary>
@@ -172,8 +172,8 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.GetOperations(departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Retrieves a unit of measure by its id
     /// </summary>
@@ -187,7 +187,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
         var result = await repository.GetUoM(uomId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a unit of measure by its id
     /// </summary>
@@ -196,13 +196,13 @@ public class CollectionController(ICollectionRepository repository) : Controller
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateUoM([FromRoute] Guid uomId, [FromBody]  CreateUnitOfMeasure request)
+    public async Task<IResult> UpdateUoM([FromRoute] Guid uomId, [FromBody] CreateUnitOfMeasure request)
     {
         var result = await repository.UpdateUoM(request, uomId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Retrieves a unit of measure by its id
     /// </summary>

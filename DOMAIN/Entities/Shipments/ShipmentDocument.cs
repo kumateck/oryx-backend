@@ -19,7 +19,7 @@ public class ShipmentDocument : BaseEntity, IRequireApproval
     public DateTime? ClearedAt { get; set; }
     public DateTime? TransitStartedAt { get; set; }
     public DateTime? AtPortAt { get; set; }
-    public DocType Type { get; set; } 
+    public DocType Type { get; set; }
     public DateTime? CompletedDistributionAt { get; set; }
     public ShipmentStatus Status { get; set; }
     public bool Approved { get; set; }
@@ -84,7 +84,7 @@ public class ShipmentInvoiceItem : BaseEntity
     public Currency Currency { get; set; }
 }
 
-public class DistributionShipmentInvoiceItemDto 
+public class DistributionShipmentInvoiceItemDto
 {
     public List<ShipmentInvoiceItem> ShipmentInvoiceItems { get; set; }
     public Guid MaterialId { get; set; }

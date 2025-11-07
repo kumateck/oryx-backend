@@ -39,7 +39,7 @@ public class UpdatePurchaseOrderRequest
     public string AmountInFigures { get; set; }
 }
 
-public class CreatePurchaseOrderItemRequest 
+public class CreatePurchaseOrderItemRequest
 {
     public Guid MaterialId { get; set; }
     public Guid UomId { get; set; }

@@ -21,7 +21,7 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
     public async Task<IResult> CreateMaterialSampling([FromBody] CreateMaterialSamplingRequest request)
     {
         var result = await repository.CreateMaterialSampling(request);
-        return result.IsSuccess ? TypedResults.Ok(result.Value): result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -35,7 +35,7 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
         var result = await repository.GetMaterialSamplingByGrnAndBatch(grnId, batchId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new pre-sample checklist.
     /// </summary>

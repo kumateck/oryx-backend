@@ -53,7 +53,7 @@ public class InventoryPurchaseRequisitionItem : BaseEntity
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
-    public RequestStatus Status { get; set; }  
+    public RequestStatus Status { get; set; }
 }
 
 public class InventoryPurchaseRequisitionItemDto : BaseDto
@@ -62,5 +62,5 @@ public class InventoryPurchaseRequisitionItemDto : BaseDto
     public ItemDto Item { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
-    public RequestStatus Status { get; set; }  
+    public RequestStatus Status { get; set; }
 }

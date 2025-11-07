@@ -11,15 +11,15 @@ public class OperationSeeder : ISeeder
     {
         var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
 
-        if (!dbContext.Operations.Any())
-        {
-            SeedOperations(dbContext);
-        }
+        SeedOperations(dbContext);
     }
 
     private static void SeedOperations(ApplicationDbContext dbContext)
     {
-        var departments = dbContext.Departments.IgnoreQueryFilters().ToList();
+        var departments = dbContext.Departments
+            .IgnoreQueryFilters().
+            ToDictionary(d => d.Name,
+                d => d);
 
         var allOpsByDepartment = OperationUtils.All();
 
@@ -28,28 +28,22 @@ public class OperationSeeder : ISeeder
             var departmentName = departmentEntry.Key;
             var operations = departmentEntry.Value;
 
-            var department = departments.FirstOrDefault(d => d.Name.StartsWith(departmentName));
+            var departmentValid = departments.TryGetValue(departmentName, out var department);
+
+            if (!departmentValid) continue;
 
             if (department == null)
             {
                 continue;
             }
-            
+
             var newOperations = new List<Operation>();
 
             foreach (var op in operations)
             {
                 var existing = dbContext.Operations.FirstOrDefault(o => o.Name == op.Name);
 
-                if (existing != null)
-                {
-                    // Update existing operation
-                    existing.Description = op.Description;
-                    existing.Order = op.Order;
-                    existing.DepartmentId = department.Id;
-                    dbContext.Operations.Update(existing);
-                }
-                else
+                if (existing == null)
                 {
                     // Add new operation
                     var newOperation = new Operation

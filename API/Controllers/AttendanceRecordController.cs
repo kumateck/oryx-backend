@@ -11,7 +11,7 @@ namespace API.Controllers;
 [Authorize]
 public class AttendanceRecordController(IAttendanceRepository repository) : ControllerBase
 {
-    
+
     /// <summary>
     /// Upload daily attendance record
     /// </summary>

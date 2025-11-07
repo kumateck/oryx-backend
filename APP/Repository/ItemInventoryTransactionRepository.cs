@@ -12,8 +12,8 @@ public class ItemInventoryTransactionRepository(ApplicationDbContext context, IM
     public async Task<Result<ItemInventoryTransactionDto>> ViewInventoryTransaction(Guid id)
     {
         var memo = await context.ItemInventoryTransactions.FirstOrDefaultAsync(i => i.MemoId == id);
-        return memo is null ? 
-            Error.NotFound("ItemInventoryTransaction.NotFound", "Item Inventory Transaction not found") 
+        return memo is null ?
+            Error.NotFound("ItemInventoryTransaction.NotFound", "Item Inventory Transaction not found")
             : Result.Success(mapper.Map<ItemInventoryTransactionDto>(memo));
     }
 }

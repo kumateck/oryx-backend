@@ -39,7 +39,8 @@ public class RouteResponsibleUser : BaseEntity
     public User User { get; set; }
     public Guid? ProductAnalyticalRawDataId { get; set; }
     public ProductAnalyticalRawData.ProductAnalyticalRawData ProductAnalyticalRawData { get; set; }
-    public OperationAction Action { get; set; }}
+    public OperationAction Action { get; set; }
+}
 
 public class RouteResponsibleRole : BaseEntity
 {
@@ -49,7 +50,8 @@ public class RouteResponsibleRole : BaseEntity
     public Role Role { get; set; }
     public Guid? ProductAnalyticalRawDataId { get; set; }
     public ProductAnalyticalRawData.ProductAnalyticalRawData ProductAnalyticalRawData { get; set; }
-    public OperationAction Action { get; set; }}
+    public OperationAction Action { get; set; }
+}
 
 public class RouteWorkCenter : BaseEntity
 {

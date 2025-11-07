@@ -14,12 +14,12 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
 {
     public async Task<Result<Guid>> CreateAnalyticalTestRequest(CreateAnalyticalTestRequest request)
     {
-        
-        if(await context.AnalyticalTestRequests.AnyAsync(a => 
+
+        if (await context.AnalyticalTestRequests.AnyAsync(a =>
                a.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
                a.ProductionScheduleProductId == request.ProductionScheduleProductId && a.Stage == request.Stage))
-            return Error.Validation("Atr", $"This atr at stage {request.Stage} already exists"); 
-        
+            return Error.Validation("Atr", $"This atr at stage {request.Stage} already exists");
+
         var test = mapper.Map<AnalyticalTestRequest>(request);
         await context.AddAsync(test);
         await context.SaveChangesAsync();
@@ -50,7 +50,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         {
             query = query.Where(s => s.Status == status.Value);
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<AnalyticalTestRequestDto>);
     }
 
@@ -81,14 +81,14 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         {
             return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         }
-        
+
         mapper.Map(request, test);
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
-    
+
     public async Task<Result> UpdateAnalyticalTestRequest(Guid id, UpdateAnalyticalTestRequest request, Guid userId)
     {
         var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
@@ -105,7 +105,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             test.AcknowledgedById = userId;
             test.ArNumber = request.ArNumber;
         }
-        
+
         else if (request.Status == AnalyticalTestStatus.Sampled)
         {
             test.SampledAt = DateTime.UtcNow;
@@ -114,14 +114,14 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             test.SampledById = userId;
             test.SampledQuantity = request.SampledQuantity;
         }
-        
+
         else if (request.Status == AnalyticalTestStatus.Testing)
         {
             test.Status = request.Status;
             test.TestedById = userId;
             test.TestedAt = DateTime.UtcNow;
         }
-        
+
         else if (request.Status == AnalyticalTestStatus.Released)
         {
             test.ReleasedAt = DateTime.UtcNow;
@@ -134,7 +134,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
                 context.ProductionActivitySteps.Update(activityStep);
             }
         }
-        
+
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -148,13 +148,13 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         {
             return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         }
-        
+
         test.LastDeletedById = userId;
         test.DeletedAt = DateTime.UtcNow;
-        
+
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
 

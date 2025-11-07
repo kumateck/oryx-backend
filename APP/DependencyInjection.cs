@@ -29,8 +29,8 @@ public static class DependencyInjection
     public static void AddTransientServices(this IServiceCollection services)
     {
     }
-    
-     public static void AddInfrastructure(this IServiceCollection services)
+
+    public static void AddInfrastructure(this IServiceCollection services)
     {
         //add mass transit
         var rabbitHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST");
@@ -40,7 +40,7 @@ public static class DependencyInjection
         services.AddMassTransit(configure =>
         {
             configure.SetKebabCaseEndpointNameFormatter();
-            
+
             configure.UsingRabbitMq((context, cfg) =>
             {
                 cfg.Host(rabbitHost ?? throw new ArgumentException("Invalid rabbit host name"), h =>
@@ -48,20 +48,20 @@ public static class DependencyInjection
                     h.Username(rabbitUserName ?? throw new ArgumentException("Invalid rabbit username"));
                     h.Password(rabbitPassword ?? throw new ArgumentException("Invalid rabbit password"));
                 });
-        
+
                 cfg.ReceiveEndpoint("push_notification_queue", e =>
                 {
                     e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
                     e.UseMessageRetry(r =>
                     {
-                        r.Immediate(5); 
+                        r.Immediate(5);
                     });
                 });
                 cfg.ConfigureEndpoints(context);
             });
         });
     }
-    
+
     public static void AddScopedServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthRepository, AuthRepository>();
@@ -119,8 +119,8 @@ public static class DependencyInjection
         services.AddScoped<IDamagedStocksRepository, DamagedStocksRepository>();
         services.AddScoped<IRecoverableItemReportRepository, RecoverableItemReportRepository>();
         services.AddScoped<IJobRequestRepository, JobRequestRepository>();
-        
-        
+
+
         services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<ITenantProvider, TenantProvider>();
@@ -142,9 +142,9 @@ public static class DependencyInjection
     public static void AddSingletonServices(this IServiceCollection services)
     {
         var redisConnectionString = Environment.GetEnvironmentVariable("redisConnectionString") ?? "localhost:6380,abortConnect=false";
-        services.AddSingleton<IConnectionMultiplexer>(_ => 
+        services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(redisConnectionString));
-        services.AddSingleton(sp => 
+        services.AddSingleton(sp =>
             sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
         services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
         services.AddSingleton<MongoDbContext>();

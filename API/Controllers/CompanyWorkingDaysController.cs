@@ -23,9 +23,9 @@ public class CompanyWorkingDaysController(ICompanyWorkingDaysRepository reposito
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateCompanyWorkingDays(request);
-        return result.IsSuccess ? TypedResults.Ok(): result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -42,5 +42,5 @@ public class CompanyWorkingDaysController(ICompanyWorkingDaysRepository reposito
         var result = await repository.GetCompanyWorkingDays(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
 }

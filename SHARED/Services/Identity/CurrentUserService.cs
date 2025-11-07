@@ -39,7 +39,7 @@ public class CurrentUserService : ICurrentUserService
             var departmentIdString = principal.FindFirst("department")?.Value;
             if (Guid.TryParse(departmentIdString, out var departmentId))
                 DepartmentId = departmentId;
-            
+
             DepartmentType = departmentType;
         }
     }
@@ -61,7 +61,7 @@ public class CurrentUserService : ICurrentUserService
 
             return tokenHandler.ValidateToken(token, parameters, out _);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
             return null;

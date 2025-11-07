@@ -49,7 +49,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
         var result = await repo.GetAlerts(page, pageSize, searchQuery, withDisabled);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates an existing alert.
     /// </summary>
@@ -79,7 +79,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
         var result = await repo.ToggleDisable(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes a configurable alert
     /// </summary>
@@ -91,11 +91,11 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repo.DeleteAlert(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Marks a specific notification as read for the given user.
     /// </summary>
@@ -112,7 +112,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
         var result = await repo.MarkNotificationAsRead(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves notifications for the current user, optionally filtering by unread status.
     /// </summary>

@@ -29,9 +29,9 @@ public class MaterialBatchExpiryService(IServiceScopeFactory scopeFactory, Concu
 
                 foreach (var batch in expiredBatches)
                 {
-                    notificationQueue.Enqueue(($"Material batch {batch.BatchNumber} expires at {batch.ExpiryDate:dd MMMM yyyy}", NotificationType.ExpiredMaterial,null, []));
+                    notificationQueue.Enqueue(($"Material batch {batch.BatchNumber} expires at {batch.ExpiryDate:dd MMMM yyyy}", NotificationType.ExpiredMaterial, null, []));
                 }
-            
+
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
             catch (Exception e)

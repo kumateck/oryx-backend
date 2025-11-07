@@ -9,11 +9,11 @@ public static class QueryableExtensions
     {
         if (string.IsNullOrEmpty(searchQuery))
         {
-            return source; 
+            return source;
         }
 
         searchQuery = searchQuery.ToLower();
-        var predicate = PredicateBuilder.New<T>(false); 
+        var predicate = PredicateBuilder.New<T>(false);
 
         foreach (var property in properties)
         {

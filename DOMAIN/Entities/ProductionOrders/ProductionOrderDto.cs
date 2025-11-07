@@ -41,7 +41,7 @@ public class ProductionOrderProductsDto
     public decimal TotalVolume { get; set; }
     public decimal TotalBatches { get; set; }
     public decimal TotalValue { get; set; }
-    public List<ProductionOrderProductQuantityDto>  FulfilledQuantities { get; set; } = [];
+    public List<ProductionOrderProductQuantityDto> FulfilledQuantities { get; set; } = [];
     public bool Fulfilled { get; set; }
     public decimal RemainingQuantity { get; set; }
 }
@@ -55,7 +55,7 @@ public class AllocateProductionOrderRequest
 {
     public Guid ProductionOrderId { get; set; }
     public List<AllocateProductionOrderProductRequest> Products { get; set; } = [];
-    
+
 }
 
 public class AllocateProductionOrderProductRequest
@@ -71,7 +71,7 @@ public class AllocateProductQuantityRequest
 }
 
 
-public class AllocateProductionOrderDto 
+public class AllocateProductionOrderDto
 {
     public Guid Id { get; set; }
     public ProductionOrderListDto ProductionOrder { get; set; }
@@ -80,7 +80,7 @@ public class AllocateProductionOrderDto
     public DateTime? DeliveredAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool HasInvoice { get; set; }
-    
+
 }
 
 public class AllocateProductionOrderProductDto

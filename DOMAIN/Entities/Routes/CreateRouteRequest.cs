@@ -24,7 +24,7 @@ public class CreateRouteResponsibleUser
 }
 
 
-public class CreateRouteResponsibleRole 
+public class CreateRouteResponsibleRole
 {
     public Guid RoleId { get; set; }
     public Guid? ProductAnalyticalRawDataId { get; set; }

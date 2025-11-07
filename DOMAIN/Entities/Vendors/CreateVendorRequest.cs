@@ -4,7 +4,7 @@ namespace DOMAIN.Entities.Vendors;
 
 public class CreateVendorRequest
 {
-    [Required, MinLength(3, ErrorMessage="Name should be at least 3 characters")]
+    [Required, MinLength(3, ErrorMessage = "Name should be at least 3 characters")]
     public string Name { get; set; }
     [Required] public string Address { get; set; }
     [Required, Phone] public string Phone { get; set; }

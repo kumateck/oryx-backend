@@ -29,7 +29,7 @@ public class CustomerController(ICustomerRepository repository) : ControllerBase
     /// Retrieves a paginated list of customers
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK,  Type = typeof(Paginateable<IEnumerable<CustomerDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<CustomerDto>>))]
     public async Task<IResult> GetCustomers([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
@@ -41,14 +41,14 @@ public class CustomerController(ICustomerRepository repository) : ControllerBase
     /// Retrieves the details of a customer by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK,  Type = typeof(CustomerDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomerDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetCustomer([FromRoute] Guid id)
     {
         var result = await repository.GetCustomer(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the details of a customer by its ID.
     /// </summary>
@@ -61,7 +61,7 @@ public class CustomerController(ICustomerRepository repository) : ControllerBase
         var result = await repository.UpdateCustomer(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes the details of a customer by its ID.
     /// </summary>
@@ -70,9 +70,9 @@ public class CustomerController(ICustomerRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteCustomer([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteCustomer(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

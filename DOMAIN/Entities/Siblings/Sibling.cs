@@ -8,8 +8,8 @@ namespace DOMAIN.Entities.Siblings;
 public class Sibling
 {
     [StringLength(100)] public string FullName { get; set; }
-    
+
     public string Contact { get; set; }
-    
+
     public Gender Gender { get; set; }
 }

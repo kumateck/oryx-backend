@@ -17,9 +17,9 @@ public class PendingAllocatedQuantityResolver(ApplicationDbContext dbContext) : 
             .Where(a => a.Products
                 .Any(pr => pr.FulfilledQuantities
                     .Any(f => f.FinishedGoodsTransferNoteId == source.Id)))
-            .SelectMany(a => a.Products) 
+            .SelectMany(a => a.Products)
             .SelectMany(p => p.FulfilledQuantities)
-            .Where(f => f.FinishedGoodsTransferNoteId == source.Id) 
-            .Sum(f => f.Quantity); 
+            .Where(f => f.FinishedGoodsTransferNoteId == source.Id)
+            .Sum(f => f.Quantity);
     }
 }

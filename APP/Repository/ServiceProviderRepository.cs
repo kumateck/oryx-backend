@@ -14,7 +14,7 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
     {
         var existingServiceProvider = await context.ServiceProviders
             .FirstOrDefaultAsync(sp => sp.Name == request.Name);
-    
+
         if (existingServiceProvider != null)
             return Error.Validation("ServiceProvider.Exists", "Service Provider already exists");
 
@@ -52,8 +52,8 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
             .Include(s => s.Currency)
             .Include(s => s.Services)
             .FirstOrDefaultAsync(sp => sp.Id == id);
-        return serviceProvider is null ? 
-            Error.NotFound("ServiceProvider.NotFound", "Service Provider not found") : 
+        return serviceProvider is null ?
+            Error.NotFound("ServiceProvider.NotFound", "Service Provider not found") :
             mapper.Map<ServiceProviderDto>(serviceProvider);
     }
 
@@ -61,7 +61,7 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
     {
         var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp => sp.Id == id);
         if (serviceProvider is null) return Error.NotFound("ServiceProvider.NotFound", "Service Provider not found");
-        
+
         var validServiceIds = await context.Services
             .Where(s => request.ServiceIds.Contains(s.Id))
             .Select(s => s.Id)
@@ -70,7 +70,7 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
         var missingIds = request.ServiceIds.Except(validServiceIds).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Service.NotFound", $"Some services not found: {string.Join(", ", missingIds)}");
-        
+
         mapper.Map(request, serviceProvider);
         context.ServiceProviders.Update(serviceProvider);
         await context.SaveChangesAsync();
@@ -81,10 +81,10 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
     {
         var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp => sp.Id == id && sp.Services.Count > 0);
         if (serviceProvider != null) return Error.Validation("ServiceProvider.NotDeletable", "Service Provider is linked to inventory");
-        
+
         serviceProvider.DeletedAt = DateTime.UtcNow;
         serviceProvider.LastDeletedById = userId;
-                    
+
         context.ServiceProviders.Update(serviceProvider);
         await context.SaveChangesAsync();
         return Result.Success();

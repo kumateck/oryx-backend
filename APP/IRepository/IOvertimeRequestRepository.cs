@@ -7,13 +7,13 @@ namespace APP.IRepository;
 public interface IOvertimeRequestRepository
 {
     Task<Result<Guid>> CreateOvertimeRequest(CreateOvertimeRequest request);
-    
+
     Task<Result<Paginateable<IEnumerable<OvertimeRequestDto>>>> GetOvertimeRequests(int page, int pageSize,
         string searchQuery, OvertimeStatus? status, Guid? departmentId);
-    
+
     Task<Result<OvertimeRequestDto>> GetOvertimeRequest(Guid id);
-    
+
     Task<Result> UpdateOvertimeRequest(Guid id, CreateOvertimeRequest request);
-    
+
     Task<Result> DeleteOvertimeRequest(Guid id, Guid userId);
 }

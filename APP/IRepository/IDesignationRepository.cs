@@ -7,15 +7,15 @@ namespace APP.IRepository;
 public interface IDesignationRepository
 {
     Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request);
-    
+
     Task<Result<Paginateable<IEnumerable<DesignationDto>>>> GetDesignations(int page, int pageSize, string searchQuery,
         Guid? departmentId = null);
-    
+
     Task<Result<DesignationDto>> GetDesignation(Guid id);
-    
+
     Task<Result<List<DesignationWithEmployeesDto>>> GetDesignationByDepartment(Guid departmentId);
-    
+
     Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request);
-    
+
     Task<Result> DeleteDesignation(Guid id, Guid userId);
 }

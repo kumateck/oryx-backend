@@ -10,17 +10,17 @@ namespace DOMAIN.Entities.Approvals;
 public class Approval : BaseEntity
 {
     [StringLength(100)] public string ItemType { get; set; }
-    public TimeSpan EscalationDuration  { get; set; }
+    public TimeSpan EscalationDuration { get; set; }
     public List<ApprovalStage> ApprovalStages { get; set; }
 }
 
-public class ApprovalStage :  CurrentApprovalStage
+public class ApprovalStage : CurrentApprovalStage
 {
     public Guid Id { get; set; }
     public Guid ApprovalId { get; set; }
     public Approval Approval { get; set; }
     public int Order { get; set; }
-    public bool Required { get; set; }     
+    public bool Required { get; set; }
 }
 
 public class CurrentApprovalStage
@@ -32,17 +32,17 @@ public class CurrentApprovalStage
 }
 
 public class ResponsibleApprovalStage : CurrentApprovalStage
-{ 
-    public bool Required { get; set; }     
+{
+    public bool Required { get; set; }
     public int Order { get; set; }
     public DateTime? StageStartTime { get; set; }
-    public ApprovalStatus Status { get; set; }             
-    public DateTime? ApprovalTime { get; set; }    
+    public ApprovalStatus Status { get; set; }
+    public DateTime? ApprovalTime { get; set; }
     public Guid? ApprovedById { get; set; }
     public User ApprovedBy { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ActivatedAt { get; set; }
-    [StringLength(1000)] public string Comments { get; set; } 
+    [StringLength(1000)] public string Comments { get; set; }
 }
 
 public enum ApprovalStatus
@@ -53,12 +53,12 @@ public enum ApprovalStatus
 }
 public class ApprovalEntity
 {
-    public Guid Id { get; set; } 
-    public string Code { get; set; }       
-    public string ModelType { get; set; } 
-    public DepartmentDto  Department { get; set; }
-    public List<ApprovalLog>  ApprovalLogs { get; set; }
-    public DateTime CreatedAt { get; set; } 
+    public Guid Id { get; set; }
+    public string Code { get; set; }
+    public string ModelType { get; set; }
+    public DepartmentDto Department { get; set; }
+    public List<ApprovalLog> ApprovalLogs { get; set; }
+    public DateTime CreatedAt { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public UserDto RequestedBy { get; set; }
@@ -79,7 +79,7 @@ public class ApprovalLog
 }
 
 public class CreateApprovalLog
-{ 
+{
     public string Comments { get; set; }
     public Guid ModelId { get; set; }
     public ApprovalStatus Status { get; set; }

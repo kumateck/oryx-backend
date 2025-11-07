@@ -10,6 +10,6 @@ public interface IWorkOrderRepository
     Task<Result<WorkOrderDto>> GetWorkOrder(Guid workOrderId);
     Task<Result<Paginateable<IEnumerable<WorkOrderDto>>>> GetWorkOrders(int page, int pageSize,
         string searchQuery);
-     Task<Result> UpdateWorkOrder(UpdateWorkOrderRequest request, Guid workOrderId, Guid userId);
+    Task<Result> UpdateWorkOrder(UpdateWorkOrderRequest request, Guid workOrderId, Guid userId);
     Task<Result> DeleteWorkOrder(Guid workOrderId, Guid userId);
 }

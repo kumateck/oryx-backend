@@ -17,5 +17,5 @@ public class RecoverableItemBatchReport : BaseEntity
     public ItemDto Item { get; set; }
     public int Quantity { get; set; }
     public string Reason { get; set; }
-    
+
 }

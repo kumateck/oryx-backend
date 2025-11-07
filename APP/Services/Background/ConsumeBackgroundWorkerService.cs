@@ -8,14 +8,14 @@ public class ConsumeBackgroundWorkerService(IServiceProvider services, ILogger<C
     : BackgroundService
 {
     public IServiceProvider Services { get; } = services;
-    
+
     // Override ExecuteAsync to invoke DoWork in the background
     private async Task DoWork(CancellationToken stoppingToken)
     {
         try
         {
             using var scope = Services.CreateScope();
-            var scopedProcessingService = 
+            var scopedProcessingService =
                 scope.ServiceProvider
                     .GetRequiredService<IBackgroundWorkerService>();
             await scopedProcessingService.DoWork(stoppingToken);

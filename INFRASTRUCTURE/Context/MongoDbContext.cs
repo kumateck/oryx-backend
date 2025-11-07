@@ -9,7 +9,7 @@ public class MongoDbContext
 
     public MongoDbContext()
     {
-        var connectionString = Environment.GetEnvironmentVariable("MONGO_DB_CONNECTION_STRING") ??  "mongodb://root:SNsiilzMRr9UCzz@164.90.142.68:27018";
+        var connectionString = Environment.GetEnvironmentVariable("MONGO_DB_CONNECTION_STRING") ?? "mongodb://root:SNsiilzMRr9UCzz@164.90.142.68:27018";
         var client = new MongoClient(connectionString);
         var environment = Environment.GetEnvironmentVariable("Environment");
         var dbName = environment == "dev" ? "logs" : "demo_logs";

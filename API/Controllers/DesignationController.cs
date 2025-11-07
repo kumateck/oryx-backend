@@ -10,7 +10,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/designation")]
 [ApiController]
 [Authorize]
-public class DesignationController(IDesignationRepository repository): ControllerBase
+public class DesignationController(IDesignationRepository repository) : ControllerBase
 {
 
     /// <summary>
@@ -21,7 +21,7 @@ public class DesignationController(IDesignationRepository repository): Controlle
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateDesignation([FromBody] CreateDesignationRequest request)
     {
-        
+
         var result = await repository.CreateDesignation(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -49,7 +49,7 @@ public class DesignationController(IDesignationRepository repository): Controlle
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetDesignation(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -62,11 +62,11 @@ public class DesignationController(IDesignationRepository repository): Controlle
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetDesignationByDepartment(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the details of an existing designation
     /// </summary>
@@ -79,7 +79,7 @@ public class DesignationController(IDesignationRepository repository): Controlle
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateDesignation(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -95,7 +95,7 @@ public class DesignationController(IDesignationRepository repository): Controlle
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteDesignation(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

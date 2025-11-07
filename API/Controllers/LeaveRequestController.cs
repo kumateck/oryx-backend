@@ -10,20 +10,20 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/leave-request")]
 [Authorize]
-public class LeaveRequestController(ILeaveRequestRepository repository): ControllerBase
+public class LeaveRequestController(ILeaveRequestRepository repository) : ControllerBase
 {
 
     /// <summary>
     /// Creates a leave request.
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveOrAbsenceRequest([FromBody] CreateLeaveRequest leaveRequest)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateLeaveOrAbsenceRequest(leaveRequest);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -36,13 +36,13 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     public async Task<IResult> GetLeaveRequests([FromQuery] LeaveStatus? status, [FromQuery] RequestCategory? leaveCategory, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         [FromQuery] Guid? departmentId = null)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetLeaveRequests(page, pageSize, searchQuery, status, leaveCategory, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a specific leave request.
     /// </summary>
@@ -51,9 +51,9 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveRequest([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetLeaveRequest(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -67,13 +67,13 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateLeaveRequest([FromRoute] Guid id, [FromBody] CreateLeaveRequest leaveRequest)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateLeaveRequest(id, leaveRequest);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Recalls an employee from a leave.
     /// </summary>
@@ -104,9 +104,9 @@ public class LeaveRequestController(ILeaveRequestRepository repository): Control
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteLeaveRequest([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteLeaveRequest(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

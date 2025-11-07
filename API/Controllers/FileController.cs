@@ -22,7 +22,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [AllowAnonymous]
-    public async Task<IResult> UploadFile(string modelType, Guid modelId, 
+    public async Task<IResult> UploadFile(string modelType, Guid modelId,
         string reference, IFormFile file)
     {
         var userIdString = (string)HttpContext.Items["Sub"];
@@ -39,8 +39,8 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
 
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-        
-    
+
+
     /// <summary>
     /// Uploads multiple files to be associated with a model.
     /// </summary>
@@ -52,7 +52,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [AllowAnonymous]
-    public async Task<IResult> UploadFile(string modelType, Guid modelId, 
+    public async Task<IResult> UploadFile(string modelType, Guid modelId,
       [FromForm] List<IFormFile> files)
     {
         var userIdString = (string)HttpContext.Items["Sub"];
@@ -103,7 +103,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
         var result = await fileRepository.DeleteAttachment(modelId, reference, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves an image (or any file) from blob storage by its model type, model ID, and reference.
     /// </summary>
@@ -131,7 +131,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
             return TypedResults.NoContent();
         }
     }
-    
+
     /// <summary>
     /// Retrieves an image (or any file) from blob storage by its model type and reference.
     /// </summary>

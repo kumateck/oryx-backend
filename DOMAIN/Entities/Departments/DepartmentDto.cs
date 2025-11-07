@@ -5,7 +5,7 @@ using SHARED;
 namespace DOMAIN.Entities.Departments;
 
 public class DepartmentDto : BaseDto
-{ 
+{
     public string Code { get; set; }
     public string Name { get; set; }
     public DepartmentType Type { get; set; }
@@ -16,7 +16,7 @@ public class DepartmentDto : BaseDto
 }
 
 public class DepartmentListDto : BaseDto
-{ 
+{
     public string Code { get; set; }
     public string Name { get; set; }
     public DepartmentType Type { get; set; }

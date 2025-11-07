@@ -29,7 +29,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateRequisition(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -47,7 +47,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
     public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
-        [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null)
+        [FromQuery] RequestStatus? status = null, [FromQuery] RequisitionType? type = null)
     {
         var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, null, null);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -68,11 +68,11 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
     public async Task<IResult> GetRequisitionsForDepartment([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
-        [FromQuery] RequestStatus? status = null,  [FromQuery] RequisitionType? type = null, [FromQuery] MaterialKind? kind = null)
+        [FromQuery] RequestStatus? status = null, [FromQuery] RequisitionType? type = null, [FromQuery] MaterialKind? kind = null)
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, Guid.Parse(departmentId), kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -90,11 +90,11 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetRequisition(requisitionId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /*[HttpPost("issue-stock-requisition/{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -107,7 +107,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var result = await repository.IssueStockRequisitionVoucher(batchQuantities, productId,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }*/
-    
+
     [HttpPost("issue-stock-requisition/{stockRequisitionId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -117,7 +117,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.IssueStockRequisition(stockRequisitionId ,Guid.Parse(userId));
+        var result = await repository.IssueStockRequisition(stockRequisitionId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -135,8 +135,8 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var roleIds = (List<Guid>)HttpContext.Items["Roles"]; 
+
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
         var result = await repository.ApproveRequisition(request, requisitionId, Guid.Parse(userId), roleIds);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -263,7 +263,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var result = await repository.GetSuppliersWithSourceRequisitionItems(page, pageSize, source, sent);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a supplier with their associated source requisition items.
     /// </summary>
@@ -277,7 +277,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var result = await repository.GetSuppliersWithSourceRequisitionItems(supplierId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Checks if a supplier has pending price comparison
     /// </summary>
@@ -288,7 +288,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
     public async Task<IResult> CheckIfSupplierHasPendingPriceComparison(Guid supplierId)
     {
-       return TypedResults.Ok(await repository.CheckIfSupplierHasPendingPriceComparison(supplierId));
+        return TypedResults.Ok(await repository.CheckIfSupplierHasPendingPriceComparison(supplierId));
     }
 
     /// <summary>
@@ -304,13 +304,13 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.SendQuotationToSupplier(supplierId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     #endregion
-    
+
     #region Supplier Quotation Management
 
     /// <summary>
@@ -412,7 +412,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.ProcessQuotationAndCreatePurchaseOrder(processQuotations, supplierType, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

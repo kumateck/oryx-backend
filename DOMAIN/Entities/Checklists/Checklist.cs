@@ -8,10 +8,10 @@ using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.Checklists;
 
-public class Checklist: BaseEntity
+public class Checklist : BaseEntity
 {
     public Guid DistributedRequisitionMaterialId { get; set; }
-    public DistributedRequisitionMaterial DistributedRequisitionMaterial{ get; set; }
+    public DistributedRequisitionMaterial DistributedRequisitionMaterial { get; set; }
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
     public DateTime? CheckedAt { get; set; }

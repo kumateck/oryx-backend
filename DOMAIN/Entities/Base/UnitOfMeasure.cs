@@ -31,7 +31,7 @@ public enum UnitOfMeasureCategory
     Area = 4,
 }
 
-public class UnitOfMeasureDto 
+public class UnitOfMeasureDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; }

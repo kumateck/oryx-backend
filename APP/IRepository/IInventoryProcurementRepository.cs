@@ -37,16 +37,16 @@ public interface IInventoryProcurementRepository
     Task<Result<Paginateable<IEnumerable<MarketRequisitionVendorDto>>>> GetMarketRequisitionVendors(int page, int pageSize, bool complete);
     Task<Result> CreateMarketRequisitionVendor(CreateMarketRequisitionVendor request);
     Task<Result> ConfirmMarketRequisitionVendor(Guid marketRequisitionVendorId);
-   Task<Result<Paginateable<IEnumerable<MemoDto>>>> GetMemos(int page, int pageSize,
-        string searchQuery = null);
-   Task<Result> MarkMemoItemAsPaid(Guid memoItemId, DateTime? purchasedAt = null);
+    Task<Result<Paginateable<IEnumerable<MemoDto>>>> GetMemos(int page, int pageSize,
+         string searchQuery = null);
+    Task<Result> MarkMemoItemAsPaid(Guid memoItemId, DateTime? purchasedAt = null);
 
-   Task<Result> ApproveItem(Guid stockEntryId);
-   Task<Result> RejectItem(Guid stockEntryId);
-   
-   Task<Result<List<StockEntryDto>>> GetStockEntries(ApprovalStatus status);
-  Task<Result<MemoDto>> GetMemo(Guid id);
-    
+    Task<Result> ApproveItem(Guid stockEntryId);
+    Task<Result> RejectItem(Guid stockEntryId);
+
+    Task<Result<List<StockEntryDto>>> GetStockEntries(ApprovalStatus status);
+    Task<Result<MemoDto>> GetMemo(Guid id);
+
     // Helper methods
     Task<string> GenerateMemoCode();
 }

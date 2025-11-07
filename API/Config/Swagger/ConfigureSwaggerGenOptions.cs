@@ -17,7 +17,7 @@ public class ConfigureSwaggerGenOptions(IApiVersionDescriptionProvider provider)
                 Title = $"Oryx API v{description.ApiVersion}",
                 Version = description.ApiVersion.ToString()
             };
-            
+
             options.SwaggerDoc(description.GroupName, openApiInfo);
         }
     }

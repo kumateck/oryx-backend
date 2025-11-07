@@ -15,7 +15,7 @@ public class ProductionSchedule : BaseEntity
     [StringLength(100)] public string Code { get; set; }
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }
-    public ProductionStatus Status { get; set; } 
+    public ProductionStatus Status { get; set; }
     [StringLength(1000)] public string Remarks { get; set; }
     public Guid? DepartmentId { get; set; }
     public Department Department { get; set; }
@@ -45,7 +45,7 @@ public class ProductionScheduleProduct
     public Guid ProductionScheduleId { get; set; }
     public ProductionSchedule ProductionSchedule { get; set; }
     public Guid ProductId { get; set; }
-    public Product Product { get; set; }   
+    public Product Product { get; set; }
     [StringLength(100)] public string BatchNumber { get; set; }
     public BatchSize BatchSize { get; set; }
     public Guid? MarketTypeId { get; set; }
@@ -78,7 +78,7 @@ public class ProductionExtraPacking : BaseEntity
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
-    public ProductionExtraPackingStatus Status  { get; set; }
+    public ProductionExtraPackingStatus Status { get; set; }
     public DateTime? IssuedAt { get; set; }
     public Guid? IssuedById { get; set; }
     public User IssuedBy { get; set; }
@@ -96,7 +96,7 @@ public class ProductionExtraPackingDto : BaseDto
     public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
-    public ProductionExtraPackingStatus Status  { get; set; }
+    public ProductionExtraPackingStatus Status { get; set; }
     public decimal Quantity { get; set; }
 }
 

@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations;
 namespace DOMAIN.Entities.Products;
 
 public class CreateProductRequest
-{ 
-    [StringLength(255)] public string Code { get; set; } 
+{
+    [StringLength(255)] public string Code { get; set; }
     [StringLength(255)] public string Name { get; set; }
     [StringLength(255)] public string Description { get; set; }
     [StringLength(255)] public string GenericName { get; set; }
@@ -21,9 +21,9 @@ public class CreateProductRequest
     public Guid CategoryId { get; set; } // e.g., Tablet, Syrup, Injectable
     public List<CreateFinishedProductRequest> FinishedProducts { get; set; }
     public Guid? EquipmentId { get; set; }
-    public decimal BaseQuantity { get; set; } 
+    public decimal BaseQuantity { get; set; }
     public Guid? BaseUomId { get; set; }
-    public decimal BasePackingQuantity { get; set; } 
+    public decimal BasePackingQuantity { get; set; }
     public decimal FullBatchSize { get; set; }
     public Guid? BasePackingUomId { get; set; }
     public Guid? DepartmentId { get; set; }

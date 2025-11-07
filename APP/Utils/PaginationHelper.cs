@@ -14,7 +14,7 @@ public static class PaginationHelper
     {
         var totalCount = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        
+
         query = ApplySorting(query, "CreatedAt", SortDirection.Descending);
 
         var entities = await query
@@ -53,7 +53,7 @@ public static class PaginationHelper
             StopPageIndex = stopPageIndex
         };
     }
-    
+
     public static async Task<Paginateable<IQueryable<TEntity>>> GetPaginatedResultAsync<TEntity>(
         IQueryable<TEntity> query,
         int page,
@@ -63,10 +63,10 @@ public static class PaginationHelper
         var totalCount = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        var entities =  query
+        var entities = query
             .Skip((page - 1) * pageSize)
             .Take(pageSize);
-        
+
         var halfPagesToShow = pageSize / 2;
         var startPageIndex = Math.Max(1, page - halfPagesToShow);
         var stopPageIndex = Math.Min(totalPages, page + halfPagesToShow);
@@ -93,7 +93,7 @@ public static class PaginationHelper
             StopPageIndex = stopPageIndex
         };
     }
-    
+
     public static Paginateable<IEnumerable<T>> Paginate<T>(int page, int pageSize, List<T> source)
     {
         var totalCount = source.Count;
@@ -131,12 +131,12 @@ public static class PaginationHelper
             StopPageIndex = stopPageIndex
         };
     }
-    
-   public static async Task<Paginateable<IEnumerable<TDto>>> GetPaginatedResultAsync<TEntity, TDto>(
-        IQueryable<TEntity> query,
-        PagedQuery pagedQuery,
-        Func<TEntity, TDto> mapFunc)
-        where TEntity : class
+
+    public static async Task<Paginateable<IEnumerable<TDto>>> GetPaginatedResultAsync<TEntity, TDto>(
+         IQueryable<TEntity> query,
+         PagedQuery pagedQuery,
+         Func<TEntity, TDto> mapFunc)
+         where TEntity : class
     {
         if (!string.IsNullOrEmpty(pagedQuery.SortLabel))
         {

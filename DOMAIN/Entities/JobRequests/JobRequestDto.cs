@@ -12,8 +12,8 @@ public class JobRequestDto : WithAttachment
     public EquipmentDto Equipment { get; set; }
     public DateTime DateOfIssue { get; set; }
     public JobStatus Status { get; set; }
-    public string DescriptionOfWork { get; set;} 
+    public string DescriptionOfWork { get; set; }
     public DateTime PreferredCompletionDate { get; set; }
-    public UserDto IssuedBy {get; set; }
+    public UserDto IssuedBy { get; set; }
 }
 

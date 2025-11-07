@@ -61,7 +61,7 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
             .Include(v => v.Currency)
             .Include(v => v.Country)
             .FirstOrDefaultAsync(nps => nps.Id == id);
-        
+
         return supplier is null
             ? Error.NotFound("Vendor.NotFound", "Vendor not found")
             : mapper.Map<VendorDto>(supplier);
@@ -75,7 +75,7 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
             .FirstOrDefaultAsync(nps => nps.Id == id);
         if (vendor == null)
             return Error.NotFound("Vendor.NotFound", "Vendor not found");
-        
+
         var validInventoryIds = await context.Items
             .Where(s => request.ItemIds.Contains(s.Id))
             .Select(s => s.Id)
@@ -84,17 +84,17 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
         var missingIds = request.ItemIds.Except(validInventoryIds).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
-        
+
         context.VendorItems.RemoveRange(vendor.Items);
-        
+
         mapper.Map(request, vendor);
-        
+
         vendor.Items = request.ItemIds.Select(item => new VendorItem
         {
             VendorId = vendor.Id,
             ItemId = item,
         }).ToList();
-        
+
         context.Vendors.Update(vendor);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -107,10 +107,10 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
 
         if (supplier == null)
             return Error.NotFound("Vendor.NotFound", "Vendor not found");
-        
+
         supplier.DeletedAt = DateTime.UtcNow;
         supplier.LastDeletedById = userId;
-        
+
         context.Vendors.Update(supplier);
         await context.SaveChangesAsync();
         return Result.Success();

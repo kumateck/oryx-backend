@@ -9,18 +9,18 @@ using SHARED;
 public interface IMaterialAnalyticalRawDataRepository
 {
     Task<Result<Guid>> CreateAnalyticalRawData(CreateMaterialAnalyticalRawDataRequest request);
-    
+
     Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, MaterialKind materialKind);
-    
+
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id);
-    Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterial(Guid id); 
+    Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterial(Guid id);
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterialBatch(Guid id);
     Task<Result<MaterialBatchArd>> GetRelevantMaterialInfoForArd(Guid materialBatchId);
     Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request);
-    
+
     Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId);
     Task<Result> StartTestForMaterialBatch(Guid id);
-    
+
     Task<Result<Guid>> CreateUniformityOfWeight(CreateUniformityOfWeight request);
     Task<Result<Paginateable<IEnumerable<UniformityOfWeightDto>>>> GetUniformityOfWeights(int page, int pageSize, string searchQuery);
     Task<Result<UniformityOfWeightDto>> GetUniformityOfWeight(Guid id);

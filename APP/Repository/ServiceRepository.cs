@@ -30,12 +30,12 @@ public class ServiceRepository(ApplicationDbContext context, IMapper mapper) : I
         {
             query = query.WhereSearch(searchQuery, q => q.Name);
         }
-        
+
         if (isActive.HasValue)
         {
             query = query.Where(s => s.IsActive == isActive.Value);
         }
-        
+
         if (startDate.HasValue)
         {
             query = query.Where(s => s.StartDate >= startDate.Value);
@@ -53,35 +53,35 @@ public class ServiceRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result<ServiceDto>> GetService(Guid id)
     {
-       var service = await context.Services.FirstOrDefaultAsync(s => s.Id == id);
-       return service is null ? 
-           Error.NotFound("Service.NotFound", "Service not found") :
-           mapper.Map<ServiceDto>(service, 
-               opts => { opts.Items[AppConstants.ModelType] = nameof(Service);});
+        var service = await context.Services.FirstOrDefaultAsync(s => s.Id == id);
+        return service is null ?
+            Error.NotFound("Service.NotFound", "Service not found") :
+            mapper.Map<ServiceDto>(service,
+                opts => { opts.Items[AppConstants.ModelType] = nameof(Service); });
     }
 
     public async Task<Result> UpdateService(Guid id, CreateServiceRequest request)
     {
-       var service = await context.Services.FirstOrDefaultAsync(s => s.Id == id);
-       if (service == null) return Error.NotFound("Service.NotFound", "Service not found");
-       
-       mapper.Map(request, service);
-       context.Services.Update(service);
-       
-       await context.SaveChangesAsync();
-       return Result.Success();
+        var service = await context.Services.FirstOrDefaultAsync(s => s.Id == id);
+        if (service == null) return Error.NotFound("Service.NotFound", "Service not found");
+
+        mapper.Map(request, service);
+        context.Services.Update(service);
+
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 
     public async Task<Result> DeleteService(Guid id, Guid userId)
     {
         var service = await context.Services.FirstOrDefaultAsync(s => s.Id == id);
         if (service == null) return Error.NotFound("Service.NotFound", "Service not found");
-        
+
         //TODO: add service linking validation
-        
+
         service.DeletedAt = DateTime.UtcNow;
         service.LastDeletedById = userId;
-        
+
         context.Services.Update(service);
         await context.SaveChangesAsync();
         return Result.Success();
