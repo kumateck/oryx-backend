@@ -11,7 +11,6 @@ public class FormDto : BaseDto
     public FormType Type { get; set; }
     public List<FormSectionDto> Sections { get; set; } = [];
     public List<FormResponseDto> Responses { get; set; } = [];
-    public List<FormAssigneeDto> Assignees { get; set; } = [];
     public List<FormReviewerDto> Reviewers { get; set; } = [];
 }
 
@@ -57,11 +56,6 @@ public class FormResponseDto : WithAttachment
     public DateTime? CheckedAt { get; set; }
 }
 
-public class FormAssigneeDto : BaseDto
-{
-    public CollectionItemDto Form { get; set; }
-    public CollectionItemDto User { get; set; }
-}
 
 public class FormReviewerDto : BaseDto
 {

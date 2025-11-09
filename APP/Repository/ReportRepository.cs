@@ -540,7 +540,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         });
     }
 
-    public async Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
+    public Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
     {
         throw new NotImplementedException();
     }

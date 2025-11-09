@@ -7,7 +7,4 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/recoverable-item-reports")]
 [Authorize]
-public class RecoverableItemReportController(IRecoverableItemReportRepository repository) : ControllerBase
-{
-
-}
+public class RecoverableItemReportController : ControllerBase;
