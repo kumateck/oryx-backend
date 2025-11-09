@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Warehouses.Request;
 using SHARED;
 
@@ -12,4 +13,5 @@ public class CreateDepartmentRequest
     public DepartmentType Type { get; set; }
     public Guid? ParentDepartmentId { get; set; }
     public List<CreateWarehouseRequest> Warehouses { get; set; } = [];
+    public Division Division { get; set; }
 }
