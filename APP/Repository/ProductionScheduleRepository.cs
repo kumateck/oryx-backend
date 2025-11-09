@@ -1114,19 +1114,19 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("User.Department", "User has no association to any department");
 
         if (user.Department.Warehouses.Count == 0)
-            return Error.NotFound("User.Warehouse", "No raw material warehouse is associated with current user");
+            return Error.NotFound("User.Warehouse", 
+                "No raw material warehouse is associated with current user");
 
         var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
         if (productionWarehouse is null)
             return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
 
-        var isBeta = product.Division == Division.BetaLactam;
         var finishedGoodsWarehouse =
             await context.Warehouses
                 .AsSplitQuery()
                 .IgnoreQueryFilters()
                 .Include(warehouse => warehouse.ArrivalLocation)
-                .FirstOrDefaultAsync(w => w.Type == WarehouseType.FinishedGoodsStorage && w.IsBeta == isBeta);
+                .FirstOrDefaultAsync(w => w.Type == WarehouseType.FinishedGoodsStorage && w.Division == product.Division);
         if (finishedGoodsWarehouse is null)
             return Error.NotFound("User.Warehouse", "No finished goods warehouses found in the system");
 
