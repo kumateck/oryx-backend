@@ -10,6 +10,7 @@ using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using SHARED.Requests;
@@ -448,12 +449,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         bool? onlyApproved = null,
         int page = 1,
         int pageSize = 10,
-        string searchQuery = null)
+        string searchQuery = null,
+        Division? division = null)
     {
-        var departmentId = (string)HttpContext.Items["Department"];
-        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
-
-        var result = await repository.GetFinishedGoodsTransferNote(Guid.Parse(departmentId), onlyApproved, page, pageSize, searchQuery);
+        var result = await repository
+            .GetFinishedGoodsTransferNote( onlyApproved, page, pageSize, searchQuery, division);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

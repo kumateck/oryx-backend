@@ -1092,9 +1092,13 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionScheduleProduct)
             .ThenInclude(p => p.Product)
             .FirstOrDefaultAsync(r => r.Id == request.BatchManufacturingRecordId);
-
+        
         if (bmr is null)
             return RequisitionErrors.NotFound(request.BatchManufacturingRecordId);
+        
+        var product = bmr.ProductionScheduleProduct.Product;
+        if(product is null)
+            return ProductErrors.NotFound(request.BatchManufacturingRecordId);
 
         var user = await context.Users
             .AsSplitQuery()
@@ -1116,9 +1120,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         if (productionWarehouse is null)
             return Error.NotFound("User.Warehouse", "No production warehouse is associated with current user");
 
-        var isBeta = user.Department.Name == "Beta";
+        var isBeta = product.Division == Division.BetaLactam;
         var finishedGoodsWarehouse =
             await context.Warehouses
+                .AsSplitQuery()
                 .IgnoreQueryFilters()
                 .Include(warehouse => warehouse.ArrivalLocation)
                 .FirstOrDefaultAsync(w => w.Type == WarehouseType.FinishedGoodsStorage && w.IsBeta == isBeta);
@@ -1213,11 +1218,11 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     }
 
     public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
-        Guid departmentId,
         bool? onlyApproved,
         int page,
         int pageSize,
-        string searchQuery = null)
+        string searchQuery = null,
+        Division?  division = null)
     {
         var query = context.FinishedGoodsTransferNotes
             .AsSplitQuery()
@@ -1228,12 +1233,17 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(b => b.FromWarehouse)
             .Include(b => b.ToWarehouse)
             .Include(b => b.PackageStyle)
-            .Where(b => b.ToWarehouse.DepartmentId == departmentId || b.FromWarehouse.DepartmentId == departmentId)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, b => b.QarNumber);
+        }
+
+        if (division.HasValue)
+        {
+            query = query.Where(q =>
+                q.BatchManufacturingRecord.ProductionScheduleProduct.Product.Division == division.Value);
         }
 
         if (onlyApproved.HasValue)
@@ -1288,6 +1298,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(u => u.UoM)
             .Include(b => b.ToWarehouse)
             .Include(b => b.PackageStyle)
+            .Include(b => b.CreatedBy)
             .FirstOrDefaultAsync(f => f.Id == id);
 
         return transferNote is null ?

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Designations;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
@@ -23,5 +24,6 @@ public class Department
     public List<Warehouse> Warehouses { get; set; } = [];
 
     public ICollection<Designation> Designations { get; set; } = new List<Designation>();
+    public Division Division { get; set; }
 }
 
