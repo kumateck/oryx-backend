@@ -8,6 +8,7 @@ using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using SHARED;
@@ -124,11 +125,11 @@ public interface IProductionScheduleRepository
     Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
         List<BatchTransferRequest> batches, Guid userId);
     Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
-        Guid departmentId,
         bool? onlyApproved,
         int page,
         int pageSize,
-        string searchQuery = null);
+        string searchQuery = null,
+        Division? division = null);
     Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(
         int page, int pageSize,
         string searchQuery, Guid productId);
