@@ -47,7 +47,19 @@ public class CreateFormResponseRequest
 
 public class CreateFormAssigneeRequest
 {
-    public Guid UserId { get; set; }
+    public Guid FormId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public Guid? MaterialSpecificationId { get; set; }
+    public Guid? ProductSpecificationId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+    public List<CreateFormFieldAssigneeRequest> FormFieldAssignees { get; set; } = [];
+}
+
+public class CreateFormFieldAssigneeRequest
+{
+    public Guid FormFieldId { get; set; }
+    public Guid? AssigneeId { get; set; }
 }
 
 public class CreateFormReviewerRequest
@@ -70,4 +82,15 @@ public class SaveResponseDraftRequest
     public Guid? MaterialBatchId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
+}
+
+public class SaveFormAssigneeDraftRequest
+{
+    public Guid? FormAssigneeId { get; set; }
+    public Guid FormId { get; set; }
+    public Guid FormFieldId { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+    public Guid? AssigneeId { get; set; }
 }

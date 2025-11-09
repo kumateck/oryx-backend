@@ -174,6 +174,16 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         if (formField is null)
             return Error.Validation("Response.FormField", $"FormField not found {request.FormFieldId}");
+        
+        // 🧩 VALIDATION: Check if user is allowed in this specific context
+        var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
+            a.FormFieldId == formField.Id &&
+            a.FormAssignee.MaterialBatchId == request.MaterialBatchId &&
+            a.FormAssignee.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
+            a.FormAssignee.ProductionActivityStepId == request.ProductionActivityStepId);
+
+        if (fieldAssignee != null && fieldAssignee.AssigneeId != userId)
+            return Error.Validation("Response.Unauthorized", "You are not assigned to this field in this context.");
 
         // Handle file-based questions
         if (formField.Question.Type is QuestionType.Signature or QuestionType.FileUpload)
@@ -241,7 +251,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .ToListAsync();
 
         var missingFields = formFields
-            .Where(f => f.Required && !response.FormResponses.Any(r => r.FormFieldId == f.Id))
+            .Where(f => f.Required && response.FormResponses.All(r => r.FormFieldId != f.Id))
             .ToList();
 
         if (missingFields.Any())
@@ -331,6 +341,16 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             {
                 return Error.Validation("Response.FormField", $"FormField not found {response.FormFieldId}");
             }
+            
+            // 🧩 VALIDATION: Check if user is allowed in this specific context
+            var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
+                a.FormFieldId == formField.Id &&
+                a.FormAssignee.MaterialBatchId == request.MaterialBatchId &&
+                a.FormAssignee.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
+                a.FormAssignee.ProductionActivityStepId == request.ProductionActivityStepId);
+
+            if (fieldAssignee != null && fieldAssignee.AssigneeId != userId)
+                return Error.Validation("Response.Unauthorized", "You are not assigned to this field in this context.");
 
             var type = formField.Question.Type;
 
@@ -422,6 +442,124 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             formSection.ProductSpecificationId = productSpecificationId;
         }
 
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> SaveFormAssigneeDraft(SaveFormAssigneeDraftRequest request, Guid userId)
+    {
+        var formAssignee = await context.FormAssignees
+            .Include(r => r.FieldAssignees)
+            .FirstOrDefaultAsync(r => r.Id == request.FormAssigneeId);
+
+        if (formAssignee is null)
+        {
+            // Create a new draft if not yet started
+            formAssignee = new FormAssignee
+            {
+                FormId = request.FormId,
+                MaterialBatchId = request.MaterialBatchId,
+                BatchManufacturingRecordId = request.BatchManufacturingRecordId,
+                ProductionActivityStepId = request.ProductionActivityStepId,
+                CreatedById = userId,
+                FieldAssignees = []
+            };
+            await context.FormAssignees.AddAsync(formAssignee);
+        }
+
+        var formField = await context.FormFields
+            .AsSplitQuery()
+            .Include(f => f.Question)
+            .FirstOrDefaultAsync(f => f.Id == request.FormFieldId);
+
+        if (formField is null)
+            return Error.Validation("Response.FormField", $"FormField not found {request.FormFieldId}");
+        
+        
+        // Update or insert text-based responses
+        var existingFieldAssignees = formAssignee
+            .FieldAssignees.FirstOrDefault(fr => fr.FormFieldId == formField.Id);
+        
+        if (existingFieldAssignees != null)
+        {
+            existingFieldAssignees.AssigneeId = request.AssigneeId;
+            context.FormFieldAssignees.Update(existingFieldAssignees);
+        }
+        else
+        {
+            formAssignee.FieldAssignees.Add(new FormFieldAssignee
+            {
+                FormFieldId = formField.Id,
+                AssigneeId = request.AssigneeId
+            });
+        }
+        
+
+        await context.SaveChangesAsync();
+        return Result.Success(formAssignee.Id);
+    }
+
+    public async Task<Result> SubmitFormAssigneeFinal(Guid formAssigneeId)
+    {
+        var formAssignee = await context.FormAssignees
+            .Include(r => r.FieldAssignees)
+            .FirstOrDefaultAsync(r => r.Id == formAssigneeId);
+
+        if (formAssignee == null)
+            return Error.NotFound("FormAssignee.NotFound", "Form assignee not found");
+
+        // Validate that all required fields are filled
+        var formFields = await context.FormFields
+            .Where(f => f.FormSection.FormId == formAssignee.FormId)
+            .ToListAsync();
+
+        var missingFields = formFields
+            .Where(f => f.Required && formAssignee.FieldAssignees.All(r => r.FormFieldId != f.Id))
+            .ToList();
+
+        if (missingFields.Any())
+        {
+            var missingList = string.Join(", ", missingFields.Select(f => f.Id));
+            return Error.Validation("Response.MissingFields", $"Missing required fields: {missingList}");
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success("Form successfully submitted and finalized.");
+    }
+
+    public async Task<Result> SubmitFormAssignee(CreateFormAssigneeRequest request, Guid userId)
+    {
+        var formAssignee = new FormAssignee
+        {
+            FormId = request.FormId,
+            MaterialBatchId = request.MaterialBatchId,
+            BatchManufacturingRecordId = request.BatchManufacturingRecordId,
+            ProductionActivityStepId = request.ProductionActivityStepId,
+            FieldAssignees = [],
+            CreatedById = userId
+        };
+
+        foreach (var fieldAssignee in request.FormFieldAssignees)
+        {
+            var formField = await context.FormFields
+                .AsSplitQuery()
+                .Include(f => f.Question)
+                .FirstOrDefaultAsync(field => field.Id == fieldAssignee.FormFieldId);
+
+            if (formField == null)
+            {
+                return Error.Validation("Response.FormField", $"FormField not found {fieldAssignee.FormFieldId}");
+            }
+
+            formAssignee.FieldAssignees.Add(new FormFieldAssignee()
+            {
+                FormFieldId = formField.Id,
+                AssigneeId = fieldAssignee.AssigneeId
+            });
+            
+        }
+
+        await context.FormAssignees.AddAsync(formAssignee);
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -538,6 +676,74 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse));
     }
+    
+    public async Task<Result<FormAssigneeDto>> GetFormAssignee(Guid formAssigneeId)
+    {
+        var formAssignee = await context.FormAssignees
+            .AsSplitQuery()
+            .Include(fa => fa.Form)
+            .ThenInclude(f => f.Sections)
+            .ThenInclude(s => s.Fields)
+            .ThenInclude(fld => fld.Question)
+            .ThenInclude(q => q.Options)
+            .Include(fa => fa.FieldAssignees)
+            .ThenInclude(af => af.FormField)
+            .Include(fa => fa.FieldAssignees)
+            .ThenInclude(af => af.Assignee)
+            .Include(fa => fa.CreatedBy)
+            .FirstOrDefaultAsync(fa => fa.Id == formAssigneeId);
+
+        if (formAssignee == null)
+            return FormErrors.NotFound(formAssigneeId);
+
+        return mapper.Map<FormAssigneeDto>(formAssignee);
+    }
+    
+    
+    public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBatch(Guid materialBatchId)
+    {
+        var formAssignee = await context.FormAssignees
+            .AsSplitQuery()
+            .Include(fa => fa.Form)
+            .ThenInclude(f => f.Sections)
+            .ThenInclude(s => s.Fields)
+            .ThenInclude(fld => fld.Question)
+            .ThenInclude(q => q.Options)
+            .Include(fa => fa.FieldAssignees)
+            .ThenInclude(af => af.FormField)
+            .Include(fa => fa.FieldAssignees)
+            .ThenInclude(af => af.Assignee)
+            .Include(fa => fa.CreatedBy)
+            .FirstOrDefaultAsync(fa => fa.MaterialBatchId == materialBatchId);
+
+        if (formAssignee == null)
+            return FormErrors.NotFound(materialBatchId);
+
+        return mapper.Map<FormAssigneeDto>(formAssignee);
+    }
+    
+    public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBmr(Guid bmrId)
+    {
+        var formAssignee = await context.FormAssignees
+            .AsSplitQuery()
+            .Include(fa => fa.Form)
+            .ThenInclude(f => f.Sections)
+            .ThenInclude(s => s.Fields)
+            .ThenInclude(fld => fld.Question)
+            .ThenInclude(q => q.Options)
+            .Include(fa => fa.FieldAssignees)
+            .ThenInclude(af => af.FormField)
+            .Include(fa => fa.FieldAssignees)
+            .ThenInclude(af => af.Assignee)
+            .Include(fa => fa.CreatedBy)
+            .FirstOrDefaultAsync(fa => fa.BatchManufacturingRecordId == bmrId);
+
+        if (formAssignee == null)
+            return FormErrors.NotFound(bmrId);
+
+        return mapper.Map<FormAssigneeDto>(formAssignee);
+    }
+
 
     /*public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(Guid materialSpecificationId)
     {

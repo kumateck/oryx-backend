@@ -82,6 +82,45 @@ public class FormResponse : BaseEntity
     [StringLength(100000)] public string Value { get; set; }
 }
 
+public class FormAssignee : BaseEntity
+{
+    public Guid FormId { get; set; }
+    public Form Form { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+    public ProductionActivityStep ProductionActivityStep { get; set; }
+    public List<FormFieldAssignee> FieldAssignees { get; set; } = [];
+}
+
+public class FormFieldAssignee : BaseEntity
+{
+    public Guid FormAssigneeId { get; set; }
+    public FormAssignee FormAssignee { get; set; }
+    public Guid FormFieldId { get; set; }
+    public FormField FormField { get; set; }
+    public Guid? AssigneeId { get; set; }
+    public User Assignee { get; set; }
+}
+
+public class FormAssigneeDto : BaseDto
+{
+    public FormDto Form { get; set; }
+    // public Guid? BatchManufacturingRecordId { get; set; }
+    // public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
+    // public Guid? MaterialBatchId { get; set; }
+    // public MaterialBatchReducedDto MaterialBatch { get; set; }
+    public List<FormFieldAssigneeDto> FieldAssignees { get; set; } = [];
+}
+
+public class FormFieldAssigneeDto : BaseDto
+{
+    public FormFieldDto FormField { get; set; }
+    public UserDto Assignee { get; set; }
+}
+
 public class ResponseApproval : ResponsibleApprovalStage
 {
     public Guid Id { get; set; }
@@ -92,15 +131,6 @@ public class ResponseApproval : ResponsibleApprovalStage
     public Guid ApprovalId { get; set; }
 
     public Approval Approval { get; set; }
-}
-
-public class FormAssignee
-{
-    public Guid Id { get; set; }
-    public Guid FormId { get; set; }
-    public Form Form { get; set; }
-    public Guid UserId { get; set; }
-    public User User { get; set; }
 }
 
 public class FormReviewer
