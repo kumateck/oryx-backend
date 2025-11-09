@@ -352,7 +352,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Response> Responses { get; set; }
     public DbSet<FormResponse> FormResponses { get; set; }
     public DbSet<FormReviewer> FormReviewers { get; set; }
-    public DbSet<FormAssignee> FormAssignees { get; set; }
+    public DbSet<FormAssignee> FormAssignees => Set<FormAssignee>();
+    public DbSet<FormFieldAssignee> FormFieldAssignees => Set<FormFieldAssignee>();
     public DbSet<ResponseApproval> ResponseApprovals { get; set; }
 
     #endregion
@@ -1173,8 +1174,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FormSection>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<FormField>().HasQueryFilter(a =>
             !a.FormSection.DeletedAt.HasValue && !a.DeletedAt.HasValue);
-        modelBuilder.Entity<FormAssignee>()
-            .HasQueryFilter(a => !a.User.DeletedAt.HasValue && !a.Form.DeletedAt.HasValue);
         modelBuilder.Entity<FormReviewer>()
             .HasQueryFilter(a => !a.User.DeletedAt.HasValue && !a.Form.DeletedAt.HasValue);
         modelBuilder.Entity<FormResponse>().HasQueryFilter(a =>
