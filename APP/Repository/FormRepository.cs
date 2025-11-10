@@ -523,6 +523,14 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             return Error.Validation("Response.MissingFields", $"Missing required fields: {missingList}");
         }
 
+        if (formAssignee.MaterialBatchId.HasValue)
+        {
+            var materialBatch = await context.MaterialBatches
+                .FirstOrDefaultAsync(m => m.Id == formAssignee.MaterialBatchId);
+            if (materialBatch == null) return MaterialErrors.NotFound(formAssignee.MaterialBatchId.Value);
+            materialBatch.Status = BatchStatus.TestAssigned;
+        }
+
         await context.SaveChangesAsync();
         return Result.Success("Form successfully submitted and finalized.");
     }
@@ -556,9 +564,18 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 FormFieldId = formField.Id,
                 AssigneeId = fieldAssignee.AssigneeId
             });
-
         }
 
+        if (request.MaterialBatchId.HasValue)
+        {
+            var materialBatch = await context.MaterialBatches
+                .FirstOrDefaultAsync(m => m.Id == request.MaterialBatchId);
+            
+            if (materialBatch == null) return MaterialErrors.NotFound(request.MaterialBatchId.Value);
+
+            materialBatch.Status = BatchStatus.TestAssigned;
+        }
+        
         await context.FormAssignees.AddAsync(formAssignee);
         await context.SaveChangesAsync();
         return Result.Success();
