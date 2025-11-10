@@ -26,7 +26,7 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
         var request = mapper.Map<MaterialSampling>(materialSamplingRequest);
 
         await context.MaterialSamplings.AddAsync(request);
-        batch.Status = BatchStatus.Testing;
+        batch.Status = BatchStatus.Sampled;
         batch.SampledQuantity += materialSamplingRequest.SampleQuantity;
         context.MaterialBatches.Update(batch);
         await context.SaveChangesAsync();
