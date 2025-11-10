@@ -2078,8 +2078,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var rowsAffected = await context.Database.ExecuteSqlRawAsync("""
 
-                                                                             DELETE FROM MaterialDepartments
-                                                                             WHERE DepartmentId = {0} AND MaterialId = {1}
+                                                                             DELETE FROM "MaterialDepartments"
+                                                                             WHERE "DepartmentId" = {0} AND "MaterialId" = {1}
                                                                      """,
             user.DepartmentId.Value, materialId);
 
