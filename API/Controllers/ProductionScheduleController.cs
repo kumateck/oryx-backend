@@ -453,7 +453,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         Division? division = null)
     {
         var result = await repository
-            .GetFinishedGoodsTransferNote( onlyApproved, page, pageSize, searchQuery, division);
+            .GetFinishedGoodsTransferNote(onlyApproved, page, pageSize, searchQuery, division);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

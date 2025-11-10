@@ -1092,12 +1092,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionScheduleProduct)
             .ThenInclude(p => p.Product)
             .FirstOrDefaultAsync(r => r.Id == request.BatchManufacturingRecordId);
-        
+
         if (bmr is null)
             return RequisitionErrors.NotFound(request.BatchManufacturingRecordId);
-        
+
         var product = bmr.ProductionScheduleProduct.Product;
-        if(product is null)
+        if (product is null)
             return ProductErrors.NotFound(request.BatchManufacturingRecordId);
 
         var user = await context.Users
@@ -1114,7 +1114,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             return Error.NotFound("User.Department", "User has no association to any department");
 
         if (user.Department.Warehouses.Count == 0)
-            return Error.NotFound("User.Warehouse", 
+            return Error.NotFound("User.Warehouse",
                 "No raw material warehouse is associated with current user");
 
         var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i => i.Type == WarehouseType.Production);
@@ -1222,7 +1222,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         int page,
         int pageSize,
         string searchQuery = null,
-        Division?  division = null)
+        Division? division = null)
     {
         var query = context.FinishedGoodsTransferNotes
             .AsSplitQuery()
@@ -1306,12 +1306,12 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             mapper.Map<FinishedGoodsTransferNoteDto>(transferNote);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> 
+    public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>>
         GetFinishedGoodsTransferNoteByProduct(
             Guid departmentId,
-            int page, 
+            int page,
             int pageSize,
-            string searchQuery, 
+            string searchQuery,
             Guid productId)
     {
         var query = context.FinishedGoodsTransferNotes

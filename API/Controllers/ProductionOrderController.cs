@@ -167,6 +167,10 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
+    // ----------------------------
+    // Invoice Endpoints
+    // ----------------------------
+
     /// <summary>
     /// Creates an invoice.
     /// </summary>
@@ -230,6 +234,9 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
+    // ----------------------------
+    // Allocation & Delivery Endpoints
+    // ----------------------------
 
     /// <summary>
     /// Allocates stock to a production order
@@ -281,6 +288,74 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> MarkProductAllocationAsDelivered([FromRoute] Guid allocateProductionOrderId)
     {
         var result = await repository.MarkAllocationProductionOrderAsDelivered(allocateProductionOrderId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    // ----------------------------
+    // New Waybill & Loading Endpoints
+    // ----------------------------
+
+    /// <summary>
+    /// Marks a production order allocation as loaded.
+    /// </summary>
+    [HttpPut("load/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> MarkAllocationProductionOrderAsLoaded([FromRoute] Guid id)
+    {
+        var result = await repository.MarkAllocationProductionOrderAsLoaded(id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Creates a waybill from a production order.
+    /// </summary>
+    [HttpPost("{id:guid}/waybill")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateWaybillFromProductionOrder([FromBody] CreateProductionOrderWaybill request, [FromRoute] Guid id)
+    {
+        var result = await repository.CreateWaybillFromProductionOrder(request, id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of production order waybills.
+    /// </summary>
+    [HttpGet("waybill")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionOrderWaybillDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetProductionOrderWaybills(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetProductionOrderWaybills(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a production order waybill by its ID.
+    /// </summary>
+    [HttpGet("waybill/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionOrderWaybillDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionOrderWaybill([FromRoute] Guid id)
+    {
+        var result = await repository.GetProductionOrderWaybill(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+
+    /// <summary>
+    /// Sends a waybill to the customer.
+    /// </summary>
+    [HttpPost("waybill/{id:guid}/customer")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> SendWaybillToCustomer([FromRoute] Guid id)
+    {
+        var result = await repository.SendWaybillToCustomer(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

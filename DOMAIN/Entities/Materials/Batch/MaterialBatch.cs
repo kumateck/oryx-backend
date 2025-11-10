@@ -83,6 +83,7 @@ public enum BatchStatus
     Approved = 8,
     TestTaken = 9,
     Checked = 10,
+    Assigned = 11
 }
 
 public class MaterialBatchEvent : BaseEntity

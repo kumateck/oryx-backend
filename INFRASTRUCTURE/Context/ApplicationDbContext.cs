@@ -373,6 +373,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductionOrderApprovals> ProductionOrderApprovals { get; set; }
     public DbSet<AllocateProductionOrder> AllocateProductionOrders { get; set; }
     public DbSet<AllocateProductionOrderApprovals> AllocateProductionOrderApprovals { get; set; }
+    public DbSet<ProductionOrderWaybill> ProductionOrderWaybills => Set<ProductionOrderWaybill>();
 
     #endregion
 

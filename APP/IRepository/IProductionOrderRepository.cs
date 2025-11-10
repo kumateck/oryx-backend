@@ -30,6 +30,14 @@ public interface IProductionOrderRepository
     Task<Result> UpdateInvoice(Guid id, CreateInvoice request);
     Task<Result> DeleteInvoice(Guid id, Guid userId);
     Task<Result> AllocateProduct(AllocateProductionOrderRequest request);
+    Task<Result> MarkAllocationProductionOrderAsLoaded(Guid id);
+    Task<Result> CreateWaybillFromProductionOrder(CreateProductionOrderWaybill request, Guid id);
+    Task<Result<Paginateable<IEnumerable<ProductionOrderWaybillDto>>>> GetProductionOrderWaybills(
+        int page,
+        int pageSize,
+        string searchQuery);
+    Task<Result<ProductionOrderWaybillDto>> GetProductionOrderWaybill(Guid id);
+    Task<Result> SendWaybillToCustomer(Guid id);
     Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id);
 
     Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
