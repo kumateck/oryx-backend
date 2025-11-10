@@ -571,7 +571,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         // 3) Ensure all referenced notes exist
         var missingNoteIds = allNoteIds.Where(id => !notesById.ContainsKey(id)).ToList();
-        if (missingNoteIds.Any())
+        if (missingNoteIds.Count != 0)
             return Error.NotFound("FinishedGoodsTransferNote.NotFound",
                 $"These finished goods transfer notes were not found: {string.Join(", ", missingNoteIds)}");
 
