@@ -70,7 +70,18 @@ public class AllocateProductionOrder : BaseEntity
     public List<AllocateProductionOrderProduct> Products { get; set; } = [];
     public bool Approved { get; set; }
     public List<AllocateProductionOrderApprovals> Approvals { get; set; } = [];
+    public AllocateProductionOrderStatus Status { get; set; }
+    public DateTime? LoadedAt { get; set; }
+    public DateTime? WaybillSentToCustomerAt { get; set; }
     public DateTime? DeliveredAt { get; set; }
+}
+
+public enum AllocateProductionOrderStatus
+{
+    Pending = 0,
+    Loaded = 1,
+    WaybillSentToCustomer = 2,
+    Delivered = 3,
 }
 
 [Owned]
@@ -136,4 +147,24 @@ public class ProductionOrderInvoiceItemDto : BaseDto
 {
     public ProductListDto Product { get; set; }
     public int Quantity { get; set; }
+}
+
+public class CreateProductionOrderWaybill
+{
+    public string Comment { get; set; }
+}
+
+public class ProductionOrderWaybill : BaseEntity
+{
+    public Guid AllocateProductionOrderId { get; set; }
+    public AllocateProductionOrder AllocateProductionOrder { get; set; }
+    [StringLength(10000)] public string Comment { get; set; }
+}
+
+public class ProductionOrderWaybillDto
+{
+    public Guid Id { get; set; }
+    public AllocateProductionOrderDto AllocateProductionOrder { get; set; }
+    [StringLength(10000)] public string Comment { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

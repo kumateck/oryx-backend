@@ -1024,12 +1024,12 @@ public class OryxMapper : Profile
         CreateMap<AllocateProductionOrder, AllocateProductionOrderDto>()
             .ForMember(dest => dest.HasInvoice,
                 opt => opt.MapFrom<AllocateProductionOrderHasInvoice>());
-        /*.ForMember(dest => dest.Customer,
-            opt => opt.MapFrom(src => src.ProductionOrder.Customer))*/
         CreateMap<AllocateProductionOrderProduct, AllocateProductionOrderProductDto>();
         CreateMap<AllocateProductQuantity, AllocateProductQuantityDto>()
             .ForMember(dest => dest.BatchPackagingRecord,
                 opt => opt.MapFrom<AllocateProductQuantityBpr>());
+
+        CreateMap<ProductionOrderWaybill, ProductionOrderWaybillDto>();
 
         #endregion
 

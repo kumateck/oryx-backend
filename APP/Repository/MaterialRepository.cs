@@ -2070,7 +2070,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var warehouseStock = await GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
         if (warehouseStock.IsFailure) return warehouseStock.Error;
 
-        if (warehouseStock.Value == 0)
+        if (warehouseStock.Value > 0)
         {
             return Error.Validation("Material.Department",
                 "Cannot unlink material, stock for material exists in the warehosue");

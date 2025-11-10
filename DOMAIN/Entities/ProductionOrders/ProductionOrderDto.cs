@@ -77,6 +77,8 @@ public class AllocateProductionOrderDto
     public ProductionOrderListDto ProductionOrder { get; set; }
     public bool Approved { get; set; }
     public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
+    public AllocateProductionOrderStatus Status { get; set; }
+    public DateTime? LoadedAt { get; set; }
     public DateTime? DeliveredAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool HasInvoice { get; set; }
