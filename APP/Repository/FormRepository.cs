@@ -174,7 +174,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         if (formField is null)
             return Error.Validation("Response.FormField", $"FormField not found {request.FormFieldId}");
-        
+
         // 🧩 VALIDATION: Check if user is allowed in this specific context
         var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
             a.FormFieldId == formField.Id &&
@@ -341,7 +341,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             {
                 return Error.Validation("Response.FormField", $"FormField not found {response.FormFieldId}");
             }
-            
+
             // 🧩 VALIDATION: Check if user is allowed in this specific context
             var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
                 a.FormFieldId == formField.Id &&
@@ -445,7 +445,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
     public async Task<Result> SaveFormAssigneeDraft(SaveFormAssigneeDraftRequest request, Guid userId)
     {
         var formAssignee = await context.FormAssignees
@@ -474,12 +474,12 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         if (formField is null)
             return Error.Validation("Response.FormField", $"FormField not found {request.FormFieldId}");
-        
-        
+
+
         // Update or insert text-based responses
         var existingFieldAssignees = formAssignee
             .FieldAssignees.FirstOrDefault(fr => fr.FormFieldId == formField.Id);
-        
+
         if (existingFieldAssignees != null)
         {
             existingFieldAssignees.AssigneeId = request.AssigneeId;
@@ -493,7 +493,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 AssigneeId = request.AssigneeId
             });
         }
-        
+
 
         await context.SaveChangesAsync();
         return Result.Success(formAssignee.Id);
@@ -556,7 +556,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 FormFieldId = formField.Id,
                 AssigneeId = fieldAssignee.AssigneeId
             });
-            
+
         }
 
         await context.FormAssignees.AddAsync(formAssignee);
@@ -676,7 +676,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse));
     }
-    
+
     public async Task<Result<FormAssigneeDto>> GetFormAssignee(Guid formAssigneeId)
     {
         var formAssignee = await context.FormAssignees
@@ -698,8 +698,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         return mapper.Map<FormAssigneeDto>(formAssignee);
     }
-    
-    
+
+
     public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBatch(Guid materialBatchId)
     {
         var formAssignee = await context.FormAssignees
@@ -721,7 +721,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         return mapper.Map<FormAssigneeDto>(formAssignee);
     }
-    
+
     public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBmr(Guid bmrId)
     {
         var formAssignee = await context.FormAssignees

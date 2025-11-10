@@ -13,7 +13,7 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
 {
     public async Task<Result<Guid>> CreateMaterialSampling(CreateMaterialSamplingRequest materialSamplingRequest)
     {
-        var grn = await context.Grns.FirstOrDefaultAsync(gr => gr.Id == materialSamplingRequest.GrnId);
+        var grn = await context.Grns.IgnoreQueryFilters().FirstOrDefaultAsync(gr => gr.Id == materialSamplingRequest.GrnId);
 
         if (grn == null)
         {
@@ -53,7 +53,7 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
 
     public async Task<Result<Guid>> CreatePreSampleChecklist(CreatePreSampleChecklistRequest request)
     {
-        var grn = await context.Grns.FirstOrDefaultAsync(g => g.Id == request.GrnId);
+        var grn = await context.Grns.IgnoreQueryFilters().FirstOrDefaultAsync(g => g.Id == request.GrnId);
         if (grn is null)
             return Error.Validation("GRN.Invalid", "Invalid GRN");
 

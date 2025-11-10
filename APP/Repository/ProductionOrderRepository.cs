@@ -385,6 +385,85 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         return Result.Success();
     }
 
+    public async Task<Result> MarkAllocationProductionOrderAsLoaded(Guid id)
+    {
+        var productionOrder = await context.AllocateProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder == null) return Error.NotFound("Product.Order", "Product order not found");
+
+        productionOrder.LoadedAt = DateTime.UtcNow;
+        productionOrder.Status = AllocateProductionOrderStatus.Loaded;
+        context.AllocateProductionOrders.Update(productionOrder);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> CreateWaybillFromProductionOrder(CreateProductionOrderWaybill request, Guid id)
+    {
+        var productionOrder = await context.AllocateProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder == null) return Error.NotFound("Product.Order", "Product order not found");
+
+        await context.ProductionOrderWaybills.AddAsync(new ProductionOrderWaybill
+        {
+            AllocateProductionOrderId = id,
+            Comment = request.Comment,
+        });
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<ProductionOrderWaybillDto>>>> GetProductionOrderWaybills(
+        int page,
+        int pageSize,
+        string searchQuery)
+    {
+        var query = context.ProductionOrderWaybills
+            .AsSplitQuery()
+            .Include(w => w.AllocateProductionOrder)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery,
+                q => q.Comment,
+                q => q.AllocateProductionOrder.ProductionOrder.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionOrderWaybillDto>);
+    }
+
+    public async Task<Result<ProductionOrderWaybillDto>> GetProductionOrderWaybill(Guid id)
+    {
+        return mapper.Map<ProductionOrderWaybillDto>(await context
+            .ProductionOrderWaybills
+            .Include(w => w.AllocateProductionOrder)
+            .ThenInclude(w => w.Products)
+            .Include(w => w.AllocateProductionOrder)
+            .ThenInclude(w => w.ProductionOrder)
+            .FirstOrDefaultAsync(p => p.Id == id));
+    }
+
+    public async Task<Result> SendWaybillToCustomer(Guid id)
+    {
+        var productionOrder = await context.AllocateProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder == null)
+            return Error.NotFound("Product.Order", "Product order not found");
+
+        var waybill = await context.ProductionOrderWaybills
+            .FirstOrDefaultAsync(p => p.AllocateProductionOrderId == productionOrder.Id);
+        if (waybill == null)
+            return Error.NotFound("Product.Order",
+                "Waybill not created for production order {productionOrder.Id}");
+
+        productionOrder.Status = AllocateProductionOrderStatus.WaybillSentToCustomer;
+        productionOrder.WaybillSentToCustomerAt = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
 
     public async Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id)
     {
@@ -393,7 +472,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         if (productionOrder == null) return Error.NotFound("Product.Order", "Product order not found");
 
         productionOrder.DeliveredAt = DateTime.UtcNow;
-        context.AllocateProductionOrders.Update(productionOrder);
+        productionOrder.Status = AllocateProductionOrderStatus.Delivered;
         await context.SaveChangesAsync();
         return Result.Success();
     }

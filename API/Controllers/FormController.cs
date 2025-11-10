@@ -415,7 +415,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormWithResponseByBmr(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Saves or updates a single field assignment as a draft.
     /// </summary>
@@ -469,7 +469,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.SubmitFormAssignee(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves detailed information about a specific Form Assignee by its unique identifier.
     /// </summary>

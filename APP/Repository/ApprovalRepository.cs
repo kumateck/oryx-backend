@@ -1846,7 +1846,7 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 {
                     ModelType = modelType,
                     Id = modelId,
-                    Code = "",
+                    Code = proformaInvoice.Code,
                     CreatedAt = proformaInvoice.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(proformaInvoice.CreatedBy?.Department),
                     RequestedBy = mapper.Map<UserDto>(proformaInvoice.CreatedBy),
