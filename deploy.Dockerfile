@@ -6,7 +6,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-env
 WORKDIR /app
 
 # Install dependencies first
-RUN dotnet tool install -g dotnet-ef && \
+RUN dotnet tool install -g dotnet-ef --version 8.0.10 && \
     apt-get update && \
     apt-get install -y --no-install-recommends libgdiplus && \
     rm -rf /var/lib/apt/lists/*
