@@ -813,7 +813,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
 
             var targetShelf = await context.WarehouseLocationShelves
-                    .AsNoTracking()
                     .AsSplitQuery()
                     .IgnoreQueryFilters()
                     .Include(w => w.WarehouseLocationRack)
@@ -2351,7 +2350,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             context.MaterialBatches.Update(materialBatch);
 
             var targetShelf = await context.WarehouseLocationShelves
-                    .AsNoTracking()
                     .AsSplitQuery()
                     .IgnoreQueryFilters()
                     .Include(w => w.WarehouseLocationRack)
@@ -2463,7 +2461,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
 
             var targetShelf = await context.WarehouseLocationShelves
-                    .AsNoTracking()
                     .AsSplitQuery()
                     .IgnoreQueryFilters()
                     .Include(w => w.WarehouseLocationRack)
