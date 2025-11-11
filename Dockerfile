@@ -10,7 +10,7 @@ WORKDIR /app
 # Copy everything
 COPY . . 
 
-RUN dotnet tool install -g dotnet-ef
+RUN dotnet tool install -g dotnet-ef --version 8.0.10
 
 RUN apt-get update && apt-get install -y --allow-unauthenticated libgdiplus
 
