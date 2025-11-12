@@ -73,6 +73,13 @@ public class SubmitFormSectionValue
     public string Value { get; set; }
 }
 
+public class GetResponseIdRequest
+{
+    public Guid? MaterialBatchId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+}
+
 public class SaveResponseDraftRequest
 {
     public Guid? ResponseId { get; set; }

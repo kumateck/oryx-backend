@@ -146,6 +146,26 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
+    public async Task<Result<Guid?>> GetResponseId(GetResponseIdRequest request)
+    {
+        var response = await context.Responses
+            .FirstOrDefaultAsync(r => r.MaterialBatchId == request.MaterialBatchId
+                                      && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
+                                      && r.ProductionActivityStepId == request.ProductionActivityStepId);
+        
+        return response?.Id;
+    }
+    
+    public async Task<Result<Guid?>> GetFormAssigneeId(GetResponseIdRequest request)
+    {
+        var formAssignee = await context.FormAssignees
+            .FirstOrDefaultAsync(r => r.MaterialBatchId == request.MaterialBatchId
+                                      && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
+                                      && r.ProductionActivityStepId == request.ProductionActivityStepId);
+        
+        return formAssignee?.Id;
+    }
+
     public async Task<Result> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId)
     {
         var response = await context.Responses
