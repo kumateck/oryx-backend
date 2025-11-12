@@ -54,6 +54,7 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
     {
         var materialSampling = await context.MaterialSamplings
             .AsSplitQuery()
+            .Include(m => m.IssuedBy)
             .Include(m => m.Grn)
             .Include(m => m.MaterialBatch)
             .FirstOrDefaultAsync(ps => ps.GrnId == grnId && ps.MaterialBatchId == batchId);
