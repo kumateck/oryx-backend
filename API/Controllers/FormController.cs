@@ -517,4 +517,36 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormAssigneeByBmr(bmrId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Returns a response ID given the form fields.
+    /// </summary>
+    /// <param name="request">The body of the response</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpGet("response")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetResponseId(GetResponseIdRequest request)
+    {
+        
+        var result = await repository.GetResponseId(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Returns a form assignee ID given the form fields.
+    /// </summary>
+    /// <param name="request">The body of the response</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpGet("form-assignee")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormAssigneeId(GetResponseIdRequest request)
+    {
+        
+        var result = await repository.GetFormAssigneeId(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
