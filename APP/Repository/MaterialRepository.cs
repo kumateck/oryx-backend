@@ -836,7 +836,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
                             "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw");
-                case WarehouseType.PackagedStorage or WarehouseType.Production:
+                case WarehouseType.FinishedGoodsStorage or WarehouseType.Production:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
                             "Warehouse type does not allow shelf to be assigned");
                 default:
@@ -925,7 +925,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
                             "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw");
-                case WarehouseType.PackagedStorage or WarehouseType.Production:
+                case WarehouseType.FinishedGoodsStorage or WarehouseType.Production:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
                             "Warehouse type does not allow shelf to be assigned");
                 default:
@@ -2373,7 +2373,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
                             "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw");
-                case WarehouseType.PackagedStorage or WarehouseType.Production:
+                case WarehouseType.FinishedGoodsStorage or WarehouseType.Production:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
                             "Warehouse type does not allow shelf to be assigned");
                 default:
@@ -2484,7 +2484,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
                             "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw");
-                case WarehouseType.PackagedStorage or WarehouseType.Production:
+                case WarehouseType.FinishedGoodsStorage or WarehouseType.Production:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
                             "Warehouse type does not allow shelf to be assigned");
                 default:
