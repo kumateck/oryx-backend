@@ -27,7 +27,7 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
     /// <summary>
     /// Adds an issue number to sampling material
     /// </summary>
-    [HttpPatch("{materialSamplingId:guid}")]
+    [HttpPut("{materialSamplingId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> AddIssueNumberToMaterialSampling([FromRoute] Guid materialSamplingId, 
