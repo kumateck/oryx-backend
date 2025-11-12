@@ -5,6 +5,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Bcpg;
 using SHARED;
 
 namespace APP.Repository;
@@ -32,6 +33,21 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
         await context.SaveChangesAsync();
 
         return request.Id;
+    }
+
+    public async Task<Result> AddIssueNumberToMaterialSample(Guid materialSampleId, string issueNumber, Guid userId)
+    {
+        var materialSample = await context.MaterialSamplings
+            .FirstOrDefaultAsync(m => m.Id == materialSampleId);
+        
+        if(materialSample == null) 
+            return Error.NotFound("MaterialSamplingId.NotFound", "MaterialSampling not found");
+        
+        materialSample.IssueNumber = issueNumber;
+        materialSample.IssuedById = userId;
+        materialSample.IssuedAt = DateTime.Now;
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 
     public async Task<Result<MaterialSamplingDto>> GetMaterialSamplingByGrnAndBatch(Guid grnId, Guid batchId)
