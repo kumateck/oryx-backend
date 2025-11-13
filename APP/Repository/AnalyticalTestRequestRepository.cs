@@ -15,7 +15,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     public async Task<Result<Guid>> CreateAnalyticalTestRequest(CreateAnalyticalTestRequest request)
     {
 
-        if (await context.AnalyticalTestRequests.AnyAsync(a =>
+        if (await context.AnalyticalTestRequests.IgnoreQueryFilters().AnyAsync(a =>
                a.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
                a.ProductionScheduleProductId == request.ProductionScheduleProductId && a.Stage == request.Stage))
             return Error.Validation("Atr", $"This atr at stage {request.Stage} already exists");

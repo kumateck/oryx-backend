@@ -522,13 +522,13 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <summary>
     /// Retrieves a specific batch manufacturing record by its ID.
     /// </summary>
-    [HttpGet("manufacturing/{id}")]
+    [HttpGet("manufacturing/{batchManufacturingRecordId:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchManufacturingRecordDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetBatchManufacturingRecord(Guid id)
+    public async Task<IResult> GetBatchManufacturingRecord(Guid batchManufacturingRecordId)
     {
-        var result = await repository.GetBatchManufacturingRecord(id);
+        var result = await repository.GetBatchManufacturingRecord(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
