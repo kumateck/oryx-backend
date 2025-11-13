@@ -36,6 +36,7 @@ public class AnalyticalTestRequest : BaseEntity
     public Guid? TestedById { get; set; }
     public User TestedBy { get; set; }
     public DateTime? TestedAt { get; set; }
+    public DateTime? AssignedAt { get; set; }
     [StringLength(1000)] public string ArNumber { get; set; }
 }
 
@@ -58,6 +59,7 @@ public enum AnalyticalTestStatus
     Testing = 3,
     TestTaken = 4,
     Released = 5,
+    Assigned = 6,
 }
 
 public enum State

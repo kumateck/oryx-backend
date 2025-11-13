@@ -30,6 +30,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         var query = context.AnalyticalTestRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(p => p.ProductionScheduleProduct)
             .ThenInclude(s => s.Product)
             .Include(p => p.ProductionScheduleProduct)
@@ -58,6 +59,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         var test = await context.AnalyticalTestRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(p => p.ProductionScheduleProduct)
             .ThenInclude(s => s.Product)
             .Include(p => p.ProductionScheduleProduct)
