@@ -1570,6 +1570,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         return mapper.Map<BatchManufacturingRecordDto>(
             await context.BatchManufacturingRecords
                 .AsSplitQuery()
+                .IgnoreQueryFilters()
                 .Include(b => b.CreatedBy)
                 .Include(p => p.ProductionActivityStep)
                 .Include(p => p.ProductionScheduleProduct)
@@ -1611,6 +1612,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result> IssueBatchManufacturingRecord(Guid id, Guid userId)
     {
         var batchRecord = await context.BatchManufacturingRecords
+            .IgnoreQueryFilters()
             .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionActivityStep).FirstOrDefaultAsync(p => p.Id == id);
         if (batchRecord is null)
         {
