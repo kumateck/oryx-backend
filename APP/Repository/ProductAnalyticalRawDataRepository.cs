@@ -15,8 +15,10 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
 {
     public async Task<Result<Guid>> CreateAnalyticalRawData(CreateProductAnalyticalRawDataRequest request)
     {
-        var existingAnalyticalRawData = await context.ProductAnalyticalRawData.FirstOrDefaultAsync(ad => ad.SpecNumber == request.SpecNumber);
-        if (existingAnalyticalRawData is not null)
+        var existingAnalyticalRawData = await context.ProductAnalyticalRawData
+            .IgnoreQueryFilters()
+            .AnyAsync(ad => ad.SpecNumber == request.SpecNumber);
+        if (existingAnalyticalRawData)
         {
             return Error.Validation("ProductAnalyticalRawData.Exists", "Analytical raw data already exists.");
         }
@@ -48,6 +50,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     {
         var query = context.ProductAnalyticalRawData
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(ad => ad.ProductStandardTestProcedure)
             .ThenInclude(p => p.Product)
             .AsQueryable();
@@ -78,6 +81,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     {
         var analyticalRawData = await context.ProductAnalyticalRawData
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(ad => ad.Form)
             .Include(ad => ad.ProductStandardTestProcedure)
             .ThenInclude(ad => ad.Product)
@@ -95,6 +99,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     {
         var analyticalRawData = await context.ProductAnalyticalRawData
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(ad => ad.Form)
             .ThenInclude(f => f.Sections).ThenInclude(f => f.Fields)
             .ThenInclude(f => f.Question)
@@ -113,6 +118,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     {
         var bmr = await context.BatchManufacturingRecords
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(batchManufacturingRecord => batchManufacturingRecord.IssuedBy)
             .Include(b => b.ProductionScheduleProduct)
             .FirstOrDefaultAsync(m => m.Id == batchManufacturingRecordId);
@@ -127,9 +133,9 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
 
         var productArd = await context.ProductAnalyticalRawData
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(p => p.ProductStandardTestProcedure)
             .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == bmr.ProductionScheduleProduct.ProductId);
-
 
         return new ProductBatchArd
         {
