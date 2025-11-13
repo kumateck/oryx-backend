@@ -579,7 +579,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 return Error.Validation("Response.FormField", $"FormField not found {fieldAssignee.FormFieldId}");
             }
 
-            formAssignee.FieldAssignees.Add(new FormFieldAssignee()
+            formAssignee.FieldAssignees.Add(new FormFieldAssignee
             {
                 FormFieldId = formField.Id,
                 AssigneeId = fieldAssignee.AssigneeId
@@ -594,6 +594,19 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             if (materialBatch == null) return MaterialErrors.NotFound(request.MaterialBatchId.Value);
 
             materialBatch.Status = BatchStatus.TestAssigned;
+        }
+
+        if (request.BatchManufacturingRecordId.HasValue)
+        {
+            var atr = await context.AnalyticalTestRequests
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(r => 
+                    r.BatchManufacturingRecordId == request.BatchManufacturingRecordId);
+
+            if (atr == null) return Error.NotFound("Atr", "Atr not found for bmr");
+
+            atr.Status = AnalyticalTestStatus.Assigned;
+            atr.AssignedAt = DateTime.UtcNow;
         }
         
         await context.FormAssignees.AddAsync(formAssignee);
