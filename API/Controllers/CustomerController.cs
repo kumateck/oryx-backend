@@ -14,7 +14,7 @@ public class CustomerController(ICustomerRepository repository) : ControllerBase
 {
 
     /// <summary>
-    /// Creates a customer
+    /// Creates a customer.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
