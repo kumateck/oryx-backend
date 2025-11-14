@@ -34,9 +34,9 @@ COPY SHARED/ ./SHARED/
 # Build and publish in one step
 RUN dotnet publish API/API.csproj -c Release -o /app/out --no-restore
 
-# --------
+# ---------
 # Stage 2: Runtime
-# --------
+# ---------
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
