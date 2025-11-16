@@ -190,6 +190,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Code,
                 opt => opt.MapFrom(src => src.BatchNumber));
         CreateMap<WarehouseLocationName, CollectionItemDto>();
+        CreateMap<QcEquipmentCategory, CollectionItemDto>();
         #endregion
 
         #region Operation
@@ -742,6 +743,12 @@ public class OryxMapper : Profile
 
         CreateMap<CreateEquipmentRequest, Equipment>();
         CreateMap<Equipment, EquipmentDto>();
+
+        CreateMap<CreateQcEquipment, QcEquipment>();
+        CreateMap<QcEquipment, QcEquipmentDto>();
+        
+        CreateMap<CreateQcEquipmentCategory, QcEquipmentCategory>();
+        CreateMap<QcEquipmentCategory, QcEquipmentCategoryDto>();
 
         #endregion
 

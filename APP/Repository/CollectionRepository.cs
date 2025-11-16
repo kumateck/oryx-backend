@@ -14,6 +14,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.Shipments;
@@ -60,6 +61,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Instrument) => mapper.Map<List<CollectionItemDto>>(await context.Instruments.OrderBy(c => c.Name).ToListAsync()),
             nameof(ItemCategory) => mapper.Map<List<CollectionItemDto>>(await context.ItemCategories.OrderBy(c => c.Name).ToListAsync()),
             nameof(WarehouseLocationName) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationNames.OrderBy(c => c.Name).ToListAsync()),
+            nameof(QcEquipmentCategory) => mapper.Map<List<CollectionItemDto>>(await context.QcEquipmentCategories.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -223,6 +225,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var warehouseLocationNames = await context.WarehouseLocationNames.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationNames);
                     break;
+                
+                case nameof(QcEquipmentCategory):
+                    var qcEquipmentCategories = await context.QcEquipmentCategories.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(qcEquipmentCategories);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -278,6 +285,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Instrument),
             nameof(ItemCategory),
             nameof(WarehouseLocationName),
+            nameof(QcEquipmentCategory),
         };
     }
 
@@ -410,6 +418,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.WarehouseLocationNames.AddAsync(warehouseLocationName);
                 await context.SaveChangesAsync();
                 return warehouseLocationName.Id;
+            
+            case nameof(QcEquipmentCategory):
+                var qcEquipmentCategory = mapper.Map<QcEquipmentCategory>(request);
+                await context.QcEquipmentCategories.AddAsync(qcEquipmentCategory);
+                await context.SaveChangesAsync();
+                return qcEquipmentCategory.Id;
 
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -579,6 +593,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.WarehouseLocationNames.Update(warehouseLocationName);
                 await context.SaveChangesAsync();
                 return warehouseLocationName.Id;
+            
+            case nameof(QcEquipmentCategory):
+                var qcEquipmentCategory = await context.QcEquipmentCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, qcEquipmentCategory);
+                context.QcEquipmentCategories.Update(qcEquipmentCategory);
+                await context.SaveChangesAsync();
+                return qcEquipmentCategory.Id;
 
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -610,6 +631,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Instrument) => await context.Instruments.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(ItemCategory) => await context.ItemCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(WarehouseLocationName) => await context.WarehouseLocationNames.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(QcEquipmentCategory) => await context.QcEquipmentCategories.AnyAsync(p => p.Name == name  && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -815,6 +837,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 if (warehouseLocationName == null)
                     return Error.Validation("WarehouseName", "Not found");
                 context.WarehouseLocationNames.Remove(warehouseLocationName);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(QcEquipmentCategory):
+                var qcEquipmentCategory = await context.QcEquipmentCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (qcEquipmentCategory == null)
+                    return Error.Validation("QcEquipmentCategory", "Not found");
+                qcEquipmentCategory.DeletedAt = currentTime;
+                qcEquipmentCategory.LastDeletedById = userId;
+                context.QcEquipmentCategories.Update(qcEquipmentCategory);
                 await context.SaveChangesAsync();
                 return Result.Success();
 

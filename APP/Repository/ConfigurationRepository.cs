@@ -285,6 +285,12 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                     .IgnoreQueryFilters()
                     .Where(p => p.Code.StartsWith(prefix))
                     .CountAsync();
+            
+            case "ProductIssueNumber":
+                return 0;
+            
+            case "MaterialIssueNumber":
+                return 0;
 
             default:
                 return Error.Validation("ModelType", "Invalid model type sent");

@@ -4,6 +4,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Products.Equipments;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -167,4 +168,102 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         if (analyticalTest is null) return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         return mapper.Map<AnalyticalTestRequestDto>(analyticalTest);
     }
+    
+    // Create QC Equipment
+    public async Task<Result<Guid>> CreateQcEquipment(CreateQcEquipment request, Guid userId)
+    {
+        var equipment = mapper.Map<QcEquipment>(request);
+        equipment.CreatedById = userId;
+
+        await context.QcEquipments.AddAsync(equipment);
+        await context.SaveChangesAsync();
+
+        return equipment.Id;
+    }
+
+    // Get QC Equipment by ID
+    public async Task<Result<QcEquipmentDto>> GetQcEquipment(Guid equipmentId)
+    {
+        var equipment = await context.QcEquipments
+            .AsSplitQuery()
+            .Include(e => e.QcEquipmentCategory)
+            .FirstOrDefaultAsync(e => e.Id == equipmentId);
+
+        return equipment is null
+            ? Error.NotFound("QcEquipment.NotFound", "QC Equipment with this Id not found")
+            : mapper.Map<QcEquipmentDto>(equipment);
+    }
+
+    // Get paginated QC Equipments
+    public async Task<Result<Paginateable<IEnumerable<QcEquipmentDto>>>> GetQcEquipments(
+        int page,
+        int pageSize,
+        string searchQuery)
+    {
+        var query = context.QcEquipments
+            .AsSplitQuery()
+            .Include(e => e.QcEquipmentCategory)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery,
+                e => e.Name,
+                e => e.SerialNumber,
+                e => e.Make,
+                e => e.Model
+            );
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<QcEquipmentDto>
+        );
+    }
+
+    // Get all QC Equipments
+    public async Task<Result<List<QcEquipmentDto>>> GetQcEquipments()
+    {
+        return mapper.Map<List<QcEquipmentDto>>(await context.QcEquipments
+            .AsSplitQuery()
+            .Include(e => e.QcEquipmentCategory)
+            .ToListAsync());
+    }
+    
+    // Update QC Equipment
+    public async Task<Result> UpdateQcEquipment(CreateQcEquipment request, Guid equipmentId, Guid userId)
+    {
+        var existingEquipment = await context.QcEquipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        if (existingEquipment is null)
+        {
+            return Error.NotFound("QcEquipment.NotFound", "QC Equipment with this Id not found");
+        }
+
+        mapper.Map(request, existingEquipment);
+        existingEquipment.LastUpdatedById = userId;
+
+        context.QcEquipments.Update(existingEquipment);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // Delete QC Equipment (soft delete)
+    public async Task<Result> DeleteQcEquipment(Guid equipmentId, Guid userId)
+    {
+        var equipment = await context.QcEquipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        if (equipment is null)
+        {
+            return Error.NotFound("QcEquipment.NotFound", "QC Equipment with this Id not found");
+        }
+
+        equipment.DeletedAt = DateTime.UtcNow;
+        equipment.LastDeletedById = userId;
+
+        context.QcEquipments.Update(equipment);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
 }
