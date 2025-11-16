@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [ApiController]
-[Route("api/v{version:apiVersion}qc-equipment")]
+[Route("api/v{version:apiVersion}qc-equipment/")]
 [Authorize]
 public class QcEquipmentController(IAnalyticalTestRequestRepository repository) : ControllerBase
 {
