@@ -53,6 +53,7 @@ public enum QuestionType
     Reference = 9,
     Formula = 10,
     Specification = 11,
+    Equipment = 12,
 }
 
 public enum QuestionValidationType

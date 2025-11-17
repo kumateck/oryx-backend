@@ -119,6 +119,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, ProductState>();
         CreateMap<CreateItemRequest, ItemCategory>();
         CreateMap<CreateItemRequest, WarehouseLocationName>();
+        CreateMap<CreateItemRequest, QcEquipmentCategory>();
 
 
         #endregion
