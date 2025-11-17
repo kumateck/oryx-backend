@@ -30,3 +30,51 @@ public class EquipmentDto : BaseDto
     public CollectionItemDto Department { get; set; }
     public string StorageLocation { get; set; }
 }
+
+public class CreateQcEquipment
+{
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    public string Name { get; set; }
+    public Guid QcEquipmentCategoryId { get; set; }
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    public string SerialNumber { get; set; }
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")]  
+    public string Make { get; set; }
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    public string Model { get; set; }
+}
+
+public class QcEquipment : BaseEntity
+{
+    [StringLength(10000)] public string Name { get; set; }
+    public Guid QcEquipmentCategoryId { get; set; }
+    public QcEquipmentCategory QcEquipmentCategory { get; set; }
+    [StringLength(10000)] public string SerialNumber { get; set; }
+    [StringLength(10000)] public string Make { get; set; }
+    [StringLength(10000)] public string Model { get; set; }
+}
+
+public class CreateQcEquipmentCategory
+{
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    public string Name { get; set; }
+}
+
+public class QcEquipmentCategory : BaseEntity
+{
+    [StringLength(10000)] public string Name { get; set; }
+}
+
+public class QcEquipmentCategoryDto : BaseDto
+{
+    public string Name { get; set; }
+}
+
+public class QcEquipmentDto : BaseDto
+{
+    public string Name { get; set; }
+    public QcEquipmentCategoryDto QcEquipmentCategory { get; set; }
+    public string SerialNumber { get; set; }
+    public string Make { get; set; }
+    public string Model { get; set; }
+}

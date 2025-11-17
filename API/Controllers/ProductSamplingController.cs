@@ -27,12 +27,29 @@ public class ProductSamplingController(IProductSamplingRepository repository) : 
     /// <summary>
     /// Retrieves the details of a sampling product by its ID.
     /// </summary>
-    [HttpGet("{id:guid}")]
+    [HttpGet("{bmrId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSamplingDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProductSamplingByProductId([FromRoute] Guid id)
+    public async Task<IResult> GetProductSamplingByProductId([FromRoute] Guid bmrId)
     {
-        var result = await repository.GetProductSamplingByProductId(id);
+        var result = await repository.GetProductSamplingByBmrId(bmrId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Adds an issue number to sampling product
+    /// </summary>
+    [HttpPut("{productSamplingId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> AddIssueNumberToMaterialSampling([FromRoute] Guid productSamplingId, 
+        [FromQuery] string issueNumber)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await 
+            repository.AddIssueNumberToProductSample(productSamplingId, issueNumber, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

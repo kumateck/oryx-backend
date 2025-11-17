@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251116000737_AddQcEquipment")]
+    partial class AddQcEquipment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -7798,8 +7801,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("ArNumber")
-                        .HasMaxLength(1000000)
-                        .HasColumnType("character varying(1000000)");
+                        .HasColumnType("text");
 
                     b.Property<int>("ContainersSampled")
                         .HasColumnType("integer");
@@ -7812,16 +7814,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("IssueNumber")
-                        .HasMaxLength(1000000)
-                        .HasColumnType("character varying(1000000)");
-
-                    b.Property<DateTime?>("IssuedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("IssuedById")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -7843,8 +7835,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("AnalyticalTestRequestId");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("IssuedById");
 
                     b.HasIndex("LastDeletedById");
 
@@ -17009,10 +16999,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Users.User", "IssuedBy")
-                        .WithMany()
-                        .HasForeignKey("IssuedById");
-
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -17024,8 +17010,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("AnalyticalTestRequest");
 
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("IssuedBy");
 
                     b.Navigation("LastDeletedBy");
 

@@ -40,16 +40,32 @@ public class ProductSamplingRepository(ApplicationDbContext context, IMapper map
         return request.Id;
     }
 
-    public async Task<Result<ProductSamplingDto>> GetProductSamplingByProductId(Guid id)
+    public async Task<Result<ProductSamplingDto>> GetProductSamplingByBmrId(Guid batchManufacturingRecordId)
     {
         var productSampling = await context.ProductSamplings
             .AsSplitQuery()
             .Include(ps => ps.AnalyticalTestRequest)
             .Include(ps => ps.CreatedBy)
-            .FirstOrDefaultAsync(ps => ps.Id == id);
+            .Include(ps => ps.IssuedBy)
+            .FirstOrDefaultAsync(ps => ps.AnalyticalTestRequest.BatchManufacturingRecordId == batchManufacturingRecordId);
 
         return productSampling == null ?
             Error.Validation("ProductSampling", "Product Sampling not found")
             : Result.Success(mapper.Map<ProductSamplingDto>(productSampling));
+    }
+    
+    public async Task<Result> AddIssueNumberToProductSample(Guid productSampleId, string issueNumber, Guid userId)
+    {
+        var productSampling = await context.ProductSamplings
+            .FirstOrDefaultAsync(m => m.Id == productSampleId);
+        
+        if(productSampling == null) 
+            return Error.NotFound("ProductSampling.NotFound", "MaterialSampling not found");
+        
+        productSampling.IssueNumber = issueNumber;
+        productSampling.IssuedById = userId;
+        productSampling.IssuedAt = DateTime.Now;
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 }
