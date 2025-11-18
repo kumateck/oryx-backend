@@ -17,8 +17,8 @@ public class OperationSeeder : ISeeder
     private static void SeedOperations(ApplicationDbContext dbContext)
     {
         var departments = dbContext.Departments
-            .IgnoreQueryFilters().
-            ToDictionary(d => d.Name,
+            .IgnoreQueryFilters()
+            .ToDictionary(d => d.Name,
                 d => d);
 
         var allOpsByDepartment = OperationUtils.All();
@@ -41,7 +41,8 @@ public class OperationSeeder : ISeeder
 
             foreach (var op in operations)
             {
-                var existing = dbContext.Operations.FirstOrDefault(o => o.Name == op.Name);
+                var existing = dbContext.Operations
+                    .FirstOrDefault(o => o.Name == op.Name && o.Department == department);
 
                 if (existing == null)
                 {
