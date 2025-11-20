@@ -14,6 +14,7 @@ using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProformaInvoices;
@@ -296,6 +297,12 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                 return await context.MaterialSamplings
                     .IgnoreQueryFilters()
                     .Where(p => p.IssueNumber.StartsWith(prefix))
+                    .CountAsync();
+            
+            case nameof(QcEquipment):
+                return await context.QcEquipments
+                    .IgnoreQueryFilters()
+                    .Where(p => p.EquipmentId.StartsWith(prefix))
                     .CountAsync();
 
             default:
