@@ -34,6 +34,8 @@ public class EquipmentDto : BaseDto
 public class CreateQcEquipment
 {
     [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    public string EquipmentId { get; set; }
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
     public string Name { get; set; }
     public Guid QcEquipmentCategoryId { get; set; }
     [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
@@ -46,6 +48,7 @@ public class CreateQcEquipment
 
 public class QcEquipment : BaseEntity
 {
+    [StringLength(10000)] public string EquipmentId { get; set; }
     [StringLength(10000)] public string Name { get; set; }
     public Guid QcEquipmentCategoryId { get; set; }
     public QcEquipmentCategory QcEquipmentCategory { get; set; }
@@ -72,6 +75,7 @@ public class QcEquipmentCategoryDto : BaseDto
 
 public class QcEquipmentDto : BaseDto
 {
+    public string EquipmentId { get; set; }
     public string Name { get; set; }
     public QcEquipmentCategoryDto QcEquipmentCategory { get; set; }
     public string SerialNumber { get; set; }

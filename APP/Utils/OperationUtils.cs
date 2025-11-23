@@ -6,7 +6,7 @@ public static class OperationUtils
     {
         return new Dictionary<string, List<(string, string, int)>>
         {
-            {"OINTMENT", new List<(string, string, int)>
+            {"Ointment and Suppository (Appiagyei)", new List<(string, string, int)>
                 {
                     ("Requisition of BMR to Quality Assurance (QA). Issue of BMR by QA.", "Managing requisitions and issuing Batch Manufacturing Records.", 1),
                     ("Indent of R.M. & P.M. Requisitions by Production as Per BMR.", "Requesting Raw Materials and Packing Materials.", 2),
@@ -48,7 +48,7 @@ public static class OperationUtils
             },
             {"BETA", new List<(string, string, int)>
                 {
-                    ("Requisition of BMR (Batch Manufacturing Record) to Quality Assurance (QA). ii. Issue of BMR by QA.", "Managing requisitions and issuing Batch Manufacturing Records.", 1),
+                    ("Requisition of BMR to Quality Assurance (QA). Issue of BMR by QA.", "Managing requisitions and issuing Batch Manufacturing Records.", 1),
                     ("Indent of Raw Material (R.M.) and Packing Material (P.M.) Requisitions by Production as per BMR.", "Requesting Raw Materials and Packing Materials.", 2),
                     ("Dispensing of Raw Material and issue of Packing Materials in the presence of Production, QA, and a warehouse person.", "Dispensing materials for production.", 3),
                     ("Equipment & Area Clearance by QA.", "Ensuring equipment and areas are ready and cleared for use.", 4),
