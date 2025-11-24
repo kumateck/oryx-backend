@@ -175,10 +175,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<SupplierDto>>>> GetSuppliers(int page, int pageSize, string searchQuery)
     {
         var query = context.Suppliers
-            .AsNoTracking()
             .AsSplitQuery()
-            .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
-            .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
