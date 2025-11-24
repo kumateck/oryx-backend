@@ -16,8 +16,7 @@ public class CreateFinalPacking
     public decimal LeftOver { get; set; }
     public decimal BatchSize { get; set; }
     public decimal AverageVolumeFilledPerBottle { get; set; }
-    public decimal PackSize { get; set; }
-    public decimal ExpectedYield { get; set; }
+    public Guid? ProductPackingId { get; set; }
     public decimal TotalQuantityPacked { get; set; }
     public decimal QualityControlAnalyticalSample { get; set; }
     public decimal RetainedSamples { get; set; }
@@ -54,7 +53,8 @@ public class FinalPacking : BaseEntity
     public decimal LeftOver { get; set; }
     public decimal BatchSize { get; set; }
     public decimal AverageVolumeFilledPerBottle { get; set; }
-    public decimal PackSize { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
     public decimal ExpectedYield { get; set; }
     public decimal TotalQuantityPacked { get; set; }
     public decimal QualityControlAnalyticalSample { get; set; }
@@ -93,7 +93,7 @@ public class FinalPackingDto : BaseDto
     public decimal LeftOver { get; set; }
     public decimal BatchSize { get; set; }
     public decimal AverageVolumeFilledPerBottle { get; set; }
-    public decimal PackSize { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }   
     public decimal ExpectedYield { get; set; }
     public decimal TotalQuantityPacked { get; set; }
     public decimal QualityControlAnalyticalSample { get; set; }

@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.ProductAnalyticalRawData;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
@@ -63,7 +64,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            if (Enum.TryParse<Stage>(searchQuery, true, out var stage))
+            if (Enum.TryParse<TestStage>(searchQuery, true, out var stage))
                 query = query.Where(ad => ad.Stage == stage);
         }
 

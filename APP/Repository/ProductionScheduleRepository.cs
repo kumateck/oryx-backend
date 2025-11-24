@@ -2214,6 +2214,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(fp => fp.ProductionScheduleProduct)
             .ThenInclude(fp => fp.Product)
             .Include(fp => fp.Materials).ThenInclude(m => m.Material)
+            .Include(fp => fp.ProductPacking)
             .FirstOrDefaultAsync(fp => fp.Id == finalPackingId);
 
         return mapper.Map<FinalPackingDto>(finalPacking);
@@ -2229,6 +2230,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(fp => fp.ProductionScheduleProduct)
             .ThenInclude(fp => fp.Product)
             .Include(fp => fp.Materials).ThenInclude(m => m.Material)
+            .Include(fp => fp.ProductPacking)
             .FirstOrDefaultAsync(fp => fp.ProductionScheduleProductId == productionScheduleProductId);
 
         return mapper.Map<FinalPackingDto>(finalPacking);
@@ -2243,6 +2245,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .ThenInclude(fp => fp.ProductionSchedule)
             .Include(fp => fp.ProductionScheduleProduct)
             .ThenInclude(fp => fp.Product)
+            .Include(fp => fp.ProductPacking)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

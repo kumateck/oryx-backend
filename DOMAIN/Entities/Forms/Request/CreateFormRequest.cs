@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.AnalyticalTestRequests;
 
 namespace DOMAIN.Entities.Forms.Request;
 
@@ -49,6 +50,7 @@ public class CreateFormAssigneeRequest
 {
     public Guid FormId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
+    public TestStage? Stage { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public Guid? MaterialSpecificationId { get; set; }
     public Guid? ProductSpecificationId { get; set; }
