@@ -85,7 +85,7 @@ public class CreateChecklistRequest
     public bool VisibleLabelling { get; set; }
     public Intactness IntactnessStatus { get; set; }
     public ConsignmentCarrier ConsignmentCarrierStatus { get; set; }
-    public List<CreateMaterialBatchRequest> MaterialBatches { get; set; }
+    public List<CreateMaterialBatchRequest> MaterialBatches { get; set; } = [];
 }
 
 public enum ConsignmentCarrier
