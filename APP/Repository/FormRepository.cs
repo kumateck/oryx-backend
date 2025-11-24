@@ -598,17 +598,11 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         if (request.BatchManufacturingRecordId.HasValue)
         {
-            var productArd = await context.ProductAnalyticalRawData
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(p => p.FormId == request.FormId);
-            
-            if (productArd == null) return Error.NotFound("Response.ProductAnalyticalRawData.NotFound", "Product analytical raw data not found");
-            
             var atr = await context.AnalyticalTestRequests
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r => 
                     r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
-                    && r.Stage == productArd.Stage);
+                    && r.Stage == request.Stage);
 
             if (atr == null) return Error.NotFound("Atr", "Atr not found for bmr");
 
