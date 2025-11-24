@@ -1,5 +1,6 @@
 using APP.IRepository;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Base;
@@ -924,24 +925,24 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Received), //check this
             NumberOfBatchTestApprovedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Approved),
             NumberOfBatchTestRejectedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Rejected),
-            NumberOfBulkProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Bulk),
-            NumberOfIntermediateProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Intermediate),
-            NumberOfFinishedProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Finished),
+            NumberOfBulkProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == TestStage.Bulk),
+            NumberOfIntermediateProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == TestStage.Intermediate),
+            NumberOfFinishedProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == TestStage.Finished),
             NumberOfRawMaterialSpecifications = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Raw),
             NumberOfPackingMaterialSpecifications = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Package),
             NumberOfIntermediateProductSpecifications = await productStp
                 .CountAsync(p => productAnalyticalRawData
-                    .Where(ar => ar.Stage == Stage.Intermediate)
+                    .Where(ar => ar.Stage == TestStage.Intermediate)
                     .Select(ar => ar.Id)
                     .Contains(p.ProductId)),
             NumberOfBulkProductSpecifications = await productStp.CountAsync(p => productAnalyticalRawData
-                .Where(ar => ar.Stage == Stage.Bulk)
+                .Where(ar => ar.Stage == TestStage.Bulk)
                 .Select(ar => ar.Id)
                 .Contains(p.ProductId)),
 
             NumberOfFinishedProductSpecifications = await productStp.CountAsync(
                 p => productAnalyticalRawData
-                    .Where(ar => ar.Stage == Stage.Finished)
+                    .Where(ar => ar.Stage == TestStage.Finished)
                     .Select(ar => ar.Id)
                     .Contains(p.ProductId))
 
