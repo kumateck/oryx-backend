@@ -662,7 +662,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         await context.Checklists.AddAsync(checklist);
 
         request.MaterialBatches.ForEach(mb => mb.ChecklistId = checklist.Id);
-        await materialRepository.CreateMaterialBatchWithoutBatchMovement(request.MaterialBatches, userId);
+        var result = await materialRepository.CreateMaterialBatchWithoutBatchMovement(request.MaterialBatches, userId);
+        if (result.IsFailure) return result.Error;
 
         var distributedMaterial = await context.DistributedRequisitionMaterials
             .FirstOrDefaultAsync(dm => dm.Id == request.DistributedRequisitionMaterialId);

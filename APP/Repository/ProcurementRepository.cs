@@ -161,6 +161,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<SupplierDto>> GetSupplier(Guid supplierId)
     {
         var supplier = await context.Suppliers
+            .AsNoTracking()
             .AsSplitQuery()
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
@@ -174,6 +175,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<Paginateable<IEnumerable<SupplierDto>>>> GetSuppliers(int page, int pageSize, string searchQuery)
     {
         var query = context.Suppliers
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
             .AsQueryable();
@@ -209,9 +212,9 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<IEnumerable<SupplierDto>>> GetSupplierByMaterial(Guid materialId)
     {
         return mapper.Map<List<SupplierDto>>(await context.Suppliers
+            .AsSplitQuery()
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
-
             .Where(m => m.AssociatedManufacturers.Select(ma => ma.MaterialId).Contains(materialId))
             .ToListAsync());
     }
@@ -219,6 +222,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<IEnumerable<SupplierDto>>> GetSupplierByMaterialAndType(Guid materialId, SupplierType type)
     {
         return mapper.Map<List<SupplierDto>>(await context.Suppliers
+            .AsSplitQuery()
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Manufacturer)
             .Include(s => s.AssociatedManufacturers).ThenInclude(sm => sm.Material)
             .Where(m => m.AssociatedManufacturers.Select(ma => ma.MaterialId).Contains(materialId) && m.Type == type)
@@ -227,7 +231,10 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result> UpdateSupplier(CreateSupplierRequest request, Guid supplierId, Guid userId)
     {
-        var existingSupplier = await context.Suppliers.Include(supplier => supplier.AssociatedManufacturers).FirstOrDefaultAsync(s => s.Id == supplierId);
+        var existingSupplier = await context.Suppliers
+            .AsSplitQuery()
+            .Include(supplier => supplier.AssociatedManufacturers)
+            .FirstOrDefaultAsync(s => s.Id == supplierId);
         if (existingSupplier is null)
         {
             return Error.NotFound("Supplier.NotFound", "Supplier not found");
