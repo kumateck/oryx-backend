@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Instruments;
@@ -92,6 +93,7 @@ public class FormAssignee : BaseEntity
     public MaterialBatch MaterialBatch { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
+    public TestStage? Stage { get; set; }
     public List<FormFieldAssignee> FieldAssignees { get; set; } = [];
 }
 

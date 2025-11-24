@@ -482,6 +482,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 BatchManufacturingRecordId = request.BatchManufacturingRecordId,
                 ProductionActivityStepId = request.ProductionActivityStepId,
                 CreatedById = userId,
+                Stage = request.Stage,
                 FieldAssignees = []
             };
             await context.FormAssignees.AddAsync(formAssignee);
@@ -542,13 +543,29 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             var missingList = string.Join(", ", missingFields.Select(f => f.Id));
             return Error.Validation("Response.MissingFields", $"Missing required fields: {missingList}");
         }
-
+        
         if (formAssignee.MaterialBatchId.HasValue)
         {
             var materialBatch = await context.MaterialBatches
                 .FirstOrDefaultAsync(m => m.Id == formAssignee.MaterialBatchId);
+            
             if (materialBatch == null) return MaterialErrors.NotFound(formAssignee.MaterialBatchId.Value);
+
             materialBatch.Status = BatchStatus.TestAssigned;
+        }
+
+        if (formAssignee.BatchManufacturingRecordId.HasValue)
+        {
+            var atr = await context.AnalyticalTestRequests
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(r => 
+                    r.BatchManufacturingRecordId == formAssignee.BatchManufacturingRecordId
+                    && r.Stage == formAssignee.Stage);
+
+            if (atr == null) return Error.NotFound("Atr", "Atr not found for bmr");
+
+            atr.Status = AnalyticalTestStatus.Assigned;
+            atr.AssignedAt = DateTime.UtcNow;
         }
 
         await context.SaveChangesAsync();
@@ -563,6 +580,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             MaterialBatchId = request.MaterialBatchId,
             BatchManufacturingRecordId = request.BatchManufacturingRecordId,
             ProductionActivityStepId = request.ProductionActivityStepId,
+            Stage = request.Stage,
             FieldAssignees = [],
             CreatedById = userId
         };

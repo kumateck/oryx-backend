@@ -101,5 +101,6 @@ public class SaveFormAssigneeDraftRequest
     public Guid? MaterialBatchId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
+    public TestStage? Stage { get; set; }
     public Guid? AssigneeId { get; set; }
 }
