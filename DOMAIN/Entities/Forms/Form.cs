@@ -32,7 +32,7 @@ public class FormSection : BaseEntity
     public Guid FormId { get; set; }
     public Form Form { get; set; }
     [StringLength(255)] public string Name { get; set; }
-    [StringLength(1000)] public string Description { get; set; }
+    [StringLength(1000000)] public string Description { get; set; }
     public Guid? InstrumentId { get; set; }
     public Instrument Instrument { get; set; }
     public int Order { get; set; }
