@@ -54,6 +54,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .OrderByDescending(f => f.CreatedAt)
             .Include(f =>
                 f.Sections.OrderByDescending(s => s.Order))
+                .ThenInclude(f => f.Fields.OrderBy(f => f.Rank))
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(filter.SearchQuery))

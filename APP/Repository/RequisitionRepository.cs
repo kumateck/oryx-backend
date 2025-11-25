@@ -17,6 +17,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
@@ -34,7 +35,6 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // Create Stock Requisition
     public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
-
         if (request.ProductionScheduleProductId.HasValue)
         {
             var existingRequisition = await context.Requisitions
@@ -67,6 +67,14 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         if (request.RequisitionType == RequisitionType.Stock)
         {
+            if (!request.ProductionScheduleProductId.HasValue)
+                return Error.Validation("Stock.Requisition",
+                    "Production schedule product cannot be null when creating stock requisitions");
+                
+            if (!request.ProductionActivityStepId.HasValue)
+                return Error.Validation("Stock.Requisition",
+                    "Production activity step cannot be null when creating stock requisitions");
+            
             // Fetch materials to determine their kind (Raw or Package)
             var materialIds = request.Items.Select(i => i.MaterialId).ToList();
             var materials = await context.Materials
@@ -95,8 +103,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             async Task<Guid?> CreateStockRequisition(string prefix, List<CreateRequisitionItemRequest> items)
             {
                 if (items.Count == 0) return null; // Skip if no items
-
-                var beta = department.Name == "Beta" ? "B" : "N";
+                
+                var beta = department.Division == Division.BetaLactam ? "B" : "N";
                 var year = DateTime.Now.Year.ToString("yy");
                 var count = await context.Requisitions
                     .IgnoreQueryFilters()
@@ -232,6 +240,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(u => u.Department)
             .ThenInclude(d => d.Warehouses)
             .FirstOrDefaultAsync(u => u.Id == userId);
+        
         if (user is null)
             return UserErrors.NotFound(userId);
 
@@ -260,7 +269,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
-            Debug.Assert(stockRequisition.ProductionScheduleProductId != null, "stockRequisition.ProductionScheduleProductId != null");
+            if (stockRequisition.ProductionScheduleProductId == null)
+                return Error.Validation("Stock.Requisition",
+                    "Stock requisition has no production schedule product associated, contact admin.");
             var batchesToConsume =
                 await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
                     productionWarehouse.Id, stockRequisition.ProductionScheduleProductId.Value);
