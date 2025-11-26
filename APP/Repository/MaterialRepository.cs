@@ -190,7 +190,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         if (request.Count == 0)
             return Error.Validation("Material.Batches", "Must have at least one batch.");
-        
+
         var providedBatchNumbers = request
             .Where(r => !string.IsNullOrEmpty(r.BatchNumber))
             .Select(r => r.BatchNumber.Trim())

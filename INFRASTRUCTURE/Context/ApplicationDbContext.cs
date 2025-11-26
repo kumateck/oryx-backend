@@ -392,10 +392,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Equipment
 
     public DbSet<Equipment> Equipments { get; set; }
-    
+
     public DbSet<QcEquipment> QcEquipments { get; set; }
     public DbSet<QcEquipmentCategory> QcEquipmentCategories { get; set; }
-    
+
     #endregion
 
     #region Charge
@@ -1223,7 +1223,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<Equipment>()
             .HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Department.DeletedAt.HasValue);
-        
+
         modelBuilder.Entity<QcEquipment>()
             .HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 

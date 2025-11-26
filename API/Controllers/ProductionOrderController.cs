@@ -318,7 +318,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.CreateWaybillFromProductionOrder(request, id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of production order waybills.
     /// </summary>

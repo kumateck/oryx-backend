@@ -70,11 +70,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             if (!request.ProductionScheduleProductId.HasValue)
                 return Error.Validation("Stock.Requisition",
                     "Production schedule product cannot be null when creating stock requisitions");
-                
+
             if (!request.ProductionActivityStepId.HasValue)
                 return Error.Validation("Stock.Requisition",
                     "Production activity step cannot be null when creating stock requisitions");
-            
+
             // Fetch materials to determine their kind (Raw or Package)
             var materialIds = request.Items.Select(i => i.MaterialId).ToList();
             var materials = await context.Materials
@@ -103,7 +103,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             async Task<Guid?> CreateStockRequisition(string prefix, List<CreateRequisitionItemRequest> items)
             {
                 if (items.Count == 0) return null; // Skip if no items
-                
+
                 var beta = department.Division == Division.BetaLactam ? "B" : "N";
                 var year = DateTime.Now.Year.ToString("yy");
                 var count = await context.Requisitions
@@ -240,7 +240,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             .Include(u => u.Department)
             .ThenInclude(d => d.Warehouses)
             .FirstOrDefaultAsync(u => u.Id == userId);
-        
+
         if (user is null)
             return UserErrors.NotFound(userId);
 

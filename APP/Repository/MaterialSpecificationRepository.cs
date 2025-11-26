@@ -4,8 +4,10 @@ using AutoMapper;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.MaterialSpecifications;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
+using SHARED.Requests;
 
 namespace APP.Repository;
 
@@ -129,6 +131,112 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
 
         context.MaterialSpecifications.Update(materialSpec);
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> ImportMaterialSpecificationsFromCsv(IFormFile file, MaterialKind kind, Guid userId)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        var specs = new List<MaterialSpecification>();
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        using var reader = new StreamReader(stream);
+
+        // Read header row
+        var headerLine = await reader.ReadLineAsync();
+        if (string.IsNullOrWhiteSpace(headerLine))
+            return UploadErrors.WorksheetNotFound;
+
+        var headerParts = headerLine.Split(',', StringSplitOptions.TrimEntries);
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < headerParts.Length; i++)
+            headers[headerParts[i]] = i;
+
+        // Required headers
+        var requiredHeaders = new[]
+        {
+            "Name", "Code", "Specification", "Revision Date",
+            "Effective Date", "Revision", "Supersedes"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
+
+        // Lookups
+        var materials = await context.Materials
+            .AsNoTracking()
+            .Where(m => m.Kind == kind)
+            .ToDictionaryAsync(m => m.Code.ToLower(), m => m.Id);
+
+        var existingNumbers = await context.MaterialSpecifications
+            .IgnoreQueryFilters()
+            .Select(m => m.SpecificationNumber)
+            .ToHashSetAsync();
+
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            var parts = line.Split(',', StringSplitOptions.TrimEntries);
+
+            string Get(string header)
+            {
+                var index = headers[header];
+                return (index < parts.Length) ? parts[index].Trim() : "";
+            }
+
+            var code = Get("Code").ToLower();
+            if (!materials.TryGetValue(code, out var materialId))
+                continue;
+
+            var specNumber = Get("Specification");
+            if (string.IsNullOrWhiteSpace(specNumber) || existingNumbers.Contains(specNumber))
+                continue;
+
+            var spec = new MaterialSpecification
+            {
+                SpecificationNumber = specNumber,
+                RevisionNumber = Get("Revision"),
+                SupersedesNumber = Get("Supersedes"),
+                Description = Get("Name"),
+
+                EffectiveDate = DateTime.TryParse(Get("Effective Date"), out var eff)
+                    ? DateTime.SpecifyKind(eff, DateTimeKind.Utc) : DateTime.UtcNow,
+
+                ReviewDate = DateTime.TryParse(Get("Revision Date"), out var rev)
+                    ? DateTime.SpecifyKind(rev, DateTimeKind.Utc) : DateTime.UtcNow,
+
+                DueDate = DateTime.UtcNow, // adjust if required
+
+                MaterialId = materialId,
+
+                // Fill defaults
+                UserId = userId,
+                FormId = Guid.Parse("019a7e06-a806-741f-b47a-2c228a675ca1"),
+                ResponseId = null,
+                FormSections = []
+            };
+
+            specs.Add(spec);
+            existingNumbers.Add(specNumber);
+        }
+
+        if (specs.Count != 0)
+        {
+            await context.MaterialSpecifications.AddRangeAsync(specs);
+            await context.SaveChangesAsync();
+        }
+
         return Result.Success();
     }
 }

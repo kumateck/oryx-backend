@@ -153,17 +153,17 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .FirstOrDefaultAsync(r => r.MaterialBatchId == request.MaterialBatchId
                                       && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
                                       && r.ProductionActivityStepId == request.ProductionActivityStepId);
-        
+
         return response?.Id;
     }
-    
+
     public async Task<Result<Guid?>> GetFormAssigneeId(GetResponseIdRequest request)
     {
         var formAssignee = await context.FormAssignees
             .FirstOrDefaultAsync(r => r.MaterialBatchId == request.MaterialBatchId
                                       && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
                                       && r.ProductionActivityStepId == request.ProductionActivityStepId);
-        
+
         return formAssignee?.Id;
     }
 
@@ -544,12 +544,12 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             var missingList = string.Join(", ", missingFields.Select(f => f.Id));
             return Error.Validation("Response.MissingFields", $"Missing required fields: {missingList}");
         }
-        
+
         if (formAssignee.MaterialBatchId.HasValue)
         {
             var materialBatch = await context.MaterialBatches
                 .FirstOrDefaultAsync(m => m.Id == formAssignee.MaterialBatchId);
-            
+
             if (materialBatch == null) return MaterialErrors.NotFound(formAssignee.MaterialBatchId.Value);
 
             materialBatch.Status = BatchStatus.TestAssigned;
@@ -559,7 +559,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         {
             var atr = await context.AnalyticalTestRequests
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(r => 
+                .FirstOrDefaultAsync(r =>
                     r.BatchManufacturingRecordId == formAssignee.BatchManufacturingRecordId
                     && r.Stage == formAssignee.Stage);
 
@@ -609,7 +609,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         {
             var materialBatch = await context.MaterialBatches
                 .FirstOrDefaultAsync(m => m.Id == request.MaterialBatchId);
-            
+
             if (materialBatch == null) return MaterialErrors.NotFound(request.MaterialBatchId.Value);
 
             materialBatch.Status = BatchStatus.TestAssigned;
@@ -619,7 +619,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         {
             var atr = await context.AnalyticalTestRequests
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(r => 
+                .FirstOrDefaultAsync(r =>
                     r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
                     && r.Stage == request.Stage);
 
@@ -628,7 +628,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             atr.Status = AnalyticalTestStatus.Assigned;
             atr.AssignedAt = DateTime.UtcNow;
         }
-        
+
         await context.FormAssignees.AddAsync(formAssignee);
         await context.SaveChangesAsync();
         return Result.Success();
