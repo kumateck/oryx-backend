@@ -73,7 +73,7 @@ public class QcEquipmentController(IAnalyticalTestRequestRepository repository) 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId is null) return TypedResults.Unauthorized();
 
-        var result = await repository.UpdateQcEquipment(request, id,Guid.Parse(userId));
+        var result = await repository.UpdateQcEquipment(request, id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

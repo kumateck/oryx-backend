@@ -35,20 +35,20 @@ public class ProductSamplingController(IProductSamplingRepository repository) : 
         var result = await repository.GetProductSamplingByBmrId(bmrId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Adds an issue number to sampling product
     /// </summary>
     [HttpPut("{productSamplingId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> AddIssueNumberToMaterialSampling([FromRoute] Guid productSamplingId, 
+    public async Task<IResult> AddIssueNumberToMaterialSampling([FromRoute] Guid productSamplingId,
         [FromQuery] string issueNumber)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await 
+
+        var result = await
             repository.AddIssueNumberToProductSample(productSamplingId, issueNumber, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

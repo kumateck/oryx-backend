@@ -1086,6 +1086,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(b => b.ProductionScheduleProduct)
             .ThenInclude(b => b.ProductPacking)
             .ThenInclude(p => p.PackingLists)
+            .ThenInclude(p => p.Uom)
+            .Include(b => b.ProductionScheduleProduct)
+            .ThenInclude(b => b.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .FirstOrDefaultAsync(b => b.ProductionScheduleProductId == productionScheduleProductId);
 
         return mapper.Map<BatchManufacturingRecordDto>(batchManufacturingRecord);

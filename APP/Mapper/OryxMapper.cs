@@ -747,7 +747,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateQcEquipment, QcEquipment>();
         CreateMap<QcEquipment, QcEquipmentDto>();
-        
+
         CreateMap<CreateQcEquipmentCategory, QcEquipmentCategory>();
         CreateMap<QcEquipmentCategory, QcEquipmentCategoryDto>();
 

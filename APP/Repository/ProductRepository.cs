@@ -3,6 +3,9 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.Forms;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Routes;
@@ -841,10 +844,17 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var uomName = GetCell("UOM");
             var materialTypeName = GetCell("MATERIAL TYPE");
 
-            var product = await context.Products.AsNoTracking().IgnoreAutoIncludes().IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code == productCode);
+            var product = await context.Products
+                .AsNoTracking()
+                .IgnoreAutoIncludes()
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Code == productCode);
             if (product == null) continue;
 
-            var material = context.Materials.AsNoTracking().IgnoreAutoIncludes().FirstOrDefault(m => m.Code == materialCode);
+            var material = context.Materials
+                .AsNoTracking()
+                .IgnoreAutoIncludes()
+                .FirstOrDefault(m => m.Code == materialCode);
             if (material == null) continue;
 
             var uom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name.ToLower() == uomName.ToLower());

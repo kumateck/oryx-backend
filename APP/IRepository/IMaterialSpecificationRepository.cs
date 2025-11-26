@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.MaterialSpecifications;
+using Microsoft.AspNetCore.Http;
 using SHARED;
 
 namespace APP.IRepository;
@@ -13,4 +14,5 @@ public interface IMaterialSpecificationRepository
     Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(Guid materialId);
     Task<Result> UpdateMaterialSpecification(Guid id, CreateMaterialSpecificationRequest request);
     Task<Result> DeleteMaterialSpecification(Guid id, Guid userId);
+    Task<Result> ImportMaterialSpecificationsFromCsv(IFormFile file, MaterialKind kind, Guid userId);
 }
