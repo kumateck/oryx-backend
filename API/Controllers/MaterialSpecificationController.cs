@@ -84,10 +84,24 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     public async Task<IResult> DeleteMaterialSpecification([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
-
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteMaterialSpecification(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Creates a material specification
+    /// </summary>
+    [HttpPost("import")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ImportMaterialSpecification(IFormFile file, [FromQuery] MaterialKind materialKind)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportMaterialSpecificationsFromCsv(file, materialKind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

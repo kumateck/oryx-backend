@@ -53,15 +53,15 @@ public class ProductSamplingRepository(ApplicationDbContext context, IMapper map
             Error.Validation("ProductSampling", "Product Sampling not found")
             : Result.Success(mapper.Map<ProductSamplingDto>(productSampling));
     }
-    
+
     public async Task<Result> AddIssueNumberToProductSample(Guid productSampleId, string issueNumber, Guid userId)
     {
         var productSampling = await context.ProductSamplings
             .FirstOrDefaultAsync(m => m.Id == productSampleId);
-        
-        if(productSampling == null) 
+
+        if (productSampling == null)
             return Error.NotFound("ProductSampling.NotFound", "MaterialSampling not found");
-        
+
         productSampling.IssueNumber = issueNumber;
         productSampling.IssuedById = userId;
         productSampling.IssuedAt = DateTime.Now;

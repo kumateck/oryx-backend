@@ -225,7 +225,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var warehouseLocationNames = await context.WarehouseLocationNames.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationNames);
                     break;
-                
+
                 case nameof(QcEquipmentCategory):
                     var qcEquipmentCategories = await context.QcEquipmentCategories.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(qcEquipmentCategories);
@@ -418,7 +418,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.WarehouseLocationNames.AddAsync(warehouseLocationName);
                 await context.SaveChangesAsync();
                 return warehouseLocationName.Id;
-            
+
             case nameof(QcEquipmentCategory):
                 var qcEquipmentCategory = mapper.Map<QcEquipmentCategory>(request);
                 await context.QcEquipmentCategories.AddAsync(qcEquipmentCategory);
@@ -593,7 +593,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.WarehouseLocationNames.Update(warehouseLocationName);
                 await context.SaveChangesAsync();
                 return warehouseLocationName.Id;
-            
+
             case nameof(QcEquipmentCategory):
                 var qcEquipmentCategory = await context.QcEquipmentCategories.FirstOrDefaultAsync(p => p.Id == itemId);
                 mapper.Map(request, qcEquipmentCategory);
@@ -631,7 +631,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(Instrument) => await context.Instruments.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(ItemCategory) => await context.ItemCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(WarehouseLocationName) => await context.WarehouseLocationNames.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(QcEquipmentCategory) => await context.QcEquipmentCategories.AnyAsync(p => p.Name == name  && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(QcEquipmentCategory) => await context.QcEquipmentCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -839,7 +839,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.WarehouseLocationNames.Remove(warehouseLocationName);
                 await context.SaveChangesAsync();
                 return Result.Success();
-            
+
             case nameof(QcEquipmentCategory):
                 var qcEquipmentCategory = await context.QcEquipmentCategories.FirstOrDefaultAsync(p => p.Id == itemId);
                 if (qcEquipmentCategory == null)

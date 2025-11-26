@@ -529,11 +529,11 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetResponseId(GetResponseIdRequest request)
     {
-        
+
         var result = await repository.GetResponseId(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Returns a form assignee ID given the form fields.
     /// </summary>
@@ -545,7 +545,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetFormAssigneeId(GetResponseIdRequest request)
     {
-        
+
         var result = await repository.GetFormAssigneeId(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }

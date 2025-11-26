@@ -168,7 +168,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         if (analyticalTest is null) return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         return mapper.Map<AnalyticalTestRequestDto>(analyticalTest);
     }
-    
+
     // Create QC Equipment
     public async Task<Result<Guid>> CreateQcEquipment(CreateQcEquipment request, Guid userId)
     {
@@ -231,7 +231,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(e => e.QcEquipmentCategory)
             .ToListAsync());
     }
-    
+
     // Update QC Equipment
     public async Task<Result> UpdateQcEquipment(CreateQcEquipment request, Guid equipmentId, Guid userId)
     {

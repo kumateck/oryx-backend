@@ -33,16 +33,16 @@ public class EquipmentDto : BaseDto
 
 public class CreateQcEquipment
 {
-    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")]
     public string EquipmentId { get; set; }
-    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")]
     public string Name { get; set; }
     public Guid QcEquipmentCategoryId { get; set; }
-    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")]
     public string SerialNumber { get; set; }
-    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")]  
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")]
     public string Make { get; set; }
-    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")]
     public string Model { get; set; }
 }
 
@@ -59,7 +59,7 @@ public class QcEquipment : BaseEntity
 
 public class CreateQcEquipmentCategory
 {
-    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")] 
+    [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")]
     public string Name { get; set; }
 }
 

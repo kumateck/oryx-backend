@@ -23,20 +23,20 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
         var result = await repository.CreateMaterialSampling(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Adds an issue number to sampling material
     /// </summary>
     [HttpPut("{materialSamplingId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> AddIssueNumberToMaterialSampling([FromRoute] Guid materialSamplingId, 
+    public async Task<IResult> AddIssueNumberToMaterialSampling([FromRoute] Guid materialSamplingId,
         [FromQuery] string issueNumber)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
-        var result = await 
+
+        var result = await
             repository.AddIssueNumberToMaterialSample(materialSamplingId, issueNumber, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

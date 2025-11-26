@@ -39,10 +39,10 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
     {
         var materialSample = await context.MaterialSamplings
             .FirstOrDefaultAsync(m => m.Id == materialSampleId);
-        
-        if(materialSample == null) 
+
+        if (materialSample == null)
             return Error.NotFound("MaterialSamplingId.NotFound", "MaterialSampling not found");
-        
+
         materialSample.IssueNumber = issueNumber;
         materialSample.IssuedById = userId;
         materialSample.IssuedAt = DateTime.Now;
