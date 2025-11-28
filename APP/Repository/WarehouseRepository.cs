@@ -168,7 +168,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             : mapper.Map<WarehouseLocationRackDto>(rack);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(int page, 
+        int pageSize, 
+        string searchQuery,
+        MaterialKind? kind = null)
     {
         var query = context.WarehouseLocations
             .AsSplitQuery()
@@ -188,6 +191,15 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, w => w.Name);
+        }
+
+        if (kind.HasValue)
+        {
+            var warehouseType = kind == MaterialKind.Raw
+                ? WarehouseType.RawMaterialStorage
+                : WarehouseType.PackagedStorage;
+
+            query = query.Where(q => q.Warehouse.Type == warehouseType);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -301,7 +313,10 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             : mapper.Map<WarehouseLocationRackDto>(rack);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page, int pageSize, string searchQuery, MaterialKind? kind = null)
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page,
+        int pageSize, 
+        string searchQuery, 
+        MaterialKind? kind = null)
     {
         var query = context.WarehouseLocationRacks
             .AsSplitQuery()
@@ -456,8 +471,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             ? Error.NotFound("WarehouseLocationShelf.NotFound", "Warehouse location shelf not found")
             : mapper.Map<WarehouseLocationShelfDto>(shelf);
     }
-
-    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetWarehouseLocationShelves(int page, int pageSize, string searchQuery)
+    
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetWarehouseLocationShelves(int page,
+        int pageSize, 
+        string searchQuery,
+        MaterialKind? kind = null)
     {
         var query = context.WarehouseLocationShelves
             .AsSplitQuery()
@@ -474,6 +492,15 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, s => s.Name, s => s.Description);
+        }
+
+        if (kind.HasValue)
+        {
+            var warehouseType = kind == MaterialKind.Raw
+                ? WarehouseType.RawMaterialStorage
+                : WarehouseType.PackagedStorage;
+
+            query = query.Where(q => q.WarehouseLocationRack.WarehouseLocation.Warehouse.Type == warehouseType);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
