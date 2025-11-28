@@ -9,6 +9,7 @@ public class CreateRouteRequest
     public List<CreateRouteResponsibleRole> ResponsibleRoles { get; set; } = [];
     public List<CreateRouteWorkCenter> WorkCenters { get; set; } = [];
     public int Order { get; set; }
+    public bool IsCritical { get; set; }
 }
 
 public class CreateRouteResource
