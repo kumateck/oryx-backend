@@ -191,7 +191,9 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
             foreach (var role in roles)
             {
-                usersInRole.AddRange(await userManager.GetUsersInRoleAsync(role?.Name ?? ""));
+                var userRoles = await userManager.GetUsersInRoleAsync(role?.Name ?? "");
+                userRoles = userRoles.Where(u => u.DepartmentId == product.DepartmentId).ToList();
+                usersInRole.AddRange(userRoles);
             }
 
             var quantity = productionScheduleProduct.Quantity;

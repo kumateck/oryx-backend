@@ -54,6 +54,7 @@ public enum QuestionType
     Formula = 10,
     Specification = 11,
     Equipment = 12,
+    Table = 13,
 }
 
 public enum QuestionValidationType
