@@ -21,7 +21,7 @@ public interface IWarehouseRepository
         Guid userId);
     Task<Result<WarehouseLocationRackDto>> GetWarehouseLocation(Guid locationId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(int page,
-        int pageSize, string searchQuery);
+        int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result<List<WarehouseLocationDto>>> GetWarehouseLocations();
     Task<Result> UpdateWarehouseLocation(CreateWarehouseLocationRequest request, Guid locationId,
         Guid userId);
@@ -39,7 +39,7 @@ public interface IWarehouseRepository
         Guid warehouseLocationRackId, Guid userId);
     Task<Result<WarehouseLocationShelfDto>> GetWarehouseLocationShelf(Guid shelfId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetWarehouseLocationShelves(
-        int page, int pageSize, string searchQuery);
+        int page, int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result<List<WarehouseLocationShelfDto>>> GetWarehouseLocationShelves(MaterialKind kind,
         Guid userId);
     Task<Result> UpdateWarehouseLocationShelf(CreateWarehouseLocationShelfRequest request, Guid shelfId,

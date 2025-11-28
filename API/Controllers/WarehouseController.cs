@@ -131,9 +131,12 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [HttpGet("location")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationDto>>))]
-    public async Task<IResult> GetWarehouseLocations([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetWarehouseLocations([FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MaterialKind? materialKind = null)
     {
-        var result = await repository.GetWarehouseLocations(page, pageSize, searchQuery);
+        var result = await repository.GetWarehouseLocations(page, pageSize, searchQuery, materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -300,9 +303,12 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [HttpGet("shelf")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationShelfDto>>))]
-    public async Task<IResult> GetWarehouseLocationShelves([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetWarehouseLocationShelves([FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MaterialKind? materialKind = null)
     {
-        var result = await repository.GetWarehouseLocationShelves(page, pageSize, searchQuery);
+        var result = await repository.GetWarehouseLocationShelves(page, pageSize, searchQuery, materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
