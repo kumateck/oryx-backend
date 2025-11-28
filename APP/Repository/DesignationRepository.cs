@@ -13,16 +13,37 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
 {
     public async Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request)
     {
-        var existingDesignation = await context.Designations.FirstOrDefaultAsync(d => d.Name == request.Name);
-        if (existingDesignation is not null)
+        var requestedDeptIds = request.DepartmentIds.Distinct().ToList();
+
+        // Load existing designations with the same name
+        var existingDesignations = await context.Designations
+            .Include(d => d.Departments)
+            .Where(d => d.Name == request.Name)
+            .ToListAsync();
+
+        // Find conflicting departments
+        var conflictingDepartments = existingDesignations
+            .SelectMany(d => d.Departments)
+            .Where(dep => requestedDeptIds.Contains(dep.Id))
+            .Distinct()
+            .ToList();
+
+        if (conflictingDepartments.Count != 0)
         {
-            return Error.Validation("Designation.Exists", "Designation already exists.");
+            var conflictNames = string.Join(", ", conflictingDepartments.Select(d => d.Name));
+
+            return Error.Validation(
+                "Designation.DepartmentConflict",
+                $"The following department(s) are already assigned to the designation '{request.Name}': {conflictNames}."
+            );
         }
 
+        // Create a new designation
         var designation = mapper.Map<Designation>(request);
 
         var departments = await context.Departments
-            .Where(d => request.DepartmentIds.Contains(d.Id)).ToListAsync();
+            .Where(d => requestedDeptIds.Contains(d.Id))
+            .ToListAsync();
 
         designation.Departments = departments;
 
