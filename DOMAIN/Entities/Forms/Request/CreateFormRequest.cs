@@ -19,6 +19,7 @@ public class CreateFormSectionRequest
     public int Order { get; set; }
     public Guid? InstrumentId { get; set; }
     public List<CreateFormFieldRequest> Fields { get; set; } = [];
+    public string GroupName { get; set; }
 }
 
 public class CreateFormFieldRequest

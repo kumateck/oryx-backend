@@ -1080,6 +1080,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionScheduleProductId)
     {
         var batchManufacturingRecord = await context.BatchManufacturingRecords
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(b => b.ProductionScheduleProduct)
             .ThenInclude(b => b.Product)
