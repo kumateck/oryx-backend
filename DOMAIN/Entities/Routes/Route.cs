@@ -21,6 +21,7 @@ public class Route : BaseEntity
     public List<RouteResponsibleUser> ResponsibleUsers { get; set; } = [];
     public List<RouteResponsibleRole> ResponsibleRoles { get; set; } = [];
     public List<RouteWorkCenter> WorkCenters { get; set; } = [];
+    public bool IsCritical { get; set; }
 }
 
 public class RouteResource : BaseEntity

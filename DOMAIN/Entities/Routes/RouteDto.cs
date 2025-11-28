@@ -13,6 +13,7 @@ public class RouteDto : BaseDto
     public List<RouteResponsibleUserDto> ResponsibleUsers { get; set; } = [];
     public List<RouteResponsibleRoleDto> ResponsibleRoles { get; set; } = [];
     public List<RouteWorkCenterDto> WorkCenters { get; set; } = [];
+    public bool IsCritical { get; set; }
 }
 
 public class RouteResourceDto
