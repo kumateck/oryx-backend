@@ -42,6 +42,7 @@ public class FormSection : BaseEntity
     public MaterialSpecification MaterialSpecification { get; set; }
     public Guid? ProductSpecificationId { get; set; }
     public ProductSpecification ProductSpecification { get; set; }
+    [StringLength(1000000)] public string GroupName { get; set; }
 }
 
 public class FormField : BaseEntity
