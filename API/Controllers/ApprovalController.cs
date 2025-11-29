@@ -151,14 +151,15 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     [HttpGet("my-pending")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ApprovalEntity>))]
-    public async Task<IResult> GetPendingApprovals()
+    public async Task<IResult> GetPendingApprovals([FromQuery] string modelType)
     {
         var userId = (string)HttpContext.Items["Sub"];
         var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetEntitiesRequiringApproval(Guid.Parse(userId), roleIds);
+        var result = await repository.GetEntitiesRequiringApproval(Guid.Parse(userId), 
+            roleIds, modelType);
         return TypedResults.Ok(result);
     }
 }
