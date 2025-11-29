@@ -26,7 +26,11 @@ using Microsoft.Extensions.Logging;
 using SHARED;
 
 namespace APP.Repository;
-public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, IMemoryCache cache, ILogger<ApprovalRepository> logger) : IApprovalRepository
+public class ApprovalRepository(ApplicationDbContext context,
+    IMapper mapper, 
+    UserManager<User> userManager, 
+    IMemoryCache cache, 
+    ILogger<ApprovalRepository> logger) : IApprovalRepository
 {
     public async Task<Result<Guid>> CreateApproval(CreateApprovalRequest request, Guid userId)
     {
@@ -1511,7 +1515,10 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
     }
 
 
-    public async Task<List<ApprovalEntity>> GetEntitiesRequiringApproval(Guid userId, List<Guid> roleIds)
+    public async Task<List<ApprovalEntity>> GetEntitiesRequiringApproval(
+        Guid userId, 
+        List<Guid> roleIds,
+        string modelType)
     {
         var entitiesRequiringApproval = new List<ApprovalEntity>();
 
@@ -1721,6 +1728,12 @@ public class ApprovalRepository(ApplicationDbContext context, IMapper mapper, Us
                 RequestedBy = mapper.Map<UserDto>(shipmentDocument.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(shipmentDocument.Id)
             });
+        }
+
+        if (!string.IsNullOrEmpty(modelType))
+        {
+            entitiesRequiringApproval = entitiesRequiringApproval
+                .Where(a => a.ModelType == modelType).ToList();
         }
 
         return entitiesRequiringApproval.OrderByDescending(a => a.CreatedAt).ToList();
