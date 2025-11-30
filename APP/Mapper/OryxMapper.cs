@@ -120,6 +120,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, ItemCategory>();
         CreateMap<CreateItemRequest, WarehouseLocationName>();
         CreateMap<CreateItemRequest, QcEquipmentCategory>();
+        CreateMap<CreateItemRequest, Reagent>();
 
 
         #endregion
@@ -192,6 +193,7 @@ public class OryxMapper : Profile
                 opt => opt.MapFrom(src => src.BatchNumber));
         CreateMap<WarehouseLocationName, CollectionItemDto>();
         CreateMap<QcEquipmentCategory, CollectionItemDto>();
+        CreateMap<Reagent, CollectionItemDto>();
         #endregion
 
         #region Operation
