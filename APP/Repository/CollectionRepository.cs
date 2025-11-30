@@ -62,6 +62,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ItemCategory) => mapper.Map<List<CollectionItemDto>>(await context.ItemCategories.OrderBy(c => c.Name).ToListAsync()),
             nameof(WarehouseLocationName) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationNames.OrderBy(c => c.Name).ToListAsync()),
             nameof(QcEquipmentCategory) => mapper.Map<List<CollectionItemDto>>(await context.QcEquipmentCategories.OrderBy(c => c.Name).ToListAsync()),
+            nameof(Reagent) => mapper.Map<List<CollectionItemDto>>(await context.Reagents.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -230,6 +231,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var qcEquipmentCategories = await context.QcEquipmentCategories.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(qcEquipmentCategories);
                     break;
+                
+                case nameof(Reagent):
+                    var reagents = await context.Reagents.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(reagents);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -286,6 +292,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ItemCategory),
             nameof(WarehouseLocationName),
             nameof(QcEquipmentCategory),
+            nameof(Reagent),
         };
     }
 
@@ -424,6 +431,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.QcEquipmentCategories.AddAsync(qcEquipmentCategory);
                 await context.SaveChangesAsync();
                 return qcEquipmentCategory.Id;
+            
+            case nameof(Reagent):
+                var reagent = mapper.Map<Reagent>(request);
+                await context.Reagents.AddAsync(reagent);
+                await context.SaveChangesAsync();
+                return reagent.Id;
 
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -600,6 +613,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.QcEquipmentCategories.Update(qcEquipmentCategory);
                 await context.SaveChangesAsync();
                 return qcEquipmentCategory.Id;
+            
+            case nameof(Reagent):
+                var reagent = await context.Reagents.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, reagent);
+                context.Reagents.Update(reagent);
+                await context.SaveChangesAsync();
+                return reagent.Id;
 
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -632,6 +652,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(ItemCategory) => await context.ItemCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(WarehouseLocationName) => await context.WarehouseLocationNames.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(QcEquipmentCategory) => await context.QcEquipmentCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(Reagent) => await context.Reagents.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -847,6 +868,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 qcEquipmentCategory.DeletedAt = currentTime;
                 qcEquipmentCategory.LastDeletedById = userId;
                 context.QcEquipmentCategories.Update(qcEquipmentCategory);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(Reagent):
+                var reagent = await context.Reagents.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (reagent == null)
+                    return Error.Validation("Reagent", "Not found");
+                reagent.DeletedAt = currentTime;
+                reagent.LastDeletedById = userId;
+                context.Reagents.Update(reagent);
                 await context.SaveChangesAsync();
                 return Result.Success();
 
