@@ -1263,6 +1263,11 @@ public class ApprovalRepository(ApplicationDbContext context,
                     ModelId = leaveRequest.Id,
                 });
                 await context.SaveChangesAsync();
+
+                leaveRequest.LeaveStatus = LeaveStatus.Rejected;
+                context.LeaveRequests.Update(leaveRequest);
+                await context.SaveChangesAsync();
+                
                 break;
 
             case nameof(OvertimeRequest):
@@ -1310,6 +1315,10 @@ public class ApprovalRepository(ApplicationDbContext context,
                     Status = ApprovalStatus.Rejected,
                     ModelId = overtimeRequest.Id,
                 });
+                await context.SaveChangesAsync();
+                
+                overtimeRequest.Status = OvertimeStatus.Rejected;
+                context.OvertimeRequests.Update(overtimeRequest);
                 await context.SaveChangesAsync();
                 break;
 
