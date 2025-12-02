@@ -424,6 +424,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         }
         
         mapper.Map(request, employee);
+        employee.StaffNumber = request.StaffNumber;
 
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
@@ -465,7 +466,8 @@ public class EmployeeRepository(ApplicationDbContext context,
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
         
-        var staffNumberExists = await context.Employees.AnyAsync(e => e.StaffNumber == employeeDto.StaffNumber);
+        var staffNumberExists = await context.Employees
+            .AnyAsync(e => e.StaffNumber == employeeDto.StaffNumber && e.Id != employee.Id);
         if (staffNumberExists) return  Error.Conflict("Employee.StaffNumber", "Staff number already assigned to employee");
 
         var designation = await context.Designations.FirstOrDefaultAsync(d => d.Id == employeeDto.DesignationId);
