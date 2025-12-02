@@ -2549,6 +2549,7 @@ public class ApprovalRepository(ApplicationDbContext context,
             if (allRequiredApproved)
             {
                 leaveRequest.Approved = true;
+                leaveRequest.LeaveStatus = LeaveStatus.Approved;
             }
 
             await context.SaveChangesAsync();
@@ -2593,6 +2594,7 @@ public class ApprovalRepository(ApplicationDbContext context,
             if (allRequiredApproved)
             {
                 overtimeRequest.Approved = true;
+                overtimeRequest.Status = OvertimeStatus.Approved;
             }
 
             await context.SaveChangesAsync();
