@@ -21,7 +21,7 @@ public class LeaveRequest : BaseEntity, IRequireApproval
     public string RecallReason { get; set; }
 
     public RequestCategory RequestCategory { get; set; }
-    public LeaveStatus LeaveStatus { get; set; }
+    public LeaveStatus LeaveStatus { get; set; } = LeaveStatus.Pending;
     public int? UnpaidDays { get; set; }
 
     public int? PaidDays { get; set; }

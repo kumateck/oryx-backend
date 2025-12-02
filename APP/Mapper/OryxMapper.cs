@@ -769,6 +769,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
 
         CreateMap<UpdateEmployeeRequest, Employee>()
+            .ForMember(dest => dest.StaffNumber, opt => opt.MapFrom(src => src.StaffNumber))
             .ForMember(dest => dest.Mother, opt => opt.MapFrom(src => src.Mother))
             .ForMember(dest => dest.Father, opt => opt.MapFrom(src => src.Father))
             .ForMember(dest => dest.Spouse, opt => opt.MapFrom(src => src.Spouse))
