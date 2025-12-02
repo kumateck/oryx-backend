@@ -127,7 +127,8 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)
     {
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Email == request.Email || e.PhoneNumber == request.PhoneNumber);
+            .FirstOrDefaultAsync(e => e.Email == request.Email || e.PhoneNumber == request.PhoneNumber
+            || e.StaffNumber == request.StaffNumber && !string.IsNullOrWhiteSpace(request.StaffNumber));
 
         if (existingEmployee != null)
         {
@@ -421,7 +422,7 @@ public class EmployeeRepository(ApplicationDbContext context,
                 return Error.Validation("Employee.Status", "Employee suspension requires start and end dates");
             }
         }
-
+        
         mapper.Map(request, employee);
 
         context.Employees.Update(employee);
@@ -430,10 +431,13 @@ public class EmployeeRepository(ApplicationDbContext context,
         // ensuring consistency with employee users
         var user = await userManager.FindByEmailAsync(employee.Email);
         if (user == null) return Result.Success();
-
+        
+        user.FirstName = employee.FirstName;
+        user.LastName = employee.LastName;
+        user.DateOfBirth = employee.DateOfBirth;
         user.DepartmentId = employee.DepartmentId;
         user.Department = employee.Department;
-
+        
         await userManager.UpdateAsync(user);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -460,6 +464,9 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
+        
+        var staffNumberExists = await context.Employees.AnyAsync(e => e.StaffNumber == employeeDto.StaffNumber);
+        if (staffNumberExists) return  Error.Conflict("Employee.StaffNumber", "Staff number already assigned to employee");
 
         var designation = await context.Designations.FirstOrDefaultAsync(d => d.Id == employeeDto.DesignationId);
 
