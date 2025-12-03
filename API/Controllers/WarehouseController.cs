@@ -744,7 +744,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
 
     [HttpGet("bincardinformation/{productId}/product")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BinCardInformationDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductBinCardInformationDto>>))]
     public async Task<IResult> GetProductBinCardInformation([FromRoute] Guid productId, [FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string searchQuery)
     {
         var result = await repository.GetProductBinCardInformation(page, pageSize, searchQuery, productId);
