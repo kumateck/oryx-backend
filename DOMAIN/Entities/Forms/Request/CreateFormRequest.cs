@@ -5,7 +5,7 @@ namespace DOMAIN.Entities.Forms.Request;
 
 public class CreateFormRequest
 {
-    [StringLength(255)] public string Name { get; set; }
+    [StringLength(100000000)] public string Name { get; set; }
     public List<CreateFormSectionRequest> Sections { get; set; } = [];
     public List<CreateFormAssigneeRequest> Assignees { get; set; } = [];
     public List<CreateFormReviewerRequest> Reviewers { get; set; } = [];
@@ -14,8 +14,8 @@ public class CreateFormRequest
 
 public class CreateFormSectionRequest
 {
-    [StringLength(255)] public string Name { get; set; }
-    [StringLength(10000000)] public string Description { get; set; }
+    [StringLength(100000000)] public string Name { get; set; }
+    [StringLength(100000000)] public string Description { get; set; }
     public int Order { get; set; }
     public Guid? InstrumentId { get; set; }
     public List<CreateFormFieldRequest> Fields { get; set; } = [];

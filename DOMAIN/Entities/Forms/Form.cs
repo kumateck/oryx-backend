@@ -13,7 +13,7 @@ namespace DOMAIN.Entities.Forms;
 
 public class Form : BaseEntity
 {
-    [StringLength(255)] public string Name { get; set; }
+    [StringLength(100000000)] public string Name { get; set; }
     public FormType Type { get; set; }
     public List<FormSection> Sections { get; set; } = [];
     public List<FormResponse> Responses { get; set; } = [];
@@ -31,13 +31,13 @@ public class FormSection : BaseEntity
 {
     public Guid FormId { get; set; }
     public Form Form { get; set; }
-    [StringLength(255)] public string Name { get; set; }
-    [StringLength(1000000)] public string Description { get; set; }
+    [StringLength(100000000)] public string Name { get; set; }
+    [StringLength(100000000)] public string Description { get; set; }
     public Guid? InstrumentId { get; set; }
     public Instrument Instrument { get; set; }
     public int Order { get; set; }
     public List<FormField> Fields { get; set; }
-    [StringLength(1000000)] public string Value { get; set; }
+    [StringLength(10000000)] public string Value { get; set; }
     public Guid? MaterialSpecificationId { get; set; }
     public MaterialSpecification MaterialSpecification { get; set; }
     public Guid? ProductSpecificationId { get; set; }
@@ -52,7 +52,7 @@ public class FormField : BaseEntity
     public Guid QuestionId { get; set; }
     public Question Question { get; set; }
     public bool Required { get; set; }
-    [StringLength(1000)] public string Description { get; set; }
+    [StringLength(1000000)] public string Description { get; set; }
     public int Rank { get; set; }
 }
 
@@ -81,7 +81,7 @@ public class FormResponse : BaseEntity
     public Response Response { get; set; }
     public Guid FormFieldId { get; set; }
     public FormField FormField { get; set; }
-    [StringLength(100000)] public string Value { get; set; }
+    [StringLength(100000000)] public string Value { get; set; }
 }
 
 public class FormAssignee : BaseEntity
