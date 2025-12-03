@@ -31,7 +31,7 @@ public class CreateFinishedGoodsTransferNoteRequest
     public Guid BatchManufacturingRecordId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public decimal QuantityPerPack { get; set; }
-    public Guid? PackageStyleId { get; set; }
+    public Guid? ProductPackingId { get; set; }
     public decimal TotalQuantity { get; set; }
     public Guid? UoMId { get; set; }
     public string QarNumber { get; set; }

@@ -1,3 +1,4 @@
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -41,6 +42,14 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
             .Include(s => s.Currency)
             .Include(s => s.Services)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, sp => sp.Name,
+                sp => sp.Country.Name, sp => sp.Currency.Name, sp => sp.Email
+                , sp => sp.Phone, sp => sp.Address);
+        }
+        
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ServiceProviderDto>);
     }
 

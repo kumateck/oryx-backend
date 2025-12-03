@@ -713,7 +713,6 @@ public class OryxMapper : Profile
         CreateMap<CreateFinishedGoodsTransferNoteRequest, FinishedGoodsTransferNote>();
         CreateMap<PackageStyle, PackageStyleDto>();
         CreateMap<FinishedGoodsTransferNote, FinishedGoodsTransferNoteDto>()
-            .ForMember(dest => dest.PackageStyle, opt => opt.MapFrom(src => src.PackageStyle))
             .ForMember(dest => dest.PendingAllocatedQuantity, opt => opt.MapFrom<PendingAllocatedQuantityResolver>());
         CreateMap<FinishedGoodsTransferNote, FinishedGoodsListTransferNoteDto>();
 
@@ -769,6 +768,7 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
 
         CreateMap<UpdateEmployeeRequest, Employee>()
+            .ForMember(dest => dest.StaffNumber, opt => opt.MapFrom(src => src.StaffNumber))
             .ForMember(dest => dest.Mother, opt => opt.MapFrom(src => src.Mother))
             .ForMember(dest => dest.Father, opt => opt.MapFrom(src => src.Father))
             .ForMember(dest => dest.Spouse, opt => opt.MapFrom(src => src.Spouse))

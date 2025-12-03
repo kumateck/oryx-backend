@@ -1245,7 +1245,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .ThenInclude(b => b.Product)
             .Include(b => b.FromWarehouse)
             .Include(b => b.ToWarehouse)
-            .Include(b => b.PackageStyle)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -1310,7 +1313,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(b => b.FromWarehouse)
             .Include(u => u.UoM)
             .Include(b => b.ToWarehouse)
-            .Include(b => b.PackageStyle)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .Include(b => b.CreatedBy)
             .FirstOrDefaultAsync(f => f.Id == id);
 
@@ -1336,7 +1342,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(b => b.FromWarehouse)
             .Include(u => u.UoM)
             .Include(b => b.ToWarehouse)
-            .Include(b => b.PackageStyle)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .Where(f => f.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == productId && (f.ToWarehouse.DepartmentId == departmentId || f.FromWarehouse.DepartmentId == departmentId))
             .AsQueryable();
 
@@ -1362,7 +1371,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         transferNote.IsApproved = true;
         transferNote.QuantityReceived = request.QuantityReceived;
         transferNote.Notes = request.Notes;
-        transferNote.Loose = request.Loose;
+        //transferNote.Loose = request.Loose;
 
         context.FinishedGoodsTransferNotes.Update(transferNote);
         await context.SaveChangesAsync();
@@ -1391,7 +1400,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.ProductionScheduleProduct)
             .ThenInclude(b => b.Product)
-            .Include(tn => tn.PackageStyle)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .Where(p => p.IsApproved)
             .AsQueryable();
 
@@ -1418,7 +1430,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
             .ThenInclude(b => b.ProductionScheduleProduct)
             .ThenInclude(b => b.Product)
             .ThenInclude(p => p.Packings).ThenInclude(p => p.PackingLists)
-            .Include(tn => tn.PackageStyle)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .Where(p => p.IsApproved && p.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == productId)
             .ToListAsync();
 
@@ -1448,10 +1463,14 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId)
     {
         var finishedGoods = await context.FinishedGoodsTransferNotes
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.ProductionScheduleProduct)
-            .Include(tn => tn.PackageStyle)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .Where(p => p.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == productId && p.IsApproved)
             .ToListAsync();
 

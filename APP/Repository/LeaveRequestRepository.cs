@@ -284,7 +284,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         }
 
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(l => l.Id == leaveRequest.EmployeeId); ;
+            .FirstOrDefaultAsync(l => l.Id == leaveRequest.EmployeeId);
 
         if (existingEmployee is null)
         {
