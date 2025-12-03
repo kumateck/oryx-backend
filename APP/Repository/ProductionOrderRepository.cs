@@ -15,6 +15,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 {
     public async Task<Result<Guid>> CreateProductionOrder(CreateProductionOrderRequest request)
     {
+        if (request.Products.GroupBy(p => p.ProductId).Any(g => g.Count() > 1))
+        {
+            return Error.Validation("Production.Order",
+                "Production order product list cannot contain more than one of the same product");
+        }
+            
         var productionOrder = mapper.Map<ProductionOrder>(request);
         await context.AddAsync(productionOrder);
         await context.SaveChangesAsync();
@@ -634,7 +640,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
 
         // Quick lookup of products on this order
-        var orderProductsById = productionOrder.Products.ToDictionary(p => p.ProductId, p => p);
+        var orderProductsById = productionOrder.Products
+            .ToDictionary(p => p.ProductId, p => p);
 
         // 2) Collect all FinishedGoodsTransferNote IDs in the request and fetch them in one go
         var allNoteIds = request.Products
