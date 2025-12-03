@@ -1463,6 +1463,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
     public async Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId)
     {
         var finishedGoods = await context.FinishedGoodsTransferNotes
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.ProductionScheduleProduct)
