@@ -1371,7 +1371,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         transferNote.IsApproved = true;
         transferNote.QuantityReceived = request.QuantityReceived;
         transferNote.Notes = request.Notes;
-        transferNote.Loose = request.Loose;
+        //transferNote.Loose = request.Loose;
 
         context.FinishedGoodsTransferNotes.Update(transferNote);
         await context.SaveChangesAsync();
