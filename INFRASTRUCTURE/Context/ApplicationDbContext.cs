@@ -915,7 +915,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region PackingLists
 
         modelBuilder.Entity<ProductPacking>().Navigation(p => p.BasePackingUoM).AutoInclude();
-        modelBuilder.Entity<ProductPacking>().Navigation(p => p.PackingLists).AutoInclude();
         modelBuilder.Entity<ProductPackingList>().Navigation(p => p.Uom).AutoInclude();
 
         #endregion
