@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251203000431_ChangePackingStyleToProductPacking")]
-    partial class ChangePackingStyleToProductPacking
+    [Migration("20251203081056_AddProductPackingId")]
+    partial class AddProductPackingId
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
