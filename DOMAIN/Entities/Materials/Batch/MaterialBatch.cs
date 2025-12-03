@@ -174,7 +174,7 @@ public class FinishedGoodsTransferNote : BaseEntity
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
-    public decimal RemainingQuantity => QuantityReceived * QuantityPerPack + Loose - AllocatedQuantity;
+    public decimal RemainingQuantity => TotalQuantity  - AllocatedQuantity;
 }
 
 public class FinishedGoodsTransferNoteDto : BaseDto
