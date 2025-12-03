@@ -159,8 +159,8 @@ public class FinishedGoodsTransferNote : BaseEntity
     public Guid? ToWarehouseId { get; set; }
     public Warehouse ToWarehouse { get; set; }
     public decimal QuantityPerPack { get; set; }
-    public Guid? PackageStyleId { get; set; }
-    public PackageStyle PackageStyle { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public bool IsApproved { get; set; }
@@ -183,7 +183,7 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public WarehouseDto FromWarehouse { get; set; }
     public WarehouseDto ToWarehouse { get; set; }
     public decimal QuantityPerPack { get; set; }
-    public PackageStyleDto PackageStyle { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal TotalQuantity { get; set; }
     public decimal QuantityReceived { get; set; }
