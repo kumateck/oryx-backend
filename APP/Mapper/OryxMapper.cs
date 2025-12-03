@@ -713,7 +713,6 @@ public class OryxMapper : Profile
         CreateMap<CreateFinishedGoodsTransferNoteRequest, FinishedGoodsTransferNote>();
         CreateMap<PackageStyle, PackageStyleDto>();
         CreateMap<FinishedGoodsTransferNote, FinishedGoodsTransferNoteDto>()
-            .ForMember(dest => dest.PackageStyle, opt => opt.MapFrom(src => src.PackageStyle))
             .ForMember(dest => dest.PendingAllocatedQuantity, opt => opt.MapFrom<PendingAllocatedQuantityResolver>());
         CreateMap<FinishedGoodsTransferNote, FinishedGoodsListTransferNoteDto>();
 
