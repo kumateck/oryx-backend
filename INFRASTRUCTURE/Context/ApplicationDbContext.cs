@@ -911,15 +911,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Designation>().Navigation(p => p.Departments).AutoInclude();
 
         #endregion
-
-        #region PackingLists
-
-        modelBuilder.Entity<ProductPacking>().Navigation(p => p.BasePackingUoM).AutoInclude();
-        modelBuilder.Entity<ProductPackingList>().Navigation(p => p.Uom).AutoInclude();
-
-        #endregion
-
-
     }
 
     private void ConfigureQueryFilters(ModelBuilder modelBuilder)
