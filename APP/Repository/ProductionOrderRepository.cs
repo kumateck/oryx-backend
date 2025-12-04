@@ -35,6 +35,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(p => p.Customer)
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            // .ThenInclude(p => p.PackingLists)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -53,6 +59,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
             .Include(p => p.Customer)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .FirstOrDefaultAsync(po => po.Id == id);
 
         if (productionOrder == null)
