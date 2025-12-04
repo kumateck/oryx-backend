@@ -14,3 +14,4 @@ public class Service : BaseEntity
     
     public List<ServiceProvider> ServiceProviders { get; set; } = [];
 }
+
