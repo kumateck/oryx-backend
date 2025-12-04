@@ -11,7 +11,6 @@ public class CreateBoMItemsRequest
     public Guid MaterialId { get; set; }
     public Guid? UoMId { get; set; }
     public bool IsSubstitutable { get; set; }  // Allows for substitution in production
-    public Guid? MaterialTypeId { get; set; }
     public string Grade { get; set; }
     public string CasNumber { get; set; }
     public string Function { get; set; }

@@ -44,6 +44,9 @@ public class ProductionOrderProductsDto
     public List<ProductionOrderProductQuantityDto> FulfilledQuantities { get; set; } = [];
     public bool Fulfilled { get; set; }
     public decimal RemainingQuantity { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
+    public decimal Shippers { get; set; }
+    public decimal Loose { get; set; }
 }
 
 public class ProductionOrderProductQuantityDto
