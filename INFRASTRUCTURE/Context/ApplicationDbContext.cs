@@ -569,6 +569,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Service> Services { get; set; }
     public DbSet<ServiceProvider> ServiceProviders { get; set; }
+    
 
     #endregion
 
