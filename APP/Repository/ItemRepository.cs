@@ -13,7 +13,9 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
 {
     public async Task<Result<Guid>> CreateItem(CreateItemsRequest request)
     {
-        var item = await context.Items.FirstOrDefaultAsync(i => i.Code == request.Code || i.Name == request.Name); ;
+        var item = await context.Items
+            .FirstOrDefaultAsync(i => (i.Code == request.Code || i.Name == request.Name) 
+                                      && i.Store == request.Store);
         if (item != null) return Error.Validation("Item.Exists", "Item already exists for this department");
 
         if (request.ItemCategoryId.HasValue)

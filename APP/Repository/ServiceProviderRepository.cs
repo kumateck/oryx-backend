@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.ServiceProviders;
+using DOMAIN.Entities.Services;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -13,27 +14,32 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
 {
     public async Task<Result<Guid>> CreateServiceProvider(CreateServiceProviderRequest request)
     {
-        var existingServiceProvider = await context.ServiceProviders
-            .FirstOrDefaultAsync(sp => sp.Name == request.Name);
+        var exists = await context.ServiceProviders
+            .AnyAsync(sp => sp.Name == request.Name);
 
-        if (existingServiceProvider != null)
+        if (exists)
             return Error.Validation("ServiceProvider.Exists", "Service Provider already exists");
-
-        var validServiceIds = await context.Services
+        
+        var services = await context.Services
             .Where(s => request.ServiceIds.Contains(s.Id))
-            .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.ServiceIds.Except(validServiceIds).ToList();
-        if (missingIds.Count != 0)
-            return Error.NotFound("Service.NotFound", $"Some services not found: {string.Join(", ", missingIds)}");
+        var missingIds = request.ServiceIds.Except(services.Select(s => s.Id)).ToList();
+        if (missingIds.Count > 0)
+            return Error.NotFound("Service.NotFound",
+                $"Some services not found: {string.Join(", ", missingIds)}");
 
         var serviceProvider = mapper.Map<ServiceProvider>(request);
-        await context.AddAsync(serviceProvider);
+        
+        serviceProvider.Services = services;
+
+        await context.ServiceProviders.AddAsync(serviceProvider);
         await context.SaveChangesAsync();
 
         return serviceProvider.Id;
     }
+
+
     public async Task<Result<Paginateable<IEnumerable<ServiceProviderDto>>>> GetServiceProviders(int page, int pageSize, string searchQuery)
     {
         var query = context.ServiceProviders
@@ -61,6 +67,8 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
             .Include(s => s.Currency)
             .Include(s => s.Services)
             .FirstOrDefaultAsync(sp => sp.Id == id);
+        
+        
         return serviceProvider is null ?
             Error.NotFound("ServiceProvider.NotFound", "Service Provider not found") :
             mapper.Map<ServiceProviderDto>(serviceProvider);
@@ -88,7 +96,7 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result> DeleteServiceProvider(Guid id, Guid userId)
     {
-        var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp => sp.Id == id && sp.Services.Count > 0);
+        var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp => sp.Id == id);
         if (serviceProvider != null) return Error.Validation("ServiceProvider.NotDeletable", "Service Provider is linked to inventory");
 
         serviceProvider.DeletedAt = DateTime.UtcNow;
