@@ -9,7 +9,8 @@ public interface IProductionOrderRepository
 {
     // Production Orders
     Task<Result<Guid>> CreateProductionOrder(CreateProductionOrderRequest request);
-    Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>>
+        GetProductionOrders(int page, int pageSize, string searchQuery, ProductionOrderStatus? status);
     Task<Result<ProductionOrderDetailDto>> GetProductionOrder(Guid id);
     Task<Result> UpdateProductionOrder(Guid id, CreateProductionOrderRequest request);
     Task<Result> DeleteProductionOrder(Guid id, Guid userId);

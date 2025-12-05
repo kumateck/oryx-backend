@@ -1100,7 +1100,7 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
 
     public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId)
     {
-        var bmr = await context.BatchManufacturingRecords
+         var bmr = await context.BatchManufacturingRecords
             .AsSplitQuery()
             .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionScheduleProduct)
             .ThenInclude(p => p.Product)
@@ -1139,9 +1139,22 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
                 .AsSplitQuery()
                 .IgnoreQueryFilters()
                 .Include(warehouse => warehouse.ArrivalLocation)
-                .FirstOrDefaultAsync(w => w.Type == WarehouseType.FinishedGoodsStorage && w.Division == product.Division);
+                .FirstOrDefaultAsync(w => 
+                    w.Type == WarehouseType.FinishedGoodsStorage && w.Division == product.Division);
         if (finishedGoodsWarehouse is null)
-            return Error.NotFound("User.Warehouse", "No finished goods warehouses found in the system");
+            return Error.NotFound("User.Warehouse", 
+                "No finished goods warehouses found in the system");
+        
+        // if (request.FinishedGoodsTransferNoteId.HasValue)
+        // {
+        //     var finishedGoodsTransferNote = await 
+        //         context.FinishedGoodsTransferNotes
+        //         .FirstOrDefaultAsync(fn => fn.Id == request.FinishedGoodsTransferNoteId);
+        //     
+        //     if(finishedGoodsTransferNote is null)
+        //         return Error.NotFound("FinishedGoods","FinishedGoodsTransferNote not found");
+        //     
+        // }
 
         var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
         transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
@@ -2979,5 +2992,10 @@ public class ProductionScheduleRepository(ApplicationDbContext context, IMapper 
         }).ToList();
 
         return report;
+    }
+
+    public Task<Result> ForecastProductionScheduleProduct()
+    {
+        throw new NotImplementedException();
     }
 }

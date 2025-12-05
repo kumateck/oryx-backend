@@ -24,7 +24,6 @@ public class BillOfMaterialItem : BaseEntity
     public MaterialType MaterialType { get; set; }
     [StringLength(255)] public string Grade { get; set; }
     [StringLength(255)] public string CasNumber { get; set; }
-    [StringLength(255)] public string Function { get; set; }
     public int Order { get; set; }
     public bool IsSubstitutable { get; set; }
     public decimal BaseQuantity { get; set; }

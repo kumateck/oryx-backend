@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials.Batch;
@@ -64,6 +65,8 @@ public class AllocateProductionOrderRequest
 public class AllocateProductionOrderProductRequest
 {
     public Guid ProductId { get; set; }
+    [Required(ErrorMessage = "ProductPackingId is required.")]
+    public Guid? ProductPackingId { get; set; }
     public List<AllocateProductQuantityRequest> FulfilledQuantities { get; set; } = [];
 }
 
@@ -91,6 +94,7 @@ public class AllocateProductionOrderDto
 public class AllocateProductionOrderProductDto
 {
     public ProductListDto Product { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
     public List<AllocateProductQuantityDto> FulfilledQuantities { get; set; } = [];
 }
 
