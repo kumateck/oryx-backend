@@ -94,6 +94,8 @@ public class AllocateProductionOrderProduct
 {
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
     public List<AllocateProductQuantity> FulfilledQuantities { get; set; } = [];
 }
 

@@ -27,6 +27,7 @@ public class CreateSrRequest
 
 public class CreateFinishedGoodsTransferNoteRequest
 {
+    // public Guid? FinishedGoodsTransferNoteId { get; set; }
     public string TransferNoteNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
