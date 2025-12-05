@@ -43,7 +43,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Retrieves an item stock requisition by its ID
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemStockRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItem([FromRoute] Guid id)
     {
@@ -55,7 +55,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Updates an item stock requisition
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ItemDto))]
+    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ItemStockRequisitionDto))]
     public async Task<IResult> UpdateItem([FromRoute] Guid id, [FromBody] CreateItemStockRequisitionRequest request)
     {
         var result = await repository.UpdateItemStockRequisition(id, request);

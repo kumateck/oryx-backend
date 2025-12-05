@@ -15,10 +15,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 {
     public async Task<Result<Guid>> CreateProductionOrder(CreateProductionOrderRequest request)
     {
-        if (request.Products.GroupBy(p => p.ProductId).Any(g => g.Count() > 1))
+        if (request.Products.GroupBy(p => new {p.ProductId, p.ProductPackingId})
+            .Any(g => g.Count() > 1))
         {
             return Error.Validation("Production.Order",
-                "Production order product list cannot contain more than one of the same product");
+                "Production order product list " +
+                "cannot contain more than one of the same product and product packing");
         }
             
         var productionOrder = mapper.Map<ProductionOrder>(request);
@@ -27,7 +29,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         return productionOrder.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(int page, 
+        int pageSize, string searchQuery, ProductionOrderStatus? status)
     {
         var query = context.ProductionOrders
             .IgnoreQueryFilters()
@@ -35,11 +38,22 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(p => p.Customer)
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            // .ThenInclude(p => p.PackingLists)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.Code);
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(q => q.Status == status.Value);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionOrderDto>);
@@ -53,6 +67,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
             .Include(p => p.Customer)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .FirstOrDefaultAsync(po => po.Id == id);
 
         if (productionOrder == null)
@@ -623,6 +643,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
                 .ThenInclude(f => f.BatchManufacturingRecord)
                 .Include(a => a.Products)
                 .ThenInclude(p => p.Product)
+                .Include(a => a.Products)
+                .ThenInclude(p => p.ProductPacking)
+                .ThenInclude(p => p.PackingLists)
+                .Include(a => a.Products)
+                .ThenInclude(p => p.ProductPacking)
+                .ThenInclude(p => p.BasePackingUoM)
                 .FirstOrDefaultAsync(p => p.Id == id)
         );
     }
@@ -641,7 +667,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         // Quick lookup of products on this order
         var orderProductsById = productionOrder.Products
-            .ToDictionary(p => p.ProductId, p => p);
+            .ToDictionary(p => $"{p.ProductId},{p.ProductPackingId}", p => p);
 
         // 2) Collect all FinishedGoodsTransferNote IDs in the request and fetch them in one go
         var allNoteIds = request.Products
@@ -690,10 +716,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         // 6) Per-product validations (membership, remaining, optional note↔product compatibility)
         foreach (var reqProduct in request.Products)
         {
-            if (!orderProductsById.TryGetValue(reqProduct.ProductId, out var orderProduct))
+            if (!orderProductsById.TryGetValue($"{reqProduct.ProductId},{reqProduct.ProductPackingId}", 
+                    out var orderProduct))
             {
                 return Error.NotFound("ProductionOrder.ProductNotFound",
-                    $"Product {reqProduct.ProductId} not found in this production order");
+                    $"Product {reqProduct.ProductId} and" +
+                    $" Product packing {reqProduct.ProductPackingId} not found in this production order");
             }
 
             if (orderProduct.Fulfilled)

@@ -25,6 +25,13 @@ public class CreateSrRequest
     public Guid? UoMId { get; set; }
 }
 
+
+public class CreateFinishedGoodsTransferNoteQuantityRequest
+{
+    public Guid BatchManufacturingRecordId { get; set; }
+    public decimal Quantity { get; set; }
+}
+
 public class CreateFinishedGoodsTransferNoteRequest
 {
     public string TransferNoteNumber { get; set; }

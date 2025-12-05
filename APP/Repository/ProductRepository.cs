@@ -179,6 +179,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         var bom = await context.ProductBillOfMaterials
             .AsSplitQuery()
             .Include(b => b.BillOfMaterial)
+            .ThenInclude(b => b.Items)
+            .ThenInclude(i => i.Material)
+            .ThenInclude(m => m.MaterialCategory)
             .OrderByDescending(p => p.EffectiveDate)
             .FirstOrDefaultAsync(
             p => p.ProductId == productId && p.IsActive);
@@ -892,7 +895,6 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 MaterialTypeId = materialType?.Id,
                 Grade = GetCell("GRADE"),
                 CasNumber = GetCell("CAS NUMBER"),
-                Function = GetCell("FUNCTION"),
                 Order = int.TryParse(GetCell("ORDER"), out var order) ? order : 0,
                 IsSubstitutable = false,
                 BaseQuantity = decimal.TryParse(GetCell("QUANTITY"), out var baseQuantity) ? baseQuantity : 0,

@@ -17,4 +17,7 @@ public class CreateProductionOrderProduct
     public Guid ProductId { get; set; }
     public int TotalOrderQuantity { get; set; }
     public decimal VolumePerPiece { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public decimal Shippers { get; set; }
+    public decimal Loose { get; set; }
 }

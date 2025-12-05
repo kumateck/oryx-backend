@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251204111642_AddProductPackingShipperToOrderProducts")]
+    partial class AddProductPackingShipperToOrderProducts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1008,6 +1011,10 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Function")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<string>("Grade")
                         .HasMaxLength(255)
@@ -14473,34 +14480,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("UoMId");
 
-                    b.OwnsMany("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNoteQuantity", "Quantities", b1 =>
-                        {
-                            b1.Property<Guid>("FinishedGoodsTransferNoteId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<int>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("integer");
-
-                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
-
-                            b1.Property<DateTime>("MovedAt")
-                                .HasColumnType("timestamp with time zone");
-
-                            b1.Property<Guid>("MovedById")
-                                .HasColumnType("uuid");
-
-                            b1.Property<decimal>("Quantity")
-                                .HasColumnType("numeric");
-
-                            b1.HasKey("FinishedGoodsTransferNoteId", "Id");
-
-                            b1.ToTable("FinishedGoodsTransferNoteQuantity");
-
-                            b1.WithOwner()
-                                .HasForeignKey("FinishedGoodsTransferNoteId");
-                        });
-
                     b.Navigation("BatchManufacturingRecord");
 
                     b.Navigation("CreatedBy");
@@ -14514,8 +14493,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ProductPacking");
 
                     b.Navigation("ProductionActivityStep");
-
-                    b.Navigation("Quantities");
 
                     b.Navigation("ToWarehouse");
 
@@ -15729,14 +15706,9 @@ namespace INFRASTRUCTURE.Migrations
                             b1.Property<Guid>("ProductId")
                                 .HasColumnType("uuid");
 
-                            b1.Property<Guid?>("ProductPackingId")
-                                .HasColumnType("uuid");
-
                             b1.HasKey("AllocateProductionOrderId", "Id");
 
                             b1.HasIndex("ProductId");
-
-                            b1.HasIndex("ProductPackingId");
 
                             b1.ToTable("AllocateProductionOrderProduct");
 
@@ -15748,10 +15720,6 @@ namespace INFRASTRUCTURE.Migrations
                                 .HasForeignKey("ProductId")
                                 .OnDelete(DeleteBehavior.Cascade)
                                 .IsRequired();
-
-                            b1.HasOne("DOMAIN.Entities.Products.ProductPacking", "ProductPacking")
-                                .WithMany()
-                                .HasForeignKey("ProductPackingId");
 
                             b1.OwnsMany("DOMAIN.Entities.ProductionOrders.AllocateProductQuantity", "FulfilledQuantities", b2 =>
                                 {
@@ -15794,8 +15762,6 @@ namespace INFRASTRUCTURE.Migrations
                             b1.Navigation("FulfilledQuantities");
 
                             b1.Navigation("Product");
-
-                            b1.Navigation("ProductPacking");
                         });
 
                     b.Navigation("CreatedBy");

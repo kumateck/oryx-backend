@@ -1,9 +1,9 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
-using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
 
@@ -44,6 +44,9 @@ public class ProductionOrderProductsDto
     public List<ProductionOrderProductQuantityDto> FulfilledQuantities { get; set; } = [];
     public bool Fulfilled { get; set; }
     public decimal RemainingQuantity { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
+    public decimal Shippers { get; set; }
+    public decimal Loose { get; set; }
 }
 
 public class ProductionOrderProductQuantityDto
@@ -61,6 +64,8 @@ public class AllocateProductionOrderRequest
 public class AllocateProductionOrderProductRequest
 {
     public Guid ProductId { get; set; }
+    [Required]
+    public Guid? ProductPackingId { get; set; }
     public List<AllocateProductQuantityRequest> FulfilledQuantities { get; set; } = [];
 }
 
@@ -88,6 +93,7 @@ public class AllocateProductionOrderDto
 public class AllocateProductionOrderProductDto
 {
     public ProductListDto Product { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
     public List<AllocateProductQuantityDto> FulfilledQuantities { get; set; } = [];
 }
 

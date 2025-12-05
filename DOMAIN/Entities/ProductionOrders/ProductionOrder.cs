@@ -51,7 +51,12 @@ public class ProductionOrderProducts
     public decimal TotalValue => TotalOrderQuantity * Product?.Price ?? 0;
     public bool Fulfilled { get; set; }
     public List<ProductionOrderProductQuantity> FulfilledQuantities { get; set; } = [];
-    public decimal RemainingQuantity => TotalOrderQuantity - FulfilledQuantities.Sum(p => p.Quantity);
+    public decimal RemainingQuantity => TotalOrderQuantity 
+                                        - FulfilledQuantities.Sum(p => p.Quantity);
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
+    public decimal Shippers { get; set; }
+    public decimal Loose { get; set; }
 }
 
 [Owned]
@@ -89,6 +94,8 @@ public class AllocateProductionOrderProduct
 {
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
     public List<AllocateProductQuantity> FulfilledQuantities { get; set; } = [];
 }
 
