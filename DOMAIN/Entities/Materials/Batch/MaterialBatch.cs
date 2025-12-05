@@ -9,6 +9,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
+using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace DOMAIN.Entities.Materials.Batch;
@@ -175,6 +176,15 @@ public class FinishedGoodsTransferNote : BaseEntity
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
     public decimal RemainingQuantity => TotalQuantity  - AllocatedQuantity;
+    public List<FinishedGoodsTransferNoteQuantity> Quantities { get; set; } = [];
+}
+
+[Owned]
+public class FinishedGoodsTransferNoteQuantity
+{
+    public decimal Quantity { get; set; }
+    public DateTime MovedAt { get; set; }
+    public Guid MovedById { get; set; }
 }
 
 public class FinishedGoodsTransferNoteDto : BaseDto
