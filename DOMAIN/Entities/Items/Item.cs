@@ -27,7 +27,8 @@ public enum Store
 {
     IT,
     General,
-    EquipmentStore
+    EquipmentStore,
+    ReagentStore
 }
 
 public enum InventoryClassification
