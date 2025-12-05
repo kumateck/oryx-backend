@@ -4,7 +4,6 @@ using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
-using SHARED;
 
 namespace DOMAIN.Entities.ProductionOrders;
 
@@ -65,7 +64,7 @@ public class AllocateProductionOrderRequest
 public class AllocateProductionOrderProductRequest
 {
     public Guid ProductId { get; set; }
-    [Required(ErrorMessage = "ProductPackingId is required.")]
+    [Required]
     public Guid? ProductPackingId { get; set; }
     public List<AllocateProductQuantityRequest> FulfilledQuantities { get; set; } = [];
 }

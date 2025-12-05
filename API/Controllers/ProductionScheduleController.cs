@@ -13,6 +13,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
+using SHARED;
 using SHARED.Requests;
 
 namespace API.Controllers;
@@ -426,10 +427,35 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetBatchManufacturingRecordByProductionAndScheduleId(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    [HttpPost("finished-goods-transfer-note/quantity")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateFinishedGoodsTransferNoteQuantity(
+        [FromBody] CreateFinishedGoodsTransferNoteQuantityRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateFinishedGoodsTransferNoteQuantity(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    [HttpGet("finished-goods-transfer-note/bmr-quantity/{batchManufacturingRecordId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(decimal))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetRemainingQuantityOfBmrForFinishedGoodsNote(
+        [FromRoute] Guid batchManufacturingRecordId)
+    {
+        return TypedResults.Ok(await repository
+            .GetRemainderOfFinishedGoodsQuantityFromBmr(batchManufacturingRecordId));
+    }
 
     [HttpPost("finished-goods-transfer-note")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateFinishedGoodsTransferNote([FromBody] CreateFinishedGoodsTransferNoteRequest request)
     {

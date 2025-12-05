@@ -84,6 +84,10 @@ public interface IProductionScheduleRepository
     Task<Result<List<ProductionScheduleProcurementDto>>> GetMaterialsWithInsufficientStock(Guid productionScheduleProductId);
     Task<Result<List<ProductionScheduleProcurementPackageDto>>> GetPackageMaterialsWithInsufficientStock(Guid productionScheduleProductId);
     Task<Result<BatchManufacturingRecordDto>> GetBatchManufacturingRecordByProductionAndScheduleId(Guid productionScheduleProductId);
+    Task<Result> CreateFinishedGoodsTransferNoteQuantity(
+        CreateFinishedGoodsTransferNoteQuantityRequest request,
+        Guid userId);
+    Task<decimal> GetRemainderOfFinishedGoodsQuantityFromBmr(Guid batchManufacturingRecordId);
     Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
 
     Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id);
