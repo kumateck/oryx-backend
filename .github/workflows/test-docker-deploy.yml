@@ -97,5 +97,7 @@ jobs:
             --env RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }} \
             --env DOCKER_PASSWORD='${{ secrets.DOCKER_PASSWORD }}' \
             --env DOCKER_USERNAME='${{ secrets.DOCKER_USERNAME }}' \
+            --env SMTP_HOST=${{ secrets.SMTP_HOST }} \
+            --env SMTP_PORT=${{ secrets.SMTP_PORT }} \
             "${DOCKER_IMAGE_NAME}:latest"
           EOF
