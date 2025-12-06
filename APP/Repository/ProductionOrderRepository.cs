@@ -91,8 +91,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result> UpdateProductionOrder(Guid id, CreateProductionOrderRequest request)
     {
-        var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(p => p.Id == id);
-        if (productionOrder is null) return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
+        var productionOrder = await context.ProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder is null) 
+            return Error.NotFound("ProductionOrder.NotFound", 
+            "Production Order not found");
 
         productionOrder.Products = mapper.Map<List<ProductionOrderProducts>>(request.Products);
         mapper.Map(request, productionOrder);
@@ -597,7 +600,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     }
 
 
-    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? onlyApproved, int page,
+    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? approved, int page,
         int pageSize, string searchQuery, Guid? productionOrderId)
     {
         var query = context.AllocateProductionOrders
@@ -618,12 +621,9 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             query = query.WhereSearch(searchQuery, b => b.ProductionOrder.Code);
         }
 
-        if (onlyApproved.HasValue)
+        if (approved.HasValue)
         {
-            if (onlyApproved.Value)
-            {
-                query = query.Where(q => q.Approved);
-            }
+            query = query.Where(q => q.Approved == approved.Value);
         }
 
         if (productionOrderId.HasValue)
