@@ -87,7 +87,7 @@ public class AllocateProductionOrderDto
     public DateTime? DeliveredAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool HasInvoice { get; set; }
-
+    public bool HasWayBill { get; set; }
 }
 
 public class AllocateProductionOrderProductDto

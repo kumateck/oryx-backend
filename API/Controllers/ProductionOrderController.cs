@@ -342,9 +342,11 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     public async Task<IResult> GetProductionOrderWaybills(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery = null,
+        [FromQuery] Guid? allocateProductionOrderId = null)
     {
-        var result = await repository.GetProductionOrderWaybills(page, pageSize, searchQuery);
+        var result = await repository.GetProductionOrderWaybills(page, pageSize, 
+            searchQuery, allocateProductionOrderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
