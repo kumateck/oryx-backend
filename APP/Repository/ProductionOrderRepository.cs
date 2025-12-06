@@ -432,6 +432,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         await context.ProductionOrderWaybills.AddAsync(new ProductionOrderWaybill
         {
+            Code = request.Code,
             AllocateProductionOrderId = id,
             Comment = request.Comment,
         });
