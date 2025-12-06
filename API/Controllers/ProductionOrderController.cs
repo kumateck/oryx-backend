@@ -124,9 +124,14 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         [FromQuery] ProformaInvoiceStatus? proformaInvoiceStatus,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery = null,
+        [FromQuery] bool? approved = null)
     {
-        var result = await repository.GetProformaInvoices(page, pageSize, searchQuery, proformaInvoiceStatus);
+        var result = await repository.GetProformaInvoices(page, 
+            pageSize, 
+            searchQuery, 
+            proformaInvoiceStatus,
+            approved);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
