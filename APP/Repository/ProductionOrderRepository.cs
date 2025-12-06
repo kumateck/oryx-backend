@@ -154,7 +154,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery, ProformaInvoiceStatus? status = null)
+    public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page,
+        int pageSize, 
+        string searchQuery, 
+        ProformaInvoiceStatus? status = null,
+        bool? approved = null)
     {
         var query = context.ProformaInvoices
             .AsSplitQuery()
@@ -168,6 +172,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.AllocateProductionOrder.ProductionOrder.Code);
+        }
+
+        if (approved.HasValue)
+        {
+            query = query.Where(q => q.AllocateProductionOrder.Approved == approved.Value);
         }
 
         if (status != null)
