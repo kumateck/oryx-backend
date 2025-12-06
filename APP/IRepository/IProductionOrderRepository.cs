@@ -40,7 +40,8 @@ public interface IProductionOrderRepository
     Task<Result<Paginateable<IEnumerable<ProductionOrderWaybillDto>>>> GetProductionOrderWaybills(
         int page,
         int pageSize,
-        string searchQuery);
+        string searchQuery,
+        Guid? allocateProductionOrderId = null);
     Task<Result<ProductionOrderWaybillDto>> GetProductionOrderWaybill(Guid id);
     Task<Result> SendWaybillToCustomer(Guid id);
     Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id);

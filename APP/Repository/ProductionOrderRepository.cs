@@ -440,7 +440,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var productionOrder = await context.AllocateProductionOrders
             .FirstOrDefaultAsync(p => p.Id == id);
-        if (productionOrder == null) return Error.NotFound("Product.Order", "Product order not found");
+        if (productionOrder == null) return Error.NotFound("Product.Order", 
+            "Product order not found");
+        
+        if(await context.ProductionOrderWaybills.AnyAsync(p => p.AllocateProductionOrderId == id))
+            return Error.Validation("ProductionOrder.Waybill", 
+                "ProductionOrder.Waybill already exists for this allocation");
 
         await context.ProductionOrderWaybills.AddAsync(new ProductionOrderWaybill
         {
@@ -456,7 +461,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<Paginateable<IEnumerable<ProductionOrderWaybillDto>>>> GetProductionOrderWaybills(
         int page,
         int pageSize,
-        string searchQuery)
+        string searchQuery,
+        Guid? allocateProductionOrderId = null)
     {
         var query = context.ProductionOrderWaybills
             .AsSplitQuery()
@@ -468,6 +474,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             query = query.WhereSearch(searchQuery,
                 q => q.Comment,
                 q => q.AllocateProductionOrder.ProductionOrder.Code);
+        }
+
+        if (allocateProductionOrderId.HasValue)
+        {
+            query = query.Where(q => q.AllocateProductionOrderId == allocateProductionOrderId);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionOrderWaybillDto>);
