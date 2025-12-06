@@ -270,9 +270,9 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] Guid? productionOrderId = null,
-        [FromQuery] bool? onlyApproved = null)
+        [FromQuery] bool? approved = null)
     {
-        var result = await repository.GetProductAllocations(onlyApproved,
+        var result = await repository.GetProductAllocations(approved,
             page, 
             pageSize, 
             searchQuery, 
