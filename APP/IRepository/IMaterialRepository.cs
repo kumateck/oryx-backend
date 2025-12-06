@@ -78,7 +78,10 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery, MaterialKind? kind, Guid userId);
     Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page,
         int pageSize,
-        string searchQuery, MaterialKind? kind, Guid userId);
+        string searchQuery, 
+        MaterialKind? kind,
+        Guid? materialCategoryId,
+        Guid userId);
     Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId);
     Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
         int page,
