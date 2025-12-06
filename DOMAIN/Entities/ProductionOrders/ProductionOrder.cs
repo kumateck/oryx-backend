@@ -158,11 +158,14 @@ public class ProductionOrderInvoiceItemDto : BaseDto
 
 public class CreateProductionOrderWaybill
 {
+    [StringLength(1000, ErrorMessage = "Code character length must be less than 1000")]
+    public string Code { get; set; }
     public string Comment { get; set; }
 }
 
 public class ProductionOrderWaybill : BaseEntity
 {
+    [StringLength(1000)] public string Code { get; set; }
     public Guid AllocateProductionOrderId { get; set; }
     public AllocateProductionOrder AllocateProductionOrder { get; set; }
     [StringLength(10000)] public string Comment { get; set; }
@@ -171,6 +174,7 @@ public class ProductionOrderWaybill : BaseEntity
 public class ProductionOrderWaybillDto
 {
     public Guid Id { get; set; }
+    public string Code { get; set; }
     public AllocateProductionOrderDto AllocateProductionOrder { get; set; }
     [StringLength(10000)] public string Comment { get; set; }
     public DateTime CreatedAt { get; set; }
