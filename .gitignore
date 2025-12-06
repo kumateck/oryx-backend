@@ -72,6 +72,7 @@ _[Ss]cripts
 *.dot[Cc]over
 
 .env
+entrance_env
 
 # Ignore the .idea directory
 .idea/
