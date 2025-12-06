@@ -2147,6 +2147,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     int pageSize,
     string searchQuery,
     MaterialKind? kind,
+    Guid? materialCategoryId,
     Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -2176,6 +2177,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (kind.HasValue)
         {
             query = query.Where(q => q.Material.Kind == kind);
+        }
+
+        if (materialCategoryId.HasValue)
+        {
+            query = query.Where(m => m.Material.MaterialCategoryId == materialCategoryId.Value);
         }
 
         var results = await PaginationHelper.GetPaginatedResultAsync(
