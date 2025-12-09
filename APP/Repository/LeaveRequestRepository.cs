@@ -260,7 +260,9 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             .AsSplitQuery()
             .Include(l => l.LeaveType)
             .Include(l => l.Employee)
-            .ThenInclude(l => l.Department)
+                .ThenInclude(l => l.Department)
+            .Include(l => l.Employee)
+                .ThenInclude(l => l.Designation)
             .FirstOrDefaultAsync(l => l.Id == leaveRequestId);
 
         return leaveRequest is null ?
