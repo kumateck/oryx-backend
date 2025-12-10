@@ -184,6 +184,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         entity.UnpaidDays = unpaidDays;
 
         await context.LeaveRequests.AddAsync(entity);
+        context.Employees.Update(existingEmployee);
         await context.SaveChangesAsync();
 
         await approvalRepository.CreateInitialApprovalsAsync(nameof(LeaveRequest), entity.Id);
