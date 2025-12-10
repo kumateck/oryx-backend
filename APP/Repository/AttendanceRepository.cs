@@ -70,9 +70,9 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             }
 
             var existingAttendance = await context.AttendanceRecords
-                .FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp);
+                .AnyAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp && a.WorkState == parsedWorkState);
 
-            if (existingAttendance != null)
+            if (existingAttendance)
             {
                 return Error.Validation("Attendance.Duplicate", $"Duplicate record found at row {row}.");
             }
@@ -129,7 +129,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 let clockIn = records.Min(r => r.TimeStamp)
                 let clockOut = records.Max(r => r.TimeStamp)
                 let workHours = (clockOut - clockIn).TotalHours
-                let shift = employee.ShiftAssignments.FirstOrDefault(sa => sa.ScheduleDate.Date == date.Date)
+                let shift = context.ShiftAssignments.FirstOrDefault(sa => sa.ScheduleDate.Date == date.Date && sa.EmployeeId == employee.Id)
                 select new AttendanceRecordDepartmentDto
                 {
                     StaffName = $"{employee.FirstName} {employee.LastName}",
@@ -241,22 +241,36 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
 
                     if (isCasual) summary.CasualStaff++;
                     else summary.PermanentStaff++;
+                    
+                    //  EARLY MORNING SHIFT (6am–2pm)
+                    if (shiftStart >= TimeSpan.FromHours(6) && shiftStart < TimeSpan.FromHours(8))
+                    {
+                        if (isCasual) summary.CasualEarlyMorning++;
+                        else summary.PermanentEarlyMorning++;
 
                     // Categorize by shift
                     if (shiftStart >= TimeSpan.FromHours(5) && shiftStart < TimeSpan.FromHours(12))
                     {
                         if (isCasual) summary.CasualMorning++;
                         else summary.PermanentMorning++;
+
+                        continue;
                     }
                     else if (shiftStart >= TimeSpan.FromHours(12) && shiftStart < TimeSpan.FromHours(17))
                     {
                         if (isCasual) summary.CasualAfternoon++;
                         else summary.PermanentAfternoon++;
+
+                        continue;
                     }
-                    else
+                    
+                    // NIGHT SHIFT (9pm–8am)
+                    if (shiftStart >= TimeSpan.FromHours(17) || shiftStart < TimeSpan.FromHours(6))
                     {
                         if (isCasual) summary.CasualNight++;
                         else summary.PermanentNight++;
+
+                        continue;
                     }
 
                     continue;
@@ -506,37 +520,5 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             FileName = $"AttendanceSummary_{timestamp}.xlsx"
         });
-    }
-
-    private async Task<int> EmployeesOnSickLeave(DateTime today)
-    {
-        var sickLeaveTypeId = await context.LeaveTypes
-            .Where(t => t.Name == "Sick Leave")
-            .Select(t => t.Id)
-            .FirstOrDefaultAsync();
-
-        return await context.LeaveRequests
-            .Where(l => l.LeaveTypeId == sickLeaveTypeId &&
-                        l.Approved &&
-                        l.StartDate <= today &&
-                        l.EndDate >= today)
-            .CountAsync();
-    }
-
-    private async Task<int> NumberOfApprovedLeaves(DateTime today)
-    {
-        var leaveType = await context.LeaveTypes
-            .Where(t => t.Name != "Maternity Leave"
-                        && t.Name != "Sick Leave")
-            .Select(t => t.Id)
-            .FirstOrDefaultAsync();
-
-        return await context.LeaveRequests
-            .Where(l => l.LeaveTypeId == leaveType
-                        && l.RequestCategory != RequestCategory.OfficialDuty
-                        && l.Approved &&
-                        l.StartDate <= today &&
-                        l.EndDate >= today)
-            .CountAsync();
     }
 }
