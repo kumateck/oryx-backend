@@ -91,8 +91,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result> UpdateProductionOrder(Guid id, CreateProductionOrderRequest request)
     {
-        var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(p => p.Id == id);
-        if (productionOrder is null) return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
+        var productionOrder = await context.ProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder is null) 
+            return Error.NotFound("ProductionOrder.NotFound", 
+            "Production Order not found");
 
         productionOrder.Products = mapper.Map<List<ProductionOrderProducts>>(request.Products);
         mapper.Map(request, productionOrder);
@@ -154,7 +157,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery, ProformaInvoiceStatus? status = null)
+    public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page,
+        int pageSize, 
+        string searchQuery, 
+        ProformaInvoiceStatus? status = null,
+        bool? approved = null)
     {
         var query = context.ProformaInvoices
             .AsSplitQuery()
@@ -168,6 +175,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.AllocateProductionOrder.ProductionOrder.Code);
+        }
+
+        if (approved.HasValue)
+        {
+            query = query.Where(q => q.AllocateProductionOrder.Approved == approved.Value);
         }
 
         if (status != null)
@@ -428,10 +440,16 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var productionOrder = await context.AllocateProductionOrders
             .FirstOrDefaultAsync(p => p.Id == id);
-        if (productionOrder == null) return Error.NotFound("Product.Order", "Product order not found");
+        if (productionOrder == null) return Error.NotFound("Product.Order", 
+            "Product order not found");
+        
+        if(await context.ProductionOrderWaybills.AnyAsync(p => p.AllocateProductionOrderId == id))
+            return Error.Validation("ProductionOrder.Waybill", 
+                "ProductionOrder.Waybill already exists for this allocation");
 
         await context.ProductionOrderWaybills.AddAsync(new ProductionOrderWaybill
         {
+            Code = request.Code,
             AllocateProductionOrderId = id,
             Comment = request.Comment,
         });
@@ -443,7 +461,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<Paginateable<IEnumerable<ProductionOrderWaybillDto>>>> GetProductionOrderWaybills(
         int page,
         int pageSize,
-        string searchQuery)
+        string searchQuery,
+        Guid? allocateProductionOrderId = null)
     {
         var query = context.ProductionOrderWaybills
             .AsSplitQuery()
@@ -455,6 +474,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             query = query.WhereSearch(searchQuery,
                 q => q.Comment,
                 q => q.AllocateProductionOrder.ProductionOrder.Code);
+        }
+
+        if (allocateProductionOrderId.HasValue)
+        {
+            query = query.Where(q => q.AllocateProductionOrderId == allocateProductionOrderId);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionOrderWaybillDto>);
@@ -587,7 +611,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     }
 
 
-    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? onlyApproved, int page,
+    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? approved, int page,
         int pageSize, string searchQuery, Guid? productionOrderId)
     {
         var query = context.AllocateProductionOrders
@@ -608,12 +632,9 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             query = query.WhereSearch(searchQuery, b => b.ProductionOrder.Code);
         }
 
-        if (onlyApproved.HasValue)
+        if (approved.HasValue)
         {
-            if (onlyApproved.Value)
-            {
-                query = query.Where(q => q.Approved);
-            }
+            query = query.Where(q => q.Approved == approved.Value);
         }
 
         if (productionOrderId.HasValue)
