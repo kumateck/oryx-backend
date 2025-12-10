@@ -70,7 +70,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             }
 
             var existingAttendance = await context.AttendanceRecords
-                .AnyAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp);
+                .AnyAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp && a.WorkState == parsedWorkState);
 
             if (existingAttendance)
             {
