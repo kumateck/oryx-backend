@@ -225,7 +225,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 // 1. PRESENT EMPLOYEES
                 if (attendanceMap.TryGetValue(emp.StaffNumber, out var attendance))
                 {
-                    // Ensure shift exists
+                    // Ensure shift is available
                     if (!shiftMap.TryGetValue(emp.Id, out var shift) || shift.ShiftType?.StartTime == null)
                         continue;
 
@@ -248,20 +248,15 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                         if (isCasual) summary.CasualEarlyMorning++;
                         else summary.PermanentEarlyMorning++;
 
-                        continue;
-                    }
-                    
-                    //  MORNING SHIFT (8am–2pm)
-                    if (shiftStart >= TimeSpan.FromHours(8) && shiftStart < TimeSpan.FromHours(12))
+                    // Categorize by shift
+                    if (shiftStart >= TimeSpan.FromHours(5) && shiftStart < TimeSpan.FromHours(12))
                     {
                         if (isCasual) summary.CasualMorning++;
                         else summary.PermanentMorning++;
 
                         continue;
                     }
-                    
-                    // AFTERNOON SHIFT (12pm–5pm)
-                    if (shiftStart >= TimeSpan.FromHours(12) && shiftStart < TimeSpan.FromHours(17))
+                    else if (shiftStart >= TimeSpan.FromHours(12) && shiftStart < TimeSpan.FromHours(17))
                     {
                         if (isCasual) summary.CasualAfternoon++;
                         else summary.PermanentAfternoon++;
@@ -277,6 +272,8 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
 
                         continue;
                     }
+
+                    continue;
                 }
 
                 // 2. SUSPENSIONS
