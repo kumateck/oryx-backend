@@ -70,9 +70,9 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             }
 
             var existingAttendance = await context.AttendanceRecords
-                .FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp);
+                .AnyAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp);
 
-            if (existingAttendance != null)
+            if (existingAttendance)
             {
                 return Error.Validation("Attendance.Duplicate", $"Duplicate record found at row {row}.");
             }
@@ -129,7 +129,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 let clockIn = records.Min(r => r.TimeStamp)
                 let clockOut = records.Max(r => r.TimeStamp)
                 let workHours = (clockOut - clockIn).TotalHours
-                let shift = employee.ShiftAssignments.FirstOrDefault(sa => sa.ScheduleDate.Date == date.Date)
+                let shift = context.ShiftAssignments.FirstOrDefault(sa => sa.ScheduleDate.Date == date.Date && sa.EmployeeId == employee.Id)
                 select new AttendanceRecordDepartmentDto
                 {
                     StaffName = $"{employee.FirstName} {employee.LastName}",
