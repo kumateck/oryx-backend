@@ -1165,7 +1165,41 @@ public class OryxMapper : Profile
         #region Job Requests
 
         CreateMap<CreateJobRequest, JobRequest>();
+        CreateMap<UpdateJobRequestRequest, JobRequest>()
+            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         CreateMap<JobRequest, JobRequestDto>();
+        
+        // Job Execution
+        CreateMap<JobExecution, JobExecutionDto>();
+        
+        // Job Activity
+        CreateMap<JobActivity, JobActivityDto>();
+        
+        // Consumed Items
+        CreateMap<ConsumedItem, ConsumedItemDto>();
+        
+        // Job Order
+        CreateMap<CreateJobOrderRequest, JobOrder>();
+        CreateMap<JobOrder, JobOrderDto>();
+        CreateMap<JobOrderServiceProvider, JobOrderServiceProviderDto>();
+        
+        // Job Order Execution
+        CreateMap<JobOrderExecution, JobOrderExecutionDto>();
+        
+        // Service Quotation
+        CreateMap<CreateServiceQuotationRequest, ServiceQuotation>();
+        CreateMap<UpdateServiceQuotationRequest, ServiceQuotation>()
+            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+        CreateMap<ServiceQuotation, ServiceQuotationDto>();
+        
+        // Quotation Item
+        CreateMap<QuotationItem, QuotationItemDto>();
+        
+        // Service Memo
+        CreateMap<CreateServiceMemoRequest, ServiceMemo>();
+        CreateMap<UpdateServiceMemoRequest, ServiceMemo>()
+            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+        CreateMap<ServiceMemo, ServiceMemoDto>();
 
         #endregion
 
