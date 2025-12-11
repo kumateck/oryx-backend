@@ -162,4 +162,22 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
             roleIds, modelType);
         return TypedResults.Ok(result);
     }
+    
+    /// <summary>
+    /// Gets all items requiring approval by the current user.
+    /// </summary>
+    [HttpGet("my-pending/stats")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ApprovalEntity>))]
+    public async Task<IResult> GetPendingApprovalStatistics()
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
+
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetStatisticsOfEntitiesRequiringApproval(Guid.Parse(userId), 
+            roleIds);
+        return TypedResults.Ok(result);
+    }
 }
