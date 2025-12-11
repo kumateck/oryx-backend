@@ -37,7 +37,10 @@ public interface IMaterialRepository
     Task<Result<List<DepartmentDto>>> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity);
     Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
-    Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId, Guid? departmentId = null, bool? onlyAboutToExpire = null);
+    Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId,
+        Guid? departmentId = null, bool? onlyAboutToExpire = null);
+    Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(string searchQuery,
+        Guid departmentId);
     Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<List<MaterialBatchDto>>> GetFrozenMaterialBatchesInWarehouse(Guid materialId,
         Guid warehouseId);
