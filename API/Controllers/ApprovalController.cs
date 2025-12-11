@@ -168,7 +168,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     /// </summary>
     [HttpGet("my-pending/stats")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ApprovalEntity>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, int>))]
     public async Task<IResult> GetPendingApprovalStatistics()
     {
         var userId = (string)HttpContext.Items["Sub"];
