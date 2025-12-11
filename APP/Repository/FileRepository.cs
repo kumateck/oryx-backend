@@ -151,7 +151,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
 
         attachments.ForEach(item =>
         {
-            item.DeletedAt = DateTime.Now;
+            item.DeletedAt = DateTime.UtcNow;
             item.LastDeletedById = userId;
         });
         context.Attachments.UpdateRange(attachments);
@@ -166,7 +166,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
 
         if (attachment != null)
         {
-            attachment.DeletedAt = DateTime.Now;
+            attachment.DeletedAt = DateTime.UtcNow;
             attachment.LastDeletedById = userId;
             context.Attachments.Update(attachment);
             await context.SaveChangesAsync();

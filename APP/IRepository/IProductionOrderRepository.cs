@@ -19,7 +19,11 @@ public interface IProductionOrderRepository
     // Proforma Invoices
     Task<Result<Guid>> CreateProformaInvoice(CreateProformaInvoice request);
     Task<Result> SendProformaInvoiceToCustomer(Guid proformaInvoiceId, Guid userId);
-    Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery, ProformaInvoiceStatus? status = null);
+    Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, 
+        int pageSize, 
+        string searchQuery, 
+        ProformaInvoiceStatus? status = null,
+        bool? approved = null);
     Task<Result<ProformaInvoiceDto>> GetProformaInvoice(Guid id);
     Task<Result> UpdateProformaInvoice(Guid id, CreateProformaInvoice request);
     Task<Result> DeleteProformaInvoice(Guid id, Guid userId);
@@ -36,7 +40,8 @@ public interface IProductionOrderRepository
     Task<Result<Paginateable<IEnumerable<ProductionOrderWaybillDto>>>> GetProductionOrderWaybills(
         int page,
         int pageSize,
-        string searchQuery);
+        string searchQuery,
+        Guid? allocateProductionOrderId = null);
     Task<Result<ProductionOrderWaybillDto>> GetProductionOrderWaybill(Guid id);
     Task<Result> SendWaybillToCustomer(Guid id);
     Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id);

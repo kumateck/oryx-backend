@@ -11,6 +11,8 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
     {
         var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "emailapikey";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
+        var smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? "smtp.zeptomail.com";
+        var smtpPort = Convert.ToInt32(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");
 
         try
         {
@@ -45,7 +47,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
 
             var client = new SmtpClient();
             client.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
-            client.Connect("smtp.zeptomail.com", 587, false);
+            client.Connect(smtpHost, smtpPort, false);
             client.Authenticate(username, password);
             client.Send(message);
             client.Disconnect(true);
