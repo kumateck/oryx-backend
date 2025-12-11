@@ -20,7 +20,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         if (request.StartDate > request.EndDate)
             return Error.Validation("Request.InvalidDates", "Start date must be before end date.");
 
-        var totalDays = (request.EndDate - request.StartDate).TotalDays + 1;
+        var totalDays = (request.EndDate - request.StartDate).TotalDays;
 
         var existingEmployee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == request.EmployeeId);
