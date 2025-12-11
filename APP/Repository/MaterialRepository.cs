@@ -1357,7 +1357,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Math.Max(totalQuantity, 0);
     }
 
-    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId, Guid? departmentId,
+    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId, 
+        Guid? departmentId,
         bool? onlyAboutToExpire)
     {
         var shelfMaterialBatches = await context.ShelfMaterialBatches
@@ -1391,9 +1392,46 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             if (onlyAboutToExpire.Value)
             {
-                shelfMaterialBatchesDto = shelfMaterialBatchesDto.Where(s => s.MaterialBatch.AboutToExpire).ToList();
+                shelfMaterialBatchesDto = shelfMaterialBatchesDto.Where(s
+                    => s.MaterialBatch.AboutToExpire).ToList();
             }
         }
+
+        return shelfMaterialBatchesDto;
+    }
+    
+    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(string searchQuery, 
+        Guid departmentId)
+    {
+        var shelfMaterialBatches = context.ShelfMaterialBatches
+            .AsSplitQuery()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Include(s => s.MaterialBatch)
+            .Include(s => s.WarehouseLocationShelf)
+            .ThenInclude(wls => wls.WarehouseLocationRack)
+            .ThenInclude(w => w.WarehouseLocation)
+            .ThenInclude(wl => wl.Warehouse)
+            .Where(s =>
+                s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId
+                && !s.DeletedAt.HasValue && s.Quantity != 0)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            shelfMaterialBatches = shelfMaterialBatches
+                .WhereSearch(searchQuery, s => s.MaterialBatch.Material.Code,
+                    s => s.MaterialBatch.Material.Name);
+        }
+        
+        var shelfMaterialBatchesDto = mapper.Map<List<ShelfMaterialBatchDto>>(await
+            shelfMaterialBatches.ToListAsync());
+
+        shelfMaterialBatchesDto = shelfMaterialBatchesDto.
+            OrderByDescending(s => s.MaterialBatch.AboutToExpire)
+            .ThenByDescending(s => s.MaterialBatch.Expired)
+            .ThenByDescending(s => s.MaterialBatch.ExpiryDate)
+            .ToList();
 
         return shelfMaterialBatchesDto;
     }

@@ -727,6 +727,27 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetShelfMaterialsAcrossWarehouses(materialId, departmentId, onlyAboutToExpire);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    
+    /// <summary>
+    /// Retrieves the shelf material in stock
+    /// </summary>
+    /// <returns>Returns the total stock quantity of the material in the specified warehouse.</returns>
+    [HttpGet("shelf")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShelfMaterialBatchDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShelfMaterialsAcrossWarehouses(
+        [FromQuery] string searchQuery)
+    {
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+        
+        var result = await repository.GetShelfMaterialsAcrossWarehouses(searchQuery, 
+            Guid.Parse(departmentId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
 
     /// <summary>
     /// Moves a material batch into the warehouse from a distributed material.
