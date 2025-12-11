@@ -1748,6 +1748,18 @@ public class ApprovalRepository(ApplicationDbContext context,
         return entitiesRequiringApproval.OrderByDescending(a => a.CreatedAt).ToList();
     }
 
+    public async Task<Dictionary<string, int>> GetStatisticsOfEntitiesRequiringApproval(
+        Guid userId,
+        List<Guid> roleIds)
+    {
+        var entities = await GetEntitiesRequiringApproval(userId, roleIds, null);
+
+        return entities
+            .GroupBy(e => e.ModelType)
+            .ToDictionary(e => e.Key, 
+                e => e.Count());
+    }
+
     public async Task<Result<ApprovalEntity>> GetEntityRequiringApproval(string modelType,
         Guid modelId)
     {
