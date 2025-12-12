@@ -85,6 +85,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         QuotationStatus? status = null, Guid? jobOrderId = null, Guid? serviceProviderId = null)
     {
         var query = context.ServiceQuotations
+            .AsSplitQuery()
             .Include(q => q.JobOrder)
             .Include(q => q.ServiceProvider)
             .Include(q => q.Currency)
@@ -114,6 +115,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
     public async Task<Result<ServiceQuotationDto>> GetServiceQuotation(Guid id)
     {
         var quotation = await context.ServiceQuotations
+            .AsSplitQuery()
             .Include(q => q.JobOrder).ThenInclude(j => j.JobRequest)
             .Include(q => q.ServiceProvider)
             .Include(q => q.Currency)
@@ -176,6 +178,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
     public async Task<Result<List<ServiceQuotationDto>>> CompareQuotations(CompareQuotationsRequest request)
     {
         var quotations = await context.ServiceQuotations
+            .AsSplitQuery()
             .Include(q => q.ServiceProvider)
             .Include(q => q.Currency)
             .Include(q => q.Items).ThenInclude(i => i.Item)

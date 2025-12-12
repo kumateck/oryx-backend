@@ -59,6 +59,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
         ServiceMemoStatus? status = null, Guid? jobOrderId = null, Guid? serviceProviderId = null)
     {
         var query = context.ServiceMemos
+            .AsSplitQuery()
             .Include(m => m.JobOrder)
             .Include(m => m.ServiceProvider)
             .Include(m => m.IssuedBy)
@@ -86,6 +87,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result<ServiceMemoDto>> GetServiceMemo(Guid id)
     {
         var memo = await context.ServiceMemos
+            .AsSplitQuery()
             .Include(m => m.JobOrder).ThenInclude(j => j.JobRequest)
             .Include(m => m.ServiceQuotation).ThenInclude(q => q.Items)
             .Include(m => m.ServiceProvider)
@@ -117,6 +119,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<Result> IssueServiceMemo(IssueServiceMemoRequest request)
     {
         var memo = await context.ServiceMemos
+            .AsSplitQuery()
             .Include(m => m.JobOrder)
             .FirstOrDefaultAsync(m => m.Id == request.ServiceMemoId);
         
