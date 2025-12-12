@@ -17,7 +17,8 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
     {
         if (Path.GetExtension(request.Attendance.FileName) != ".xlsx" && Path.GetExtension(request.Attendance.FileName) != ".xls")
         {
-            return Error.Validation("Attendance.InvalidFileType", "Invalid file type. Only .xlsx or .xls files are allowed.");
+            return Error.Validation("Attendance.InvalidFileType", 
+                "Invalid file type. Only .xlsx or .xls files are allowed.");
         }
 
         using var stream = new MemoryStream();
@@ -30,6 +31,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
 
         if (worksheet?.Dimension == null || worksheet.Dimension.End.Row < 2)
         {
+            
             return Error.Validation("Attendance.Empty", "The uploaded Excel file is empty or does not contain any records.");
         }
 
@@ -74,7 +76,11 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
 
             if (existingAttendance)
             {
-                return Error.Validation("Attendance.Duplicate", $"Duplicate record found at row {row}.");
+                var attendance = await context.AttendanceRecords
+                    .FirstOrDefaultAsync(a
+                        => a.EmployeeId == empId && a.TimeStamp == timeStamp && a.WorkState == parsedWorkState);
+                context.AttendanceRecords.Remove(attendance);
+                //return Error.Validation("Attendance.Duplicate", $"Duplicate record found at row {row}.");
             }
 
             var employeeExists = await context.Employees.AnyAsync(e => e.StaffNumber == empId);
@@ -146,6 +152,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         var today = DateTime.UtcNow.Date;
 
         var allEmployees = await context.Employees
+            .AsSplitQuery()
             .Include(e => e.Department)
             .ToListAsync();
 
@@ -156,6 +163,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             .ToListAsync();
 
         var shiftAssignments = await context.ShiftAssignments
+            .AsSplitQuery()
             .Include(sa => sa.ShiftType)
             .Include(sa => sa.ShiftSchedules)
             .Where(sa =>
@@ -165,11 +173,15 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             .ToListAsync();
 
         var leaveRequests = await context.LeaveRequests
-            .Include(l => l.Employee).ThenInclude(e => e.Department).Include(leaveRequest => leaveRequest.LeaveType)
+            .AsSplitQuery()
+            .Include(l => l.Employee)
+            .ThenInclude(e => e.Department)
+            .Include(leaveRequest => leaveRequest.LeaveType)
             .Where(l => l.StartDate <= today && l.EndDate >= today && l.Approved)
             .ToListAsync();
 
         var suspendedEmployees = await context.Employees
+            .AsSplitQuery()
             .Include(s => s.Department)
             .Where(s =>
                 s.ActiveStatus == EmployeeActiveStatus.Suspension &&
@@ -196,10 +208,14 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             l.LeaveType.Name != "Maternity Leave" &&
             l.LeaveType.Name != "Sick Leave").ToList();
 
-        var sickLeaves = leaveRequests.Where(l => l.LeaveType.Name == "Sick Leave").ToList();
-        var maternityLeaves = leaveRequests.Where(l => l.LeaveType.Name == "Maternity Leave").ToList();
-        var absences = leaveRequests.Where(l => l.RequestCategory == RequestCategory.AbsenceRequest).ToList();
-        var officialDuties = leaveRequests.Where(l => l.RequestCategory == RequestCategory.OfficialDuty).ToList();
+        var sickLeaves = leaveRequests
+            .Where(l => l.LeaveType is { Name: "Sick Leave" }).ToList();
+        var maternityLeaves = leaveRequests.Where(l =>
+            l.LeaveType is { Name: "Maternity Leave" }).ToList();
+        var absences = leaveRequests
+            .Where(l => l.RequestCategory == RequestCategory.AbsenceRequest).ToList();
+        var officialDuties = leaveRequests.Where(l 
+            => l.RequestCategory == RequestCategory.OfficialDuty).ToList();
 
         var suspendedIds = suspendedEmployees.Select(s => s.Id).ToHashSet();
 
