@@ -27,7 +27,8 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// </summary>
     [HttpGet("daily-summary")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<AttendanceRecordDepartmentDto>))]
-    public async Task<IResult> DepartmentDailySummaryAttendance([FromQuery] string departmentName, [FromQuery] DateTime date)
+    public async Task<IResult> DepartmentDailySummaryAttendance([FromQuery] string departmentName,
+        [FromQuery] DateTime date)
     {
         var result = await repository.DepartmentDailySummaryAttendance(departmentName, date);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
