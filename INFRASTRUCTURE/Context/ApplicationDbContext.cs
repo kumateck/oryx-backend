@@ -1434,6 +1434,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
 
         #endregion
+
+        #region Attendance Record Filter
+
+        modelBuilder.Entity<AttendanceRecords>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
     }
 
     private void ConfigureConstraints(ModelBuilder modelBuilder)
