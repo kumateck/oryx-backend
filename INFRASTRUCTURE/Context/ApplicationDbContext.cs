@@ -651,6 +651,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Job Requests
 
     public DbSet<JobRequest> JobRequests { get; set; }
+    public DbSet<JobExecution> JobExecutions { get; set; }
+    public DbSet<JobActivity> JobActivities { get; set; }
+    public DbSet<ConsumedItem> ConsumedItems { get; set; }
+    public DbSet<JobOrder> JobOrders { get; set; }
+    public DbSet<JobOrderServiceProvider> JobOrderServiceProviders { get; set; }
+    public DbSet<JobOrderExecution> JobOrderExecutions { get; set; }
+    public DbSet<ServiceQuotation> ServiceQuotations { get; set; }
+    public DbSet<QuotationItem> QuotationItems { get; set; }
+    public DbSet<ServiceMemo> ServiceMemos { get; set; }
+    public DbSet<ServiceMemoApproval> ServiceMemoApprovals { get; set; }
 
     #endregion
 
@@ -1505,6 +1515,68 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             b.HasKey("Id");
 
         });
+
+        #endregion
+
+        #region Job Management
+
+        // JobOrder has many ServiceQuotations
+        modelBuilder.Entity<JobOrder>()
+            .HasMany(jo => jo.Quotations)
+            .WithOne(sq => sq.JobOrder)
+            .HasForeignKey(sq => sq.JobOrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // JobOrder has one selected ServiceQuotation (without inverse navigation)
+        modelBuilder.Entity<JobOrder>()
+            .HasOne(jo => jo.SelectedQuotation)
+            .WithMany()
+            .HasForeignKey(jo => jo.SelectedQuotationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // JobOrder has one ServiceMemo (without inverse navigation on ServiceMemo side)
+        modelBuilder.Entity<JobOrder>()
+            .HasOne(jo => jo.ServiceMemo)
+            .WithOne(sm => sm.JobOrder)
+            .HasForeignKey<ServiceMemo>(sm => sm.JobOrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // JobOrder has one JobOrderExecution
+        modelBuilder.Entity<JobOrder>()
+            .HasOne(jo => jo.Execution)
+            .WithOne(e => e.JobOrder)
+            .HasForeignKey<JobOrderExecution>(e => e.JobOrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // JobActivity can belong to either JobExecution or JobOrderExecution
+        modelBuilder.Entity<JobActivity>()
+            .HasOne(ja => ja.JobExecution)
+            .WithMany(je => je.Activities)
+            .HasForeignKey(ja => ja.JobExecutionId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
+        modelBuilder.Entity<JobActivity>()
+            .HasOne(ja => ja.JobOrderExecution)
+            .WithMany(joe => joe.Activities)
+            .HasForeignKey(ja => ja.JobOrderExecutionId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
+        // ConsumedItem can belong to either JobExecution or JobOrderExecution
+        modelBuilder.Entity<ConsumedItem>()
+            .HasOne(ci => ci.JobExecution)
+            .WithMany(je => je.ConsumedItems)
+            .HasForeignKey(ci => ci.JobExecutionId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
+        modelBuilder.Entity<ConsumedItem>()
+            .HasOne(ci => ci.JobOrderExecution)
+            .WithMany(joe => joe.ConsumedItems)
+            .HasForeignKey(ci => ci.JobOrderExecutionId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
 
         #endregion
 

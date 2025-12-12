@@ -380,8 +380,8 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             foreach (var item in report.DepartmentReports)
             {
                 sb.AppendLine($"{item.DepartmentName},{item.PermanentStaff},{item.CasualStaff}," +
-                              $"{item.PermanentMorning},{item.PermanentAfternoon},{item.PermanentNight}," +
-                              $"{item.CasualMorning},{item.CasualAfternoon},{item.CasualNight}," +
+                              $"{item.PermanentEarlyMorning}, {item.PermanentMorning},{item.PermanentAfternoon},{item.PermanentNight}," +
+                              $"{item.CasualEarlyMorning},{item.CasualMorning},{item.CasualAfternoon},{item.CasualNight}," +
                               $"{item.Absences}," +
                               $"{item.Suspensions}," +
                               $"{item.SickLeaves}," +
@@ -434,17 +434,19 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         deptSheet.Cells[1, 1].Value = "Department";
         deptSheet.Cells[1, 2].Value = "Permanent Staff";
         deptSheet.Cells[1, 3].Value = "Casual Staff";
-        deptSheet.Cells[1, 4].Value = "Morning (P)";
-        deptSheet.Cells[1, 5].Value = "Afternoon (P)";
-        deptSheet.Cells[1, 6].Value = "Night (P)";
-        deptSheet.Cells[1, 7].Value = "Morning (C)";
-        deptSheet.Cells[1, 8].Value = "Afternoon (C)";
-        deptSheet.Cells[1, 9].Value = "Night (C)";
-        deptSheet.Cells[1, 10].Value = "Absences";
-        deptSheet.Cells[1, 11].Value = "Suspensions";
-        deptSheet.Cells[1, 12].Value = "Sick Leaves";
-        deptSheet.Cells[1, 13].Value = "Maternity Leaves";
-        deptSheet.Cells[1, 14].Value = "Approved Leaves";
+        deptSheet.Cells[1, 4].Value = "Early Morning (P)";
+        deptSheet.Cells[1, 5].Value = "Morning (P)";
+        deptSheet.Cells[1, 6].Value = "Afternoon (P)";
+        deptSheet.Cells[1, 7].Value = "Night (P)";
+        deptSheet.Cells[1, 8].Value = "Early Morning (C)";
+        deptSheet.Cells[1, 9].Value = "Morning (C)";
+        deptSheet.Cells[1, 10].Value = "Afternoon (C)";
+        deptSheet.Cells[1, 11].Value = "Night (C)";
+        deptSheet.Cells[1, 12].Value = "Absences";
+        deptSheet.Cells[1, 13].Value = "Suspensions";
+        deptSheet.Cells[1, 14].Value = "Sick Leaves";
+        deptSheet.Cells[1, 15].Value = "Maternity Leaves";
+        deptSheet.Cells[1, 16].Value = "Approved Leaves";
 
         var row = 2;
         foreach (var item in report.DepartmentReports)
@@ -452,17 +454,19 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             deptSheet.Cells[row, 1].Value = item.DepartmentName;
             deptSheet.Cells[row, 2].Value = item.PermanentStaff;
             deptSheet.Cells[row, 3].Value = item.CasualStaff;
-            deptSheet.Cells[row, 4].Value = item.PermanentMorning;
-            deptSheet.Cells[row, 5].Value = item.PermanentAfternoon;
-            deptSheet.Cells[row, 6].Value = item.PermanentNight;
-            deptSheet.Cells[row, 7].Value = item.CasualMorning;
-            deptSheet.Cells[row, 8].Value = item.CasualAfternoon;
-            deptSheet.Cells[row, 9].Value = item.CasualNight;
-            deptSheet.Cells[row, 10].Value = item.Absences;
-            deptSheet.Cells[row, 11].Value = item.Suspensions;
-            deptSheet.Cells[row, 12].Value = item.SickLeaves;
-            deptSheet.Cells[row, 13].Value = item.MaternityLeaves;
-            deptSheet.Cells[row, 14].Value = item.ApprovedLeaves;
+            deptSheet.Cells[row, 4].Value = item.PermanentEarlyMorning;
+            deptSheet.Cells[row, 5].Value = item.PermanentMorning;
+            deptSheet.Cells[row, 6].Value = item.PermanentAfternoon;
+            deptSheet.Cells[row, 7].Value = item.PermanentNight;
+            deptSheet.Cells[row, 8].Value = item.CasualEarlyMorning;
+            deptSheet.Cells[row, 9].Value = item.CasualMorning;
+            deptSheet.Cells[row, 10].Value = item.CasualAfternoon;
+            deptSheet.Cells[row, 11].Value = item.CasualNight;
+            deptSheet.Cells[row, 12].Value = item.Absences;
+            deptSheet.Cells[row, 13].Value = item.Suspensions;
+            deptSheet.Cells[row, 14].Value = item.SickLeaves;
+            deptSheet.Cells[row, 15].Value = item.MaternityLeaves;
+            deptSheet.Cells[row, 16].Value = item.ApprovedLeaves;
             row++;
         }
         deptSheet.Cells.AutoFitColumns();
