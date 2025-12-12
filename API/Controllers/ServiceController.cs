@@ -10,7 +10,8 @@ namespace API.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v{version:apiVersion}/services")]
-public class ServiceController(IServiceRepository repository) : ControllerBase
+public class 
+    ServiceController(IServiceRepository repository) : ControllerBase
 {
     /// <summary>
     /// Creates a service
