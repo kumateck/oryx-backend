@@ -21,6 +21,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
             return Error.NotFound("JobOrder.NotFound", "Job order not found");
 
         var quotation = await context.ServiceQuotations
+            .AsSplitQuery()
             .Include(q => q.Items)
             .FirstOrDefaultAsync(q => q.Id == request.ServiceQuotationId);
         

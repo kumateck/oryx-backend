@@ -145,6 +145,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
     public async Task<Result> NegotiateQuotation(NegotiateQuotationRequest request)
     {
         var quotation = await context.ServiceQuotations
+            .AsSplitQuery()
             .Include(q => q.Items)
             .FirstOrDefaultAsync(q => q.Id == request.QuotationId);
         
