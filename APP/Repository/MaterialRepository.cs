@@ -1363,7 +1363,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var shelfMaterialBatches = await context.ShelfMaterialBatches
             .AsSplitQuery()
-            .AsNoTracking()
             .IgnoreQueryFilters()
             .Include(s => s.MaterialBatch)
             .Include(s => s.WarehouseLocationShelf)
@@ -1405,7 +1404,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var shelfMaterialBatches = context.ShelfMaterialBatches
             .AsSplitQuery()
-            .AsNoTracking()
             .IgnoreQueryFilters()
             .Include(s => s.MaterialBatch)
             .Include(s => s.WarehouseLocationShelf)
@@ -1442,6 +1440,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Sum of quantities moved to this location (incoming batches)
         var batchesInLocation = await context.MassMaterialBatchMovements
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.ToWarehouse)
             .Where(m => m.Batch.Status == BatchStatus.Frozen && m.Batch.MaterialId == materialId
@@ -1451,6 +1450,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Sum of quantities moved out of this location (outgoing batches)
         var batchesMovedOut = await context.MassMaterialBatchMovements
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.FromWarehouse)
             .Where(m => m.Batch.Status == BatchStatus.Frozen && m.Batch.MaterialId == materialId
@@ -1460,6 +1460,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Sum of the consumed quantities at this location for the given material
         var batchesConsumedAtLocation = await context.MaterialBatchEvents
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.ConsumptionWarehouse)
             .Where(e => e.Batch.Status == BatchStatus.Frozen && e.Batch.MaterialId == materialId
@@ -1479,6 +1480,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var frozenBatches = await context.MaterialBatches
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(b => b.Material)
             .Include(b => b.UoM)
             .Where(b => b.Status == BatchStatus.Frozen && b.MaterialId == materialId &&
@@ -1497,6 +1499,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Fetch frozen batches in FIFO order
         var frozenBatches = await context.MaterialBatches
+            .AsSplitQuery()
             .Include(b => b.Material)
             .Include(b => b.UoM)
             .Where(b => b.Status == BatchStatus.Frozen &&
@@ -1552,6 +1555,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Fetch batches sorted by expiry date (FIFO order)
         var batches = context.MaterialBatches
+            .AsSplitQuery()
             .Where(b => b.MaterialId == materialId &&
                         b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)) // Ensure the batch is in the warehouse
             .OrderBy(b => b.ExpiryDate) // FIFO
@@ -1559,7 +1563,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ThenInclude(m => m.ToWarehouse)
             .Include(b => b.MassMovements)
             .ThenInclude(m => m.FromWarehouse)
-            .AsSplitQuery()
             .ToList();
 
         foreach (var batch in batches)
