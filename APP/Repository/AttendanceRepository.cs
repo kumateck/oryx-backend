@@ -113,11 +113,11 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 );
             }
 
-            if (localTime.Date != targetDate)
+            if (localTime.Date != targetDate.Date)
             {
                 return Error.Validation(
                     "Attendance.InvalidDate",
-                    $"The timestamp at row {row} is not for the allowed date."
+                    $"The timestamp at row {row} is not for the allowed date {targetDate:dd-MM-yyyy}."
                 );
             }
 
