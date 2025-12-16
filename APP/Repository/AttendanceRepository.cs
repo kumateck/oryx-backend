@@ -13,7 +13,7 @@ namespace APP.Repository;
 
 public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRepository
 {
-    public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
+    public async Task<Result> UploadAttendance(CreateAttendanceRequest request, DateTime? date)
     {
         // 1️⃣ Validate file type
         var extension = Path.GetExtension(request.Attendance.FileName);
@@ -41,7 +41,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             );
         }
 
-        var targetDate = DateTime.UtcNow.Date;
+        var targetDate = date ?? DateTime.UtcNow.Date;
 
         var employees = await context.Employees
             .AsNoTracking()
@@ -79,6 +79,17 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                     "Attendance.MissingFields",
                     $"Missing required fields at row {row}."
                 );
+            }
+
+            if (date.HasValue)
+            {
+                if (targetDate != DateTime.ParseExact(timestampStr, "dd/MM/yyyy", null, DateTimeStyles.AssumeLocal).Date)
+                {
+                    return Error.Validation(
+                        "Attendance.InvalidDate",
+                        $"The timestamp at row {row} is not for the allowed date."
+                    );
+                }
             }
 
             if (!employees.Contains(empId))
