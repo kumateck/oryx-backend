@@ -15,10 +15,10 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// <summary>
     /// Upload daily attendance record
     /// </summary>
-    [HttpPost("upload")]
-    public async Task<IResult> UploadAttendance([FromForm] CreateAttendanceRequest request)
+    [HttpPost("upload/{date:datetime:dd-MM-yyyy}")]
+    public async Task<IResult> UploadAttendance([FromForm] CreateAttendanceRequest request, [FromRoute] DateTime date)
     {
-        var result = await repository.UploadAttendance(request);
+        var result = await repository.UploadAttendance(request, date);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
