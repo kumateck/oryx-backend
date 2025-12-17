@@ -48,7 +48,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     // Get paginated list of Materials
-    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page, int pageSize, string searchQuery, MaterialKind kind)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page,
+        int pageSize, string searchQuery, MaterialKind kind)
     {
         var query = context.Materials
             .AsSplitQuery()
@@ -110,7 +111,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (user is null) return UserErrors.NotFound(userId);
 
 
-        var material = await context.MaterialDepartments.FirstOrDefaultAsync(m => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId);
+        var material = await context.MaterialDepartments.FirstOrDefaultAsync(m
+            => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId);
         if (material is null)
         {
             return MaterialErrors.NotFound(materialId);
@@ -160,7 +162,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Now create initial movements for each batch
         foreach (var batch in batches)
         {
-            var initialLocationId = request.FirstOrDefault(r => r.MaterialId == batch.MaterialId)?.MaterialId;
+            var initialLocationId = request.FirstOrDefault(r
+                => r.MaterialId == batch.MaterialId)?.MaterialId;
 
             if (initialLocationId.HasValue)
             {
@@ -186,7 +189,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
 
-    public async Task<Result> CreateMaterialBatchWithoutBatchMovement(List<CreateMaterialBatchRequest> request, Guid userId)
+    public async Task<Result> CreateMaterialBatchWithoutBatchMovement(List<CreateMaterialBatchRequest> request,
+        Guid userId)
     {
         if (request.Count == 0)
             return Error.Validation("Material.Batches", "Must have at least one batch.");
@@ -207,7 +211,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             if (duplicateInRequest != null)
             {
-                return Error.Validation("BatchNumber", $"Duplicate batch number '{duplicateInRequest}' found in request.");
+                return Error.Validation("BatchNumber",
+                    $"Duplicate batch number '{duplicateInRequest}' found in request.");
             }
 
             // Check for duplicates already in the database
@@ -218,7 +223,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             if (existingBatchNumbers.Count != 0)
             {
-                return Error.Validation("BatchNumber", $"Batch number(s) '{string.Join(", ", existingBatchNumbers)}' already exist.");
+                return Error.Validation("BatchNumber",
+                    $"Batch number(s) '{string.Join(", ", existingBatchNumbers)}' already exist.");
             }
         }
 
@@ -236,10 +242,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var batch = await context.MaterialBatches
             .Include(b => b.Material)
-            .Include(b => b.Events).ThenInclude(m => m.User)
-            .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.User)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.ConsumptionWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.ToWarehouse)
             .FirstOrDefaultAsync(b => b.Id == batchId);
 
         if (batch is null) return MaterialErrors.NotFound(batchId);
@@ -250,15 +260,20 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     // Get paginated list of Material Batches
-    public async Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(int page,
+        int pageSize, string searchQuery)
     {
         var query = context.MaterialBatches
             .AsSplitQuery()
             .Include(b => b.Material)
-            .Include(b => b.Events).ThenInclude(m => m.User)
-            .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.User)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.ConsumptionWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.ToWarehouse)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -287,10 +302,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = await context.MaterialBatches
             .AsSplitQuery()
             .Include(b => b.Material)
-            .Include(b => b.Events).ThenInclude(m => m.User)
-            .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.User)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.ConsumptionWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.ToWarehouse)
             .Where(b => b.MaterialId == materialId)
             .ToListAsync();
 
@@ -384,8 +403,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success(result);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page, int pageSize, string searchQuery, MaterialKind kind,
-        Guid warehouseId, Guid departmentId)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind kind,
+        Guid warehouseId,
+        Guid departmentId)
     {
 
         var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId);
