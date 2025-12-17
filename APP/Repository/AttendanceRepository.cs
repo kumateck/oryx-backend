@@ -81,17 +81,6 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 );
             }
 
-            if (date.HasValue)
-            {
-                if (targetDate != DateTime.ParseExact(timestampStr, "dd/MM/yyyy", null, DateTimeStyles.AssumeLocal).Date)
-                {
-                    return Error.Validation(
-                        "Attendance.InvalidDate",
-                        $"The timestamp at row {row} is not for the allowed date."
-                    );
-                }
-            }
-
             if (!employees.Contains(empId))
             {
                 return Error.Validation(
