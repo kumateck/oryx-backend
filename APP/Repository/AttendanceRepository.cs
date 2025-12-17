@@ -13,7 +13,7 @@ namespace APP.Repository;
 
 public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRepository
 {
-    public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
+    public async Task<Result> UploadAttendance(CreateAttendanceRequest request, DateTime? date)
     {
         // 1️⃣ Validate file type
         var extension = Path.GetExtension(request.Attendance.FileName);
@@ -41,7 +41,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             );
         }
 
-        var targetDate = DateTime.UtcNow.Date;
+        var targetDate = date ?? DateTime.UtcNow.Date;
 
         var employees = await context.Employees
             .AsNoTracking()
@@ -81,6 +81,17 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 );
             }
 
+            if (date.HasValue)
+            {
+                if (targetDate != DateTime.ParseExact(timestampStr, "dd/MM/yyyy", null, DateTimeStyles.AssumeLocal).Date)
+                {
+                    return Error.Validation(
+                        "Attendance.InvalidDate",
+                        $"The timestamp at row {row} is not for the allowed date."
+                    );
+                }
+            }
+
             if (!employees.Contains(empId))
             {
                 return Error.Validation(
@@ -102,11 +113,11 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 );
             }
 
-            if (localTime.Date != targetDate)
+            if (localTime.Date != targetDate.Date)
             {
                 return Error.Validation(
                     "Attendance.InvalidDate",
-                    $"The timestamp at row {row} is not for the allowed date."
+                    $"The timestamp at row {row} is not for the allowed date {targetDate:dd-MM-yyyy}."
                 );
             }
 
@@ -457,7 +468,8 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         if (format.FileType == "csv")
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Department,Permanent,Casual,Morning(P),Afternoon(P),Night(P),Morning(C),Afternoon(C),Night(C),Absent,Suspended,Sick,Maternity,Leave");
+            sb.AppendLine(
+                "Department,Permanent,Casual,Early Morning (P),Morning(P),Afternoon(P),Night(P),Early Morning (P),Morning(C),Afternoon(C),Night(C),Absent,Suspended,Sick,Maternity,Leave");
 
             foreach (var item in report.DepartmentReports)
             {
@@ -474,7 +486,8 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             // Add a separator for system statistics
             sb.AppendLine();
             sb.AppendLine("===== System Wide Breakdown =====");
-            sb.AppendLine("Department,Perm.Leaves,Cas.Leaves,Perm.Sick,Cas.Sick,Perm.Maternity,Cas.Maternity,Perm.Absent,Cas.Absent,Perm.OfficialDuty,Cas.OfficialDuty,Perm.Suspended,Cas.Suspended");
+            sb.AppendLine(
+                "Department,Perm.Leaves,Cas.Leaves,Perm.Sick,Cas.Sick,Perm.Maternity,Cas.Maternity,Perm.Absent,Cas.Absent,Perm.OfficialDuty,Cas.OfficialDuty,Perm.Suspended,Cas.Suspended");
 
             foreach (var dept in report.SystemStatistics.Departments)
             {
@@ -506,8 +519,9 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 FileName = $"AttendanceSummary_{timestamp}.csv"
             });
         }
+    
 
-        // ---------- EXCEL ----------
+    // ---------- EXCEL ----------
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage();
 
