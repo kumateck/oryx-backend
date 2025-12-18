@@ -9,9 +9,9 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
 {
     public void SendMail(string name, string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
-        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "emailapikey";
+        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "erp@entrancepharmaceuticals.com";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
-        var smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? "smtp.zeptomail.com";
+        var smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? "entrancepharmaceuticals.com";
         var smtpPort = Convert.ToInt32(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");
 
         try
