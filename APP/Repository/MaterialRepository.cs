@@ -48,7 +48,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     // Get paginated list of Materials
-    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page, int pageSize, string searchQuery, MaterialKind kind)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page,
+        int pageSize, string searchQuery, MaterialKind kind)
     {
         var query = context.Materials
             .AsSplitQuery()
@@ -110,7 +111,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (user is null) return UserErrors.NotFound(userId);
 
 
-        var material = await context.MaterialDepartments.FirstOrDefaultAsync(m => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId);
+        var material = await context.MaterialDepartments.FirstOrDefaultAsync(m
+            => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId);
         if (material is null)
         {
             return MaterialErrors.NotFound(materialId);
@@ -160,7 +162,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Now create initial movements for each batch
         foreach (var batch in batches)
         {
-            var initialLocationId = request.FirstOrDefault(r => r.MaterialId == batch.MaterialId)?.MaterialId;
+            var initialLocationId = request.FirstOrDefault(r
+                => r.MaterialId == batch.MaterialId)?.MaterialId;
 
             if (initialLocationId.HasValue)
             {
@@ -186,7 +189,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
 
-    public async Task<Result> CreateMaterialBatchWithoutBatchMovement(List<CreateMaterialBatchRequest> request, Guid userId)
+    public async Task<Result> CreateMaterialBatchWithoutBatchMovement(List<CreateMaterialBatchRequest> request,
+        Guid userId)
     {
         if (request.Count == 0)
             return Error.Validation("Material.Batches", "Must have at least one batch.");
@@ -207,7 +211,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             if (duplicateInRequest != null)
             {
-                return Error.Validation("BatchNumber", $"Duplicate batch number '{duplicateInRequest}' found in request.");
+                return Error.Validation("BatchNumber",
+                    $"Duplicate batch number '{duplicateInRequest}' found in request.");
             }
 
             // Check for duplicates already in the database
@@ -218,7 +223,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             if (existingBatchNumbers.Count != 0)
             {
-                return Error.Validation("BatchNumber", $"Batch number(s) '{string.Join(", ", existingBatchNumbers)}' already exist.");
+                return Error.Validation("BatchNumber",
+                    $"Batch number(s) '{string.Join(", ", existingBatchNumbers)}' already exist.");
             }
         }
 
@@ -236,10 +242,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var batch = await context.MaterialBatches
             .Include(b => b.Material)
-            .Include(b => b.Events).ThenInclude(m => m.User)
-            .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.User)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.ConsumptionWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.ToWarehouse)
             .FirstOrDefaultAsync(b => b.Id == batchId);
 
         if (batch is null) return MaterialErrors.NotFound(batchId);
@@ -250,15 +260,20 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     // Get paginated list of Material Batches
-    public async Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(int page,
+        int pageSize, string searchQuery)
     {
         var query = context.MaterialBatches
             .AsSplitQuery()
             .Include(b => b.Material)
-            .Include(b => b.Events).ThenInclude(m => m.User)
-            .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.User)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.ConsumptionWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.ToWarehouse)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -287,10 +302,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = await context.MaterialBatches
             .AsSplitQuery()
             .Include(b => b.Material)
-            .Include(b => b.Events).ThenInclude(m => m.User)
-            .Include(b => b.Events).ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements).ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.User)
+            .Include(b => b.Events)
+                .ThenInclude(m => m.ConsumptionWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.MassMovements)
+                .ThenInclude(m => m.ToWarehouse)
             .Where(b => b.MaterialId == materialId)
             .ToListAsync();
 
@@ -384,8 +403,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success(result);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page, int pageSize, string searchQuery, MaterialKind kind,
-        Guid warehouseId, Guid departmentId)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind kind,
+        Guid warehouseId,
+        Guid departmentId)
     {
 
         var warehouse = await context.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId);
@@ -1357,12 +1380,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Math.Max(totalQuantity, 0);
     }
 
-    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId, Guid? departmentId,
+    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId, 
+        Guid? departmentId,
         bool? onlyAboutToExpire)
     {
         var shelfMaterialBatches = await context.ShelfMaterialBatches
             .AsSplitQuery()
-            .AsNoTracking()
             .IgnoreQueryFilters()
             .Include(s => s.MaterialBatch)
             .Include(s => s.WarehouseLocationShelf)
@@ -1391,9 +1414,45 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             if (onlyAboutToExpire.Value)
             {
-                shelfMaterialBatchesDto = shelfMaterialBatchesDto.Where(s => s.MaterialBatch.AboutToExpire).ToList();
+                shelfMaterialBatchesDto = shelfMaterialBatchesDto.Where(s
+                    => s.MaterialBatch.AboutToExpire).ToList();
             }
         }
+
+        return shelfMaterialBatchesDto;
+    }
+    
+    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(string searchQuery, 
+        Guid departmentId)
+    {
+        var shelfMaterialBatches = context.ShelfMaterialBatches
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(s => s.MaterialBatch)
+            .Include(s => s.WarehouseLocationShelf)
+            .ThenInclude(wls => wls.WarehouseLocationRack)
+            .ThenInclude(w => w.WarehouseLocation)
+            .ThenInclude(wl => wl.Warehouse)
+            .Where(s =>
+                s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId
+                && !s.DeletedAt.HasValue && s.Quantity != 0)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            shelfMaterialBatches = shelfMaterialBatches
+                .WhereSearch(searchQuery, s => s.MaterialBatch.Material.Code,
+                    s => s.MaterialBatch.Material.Name);
+        }
+        
+        var shelfMaterialBatchesDto = mapper.Map<List<ShelfMaterialBatchDto>>(await
+            shelfMaterialBatches.ToListAsync());
+
+        shelfMaterialBatchesDto = shelfMaterialBatchesDto.
+            OrderByDescending(s => s.MaterialBatch.AboutToExpire)
+            .ThenByDescending(s => s.MaterialBatch.Expired)
+            .ThenByDescending(s => s.MaterialBatch.ExpiryDate)
+            .ToList();
 
         return shelfMaterialBatchesDto;
     }
@@ -1404,6 +1463,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Sum of quantities moved to this location (incoming batches)
         var batchesInLocation = await context.MassMaterialBatchMovements
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.ToWarehouse)
             .Where(m => m.Batch.Status == BatchStatus.Frozen && m.Batch.MaterialId == materialId
@@ -1413,6 +1473,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Sum of quantities moved out of this location (outgoing batches)
         var batchesMovedOut = await context.MassMaterialBatchMovements
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.FromWarehouse)
             .Where(m => m.Batch.Status == BatchStatus.Frozen && m.Batch.MaterialId == materialId
@@ -1422,6 +1483,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Sum of the consumed quantities at this location for the given material
         var batchesConsumedAtLocation = await context.MaterialBatchEvents
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(m => m.Batch)
             .Include(m => m.ConsumptionWarehouse)
             .Where(e => e.Batch.Status == BatchStatus.Frozen && e.Batch.MaterialId == materialId
@@ -1441,6 +1503,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var frozenBatches = await context.MaterialBatches
             .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(b => b.Material)
             .Include(b => b.UoM)
             .Where(b => b.Status == BatchStatus.Frozen && b.MaterialId == materialId &&
@@ -1459,6 +1522,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Fetch frozen batches in FIFO order
         var frozenBatches = await context.MaterialBatches
+            .AsSplitQuery()
             .Include(b => b.Material)
             .Include(b => b.UoM)
             .Where(b => b.Status == BatchStatus.Frozen &&
@@ -1514,6 +1578,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Fetch batches sorted by expiry date (FIFO order)
         var batches = context.MaterialBatches
+            .AsSplitQuery()
             .Where(b => b.MaterialId == materialId &&
                         b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)) // Ensure the batch is in the warehouse
             .OrderBy(b => b.ExpiryDate) // FIFO
@@ -1521,7 +1586,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ThenInclude(m => m.ToWarehouse)
             .Include(b => b.MassMovements)
             .ThenInclude(m => m.FromWarehouse)
-            .AsSplitQuery()
             .ToList();
 
         foreach (var batch in batches)

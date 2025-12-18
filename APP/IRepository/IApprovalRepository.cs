@@ -20,6 +20,9 @@ public interface IApprovalRepository
     Task<Result> RejectItem(string modelType, Guid modelId, Guid userId, List<Guid> roleIds,
         string comments = null);
     Task<List<ApprovalEntity>> GetEntitiesRequiringApproval(Guid userId, List<Guid> roleIds, string modelType);
+    Task<Dictionary<string, int>> GetStatisticsOfEntitiesRequiringApproval(
+        Guid userId,
+        List<Guid> roleIds);
 
     Task<Result<ApprovalEntity>> GetEntityRequiringApproval(string modelType, Guid modelId);
     List<ResponsibleApprovalStage> GetCurrentApprovalStage(List<ResponsibleApprovalStage> stages, 
