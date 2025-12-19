@@ -7,7 +7,7 @@ namespace APP.IRepository;
 public interface IJobOrderRepository
 {
     Task<Result<Guid>> CreateJobOrder(CreateJobOrderRequest request);
-    Task<Result<Paginateable<IEnumerable<JobOrderDto>>>> GetJobOrders(int page, int pageSize, 
+    Task<Result<Paginateable<IEnumerable<JobOrderDto>>>> GetJobOrders(int page, int pageSize,
         JobOrderStatus? status = null, Guid? jobRequestId = null, Guid? serviceId = null);
     Task<Result<JobOrderDto>> GetJobOrder(Guid id);
     Task<Result> SendJobOrderToProviders(SendJobOrderToProvidersRequest request);

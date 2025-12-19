@@ -132,7 +132,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseLocationDto>>))]
     public async Task<IResult> GetWarehouseLocations([FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10, 
+        [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? materialKind = null)
     {

@@ -15,21 +15,21 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 {
     public async Task<Result<Guid>> CreateProductionOrder(CreateProductionOrderRequest request)
     {
-        if (request.Products.GroupBy(p => new {p.ProductId, p.ProductPackingId})
+        if (request.Products.GroupBy(p => new { p.ProductId, p.ProductPackingId })
             .Any(g => g.Count() > 1))
         {
             return Error.Validation("Production.Order",
                 "Production order product list " +
                 "cannot contain more than one of the same product and product packing");
         }
-            
+
         var productionOrder = mapper.Map<ProductionOrder>(request);
         await context.AddAsync(productionOrder);
         await context.SaveChangesAsync();
         return productionOrder.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(int page, 
+    public async Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(int page,
         int pageSize, string searchQuery, ProductionOrderStatus? status)
     {
         var query = context.ProductionOrders
@@ -93,8 +93,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var productionOrder = await context.ProductionOrders
             .FirstOrDefaultAsync(p => p.Id == id);
-        if (productionOrder is null) 
-            return Error.NotFound("ProductionOrder.NotFound", 
+        if (productionOrder is null)
+            return Error.NotFound("ProductionOrder.NotFound",
             "Production Order not found");
 
         productionOrder.Products = mapper.Map<List<ProductionOrderProducts>>(request.Products);
@@ -158,8 +158,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     }
 
     public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page,
-        int pageSize, 
-        string searchQuery, 
+        int pageSize,
+        string searchQuery,
         ProformaInvoiceStatus? status = null,
         bool? approved = null)
     {
@@ -440,11 +440,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var productionOrder = await context.AllocateProductionOrders
             .FirstOrDefaultAsync(p => p.Id == id);
-        if (productionOrder == null) return Error.NotFound("Product.Order", 
+        if (productionOrder == null) return Error.NotFound("Product.Order",
             "Product order not found");
-        
-        if(await context.ProductionOrderWaybills.AnyAsync(p => p.AllocateProductionOrderId == id))
-            return Error.Validation("ProductionOrder.Waybill", 
+
+        if (await context.ProductionOrderWaybills.AnyAsync(p => p.AllocateProductionOrderId == id))
+            return Error.Validation("ProductionOrder.Waybill",
                 "ProductionOrder.Waybill already exists for this allocation");
 
         await context.ProductionOrderWaybills.AddAsync(new ProductionOrderWaybill
@@ -737,7 +737,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         // 6) Per-product validations (membership, remaining, optional note↔product compatibility)
         foreach (var reqProduct in request.Products)
         {
-            if (!orderProductsById.TryGetValue($"{reqProduct.ProductId},{reqProduct.ProductPackingId}", 
+            if (!orderProductsById.TryGetValue($"{reqProduct.ProductId},{reqProduct.ProductPackingId}",
                     out var orderProduct))
             {
                 return Error.NotFound("ProductionOrder.ProductNotFound",

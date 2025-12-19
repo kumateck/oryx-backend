@@ -38,7 +38,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
 
         var jobOrder = mapper.Map<JobOrder>(request);
         jobOrder.Code = code;
-        
+
         // Add service providers
         jobOrder.ServiceProviders = request.ServiceProviderIds.Select(id => new JobOrderServiceProvider
         {
@@ -117,7 +117,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         var jobOrder = await context.JobOrders
             .Include(j => j.ServiceProviders)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
-        
+
         if (jobOrder is null)
             return Error.NotFound("JobOrder.NotFound", "Job order not found");
 
@@ -151,13 +151,13 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         var jobOrder = await context.JobOrders
             .Include(j => j.Quotations)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
-        
+
         if (jobOrder is null)
             return Error.NotFound("JobOrder.NotFound", "Job order not found");
 
         var quotation = await context.ServiceQuotations
             .FirstOrDefaultAsync(q => q.Id == request.QuotationId && q.JobOrderId == request.JobOrderId);
-        
+
         if (quotation is null)
             return Error.NotFound("Quotation.NotFound", "Quotation not found");
 
@@ -172,10 +172,10 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         jobOrder.Status = JobOrderStatus.QuotationSelected;
 
         context.JobOrders.Update(jobOrder);
-        
+
         // Update job request status
         await jobRequestRepository.UpdateJobRequestStatus(jobOrder.JobRequestId, JobRequestStatus.ContractorSelected);
-        
+
         await context.SaveChangesAsync();
 
         return Result.Success();
@@ -203,13 +203,13 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         };
 
         jobOrder.Status = JobOrderStatus.InProgress;
-        
+
         await context.JobOrderExecutions.AddAsync(execution);
         context.JobOrders.Update(jobOrder);
-        
+
         // Update job request status
         await jobRequestRepository.UpdateJobRequestStatus(jobOrder.JobRequestId, JobRequestStatus.InProgressExternal);
-        
+
         await context.SaveChangesAsync();
 
         return execution.Id;
@@ -272,7 +272,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         var execution = await context.JobOrderExecutions
             .Include(e => e.JobOrder)
             .FirstOrDefaultAsync(e => e.Id == request.JobOrderExecutionId);
-        
+
         if (execution is null)
             return Error.NotFound("JobOrderExecution.NotFound", "Job order execution not found");
 
@@ -316,12 +316,12 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         }
 
         execution.JobOrder.Status = JobOrderStatus.Completed;
-        
+
         context.JobOrderExecutions.Update(execution);
-        
+
         // Update job request status
         await jobRequestRepository.UpdateJobRequestStatus(execution.JobOrder.JobRequestId, JobRequestStatus.CompletedExternal);
-        
+
         await context.SaveChangesAsync();
 
         return Result.Success();
@@ -355,7 +355,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         var execution = await context.JobOrderExecutions
             .Include(e => e.JobOrder)
             .FirstOrDefaultAsync(e => e.Id == request.JobOrderExecutionId);
-        
+
         if (execution is null)
             return Error.NotFound("JobOrderExecution.NotFound", "Job order execution not found");
 
@@ -373,12 +373,12 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         execution.RequesterComments = request.RequesterComments;
 
         execution.JobOrder.Status = JobOrderStatus.Approved;
-        
+
         context.JobOrderExecutions.Update(execution);
-        
+
         // Update job request status
         await jobRequestRepository.UpdateJobRequestStatus(execution.JobOrder.JobRequestId, JobRequestStatus.Approved);
-        
+
         await context.SaveChangesAsync();
 
         return Result.Success();

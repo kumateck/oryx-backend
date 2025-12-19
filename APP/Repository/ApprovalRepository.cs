@@ -27,9 +27,9 @@ using SHARED;
 
 namespace APP.Repository;
 public class ApprovalRepository(ApplicationDbContext context,
-    IMapper mapper, 
-    UserManager<User> userManager, 
-    IMemoryCache cache, 
+    IMapper mapper,
+    UserManager<User> userManager,
+    IMemoryCache cache,
     ILogger<ApprovalRepository> logger) : IApprovalRepository
 {
     public async Task<Result<Guid>> CreateApproval(CreateApprovalRequest request, Guid userId)
@@ -1267,7 +1267,7 @@ public class ApprovalRepository(ApplicationDbContext context,
                 leaveRequest.LeaveStatus = LeaveStatus.Rejected;
                 context.LeaveRequests.Update(leaveRequest);
                 await context.SaveChangesAsync();
-                
+
                 break;
 
             case nameof(OvertimeRequest):
@@ -1316,7 +1316,7 @@ public class ApprovalRepository(ApplicationDbContext context,
                     ModelId = overtimeRequest.Id,
                 });
                 await context.SaveChangesAsync();
-                
+
                 overtimeRequest.Status = OvertimeStatus.Rejected;
                 context.OvertimeRequests.Update(overtimeRequest);
                 await context.SaveChangesAsync();
@@ -1525,7 +1525,7 @@ public class ApprovalRepository(ApplicationDbContext context,
 
 
     public async Task<List<ApprovalEntity>> GetEntitiesRequiringApproval(
-        Guid userId, 
+        Guid userId,
         List<Guid> roleIds,
         string modelType)
     {
@@ -1756,7 +1756,7 @@ public class ApprovalRepository(ApplicationDbContext context,
 
         return entities
             .GroupBy(e => e.ModelType)
-            .ToDictionary(e => e.Key, 
+            .ToDictionary(e => e.Key,
                 e => e.Count());
     }
 

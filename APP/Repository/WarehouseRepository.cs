@@ -168,8 +168,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             : mapper.Map<WarehouseLocationRackDto>(rack);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(int page, 
-        int pageSize, 
+    public async Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(int page,
+        int pageSize,
         string searchQuery,
         MaterialKind? kind = null)
     {
@@ -314,8 +314,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     }
 
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page,
-        int pageSize, 
-        string searchQuery, 
+        int pageSize,
+        string searchQuery,
         MaterialKind? kind = null)
     {
         var query = context.WarehouseLocationRacks
@@ -471,9 +471,9 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             ? Error.NotFound("WarehouseLocationShelf.NotFound", "Warehouse location shelf not found")
             : mapper.Map<WarehouseLocationShelfDto>(shelf);
     }
-    
+
     public async Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetWarehouseLocationShelves(int page,
-        int pageSize, 
+        int pageSize,
         string searchQuery,
         MaterialKind? kind = null)
     {

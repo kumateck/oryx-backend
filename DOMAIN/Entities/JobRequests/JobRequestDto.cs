@@ -19,15 +19,15 @@ public class JobRequestDto : WithAttachment
     public DateTime PreferredCompletionDate { get; set; }
     public UserDto IssuedBy { get; set; }
     public JobHandlingType HandlingType { get; set; }
-    
+
     // For internal assignment
     public EmployeeDto AssignedToEmployee { get; set; }
     public DateTime? AssignedAt { get; set; }
     public UserDto AssignedBy { get; set; }
-    
+
     // For external assignment
     public ServiceDto Service { get; set; }
-    
+
     // Related entities
     public List<JobExecutionDto> Executions { get; set; } = [];
     public List<JobOrderDto> JobOrders { get; set; } = [];

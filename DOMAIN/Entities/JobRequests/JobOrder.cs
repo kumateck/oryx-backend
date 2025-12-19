@@ -13,37 +13,37 @@ public class JobOrder : BaseEntity
 {
     [StringLength(100)]
     public string Code { get; set; }
-    
+
     public Guid JobRequestId { get; set; }
     public JobRequest JobRequest { get; set; }
-    
+
     public Guid ServiceId { get; set; }
     public Service Service { get; set; }
-    
+
     public DateTime IssuedDate { get; set; }
-    
+
     public Guid IssuedById { get; set; }
     public User IssuedBy { get; set; }
-    
+
     [StringLength(2000)]
     public string Description { get; set; }
-    
+
     public JobOrderStatus Status { get; set; } = JobOrderStatus.Pending;
-    
+
     // Service providers this job order was sent to
     public List<JobOrderServiceProvider> ServiceProviders { get; set; } = [];
-    
+
     // Quotations received from contractors
     public List<ServiceQuotation> Quotations { get; set; } = [];
-    
+
     // Selected quotation
     public Guid? SelectedQuotationId { get; set; }
     public ServiceQuotation SelectedQuotation { get; set; }
-    
+
     // Service Memo
     public Guid? ServiceMemoId { get; set; }
     public ServiceMemo ServiceMemo { get; set; }
-    
+
     // Execution by external contractor
     public JobOrderExecution Execution { get; set; }
 }
@@ -54,17 +54,17 @@ public class JobOrder : BaseEntity
 public class JobOrderServiceProvider
 {
     public Guid Id { get; set; }
-    
+
     public Guid JobOrderId { get; set; }
     public JobOrder JobOrder { get; set; }
-    
+
     public Guid ServiceProviderId { get; set; }
     public ServiceProvider ServiceProvider { get; set; }
-    
+
     public DateTime SentAt { get; set; }
-    
+
     public bool ResponseReceived { get; set; }
-    
+
     public DateTime? ResponseDate { get; set; }
 }
 
