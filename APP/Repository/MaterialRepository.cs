@@ -1380,7 +1380,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Math.Max(totalQuantity, 0);
     }
 
-    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId, 
+    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId,
         Guid? departmentId,
         bool? onlyAboutToExpire)
     {
@@ -1421,8 +1421,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return shelfMaterialBatchesDto;
     }
-    
-    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(string searchQuery, 
+
+    public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(string searchQuery,
         Guid departmentId)
     {
         var shelfMaterialBatches = context.ShelfMaterialBatches
@@ -1444,7 +1444,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .WhereSearch(searchQuery, s => s.MaterialBatch.Material.Code,
                     s => s.MaterialBatch.Material.Name);
         }
-        
+
         var shelfMaterialBatchesDto = mapper.Map<List<ShelfMaterialBatchDto>>(await
             shelfMaterialBatches.ToListAsync());
 

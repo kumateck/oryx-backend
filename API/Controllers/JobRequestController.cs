@@ -30,7 +30,7 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<JobRequestDto>>))]
     public async Task<IResult> GetJobRequests(
-        [FromQuery] int page = 1, 
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] JobRequestStatus? status = null,

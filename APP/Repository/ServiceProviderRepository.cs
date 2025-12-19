@@ -19,7 +19,7 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
 
         if (exists)
             return Error.Validation("ServiceProvider.Exists", "Service Provider already exists");
-        
+
         var services = await context.Services
             .Where(s => request.ServiceIds.Contains(s.Id))
             .ToListAsync();
@@ -30,7 +30,7 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
                 $"Some services not found: {string.Join(", ", missingIds)}");
 
         var serviceProvider = mapper.Map<ServiceProvider>(request);
-        
+
         serviceProvider.Services = services;
 
         await context.ServiceProviders.AddAsync(serviceProvider);
@@ -55,7 +55,7 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
                 sp => sp.Country.Name, sp => sp.Currency.Name, sp => sp.Email
                 , sp => sp.Phone, sp => sp.Address);
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ServiceProviderDto>);
     }
 
@@ -67,8 +67,8 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
             .Include(s => s.Currency)
             .Include(s => s.Services)
             .FirstOrDefaultAsync(sp => sp.Id == id);
-        
-        
+
+
         return serviceProvider is null ?
             Error.NotFound("ServiceProvider.NotFound", "Service Provider not found") :
             mapper.Map<ServiceProviderDto>(serviceProvider);

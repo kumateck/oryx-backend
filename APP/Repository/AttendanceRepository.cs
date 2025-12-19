@@ -378,31 +378,31 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                         => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
 
                 NumberOfPermanentSickLeaves = sickLeaves
-                    .Count(l 
+                    .Count(l
                         => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
                 NumberOfCasualSickLeaves = sickLeaves
                     .Count(l
                         => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
 
                 NumberOfPermanentMaternityLeave = maternityLeaves
-                    .Count(l 
+                    .Count(l
                         => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
                 NumberOfCasualMaternityLeave = maternityLeaves
-                    .Count(l 
+                    .Count(l
                         => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
 
                 NumberOfPermanentAbsentEmployees = absences
                     .Count(a
                         => a.Employee.Department?.Name == deptName && a.Employee.Type == EmployeeType.Permanent),
                 NumberOfCasualAbsentEmployees = absences
-                    .Count(a 
+                    .Count(a
                         => a.Employee.Department?.Name == deptName && a.Employee.Type == EmployeeType.Casual),
 
                 NumberOfPermanentOfficialDuty = officialDuties
-                    .Count(o 
+                    .Count(o
                         => o.Employee.Department?.Name == deptName && o.Employee.Type == EmployeeType.Permanent),
                 NumberOfCasualOfficialDuty = officialDuties
-                    .Count(o 
+                    .Count(o
                         => o.Employee.Department?.Name == deptName && o.Employee.Type == EmployeeType.Casual),
 
                 NumberOfPermanentSuspensions = suspendedEmployees
@@ -445,7 +445,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         });
     }
 
-    public  async Task<Result<FileExportResult>> ExportAttendanceSummary(FileFormat format)
+    public async Task<Result<FileExportResult>> ExportAttendanceSummary(FileFormat format)
     {
         var attendanceResult = await GeneralAttendanceReport();
         if (!attendanceResult.IsSuccess)
@@ -508,9 +508,9 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 FileName = $"AttendanceSummary_{timestamp}.csv"
             });
         }
-    
 
-    // ---------- EXCEL ----------
+
+        // ---------- EXCEL ----------
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage();
 

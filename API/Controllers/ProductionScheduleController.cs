@@ -427,7 +427,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetBatchManufacturingRecordByProductionAndScheduleId(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     [HttpPost("finished-goods-transfer-note/quantity")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -441,7 +441,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.CreateFinishedGoodsTransferNoteQuantity(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     [HttpGet("finished-goods-transfer-note/bmr-quantity/{batchManufacturingRecordId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(decimal))]

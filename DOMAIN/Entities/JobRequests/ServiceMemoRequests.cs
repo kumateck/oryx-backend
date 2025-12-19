@@ -6,34 +6,34 @@ public class CreateServiceMemoRequest
 {
     [Required]
     public Guid JobOrderId { get; set; }
-    
+
     [Required]
     public Guid ServiceQuotationId { get; set; }
-    
+
     [Required]
     public Guid ServiceProviderId { get; set; }
-    
+
     [Required]
     public DateTime IssuedDate { get; set; }
-    
+
     [Required]
     public Guid IssuedById { get; set; }
-    
+
     [Required, Range(0, double.MaxValue)]
     public decimal AgreedServiceCharge { get; set; }
-    
+
     [Required, Range(0, double.MaxValue)]
     public decimal AgreedMaterialsCost { get; set; }
-    
+
     [Required]
     public DateTime ExpectedStartDate { get; set; }
-    
+
     [Required]
     public DateTime ExpectedCompletionDate { get; set; }
-    
+
     [StringLength(2000)]
     public string TermsAndConditions { get; set; }
-    
+
     [StringLength(2000)]
     public string SpecialInstructions { get; set; }
 }

@@ -24,7 +24,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
             .AsSplitQuery()
             .Include(q => q.Items)
             .FirstOrDefaultAsync(q => q.Id == request.ServiceQuotationId);
-        
+
         if (quotation is null)
             return Error.NotFound("ServiceQuotation.NotFound", "Service quotation not found");
 
@@ -32,7 +32,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
             return Error.Validation("Quotation.NotSelected", "This quotation has not been selected");
 
         var serviceProvider = await context.ServiceProviders.AnyAsync(sp => sp.Id == request.ServiceProviderId);
-        if (!serviceProvider) 
+        if (!serviceProvider)
             return Error.Validation("ServiceProvider.Invalid", "Invalid service provider");
 
         var issuer = await userManager.FindByIdAsync(request.IssuedById.ToString());
@@ -45,7 +45,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
         memo.MemoNumber = memoNumber;
 
         await context.ServiceMemos.AddAsync(memo);
-        
+
         // Update job order
         jobOrder.ServiceMemoId = memo.Id;
         jobOrder.Status = JobOrderStatus.MemoCreated;
@@ -123,7 +123,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
             .AsSplitQuery()
             .Include(m => m.JobOrder)
             .FirstOrDefaultAsync(m => m.Id == request.ServiceMemoId);
-        
+
         if (memo is null)
             return Error.NotFound("ServiceMemo.NotFound", "Service memo not found");
 
@@ -132,10 +132,10 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
 
         memo.Status = ServiceMemoStatus.Issued;
         context.ServiceMemos.Update(memo);
-        
+
         // Update job request status
         await jobRequestRepository.UpdateJobRequestStatus(memo.JobOrder.JobRequestId, JobRequestStatus.InProgressExternal);
-        
+
         await context.SaveChangesAsync();
 
         return Result.Success();

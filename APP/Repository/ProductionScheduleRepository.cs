@@ -635,13 +635,13 @@ public class ProductionScheduleRepository(
                 .OrderBy(o => o.Order)
                 .Where(o => o.DepartmentId == departmentId)
                 .Select(o => new OperationDto
-                    { Id = o.Id, Name = o.Name, Description = o.Description, Order = o.Order })
+                { Id = o.Id, Name = o.Name, Description = o.Description, Order = o.Order })
                 .AsNoTracking()
                 .ToListAsync()
             : await context.Operations
                 .OrderBy(o => o.Order)
                 .Select(o => new OperationDto
-                    { Id = o.Id, Name = o.Name, Description = o.Description, Order = o.Order })
+                { Id = o.Id, Name = o.Name, Description = o.Description, Order = o.Order })
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -686,7 +686,7 @@ public class ProductionScheduleRepository(
         // Group activities by operation
         var groupedActivities = productionActivityDtos
             .GroupBy(p => new CollectionItemDto
-                { Id = p.CurrentStep.Operation.Id, Name = p.CurrentStep.Operation.Name })
+            { Id = p.CurrentStep.Operation.Id, Name = p.CurrentStep.Operation.Name })
             .ToList();
 
         // Construct response list
@@ -1159,10 +1159,10 @@ public class ProductionScheduleRepository(
     {
         if (request.Quantity > await GetRemainderOfFinishedGoodsQuantityFromBmr(request.BatchManufacturingRecordId))
         {
-            return Error.Validation("Bmr.Quantity", 
+            return Error.Validation("Bmr.Quantity",
                 "Requested quantity is greater than remaining quantity in bmr");
         }
-        
+
         var finishedGoodsTransferNote = await context.FinishedGoodsTransferNotes
             .FirstOrDefaultAsync(f =>
                 f.BatchManufacturingRecordId == request.BatchManufacturingRecordId);
@@ -1191,26 +1191,26 @@ public class ProductionScheduleRepository(
     {
         var bmr = await context.BatchManufacturingRecords
             .FirstOrDefaultAsync(b => b.Id == batchManufacturingRecordId);
-        
-        if(bmr is null) throw new Exception("Bmr not found");
-        
+
+        if (bmr is null) throw new Exception("Bmr not found");
+
         var finishedGoodsTransferNote = await context.FinishedGoodsTransferNotes
             .Include(f => f.Quantities)
             .FirstOrDefaultAsync(f => f.BatchManufacturingRecordId == batchManufacturingRecordId);
 
         if (finishedGoodsTransferNote is null) return bmr.BatchQuantity;
 
-        return bmr.BatchQuantity - 
+        return bmr.BatchQuantity -
                finishedGoodsTransferNote.Quantities.Sum(q => q.Quantity);
     }
 
-public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId)
+    public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId)
     {
-         var bmr = await context.BatchManufacturingRecords
-            .AsSplitQuery()
-            .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionScheduleProduct)
-            .ThenInclude(p => p.Product)
-            .FirstOrDefaultAsync(r => r.Id == request.BatchManufacturingRecordId);
+        var bmr = await context.BatchManufacturingRecords
+           .AsSplitQuery()
+           .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionScheduleProduct)
+           .ThenInclude(p => p.Product)
+           .FirstOrDefaultAsync(r => r.Id == request.BatchManufacturingRecordId);
 
         if (bmr is null)
             return RequisitionErrors.NotFound(request.BatchManufacturingRecordId);
@@ -1245,10 +1245,10 @@ public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTra
                 .AsSplitQuery()
                 .IgnoreQueryFilters()
                 .Include(warehouse => warehouse.ArrivalLocation)
-                .FirstOrDefaultAsync(w => 
+                .FirstOrDefaultAsync(w =>
                     w.Type == WarehouseType.FinishedGoodsStorage && w.Division == product.Division);
         if (finishedGoodsWarehouse is null)
-            return Error.NotFound("User.Warehouse", 
+            return Error.NotFound("User.Warehouse",
                 "No finished goods warehouses found in the system");
 
         FinishedGoodsTransferNote transferNote = null;

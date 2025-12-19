@@ -11,7 +11,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, 
+public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager,
     IJobRequestRepository jobRequestRepository) : IJobExecutionRepository
 {
     public async Task<Result<Paginateable<IEnumerable<JobExecutionDto>>>> GetJobExecutions(int page, int pageSize,
@@ -76,10 +76,10 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
         jobExecution.AcknowledgedAt = DateTime.UtcNow;
 
         context.JobExecutions.Update(jobExecution);
-        
+
         // Update job request status
         await jobRequestRepository.UpdateJobRequestStatus(jobExecution.JobRequestId, JobRequestStatus.Acknowledged);
-        
+
         await context.SaveChangesAsync();
 
         return Result.Success();
@@ -102,10 +102,10 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
         }
 
         context.JobExecutions.Update(jobExecution);
-        
+
         // Update job request status
         await jobRequestRepository.UpdateJobRequestStatus(jobExecution.JobRequestId, JobRequestStatus.InProgressInternal);
-        
+
         await context.SaveChangesAsync();
 
         return Result.Success();
@@ -209,10 +209,10 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
         }
 
         context.JobExecutions.Update(jobExecution);
-        
+
         // Update job request status
         await jobRequestRepository.UpdateJobRequestStatus(jobExecution.JobRequestId, JobRequestStatus.CompletedInternal);
-        
+
         await context.SaveChangesAsync();
 
         return Result.Success();
@@ -259,10 +259,10 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
         jobExecution.ApprovalComments = request.ApprovalComments;
 
         context.JobExecutions.Update(jobExecution);
-        
+
         // Update job request status
         await jobRequestRepository.UpdateJobRequestStatus(jobExecution.JobRequestId, JobRequestStatus.Approved);
-        
+
         await context.SaveChangesAsync();
 
         return Result.Success();

@@ -231,7 +231,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var qcEquipmentCategories = await context.QcEquipmentCategories.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(qcEquipmentCategories);
                     break;
-                
+
                 case nameof(Reagent):
                     var reagents = await context.Reagents.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(reagents);
@@ -431,7 +431,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.QcEquipmentCategories.AddAsync(qcEquipmentCategory);
                 await context.SaveChangesAsync();
                 return qcEquipmentCategory.Id;
-            
+
             case nameof(Reagent):
                 var reagent = mapper.Map<Reagent>(request);
                 await context.Reagents.AddAsync(reagent);
@@ -613,7 +613,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.QcEquipmentCategories.Update(qcEquipmentCategory);
                 await context.SaveChangesAsync();
                 return qcEquipmentCategory.Id;
-            
+
             case nameof(Reagent):
                 var reagent = await context.Reagents.FirstOrDefaultAsync(p => p.Id == itemId);
                 mapper.Map(request, reagent);
@@ -870,7 +870,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.QcEquipmentCategories.Update(qcEquipmentCategory);
                 await context.SaveChangesAsync();
                 return Result.Success();
-            
+
             case nameof(Reagent):
                 var reagent = await context.Reagents.FirstOrDefaultAsync(p => p.Id == itemId);
                 if (reagent == null)

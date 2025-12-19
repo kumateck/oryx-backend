@@ -16,12 +16,12 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         var jobOrder = await context.JobOrders
             .Include(j => j.ServiceProviders)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
-        
+
         if (jobOrder is null)
             return Error.NotFound("JobOrder.NotFound", "Job order not found");
 
         var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp => sp.Id == request.ServiceProviderId);
-        if (serviceProvider is null) 
+        if (serviceProvider is null)
             return Error.Validation("ServiceProvider.Invalid", "Invalid service provider");
 
         // Verify this provider was sent the job order
@@ -46,7 +46,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         }
 
         var quotation = mapper.Map<ServiceQuotation>(request);
-        
+
         // Map items
         quotation.Items = request.Items.Select(i => new QuotationItem
         {
@@ -60,7 +60,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         }).ToList();
 
         await context.ServiceQuotations.AddAsync(quotation);
-        
+
         // Update job order service provider response
         var jobOrderProvider = jobOrder.ServiceProviders.FirstOrDefault(sp => sp.ServiceProviderId == request.ServiceProviderId);
         if (jobOrderProvider != null)
@@ -148,7 +148,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
             .AsSplitQuery()
             .Include(q => q.Items)
             .FirstOrDefaultAsync(q => q.Id == request.QuotationId);
-        
+
         if (quotation is null)
             return Error.NotFound("ServiceQuotation.NotFound", "Service quotation not found");
 

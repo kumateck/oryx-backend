@@ -5,18 +5,18 @@ namespace DOMAIN.Entities.JobRequests;
 public class CreateJobRequest
 {
     [Required] public Guid DepartmentId { get; set; }
-    
+
     [Required, StringLength(500)]
     public string Location { get; set; }
 
     public Guid? EquipmentId { get; set; }
-    
+
     [StringLength(1000)]
     public string EquipmentInstrumentNumber { get; set; }
-    
+
     [Required]
     public DateTime DateOfIssue { get; set; }
-    
+
     [Required, StringLength(2000)]
     public string DescriptionOfWork { get; set; }
 
@@ -58,13 +58,13 @@ public class RecordJobActivityRequest
 {
     [Required, StringLength(2000)]
     public string ActivityDescription { get; set; }
-    
+
     [Required]
     public DateTime PerformedAt { get; set; }
-    
+
     [Required]
     public Guid PerformedById { get; set; }
-    
+
     public string Notes { get; set; }
 }
 
@@ -72,15 +72,15 @@ public class RecordConsumedItemRequest
 {
     [Required]
     public Guid ItemId { get; set; }
-    
+
     [Required]
     public decimal QuantityConsumed { get; set; }
-    
+
     [Required]
     public Guid UnitOfMeasureId { get; set; }
-    
+
     public string Notes { get; set; }
-    
+
     public ItemSource Source { get; set; } = ItemSource.FromStock;
 }
 
