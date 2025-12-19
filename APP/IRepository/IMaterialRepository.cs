@@ -81,7 +81,7 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery, MaterialKind? kind, Guid userId);
     Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page,
         int pageSize,
-        string searchQuery, 
+        string searchQuery,
         MaterialKind? kind,
         Guid? materialCategoryId,
         Guid userId);

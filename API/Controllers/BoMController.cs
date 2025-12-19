@@ -17,7 +17,7 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="request">The CreateBillOfMaterialRequest object.</param>
     /// <returns>Returns the ID of the created Bill of Material.</returns>
     [HttpPost]
-    [Authorize] 
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateBillOfMaterial([FromBody] CreateBillOfMaterialRequest request)

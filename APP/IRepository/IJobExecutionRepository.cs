@@ -6,7 +6,7 @@ namespace APP.IRepository;
 
 public interface IJobExecutionRepository
 {
-    Task<Result<Paginateable<IEnumerable<JobExecutionDto>>>> GetJobExecutions(int page, int pageSize, 
+    Task<Result<Paginateable<IEnumerable<JobExecutionDto>>>> GetJobExecutions(int page, int pageSize,
         JobExecutionStatus? status = null, Guid? employeeId = null, Guid? jobRequestId = null);
     Task<Result<JobExecutionDto>> GetJobExecution(Guid id);
     Task<Result> AcknowledgeJobExecution(AcknowledgeJobExecutionRequest request);

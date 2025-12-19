@@ -158,11 +158,11 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
 
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetEntitiesRequiringApproval(Guid.Parse(userId), 
+        var result = await repository.GetEntitiesRequiringApproval(Guid.Parse(userId),
             roleIds, modelType);
         return TypedResults.Ok(result);
     }
-    
+
     /// <summary>
     /// Gets all items requiring approval by the current user.
     /// </summary>
@@ -176,7 +176,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
 
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetStatisticsOfEntitiesRequiringApproval(Guid.Parse(userId), 
+        var result = await repository.GetStatisticsOfEntitiesRequiringApproval(Guid.Parse(userId),
             roleIds);
         return TypedResults.Ok(result);
     }

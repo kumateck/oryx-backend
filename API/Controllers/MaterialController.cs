@@ -595,7 +595,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetMaterialDepartments(page, pageSize, 
+        var result = await repository.GetMaterialDepartments(page, pageSize,
             searchQuery, kind, materialCategoryId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -727,8 +727,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetShelfMaterialsAcrossWarehouses(materialId, departmentId, onlyAboutToExpire);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Retrieves the shelf material in stock
     /// </summary>
@@ -742,12 +742,12 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
-        
-        var result = await repository.GetShelfMaterialsAcrossWarehouses(searchQuery, 
+
+        var result = await repository.GetShelfMaterialsAcrossWarehouses(searchQuery,
             Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
 
     /// <summary>
     /// Moves a material batch into the warehouse from a distributed material.

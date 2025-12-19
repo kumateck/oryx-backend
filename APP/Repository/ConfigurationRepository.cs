@@ -304,9 +304,9 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                     .IgnoreQueryFilters()
                     .Where(p => p.EquipmentId.StartsWith(prefix))
                     .CountAsync();
-            
+
             case nameof(ProductionOrderWaybill):
-                return await  context.ProductionOrderWaybills
+                return await context.ProductionOrderWaybills
                     .IgnoreQueryFilters()
                     .Where(p => p.Code.StartsWith(prefix))
                     .CountAsync();

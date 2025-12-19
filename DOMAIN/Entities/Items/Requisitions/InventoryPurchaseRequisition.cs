@@ -11,7 +11,7 @@ public class CreateInventoryPurchaseRequisition
     public string Code { get; set; }
     public DateTime? ExpectedDeliveryDate { get; set; }
     public string Remarks { get; set; }
-    
+
     [Required, MinLength(1, ErrorMessage = "At least one item is required")]
     public List<CreateInventoryPurchaseRequisitionItem> Items { get; set; } = [];
 }
@@ -21,7 +21,7 @@ public class CreateInventoryPurchaseRequisitionItem
     [Required]
     public Guid ItemId { get; set; }
     public Guid UoMId { get; set; }
-    
+
     [Range(1, int.MaxValue, ErrorMessage = "Quantity must be greater than 0.")]
     public decimal Quantity { get; set; }
 }
