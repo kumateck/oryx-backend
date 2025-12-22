@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DOMAIN.Entities.Materials.Batch;
 
-public class CreateMaterialBatchRequest 
+public class CreateMaterialBatchRequest
 {
     public Guid MaterialId { get; set; }         // ID of the material being added
     public decimal TotalQuantity { get; set; }             // Quantity of the material batch
@@ -25,13 +25,20 @@ public class CreateSrRequest
     public Guid? UoMId { get; set; }
 }
 
+
+public class CreateFinishedGoodsTransferNoteQuantityRequest
+{
+    public Guid BatchManufacturingRecordId { get; set; }
+    public decimal Quantity { get; set; }
+}
+
 public class CreateFinishedGoodsTransferNoteRequest
 {
     public string TransferNoteNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public decimal QuantityPerPack { get; set; }
-    public Guid? PackageStyleId { get; set; }
+    public Guid? ProductPackingId { get; set; }
     public decimal TotalQuantity { get; set; }
     public Guid? UoMId { get; set; }
     public string QarNumber { get; set; }

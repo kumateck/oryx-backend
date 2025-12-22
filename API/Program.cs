@@ -70,7 +70,7 @@ builder.Services.AddSwaggerGen(options =>
     });
     options.OperationFilter<ReApplyOptionalParameterFilter>();
     options.OperationFilter<SwaggerHeaderFilter>();
-    
+
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     options.IncludeXmlComments(xmlPath);
@@ -109,7 +109,7 @@ builder.Services.AddControllers()
 
             var problemDetails = new ProblemDetails
             {
-                Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1", 
+                Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
                 Title = "One or more validation errors occurred.",
                 Status = StatusCodes.Status422UnprocessableEntity,
                 Extensions = { ["errors"] = errors }
@@ -130,10 +130,10 @@ builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("fixed", opt =>
     {
-        opt.PermitLimit = 10; 
-        opt.Window = TimeSpan.FromMinutes(1); 
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 2; 
+        opt.QueueLimit = 2;
     });
 });
 
@@ -224,15 +224,15 @@ app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
     options.DisplayRequestDuration();
-    
+
     var descriptions = app.DescribeApiVersions();
     foreach (var description in descriptions)
     {
         var url = $"/swagger/{description.GroupName}/swagger.json";
         var name = description.GroupName.ToUpperInvariant();
-            
+
         options.SwaggerEndpoint(url, name);
-    }        
+    }
     options.RoutePrefix = "";
     options.DefaultModelsExpandDepth(-1);
     options.EnableDeepLinking();

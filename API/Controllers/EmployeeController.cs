@@ -30,7 +30,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// </summary>
     [AllowAnonymous]
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
     {
@@ -42,7 +42,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// Creates a user from an employee.
     /// </summary>
     [HttpPost("user")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [AllowAnonymous]
     public async Task<IResult> CreateUserFromEmployee([FromBody] EmployeeUserDto employeeUserDto)
@@ -62,7 +62,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     public async Task<IResult> UploadAnImage([FromBody] UploadFileRequest request, [FromRoute] Guid id)
     {
         await repository.UploadAvatar(request, id);
-        return  TypedResults.NoContent();
+        return TypedResults.NoContent();
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EmployeeDto>>))]
-    public async Task<IResult> GetEmployees([FromQuery] EmployeeStatus? status,[FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetEmployees([FromQuery] EmployeeStatus? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] string designation = null, [FromQuery] string department = null,
         [FromQuery] bool? isNotUser = null
         )
@@ -78,7 +78,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
         var result = await repository.GetEmployees(status, page, pageSize, searchQuery, designation, department, isNotUser);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of employees based on their department.
     /// </summary>
@@ -86,7 +86,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<EmployeeDto>))]
     public async Task<IResult> GetEmployeesByDepartment([FromRoute] Guid id)
     {
-        
+
         var result = await repository.GetEmployeesByDepartment(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -96,7 +96,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// </summary>
     [HttpGet("{shiftScheduleId:guid}/available")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<MinimalEmployeeInfoDto>))]
-    public async Task<IResult> GetAvailableEmployees([FromRoute] Guid shiftScheduleId ,[FromQuery] DateTime date)
+    public async Task<IResult> GetAvailableEmployees([FromRoute] Guid shiftScheduleId, [FromQuery] DateTime date)
     {
         var result = await repository.GetAvailableEmployeesByDepartment(shiftScheduleId, date);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -181,11 +181,26 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteEmployee(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
+    /// <summary>
+    /// Deletes a specific employee by its ID.
+    /// </summary>
+    [HttpPut("email/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateEmployeeEmail([FromRoute] Guid id, [FromQuery] string email)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateEmployeeEmail(id, email);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Imports employee from an Excel file.
     /// </summary>

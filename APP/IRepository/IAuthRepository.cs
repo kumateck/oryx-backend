@@ -6,12 +6,12 @@ using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 namespace APP.IRepository;
 
 public interface IAuthRepository
-{ 
+{
     Task<Result<LoginResponse>> Login(LoginRequest request);
     Task<Result<LoginResponse>> LoginWithRefreshToken(LoginWithRefreshToken request);
     Task<Result> ForgotPassword(ForgotPasswordRequest request);
     Task<Result<PasswordChangeResponse>> SetPassword(SetPasswordRequest model);
     Task<Result<PasswordChangeResponse>> ResetPassword(ChangePasswordRequest model, Guid userId);
-    
+
     Task<Result<PasswordChangeResponse>> ChangePassword(UserPasswordChangeRequest model, Guid userId);
 }

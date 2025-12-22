@@ -9,29 +9,42 @@ namespace DOMAIN.Entities.Shipments;
 
 public class ShipmentDocumentDto : WithAttachment
 {
-    public string Code { get; set; } 
+    public string Code { get; set; }
     public ShipmentInvoiceDto ShipmentInvoice { get; set; }
     public List<ShipmentDiscrepancyDto> Discrepancies { get; set; } = [];
     public DateTime? ArrivedAt { get; set; }
     public DateTime? ClearedAt { get; set; }
     public DateTime? TransitStartedAt { get; set; }
-    public DocType Type { get; set; } 
+    public DocType Type { get; set; }
     public ShipmentStatus Status { get; set; }
     public DateTime? AtPortAt { get; set; }
+    public DateTime? CompletedDistributionAt { get; set; }
     public bool HasBillingSheet { get; set; }
     public bool Approved { get; set; }
 }
 
 public class ShipmentInvoiceDto : BaseDto
-{ 
+{
     public string Code { get; set; }
     public SupplierDto Supplier { get; set; }
     public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
     public decimal TotalCost { get; set; }
     public CurrencyDto Currency { get; set; }
-    public DateTime? PaidAt { get; set; } 
+    public DateTime? PaidAt { get; set; }
     public bool IsUsed { get; set; }
 }
+
+public class ShipmentInvoiceListDto : BaseDto
+{
+    public string Code { get; set; }
+    public SupplierListDto Supplier { get; set; }
+    //public List<ShipmentInvoiceItemDto> Items { get; set; } = [];
+    public decimal TotalCost { get; set; }
+    public CurrencyDto Currency { get; set; }
+    public DateTime? PaidAt { get; set; }
+    public bool IsUsed { get; set; }
+}
+
 
 public class ShipmentInvoiceItemDto : BaseDto
 {

@@ -22,7 +22,7 @@ public class SourceRequisitionItem : BaseEntity
 {
     public Guid SourceRequisitionId { get; set; }
     public SourceRequisition SourceRequisition { get; set; }
-    public Guid MaterialId {  get; set; }
+    public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
@@ -38,7 +38,7 @@ public enum ProcurementSource
 }
 
 
-public class SourceRequisitionDto :  WithAttachment
+public class SourceRequisitionDto : WithAttachment
 {
     public string Code { get; set; }
     public CollectionItemDto Supplier { get; set; }
@@ -46,26 +46,26 @@ public class SourceRequisitionDto :  WithAttachment
 }
 
 public class SupplierQuotation : BaseEntity
-{ 
+{
     public Guid SupplierId { get; set; }
-    public Supplier Supplier { get; set; } 
+    public Supplier Supplier { get; set; }
     public Guid SourceRequisitionId { get; set; }
     public SourceRequisition SourceRequisition { get; set; }
     public List<SupplierQuotationItem> Items { get; set; } = [];
     public bool ReceivedQuotation { get; set; }
 }
 
-public class SupplierQuotationDto 
-{ 
+public class SupplierQuotationDto
+{
     public Guid Id { get; set; }
-    public SupplierListDto Supplier { get; set; } 
+    public SupplierListDto Supplier { get; set; }
     public List<SupplierQuotationItemDto> Items { get; set; } = [];
     public bool ReceivedQuotation { get; set; }
 }
 
 public class SupplierQuotationItem : BaseEntity
 {
-    public Guid SupplierQuotationId { get; set; }    
+    public Guid SupplierQuotationId { get; set; }
     public SupplierQuotation SupplierQuotation { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
@@ -107,7 +107,7 @@ public class SourceRequisitionItemDto
 }
 public class SupplierQuotationRequest
 {
-    public SupplierDto Supplier { get; set; }
+    public SupplierListDto Supplier { get; set; }
     public DateTime? SentQuotationRequestAt { get; set; }
     public bool SentQuotationRequest => SentQuotationRequestAt is not null;
     public List<SourceRequisitionItemDto> Items { get; set; } = [];

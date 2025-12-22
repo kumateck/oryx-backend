@@ -3,6 +3,10 @@
 set -e
 
 echo "Starting Docker containers..."
-docker compose up --build -d
+docker compose build --progress=plain
 
-echo "✅ Deployment complete. container is up."
+docker compose up -d
+
+echo "✅ Deployment complete. Containers are up."
+echo "📋 Viewing logs (Ctrl+C to exit, containers will keep running)..."
+docker compose logs -f

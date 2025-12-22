@@ -9,6 +9,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
+using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace DOMAIN.Entities.Materials.Batch;
@@ -22,21 +23,22 @@ public class MaterialBatch : BaseEntity
     [StringLength(10000)] public string BatchNumber { get; set; }
     public Guid? GrnId { get; set; }
     public Grn Grn { get; set; }
-    public Guid? StockTransferSourceId { get; set; }
-    public StockTransferSource StockTransferSource { get; set; } 
+    public Guid? StockTransferId { get; set; }
+    public StockTransfer StockTransfer { get; set; }
     public int NumberOfContainers { get; set; }
     public Guid? ContainerPackageStyleId { get; set; }
     public PackageStyle ContainerPackageStyle { get; set; }
     public decimal QuantityPerContainer { get; set; }
     public decimal QuantityAssigned { get; set; }
-    public decimal TotalQuantity { get; set; }  
-    public decimal ConsumedQuantity { get; set; }  
+    public decimal TotalQuantity { get; set; }
+    public decimal ConsumedQuantity { get; set; }
     public decimal RemainingQuantity => TotalQuantity - ConsumedQuantity - ReservedQuantity;
     public decimal QuantityUnassigned => RemainingQuantity - QuantityAssigned;
     public decimal SampledQuantity { get; set; }
+    public decimal QuantityDistributed { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
-    public BatchStatus Status { get; set; }  
+    public BatchStatus Status { get; set; }
     public DateTime DateReceived { get; set; }
     public DateTime? DateApproved { get; set; }
     public DateTime? DateRejected { get; set; }
@@ -52,7 +54,7 @@ public class MaterialBatch : BaseEntity
     public DateTime? ReturnDate { get; set; }
 }
 
-public class Sr:BaseEntity
+public class Sr : BaseEntity
 {
     public Guid MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
@@ -81,16 +83,18 @@ public enum BatchStatus
     Consumed = 7,
     Approved = 8,
     TestTaken = 9,
-    Checked =  10,
+    Checked = 10,
+    Sampled = 11,
+    TestAssigned = 12
 }
 
 public class MaterialBatchEvent : BaseEntity
 {
-    public Guid BatchId { get; set; }            
-    public MaterialBatch Batch { get; set; }     
-    public decimal Quantity { get; set; }     
-    public Guid UserId { get; set; }       
-    public User User { get; set; } 
+    public Guid BatchId { get; set; }
+    public MaterialBatch Batch { get; set; }
+    public decimal Quantity { get; set; }
+    public Guid UserId { get; set; }
+    public User User { get; set; }
     public EventType Type { get; set; }
     public Guid? ConsumptionWarehouseId { get; set; }
     public Warehouse ConsumptionWarehouse { get; set; }
@@ -99,11 +103,11 @@ public class MaterialBatchEvent : BaseEntity
 
 public class FinishedProductBatchEvent : BaseEntity
 {
-    public Guid ProductId { get; set; }            
-    public Product Product { get; set; }     
-    public decimal Quantity { get; set; }     
-    public Guid UserId { get; set; }       
-    public User User { get; set; } 
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public decimal Quantity { get; set; }
+    public Guid UserId { get; set; }
+    public User User { get; set; }
     public EventType Type { get; set; }
     public Guid? ConsumptionWarehouseId { get; set; }
     public Warehouse ConsumptionWarehouse { get; set; }
@@ -130,7 +134,7 @@ public class MassMaterialBatchMovement : BaseEntity
     public DateTime MovedAt { get; set; }
     public Guid MovedById { get; set; }
     public User MovedBy { get; set; }
-    public MovementType MovementType { get; set; }  
+    public MovementType MovementType { get; set; }
 }
 
 public class FinishedProductBatchMovement : BaseEntity
@@ -145,10 +149,10 @@ public class FinishedProductBatchMovement : BaseEntity
     public DateTime MovedAt { get; set; }
     public Guid MovedById { get; set; }
     public User MovedBy { get; set; }
-    public MovementType MovementType { get; set; }  
+    public MovementType MovementType { get; set; }
 }
 
-public class FinishedGoodsTransferNote:BaseEntity
+public class FinishedGoodsTransferNote : BaseEntity
 {
     public string TransferNoteNumber { get; set; }
     public Guid? FromWarehouseId { get; set; }
@@ -156,8 +160,8 @@ public class FinishedGoodsTransferNote:BaseEntity
     public Guid? ToWarehouseId { get; set; }
     public Warehouse ToWarehouse { get; set; }
     public decimal QuantityPerPack { get; set; }
-    public Guid? PackageStyleId { get; set; }
-    public PackageStyle PackageStyle { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public bool IsApproved { get; set; }
@@ -171,7 +175,16 @@ public class FinishedGoodsTransferNote:BaseEntity
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
-    public decimal RemainingQuantity => QuantityReceived * QuantityPerPack + Loose - AllocatedQuantity;
+    public decimal RemainingQuantity => TotalQuantity - AllocatedQuantity;
+    public List<FinishedGoodsTransferNoteQuantity> Quantities { get; set; } = [];
+}
+
+[Owned]
+public class FinishedGoodsTransferNoteQuantity
+{
+    public decimal Quantity { get; set; }
+    public DateTime MovedAt { get; set; }
+    public Guid MovedById { get; set; }
 }
 
 public class FinishedGoodsTransferNoteDto : BaseDto
@@ -180,7 +193,7 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public WarehouseDto FromWarehouse { get; set; }
     public WarehouseDto ToWarehouse { get; set; }
     public decimal QuantityPerPack { get; set; }
-    public PackageStyleDto PackageStyle { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal TotalQuantity { get; set; }
     public decimal QuantityReceived { get; set; }
@@ -195,7 +208,7 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public decimal PendingAllocatedQuantity { get; set; }
 }
 
-public class FinishedGoodsListTransferNoteDto 
+public class FinishedGoodsListTransferNoteDto
 {
     public Guid Id { get; set; }
     public string TransferNoteNumber { get; set; }
@@ -241,7 +254,7 @@ public class ApprovedProductDto
 
 public class ApprovedProductDetailDto
 {
-    public ProductDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public decimal TotalQuantity { get; set; }
     public decimal TotalRemainingQuantity { get; set; }
     public decimal QuantityPerPack { get; set; }

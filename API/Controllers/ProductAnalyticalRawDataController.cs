@@ -45,7 +45,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
         var result = await repository.GetAnalyticalRawData(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves specific product analytical raw data by product Id.
     /// </summary>
@@ -57,7 +57,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
         var result = await repository.GetAnalyticalRawDataByProduct(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves specific product batch analytical raw data details 
     /// </summary>
@@ -69,7 +69,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
         var result = await repository.GetRelevantProductInfoForArd(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates product analytical raw data by its ID.
     /// </summary>
@@ -93,11 +93,11 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteAnalyticalRawData(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Starts test for BMR
     /// </summary>

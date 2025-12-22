@@ -11,18 +11,18 @@ namespace APP.Repository;
 
 public class WorkOrderRepository(ApplicationDbContext context, IMapper mapper) : IWorkOrderRepository
 {
-    public async Task<Result<Guid>> CreateWorkOrder(CreateWorkOrderRequest request, Guid userId) 
-    { 
-        var workOrder = mapper.Map<WorkOrder>(request); 
-        workOrder.CreatedById = userId; 
+    public async Task<Result<Guid>> CreateWorkOrder(CreateWorkOrderRequest request, Guid userId)
+    {
+        var workOrder = mapper.Map<WorkOrder>(request);
+        workOrder.CreatedById = userId;
         await context.WorkOrders.AddAsync(workOrder);
         await context.ProductionSteps.AddRangeAsync(workOrder.Steps);
         await context.SaveChangesAsync();
         return workOrder.Id;
     }
-    
-    public async Task<Result<WorkOrderDto>> GetWorkOrder(Guid workOrderId) 
-    { 
+
+    public async Task<Result<WorkOrderDto>> GetWorkOrder(Guid workOrderId)
+    {
         var workOrder = await context.WorkOrders
             .Include(w => w.Steps)
             .FirstOrDefaultAsync(w => w.Id == workOrderId);
@@ -30,8 +30,8 @@ public class WorkOrderRepository(ApplicationDbContext context, IMapper mapper) :
         return workOrder is null ? Error.NotFound("WorkOrder.NotFound", "Work order is not found") : mapper.Map<WorkOrderDto>(workOrder);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<WorkOrderDto>>>> GetWorkOrders(int page, int pageSize, string searchQuery) 
-    { 
+    public async Task<Result<Paginateable<IEnumerable<WorkOrderDto>>>> GetWorkOrders(int page, int pageSize, string searchQuery)
+    {
         var query = context.WorkOrders
             .AsSplitQuery()
             .Include(w => w.Steps)
@@ -50,11 +50,11 @@ public class WorkOrderRepository(ApplicationDbContext context, IMapper mapper) :
         );
     }
 
-    public async Task<Result> UpdateWorkOrder(UpdateWorkOrderRequest request, Guid workOrderId, Guid userId) 
-    { 
+    public async Task<Result> UpdateWorkOrder(UpdateWorkOrderRequest request, Guid workOrderId, Guid userId)
+    {
         var existingWorkOrder = await context.WorkOrders.FirstOrDefaultAsync(w => w.Id == workOrderId);
 
-        if (existingWorkOrder is null) 
+        if (existingWorkOrder is null)
         {
             return Error.NotFound("WorkOrder.NotFound", "Work order is not found");
         }
@@ -65,19 +65,19 @@ public class WorkOrderRepository(ApplicationDbContext context, IMapper mapper) :
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
-    public async Task<Result> DeleteWorkOrder(Guid workOrderId, Guid userId) 
-    { 
-        var workOrder = await context.WorkOrders.FirstOrDefaultAsync(w => w.Id == workOrderId); 
-        if (workOrder is null) 
-        { 
+
+    public async Task<Result> DeleteWorkOrder(Guid workOrderId, Guid userId)
+    {
+        var workOrder = await context.WorkOrders.FirstOrDefaultAsync(w => w.Id == workOrderId);
+        if (workOrder is null)
+        {
             return Error.NotFound("WorkOrder.NotFound", "Work order is not found");
         }
-        
-        workOrder.DeletedAt = DateTime.UtcNow; 
-        workOrder.LastDeletedById = userId; 
-        context.WorkOrders.Update(workOrder); 
-        await context.SaveChangesAsync(); 
+
+        workOrder.DeletedAt = DateTime.UtcNow;
+        workOrder.LastDeletedById = userId;
+        context.WorkOrders.Update(workOrder);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 }

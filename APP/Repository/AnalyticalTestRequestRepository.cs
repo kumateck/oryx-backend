@@ -4,6 +4,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Products.Equipments;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -14,11 +15,12 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
 {
     public async Task<Result<Guid>> CreateAnalyticalTestRequest(CreateAnalyticalTestRequest request)
     {
-        
-        if(await context.AnalyticalTestRequests.AnyAsync(a => 
-               a.BatchManufacturingRecordId == request.BatchManufacturingRecordId && a.ProductionScheduleProductId == request.ProductionScheduleProductId))
-            return Error.Validation("Atr", "This atr already exists"); 
-        
+
+        if (await context.AnalyticalTestRequests.IgnoreQueryFilters().AnyAsync(a =>
+               a.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
+               a.ProductionScheduleProductId == request.ProductionScheduleProductId && a.Stage == request.Stage))
+            return Error.Validation("Atr", $"This atr at stage {request.Stage} already exists");
+
         var test = mapper.Map<AnalyticalTestRequest>(request);
         await context.AddAsync(test);
         await context.SaveChangesAsync();
@@ -29,6 +31,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         var query = context.AnalyticalTestRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(p => p.ProductionScheduleProduct)
             .ThenInclude(s => s.Product)
             .Include(p => p.ProductionScheduleProduct)
@@ -49,7 +52,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         {
             query = query.Where(s => s.Status == status.Value);
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<AnalyticalTestRequestDto>);
     }
 
@@ -57,6 +60,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     {
         var test = await context.AnalyticalTestRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(p => p.ProductionScheduleProduct)
             .ThenInclude(s => s.Product)
             .Include(p => p.ProductionScheduleProduct)
@@ -80,14 +84,14 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         {
             return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         }
-        
+
         mapper.Map(request, test);
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
-    
+
     public async Task<Result> UpdateAnalyticalTestRequest(Guid id, UpdateAnalyticalTestRequest request, Guid userId)
     {
         var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
@@ -104,7 +108,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             test.AcknowledgedById = userId;
             test.ArNumber = request.ArNumber;
         }
-        
+
         else if (request.Status == AnalyticalTestStatus.Sampled)
         {
             test.SampledAt = DateTime.UtcNow;
@@ -113,14 +117,14 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             test.SampledById = userId;
             test.SampledQuantity = request.SampledQuantity;
         }
-        
+
         else if (request.Status == AnalyticalTestStatus.Testing)
         {
             test.Status = request.Status;
             test.TestedById = userId;
             test.TestedAt = DateTime.UtcNow;
         }
-        
+
         else if (request.Status == AnalyticalTestStatus.Released)
         {
             test.ReleasedAt = DateTime.UtcNow;
@@ -133,7 +137,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
                 context.ProductionActivitySteps.Update(activityStep);
             }
         }
-        
+
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -147,13 +151,13 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         {
             return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         }
-        
+
         test.LastDeletedById = userId;
         test.DeletedAt = DateTime.UtcNow;
-        
+
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
 
@@ -164,4 +168,102 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         if (analyticalTest is null) return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         return mapper.Map<AnalyticalTestRequestDto>(analyticalTest);
     }
+
+    // Create QC Equipment
+    public async Task<Result<Guid>> CreateQcEquipment(CreateQcEquipment request, Guid userId)
+    {
+        var equipment = mapper.Map<QcEquipment>(request);
+        equipment.CreatedById = userId;
+
+        await context.QcEquipments.AddAsync(equipment);
+        await context.SaveChangesAsync();
+
+        return equipment.Id;
+    }
+
+    // Get QC Equipment by ID
+    public async Task<Result<QcEquipmentDto>> GetQcEquipment(Guid equipmentId)
+    {
+        var equipment = await context.QcEquipments
+            .AsSplitQuery()
+            .Include(e => e.QcEquipmentCategory)
+            .FirstOrDefaultAsync(e => e.Id == equipmentId);
+
+        return equipment is null
+            ? Error.NotFound("QcEquipment.NotFound", "QC Equipment with this Id not found")
+            : mapper.Map<QcEquipmentDto>(equipment);
+    }
+
+    // Get paginated QC Equipments
+    public async Task<Result<Paginateable<IEnumerable<QcEquipmentDto>>>> GetQcEquipments(
+        int page,
+        int pageSize,
+        string searchQuery)
+    {
+        var query = context.QcEquipments
+            .AsSplitQuery()
+            .Include(e => e.QcEquipmentCategory)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery,
+                e => e.Name,
+                e => e.SerialNumber,
+                e => e.Make,
+                e => e.Model
+            );
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<QcEquipmentDto>
+        );
+    }
+
+    // Get all QC Equipments
+    public async Task<Result<List<QcEquipmentDto>>> GetQcEquipments()
+    {
+        return mapper.Map<List<QcEquipmentDto>>(await context.QcEquipments
+            .AsSplitQuery()
+            .Include(e => e.QcEquipmentCategory)
+            .ToListAsync());
+    }
+
+    // Update QC Equipment
+    public async Task<Result> UpdateQcEquipment(CreateQcEquipment request, Guid equipmentId, Guid userId)
+    {
+        var existingEquipment = await context.QcEquipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        if (existingEquipment is null)
+        {
+            return Error.NotFound("QcEquipment.NotFound", "QC Equipment with this Id not found");
+        }
+
+        mapper.Map(request, existingEquipment);
+        existingEquipment.LastUpdatedById = userId;
+
+        context.QcEquipments.Update(existingEquipment);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // Delete QC Equipment (soft delete)
+    public async Task<Result> DeleteQcEquipment(Guid equipmentId, Guid userId)
+    {
+        var equipment = await context.QcEquipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        if (equipment is null)
+        {
+            return Error.NotFound("QcEquipment.NotFound", "QC Equipment with this Id not found");
+        }
+
+        equipment.DeletedAt = DateTime.UtcNow;
+        equipment.LastDeletedById = userId;
+
+        context.QcEquipments.Update(equipment);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
 }

@@ -19,7 +19,7 @@ internal class PermissionAuthorizationHandler(ApplicationDbContext context, IMem
         }
 
         var cacheKey = $"UserId_{userId}_Permissions";
-        
+
         if (!cache.TryGetValue(cacheKey, out Dictionary<string, List<string>> permissionsDict))
         {
             // Fetch permissions from database
@@ -31,12 +31,12 @@ internal class PermissionAuthorizationHandler(ApplicationDbContext context, IMem
             var roleClaims = await context.RoleClaims.IgnoreQueryFilters()
                 .Where(item => roleIds.Contains(item.RoleId))
                 .ToListAsync();
-            
+
             var allPermissions = roleClaims.Select(rc => rc.ClaimValue)
                 .Distinct();
-            
+
             permissionsDict = new Dictionary<string, List<string>>();
-            
+
             foreach (var perm in allPermissions)
             {
                 var permissionTypes = await context.PermissionTypes

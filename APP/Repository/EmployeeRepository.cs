@@ -30,7 +30,7 @@ namespace APP.Repository;
 public class EmployeeRepository(ApplicationDbContext context,
     ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper,
     IConfiguration configuration, UserManager<User> userManager, IBlobStorageService blobStorage,
-    IHttpContextAccessor httpContextAccessor) : IEmployeeRepository
+    IHttpContextAccessor httpContextAccessor, IAuthRepository authRepository) : IEmployeeRepository
 {
 
     public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
@@ -38,16 +38,16 @@ public class EmployeeRepository(ApplicationDbContext context,
         const int maxRetries = 3;
 
         const string templatePath = "wwwroot/email/RegistrationEmail.html";
-        
+
         if (!File.Exists(templatePath))
             throw new FileNotFoundException("Email template not found", templatePath);
 
         var emailTemplate = await File.ReadAllTextAsync(templatePath);
-        
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwtKey = configuration["JwtSettings:Key"] ?? "";
         var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
-      
+
         foreach (var employee in employeeDtos.EmailList)
         {
             try
@@ -64,13 +64,13 @@ public class EmployeeRepository(ApplicationDbContext context,
 
                 var token = tokenHandler.CreateToken(tokenDescriptor);
                 var jwt = tokenHandler.WriteToken(token);
-                
+
                 var partialUrl = httpContextAccessor.HttpContext?.Request.Headers.Origin;
 
                 var verificationLink = employee.EmployeeType == EmployeeType.Casual
                     ? $"{partialUrl}/onboarding/0?token={jwt}"
                     : $"{partialUrl}/onboarding/1?token={jwt}";
-                
+
                 var emailBody = emailTemplate
                     .Replace("{Email}", employee.Email)
                     .Replace("{VerificationLink}", verificationLink);
@@ -81,9 +81,9 @@ public class EmployeeRepository(ApplicationDbContext context,
 
                 while (attempts < maxRetries && !sent)
                 {
-                    try 
+                    try
                     {
-                        emailService.SendMail(employee.Name,employee.Email, "Welcome to the team", emailBody, []);
+                        emailService.SendMail(employee.Name, employee.Email, "Welcome to the team", emailBody, []);
                         logger.LogInformation("Email sent to {EmployeeEmail}", employee.Email);
                         sent = true;
                     }
@@ -105,7 +105,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         return Result.Success("Bulk onboarding completed.");
     }
-    
+
     public async Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId)
     {
         var avatar = request.File.ConvertFromBase64();
@@ -127,7 +127,8 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request)
     {
         var existingEmployee = await context.Employees
-            .FirstOrDefaultAsync(e => e.Email ==request.Email || e.PhoneNumber == request.PhoneNumber);
+            .FirstOrDefaultAsync(e => e.Email == request.Email || e.PhoneNumber == request.PhoneNumber
+            || e.StaffNumber == request.StaffNumber && !string.IsNullOrWhiteSpace(request.StaffNumber));
 
         if (existingEmployee != null)
         {
@@ -149,7 +150,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         }
 
         var employee = mapper.Map<Employee>(request);
-        
+
         await context.Employees.AddAsync(employee);
 
         await context.SaveChangesAsync();
@@ -171,7 +172,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             .FirstOrDefaultAsync(u => u.Email == employee.Email);
 
         var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId);
-        
+
         if (role is null) return Error.NotFound("Role.NotFound", "Role not found");
 
         if (existingUser is not null && !existingUser.DeletedAt.HasValue)
@@ -204,7 +205,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             var newUser = mapper.Map<User>(employee);
             newUser.Email = newUser.UserName = employee.Email;
 
-            var createResult = await userManager.CreateAsync(newUser, password:"Pass123$1");
+            var createResult = await userManager.CreateAsync(newUser, password: "Pass123$1");
             if (!createResult.Succeeded)
             {
                 var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
@@ -239,7 +240,7 @@ public class EmployeeRepository(ApplicationDbContext context,
                 KeyName = key,
                 CreatedAt = DateTime.UtcNow
             });
-            
+
             await context.SaveChangesAsync();
 
             var verificationLink = $"{partialUrl}/reset-password?key={key}";
@@ -287,12 +288,12 @@ public class EmployeeRepository(ApplicationDbContext context,
             .Where(e => e.DepartmentId == departmentId)
             .ToListAsync();
 
-        var employeeDtos = employees.Select(e => mapper.Map<EmployeeDto>(e, 
+        var employeeDtos = employees.Select(e => mapper.Map<EmployeeDto>(e,
             opts => { opts.Items[AppConstants.ModelType] = nameof(Employee); }));
 
-        return Result.Success(employeeDtos); 
+        return Result.Success(employeeDtos);
     }
-    
+
 
     public async Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date)
     {
@@ -303,7 +304,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             return Result.Success(Enumerable.Empty<MinimalEmployeeInfoDto>());
         }
-        
+
         var shiftSchedule = await context.ShiftSchedules.FirstOrDefaultAsync(ss => ss.Id == shiftScheduleId);
 
         if (shiftSchedule == null)
@@ -343,16 +344,16 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result<EmployeeDto>> GetEmployee(Guid id)
     {
         var employee = await context.Employees
-            .Include(e=> e.Department)
-            .Include(e=> e.Designation)
+            .Include(e => e.Department)
+            .Include(e => e.Designation)
             .FirstOrDefaultAsync(e => e.Id == id);
-    
+
         return employee is null ?
             Error.NotFound("Employee.NotFound", "Employee not found") :
-            mapper.Map<EmployeeDto>(employee, 
-                opts => { opts.Items[AppConstants.ModelType] = nameof(Employee);});
+            mapper.Map<EmployeeDto>(employee,
+                opts => { opts.Items[AppConstants.ModelType] = nameof(Employee); });
     }
-    
+
     public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(EmployeeStatus? activeStatus,
         int page, int pageSize,
         string searchQuery = null, string designation = null, string department = null, bool? isNotUser = null)
@@ -369,13 +370,13 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             query = query.WhereSearch(searchQuery,
                 q => q.FirstName,
-                q=> q.LastName, q => q.Email, 
-                q => q.FirstName + " " +q.LastName,
+                q => q.LastName, q => q.Email,
+                q => q.FirstName + " " + q.LastName,
                 q => q.StaffNumber,
                 q => q.PhoneNumber,
                 q => q.GhanaCardNumber);
         }
-        
+
         if (!string.IsNullOrEmpty(designation))
         {
             query = query.WhereSearch(designation, q => q.Designation.Name);
@@ -397,9 +398,9 @@ public class EmployeeRepository(ApplicationDbContext context,
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
-            query, 
-            page, 
-            pageSize, 
+            query,
+            page,
+            pageSize,
             mapper.Map<EmployeeDto>
         );
     }
@@ -421,19 +422,23 @@ public class EmployeeRepository(ApplicationDbContext context,
                 return Error.Validation("Employee.Status", "Employee suspension requires start and end dates");
             }
         }
-        
+
         mapper.Map(request, employee);
+        employee.StaffNumber = request.StaffNumber;
 
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
-        
+
         // ensuring consistency with employee users
         var user = await userManager.FindByEmailAsync(employee.Email);
         if (user == null) return Result.Success();
-        
+
+        user.FirstName = employee.FirstName;
+        user.LastName = employee.LastName;
+        user.DateOfBirth = employee.DateOfBirth;
         user.DepartmentId = employee.DepartmentId;
         user.Department = employee.Department;
-            
+
         await userManager.UpdateAsync(user);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -442,10 +447,10 @@ public class EmployeeRepository(ApplicationDbContext context,
     public async Task<Result> UpdateEmployeeStatus(Guid employeeId, UpdateEmployeeStatus status)
     {
         var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId);
-        if  (employee == null)  return Error.NotFound("Employee.NotFound", "Employee not found");
-        
+        if (employee == null) return Error.NotFound("Employee.NotFound", "Employee not found");
+
         mapper.Map(status, employee);
-        
+
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -460,14 +465,18 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
-        
+
+        var staffNumberExists = await context.Employees
+            .AnyAsync(e => e.StaffNumber == employeeDto.StaffNumber && e.Id != employee.Id);
+        if (staffNumberExists) return Error.Conflict("Employee.StaffNumber", "Staff number already assigned to employee");
+
         var designation = await context.Designations.FirstOrDefaultAsync(d => d.Id == employeeDto.DesignationId);
 
         if (designation == null)
         {
             return Error.NotFound("Designation.NotFound", "Designation not found");
         }
-        
+
         var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == employeeDto.DepartmentId);
 
         if (department == null)
@@ -479,7 +488,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         {
             return Error.Validation("Employee.Level", "Permanent employees must have a level assigned");
         }
-        
+
         mapper.Map(employeeDto, employee);
         employee.DepartmentId = employeeDto.DepartmentId;
         employee.DesignationId = employeeDto.DesignationId;
@@ -488,13 +497,13 @@ public class EmployeeRepository(ApplicationDbContext context,
 
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
-        
+
         var user = await userManager.FindByEmailAsync(employee.Email);
         if (user == null) return Result.Success();
-        
+
         user.DepartmentId = employee.DepartmentId;
         user.Department = department;
-        
+
         await userManager.UpdateAsync(user);
         await context.SaveChangesAsync();
 
@@ -540,7 +549,7 @@ public class EmployeeRepository(ApplicationDbContext context,
     {
         var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
         if (employee == null) return Error.NotFound("Employee.NotFound", "Employee not found");
-        
+
         employee.Type = employeeType;
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
@@ -557,12 +566,67 @@ public class EmployeeRepository(ApplicationDbContext context,
         }
         employee.DeletedAt = DateTime.UtcNow;
         employee.LastDeletedById = userId;
-        
+
         context.Employees.Update(employee);
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
+    public async Task<Result> UpdateEmployeeEmail(Guid id, string newEmail)
+    {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
+        if (employee == null)
+            return Error.NotFound("Employee.NotFound", "Employee not found");
+
+        if (employee.Email == newEmail)
+            return Result.Success();
+
+        var emailExists = await context.Employees.AnyAsync(e => e.Email == newEmail && e.Id != id)
+                          || await context.Users.AnyAsync(u => u.Email == newEmail);
+        if (emailExists)
+            return Error.Validation("Employee.Email", "Email already exists");
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            var oldEmail = employee.Email;
+            employee.Email = newEmail;
+            context.Employees.Update(employee);
+            await context.SaveChangesAsync();
+
+            // Find the linked Identity user by the OLD email
+            var user = await userManager.FindByEmailAsync(oldEmail);
+            if (user != null)
+            {
+                var emailResult = await userManager.SetEmailAsync(user, newEmail);
+                if (!emailResult.Succeeded)
+                    return Error.Validation("User.Email", string.Join("; ", emailResult.Errors.Select(e => e.Description)));
+
+                var usernameResult = await userManager.SetUserNameAsync(user, newEmail);
+                if (!usernameResult.Succeeded)
+                    return Error.Validation("User.UserName", string.Join("; ", usernameResult.Errors.Select(e => e.Description)));
+
+                var updateResult = await userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                    return Error.Validation("User.Update", string.Join("; ", updateResult.Errors.Select(e => e.Description)));
+
+                await authRepository.ForgotPassword(new ForgotPasswordRequest
+                {
+                    Email = newEmail
+                });
+            }
+
+            await transaction.CommitAsync();
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Error.Failure("Employee.UpdateEmail", $"Failed to update email: {ex.Message}");
+        }
+    }
+
+
     public async Task<Result> ImportEmployeesFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -617,6 +681,10 @@ public class EmployeeRepository(ApplicationDbContext context,
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
+
+            var isRowEmpty = requiredHeaders.All(header => string.IsNullOrWhiteSpace(GetCell(header)));
+            if (isRowEmpty)
+                continue;
 
             var departmentCode = GetCell("Department Code")?.ToLower();
             var departmentName = GetCell("Department")?.ToLower();

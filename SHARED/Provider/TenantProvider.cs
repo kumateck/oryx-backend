@@ -9,7 +9,7 @@ public class TenantProvider : ITenantProvider
         if (httpContextAccessor.HttpContext == null) return;
 
         string tenant = httpContextAccessor.HttpContext?.Request.Headers["App-Name"];
-        
+
         if (string.IsNullOrEmpty(tenant) || tenant == "dev" || tenant == "staging" || tenant == "demo")
         {
             tenant = "Entrance";
@@ -18,5 +18,5 @@ public class TenantProvider : ITenantProvider
         Tenant = tenant;
     }
 
-    public string Tenant { get; set; } 
+    public string Tenant { get; set; }
 }

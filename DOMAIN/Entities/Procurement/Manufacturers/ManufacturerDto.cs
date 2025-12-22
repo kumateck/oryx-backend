@@ -6,7 +6,7 @@ using SHARED;
 namespace DOMAIN.Entities.Procurement.Manufacturers;
 
 public class ManufacturerDto : BaseDto
-{ 
+{
     public string Name { get; set; }
     public string Address { get; set; }
     public string Email { get; set; }
@@ -17,7 +17,7 @@ public class ManufacturerDto : BaseDto
 }
 
 public class ManufacturerListDto : BaseDto
-{ 
+{
     public string Name { get; set; }
     public string Address { get; set; }
     public string Email { get; set; }
@@ -26,7 +26,9 @@ public class ManufacturerListDto : BaseDto
     public CountryDto Country { get; set; }
 }
 
-public class ManufacturerMaterialDto 
+public class ManufacturerMaterialDto
 {
     public MaterialDto Material { get; set; }
+    public QuantityType QuantityType { get; set; }
+    public QuantityPerPackOption QuantityPerPackOption { get; set; }
 }

@@ -20,7 +20,7 @@ public class AnalyticalTestRequest : BaseEntity
     public DateTime? ReleasedAt { get; set; }
     public Guid? ReleasedById { get; set; }
     public User ReleasedBy { get; set; }
-    public string Filled { get; set;}
+    public string Filled { get; set; }
     public string SampledQuantity { get; set; }
     public TestStage Stage { get; set; }
     public Guid StateId { get; set; }
@@ -36,6 +36,7 @@ public class AnalyticalTestRequest : BaseEntity
     public Guid? TestedById { get; set; }
     public User TestedBy { get; set; }
     public DateTime? TestedAt { get; set; }
+    public DateTime? AssignedAt { get; set; }
     [StringLength(1000)] public string ArNumber { get; set; }
 }
 
@@ -45,9 +46,9 @@ public class ProductState : BaseEntity
 }
 public enum TestStage
 {
-     Intermediate,
-     Bulk,
-     Finished
+    Intermediate,
+    Bulk,
+    Finished
 }
 
 public enum AnalyticalTestStatus
@@ -58,6 +59,7 @@ public enum AnalyticalTestStatus
     Testing = 3,
     TestTaken = 4,
     Released = 5,
+    Assigned = 6,
 }
 
 public enum State

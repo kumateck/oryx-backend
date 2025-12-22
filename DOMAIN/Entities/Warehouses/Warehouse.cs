@@ -8,7 +8,6 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
-using SHARED;
 
 namespace DOMAIN.Entities.Warehouses;
 
@@ -20,11 +19,11 @@ public class Warehouse : BaseEntity
     [StringLength(1000)] public string Description { get; set; }
     public List<WarehouseLocation> Locations { get; set; } = [];
     public WarehouseArrivalLocation ArrivalLocation { get; set; }
-    public WarehouseType Type { get; set; } 
-    public bool? IsBeta { get; set; }
+    public WarehouseType Type { get; set; }
+    public Division? Division { get; set; }
 }
 
-public class WarehouseArrivalLocation:BaseEntity
+public class WarehouseArrivalLocation : BaseEntity
 {
     public Guid WarehouseId { get; set; }
     public Warehouse Warehouse { get; set; }
@@ -38,8 +37,6 @@ public class WarehouseArrivalLocation:BaseEntity
 
 public class DistributedRequisitionMaterial : BaseEntity
 {
-    public Guid? RequisitionItemId { get; set; }
-    public RequisitionItem RequisitionItem { get; set; }
     public Guid? WarehouseArrivalLocationId { get; set; }
     public WarehouseArrivalLocation WarehouseArrivalLocation { get; set; }
     public List<MaterialItemDistribution> MaterialItemDistributions { get; set; } = [];
@@ -47,7 +44,7 @@ public class DistributedRequisitionMaterial : BaseEntity
     public ShipmentInvoice ShipmentInvoice { get; set; }
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
-    public Guid? UomId { get; set; }
+    public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
     public DateTime? DistributedAt { get; set; }
@@ -56,8 +53,22 @@ public class DistributedRequisitionMaterial : BaseEntity
     public DateTime? GrnGeneratedAt { get; set; }
     public DistributedRequisitionMaterialStatus Status { get; set; }
     public List<Checklist> CheckLists { get; set; }
+    public List<DistributedRequisitionItem> DistributedRequisitionItems { get; set; } = [];
 }
 
+public class DistributedRequisitionItem
+{
+    public Guid Id { get; set; }
+    public Guid RequisitionItemId { get; set; }
+    public RequisitionItem RequisitionItem { get; set; }
+    public Guid DistributedRequisitionMaterialId { get; set; }
+    public DistributedRequisitionMaterial DistributedRequisitionMaterial { get; set; }
+    public Guid UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
+    public Guid WarehouseId { get; set; }
+    public Warehouse Warehouse { get; set; }
+    public decimal Quantity { get; set; }
+}
 public class DistributedFinishedProduct : BaseEntity
 {
     public Guid? WarehouseArrivalLocationId { get; set; }
@@ -88,10 +99,11 @@ public class MaterialItemDistribution
 
 public enum DistributedRequisitionMaterialStatus
 {
-    Distributed,
+    Pending,
     Arrived,
     Checked,
-    GrnGenerated
+    GrnGenerated,
+    Distributed
 }
 
 public enum DistributedFinishedProductStatus
@@ -130,7 +142,7 @@ public class WarehouseLocationShelf : BaseEntity
     public List<ShelfMaterialBatch> GetMaterialBatches() => MaterialBatches;
 }
 
-public class ShelfMaterialBatch:BaseEntity
+public class ShelfMaterialBatch : BaseEntity
 {
     public Guid WarehouseLocationShelfId { get; set; }
     public WarehouseLocationShelf WarehouseLocationShelf { get; set; }
@@ -144,8 +156,52 @@ public class ShelfMaterialBatch:BaseEntity
 
 public enum WarehouseType
 {
-    RawMaterialStorage, 
+    RawMaterialStorage,
     PackagedStorage,
     FinishedGoodsStorage,
     Production
+}
+
+public class DistributeMaterialRequest
+{
+    public Guid WarehouseId { get; set; }
+    public Guid MaterialBatchId { get; set; }
+    public Guid UoMId { get; set; }
+    public Guid DistributedRequisitionItemId { get; set; }
+    public decimal Quantity { get; set; }
+}
+
+public class DistributeMaterial : BaseEntity
+{
+    public Guid WarehouseId { get; set; }
+    public Warehouse Warehouse { get; set; }
+    public Guid MaterialBatchId { get; set; }
+    public MaterialBatch MaterialBatch { get; set; }
+    public Guid UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
+    public decimal Quantity { get; set; }
+    public Guid DistributedRequisitionItemId { get; set; }
+    public DistributedRequisitionItem DistributedRequisitionItem { get; set; }
+    public DistributeMaterialStatus Status { get; set; }
+}
+
+public enum DistributeMaterialStatus
+{
+    Pending,
+    Distributed
+}
+
+public class DistributeMaterialDto : BaseDto
+{
+    public WarehouseDto Warehouse { get; set; }
+    public MaterialBatchReducedDto MaterialBatch { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public decimal Quantity { get; set; }
+    public DistributeMaterialStatus Status { get; set; }
+}
+
+public class WarehouseLocationName
+{
+    public Guid Id { get; set; }
+    [StringLength(1000000)] public string Name { get; set; }
 }

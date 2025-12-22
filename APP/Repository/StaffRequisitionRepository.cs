@@ -10,37 +10,37 @@ using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
- 
+
 public class StaffRequisitionRepository(ApplicationDbContext context, IMapper mapper, IBackgroundWorkerService backgroundWorkerService) : IStaffRequisitionRepository
 {
     public async Task<Result<Guid>> CreateStaffRequisition(CreateStaffRequisitionRequest request, Guid userId)
     {
         var designation = await context.Designations.FindAsync(request.DesignationId);
-        
+
         if (designation == null)
         {
-            return Error.NotFound("Invalid.Designation","Invalid Designation");
+            return Error.NotFound("Invalid.Designation", "Invalid Designation");
         }
-        
+
         var department = await context.Departments.FindAsync(request.DepartmentId);
         if (department == null)
         {
-            return Error.NotFound("Invalid.Department","Invalid Department");
+            return Error.NotFound("Invalid.Department", "Invalid Department");
         }
 
         if (request.RequestUrgency <= DateTime.UtcNow)
         {
-            return Error.Validation("Invalid.RequestUrgency","Urgency date must be today or later");
+            return Error.Validation("Invalid.RequestUrgency", "Urgency date must be today or later");
         }
-        
+
         var staffRequisition = mapper.Map<StaffRequisition>(request);
-        
+
         await context.StaffRequisitions.AddAsync(staffRequisition);
-        
+
         await context.SaveChangesAsync();
-        
+
         backgroundWorkerService.EnqueueNotification("Staff requisition created", NotificationType.StaffRequest);
-        
+
         return staffRequisition.Id;
     }
 
@@ -108,14 +108,14 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
             .Include(sr => sr.Designation)
             .Include(sr => sr.Department)
             .FirstOrDefaultAsync(sr => sr.Id == id);
-        
+
         return requisition is null ? Error.NotFound("StaffRequisition.NotFound", "Staff requisition not found")
             : mapper.Map<StaffRequisitionDto>(requisition);
     }
 
     public async Task<Result> UpdateStaffRequisition(Guid id, CreateStaffRequisitionRequest request)
     {
-        
+
         var requisition = await context.StaffRequisitions.FirstOrDefaultAsync(sr => sr.Id == id);
 
         if (requisition is null)
@@ -128,17 +128,17 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
             return Error.Validation("StaffRequisition.NotEditable",
                 "Cannot modify a staff requisition approved that is approved");
         }
-        
+
         var department = await context.Departments.FindAsync(request.DepartmentId);
         if (department is null)
         {
             return Error.NotFound("Department.Invalid", "Invalid Department");
         }
-        
+
         mapper.Map(request, requisition);
         context.StaffRequisitions.Update(requisition);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
 
@@ -157,13 +157,13 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
         {
             return Error.Validation("StaffRequisition.CannotDelete", "Cannot delete a staff requisition that is approved");
         }
-        
+
         requisition.DeletedAt = DateTime.UtcNow;
         requisition.LastDeletedById = userId;
-        
+
         context.StaffRequisitions.Update(requisition);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
 }

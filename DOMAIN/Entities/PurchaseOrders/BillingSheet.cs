@@ -3,8 +3,10 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Charges;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Shipments;
+using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.PurchaseOrders;
 
@@ -21,16 +23,32 @@ public class BillingSheet : BaseEntity, IRequireApproval
     [StringLength(100)] public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
     public BillingSheetStatus Status { get; set; }
-    
+
     //container information
     [StringLength(100)] public string ContainerNumber { get; set; }
     [StringLength(1000)] public string NumberOfPackages { get; set; }
     public Guid? ContainerPackageStyleId { get; set; }
     public PackageStyle ContainerPackageStyle { get; set; }
     [StringLength(1000)] public string PackageDescription { get; set; }
-    public List<Charge> Charges { get; set; } = [];
-    public List<BillingSheetApproval>  Approvals { get; set; } = [];
+    public List<BillingSheetCharge> Charges { get; set; } = [];
+    public List<BillingSheetApproval> Approvals { get; set; } = [];
     public bool Approved { get; set; }
+}
+
+public class BillingSheetCharge
+{
+    public Guid Id { get; set; }
+    public Guid ChargeId { get; set; }
+    public Charge Charge { get; set; }
+    public Guid BillingSheetId { get; set; }
+    public BillingSheet BillingSheet { get; set; }
+    public bool Paid { get; set; }
+    public Guid? CurrencyId { get; set; }
+    public Currency Currency { get; set; }
+    public decimal Amount { get; set; }
+    public Guid? LastUpdatedById { get; set; }
+    public User LastUpdatedBy { get; set; }
+    public DateTime? LastUpdatedOn { get; set; }
 }
 
 public class BillingSheetApproval : ResponsibleApprovalStage
@@ -61,10 +79,19 @@ public class BillingSheetDto : WithAttachment
     public DateTime FreeTimeExpiryDate { get; set; }
     public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
-    public List<ChargeDto> Charges { get; set; } = [];
+    public List<BillingSheetChargeDto> Charges { get; set; } = [];
     //container information
     public string ContainerNumber { get; set; }
     public string NumberOfPackages { get; set; }
     public string PackageDescription { get; set; }
     public PackageStyleDto ContainerPackageStyle { get; set; }
+}
+
+public class BillingSheetChargeDto
+{
+    public Guid Id { get; set; }
+    public ChargeDto Charge { get; set; }
+    public CurrencyDto Currency { get; set; }
+    public decimal Amount { get; set; }
+    public bool Paid { get; set; }
 }

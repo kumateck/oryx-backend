@@ -25,7 +25,7 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
 
         var refreshToken = SaveRefreshToken(user.Id);
         var expiry = DateTime.UtcNow.AddMonths(6);
-        
+
         return new LoginResponse
         {
             UserId = user.Id,
@@ -34,58 +34,58 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
             ExpiresIn = Convert.ToInt32(expiry.Subtract(DateTime.UtcNow).TotalSeconds)
         };
     }
-    
-    private static string GenerateRefreshToken(int size = 32) 
-    { 
-        var randomNumber = new byte[size]; 
-        using var rng = RandomNumberGenerator.Create(); 
-        rng.GetBytes(randomNumber); 
+
+    private static string GenerateRefreshToken(int size = 32)
+    {
+        var randomNumber = new byte[size];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
         return Convert.ToBase64String(randomNumber);
     }
 
-    private string SaveRefreshToken(Guid userId) 
-    { 
-        var refreshToken = GenerateRefreshToken(); 
-        context.RefreshTokens.Add(new RefreshToken 
-        { 
-            CreatedById = userId, 
-            Token = refreshToken, 
+    private string SaveRefreshToken(Guid userId)
+    {
+        var refreshToken = GenerateRefreshToken();
+        context.RefreshTokens.Add(new RefreshToken
+        {
+            CreatedById = userId,
+            Token = refreshToken,
             Expiry = DateTime.UtcNow.AddMonths(6)
         });
         context.SaveChanges();
         return refreshToken;
     }
-    
+
     private async Task<Result<string>> GenerateToken(User user, string clientId)
-    { 
+    {
         var jwtKey = configuration["JwtSettings:Key"];
         if (string.IsNullOrEmpty(jwtKey))
             return Error.NotFound("JwtKey.NotFound", "Jwt ket not found");
-        
+
         var keyBytes = Encoding.ASCII.GetBytes(jwtKey);
-        
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var expiry = DateTime.UtcNow.AddMonths(6);
-        
+
         var roles = await userManager.GetRolesAsync(user);
-        
+
         var mainRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == roles.FirstOrDefault());
-        
-        var claims = new List<Claim> 
+
+        var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()), 
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"), 
+            new(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"),
             new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-            new("department", user.DepartmentId?.ToString() ?? ""),
+            new("department", user.DepartmentId.ToString()),
             new("environment",  Environment.GetEnvironmentVariable("Environment") ?? "dev"),
             new("departmentType", mainRole?.Type.ToString() ?? "")
-        }; 
+        };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-        
+
         var tokenDescriptor = new SecurityTokenDescriptor
-        { 
-            Subject = new ClaimsIdentity(claims), 
+        {
+            Subject = new ClaimsIdentity(claims),
             Expires = expiry,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256)
         };
@@ -95,28 +95,28 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
         return tokenJson;
     }
 
-    public async Task<Result<LoginResponse>> AuthenticateById(Guid? id, string clientId) 
-    { 
-        var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id); 
+    public async Task<Result<LoginResponse>> AuthenticateById(Guid? id, string clientId)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id);
         if (user != null)
         {
-            return await  Authenticate(user, clientId);
+            return await Authenticate(user, clientId);
         }
 
         return Result.Failure<LoginResponse>(Error.NotFound("User.NotFound", "User with {id} not found"));
     }
-        
-    public async Task<Result<LoginResponse>> AuthenticateNewUser(User user) 
-    { 
-        var clientId = string.Empty; 
-        var tokenJson =  await GenerateToken(user, clientId); 
-        var refreshToken = SaveRefreshToken(user.Id); 
+
+    public async Task<Result<LoginResponse>> AuthenticateNewUser(User user)
+    {
+        var clientId = string.Empty;
+        var tokenJson = await GenerateToken(user, clientId);
+        var refreshToken = SaveRefreshToken(user.Id);
         var expiry = DateTime.UtcNow.AddMonths(6);
-        
-        return new LoginResponse 
-        { 
-            AccessToken = tokenJson.Value, 
-            RefreshToken = refreshToken, 
+
+        return new LoginResponse
+        {
+            AccessToken = tokenJson.Value,
+            RefreshToken = refreshToken,
             ExpiresIn = Convert.ToInt32(expiry.Subtract(DateTime.UtcNow).TotalSeconds)
         };
     }

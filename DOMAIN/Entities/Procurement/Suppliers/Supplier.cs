@@ -4,6 +4,7 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
+using Microsoft.EntityFrameworkCore;
 
 namespace DOMAIN.Entities.Procurement.Suppliers;
 
@@ -25,7 +26,7 @@ public class Supplier : BaseEntity
 
 public enum SupplierType
 {
-    Foreign, 
+    Foreign,
     Local
 }
 
@@ -40,10 +41,12 @@ public class SupplierManufacturer : BaseEntity
 {
     public Guid SupplierId { get; set; }
     public Supplier Supplier { get; set; }
-    public Guid ManufacturerId { get; set; } 
+    public Guid ManufacturerId { get; set; }
     public Manufacturer Manufacturer { get; set; }
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
-    public decimal QuantityPerPack { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
     public bool Default { get; set; }
 }
+

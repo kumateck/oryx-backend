@@ -9,6 +9,7 @@ public class CreateRouteRequest
     public List<CreateRouteResponsibleRole> ResponsibleRoles { get; set; } = [];
     public List<CreateRouteWorkCenter> WorkCenters { get; set; } = [];
     public int Order { get; set; }
+    public bool IsCritical { get; set; }
 }
 
 public class CreateRouteResource
@@ -24,7 +25,7 @@ public class CreateRouteResponsibleUser
 }
 
 
-public class CreateRouteResponsibleRole 
+public class CreateRouteResponsibleRole
 {
     public Guid RoleId { get; set; }
     public Guid? ProductAnalyticalRawDataId { get; set; }

@@ -35,12 +35,15 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionOrderDto>>))]
-    public async Task<IResult> GetProductionOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetProductionOrders([FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] ProductionOrderStatus? status = null)
     {
-        var result = await repository.GetProductionOrders(page, pageSize, searchQuery);
+        var result = await repository.GetProductionOrders(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a production order by its ID.
     /// </summary>
@@ -52,7 +55,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.GetProductionOrder(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates a production order by its ID.
     /// </summary>
@@ -65,7 +68,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.UpdateProductionOrder(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes a production order by its ID.
     /// </summary>
@@ -76,7 +79,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteProductionOrder(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -96,7 +99,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.CreateProformaInvoice(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Sends the proforma invoice to the customer
     /// </summary>
@@ -107,7 +110,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.SendProformaInvoiceToCustomer(proformaInvoiceId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -121,21 +124,26 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         [FromQuery] ProformaInvoiceStatus? proformaInvoiceStatus,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery = null,
+        [FromQuery] bool? approved = null)
     {
-        var result = await repository.GetProformaInvoices(page, pageSize, searchQuery, proformaInvoiceStatus);
+        var result = await repository.GetProformaInvoices(page,
+            pageSize,
+            searchQuery,
+            proformaInvoiceStatus,
+            approved);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
     /// Retrieves a proforma invoice by its ID.
     /// </summary>
-    [HttpGet("proforma-invoice/{id:guid}")]
+    [HttpGet("proforma-invoice/{proformaInvoiceId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProformaInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProformaInvoice([FromRoute] Guid id)
+    public async Task<IResult> GetProformaInvoice([FromRoute] Guid proformaInvoiceId)
     {
-        var result = await repository.GetProformaInvoice(id);
+        var result = await repository.GetProformaInvoice(proformaInvoiceId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -166,7 +174,11 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.DeleteProformaInvoice(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
+    // ----------------------------
+    // Invoice Endpoints
+    // ----------------------------
+
     /// <summary>
     /// Creates an invoice.
     /// </summary>
@@ -229,8 +241,11 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.DeleteInvoice(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
-    
+
+    // ----------------------------
+    // Allocation & Delivery Endpoints
+    // ----------------------------
+
     /// <summary>
     /// Allocates stock to a production order
     /// </summary>
@@ -242,45 +257,121 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         var result = await repository.CreateProductOrderAllocation(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Get product allocations
     /// </summary>
     [HttpGet("allocate")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<List<AllocateProductionOrderDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(Paginateable<List<AllocateProductionOrderDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetProductAllocations(
-        [FromQuery] int page = 1, 
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
-        [FromQuery]  Guid? productionOrderId = null,
-        [FromQuery] bool? onlyApproved = null)
+        [FromQuery] Guid? productionOrderId = null,
+        [FromQuery] bool? approved = null)
     {
-        var result = await repository.GetProductAllocations(onlyApproved, page, pageSize, searchQuery, productionOrderId);
+        var result = await repository.GetProductAllocations(approved,
+            page,
+            pageSize,
+            searchQuery,
+            productionOrderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Get product allocation by id
     /// </summary>
-    [HttpGet("allocate/{allocatedProductId}")]
+    [HttpGet("allocate/{allocateProductionOrderId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AllocateProductionOrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetAllocatedProduct([FromRoute]  Guid allocatedProductId)
+    public async Task<IResult> GetAllocatedProduct([FromRoute] Guid allocateProductionOrderId)
     {
-        var result = await repository.GetProductAllocation(allocatedProductId);
+        var result = await repository.GetProductAllocation(allocateProductionOrderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Mark a production order as delivered
     /// </summary>
     [HttpPut("deliver/{allocateProductionOrderId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> MarkProductAllocationAsDelivered([FromRoute]  Guid allocateProductionOrderId)
+    public async Task<IResult> MarkProductAllocationAsDelivered([FromRoute] Guid allocateProductionOrderId)
     {
         var result = await repository.MarkAllocationProductionOrderAsDelivered(allocateProductionOrderId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    // ----------------------------
+    // New Waybill & Loading Endpoints
+    // ----------------------------
+
+    /// <summary>
+    /// Marks a production order allocation as loaded.
+    /// </summary>
+    [HttpPut("load/{allocateProductionOrderId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> MarkAllocationProductionOrderAsLoaded([FromRoute] Guid allocateProductionOrderId)
+    {
+        var result = await repository.MarkAllocationProductionOrderAsLoaded(allocateProductionOrderId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Creates a waybill from a production order.
+    /// </summary>
+    [HttpPost("{allocateProductionOrderId:guid}/waybill")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateWaybillFromProductionOrder([FromBody] CreateProductionOrderWaybill request,
+        [FromRoute] Guid allocateProductionOrderId)
+    {
+        var result = await repository.CreateWaybillFromProductionOrder(request, allocateProductionOrderId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of production order waybills.
+    /// </summary>
+    [HttpGet("waybill")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionOrderWaybillDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> GetProductionOrderWaybills(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] Guid? allocateProductionOrderId = null)
+    {
+        var result = await repository.GetProductionOrderWaybills(page, pageSize,
+            searchQuery, allocateProductionOrderId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a production order waybill by its ID.
+    /// </summary>
+    [HttpGet("waybill/{productionOrderWaybillId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionOrderWaybillDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionOrderWaybill([FromRoute] Guid productionOrderWaybillId)
+    {
+        var result = await repository.GetProductionOrderWaybill(productionOrderWaybillId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+
+    /// <summary>
+    /// Sends a waybill to the customer.
+    /// </summary>
+    [HttpPost("waybill/{allocateProductionOrderId:guid}/customer")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> SendWaybillToCustomer([FromRoute] Guid allocateProductionOrderId)
+    {
+        var result = await repository.SendWaybillToCustomer(allocateProductionOrderId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

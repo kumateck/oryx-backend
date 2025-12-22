@@ -1,5 +1,6 @@
 using APP.IRepository;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Base;
@@ -203,7 +204,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             leaveRequests = leaveRequests.Where(lr => lr.Employee.Gender == gender.Value);
             overtimeRequests = overtimeRequests.Where(or => or.Employees.Any(e => e.Gender == gender.Value));
         }
-        
+
         var employeeStats = await employees.GroupBy(e => 1).Select(g => new
         {
             TotalCasual = g.Count(e => e.Type == EmployeeType.Casual),
@@ -218,7 +219,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             Female = g.Count(e => e.Gender == Gender.Female)
         }).FirstOrDefaultAsync();
 
-      
+
         var leaveStats = await leaveRequests.GroupBy(lr => 1).Select(g => new
         {
             Total = g.Count(),
@@ -242,7 +243,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             PendingOfficialDuty = g.Count(lr => lr.RequestCategory == RequestCategory.OfficialDuty && lr.LeaveStatus == LeaveStatus.Pending)
         }).FirstOrDefaultAsync();
 
-  
+
         var overtimeStats = await overtimeRequests.GroupBy(or => 1).Select(g => new
         {
             Total = g.Count(),
@@ -251,13 +252,13 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             Expired = g.Count(or => or.Status == OvertimeStatus.Expired)
         }).FirstOrDefaultAsync();
 
-     
+
         var staffRequisitionCount = await staffRequisitions.CountAsync();
-        
+
         var ratio = (employeeStats?.Female > 0)
             ? (decimal)employeeStats.Male / employeeStats.Female
             : 0;
-        
+
         return new HrDashboardDto
         {
             NumberOfOvertimeRequests = overtimeStats?.Total ?? 0,
@@ -338,7 +339,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         };
 
         return new PermanentStaffGradeReportDto { Departments = groupedResults, Totals = total };
-        
+
     }
 
     private async Task<AttendanceStatsDto> GetAttendanceStatsAsync(DateTime? startDate, DateTime? endDate)
@@ -359,21 +360,21 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             AttendanceRate = rate
         };
     }
-    
+
     public async Task<Result<EmployeeMovementReportDto>> GetEmployeeMovementReport(MovementReportFilter filter)
     {
-        var start = filter.StartDate ?? DateTime.UtcNow.AddMonths(-1); 
+        var start = filter.StartDate ?? DateTime.UtcNow.AddMonths(-1);
         var end = filter.EndDate ?? DateTime.UtcNow;
 
         // Get employees who were either hired or left during the period
         var query = context.Employees
             .Include(e => e.Department)
-            .Where(e => 
-                (e.DateEmployed >= start && e.DateEmployed <= end) || 
-                (e.Status == EmployeeStatus.Inactive && 
-                 e.ExitDate.HasValue && 
-                 e.ExitDate >= start && 
-                 e.ExitDate <= end) 
+            .Where(e =>
+                (e.DateEmployed >= start && e.DateEmployed <= end) ||
+                (e.Status == EmployeeStatus.Inactive &&
+                 e.ExitDate.HasValue &&
+                 e.ExitDate >= start &&
+                 e.ExitDate <= end)
             );
 
         if (filter.DepartmentId.HasValue)
@@ -406,10 +407,10 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                         totals.PermanentNew++;
                         break;
                     // Count exits during the period (only for inactive employees)
-                    case EmployeeStatus.Inactive when 
-                        emp.ExitDate.HasValue && 
-                        emp.ExitDate >= start && 
-                        emp.ExitDate <= end && 
+                    case EmployeeStatus.Inactive when
+                        emp.ExitDate.HasValue &&
+                        emp.ExitDate >= start &&
+                        emp.ExitDate <= end &&
                         emp.InactiveStatus.HasValue:
                         switch (emp.InactiveStatus.Value)
                         {
@@ -425,7 +426,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                                     totals.PermanentResignation++;
                                 }
                                 break;
-                            
+
                             case EmployeeInactiveStatus.Termination:
                             case EmployeeInactiveStatus.Deceased:
                                 if (isCasual)
@@ -439,7 +440,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                                     totals.PermanentTermination++;
                                 }
                                 break;
-                            
+
                             case EmployeeInactiveStatus.SummaryDismissed:
                                 if (isCasual)
                                 {
@@ -452,7 +453,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                                     totals.PermanentSDVP++;
                                 }
                                 break;
-                            
+
                             case EmployeeInactiveStatus.Transfer:
                                 // Transfers are typically permanent employees
                                 if (!isCasual)
@@ -461,7 +462,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                                     totals.PermanentTransfer++;
                                 }
                                 break;
-                            
+
                             case EmployeeInactiveStatus.VacatedPost:
                                 // These might need separate handling depending on your business rules
                                 // For now, treating them as terminations
@@ -476,7 +477,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                                     totals.PermanentSDVP++;
                                 }
                                 break;
-                            
+
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }
@@ -484,7 +485,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                         break;
                 }
             }
-            
+
             departments.Add(dto);
         }
 
@@ -502,7 +503,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         var employees = context.Employees
             .Include(e => e.Department)
-            .Where(e => (e.Type == EmployeeType.Casual  || e.Type == EmployeeType.Permanent) && !e.InactiveStatus.HasValue);
+            .Where(e => (e.Type == EmployeeType.Casual || e.Type == EmployeeType.Permanent) && !e.InactiveStatus.HasValue);
 
         if (filter.DepartmentId.HasValue)
         {
@@ -531,7 +532,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             TotalPermanentStaff = groupedResults.Sum(x => x.TotalPermanentStaff),
             TotalCasualStaff = groupedResults.Sum(x => x.TotalCasualStaff)
         };
-        
+
 
         return Result.Success(new StaffTotalReport
         {
@@ -540,7 +541,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         });
     }
 
-    public async Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
+    public Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(MovementReportFilter filter)
     {
         throw new NotImplementedException();
     }
@@ -679,7 +680,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             };
 
             report.Departments.Add(dto);
-            
+
         }
 
         return Result.Success(report);
@@ -690,18 +691,18 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     public async Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(ReportFilter filter)
     {
         var currentYear = DateTime.UtcNow.Year;
-        
+
         var startYear = filter.StartDate?.Year ?? currentYear;
         var endYear = filter.EndDate?.Year ?? currentYear;
 
         filter.StartDate = new DateTime(startYear, 1, 1);
         filter.EndDate = new DateTime(endYear, 12, 31);
-        
+
         var leavers = await context.Employees
             .Where(e => e.ExitDate.HasValue &&
                         e.ExitDate.Value.Year == filter.StartDate.Value.Year)
             .ToListAsync();
-        
+
         var startCount = await context.Employees
             .Where(e => e.DateEmployed <= filter.StartDate.Value &&
                         (!e.ExitDate.HasValue || e.ExitDate >= filter.EndDate.Value))
@@ -714,7 +715,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         var averageEmployees = (startCount + endCount) / 2.0;
         var turnoverRate = averageEmployees == 0 ? 0 : (leavers.Count / averageEmployees) * 100.0;
-        
+
         var exitedEmployees = await context.Employees
             .Include(e => e.Department)
             .Where(e => e.ExitDate.HasValue && e.ExitDate.Value.Year == filter.EndDate.Value.Year)
@@ -766,8 +767,8 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .AsQueryable();
         var responseApprovals = context.ResponseApprovals.AsQueryable();
         var staffRequisitionApprovals = context.StaffRequisitionApprovals.AsQueryable();
-        
-        
+
+
         if (filter.StartDate.HasValue)
         {
             analyticalTestRequests = analyticalTestRequests.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
@@ -779,7 +780,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             responseApprovals = responseApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             billingSheetApprovals = billingSheetApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             leaveRequestApprovals = leaveRequestApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
-            purchaseOrderApprovals =  purchaseOrderApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
+            purchaseOrderApprovals = purchaseOrderApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
             staffRequisitionApprovals = staffRequisitionApprovals.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
         }
 
@@ -802,7 +803,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         {
             analyticalTestRequests = analyticalTestRequests.Where(lr => lr.ProductionScheduleProduct.ProductId == productId);
             products = products.Where(lr => lr.Id == productId);
-            bmrRequests = bmrRequests.Where(lr => 
+            bmrRequests = bmrRequests.Where(lr =>
                 lr.ProductionScheduleProduct != null &&
                 lr.ProductionScheduleProduct.ProductId == productId);
             requisitionApprovals = requisitionApprovals.Where(lr =>
@@ -817,32 +818,32 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             NumberOfApprovedBmrRequests = bmrRequests.Count(bmr => bmr.Status == BatchManufacturingStatus.Approved),
             NumberOfRejectBmrRequests = bmrRequests.Count(bmr => bmr.Status == BatchManufacturingStatus.Rejected),
             NumberOfAnalyticalTestRequests = analyticalTestRequests.Count(),
-            NumberOfExpiredAnalyticalTestRequests = 
+            NumberOfExpiredAnalyticalTestRequests =
                 await analyticalTestRequests.CountAsync(or => or.ExpiryDate > filter.StartDate && or.ExpiryDate <= filter.EndDate),
-            NumberOfApprovals = await requisitionApprovals.CountAsync() + await billingSheetApprovals.CountAsync() 
+            NumberOfApprovals = await requisitionApprovals.CountAsync() + await billingSheetApprovals.CountAsync()
                                 + await leaveRequestApprovals.CountAsync() + await purchaseOrderApprovals.CountAsync()
                                 + await staffRequisitionApprovals.CountAsync() + await purchaseOrderApprovals.CountAsync()
                                 + await responseApprovals.CountAsync(),
-            
-            NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                       + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
-                                    + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+
+            NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
+                                       + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
+                                    + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
                                        + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
-                                    + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
+                                    + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
                                        + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending)
                                     + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending),
-            
-            NumberOfRejectedApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
-                                        + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+
+            NumberOfRejectedApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+                                        + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
+                                        + await leaveRequestApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
                                         + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
-                                        + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected) 
+                                        + await staffRequisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
                                         + await purchaseOrderApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected)
                                         + await responseApprovals.CountAsync(s => s.Status == ApprovalStatus.Rejected),
             NumberOfManufacturers = await approvedManufacturers.CountAsync(),
             NumberOfNewManufacturers = await approvedManufacturers.CountAsync(),
             NumberOfApprovedManufacturers = await approvedManufacturers.CountAsync(am => am.ApprovedAt.HasValue),
-            NumberOfExpiredManufacturers = await approvedManufacturers.CountAsync(am =>am.ValidityDate.HasValue && am.ValidityDate.Value < DateTime.UtcNow),
+            NumberOfExpiredManufacturers = await approvedManufacturers.CountAsync(am => am.ValidityDate.HasValue && am.ValidityDate.Value < DateTime.UtcNow),
             NumberOfProducts = await products.CountAsync(),
             NumberOfPackingMaterials = await materials.CountAsync(m => m.Kind == MaterialKind.Package),
             NumberOfRawMaterials = await materials.CountAsync(m => m.Kind == MaterialKind.Raw)
@@ -854,7 +855,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     {
         var materialStp = context.MaterialStandardTestProcedures.AsQueryable();
         var productStp = context.ProductStandardTestProcedures.AsQueryable();
-        
+
         var materialAnalyticalRawData = context.MaterialAnalyticalRawData.AsQueryable();
         var productAnalyticalRawData = context.ProductAnalyticalRawData.AsQueryable();
 
@@ -866,7 +867,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         // var requisitionApprovals = context.RequisitionApprovals.AsQueryable();
         // var responseApprovals = context.ResponseApprovals.AsQueryable();
         // var staffRequisitionApprovals = context.StaffRequisitionApprovals.AsQueryable();
-        
+
         if (filter.StartDate.HasValue)
         {
             materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.CreatedAt >= filter.StartDate.Value);
@@ -902,7 +903,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         {
             productStp = productStp.Where(lr => lr.ProductId == productId);
             productAnalyticalRawData = productAnalyticalRawData.Where(lr => lr.ProductStandardTestProcedure.ProductId == productId);
-            
+
         }
 
         if (materialId.HasValue)
@@ -910,7 +911,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             materialAnalyticalRawData = materialAnalyticalRawData.Where(lr => lr.MaterialStandardTestProcedure.MaterialId == materialId);
             materialStp = materialStp.Where(lr => lr.MaterialId == materialId);
             rawMaterialBatchTest = rawMaterialBatchTest.Where(lr => lr.MaterialId == materialId);
-            
+
         }
         return new QcDashboardDto
         {
@@ -920,32 +921,32 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             NumberOfMaterialAnalyticalRawData = await materialAnalyticalRawData.CountAsync(m => m.MaterialStandardTestProcedure.Material.Kind == MaterialKind.Raw),
             NumberOfMaterialAnalyticalPackingData = await materialAnalyticalRawData.CountAsync(m => m.MaterialStandardTestProcedure.Material.Kind == MaterialKind.Package),
             NumberOfBatchTestCountRawMaterials = rawMaterialBatchTest.Count(rm => rm.Material.Kind == MaterialKind.Raw),
-            NumberOfBatchTestPendingRawMaterials = 
+            NumberOfBatchTestPendingRawMaterials =
                 await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Received), //check this
             NumberOfBatchTestApprovedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Approved),
             NumberOfBatchTestRejectedRawMaterials = await rawMaterialBatchTest.CountAsync(rm => rm.Status == BatchStatus.Rejected),
-            NumberOfBulkProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Bulk),
-            NumberOfIntermediateProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Intermediate),
-            NumberOfFinishedProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == Stage.Finished),
+            NumberOfBulkProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == TestStage.Bulk),
+            NumberOfIntermediateProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == TestStage.Intermediate),
+            NumberOfFinishedProductAnalyticalRawData = await productAnalyticalRawData.CountAsync(p => p.Stage == TestStage.Finished),
             NumberOfRawMaterialSpecifications = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Raw),
             NumberOfPackingMaterialSpecifications = await materialStp.CountAsync(ms => ms.Material.Kind == MaterialKind.Package),
             NumberOfIntermediateProductSpecifications = await productStp
                 .CountAsync(p => productAnalyticalRawData
-                    .Where(ar => ar.Stage == Stage.Intermediate)
+                    .Where(ar => ar.Stage == TestStage.Intermediate)
                     .Select(ar => ar.Id)
                     .Contains(p.ProductId)),
-            NumberOfBulkProductSpecifications = await productStp.CountAsync(p=> productAnalyticalRawData
-                .Where(ar => ar.Stage == Stage.Bulk)
+            NumberOfBulkProductSpecifications = await productStp.CountAsync(p => productAnalyticalRawData
+                .Where(ar => ar.Stage == TestStage.Bulk)
                 .Select(ar => ar.Id)
                 .Contains(p.ProductId)),
-            
+
             NumberOfFinishedProductSpecifications = await productStp.CountAsync(
                 p => productAnalyticalRawData
-                    .Where(ar => ar.Stage == Stage.Finished)
+                    .Where(ar => ar.Stage == TestStage.Finished)
                     .Select(ar => ar.Id)
                     .Contains(p.ProductId))
-            
-            
+
+
             // NumberOfApprovals = await approvals.CountAsync(),
             // NumberOfPendingApprovals = await requisitionApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
             //                            + await billingSheetApprovals.CountAsync(s => s.Status == ApprovalStatus.Pending) 
@@ -970,7 +971,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var stockRequisitions = context.Requisitions
             .Where(r => r.RequisitionType == RequisitionType.Stock && r.DepartmentId == departmentId)
             .AsQueryable();
-        
+
         var incomingStockTransfers = context.StockTransferSources
             .Where(s => s.FromDepartmentId == departmentId)
             .AsQueryable();
@@ -1002,8 +1003,8 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 )
             )
             .AsQueryable();
-        
-        
+
+
         if (filter.StartDate.HasValue)
         {
             var start = filter.StartDate.Value;
@@ -1012,7 +1013,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             shipments = shipments.Where(s => s.CreatedAt >= start);
         }
 
-        
+
         if (filter.EndDate.HasValue)
         {
             var end = filter.EndDate.Value.AddDays(1);
@@ -1020,13 +1021,13 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             incomingStockTransfers = incomingStockTransfers.Where(r => r.CreatedAt < end);
             shipments = shipments.Where(r => r.CreatedAt < end);
         }
-        
+
         return new WarehouseReportDto
         {
             NumberOfStockRequisitions = await stockRequisitions.CountAsync(),
             NumberOfNewStockRequisitions = await stockRequisitions.CountAsync(s => s.Status == RequestStatus.New),
-            NumberOfInProgressStockRequisitions =  await stockRequisitions.CountAsync(s => s.Status == RequestStatus.Pending),
-            NumberOfCompletedStockRequisitions =  await stockRequisitions.CountAsync(s => s.Status == RequestStatus.Completed),
+            NumberOfInProgressStockRequisitions = await stockRequisitions.CountAsync(s => s.Status == RequestStatus.Pending),
+            NumberOfCompletedStockRequisitions = await stockRequisitions.CountAsync(s => s.Status == RequestStatus.Completed),
             NumberOfIncomingStockTransfers = await incomingStockTransfers.CountAsync(),
             NumberOfIncomingPendingStockTransfers = await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.InProgress),
             NumberOfIncomingCompletedStockTransfers = await incomingStockTransfers.CountAsync(s => s.Status == StockTransferStatus.Issued),
@@ -1036,19 +1037,19 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             NumberOfClearedShipments = await shipments.CountAsync(s => s.Type == DocType.Shipment && s.Status == ShipmentStatus.Cleared),
         };
     }
-    
+
     public async Task<Result<List<MaterialBatchReservedQuantityReportDto>>> GetReservedMaterialBatchesForDepartment(ReportFilter filter, Guid departmentId)
     {
         var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
-        if(department is null) return Error.NotFound("Department", "Department not found.");
-        
+        if (department is null) return Error.NotFound("Department", "Department not found.");
+
         var materialBatchReserved = context.MaterialBatchReservedQuantities
             .AsSplitQuery()
             .Include(m => m.MaterialBatch).ThenInclude(b => b.Material)
             .Include(m => m.Warehouse)
             .Where(m => m.Warehouse.DepartmentId == departmentId)
             .AsQueryable();
-        
+
         if (filter.MaterialKind.HasValue)
         {
             materialBatchReserved = materialBatchReserved
@@ -1091,25 +1092,24 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             return Error.NotFound("Warehouse.Raw", "This user has no raw material configured for his department");
 
         var packageMaterialWarehouse = warehouses.FirstOrDefault(w => w.Type == WarehouseType.PackagedStorage);
-        
+
         if (packageMaterialWarehouse is null)
             return Error.NotFound("Warehouse.Package", "This user has no packaging material configured for his department");
-        
+
         var query = context.DistributedRequisitionMaterials
             .Include(drm => drm.ShipmentInvoice)
             .Include(drm => drm.Material)
-            .Include(drm => drm.RequisitionItem)
             .Include(drm => drm.WarehouseArrivalLocation)
-            .Include(drm=>drm.MaterialItemDistributions)
-            .Include(sr=>sr.CheckLists)
-            .ThenInclude(cl=>cl.MaterialBatches)
-            .Where(drm => drm.Status == DistributedRequisitionMaterialStatus.Distributed)
+            .Include(drm => drm.MaterialItemDistributions)
+            .Include(sr => sr.CheckLists)
+            .ThenInclude(cl => cl.MaterialBatches)
+            .Where(drm => drm.Status == DistributedRequisitionMaterialStatus.Pending)
             .AsQueryable();
 
         query = filter.MaterialKind == MaterialKind.Raw
             ? query.Where(q => q.WarehouseArrivalLocation.WarehouseId == rawMaterialWarehouse.Id)
             : query.Where(q => q.WarehouseArrivalLocation.WarehouseId == packageMaterialWarehouse.Id);
-        
+
         if (filter.StartDate.HasValue)
         {
             var start = filter.StartDate.Value;
@@ -1121,7 +1121,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             var end = filter.EndDate.Value.AddDays(1);
             query = query.Where(r => r.CreatedAt < end);
         }
-        
+
         return mapper.Map<List<DistributedRequisitionMaterialDto>>(await query.ToListAsync());
     }
 
@@ -1141,7 +1141,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         {
             query = query.Where(b => b.Material.Kind == filter.MaterialKind);
         }
-          
+
         if (filter.StartDate.HasValue)
         {
             var start = filter.StartDate.Value;
@@ -1153,21 +1153,21 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             var end = filter.EndDate.Value.AddDays(1);
             query = query.Where(r => r.CreatedAt < end);
         }
-        
+
         return mapper.Map<List<MaterialBatchDto>>(await query.ToListAsync());
     }
 
     public async Task<Result<LogisticsReportDto>> GetLogisticsReport(ReportFilter filter)
     {
         var shipmentInvoices = context.ShipmentInvoices.AsQueryable();
-        
+
         var shipments = context.ShipmentDocuments.AsQueryable();
-        
+
         var billingSheets = context.BillingSheets
             .AsSplitQuery()
             .Include(s => s.Invoice)
             .AsQueryable();
-        
+
         if (filter.StartDate.HasValue)
         {
             var start = filter.StartDate.Value;
@@ -1202,7 +1202,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             NumberOfNewWaybills = await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.New),
             NumberOfInTransitWaybills = await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.InTransit),
             NumberOfArrivedWaybills = await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.Arrived),
-            NumberOfClearedWaybills =  await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.Cleared),
+            NumberOfClearedWaybills = await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.Cleared),
         };
     }
 }

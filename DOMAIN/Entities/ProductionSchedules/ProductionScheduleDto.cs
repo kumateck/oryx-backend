@@ -11,8 +11,8 @@ public class ProductionScheduleDto : BaseDto
     public string Code { get; set; }
     public DateTime ScheduledStartTime { get; set; }
     public DateTime ScheduledEndTime { get; set; }
-    public ProductionStatus Status { get; set; } 
-    public string Remarks { get; set; } 
+    public ProductionStatus Status { get; set; }
+    public string Remarks { get; set; }
     public List<ProductionScheduleProductDto> Products { get; set; } = [];
 }
 
@@ -23,7 +23,7 @@ public class ProductionScheduleItemDto : BaseDto
     public decimal Quantity { get; set; }
 }
 
-public class ProductionScheduleProcurementDto 
+public class ProductionScheduleProcurementDto
 {
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto BaseUoM { get; set; }
@@ -34,13 +34,14 @@ public class ProductionScheduleProcurementDto
     public MaterialRequisitionStatus Status { get; set; }
     public Guid StorageWarehouseId { get; set; }
     public Guid ProductionWarehouseId { get; set; }
+    public MaterialDepartmentDetails MaterialDepartment { get; set; }
+    public decimal FrozenQuantity { get; set; }
 }
 
-public class ProductionScheduleProcurementPackageDto 
+public class ProductionScheduleProcurementPackageDto
 {
     public MaterialDto Material { get; set; }
     public MaterialDto DirectLinkMaterial { get; set; }
-    public UnitOfMeasureDto BaseUoM { get; set; }
     public decimal BaseQuantity { get; set; }
     public decimal PrescribedQuantity { get; set; }
     public decimal QuantityNeeded { get; set; }
@@ -50,19 +51,31 @@ public class ProductionScheduleProcurementPackageDto
     public decimal PackingExcessMargin { get; set; }
     public Guid StorageWarehouseId { get; set; }
     public Guid ProductionWarehouseId { get; set; }
+    public MaterialDepartmentDetails MaterialDepartment { get; set; }
+    public decimal FrozenQuantity { get; set; }
+}
+
+public class MaterialDepartmentDetails
+{
+    public CollectionItemDto Department { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public decimal ReOrderLevel { get; set; }
+    public decimal MinimumStockLevel { get; set; }
+    public decimal MaximumStockLevel { get; set; }
 }
 
 public class ProductionScheduleProductDto
 {
+    public Guid Id { get; set; }
     public CollectionItemDto ProductionSchedule { get; set; }
     public ProductListDto Product { get; set; }
     public decimal Quantity { get; set; }
     public string BatchNumber { get; set; }
     public BatchSize BatchSize { get; set; }
-    public CustomerDto MarketType { get; set; } 
+    public CustomerDto MarketType { get; set; }
     public bool Cancelled { get; set; }
-   public string ReasonForCancellation { get; set; }
-   public ProductPackingDto ProductPacking { get; set; }
+    public string ReasonForCancellation { get; set; }
+    public ProductPackingDto ProductPacking { get; set; }
 }
 
 public enum MaterialRequisitionStatus
@@ -71,7 +84,7 @@ public enum MaterialRequisitionStatus
     StockTransfer = 1,
     PurchaseRequisition = 2,
     Local = 3,
-    Foreign= 4,
+    Foreign = 4,
     StockRequisition = 5,
     Issued = 6,
     InHouse = 7

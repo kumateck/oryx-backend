@@ -11,6 +11,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
+using DOMAIN.Entities.Warehouses;
 
 namespace API.Controllers;
 
@@ -68,7 +69,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetManufacturers(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of manufacturers by their material ID.
     /// </summary>
@@ -172,7 +173,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetSuppliers(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the status of a specific supplier by its ID.
     /// </summary>
@@ -184,15 +185,15 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateSupplierStatus(Guid supplierId, [FromBody]UpdateSupplierStatusRequest request)
+    public async Task<IResult> UpdateSupplierStatus(Guid supplierId, [FromBody] UpdateSupplierStatusRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-    
+
         var result = await repository.UpdateSupplierStatus(supplierId, request.Status, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of suppliers by their material ID.
     /// </summary>
@@ -207,7 +208,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetSupplierByMaterial(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of suppliers by their material ID.
     /// </summary>
@@ -261,8 +262,8 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.DeleteSupplier(supplierId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
-     // ************* PurchaseOrder Endpoints *************
+
+    // ************* PurchaseOrder Endpoints *************
 
     /// <summary>
     /// Creates a new purchase order.
@@ -325,13 +326,13 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [HttpGet("purchase-order")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<PurchaseOrderDto>>))]
-    public async Task<IResult> GetPurchaseOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, 
+    public async Task<IResult> GetPurchaseOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         [FromQuery] PurchaseOrderStatus? status = null, [FromQuery] SupplierType? type = null)
     {
         var result = await repository.GetPurchaseOrders(page, pageSize, searchQuery, status, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Sends a purchase order or awarded quote to a supplier
     /// </summary>
@@ -347,7 +348,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.SendPurchaseOrderToSupplier(request, purchaseOrderId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Sends a proforma-invoice to a supplier
     /// </summary>
@@ -369,6 +370,26 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The UpdatePurchaseOrderRequest object.</param>
     /// <param name="purchaseOrderId">The ID of the purchase order to update.</param>
     /// <returns>Returns success or failure.</returns>
+    [HttpPut("purchase-order/first-step/{purchaseOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdatePurchaseOrderFirstStep([FromBody] UpdatePurchaseOrderFirstStep request, Guid purchaseOrderId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdatePurchaseOrderSFirstStep(request, purchaseOrderId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a specific purchase order by its ID.
+    /// </summary>
+    /// <param name="request">The UpdatePurchaseOrderRequest object.</param>
+    /// <param name="purchaseOrderId">The ID of the purchase order to update.</param>
+    /// <returns>Returns success or failure.</returns>
     [HttpPut("purchase-order/{purchaseOrderId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -380,6 +401,25 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.UpdatePurchaseOrder(request, purchaseOrderId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Cancels a specific purchase order by its ID.
+    /// </summary>
+    /// <param name="purchaseOrderId">The ID of the purchase order to update.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpDelete("purchase-order/{purchaseOrderId}/cancel")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CancelPurchaseOrder(Guid purchaseOrderId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CancelPurchaseOrder(purchaseOrderId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -418,6 +458,16 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeletePurchaseOrder(purchaseOrderId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    [HttpPut("purchase-order/check/{purchaseOrderId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CheckPurchaseOrder(Guid purchaseOrderId)
+    {
+        var result = await repository.CheckPurchaseOrder(purchaseOrderId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -545,7 +595,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetBillingSheet(billingSheetId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a billing sheet by its invoice.
     /// </summary>
@@ -589,12 +639,48 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateBillingSheet([FromBody] CreateBillingSheetRequest request, Guid billingSheetId)
+    public async Task<IResult> UpdateBillingSheet([FromBody] UpdateBillingSheetRequest request, Guid billingSheetId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.UpdateBillingSheet(request, billingSheetId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Marks charges within a billing sheet
+    /// </summary>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPut("billing-sheet/charge")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MarkBillingSheetChargeAsPaid([FromBody] MarkBillingSheetCharge request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.MarkBillingSheetChargeAsPaid(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Marks charges within a billing sheet
+    /// </summary>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPost("billing-sheet/charge/{billingSheetId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddChargeToBillingSheet([FromBody] List<CreateBillingSheetCharge> request, [FromRoute] Guid billingSheetId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.AddChargesToBillingSheet(request, billingSheetId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -615,7 +701,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.DeleteBillingSheet(billingSheetId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new shipment document.
     /// </summary>
@@ -704,9 +790,9 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.DeleteShipmentDocument(shipmentDocumentId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     // ************* Waybill Endpoints *************
-    
+
     /// <summary>
     /// Creates a new waybill.
     /// </summary>
@@ -720,11 +806,11 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-    
+
         var result = await repository.CreateWayBill(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a waybill by its ID.
     /// </summary>
@@ -756,7 +842,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetWaybillDocuments(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates a specific waybill by its ID.
     /// </summary>
@@ -772,11 +858,11 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-    
+
         var result = await repository.UpdateWaybillDocument(request, waybillId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes a specific waybill by its ID.
     /// </summary>
@@ -790,11 +876,11 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-    
+
         var result = await repository.DeleteWaybillDocument(waybillId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Marks a shipment as arrived by updating the ArrivedAt property.
     /// </summary>
@@ -827,11 +913,11 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-    
+
         var result = await repository.UpdateShipmentStatus(shipmentId, request.Status, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves all shipments that have arrived.
     /// </summary>
@@ -843,7 +929,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetArrivedShipments(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new shipment invoice.
     /// </summary>
@@ -859,7 +945,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.CreateShipmentInvoice(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a shipment invoice by the ID.
     /// </summary>
@@ -872,7 +958,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetShipmentInvoice(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves all shipment invoices that have not been linked to a shipment document.
     /// </summary>
@@ -898,7 +984,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetShipmentInvoiceByShipmentDocument(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of shipment invoices.
     /// </summary>
@@ -931,7 +1017,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.UpdateShipmentInvoice(request, shipmentInvoiceId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Marks a shipment invoice as paid and the time it was paid
     /// </summary>
@@ -945,10 +1031,10 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.MarkShipmentInvoiceAsPaid(shipmentInvoiceId, paidAt,Guid.Parse(userId));
+        var result = await repository.MarkShipmentInvoiceAsPaid(shipmentInvoiceId, paidAt, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Marks a shipment invoice as paid and the time it was paid
     /// </summary>
@@ -1043,7 +1129,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.DeleteShipmentDiscrepancy(shipmentDiscrepancyId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves purchase orders that are either not linked to any shipment invoice or are partially used.
     /// </summary>
@@ -1087,7 +1173,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.GetMaterialsByPurchaseOrderIdsAsync(purchaseOrderIds);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves material distribution details for a specific shipment document.
     /// </summary>
@@ -1108,14 +1194,17 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// </summary>
     /// <param name="shipmentDocumentId">The shipment document id for which you want to approve distribution</param>
     /// <param name="materialId"></param>
+    /// <param name="departmentId">The department the material goes to</param>
     /// <returns>Returns success or failure.</returns>
-    [HttpPost("{shipmentDocumentId}/confirm-distribution/{materialId}")]
-    public async Task<IResult> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId)
+    [HttpPost("{shipmentDocumentId}/confirm-distribution/{materialId}/{departmentId}")]
+    public async Task<IResult> ConfirmDistribution([FromRoute] Guid shipmentDocumentId,
+        [FromRoute] Guid materialId,
+        [FromRoute] Guid departmentId)
     {
-        var result = await repository.ConfirmDistribution(shipmentDocumentId,materialId);
+        var result = await repository.ConfirmDistribution(shipmentDocumentId, materialId, departmentId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Confirms the distribution of materials.
     /// </summary>
@@ -1127,7 +1216,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.ConfirmDistribution(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of supplier materials by material
     /// </summary>
@@ -1135,12 +1224,12 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierManufacturerDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetSupplierManufacturersByMaterial([FromRoute]Guid supplierId, [FromRoute]Guid materialId)
+    public async Task<IResult> GetSupplierManufacturersByMaterial([FromRoute] Guid supplierId, [FromRoute] Guid materialId)
     {
         var result = await repository.GetSupplierManufacturersByMaterial(materialId, supplierId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of supplier materials by material
     /// </summary>
@@ -1148,9 +1237,64 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierManufacturerDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetSupplierManufacturersBySupplier([FromRoute]Guid supplierId)
+    public async Task<IResult> GetSupplierManufacturersBySupplier([FromRoute] Guid supplierId)
     {
         var result = await repository.GetSupplierManufacturersBySupplier(supplierId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    // ************* DistributeMaterial Endpoints *************
+
+    /// <summary>
+    /// Distributes a requisition material to a warehouse.
+    /// </summary>
+    /// <param name="request">The distribution details request.</param>
+    /// <returns>Returns success or failure.</returns>
+    [HttpPost("distribute-material")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DistributeMaterialToWarehouse([FromBody] List<DistributeMaterialRequest> request)
+    {
+        var result = await repository.DistributeMaterialToWarehouse(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of distributed materials.
+    /// </summary>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="status">Filter by distribution status.</param>
+    /// <param name="departmentId">Filter by department ID.</param>
+    /// <param name="kind">The material kind</param>
+    /// <returns>Returns a paginated list of distributed materials.</returns>
+    [HttpGet("distribute-material")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributeMaterialDto>>))]
+    public async Task<IResult> GetDistributeMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null, [FromQuery] DistributeMaterialStatus? status = null,
+        [FromQuery] Guid? departmentId = null,
+        [FromQuery] MaterialKind? kind = null)
+    {
+        var result = await repository.GetDistributeMaterials(page, pageSize, searchQuery, status, departmentId, kind);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a specific distributed material by its ID.
+    /// </summary>
+    /// <param name="distributeMaterialId">The ID of the distributed material.</param>
+    /// <returns>Returns the distributed material details.</returns>
+    [HttpGet("distribute-material/{distributeMaterialId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DistributeMaterialDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDistributeMaterial(Guid distributeMaterialId)
+    {
+        var result = await repository.GetDistributeMaterial(distributeMaterialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

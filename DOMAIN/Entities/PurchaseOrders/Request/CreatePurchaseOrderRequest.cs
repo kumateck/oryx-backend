@@ -19,28 +19,33 @@ public class CreatePurchaseOrderRequest
     public decimal Insurance { get; set; }
     public string AmountInFigures { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
+    public Guid? DepartmentId { get; set; }
 }
 
-public class UpdatePurchaseOrderRequest
+public class UpdatePurchaseOrderFirstStep
 {
     public string ProFormaInvoiceNumber { get; set; }
     public Guid? DeliveryModeId { get; set; }
     public Guid? TermsOfPaymentId { get; set; }
+    public DateTime? EstimatedDeliveryDate { get; set; }
+}
+
+public class UpdatePurchaseOrderRequest
+{
     public decimal TotalFobValue { get; set; }
     public decimal TotalCifValue { get; set; }
     public decimal SeaFreight { get; set; }
     public decimal Insurance { get; set; }
     public string AmountInFigures { get; set; }
-    public DateTime? EstimatedDeliveryDate { get; set; }
 }
 
-public class CreatePurchaseOrderItemRequest 
+public class CreatePurchaseOrderItemRequest
 {
     public Guid MaterialId { get; set; }
     public Guid UomId { get; set; }
     public Guid? CurrencyId { get; set; }
     public decimal Quantity { get; set; }
-    [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
+    [Range(0.0001, double.MaxValue, ErrorMessage = "Price must be greater than 0.0001")]
     public decimal Price { get; set; }
 }
 

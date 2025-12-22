@@ -18,13 +18,13 @@ public class ProductStandardTestProcedureController(IProductStandardTestProcedur
     /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]  
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateStandardTestProcedure([FromBody] CreateProductStandardTestProcedureRequest request)
     {
         var result = await repository.CreateProductStandardTestProcedure(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of standard test procedures.
     /// </summary>
@@ -35,7 +35,7 @@ public class ProductStandardTestProcedureController(IProductStandardTestProcedur
         var result = await repository.GetProductStandardTestProcedures(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a specific standard test procedure by its ID.
     /// </summary>
@@ -47,7 +47,19 @@ public class ProductStandardTestProcedureController(IProductStandardTestProcedur
         var result = await repository.GetProductStandardTestProcedure(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
+    /// <summary>
+    /// Retrieves the details of a specific standard test procedure by its ID.
+    /// </summary>
+    [HttpGet("{productId:guid}/product")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductStandardTestProcedureDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStandardTestProcedureByProduct([FromRoute] Guid productId)
+    {
+        var result = await repository.GetProductStandardTestProcedureByProduct(productId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Updates the details of an existing standard test procedure.
     /// </summary>
@@ -71,11 +83,11 @@ public class ProductStandardTestProcedureController(IProductStandardTestProcedur
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteProductStandardTestProcedure(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of products that are not yet used in any standard test procedure.
     /// </summary>

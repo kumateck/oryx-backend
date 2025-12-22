@@ -44,7 +44,7 @@ public class BatchPackagingRecord : BaseEntity
 
 public class BatchPackagingRecordDto : BaseDto
 {
-    public ProductionScheduleProductDto  ProductionScheduleProductDto{get; set; }
+    public ProductionScheduleProductDto ProductionScheduleProductDto { get; set; }
     public string BatchNumber { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }

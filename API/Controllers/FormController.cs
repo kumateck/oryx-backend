@@ -58,7 +58,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetForms(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a paginated list of forms.
     /// </summary>
@@ -112,13 +112,50 @@ public class FormController(IFormRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Saves or updates a single field response as a draft.
+    /// </summary>
+    /// <param name="request">The SaveResponseDraftRequest object containing field response data.</param>
+    /// <returns>Returns the ResponseId if successful, or a failure result.</returns>
+    [HttpPost("responses/draft")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> SaveFormResponseDraft([FromBody] SaveResponseDraftRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.SaveFormResponseDraft(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Finalizes a form response submission after all required fields have been filled.
+    /// </summary>
+    /// <param name="responseId">The unique identifier of the Response being finalized.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("responses/finalize/{responseId:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SubmitFormResponseFinal(Guid responseId)
+    {
+        var result = await repository.SubmitFormResponseFinal(responseId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+
+    /// <summary>
     /// Submits a response to a form.
     /// </summary>
     /// <param name="request">The CreateResponseRequest object containing response data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("responses")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SubmitFormResponse([FromBody] CreateResponseRequest request)
     {
@@ -126,7 +163,28 @@ public class FormController(IFormRepository repository) : ControllerBase
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.SubmitFormResponse(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Submits a response to a form section.
+    /// </summary>
+    /// <param name="request">The CreateResponseRequest object containing response data.</param>
+    /// <param name="materialSpecificationId">The id of the material spec</param>
+    /// <param name="productSpecificationId">The id of the product spec</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("responses/section")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> SubmitFormSectionResponse([FromBody] List<SubmitFormSectionValue> request,
+        [FromQuery] Guid? materialSpecificationId, [FromQuery] Guid? productSpecificationId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.SubmitFormSectionValue(request, materialSpecificationId, productSpecificationId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -136,14 +194,14 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns the form response details.</returns>
     [HttpGet("responses/{formResponseId}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDetailDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetFormResponse(Guid formResponseId)
     {
         var result = await repository.GetFormResponse(formResponseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new question.
     /// </summary>
@@ -185,7 +243,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     [HttpGet("question")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<QuestionDto>>))]
-    public async Task<IResult> GetQuestions([FromQuery] FormFilter filter)
+    public async Task<IResult> GetQuestions([FromQuery] QuestionFilter filter)
     {
         var result = await repository.GetQuestions(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -258,12 +316,12 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GenerateCertificateOfAnalysisForProduct([FromRoute] Guid batchManufacturingRecordId,
-        [FromRoute]Guid productionActivityStepId)
+        [FromRoute] Guid productionActivityStepId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GenerateCertificateOfAnalysisForProduct(batchManufacturingRecordId, productionActivityStepId,Guid.Parse(userId));
+        var result = await repository.GenerateCertificateOfAnalysisForProduct(batchManufacturingRecordId, productionActivityStepId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -296,7 +354,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormResponseByBmr(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Gets form response by batch manufacturing record ID.
     /// </summary>
@@ -311,7 +369,7 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormResponseByMaterialSpecification(materialSpecificationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Gets form response by batch manufacturing record ID.
     /// </summary>
@@ -326,8 +384,8 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormResponseByProductSpecification(productSpecificationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    
+
+
     /// <summary>
     /// Gets form with response by material batch ID.
     /// </summary>
@@ -357,34 +415,138 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormWithResponseByBmr(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
-    /*/// <summary>
-    /// Gets form with response by material batch ID.
+
+    /// <summary>
+    /// Saves or updates a single field assignment as a draft.
     /// </summary>
-    /// <param name="materialSpecificationId">The ID of the material spec.</param>
-    /// <returns>Returns the form response.</returns>
-    [HttpGet("with-responses/material-specification/{materialSpecificationId}")]
+    /// <param name="request">The SaveFormAssigneeDraftRequest object containing field assignment data.</param>
+    /// <returns>Returns the FormAssigneeId if successful, or a failure result.</returns>
+    [HttpPost("assignees/draft")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFormWithResponseByMaterialSpec(Guid materialSpecificationId)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> SaveFormAssigneeDraft([FromBody] SaveFormAssigneeDraftRequest request)
     {
-        var result = await repository.GetFormWithResponseByMaterialSpecification(materialSpecificationId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.SaveFormAssigneeDraft(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Finalizes a form assignee submission after all required fields have been filled.
+    /// </summary>
+    /// <param name="formAssigneeId">The unique identifier of the FormAssignee being finalized.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("assignees/finalize/{formAssigneeId:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SubmitFormAssigneeFinal(Guid formAssigneeId)
+    {
+        var result = await repository.SubmitFormAssigneeFinal(formAssigneeId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Submits a new form assignee with its field assignments.
+    /// </summary>
+    /// <param name="request">The CreateFormAssigneeRequest object containing form and field assignment data.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("assignees")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> SubmitFormAssignee([FromBody] CreateFormAssigneeRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.SubmitFormAssignee(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves detailed information about a specific Form Assignee by its unique identifier.
+    /// </summary>
+    /// <param name="formAssigneeId">The unique identifier of the Form Assignee.</param>
+    /// <returns>Returns the FormAssigneeDto if found, or a failure result.</returns>
+    [HttpGet("assignees/{formAssigneeId:guid}")]
+    [Authorize]
+    [ProducesResponseType(typeof(FormAssigneeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormAssignee(Guid formAssigneeId)
+    {
+        var result = await repository.GetFormAssignee(formAssigneeId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
-    /// Gets form with response by material batch ID.
+    /// Retrieves a Form Assignee associated with a specific Material Batch.
     /// </summary>
-    /// <param name="productSpecificationId">The ID of the material batch.</param>
-    /// <returns>Returns the form response.</returns>
-    [HttpGet("with-responses/product-specification/{productSpecificationId}")]
+    /// <param name="materialBatchId">The unique identifier of the Material Batch.</param>
+    /// <returns>Returns the FormAssigneeDto if found, or a failure result.</returns>
+    [HttpGet("assignees/material-batch/{materialBatchId:guid}")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
+    [ProducesResponseType(typeof(FormAssigneeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFormWithResponseByProductSpec(Guid productSpecificationId)
+    public async Task<IResult> GetFormAssigneeByBatch(Guid materialBatchId)
     {
-        var result = await repository.GetFormWithResponseByProductSpecification(productSpecificationId);
+        var result = await repository.GetFormAssigneeByBatch(materialBatchId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }*/
+    }
+
+    /// <summary>
+    /// Retrieves a Form Assignee associated with a specific Batch Manufacturing Record (BMR).
+    /// </summary>
+    /// <param name="bmrId">The unique identifier of the Batch Manufacturing Record.</param>
+    /// <returns>Returns the FormAssigneeDto if found, or a failure result.</returns>
+    [HttpGet("assignees/bmr/{bmrId:guid}")]
+    [Authorize]
+    [ProducesResponseType(typeof(FormAssigneeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormAssigneeByBmr(Guid bmrId)
+    {
+        var result = await repository.GetFormAssigneeByBmr(bmrId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Returns a response ID given the form fields.
+    /// </summary>
+    /// <param name="request">The body of the response</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpGet("response")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetResponseId(GetResponseIdRequest request)
+    {
+
+        var result = await repository.GetResponseId(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Returns a form assignee ID given the form fields.
+    /// </summary>
+    /// <param name="request">The body of the response</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpGet("form-assignee")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormAssigneeId(GetResponseIdRequest request)
+    {
+
+        var result = await repository.GetFormAssigneeId(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

@@ -6,10 +6,10 @@ using SHARED;
 namespace APP.IRepository;
 
 public interface ICollectionRepository
-{ 
+{
     Task<Result<Dictionary<string, IEnumerable<CollectionItemDto>>>> GetItemCollection(
         List<string> itemTypes, MaterialKind? materialKind);
-    Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType, MaterialKind? materialKind); 
+    Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType, MaterialKind? materialKind);
     Result<IEnumerable<string>> GetItemTypes();
     Task<Result<Guid>> CreateItem(CreateItemRequest request, string itemType);
     Task<Result<Guid>> UpdateItem(CreateItemRequest request, Guid itemId, string itemType, Guid userId);
@@ -17,6 +17,7 @@ public interface ICollectionRepository
     Task<Result<IEnumerable<PackageStyleDto>>> GetPackageStyles();
     Task<Result> CreateUoM(CreateUnitOfMeasure request);
     Task<Result<UnitOfMeasureDto>> GetUoM(Guid uomId);
+    Task<Result<IEnumerable<OperationDto>>> GetOperations(Guid? departmentId);
     Task<Result> UpdateUoM(CreateUnitOfMeasure request, Guid id);
     Task<Result> DeleteUoM(Guid uomId);
     Task<Result<Paginateable<IEnumerable<UnitOfMeasureDto>>>> GetUoM(FilterUnitOfMeasure filter);

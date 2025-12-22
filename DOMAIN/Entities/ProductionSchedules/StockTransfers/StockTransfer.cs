@@ -49,7 +49,7 @@ public class StockTransferSource : BaseEntity
     public Guid? IssuedById { get; set; }
     public User IssuedBy { get; set; }
     public DateTime? IssuedAt { get; set; }
-    
+
 }
 
 public class StockTransferDto : BaseDto

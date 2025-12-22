@@ -16,10 +16,10 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         {
             return Error.Validation("MaterialSpecification.DueDate", "Due date must be greater than current date");
         }
-        
+
         var productSpec = mapper.Map<ProductSpecification>(request);
         await context.AddAsync(productSpec);
-       
+
         await context.SaveChangesAsync();
         return productSpec.Id;
     }
@@ -56,12 +56,13 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
                 .Include(m => m.Response)
                 .ThenInclude(r => r.FormResponses)
                 .ThenInclude(r => r.FormField)
+                .Include(ps => ps.FormSections)
                 .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
             : mapper.Map<ProductSpecificationDto>(productSpec);
     }
-    
+
     public async Task<Result<ProductSpecificationDto>> GetProductSpecificationByProduct(Guid productId)
     {
 
@@ -70,11 +71,12 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Include(ps => ps.Product)
             .Include(ps => ps.Form)
             .Include(ps => ps.CreatedBy)
+            .Include(ps => ps.FormSections)
             .FirstOrDefaultAsync(ps => ps.ProductId == productId);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
             : mapper.Map<ProductSpecificationDto>(productSpec);
-            
+
     }
 
     public async Task<Result<List<ProductSpecificationDto>>> GetProductSpecificationByProductId(Guid productId)
@@ -94,23 +96,24 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Include(m => m.Response)
             .ThenInclude(r => r.FormResponses)
             .ThenInclude(r => r.FormField)
+            .Include(ps => ps.FormSections)
             .Where(ps => ps.ProductId == productId)
             .ToListAsync();
-        
+
         return mapper.Map<List<ProductSpecificationDto>>(productSpec);
     }
 
     public async Task<Result> UpdateProductSpecification(Guid id, CreateProductSpecificationRequest request)
     {
         var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);
-        
+
         if (productSpec is null)
         {
             return Error.NotFound("ProductSpecification.NotFound", "Product specification not found");
         }
-        
+
         mapper.Map(request, productSpec);
-        
+
         context.ProductSpecifications.Update(productSpec);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -119,15 +122,15 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
     public async Task<Result> DeleteProductSpecification(Guid id, Guid userId)
     {
         var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);
-        
+
         if (productSpec is null)
         {
             return Error.NotFound("ProductSpecification.NotFound", "Product specification not found");
         }
-        
+
         productSpec.LastDeletedById = userId;
         productSpec.DeletedAt = DateTime.UtcNow;
-        
+
         context.ProductSpecifications.Update(productSpec);
         await context.SaveChangesAsync();
         return Result.Success();

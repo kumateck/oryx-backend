@@ -22,5 +22,6 @@ public class FormWithResponseAttachmentResolver(IMapper mapper) : IValueResolver
         return mapper.Map<List<FormResponseDto>>(source.Responses, opt =>
         {
             opt.Items[AppConstants.ModelType] = nameof(FormResponse);
-        });    }
+        });
+    }
 }

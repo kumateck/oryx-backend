@@ -8,7 +8,7 @@ internal class PermissionPolicyProvider(IOptions<AuthorizationOptions> options) 
     private DefaultAuthorizationPolicyProvider FallbackPolicyProvider { get; } = new(options);
 
     public Task<AuthorizationPolicy> GetDefaultPolicyAsync() => FallbackPolicyProvider.GetDefaultPolicyAsync();
-    
+
     public Task<AuthorizationPolicy> GetPolicyAsync(string policyName)
     {
         //if (!policyName.StartsWith("permission", StringComparison.OrdinalIgnoreCase))

@@ -9,7 +9,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/countries")]
 public class CountryController(ICountryRepository repository) : ControllerBase
 {
-    
+
     /// <summary>
     /// Returns a list of countries.
     /// </summary>

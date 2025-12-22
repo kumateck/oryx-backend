@@ -13,7 +13,7 @@ namespace API.Controllers;
 [Authorize]
 public class MaterialSpecificationController(IMaterialSpecificationRepository repository) : ControllerBase
 {
-     /// <summary>
+    /// <summary>
     /// Creates a material specification
     /// </summary>
     [HttpPost]
@@ -30,13 +30,13 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialSpecificationDto>>))]
-    public async Task<IResult> GetMaterialSpecifications([FromQuery] MaterialKind materialKind,[FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetMaterialSpecifications([FromQuery] MaterialKind materialKind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetMaterialSpecifications(page, pageSize, searchQuery, materialKind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a material specification by its ID.
     /// </summary>
@@ -48,11 +48,11 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
         var result = await repository.GetMaterialSpecification(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the details of a material specification by material ID
     /// </summary>
-    [HttpGet("material{materialId:guid}")]
+    [HttpGet("material/{materialId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialSpecificationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialSpecificationByMaterial([FromRoute] Guid materialId)
@@ -84,10 +84,24 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     public async Task<IResult> DeleteMaterialSpecification([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
-
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteMaterialSpecification(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Creates a material specification
+    /// </summary>
+    [HttpPost("import")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ImportMaterialSpecification(IFormFile file, [FromQuery] MaterialKind materialKind)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportMaterialSpecificationsFromCsv(file, materialKind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

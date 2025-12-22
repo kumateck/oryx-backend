@@ -19,7 +19,7 @@ public class QuestionOption : BaseEntity
 {
     public Guid QuestionId { get; set; }
     public Question Question { get; set; }
-    [StringLength(100000000)]  public string Name { get; set; }
+    [StringLength(100000000)] public string Name { get; set; }
 }
 
 public class QuestionDto : BaseDto
@@ -47,19 +47,21 @@ public enum QuestionType
     Datepicker = 3,
     SingleChoice = 4,
     Dropdown = 5,
-    Checkbox = 6, 
+    Checkbox = 6,
     FileUpload = 7,
     Signature = 8,
     Reference = 9,
     Formula = 10,
     Specification = 11,
+    Equipment = 12,
+    Table = 13,
 }
 
 public enum QuestionValidationType
 {
     Number = 0,
     Letter = 1,
-    Alphanumeric= 2,
+    Alphanumeric = 2,
     None = 3
 }
 

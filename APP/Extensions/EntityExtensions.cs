@@ -16,13 +16,13 @@ public static class EntityExtensions
         var warehouses = user.Department?.Warehouses ?? [];
         return warehouses.FirstOrDefault(w => w.Type == WarehouseType.Production);
     }
-    
+
     public static Warehouse GetUserRawWarehouse(this User user)
     {
         var warehouses = user.Department?.Warehouses ?? [];
         return warehouses.FirstOrDefault(w => w.Type == WarehouseType.RawMaterialStorage);
     }
-    
+
     public static Warehouse GetUserPackagingWarehouse(this User user)
     {
         var warehouses = user.Department?.Warehouses ?? [];

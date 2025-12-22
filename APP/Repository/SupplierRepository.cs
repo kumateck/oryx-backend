@@ -7,27 +7,27 @@ namespace APP.Repository;
 
 public class SupplierRepository : ISupplierRepository
 {
-    public async Task<Result<Guid>> CreateSupplier(CreateSupplierRequest request)
+    public Task<Result<Guid>> CreateSupplier(CreateSupplierRequest request)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<SupplierDto>>>> GetSuppliers(int page, int pageSize, string searchQuery)
+    public Task<Result<Paginateable<IEnumerable<SupplierDto>>>> GetSuppliers(int page, int pageSize, string searchQuery)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<Result<SupplierDto>> GetSupplier(Guid id)
+    public Task<Result<SupplierDto>> GetSupplier(Guid id)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<Result> UpdateSupplier(Guid id, CreateSupplierRequest request)
+    public Task<Result> UpdateSupplier(Guid id, CreateSupplierRequest request)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<Result> DeleteSupplier(Guid id, Guid userId)
+    public Task<Result> DeleteSupplier(Guid id, Guid userId)
     {
         throw new NotImplementedException();
     }

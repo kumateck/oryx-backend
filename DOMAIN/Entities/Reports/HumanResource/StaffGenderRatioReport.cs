@@ -15,9 +15,9 @@ public class StaffGenderRatioTotalDto
     public int NumberOfCasualFemale { get; set; }
     public int TotalMales => NumberOfCasualMale + NumberOfPermanentMale;
     public int TotalFemales => NumberOfCasualFemale + NumberOfPermanentFemale;
-    
+
     public int Total => TotalMales + TotalFemales;
-    
+
 }
 
 public class StaffGenderRatioCountDto : StaffGenderRatioTotalDto

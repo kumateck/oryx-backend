@@ -4,7 +4,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
-using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 
@@ -18,7 +17,7 @@ public class Requisition : BaseEntity, IRequireApproval
     public Guid DepartmentId { get; set; }
     public Department Department { get; set; }
     public RequisitionType RequisitionType { get; set; }
-    public RequestStatus Status { get; set; }  
+    public RequestStatus Status { get; set; }
     [StringLength(1000)] public string Comments { get; set; }
     public DateTime? ExpectedDelivery { get; set; }
     public Guid? ProductionScheduleProductId { get; set; }
@@ -40,7 +39,7 @@ public class RequisitionItem : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
     public decimal QuantityReceived { get; set; }
-    public RequestStatus Status { get; set; }  
+    public RequestStatus Status { get; set; }
 }
 
 public class RequisitionApproval : ResponsibleApprovalStage

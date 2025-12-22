@@ -19,7 +19,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
         var response = await repo.GetRoles();
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
-    
+
     [HttpGet("with-permissions")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RolePermissionDto>>))]
     public async Task<IResult> GetRolesWithPermissions([FromQuery(Name = "page")] int page = 1,
@@ -36,7 +36,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
     public async Task<IResult> GetRole(Guid id)
     {
         try
-        {  
+        {
             var response = await repo.GetRole(id);
             return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
         }
@@ -53,7 +53,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var response = await repo.CreateRole(request, Guid.Parse(userId));
         return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
     }
@@ -67,7 +67,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
         {
             var userId = (string)HttpContext.Items["Sub"];
             if (userId == null) return TypedResults.Unauthorized();
-        
+
             var response = await repo.UpdateRole(request, id, Guid.Parse(userId));
             return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
         }
@@ -91,10 +91,10 @@ public class RoleController(IRoleRepository repo) : ControllerBase
     public async Task<IResult> DeleteRole(Guid id)
     {
         try
-        {  
+        {
             var userId = (string)HttpContext.Items["Sub"];
             if (userId == null) return TypedResults.Unauthorized();
-            
+
             var response = await repo.DeleteRole(id, Guid.Parse(userId));
             return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
         }

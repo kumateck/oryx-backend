@@ -12,18 +12,18 @@ public class AnalyticalTestRequestDto : BaseDto
     public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     public ProductionActivityStepDto ProductionActivityStep { get; set; }
     public DateTime ManufacturingDate { get; set; }
-    
+
     public DateTime ExpiryDate { get; set; }
     public string Filled { get; set; }
-    
+
     public DateTime? ReleasedAt { get; set; }
-    
+
     public string SampledQuantity { get; set; }
-    
+
     public TestStage Stage { get; set; }
-    
+
     public CollectionItemDto State { get; set; }
-    
+
     public AnalyticalTestStatus Status { get; set; }
     public int NumberOfContainers { get; set; }
     public UserDto SampledBy { get; set; }
@@ -31,5 +31,6 @@ public class AnalyticalTestRequestDto : BaseDto
     public DateTime? SampledAt { get; set; }
     public UserDto AcknowledgedBy { get; set; }
     public DateTime? AcknowledgedAt { get; set; }
+    public DateTime? AssignedAt { get; set; }
     public string ArNumber { get; set; }
 }

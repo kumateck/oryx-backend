@@ -11,7 +11,7 @@ public class ProductionScheduleReportDto
     public decimal Batches { get; set; }
     public decimal ExpectedQuantity => BatchSize * Batches;
     public decimal ExpectedAmount => ExpectedQuantity * UnitPrice;
-    public decimal ActualQuantity{ get; set; }
+    public decimal ActualQuantity { get; set; }
     public decimal ActualAmount => ActualQuantity * UnitPrice;
     public CollectionItemDto MarketType { get; set; }
 }
@@ -23,7 +23,7 @@ public class ProductionScheduleDetailedReportDto
     public string PackageStyle { get; set; }
     public decimal ExpectedQuantity { get; set; }
     public decimal ExpectedAmount => ExpectedQuantity * UnitPrice;
-    public decimal ActualQuantity{ get; set; }
+    public decimal ActualQuantity { get; set; }
     public decimal ActualAmount => ActualQuantity * UnitPrice;
 }
 

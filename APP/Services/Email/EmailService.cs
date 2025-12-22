@@ -9,16 +9,18 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
 {
     public void SendMail(string name, string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
-        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "emailapikey";
+        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "erp@entrancepharmaceuticals.com";
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
-        
+        var smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? "entrancepharmaceuticals.com";
+        var smtpPort = Convert.ToInt32(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");
+
         try
         {
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("Kumateck LTD", "noreply@kumateck.com"));
             message.To.Add(new MailboxAddress(name, to));
             message.Subject = subject;
-            
+
             var bodyPart = new TextPart("html")
             {
                 Text = body
@@ -42,10 +44,10 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
                 }
             }
             message.Body = multipart;
-            
+
             var client = new SmtpClient();
             client.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
-            client.Connect("smtp.zeptomail.com", 587, false);
+            client.Connect(smtpHost, smtpPort, false);
             client.Authenticate(username, password);
             client.Send(message);
             client.Disconnect(true);
@@ -58,7 +60,7 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
             throw new Exception($"Error sending email: {ex.Message}");
         }
     }
-    
+
     public void ProcessNotificationData(NotificationDto data)
     {
         const string subject = "New Notification";

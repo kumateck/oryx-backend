@@ -12,13 +12,13 @@ using SHARED;
 
 namespace DOMAIN.Entities.Warehouses;
 
-public class WarehouseDto 
+public class WarehouseDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
     public WarehouseType Type { get; set; }
-    public bool? IsBeta { get; set; }
+    public Division? Division { get; set; }
     public List<CollectionItemDto> Locations { get; set; } = [];
 }
 
@@ -30,8 +30,8 @@ public class WarehouseWithoutLocationDto
     public WarehouseType Type { get; set; }
 }
 
-public class WarehouseLocationDto 
-{ 
+public class WarehouseLocationDto
+{
     public Guid Id { get; set; }
     public string Name { get; set; }
     public string FloorName { get; set; }
@@ -40,7 +40,7 @@ public class WarehouseLocationDto
     public List<WarehouseLocationRackDto> Racks { get; set; } = [];
 }
 
-public class WarehouseLocationRackDto 
+public class WarehouseLocationRackDto
 {
     public Guid Id { get; set; }
     public WareHouseLocationDto WarehouseLocation { get; set; }
@@ -64,11 +64,10 @@ public class WarehouseArrivalLocationDto
 public class DistributedRequisitionMaterialDto
 {
     public Guid Id { get; set; }
-    public RequisitionItemDto RequisitionItem { get; set; }
     public MaterialDto Material { get; set; }
-    public UnitOfMeasureDto Uom { get; set; }
-    public ShipmentInvoiceDto ShipmentInvoice { get; set; }
+    public ShipmentInvoiceListDto ShipmentInvoice { get; set; }
     public decimal Quantity { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public DateTime? ArrivedAt { get; set; }
     public DateTime? CheckedAt { get; set; }
     public DateTime? DistributedAt { get; set; }
@@ -76,13 +75,41 @@ public class DistributedRequisitionMaterialDto
     public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; } = [];
     public DistributedRequisitionMaterialStatus Status { get; set; }
     public List<DistributedChecklistDto> Checklists { get; set; }
-    public DepartmentDto Department { get; set; }
+    public List<DistributedRequisitionItemDto> DistributedRequisitionItems { get; set; } = [];
+    public DepartmentListDto Department { get; set; }
+}
+
+public class DistributedRequisitionMaterialListDto
+{
+    public Guid Id { get; set; }
+    public MaterialDto Material { get; set; }
+    //public ShipmentInvoiceListDto ShipmentInvoice { get; set; }
+    public decimal Quantity { get; set; }
+    public DateTime? ArrivedAt { get; set; }
+    public DateTime? CheckedAt { get; set; }
+    public DateTime? DistributedAt { get; set; }
+    public DateTime? GrnGeneratedAt { get; set; }
+    //public List<MaterialItemDistributionDto> MaterialItemDistributions { get; set; } = [];
+    public DistributedRequisitionMaterialStatus Status { get; set; }
+    public DepartmentListDto Department { get; set; }
+    public List<DistributedRequisitionItemDto> DistributedRequisitionItems { get; set; } = [];
+}
+
+public class DistributedRequisitionItemDto
+{
+    public Guid Id { get; set; }
+    public RequisitionItemListDto RequisitionItem { get; set; }
+    public UnitOfMeasureDto Uom { get; set; }
+    public WarehouseWithoutLocationDto Warehouse { get; set; }
+    public decimal Quantity { get; set; }
+    public decimal QuantityDistributed { get; set; }
+    public bool FullyDistributed => Quantity == QuantityDistributed;
 }
 
 public class DistributedFinishedProductDto
 {
     public Guid Id { get; set; }
-    public ProductDto Product { get; set; }
+    public ProductListDto Product { get; set; }
     public UnitOfMeasureDto Uom { get; set; }
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public FinishedGoodsTransferNoteDto TransferNote { get; set; }
@@ -117,7 +144,7 @@ public class WareHouseLocationDto
     public CollectionItemDto Warehouse { get; set; }
 }
 
-public class WareHouseLocationRackDto 
+public class WareHouseLocationRackDto
 {
     public Guid Id { get; set; }
     public WareHouseLocationDto WarehouseLocation { get; set; }

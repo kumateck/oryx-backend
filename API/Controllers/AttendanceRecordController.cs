@@ -11,14 +11,14 @@ namespace API.Controllers;
 [Authorize]
 public class AttendanceRecordController(IAttendanceRepository repository) : ControllerBase
 {
-    
+
     /// <summary>
     /// Upload daily attendance record
     /// </summary>
-    [HttpPost("upload")]
-    public async Task<IResult> UploadAttendance([FromForm] CreateAttendanceRequest request)
+    [HttpPost("upload/{date:datetime}")]
+    public async Task<IResult> UploadAttendance([FromForm] CreateAttendanceRequest request, [FromQuery] DateTime date)
     {
-        var result = await repository.UploadAttendance(request);
+        var result = await repository.UploadAttendance(request, date.Date);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
@@ -27,7 +27,8 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// </summary>
     [HttpGet("daily-summary")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<AttendanceRecordDepartmentDto>))]
-    public async Task<IResult> DepartmentDailySummaryAttendance([FromQuery] string departmentName, [FromQuery] DateTime date)
+    public async Task<IResult> DepartmentDailySummaryAttendance([FromQuery] string departmentName,
+        [FromQuery] DateTime date)
     {
         var result = await repository.DepartmentDailySummaryAttendance(departmentName, date);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

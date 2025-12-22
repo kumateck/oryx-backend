@@ -21,17 +21,17 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         {
             return Error.Validation("MaterialStandardTestProcedure.Exists", "Material Standard test procedure already exists.");
         }
-        
+
         var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == request.MaterialId);
 
         if (material == null)
         {
             return Error.Validation("Invalid.Material", "Invalid material");
         }
-        
+
         var materialStandardTestProcedure = mapper.Map<MaterialStandardTestProcedure>(request);
         await context.MaterialStandardTestProcedures.AddAsync(materialStandardTestProcedure);
-        
+
         await context.SaveChangesAsync();
         return materialStandardTestProcedure.Id;
     }
@@ -42,7 +42,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .AsSplitQuery()
             .Include(stp => stp.Material)
             .ThenInclude(m => m.MaterialCategory)
-            .Where(m => m.Material.Kind ==  materialKind)
+            .Where(m => m.Material.Kind == materialKind)
             .AsQueryable();
 
         if (unused)
@@ -69,15 +69,29 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
     public async Task<Result<MaterialStandardTestProcedureDto>> GetMaterialStandardTestProcedure(Guid id)
     {
         var procedure = await context.MaterialStandardTestProcedures
+            .AsSplitQuery()
             .Include(stp => stp.Material)
             .FirstOrDefaultAsync(stp => stp.Id == id);
-        
-        return procedure is null ? 
-            Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found") : 
+
+        return procedure is null ?
+            Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found") :
             mapper.Map<MaterialStandardTestProcedureDto>(procedure
-            , opts => {opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure);});
+            , opts => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); });
     }
-    
+
+    public async Task<Result<MaterialStandardTestProcedureDto>> GetMaterialStandardTestProcedureByMaterial(Guid id)
+    {
+        var procedure = await context.MaterialStandardTestProcedures
+            .AsSplitQuery()
+            .Include(stp => stp.Material)
+            .FirstOrDefaultAsync(stp => stp.MaterialId == id);
+
+        return procedure is null ?
+            Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found") :
+            mapper.Map<MaterialStandardTestProcedureDto>(procedure
+                , opts => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); });
+    }
+
     public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotUsedInStandardTestProcedure(int page, int pageSize, string searchQuery, MaterialKind kind)
     {
         var query = context.Materials
@@ -103,17 +117,17 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
     {
         var procedure = await context.MaterialStandardTestProcedures
             .FirstOrDefaultAsync(stp => stp.Id == id);
-        
+
         if (procedure is null)
         {
             return Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found");
         }
-        
+
         mapper.Map(request, procedure);
-        
+
         context.MaterialStandardTestProcedures.Update(procedure);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
 
@@ -125,13 +139,13 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         {
             return Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found");
         }
-        
+
         procedure.DeletedAt = DateTime.UtcNow;
         procedure.LastDeletedById = userId;
-        
+
         context.MaterialStandardTestProcedures.Update(procedure);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
 }

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DOMAIN.Entities.Users.Request;
 
-public class UpdateUserRequest 
+public class UpdateUserRequest
 {
     [Required] public string FirstName { get; set; }
     [Required] public string LastName { get; set; }

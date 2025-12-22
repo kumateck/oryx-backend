@@ -21,9 +21,9 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateStaffRequisition([FromBody] CreateStaffRequisitionRequest request)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateStaffRequisition(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -33,14 +33,14 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StaffRequisitionDto>>))]
-    public async Task<IResult> GetStaffRequisitions([FromQuery] AppointmentType? appointmentType,[FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetStaffRequisitions([FromQuery] AppointmentType? appointmentType, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null,
         [FromQuery] Guid? departmentId = null)
     {
         var result = await repository.GetStaffRequisitions(page, pageSize, searchQuery, startDate, endDate, departmentId, appointmentType);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a staff requisition by its ID.
     /// </summary>
@@ -66,7 +66,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
         var result = await repository.UpdateStaffRequisition(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Deletes a staff requisition by its ID.
     /// </summary>
@@ -75,9 +75,9 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteStaffRequisition([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteStaffRequisitionRequest(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

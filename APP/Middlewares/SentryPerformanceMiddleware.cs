@@ -18,8 +18,8 @@ namespace APP.Middlewares
             }
             catch (Exception ex)
             {
-                transaction.Finish(ex); 
-                throw; 
+                transaction.Finish(ex);
+                throw;
             }
         }
     }

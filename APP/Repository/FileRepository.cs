@@ -16,7 +16,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
         Guid? userId)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
-        
+
         var attachment = new Attachment
         {
             ModelId = modelId,
@@ -42,7 +42,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             {
                 case nameof(PurchaseOrder):
                     var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item => item.Id == modelId &&
-                        (item.Status != PurchaseOrderStatus.Completed || item.Status != PurchaseOrderStatus.PartiallyLinked || item.Status != PurchaseOrderStatus.Linked));
+                        (item.Status == PurchaseOrderStatus.Delivered || item.Status == PurchaseOrderStatus.Pending || item.Status == PurchaseOrderStatus.New));
                     if (purchaseOrder is not null)
                     {
                         purchaseOrder.Status = PurchaseOrderStatus.Attached;
@@ -50,7 +50,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                         await context.SaveChangesAsync();
                     }
                     break;
-                
+
                 case nameof(ProformaInvoice):
                     var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item => item.Id == modelId);
                     if (proformaInvoice is not null)
@@ -71,7 +71,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
         return Result.Success();
     }
 
-    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, List<IFormFile> files, Guid?  userId)
+    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, List<IFormFile> files, Guid? userId)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
@@ -91,7 +91,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                 };
 
                 context.Attachments.Add(attachment);
-                references.Add(reference.ToString()); 
+                references.Add(reference.ToString());
             }
 
             await context.SaveChangesAsync();
@@ -100,7 +100,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             {
                 var reference = references[files.IndexOf(file)];
                 var result = await blobStorageService.UploadBlobAsync(modelType.ToLower(), file, $"{modelId}/{reference}");
-            
+
                 if (result.IsFailure)
                 {
                     await transaction.RollbackAsync();
@@ -112,15 +112,15 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             if (modelType == nameof(PurchaseOrder))
             {
                 var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item => item.Id == modelId &&
-                    (item.Status != PurchaseOrderStatus.Completed || item.Status != PurchaseOrderStatus.PartiallyLinked || item.Status != PurchaseOrderStatus.Linked));
+                    (item.Status == PurchaseOrderStatus.Delivered || item.Status == PurchaseOrderStatus.Pending || item.Status == PurchaseOrderStatus.New));
                 if (purchaseOrder is not null)
                 {
                     purchaseOrder.Status = PurchaseOrderStatus.Attached;
                     context.PurchaseOrders.Update(purchaseOrder);
                 }
             }
-            
-            if(modelType ==  nameof(ProformaInvoice))
+
+            if (modelType == nameof(ProformaInvoice))
             {
                 var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item => item.Id == modelId);
                 if (proformaInvoice is not null)
@@ -151,7 +151,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
 
         attachments.ForEach(item =>
         {
-            item.DeletedAt = DateTime.Now;
+            item.DeletedAt = DateTime.UtcNow;
             item.LastDeletedById = userId;
         });
         context.Attachments.UpdateRange(attachments);
@@ -166,7 +166,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
 
         if (attachment != null)
         {
-            attachment.DeletedAt = DateTime.Now;
+            attachment.DeletedAt = DateTime.UtcNow;
             attachment.LastDeletedById = userId;
             context.Attachments.Update(attachment);
             await context.SaveChangesAsync();

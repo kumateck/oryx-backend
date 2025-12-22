@@ -13,11 +13,16 @@ namespace APP.Repository;
 
 public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRepository
 {
-    public async Task<Result> UploadAttendance(CreateAttendanceRequest request)
+    public async Task<Result> UploadAttendance(CreateAttendanceRequest request, DateTime? date)
     {
-        if (Path.GetExtension(request.Attendance.FileName) != ".xlsx" && Path.GetExtension(request.Attendance.FileName) != ".xls")
+        // 1️⃣ Validate file type
+        var extension = Path.GetExtension(request.Attendance.FileName);
+        if (extension != ".xlsx" && extension != ".xls")
         {
-            return Error.Validation("Attendance.InvalidFileType", "Invalid file type. Only .xlsx or .xls files are allowed.");
+            return Error.Validation(
+                "Attendance.InvalidFileType",
+                "Invalid file type. Only .xlsx or .xls files are allowed."
+            );
         }
 
         using var stream = new MemoryStream();
@@ -30,11 +35,30 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
 
         if (worksheet?.Dimension == null || worksheet.Dimension.End.Row < 2)
         {
-            return Error.Validation("Attendance.Empty", "The uploaded Excel file is empty or does not contain any records.");
+            return Error.Validation(
+                "Attendance.Empty",
+                "The uploaded Excel file is empty or does not contain any records."
+            );
         }
 
-        var attendanceRecords = new List<AttendanceRecords>();
-        
+        var targetDate = date ?? DateTime.UtcNow.Date;
+
+        var employees = await context.Employees
+            .AsNoTracking()
+            .Select(e => e.StaffNumber)
+            .ToHashSetAsync();
+
+        var existingAttendance = await context.AttendanceRecords
+            .Where(a => a.TimeStamp.Date == targetDate)
+            .ToListAsync();
+
+        var existingAttendanceLookup = existingAttendance
+            .GroupBy(a => (a.EmployeeId, a.TimeStamp, a.WorkState))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var attendanceToInsert = new List<AttendanceRecords>();
+        var attendanceToRemove = new List<AttendanceRecords>();
+
         var lastRow = worksheet.Dimension.End.Row;
         while (lastRow >= 2 && string.IsNullOrWhiteSpace(worksheet.Cells[lastRow, 1].Text))
         {
@@ -45,64 +69,103 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         {
             var empId = worksheet.Cells[row, 1].Text?.Trim();
             var timestampStr = worksheet.Cells[row, 3].Text?.Trim();
-            var workState = worksheet.Cells[row, 4].Text?.Trim().Replace(" ", "");
+            var workStateRaw = worksheet.Cells[row, 4].Text?.Trim().Replace(" ", "");
 
-            if (string.IsNullOrWhiteSpace(empId) || string.IsNullOrWhiteSpace(timestampStr) || string.IsNullOrWhiteSpace(workState))
+            if (string.IsNullOrWhiteSpace(empId) ||
+                string.IsNullOrWhiteSpace(timestampStr) ||
+                string.IsNullOrWhiteSpace(workStateRaw))
             {
-                return Error.Validation("Attendance.MissingFields", $"Missing required fields at row {row}.");
+                return Error.Validation(
+                    "Attendance.MissingFields",
+                    $"Missing required fields at row {row}."
+                );
             }
 
-            if (!DateTime.TryParseExact(timestampStr, "dd/MM/yyyy HH:mm:ss", null, DateTimeStyles.AssumeLocal, out var localTime))
+            if (!employees.Contains(empId))
             {
-                return Error.Validation("Attendance.InvalidTimestamp", $"Invalid timestamp format at row {row}. Use dd/MM/yyyy HH:mm:ss.");
+                return Error.Validation(
+                    "Attendance.InvalidEmployee",
+                    $"Employee with staff number '{empId}' not found at row {row}."
+                );
             }
 
-            if (localTime.Date != DateTime.UtcNow.Date)
+            if (!DateTime.TryParseExact(
+                    timestampStr,
+                    "dd/MM/yyyy HH:mm:ss",
+                    null,
+                    DateTimeStyles.AssumeLocal,
+                    out var localTime))
             {
-                return Error.Validation("Attendance.InvalidDate", $"The timestamp at row {row} is not for today. Only today's records are allowed.");
+                return Error.Validation(
+                    "Attendance.InvalidTimestamp",
+                    $"Invalid timestamp format at row {row}. Use dd/MM/yyyy HH:mm:ss."
+                );
             }
 
-            var timeStamp = localTime.ToUniversalTime();
-
-            if (!Enum.TryParse<WorkState>(workState, true, out var parsedWorkState))
+            if (localTime.Date != targetDate.Date)
             {
-                return Error.Validation("Attendance.InvalidWorkState", $"Invalid work state '{workState}' at row {row}. Allowed values: Check In, Check Out.");
+                return Error.Validation(
+                    "Attendance.InvalidDate",
+                    $"The timestamp at row {row} is not for the allowed date {targetDate:dd-MM-yyyy}."
+                );
             }
 
-            var existingAttendance = await context.AttendanceRecords
-                .FirstOrDefaultAsync(a => a.EmployeeId == empId && a.TimeStamp == timeStamp);
-
-            if (existingAttendance != null)
+            if (!Enum.TryParse<WorkState>(workStateRaw, true, out var workState))
             {
-                return Error.Validation("Attendance.Duplicate", $"Duplicate record found at row {row}.");
+                return Error.Validation(
+                    "Attendance.InvalidWorkState",
+                    $"Invalid work state '{workStateRaw}' at row {row}. Allowed values: Check In, Check Out."
+                );
             }
 
-            var employeeExists = await context.Employees.AnyAsync(e => e.StaffNumber == empId);
-            if (!employeeExists)
+            var utcTimestamp = localTime.ToUniversalTime();
+            var key = (empId, utcTimestamp, workState);
+
+            // Duplicate handling
+            if (existingAttendanceLookup.TryGetValue(key, out var existing))
             {
-                return Error.Validation("Attendance.InvalidEmployee", $"Employee with staff number '{empId}' not found.");
+                attendanceToRemove.Add(existing);
             }
 
-            attendanceRecords.Add(new AttendanceRecords
+            attendanceToInsert.Add(new AttendanceRecords
             {
                 EmployeeId = empId,
-                TimeStamp = timeStamp,
-                WorkState = parsedWorkState
+                TimeStamp = utcTimestamp,
+                WorkState = workState
             });
         }
 
-        if (attendanceRecords.Count == 0)
+        if (attendanceToInsert.Count == 0)
         {
-            return Error.Validation("Attendance.NoValidRecords", "No valid attendance records were found in the uploaded file.");
+            return Error.Validation(
+                "Attendance.NoValidRecords",
+                "No valid attendance records were found in the uploaded file."
+            );
         }
 
-        await context.AttendanceRecords.AddRangeAsync(attendanceRecords);
-        await context.SaveChangesAsync();
+        // 7️⃣ Persist in ONE transaction
+        context.ChangeTracker.AutoDetectChangesEnabled = false;
+
+        try
+        {
+            if (attendanceToRemove.Count > 0)
+            {
+                context.AttendanceRecords.RemoveRange(attendanceToRemove);
+            }
+
+            await context.AttendanceRecords.AddRangeAsync(attendanceToInsert);
+            await context.SaveChangesAsync();
+        }
+        finally
+        {
+            context.ChangeTracker.AutoDetectChangesEnabled = true;
+        }
 
         return Result.Success();
     }
 
-    public async Task<Result<List<AttendanceRecordDepartmentDto>>> DepartmentDailySummaryAttendance(string departmentName, DateTime date)
+    public async Task<Result<List<AttendanceRecordDepartmentDto>>> DepartmentDailySummaryAttendance(string departmentName,
+        DateTime date)
     {
         // Filter attendance records for the given date
         var dailyRecords = await context.AttendanceRecords
@@ -116,6 +179,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         var employeeIds = dailyRecords.Select(r => r.EmployeeId).Distinct().ToList();
 
         var employees = await context.Employees
+            .AsSplitQuery()
             .Include(e => e.Department)
             .Include(e => e.ShiftAssignments)
             .ThenInclude(sa => sa.ShiftCategory)
@@ -123,207 +187,253 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             .ToListAsync();
 
         return (from employee in employees
-            let records = dailyRecords
-                .Where(r => r.EmployeeId == employee.StaffNumber).ToList()
-            where records.Count != 0
-            let clockIn = records.Min(r => r.TimeStamp)
-            let clockOut = records.Max(r => r.TimeStamp)
-            let workHours = (clockOut - clockIn).TotalHours
-            let shift = employee.ShiftAssignments.FirstOrDefault(sa => sa.ScheduleDate.Date == date.Date)
-            select new AttendanceRecordDepartmentDto
-            {
-                StaffName = $"{employee.FirstName} {employee.LastName}",
-                EmployeeId = employee.StaffNumber,
-                ShiftName = shift.ShiftCategory.Name,
-                ClockInTime = clockIn.ToString("hh:mm tt"),
-                ClockOutTime = clockOut.ToString("hh:mm tt"),
-                WorkHours = Math.Round(workHours, 2)
-            }).ToList();
+                let records = dailyRecords
+                    .Where(r => r.EmployeeId == employee.StaffNumber).ToList()
+                where records.Count != 0
+                let clockIn = records.Min(r => r.TimeStamp)
+                let clockOut = records.Max(r => r.TimeStamp)
+                let workHours = (clockOut - clockIn).TotalHours
+                let shift = context.ShiftAssignments.FirstOrDefault(sa => sa.ScheduleDate.Date == date.Date && sa.EmployeeId == employee.Id)
+                select new AttendanceRecordDepartmentDto
+                {
+                    StaffName = $"{employee.FirstName} {employee.LastName}",
+                    EmployeeId = employee.StaffNumber,
+                    ShiftName = shift.ShiftCategory.Name,
+                    ClockInTime = clockIn.ToString("hh:mm tt"),
+                    ClockOutTime = clockOut.ToString("hh:mm tt"),
+                    WorkHours = Math.Round(workHours, 2)
+                }).ToList();
     }
 
     public async Task<Result<GeneralAttendanceReportResponse>> GeneralAttendanceReport()
     {
         var today = DateTime.UtcNow.Date;
-        
-        var dailyRecords = await context.AttendanceRecords
-            .Where(a => a.TimeStamp.Date == today && a.WorkState == WorkState.CheckIn)
-            .ToListAsync();
-        
+
         var allEmployees = await context.Employees
+            .AsSplitQuery()
             .Include(e => e.Department)
             .ToListAsync();
 
-        var employeeDbIds = allEmployees.Select(e => e.Id).ToList();
-        
+        var employeeIds = allEmployees.Select(e => e.Id).ToHashSet();
+
+        var dailyAttendance = await context.AttendanceRecords
+            .Where(a => a.TimeStamp.Date == today && a.WorkState == WorkState.CheckIn)
+            .ToListAsync();
+
         var shiftAssignments = await context.ShiftAssignments
             .AsSplitQuery()
             .Include(sa => sa.ShiftType)
             .Include(sa => sa.ShiftSchedules)
             .Where(sa =>
-                sa.ShiftSchedules != null &&
                 sa.ShiftSchedules.StartDate.Date <= today &&
                 sa.ShiftSchedules.EndDate.Date >= today &&
-                employeeDbIds.Contains(sa.EmployeeId))
+                employeeIds.Contains(sa.EmployeeId))
             .ToListAsync();
 
-        var shiftAssignmentMap = shiftAssignments
-            .GroupBy(sa => sa.EmployeeId)
-            .ToDictionary(g => g.Key, g => g.FirstOrDefault());
-        
-        var approvedLeaves = await context.LeaveRequests
-            .Where(l =>
-                l.Approved &&
-                l.RequestCategory == RequestCategory.LeaveRequest &&
-                l.LeaveType.Name != "Maternity Leave" &&
-                l.LeaveType.Name != "Sick Leave" &&
-                l.StartDate <= today && l.EndDate >= today)
-            .Include(l => l.Employee).ThenInclude(e => e.Department)
-            .ToListAsync();
-
-        var sickLeaves = await context.LeaveRequests
-            .Where(l => l.Approved && l.LeaveType.Name == "Sick Leave" &&
-                l.StartDate <= today && l.EndDate >= today)
-            .Include(l => l.Employee).ThenInclude(e => e.Department)
-            .ToListAsync();
-
-        var maternityLeaves = await context.LeaveRequests
-            .Where(l => l.Approved && l.LeaveType.Name == "Maternity Leave" &&
-                l.StartDate <= today && l.EndDate >= today)
-            .Include(l => l.Employee).ThenInclude(e => e.Department)
-            .ToListAsync();
-
-        var absences = await context.LeaveRequests
-            .Where(l => l.Approved && l.RequestCategory == RequestCategory.AbsenceRequest &&
-                l.StartDate <= today && l.EndDate >= today)
-            .Include(l => l.Employee).ThenInclude(e => e.Department)
-            .ToListAsync();
-
-        var officialDuties = await context.LeaveRequests
-            .Where(l => l.Approved && l.RequestCategory == RequestCategory.OfficialDuty &&
-                l.StartDate <= today && l.EndDate >= today)
-            .Include(l => l.Employee).ThenInclude(e => e.Department)
+        var leaveRequests = await context.LeaveRequests
+            .AsSplitQuery()
+            .Include(l => l.Employee)
+            .ThenInclude(e => e.Department)
+            .Include(lr => lr.LeaveType)
+            .Where(l => l.StartDate <= today && l.EndDate >= today && l.Approved)
             .ToListAsync();
 
         var suspendedEmployees = await context.Employees
-            .Where(s => s.ActiveStatus == EmployeeActiveStatus.Suspension &&
-                s.SuspensionStartDate <= today && s.SuspensionEndDate >= today)
+            .AsSplitQuery()
             .Include(s => s.Department)
+            .Where(s =>
+                s.ActiveStatus == EmployeeActiveStatus.Suspension &&
+                s.SuspensionStartDate <= today &&
+                s.SuspensionEndDate >= today)
             .ToListAsync();
-        
-        var attendanceMap = dailyRecords
-            .GroupBy(r => r.EmployeeId)
+
+        // ===== DATA MAPS =====
+
+        var attendanceMap = dailyAttendance
+            .Where(a => !string.IsNullOrWhiteSpace(a.EmployeeId))
+            .GroupBy(a => a.EmployeeId)
             .ToDictionary(
-                g => g.Key, 
-                g => g.OrderBy(r => r.TimeStamp).First()
+                g => g.Key,
+                g => g.OrderBy(a => a.TimeStamp).First()
             );
-        
-        var groupedByDepartment = allEmployees.GroupBy(e => e.Department?.Name ?? "Unassigned").ToList();
+
+        var shiftMap = shiftAssignments
+            .GroupBy(s => s.EmployeeId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Leave groups
+        var approvedLeaves = leaveRequests.Where(l =>
+            l.RequestCategory == RequestCategory.LeaveRequest &&
+            l.LeaveType.Name != "Maternity Leave" &&
+            l.LeaveType.Name != "Sick Leave").ToList();
+
+        var sickLeaves = leaveRequests
+            .Where(l => l.LeaveType.Name == "Sick Leave").ToList();
+        var maternityLeaves = leaveRequests
+            .Where(l => l.LeaveType.Name == "Maternity Leave").ToList();
+        var absences = leaveRequests
+            .Where(l => l.RequestCategory == RequestCategory.AbsenceRequest).ToList();
+        var officialDuties = leaveRequests
+            .Where(l => l.RequestCategory == RequestCategory.OfficialDuty).ToList();
+
+        var suspendedIds = suspendedEmployees.Select(s => s.Id).ToHashSet();
+
+        // ===== GROUP BY DEPARTMENT =====
 
         var departmentReports = new List<GeneralAttendanceReportDto>();
+        var deptGroups = allEmployees.GroupBy(e => e.Department?.Name ?? "Unassigned").ToList();
 
-        foreach (var group in groupedByDepartment)
+        foreach (var deptGroup in deptGroups)
         {
-            var departmentName = group.Key;
-            var summary = new GeneralAttendanceReportDto { DepartmentName = departmentName };
-
-            foreach (var employee in group)
+            var summary = new GeneralAttendanceReportDto
             {
-                var isCasual = employee.Type == EmployeeType.Casual;
+                DepartmentName = deptGroup.Key
+            };
 
-                if (attendanceMap.ContainsKey(employee.StaffNumber))
+            foreach (var emp in deptGroup)
+            {
+                if (string.IsNullOrWhiteSpace(emp.StaffNumber))
+                    continue;
+
+                var isCasual = emp.Type == EmployeeType.Casual;
+
+                // 1. PRESENT EMPLOYEES
+                if (attendanceMap.TryGetValue(emp.StaffNumber, out var attendance))
                 {
-                    if (!shiftAssignmentMap.TryGetValue(employee.Id, out var shiftAssignment) ||
-                        shiftAssignment?.ShiftType?.StartTime == null)
+                    if (!shiftMap.TryGetValue(emp.Id, out var shift) || shift.ShiftType?.StartTime == null)
                         continue;
 
                     if (!DateTime.TryParseExact(
-                            shiftAssignment.ShiftType.StartTime,
+                            shift.ShiftType.StartTime,
                             "hh:mm tt",
                             CultureInfo.InvariantCulture,
                             DateTimeStyles.None,
-                            out var parsedShiftStartTime))
+                            out var parsedShiftStart))
                         continue;
 
-                    var shiftStartTime = parsedShiftStartTime.TimeOfDay;
+                    var shiftStart = parsedShiftStart.TimeOfDay;
 
                     if (isCasual) summary.CasualStaff++;
                     else summary.PermanentStaff++;
 
-                    if (shiftStartTime >= TimeSpan.FromHours(5) && shiftStartTime < TimeSpan.FromHours(12))
+                    // MORNING SHIFT
+                    if (shiftStart >= TimeSpan.FromHours(5) && shiftStart < TimeSpan.FromHours(12))
                     {
-                        if (isCasual) summary.CasualMorning++;
-                        else summary.PermanentMorning++;
+                        if (isCasual) summary.CasualMorning++; else summary.PermanentMorning++;
+                        continue;
                     }
-                    else if (shiftStartTime >= TimeSpan.FromHours(12) && shiftStartTime < TimeSpan.FromHours(17))
+
+                    // AFTERNOON SHIFT
+                    if (shiftStart >= TimeSpan.FromHours(12) && shiftStart < TimeSpan.FromHours(17))
                     {
-                        if (isCasual) summary.CasualAfternoon++;
-                        else summary.PermanentAfternoon++;
+                        if (isCasual) summary.CasualAfternoon++; else summary.PermanentAfternoon++;
+                        continue;
                     }
-                    else
+
+                    // NIGHT SHIFT
+                    if (shiftStart >= TimeSpan.FromHours(17) || shiftStart < TimeSpan.FromHours(5))
                     {
-                        if (isCasual) summary.CasualNight++;
-                        else summary.PermanentNight++;
+                        if (isCasual) summary.CasualNight++; else summary.PermanentNight++;
+                        continue;
                     }
                 }
-                else if (suspendedEmployees.Any(s => s.Id == employee.Id))
+
+                // 2. SUSPENSIONS
+                if (suspendedIds.Contains(emp.Id))
                 {
                     summary.Suspensions++;
+                    continue;
                 }
-                else if (absences.Any(a => a.EmployeeId == employee.Id))
+
+                // 3. ABSENCES
+                if (absences.Any(a => a.EmployeeId == emp.Id))
                 {
                     summary.Absences++;
                 }
             }
-            
-            summary.ApprovedLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == departmentName);
-            summary.SickLeaves = sickLeaves.Count(l => l.Employee.Department?.Name == departmentName);
-            summary.MaternityLeaves = maternityLeaves.Count(l => l.Employee.Department?.Name == departmentName);
+
+            // Leave totals for department
+            summary.ApprovedLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == deptGroup.Key);
+            summary.SickLeaves = sickLeaves.Count(l => l.Employee.Department?.Name == deptGroup.Key);
+            summary.MaternityLeaves = maternityLeaves.Count(l => l.Employee.Department?.Name == deptGroup.Key);
 
             departmentReports.Add(summary);
         }
-        
-        var departmentStats = groupedByDepartment.Select(group =>
+
+        // ===== DEPARTMENT & SYSTEM STATS =====
+
+        var departmentStats = deptGroups.Select(group =>
         {
             var deptName = group.Key;
+
             return new SystemGeneralStaffCountDto
             {
                 Department = deptName,
-                NumberOfPermanentLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
-                NumberOfCasualLeaves = approvedLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
 
-                NumberOfPermanentSickLeaves = sickLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
-                NumberOfCasualSickLeaves = sickLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
+                NumberOfPermanentLeaves = approvedLeaves
+                    .Count(l
+                        => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualLeaves = approvedLeaves
+                    .Count(l
+                        => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
 
-                NumberOfPermanentMaternityLeave = maternityLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
-                NumberOfCasualMaternityLeave = maternityLeaves.Count(l => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
+                NumberOfPermanentSickLeaves = sickLeaves
+                    .Count(l
+                        => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualSickLeaves = sickLeaves
+                    .Count(l
+                        => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
 
-                NumberOfPermanentAbsentEmployees = absences.Count(a => a.Employee.Department?.Name == deptName && a.Employee.Type == EmployeeType.Permanent),
-                NumberOfCasualAbsentEmployees = absences.Count(a => a.Employee.Department?.Name == deptName && a.Employee.Type == EmployeeType.Casual),
+                NumberOfPermanentMaternityLeave = maternityLeaves
+                    .Count(l
+                        => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualMaternityLeave = maternityLeaves
+                    .Count(l
+                        => l.Employee.Department?.Name == deptName && l.Employee.Type == EmployeeType.Casual),
 
-                NumberOfPermanentOfficialDuty = officialDuties.Count(o => o.Employee.Department?.Name == deptName && o.Employee.Type == EmployeeType.Permanent),
-                NumberOfCasualOfficialDuty = officialDuties.Count(o => o.Employee.Department?.Name == deptName && o.Employee.Type == EmployeeType.Casual),
+                NumberOfPermanentAbsentEmployees = absences
+                    .Count(a
+                        => a.Employee.Department?.Name == deptName && a.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualAbsentEmployees = absences
+                    .Count(a
+                        => a.Employee.Department?.Name == deptName && a.Employee.Type == EmployeeType.Casual),
 
-                NumberOfPermanentSuspensions = suspendedEmployees.Count(s => s.Department?.Name == deptName && s.Type == EmployeeType.Permanent),
-                NumberOfCasualSuspensions = suspendedEmployees.Count(s => s.Department?.Name == deptName && s.Type == EmployeeType.Casual),
+                NumberOfPermanentOfficialDuty = officialDuties
+                    .Count(o
+                        => o.Employee.Department?.Name == deptName && o.Employee.Type == EmployeeType.Permanent),
+                NumberOfCasualOfficialDuty = officialDuties
+                    .Count(o
+                        => o.Employee.Department?.Name == deptName && o.Employee.Type == EmployeeType.Casual),
+
+                NumberOfPermanentSuspensions = suspendedEmployees
+                    .Count(s => s.Department?.Name == deptName && s.Type == EmployeeType.Permanent),
+                NumberOfCasualSuspensions = suspendedEmployees
+                    .Count(s => s.Department?.Name == deptName && s.Type == EmployeeType.Casual),
             };
         }).ToList();
 
         var systemStats = new SystemGeneralStats
         {
-            NumberOfPermanentLeaves = departmentStats.Sum(d => d.NumberOfPermanentLeaves),
-            NumberOfCasualLeaves = departmentStats.Sum(d => d.NumberOfCasualLeaves),
-            NumberOfPermanentSickLeaves = departmentStats.Sum(d => d.NumberOfPermanentSickLeaves),
-            NumberOfCasualSickLeaves = departmentStats.Sum(d => d.NumberOfCasualSickLeaves),
-            NumberOfPermanentMaternityLeave = departmentStats.Sum(d => d.NumberOfPermanentMaternityLeave),
-            NumberOfCasualMaternityLeave = departmentStats.Sum(d => d.NumberOfCasualMaternityLeave),
-            NumberOfPermanentAbsentEmployees = departmentStats.Sum(d => d.NumberOfPermanentAbsentEmployees),
-            NumberOfCasualAbsentEmployees = departmentStats.Sum(d => d.NumberOfCasualAbsentEmployees),
-            NumberOfPermanentOfficialDuty = departmentStats.Sum(d => d.NumberOfPermanentOfficialDuty),
-            NumberOfCasualOfficialDuty = departmentStats.Sum(d => d.NumberOfCasualOfficialDuty),
-            NumberOfPermanentSuspensions = departmentStats.Sum(d => d.NumberOfPermanentSuspensions),
-            NumberOfCasualSuspensions = departmentStats.Sum(d => d.NumberOfCasualSuspensions)
+            NumberOfPermanentLeaves = departmentStats.Sum(s => s.NumberOfPermanentLeaves),
+            NumberOfCasualLeaves = departmentStats.Sum(s => s.NumberOfCasualLeaves),
+
+            NumberOfPermanentSickLeaves = departmentStats.Sum(s => s.NumberOfPermanentSickLeaves),
+            NumberOfCasualSickLeaves = departmentStats.Sum(s => s.NumberOfCasualSickLeaves),
+
+            NumberOfPermanentMaternityLeave = departmentStats.Sum(s => s.NumberOfPermanentMaternityLeave),
+            NumberOfCasualMaternityLeave = departmentStats.Sum(s => s.NumberOfCasualMaternityLeave),
+
+            NumberOfPermanentAbsentEmployees = departmentStats.Sum(s => s.NumberOfPermanentAbsentEmployees),
+            NumberOfCasualAbsentEmployees = departmentStats.Sum(s => s.NumberOfCasualAbsentEmployees),
+
+            NumberOfPermanentOfficialDuty = departmentStats.Sum(s => s.NumberOfPermanentOfficialDuty),
+            NumberOfCasualOfficialDuty = departmentStats.Sum(s => s.NumberOfCasualOfficialDuty),
+
+            NumberOfPermanentSuspensions = departmentStats.Sum(s => s.NumberOfPermanentSuspensions),
+            NumberOfCasualSuspensions = departmentStats.Sum(s => s.NumberOfCasualSuspensions)
         };
 
+        // FINAL RETURN — OUTSIDE THE LOOP
         return Result.Success(new GeneralAttendanceReportResponse
         {
             DepartmentReports = departmentReports,
@@ -334,26 +444,27 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             }
         });
     }
-    
+
     public async Task<Result<FileExportResult>> ExportAttendanceSummary(FileFormat format)
     {
         var attendanceResult = await GeneralAttendanceReport();
         if (!attendanceResult.IsSuccess)
             return Error.Failure("Export.Failed", "Failed to generate attendance report.");
-        
+
         var report = attendanceResult.Value; // now contains DepartmentReports + SystemStatistics
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-        
+
         if (format.FileType == "csv")
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Department,Permanent,Casual,Morning(P),Afternoon(P),Night(P),Morning(C),Afternoon(C),Night(C),Absent,Suspended,Sick,Maternity,Leave");
+            sb.AppendLine(
+                "Department,Permanent,Casual,Early Morning (P),Morning(P),Afternoon(P),Night(P),Early Morning (P),Morning(C),Afternoon(C),Night(C),Absent,Suspended,Sick,Maternity,Leave");
 
             foreach (var item in report.DepartmentReports)
             {
                 sb.AppendLine($"{item.DepartmentName},{item.PermanentStaff},{item.CasualStaff}," +
-                              $"{item.PermanentMorning},{item.PermanentAfternoon},{item.PermanentNight}," +
-                              $"{item.CasualMorning},{item.CasualAfternoon},{item.CasualNight}," +
+                              $"{item.PermanentEarlyMorning}, {item.PermanentMorning},{item.PermanentAfternoon},{item.PermanentNight}," +
+                              $"{item.CasualEarlyMorning},{item.CasualMorning},{item.CasualAfternoon},{item.CasualNight}," +
                               $"{item.Absences}," +
                               $"{item.Suspensions}," +
                               $"{item.SickLeaves}," +
@@ -364,7 +475,8 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             // Add a separator for system statistics
             sb.AppendLine();
             sb.AppendLine("===== System Wide Breakdown =====");
-            sb.AppendLine("Department,Perm.Leaves,Cas.Leaves,Perm.Sick,Cas.Sick,Perm.Maternity,Cas.Maternity,Perm.Absent,Cas.Absent,Perm.OfficialDuty,Cas.OfficialDuty,Perm.Suspended,Cas.Suspended");
+            sb.AppendLine(
+                "Department,Perm.Leaves,Cas.Leaves,Perm.Sick,Cas.Sick,Perm.Maternity,Cas.Maternity,Perm.Absent,Cas.Absent,Perm.OfficialDuty,Cas.OfficialDuty,Perm.Suspended,Cas.Suspended");
 
             foreach (var dept in report.SystemStatistics.Departments)
             {
@@ -397,6 +509,7 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             });
         }
 
+
         // ---------- EXCEL ----------
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage();
@@ -406,17 +519,19 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
         deptSheet.Cells[1, 1].Value = "Department";
         deptSheet.Cells[1, 2].Value = "Permanent Staff";
         deptSheet.Cells[1, 3].Value = "Casual Staff";
-        deptSheet.Cells[1, 4].Value = "Morning (P)";
-        deptSheet.Cells[1, 5].Value = "Afternoon (P)";
-        deptSheet.Cells[1, 6].Value = "Night (P)";
-        deptSheet.Cells[1, 7].Value = "Morning (C)";
-        deptSheet.Cells[1, 8].Value = "Afternoon (C)";
-        deptSheet.Cells[1, 9].Value = "Night (C)";
-        deptSheet.Cells[1, 10].Value = "Absences";
-        deptSheet.Cells[1, 11].Value = "Suspensions";
-        deptSheet.Cells[1, 12].Value = "Sick Leaves";
-        deptSheet.Cells[1, 13].Value = "Maternity Leaves";
-        deptSheet.Cells[1, 14].Value = "Approved Leaves";
+        deptSheet.Cells[1, 4].Value = "Early Morning (P)";
+        deptSheet.Cells[1, 5].Value = "Morning (P)";
+        deptSheet.Cells[1, 6].Value = "Afternoon (P)";
+        deptSheet.Cells[1, 7].Value = "Night (P)";
+        deptSheet.Cells[1, 8].Value = "Early Morning (C)";
+        deptSheet.Cells[1, 9].Value = "Morning (C)";
+        deptSheet.Cells[1, 10].Value = "Afternoon (C)";
+        deptSheet.Cells[1, 11].Value = "Night (C)";
+        deptSheet.Cells[1, 12].Value = "Absences";
+        deptSheet.Cells[1, 13].Value = "Suspensions";
+        deptSheet.Cells[1, 14].Value = "Sick Leaves";
+        deptSheet.Cells[1, 15].Value = "Maternity Leaves";
+        deptSheet.Cells[1, 16].Value = "Approved Leaves";
 
         var row = 2;
         foreach (var item in report.DepartmentReports)
@@ -424,17 +539,19 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             deptSheet.Cells[row, 1].Value = item.DepartmentName;
             deptSheet.Cells[row, 2].Value = item.PermanentStaff;
             deptSheet.Cells[row, 3].Value = item.CasualStaff;
-            deptSheet.Cells[row, 4].Value = item.PermanentMorning;
-            deptSheet.Cells[row, 5].Value = item.PermanentAfternoon;
-            deptSheet.Cells[row, 6].Value = item.PermanentNight;
-            deptSheet.Cells[row, 7].Value = item.CasualMorning;
-            deptSheet.Cells[row, 8].Value = item.CasualAfternoon;
-            deptSheet.Cells[row, 9].Value = item.CasualNight;
-            deptSheet.Cells[row, 10].Value = item.Absences;
-            deptSheet.Cells[row, 11].Value = item.Suspensions;
-            deptSheet.Cells[row, 12].Value = item.SickLeaves;
-            deptSheet.Cells[row, 13].Value = item.MaternityLeaves;
-            deptSheet.Cells[row, 14].Value = item.ApprovedLeaves;
+            deptSheet.Cells[row, 4].Value = item.PermanentEarlyMorning;
+            deptSheet.Cells[row, 5].Value = item.PermanentMorning;
+            deptSheet.Cells[row, 6].Value = item.PermanentAfternoon;
+            deptSheet.Cells[row, 7].Value = item.PermanentNight;
+            deptSheet.Cells[row, 8].Value = item.CasualEarlyMorning;
+            deptSheet.Cells[row, 9].Value = item.CasualMorning;
+            deptSheet.Cells[row, 10].Value = item.CasualAfternoon;
+            deptSheet.Cells[row, 11].Value = item.CasualNight;
+            deptSheet.Cells[row, 12].Value = item.Absences;
+            deptSheet.Cells[row, 13].Value = item.Suspensions;
+            deptSheet.Cells[row, 14].Value = item.SickLeaves;
+            deptSheet.Cells[row, 15].Value = item.MaternityLeaves;
+            deptSheet.Cells[row, 16].Value = item.ApprovedLeaves;
             row++;
         }
         deptSheet.Cells.AutoFitColumns();
@@ -498,37 +615,5 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
             ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             FileName = $"AttendanceSummary_{timestamp}.xlsx"
         });
-    }
-
-    private async Task<int> EmployeesOnSickLeave(DateTime today)
-    {
-        var sickLeaveTypeId = await context.LeaveTypes
-            .Where(t => t.Name == "Sick Leave")
-            .Select(t => t.Id)
-            .FirstOrDefaultAsync();
-
-        return await context.LeaveRequests
-            .Where(l => l.LeaveTypeId == sickLeaveTypeId &&
-                        l.Approved &&
-                        l.StartDate <= today &&
-                        l.EndDate >= today)
-            .CountAsync();
-    }
-
-    private async Task<int> NumberOfApprovedLeaves(DateTime today)
-    {
-        var leaveType = await context.LeaveTypes
-            .Where(t => t.Name != "Maternity Leave" 
-                        && t.Name != "Sick Leave")
-            .Select(t => t.Id)
-            .FirstOrDefaultAsync();
-
-        return await context.LeaveRequests
-            .Where(l => l.LeaveTypeId == leaveType
-                        && l.RequestCategory != RequestCategory.OfficialDuty
-                        && l.Approved &&
-                        l.StartDate <= today &&
-                        l.EndDate >= today)
-            .CountAsync();
     }
 }

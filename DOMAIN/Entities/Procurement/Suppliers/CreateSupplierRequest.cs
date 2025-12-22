@@ -17,6 +17,7 @@ public class CreateSupplierManufacturerRequest
 {
     public Guid ManufacturerId { get; set; }
     public Guid? MaterialId { get; set; }
-    public decimal QuantityPerPack { get; set; }
+    public Guid? UoMId { get; set; }
     public bool Default { get; set; }
 }
+

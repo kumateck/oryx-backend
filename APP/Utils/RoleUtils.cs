@@ -10,7 +10,7 @@ public class RoleUtils
     public const string QaManager = "QA Manager";
     public const string QcManager = "QC Manager";
     public const string LogisticsManager = "Logistics Manager";
-    
+
     public static IEnumerable<string> AppRoles()
     {
         return

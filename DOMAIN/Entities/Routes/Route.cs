@@ -17,10 +17,11 @@ public class Route : BaseEntity
     public Guid? WorkflowId { get; set; }
     public Form WorkFlow { get; set; }
     public int Order { get; set; }
-    public List<RouteResource> Resources { get; set; }
+    public List<RouteResource> Resources { get; set; } = [];
     public List<RouteResponsibleUser> ResponsibleUsers { get; set; } = [];
     public List<RouteResponsibleRole> ResponsibleRoles { get; set; } = [];
     public List<RouteWorkCenter> WorkCenters { get; set; } = [];
+    public bool IsCritical { get; set; }
 }
 
 public class RouteResource : BaseEntity
@@ -39,7 +40,8 @@ public class RouteResponsibleUser : BaseEntity
     public User User { get; set; }
     public Guid? ProductAnalyticalRawDataId { get; set; }
     public ProductAnalyticalRawData.ProductAnalyticalRawData ProductAnalyticalRawData { get; set; }
-    public OperationAction Action { get; set; }}
+    public OperationAction Action { get; set; }
+}
 
 public class RouteResponsibleRole : BaseEntity
 {
@@ -49,7 +51,8 @@ public class RouteResponsibleRole : BaseEntity
     public Role Role { get; set; }
     public Guid? ProductAnalyticalRawDataId { get; set; }
     public ProductAnalyticalRawData.ProductAnalyticalRawData ProductAnalyticalRawData { get; set; }
-    public OperationAction Action { get; set; }}
+    public OperationAction Action { get; set; }
+}
 
 public class RouteWorkCenter : BaseEntity
 {
@@ -62,11 +65,12 @@ public class RouteWorkCenter : BaseEntity
 public enum OperationAction
 {
     BmrAndBprRequisition = 0,
-    StockRequisition = 1,   
-    FullReturn = 2,
-    AdditionalStockRequest = 3,
-    FinalPackingOrPartialReturn = 4,
-    FinishedGoodsTransferNote = 5,
-    Dispatch = 6,
-    Atr = 7,
+    BmrAndBprCancellation = 1,
+    StockRequisition = 2,
+    FullReturn = 3,
+    AdditionalStockRequest = 4,
+    FinalPackingOrPartialReturn = 5,
+    FinishedGoodsTransferNote = 6,
+    Dispatch = 7,
+    Atr = 8,
 }

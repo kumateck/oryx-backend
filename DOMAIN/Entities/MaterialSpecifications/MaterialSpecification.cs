@@ -13,15 +13,16 @@ public class MaterialSpecification : BaseEntity
     public DateTime EffectiveDate { get; set; }
     public DateTime ReviewDate { get; set; }
     public Guid FormId { get; set; }
-    public Form Form { get; set; } 
-    public DateTime DueDate {get;set;}
-    public string Description {get;set;}
+    public Form Form { get; set; }
+    public DateTime DueDate { get; set; }
+    public string Description { get; set; }
     public Guid UserId { get; set; }
     public User User { get; set; }
     public Guid MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid? ResponseId { get; set; }
     public Response Response { get; set; }
+    public List<FormSection> FormSections { get; set; } = [];
 }
 
 
@@ -30,6 +31,6 @@ public enum MaterialSpecificationReference
 {
     BP,
     USP,
-    PhInt, 
+    PhInt,
     InHouse
 }

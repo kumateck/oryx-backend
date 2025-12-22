@@ -10,20 +10,20 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/leave-type")]
 [Authorize]
-public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBase
+public class LeaveTypeController(ILeaveTypeRepository repository) : ControllerBase
 {
 
     /// <summary>
     /// Creates a leave type.
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK, Type= typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveType([FromBody] CreateLeaveTypeRequest leaveType)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateLeaveType(leaveType);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
 
@@ -34,18 +34,18 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveTypeDto>>))]
-    public async Task<IResult> GetLeaveTypes([FromQuery] int page = 1, 
+    public async Task<IResult> GetLeaveTypes([FromQuery] int page = 1,
         [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         [FromQuery] Guid? designationId = null)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetLeaveTypes(page, pageSize, searchQuery, designationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
 
     }
-    
+
     /// <summary>
     /// Retrieves the details of a specific leave type.
     /// </summary>
@@ -54,9 +54,9 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveType([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.GetLeaveType(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
 
@@ -71,9 +71,9 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateLeaveType([FromRoute] Guid id, [FromBody] CreateLeaveTypeRequest leaveType)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateLeaveType(id, leaveType);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
 
@@ -88,9 +88,9 @@ public class LeaveTypeController(ILeaveTypeRepository repository): ControllerBas
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteLeaveType([FromRoute] Guid id)
     {
-        var userId = (string) HttpContext.Items["Sub"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteLeaveType(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

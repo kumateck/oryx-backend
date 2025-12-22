@@ -32,9 +32,9 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
                 CreatedAt = DateTime.UtcNow,
                 Type = WarehouseType.Production
             };
-        
+
             await context.Warehouses.AddAsync(productionWarehouse);
-        
+
             department.Warehouses.Add(productionWarehouse);
 
             var packagedMaterialWarehouse = new Warehouse
@@ -47,11 +47,11 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
                 CreatedAt = DateTime.UtcNow,
                 Type = WarehouseType.PackagedStorage
             };
-            
+
             await context.Warehouses.AddAsync(packagedMaterialWarehouse);
-            
+
             department.Warehouses.Add(packagedMaterialWarehouse);
-            
+
             var rawMaterialWarehouse = new Warehouse
             {
                 Id = Guid.NewGuid(),
@@ -62,11 +62,11 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
                 CreatedAt = DateTime.UtcNow,
                 Type = WarehouseType.RawMaterialStorage
             };
-        
+
             await context.Warehouses.AddAsync(rawMaterialWarehouse);
-        
+
             department.Warehouses.Add(rawMaterialWarehouse);
-            
+
             var finishedGoodsWarehouse = new Warehouse
             {
                 Id = Guid.NewGuid(),
@@ -77,12 +77,12 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
                 CreatedAt = DateTime.UtcNow,
                 Type = WarehouseType.FinishedGoodsStorage
             };
-            
+
             await context.Warehouses.AddAsync(finishedGoodsWarehouse);
-            
+
             department.Warehouses.Add(finishedGoodsWarehouse);
         }
-        
+
         await context.SaveChangesAsync();
 
         return department.Id;
@@ -100,7 +100,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             ? Error.NotFound("Department.NotFound", "Department not found")
             : mapper.Map<DepartmentDto>(department);
     }
-    
+
     public async Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> GetDepartments(int page, int pageSize, string searchQuery, DepartmentType? type)
     {
         var query = context.Departments
@@ -108,7 +108,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             .Include(d => d.Warehouses)
             .Include(d => d.ParentDepartment)
             .AsQueryable();
-        
+
         if (type.HasValue)
         {
             query = query.Where(d => d.Type == type);
@@ -126,7 +126,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             mapper.Map<DepartmentDto>
         );
     }
-    
+
     public async Task<Result> UpdateDepartment(CreateDepartmentRequest request, Guid departmentId, Guid userId)
     {
         var existingDepartment = await context.Departments
@@ -148,16 +148,16 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             {
                 if (childrenOfExistingDepartment.Select(b => b.Id).Contains(request.ParentDepartmentId.Value))
                 {
-                    return Error.Validation("Department.Children", 
+                    return Error.Validation("Department.Children",
                         $"Department {request.ParentDepartmentId} is a child of department {existingDepartment.Id}");
                 }
             }
         }
-        
+
         context.Warehouses.RemoveRange(existingDepartment.Warehouses);
         mapper.Map(request, existingDepartment);
         context.Departments.Update(existingDepartment);
-        
+
         await context.SaveChangesAsync();
         return Result.Success();
     }

@@ -23,7 +23,7 @@ public class ActivityLogRepository(MongoDbContext context, IMapper mapper, Appli
         var activityLog = mapper.Map<ActivityLog>(model);
         await _activityLogs.InsertOneAsync(activityLog);
     }
-    
+
     public void RecordActivity(CreateActivityLog model)
     {
         if (model.UserId.HasValue)
@@ -37,14 +37,14 @@ public class ActivityLogRepository(MongoDbContext context, IMapper mapper, Appli
     public async Task<Paginateable<IEnumerable<ActivityLogDto>>> GetActivityLogs(ActivityLogFilter filter)
     {
         var filterDefinition = Builders<ActivityLog>.Filter.Empty;
-        
+
         filter.StartDate ??= DateTime.UtcNow.Date;
         filter.EndDate ??= DateTime.UtcNow.AddDays(1).Date;
 
         // Apply date range filters
         if (filter.StartDate.HasValue)
             filterDefinition &= Builders<ActivityLog>.Filter.Gte(log => log.CreatedAt, filter.StartDate.Value);
-    
+
         if (filter.EndDate.HasValue)
             filterDefinition &= Builders<ActivityLog>.Filter.Lte(log => log.CreatedAt, filter.EndDate.Value);
 

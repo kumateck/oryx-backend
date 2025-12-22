@@ -10,7 +10,7 @@ namespace DOMAIN.Entities.Products;
 
 public class Product : BaseEntity
 {
-    [StringLength(255)] public string Code { get; set; } 
+    [StringLength(255)] public string Code { get; set; }
     [StringLength(255)] public string Name { get; set; }
     [StringLength(255)] public string GenericName { get; set; }
     [StringLength(255)] public string StorageCondition { get; set; }
@@ -24,10 +24,10 @@ public class Product : BaseEntity
     [StringLength(1000000)] public string PrimaryPackDescription { get; set; }
     [StringLength(1000000)] public string SecondaryPackDescription { get; set; }
     [StringLength(1000000)] public string TertiaryPackDescription { get; set; }
-    [StringLength(1000000)] public string LabelClaim { get; set; } 
+    [StringLength(1000000)] public string LabelClaim { get; set; }
     public Guid? CategoryId { get; set; }
     public ProductCategory Category { get; set; }
-    public decimal BaseQuantity { get; set; } 
+    public decimal BaseQuantity { get; set; }
     public Guid? BaseUomId { get; set; }
     public UnitOfMeasure BaseUoM { get; set; }
     public Guid? EquipmentId { get; set; }
@@ -41,7 +41,7 @@ public class Product : BaseEntity
     public List<Route> Routes { get; set; } = [];
     public decimal Price => Prices.OrderByDescending(p => p.Date).FirstOrDefault()?.Price ?? 0;
     public Division Division { get; set; }
-    public List<ProductPrices>  Prices { get; set; } = [];
+    public List<ProductPrices> Prices { get; set; } = [];
     public List<ProductPacking> Packings { get; set; } = [];
 }
 
@@ -62,7 +62,7 @@ public class ProductPacking : BaseEntity
     public int PackPerShipper { get; set; }
     public Guid? BasePackingUomId { get; set; }
     public UnitOfMeasure BasePackingUoM { get; set; }
-    public decimal BasePackingQuantity { get; set; } 
+    public decimal BasePackingQuantity { get; set; }
     public decimal ExpectedYield { get; set; }
     public bool IsDefault { get; set; }
     public List<ProductPackingList> PackingLists { get; set; } = [];

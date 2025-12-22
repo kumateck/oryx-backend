@@ -20,7 +20,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
 
         var employee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == leaveEntitlementRequest.EmployeeId);
-        
+
         if (employee is null)
         {
             return Error.NotFound("Employee.NotFound", "Employee is not found");
@@ -28,20 +28,20 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
 
         var existingEntitlement =
             await context.LeaveEntitlements.FirstOrDefaultAsync(l =>
-                l.EmployeeId == leaveEntitlementRequest.EmployeeId 
+                l.EmployeeId == leaveEntitlementRequest.EmployeeId
                 && l.Year == leaveEntitlementRequest.Year
-                && l.LastDeletedById == null);;
-        
+                && l.LastDeletedById == null); ;
+
         if (existingEntitlement is not null)
         {
             return Error.Validation("LeaveEntitlement.AlreadyExists", "Leave entitlement already exists");
         }
-        
+
         var leaveEntitlement = mapper.Map<LeaveEntitlement>(leaveEntitlementRequest);
 
         await context.LeaveEntitlements.AddAsync(leaveEntitlement);
         await context.SaveChangesAsync();
-        
+
         return leaveEntitlement.Id;
     }
 
@@ -50,7 +50,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         var leaveEntitlement = await context.LeaveEntitlements
             .FirstOrDefaultAsync(l => l.Id == leaveEntitlementId
             && l.LastDeletedById == null);
-        
+
         return leaveEntitlement is null ?
             Error.NotFound("LeaveEntitlement.NotFound", "Leave entitlement is not found") :
             Result.Success(mapper.Map<LeaveEntitlementDto>(leaveEntitlement));
@@ -66,7 +66,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         {
             query = query.WhereSearch(searchQuery);
         }
-        
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
@@ -84,7 +84,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         {
             return Error.NotFound("LeaveEntitlement.NotFound", "Leave entitlement is not found");
         }
-        
+
         mapper.Map(leaveEntitlementDto, leaveEntitlement);
 
         context.LeaveEntitlements.Update(leaveEntitlement);
@@ -100,7 +100,7 @@ public class LeaveEntitlementRepository(ApplicationDbContext context, IMapper ma
         {
             return Error.NotFound("LeaveEntitlement.NotFound", "Leave entitlement is not found");
         }
-        
+
         leaveEntitlement.DeletedAt = DateTime.UtcNow;
         leaveEntitlement.LastDeletedById = userId;
         context.LeaveEntitlements.Update(leaveEntitlement);

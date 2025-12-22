@@ -15,13 +15,22 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 {
     public async Task<Result<Guid>> CreateProductionOrder(CreateProductionOrderRequest request)
     {
+        if (request.Products.GroupBy(p => new { p.ProductId, p.ProductPackingId })
+            .Any(g => g.Count() > 1))
+        {
+            return Error.Validation("Production.Order",
+                "Production order product list " +
+                "cannot contain more than one of the same product and product packing");
+        }
+
         var productionOrder = mapper.Map<ProductionOrder>(request);
         await context.AddAsync(productionOrder);
         await context.SaveChangesAsync();
         return productionOrder.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(int page,
+        int pageSize, string searchQuery, ProductionOrderStatus? status)
     {
         var query = context.ProductionOrders
             .IgnoreQueryFilters()
@@ -29,13 +38,24 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(p => p.Customer)
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            // .ThenInclude(p => p.PackingLists)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.Code);
         }
-        
+
+        if (status.HasValue)
+        {
+            query = query.Where(q => q.Status == status.Value);
+        }
+
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionOrderDto>);
     }
 
@@ -47,26 +67,35 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
             .Include(p => p.Customer)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(p => p.Products)
+            .ThenInclude(p => p.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
             .FirstOrDefaultAsync(po => po.Id == id);
 
         if (productionOrder == null)
             return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
-        
+
         var productionOrderDto = mapper.Map<ProductionOrderDetailDto>(productionOrder);
-        
+
         productionOrderDto.Invoice =
             mapper.Map<ProductionOrderInvoiceDto>(await context.Invoices
                 .AsSplitQuery()
                 .Include(p => p.ProformaInvoice).ThenInclude(p => p.AllocateProductionOrder)
                 .FirstOrDefaultAsync(p => p.ProformaInvoice.AllocateProductionOrder.ProductionOrderId == productionOrderDto.Id));
-        
+
         return productionOrderDto;
     }
 
     public async Task<Result> UpdateProductionOrder(Guid id, CreateProductionOrderRequest request)
     {
-        var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(p => p.Id == id);
-        if(productionOrder is null) return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
+        var productionOrder = await context.ProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder is null)
+            return Error.NotFound("ProductionOrder.NotFound",
+            "Production Order not found");
 
         productionOrder.Products = mapper.Map<List<ProductionOrderProducts>>(request.Products);
         mapper.Map(request, productionOrder);
@@ -79,11 +108,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(po => po.Id == id);
         if (productionOrder == null) return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
-        
+
         productionOrder.DeletedAt = DateTime.Now;
         productionOrder.LastDeletedById = userId;
         context.ProductionOrders.Update(productionOrder);
-            
+
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -112,7 +141,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         };
         await context.ProformaInvoices.AddAsync(invoice);
         await context.SaveChangesAsync();
-        
+
         return invoice.Id;
     }
 
@@ -127,14 +156,18 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
-    public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page, int pageSize, string searchQuery, ProformaInvoiceStatus? status = null)
+
+    public async Task<Result<Paginateable<IEnumerable<ProformaInvoiceDto>>>> GetProformaInvoices(int page,
+        int pageSize,
+        string searchQuery,
+        ProformaInvoiceStatus? status = null,
+        bool? approved = null)
     {
         var query = context.ProformaInvoices
             .AsSplitQuery()
             .Include(p => p.AllocateProductionOrder)
             .ThenInclude(p => p.ProductionOrder)
-            .ThenInclude(p => p.Customer)     
+            .ThenInclude(p => p.Customer)
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
             .AsQueryable();
@@ -142,6 +175,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.AllocateProductionOrder.ProductionOrder.Code);
+        }
+
+        if (approved.HasValue)
+        {
+            query = query.Where(q => q.AllocateProductionOrder.Approved == approved.Value);
         }
 
         if (status != null)
@@ -207,7 +245,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
     public async Task<Result<Guid>> CreateInvoice(CreateInvoice request)
     {
         var proformaExists = await context.ProformaInvoices.AnyAsync(p => p.Id == request.ProformaInvoiceId);
@@ -235,7 +273,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, 
+            query = query.WhereSearch(searchQuery,
                 i => i.Customer.Name, i => i.Customer.Address, i => i.Customer.Email);
         }
 
@@ -286,7 +324,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         return Result.Success();
     }
 
-     public async Task<Result> AllocateProduct(AllocateProductionOrderRequest request)
+    public async Task<Result> AllocateProduct(AllocateProductionOrderRequest request)
     {
         var productionOrder = await context.ProductionOrders
             .AsSplitQuery()
@@ -384,7 +422,98 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         await context.SaveChangesAsync();
         return Result.Success();
     }
-     
+
+    public async Task<Result> MarkAllocationProductionOrderAsLoaded(Guid id)
+    {
+        var productionOrder = await context.AllocateProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder == null) return Error.NotFound("Product.Order", "Product order not found");
+
+        productionOrder.LoadedAt = DateTime.UtcNow;
+        productionOrder.Status = AllocateProductionOrderStatus.Loaded;
+        context.AllocateProductionOrders.Update(productionOrder);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> CreateWaybillFromProductionOrder(CreateProductionOrderWaybill request, Guid id)
+    {
+        var productionOrder = await context.AllocateProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder == null) return Error.NotFound("Product.Order",
+            "Product order not found");
+
+        if (await context.ProductionOrderWaybills.AnyAsync(p => p.AllocateProductionOrderId == id))
+            return Error.Validation("ProductionOrder.Waybill",
+                "ProductionOrder.Waybill already exists for this allocation");
+
+        await context.ProductionOrderWaybills.AddAsync(new ProductionOrderWaybill
+        {
+            Code = request.Code,
+            AllocateProductionOrderId = id,
+            Comment = request.Comment,
+        });
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<ProductionOrderWaybillDto>>>> GetProductionOrderWaybills(
+        int page,
+        int pageSize,
+        string searchQuery,
+        Guid? allocateProductionOrderId = null)
+    {
+        var query = context.ProductionOrderWaybills
+            .AsSplitQuery()
+            .Include(w => w.AllocateProductionOrder)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery,
+                q => q.Comment,
+                q => q.AllocateProductionOrder.ProductionOrder.Code);
+        }
+
+        if (allocateProductionOrderId.HasValue)
+        {
+            query = query.Where(q => q.AllocateProductionOrderId == allocateProductionOrderId);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionOrderWaybillDto>);
+    }
+
+    public async Task<Result<ProductionOrderWaybillDto>> GetProductionOrderWaybill(Guid id)
+    {
+        return mapper.Map<ProductionOrderWaybillDto>(await context
+            .ProductionOrderWaybills
+            .Include(w => w.AllocateProductionOrder)
+            .ThenInclude(w => w.Products)
+            .Include(w => w.AllocateProductionOrder)
+            .ThenInclude(w => w.ProductionOrder)
+            .FirstOrDefaultAsync(p => p.Id == id));
+    }
+
+    public async Task<Result> SendWaybillToCustomer(Guid id)
+    {
+        var productionOrder = await context.AllocateProductionOrders
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (productionOrder == null)
+            return Error.NotFound("Product.Order", "Product order not found");
+
+        var waybill = await context.ProductionOrderWaybills
+            .FirstOrDefaultAsync(p => p.AllocateProductionOrderId == productionOrder.Id);
+        if (waybill == null)
+            return Error.NotFound("Product.Order",
+                "Waybill not created for production order {productionOrder.Id}");
+
+        productionOrder.Status = AllocateProductionOrderStatus.WaybillSentToCustomer;
+        productionOrder.WaybillSentToCustomerAt = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
 
     public async Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id)
     {
@@ -393,11 +522,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         if (productionOrder == null) return Error.NotFound("Product.Order", "Product order not found");
 
         productionOrder.DeliveredAt = DateTime.UtcNow;
-        context.AllocateProductionOrders.Update(productionOrder);
+        productionOrder.Status = AllocateProductionOrderStatus.Delivered;
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
+
     public async Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request)
     {
         var validation = await ValidateProductAllocation(request);
@@ -482,7 +611,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     }
 
 
-    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? onlyApproved, int page,
+    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? approved, int page,
         int pageSize, string searchQuery, Guid? productionOrderId)
     {
         var query = context.AllocateProductionOrders
@@ -497,18 +626,15 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(a => a.Products)
             .ThenInclude(p => p.Product)
             .AsQueryable();
-        
+
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, b => b.ProductionOrder.Code);
         }
 
-        if (onlyApproved.HasValue)
+        if (approved.HasValue)
         {
-            if (onlyApproved.Value)
-            {
-                query = query.Where(q => q.Approved);
-            }
+            query = query.Where(q => q.Approved == approved.Value);
         }
 
         if (productionOrderId.HasValue)
@@ -538,10 +664,16 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
                 .ThenInclude(f => f.BatchManufacturingRecord)
                 .Include(a => a.Products)
                 .ThenInclude(p => p.Product)
+                .Include(a => a.Products)
+                .ThenInclude(p => p.ProductPacking)
+                .ThenInclude(p => p.PackingLists)
+                .Include(a => a.Products)
+                .ThenInclude(p => p.ProductPacking)
+                .ThenInclude(p => p.BasePackingUoM)
                 .FirstOrDefaultAsync(p => p.Id == id)
         );
     }
-    
+
     public async Task<Result> ValidateProductAllocation(AllocateProductionOrderRequest request)
     {
         // 1) Load the production order + products (as no-tracking; we're not persisting here)
@@ -555,7 +687,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
 
         // Quick lookup of products on this order
-        var orderProductsById = productionOrder.Products.ToDictionary(p => p.ProductId, p => p);
+        var orderProductsById = productionOrder.Products
+            .ToDictionary(p => $"{p.ProductId},{p.ProductPackingId}", p => p);
 
         // 2) Collect all FinishedGoodsTransferNote IDs in the request and fetch them in one go
         var allNoteIds = request.Products
@@ -571,7 +704,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         // 3) Ensure all referenced notes exist
         var missingNoteIds = allNoteIds.Where(id => !notesById.ContainsKey(id)).ToList();
-        if (missingNoteIds.Any())
+        if (missingNoteIds.Count != 0)
             return Error.NotFound("FinishedGoodsTransferNote.NotFound",
                 $"These finished goods transfer notes were not found: {string.Join(", ", missingNoteIds)}");
 
@@ -604,10 +737,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         // 6) Per-product validations (membership, remaining, optional note↔product compatibility)
         foreach (var reqProduct in request.Products)
         {
-            if (!orderProductsById.TryGetValue(reqProduct.ProductId, out var orderProduct))
+            if (!orderProductsById.TryGetValue($"{reqProduct.ProductId},{reqProduct.ProductPackingId}",
+                    out var orderProduct))
             {
                 return Error.NotFound("ProductionOrder.ProductNotFound",
-                    $"Product {reqProduct.ProductId} not found in this production order");
+                    $"Product {reqProduct.ProductId} and" +
+                    $" Product packing {reqProduct.ProductPackingId} not found in this production order");
             }
 
             if (orderProduct.Fulfilled)

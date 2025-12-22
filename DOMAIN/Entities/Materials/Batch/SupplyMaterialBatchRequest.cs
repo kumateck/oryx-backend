@@ -7,6 +7,20 @@ public class SupplyMaterialBatchRequest
     public List<CreateShelfMaterialBatch> ShelfMaterialBatches { get; set; }
 }
 
+public class SupplyMaterialBatchFromHoldingRequest
+{
+    public Guid MaterialBatchId { get; set; }
+    public Guid HoldingMaterialId { get; set; }
+    public List<CreateShelfMaterialBatch> ShelfMaterialBatches { get; set; }
+}
+
+public class SupplyMaterialBatchFromHMaterialDistribute
+{
+    public Guid MaterialBatchId { get; set; }
+    public Guid DistributeMaterialId { get; set; }
+    public List<CreateShelfMaterialBatch> ShelfMaterialBatches { get; set; }
+}
+
 public class CreateShelfMaterialBatch
 {
     public Guid WarehouseLocationShelfId { get; set; }

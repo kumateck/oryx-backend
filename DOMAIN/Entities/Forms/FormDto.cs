@@ -11,7 +11,6 @@ public class FormDto : BaseDto
     public FormType Type { get; set; }
     public List<FormSectionDto> Sections { get; set; } = [];
     public List<FormResponseDto> Responses { get; set; } = [];
-    public List<FormAssigneeDto> Assignees { get; set; } = [];
     public List<FormReviewerDto> Reviewers { get; set; } = [];
 }
 
@@ -23,6 +22,8 @@ public class FormSectionDto : BaseDto
     public CollectionItemDto Instrument { get; set; }
     public int Order { get; set; }
     public List<FormFieldDto> Fields { get; set; } = [];
+    public string Value { get; set; }
+    public string GroupName { get; set; }
 }
 
 public class FormFieldDto : BaseDto
@@ -31,9 +32,7 @@ public class FormFieldDto : BaseDto
     public QuestionDto Question { get; set; }
     public bool Required { get; set; }
     public string Description { get; set; }
-    public int Rank { get; set; } 
-    public CollectionItemDto Assignee { get; set; }
-    public CollectionItemDto Reviewer { get; set; }
+    public int Rank { get; set; }
 }
 
 public class ResponseDto : BaseDto
@@ -41,8 +40,16 @@ public class ResponseDto : BaseDto
     public CollectionItemDto Form { get; set; }
     public List<FormResponseDto> FormResponses { get; set; } = [];
 }
+public class ResponseDetailDto : ResponseDto
+{
+    public CollectionItemDto BatchManufacturingRecord { get; set; }
+    public CollectionItemDto MaterialBatch { get; set; }
+    public UserDto CheckedBy { get; set; }
+    public DateTime? CheckedAt { get; set; }
+}
 
-public class FormResponseDto :  WithAttachment
+
+public class FormResponseDto : WithAttachment
 {
     public FormFieldDto FormField { get; set; }
     public string Value { get; set; }
@@ -50,11 +57,6 @@ public class FormResponseDto :  WithAttachment
     public DateTime? CheckedAt { get; set; }
 }
 
-public class FormAssigneeDto : BaseDto
-{
-    public CollectionItemDto Form { get; set; }
-    public CollectionItemDto User { get; set; }
-}
 
 public class FormReviewerDto : BaseDto
 {

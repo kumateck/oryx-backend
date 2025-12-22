@@ -13,22 +13,43 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
 {
     public async Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request)
     {
-        var existingDesignation = await context.Designations.FirstOrDefaultAsync(d => d.Name == request.Name);
-        if (existingDesignation is not null)
+        var requestedDeptIds = request.DepartmentIds.Distinct().ToList();
+
+        // Load existing designations with the same name
+        var existingDesignations = await context.Designations
+            .Include(d => d.Departments)
+            .Where(d => d.Name == request.Name)
+            .ToListAsync();
+
+        // Find conflicting departments
+        var conflictingDepartments = existingDesignations
+            .SelectMany(d => d.Departments)
+            .Where(dep => requestedDeptIds.Contains(dep.Id))
+            .Distinct()
+            .ToList();
+
+        if (conflictingDepartments.Count != 0)
         {
-            return Error.Validation("Designation.Exists", "Designation already exists.");
+            var conflictNames = string.Join(", ", conflictingDepartments.Select(d => d.Name));
+
+            return Error.Validation(
+                "Designation.DepartmentConflict",
+                $"The following department(s) are already assigned to the designation '{request.Name}': {conflictNames}."
+            );
         }
-        
+
+        // Create a new designation
         var designation = mapper.Map<Designation>(request);
-        
+
         var departments = await context.Departments
-            .Where(d => request.DepartmentIds.Contains(d.Id)).ToListAsync();
-        
+            .Where(d => requestedDeptIds.Contains(d.Id))
+            .ToListAsync();
+
         designation.Departments = departments;
-        
+
         await context.Designations.AddAsync(designation);
         await context.SaveChangesAsync();
-        
+
         return designation.Id;
     }
 
@@ -57,7 +78,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
     {
         var designation = await context.Designations.
             FirstOrDefaultAsync(d => d.Id == id);
-        return designation is null ? 
+        return designation is null ?
             Error.NotFound("Designation.NotFound", "Designation not found") :
             Result.Success(mapper.Map<DesignationDto>(designation));
     }
@@ -76,7 +97,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
             .Where(e => e.DesignationId != null);
 
         var employees = await employeeQuery.ToListAsync();
-        
+
         var result = designations.Select(designation =>
         {
             var relatedEmployees = employees
@@ -114,20 +135,20 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
             return Error.NotFound("Designation.NotFound", "Designation not found");
         }
         mapper.Map(request, designation);
-        
+
         // Fetch the new Departments based on the request
         var departments = await context.Departments
             .Where(d => request.DepartmentIds.Contains(d.Id))
             .ToListAsync();
-        
+
         if (departments.Count != request.DepartmentIds.Count)
         {
             return Error.Validation("Designation.InvalidDepartments", "One or more department IDs are invalid.");
         }
-        
-        designation.Departments.Clear(); 
+
+        designation.Departments.Clear();
         designation.Departments = departments;
-        
+
         context.Designations.Update(designation);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -141,18 +162,18 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         {
             return Error.NotFound("Designation.NotFound", "Designation not found");
         }
-        
+
         var employees = await context.Employees
             .FirstOrDefaultAsync(e => e.DesignationId == id);
 
         if (employees is not null)
         {
-            return Error.Validation("Designation.InUse", "Designation is in use.");       
+            return Error.Validation("Designation.InUse", "Designation is in use.");
         }
-        
+
         designation.DeletedAt = DateTime.UtcNow;
         designation.LastDeletedById = userId;
-        
+
         context.Designations.Update(designation);
         await context.SaveChangesAsync();
         return Result.Success();

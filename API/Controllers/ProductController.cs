@@ -14,7 +14,7 @@ namespace API.Controllers;
 public class ProductController(IProductRepository repository) : ControllerBase
 {
     // Product CRUD operations (existing)
-    
+
     /// <summary>
     /// Creates a new product.
     /// </summary>
@@ -26,7 +26,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateProduct(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -51,7 +51,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductListDto>>))]
     public async Task<IResult> GetProducts([FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10, 
+        [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] Guid? departmentId = null)
     {
@@ -71,11 +71,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateProduct(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates a specific product package description by its ID.
     /// </summary>
@@ -88,7 +88,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.UpdateProductPackageDescription(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -104,11 +104,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteProduct(productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves the active bom for the product.
     /// </summary>
@@ -121,7 +121,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.GetBillOfMaterialByProductId(productId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new route for a product.
     /// </summary>
@@ -133,7 +133,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateRoute(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -174,11 +174,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.DeleteRoute(routeId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new product package.
     /// </summary>
@@ -191,10 +191,10 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateProductPackage(request, productId,Guid.Parse(userId));
+        var result = await repository.CreateProductPackage(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new product package.
     /// </summary>
@@ -207,10 +207,10 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateProductPacking(request, productId,Guid.Parse(userId));
+        var result = await repository.CreateProductPacking(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves packings lists for a product
     /// </summary>
@@ -281,7 +281,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.DeleteProductPackage(productPackageId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new finished product.
     /// </summary>
@@ -293,11 +293,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.CreateFinishedProduct(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates a specific Bill of Material.
     /// </summary>
@@ -312,11 +312,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        
+
         var result = await repository.ArchiveBillOfMaterial(productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Creates a new equipment.
     /// </summary>
@@ -402,7 +402,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.DeleteEquipment(equipmentId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Imports products from an Excel file.
     /// </summary>
@@ -423,7 +423,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
             ? TypedResults.NoContent()
             : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Imports product bill of materials (BOM) from an Excel file.
     /// </summary>
@@ -444,7 +444,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
             ? TypedResults.NoContent()
             : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Imports product packaging information from an Excel file.
     /// </summary>

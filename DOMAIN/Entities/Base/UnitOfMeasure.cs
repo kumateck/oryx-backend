@@ -19,6 +19,7 @@ public enum UnitOfMeasureType
     Raw = 0,
     Packing = 1,
     Shipping = 2,
+    Value = 3
 }
 
 public enum UnitOfMeasureCategory
@@ -30,7 +31,7 @@ public enum UnitOfMeasureCategory
     Area = 4,
 }
 
-public class UnitOfMeasureDto 
+public class UnitOfMeasureDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; }

@@ -6,7 +6,8 @@
 - Ensure you have Docker and Docker Compose installed on your machine.
     - [Install Docker](https://www.docker.com/get-started)
 
-## Building and Running the Docker Container
+## Building and Running the Docker Container.
+
 
 ### Step 1: Clone the Repository
 

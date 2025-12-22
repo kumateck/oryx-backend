@@ -13,7 +13,7 @@ public class UpdateShipmentStatusRequest
     public ShipmentStatus Status { get; set; }
 }
 
-public class CreateShipmentInvoice 
+public class CreateShipmentInvoice
 {
     public string Code { get; set; }
     public DateTime? ShipmentArrivedAt { get; set; }
@@ -22,7 +22,7 @@ public class CreateShipmentInvoice
     public decimal TotalCost { get; set; }
 }
 
-public class CreateShipmentInvoiceItem 
+public class CreateShipmentInvoiceItem
 {
     public Guid MaterialId { get; set; }
     public Guid UoMId { get; set; }

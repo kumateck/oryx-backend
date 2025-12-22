@@ -29,7 +29,7 @@ public class HoldingMaterialTransferBatch
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
-    public Guid SourceWarehouseId {get; set; }
+    public Guid SourceWarehouseId { get; set; }
     public Warehouse SourceWarehouse { get; set; }
     public Guid DestinationWarehouseId { get; set; }
     public Warehouse DestinationWarehouse { get; set; }
@@ -43,6 +43,7 @@ public enum HoldingMaterialTransferStatus
 
 public class HoldingMaterialTransferDto
 {
+    public Guid Id { get; set; }
     public HoldingMaterialTransferStatus Status { get; set; }
     public List<HoldingMaterialTransferBatchDto> Batches { get; set; } = [];
 }

@@ -40,26 +40,31 @@ public class ProductionOrderApprovals : ResponsibleApprovalStage
 [Owned]
 public class ProductionOrderProducts
 {
-    public Guid ProductId {get; set;}
+    public Guid ProductId { get; set; }
     public Product Product { get; set; }
     public int TotalOrderQuantity { get; set; }
     public decimal VolumePerPiece { get; set; }
     public decimal TotalVolume => TotalOrderQuantity * VolumePerPiece;
-    public decimal TotalBatches =>  Product?.FullBatchSize > 0 
-        ? TotalVolume / Product.FullBatchSize 
+    public decimal TotalBatches => Product?.FullBatchSize > 0
+        ? TotalVolume / Product.FullBatchSize
         : 0;
     public decimal TotalValue => TotalOrderQuantity * Product?.Price ?? 0;
     public bool Fulfilled { get; set; }
     public List<ProductionOrderProductQuantity> FulfilledQuantities { get; set; } = [];
-    public decimal RemainingQuantity => TotalOrderQuantity - FulfilledQuantities.Sum(p => p.Quantity);
+    public decimal RemainingQuantity => TotalOrderQuantity
+                                        - FulfilledQuantities.Sum(p => p.Quantity);
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
+    public decimal Shippers { get; set; }
+    public decimal Loose { get; set; }
 }
 
 [Owned]
 public class ProductionOrderProductQuantity
 {
-    public Guid FinishedGoodsTransferNoteId {get; set;}
-    public FinishedGoodsTransferNote  FinishedGoodsTransferNote { get; set; }
-    public decimal Quantity {get; set;}
+    public Guid FinishedGoodsTransferNoteId { get; set; }
+    public FinishedGoodsTransferNote FinishedGoodsTransferNote { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 
@@ -70,7 +75,18 @@ public class AllocateProductionOrder : BaseEntity
     public List<AllocateProductionOrderProduct> Products { get; set; } = [];
     public bool Approved { get; set; }
     public List<AllocateProductionOrderApprovals> Approvals { get; set; } = [];
+    public AllocateProductionOrderStatus Status { get; set; }
+    public DateTime? LoadedAt { get; set; }
+    public DateTime? WaybillSentToCustomerAt { get; set; }
     public DateTime? DeliveredAt { get; set; }
+}
+
+public enum AllocateProductionOrderStatus
+{
+    Pending = 0,
+    Loaded = 1,
+    WaybillSentToCustomer = 2,
+    Delivered = 3,
 }
 
 [Owned]
@@ -78,6 +94,8 @@ public class AllocateProductionOrderProduct
 {
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
     public List<AllocateProductQuantity> FulfilledQuantities { get; set; } = [];
 }
 
@@ -85,7 +103,7 @@ public class AllocateProductionOrderProduct
 public class AllocateProductQuantity
 {
     public Guid FinishedGoodsTransferNoteId { get; set; }
-    public FinishedGoodsTransferNote  FinishedGoodsTransferNote { get; set; }
+    public FinishedGoodsTransferNote FinishedGoodsTransferNote { get; set; }
     public decimal Quantity { get; set; }
 }
 
@@ -136,4 +154,28 @@ public class ProductionOrderInvoiceItemDto : BaseDto
 {
     public ProductListDto Product { get; set; }
     public int Quantity { get; set; }
+}
+
+public class CreateProductionOrderWaybill
+{
+    [StringLength(1000, ErrorMessage = "Code character length must be less than 1000")]
+    public string Code { get; set; }
+    public string Comment { get; set; }
+}
+
+public class ProductionOrderWaybill : BaseEntity
+{
+    [StringLength(1000)] public string Code { get; set; }
+    public Guid AllocateProductionOrderId { get; set; }
+    public AllocateProductionOrder AllocateProductionOrder { get; set; }
+    [StringLength(10000)] public string Comment { get; set; }
+}
+
+public class ProductionOrderWaybillDto
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; }
+    public AllocateProductionOrderDto AllocateProductionOrder { get; set; }
+    [StringLength(10000)] public string Comment { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

@@ -9,6 +9,6 @@ public interface IFileRepository
         Guid? userId);
     Task<Result> SaveBlobItem(string modelType, Guid modelId, List<IFormFile> files,
         Guid? userId);
-    Task<Result> DeleteAttachment(Guid modelId, Guid userId); 
+    Task<Result> DeleteAttachment(Guid modelId, Guid userId);
     Task<Result> DeleteAttachment(Guid id, string reference, Guid userId);
 }

@@ -10,7 +10,7 @@ namespace DOMAIN.Entities.VendorQuotations;
 public class VendorQuotation : BaseEntity
 {
     public Guid VendorId { get; set; }
-    public Vendor Vendor { get; set; } 
+    public Vendor Vendor { get; set; }
     public Guid SourceInventoryRequisitionId { get; set; }
     public SourceInventoryRequisition SourceInventoryRequisition { get; set; }
     public List<VendorQuotationItem> Items { get; set; } = [];
@@ -19,7 +19,7 @@ public class VendorQuotation : BaseEntity
 
 public class VendorQuotationDto : BaseDto
 {
-    public VendorDto Vendor { get; set; } 
+    public VendorDto Vendor { get; set; }
     public SourceInventoryRequisitionDto SourceInventoryRequisition { get; set; }
     public List<VendorQuotationItemDto> Items { get; set; } = [];
     public bool ReceivedQuotation { get; set; }
@@ -27,7 +27,7 @@ public class VendorQuotationDto : BaseDto
 
 public class VendorQuotationItem : BaseEntity
 {
-    public Guid VendorQuotationId { get; set; }    
+    public Guid VendorQuotationId { get; set; }
     public VendorQuotation VendorQuotation { get; set; }
     public Guid ItemId { get; set; }
     public Item Item { get; set; }

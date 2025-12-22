@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.AnalyticalTestRequests;
 
 namespace DOMAIN.Entities.Forms.Request;
 
 public class CreateFormRequest
 {
-    [StringLength(255)] public string Name { get; set; }
+    [StringLength(100000000)] public string Name { get; set; }
     public List<CreateFormSectionRequest> Sections { get; set; } = [];
     public List<CreateFormAssigneeRequest> Assignees { get; set; } = [];
     public List<CreateFormReviewerRequest> Reviewers { get; set; } = [];
@@ -13,24 +14,23 @@ public class CreateFormRequest
 
 public class CreateFormSectionRequest
 {
-    [StringLength(255)] public string Name { get; set; }
-    [StringLength(1000)] public string Description { get; set; }
+    [StringLength(100000000)] public string Name { get; set; }
+    [StringLength(100000000)] public string Description { get; set; }
     public int Order { get; set; }
     public Guid? InstrumentId { get; set; }
     public List<CreateFormFieldRequest> Fields { get; set; } = [];
+    public string GroupName { get; set; }
 }
 
 public class CreateFormFieldRequest
 {
     public Guid QuestionId { get; set; }
     public bool Required { get; set; }
-    public int Rank { get; set; } 
+    public int Rank { get; set; }
     public string Description { get; set; }
-    public Guid? AssigneeId { get; set; }
-    public Guid? ReviewerId { get; set; }
 }
 
-public class CreateResponseRequest 
+public class CreateResponseRequest
 {
     public Guid FormId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
@@ -47,12 +47,61 @@ public class CreateFormResponseRequest
     public string Value { get; set; }
 }
 
-public class CreateFormAssigneeRequest 
+public class CreateFormAssigneeRequest
 {
-    public Guid UserId { get; set; }
+    public Guid FormId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public TestStage? Stage { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public Guid? MaterialSpecificationId { get; set; }
+    public Guid? ProductSpecificationId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+    public List<CreateFormFieldAssigneeRequest> FormFieldAssignees { get; set; } = [];
+}
+
+public class CreateFormFieldAssigneeRequest
+{
+    public Guid FormFieldId { get; set; }
+    public Guid? AssigneeId { get; set; }
 }
 
 public class CreateFormReviewerRequest
 {
     public Guid UserId { get; set; }
+}
+
+public class SubmitFormSectionValue
+{
+    public Guid FormSectionId { get; set; }
+    public string Value { get; set; }
+}
+
+public class GetResponseIdRequest
+{
+    public Guid? MaterialBatchId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+}
+
+public class SaveResponseDraftRequest
+{
+    public Guid? ResponseId { get; set; }
+    public Guid FormId { get; set; }
+    public Guid FormFieldId { get; set; }
+    public string Value { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+}
+
+public class SaveFormAssigneeDraftRequest
+{
+    public Guid? FormAssigneeId { get; set; }
+    public Guid FormId { get; set; }
+    public Guid FormFieldId { get; set; }
+    public Guid? MaterialBatchId { get; set; }
+    public Guid? BatchManufacturingRecordId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
+    public TestStage? Stage { get; set; }
+    public Guid? AssigneeId { get; set; }
 }

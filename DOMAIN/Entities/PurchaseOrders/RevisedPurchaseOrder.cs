@@ -73,7 +73,7 @@ public enum RevisedPurchaseOrderType
 
 public class PurchaseOrderItemSnapshot
 {
-    public Guid Id { get; set; } 
+    public Guid Id { get; set; }
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
     public Guid? UoMId { get; set; }

@@ -8,10 +8,10 @@ using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.Checklists;
 
-public class Checklist: BaseEntity
+public class Checklist : BaseEntity
 {
     public Guid DistributedRequisitionMaterialId { get; set; }
-    public DistributedRequisitionMaterial DistributedRequisitionMaterial{ get; set; }
+    public DistributedRequisitionMaterial DistributedRequisitionMaterial { get; set; }
     public Guid? MaterialId { get; set; }
     public Material Material { get; set; }
     public DateTime? CheckedAt { get; set; }
@@ -43,6 +43,19 @@ public class ChecklistDto
     public List<MaterialBatchDto> MaterialBatches { get; set; } = [];
 }
 
+public class CheckListDto
+{
+    public DistributedRequisitionMaterialListDto DistributedRequisitionMaterial { get; set; }
+    public MaterialDto Material { get; set; }
+    public DateTime? CheckedAt { get; set; }
+    public SupplierDto Supplier { get; set; }
+    public ManufacturerListDto Manufacturer { get; set; }
+    public bool CertificateOfAnalysisDelivered { get; set; }
+    public bool VisibleLabelling { get; set; }
+    public Intactness IntactnessStatus { get; set; }
+    public ConsignmentCarrier ConsignmentCarrierStatus { get; set; }
+}
+
 public class MaterialBatchChecklistDto
 {
     public DateTime? CheckedAt { get; set; }
@@ -72,7 +85,7 @@ public class CreateChecklistRequest
     public bool VisibleLabelling { get; set; }
     public Intactness IntactnessStatus { get; set; }
     public ConsignmentCarrier ConsignmentCarrierStatus { get; set; }
-    public List<CreateMaterialBatchRequest> MaterialBatches { get; set; }
+    public List<CreateMaterialBatchRequest> MaterialBatches { get; set; } = [];
 }
 
 public enum ConsignmentCarrier

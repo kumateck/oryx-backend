@@ -7,16 +7,22 @@ namespace DOMAIN.Entities.Items.Requisitions;
 
 public class CreateInventoryPurchaseRequisition
 {
+    [Required]
     public string Code { get; set; }
     public DateTime? ExpectedDeliveryDate { get; set; }
     public string Remarks { get; set; }
+
+    [Required, MinLength(1, ErrorMessage = "At least one item is required")]
     public List<CreateInventoryPurchaseRequisitionItem> Items { get; set; } = [];
 }
 
 public class CreateInventoryPurchaseRequisitionItem
 {
+    [Required]
     public Guid ItemId { get; set; }
     public Guid UoMId { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "Quantity must be greater than 0.")]
     public decimal Quantity { get; set; }
 }
 
@@ -53,7 +59,7 @@ public class InventoryPurchaseRequisitionItem : BaseEntity
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
-    public RequestStatus Status { get; set; }  
+    public RequestStatus Status { get; set; }
 }
 
 public class InventoryPurchaseRequisitionItemDto : BaseDto
@@ -62,5 +68,5 @@ public class InventoryPurchaseRequisitionItemDto : BaseDto
     public ItemDto Item { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
-    public RequestStatus Status { get; set; }  
+    public RequestStatus Status { get; set; }
 }
