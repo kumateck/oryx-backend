@@ -489,6 +489,22 @@ public class EmployeeRepository(ApplicationDbContext context,
             return Error.Validation("Employee.Level", "Permanent employees must have a level assigned");
         }
 
+        if (employeeDto.WarehouseId.HasValue)
+        {
+            var warehouse = await context.Warehouses.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(w => w.Id == employeeDto.WarehouseId);
+            if (warehouse == null)
+            {
+                return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
+            }
+
+            if (warehouse.DepartmentId != employeeDto.DepartmentId)
+            {
+                return Error.Validation("Warehouse.DepartmentId", 
+                    "The warehouse selected does not match the department selected");
+            }
+        }
+
         mapper.Map(employeeDto, employee);
         employee.DepartmentId = employeeDto.DepartmentId;
         employee.DesignationId = employeeDto.DesignationId;
