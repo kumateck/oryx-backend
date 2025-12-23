@@ -96,4 +96,5 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(int page, int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result> MoveMaterialBatchToWarehouseFromDistribute(
         SupplyMaterialBatchFromHMaterialDistribute request, Guid userId);
+    Task<Result> ImportMaterialStockFromExcel(IFormFile file);
 }
