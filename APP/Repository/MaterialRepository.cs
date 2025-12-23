@@ -2824,4 +2824,106 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             mapper.Map<MaterialRejectDto>
         );
     }
+    
+    public async Task<Result> ImportMaterialStockFromExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null) return UploadErrors.WorksheetNotFound;
+
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            var header = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrEmpty(header)) headers[header] = col;
+        }
+
+        // 1. Pre-fetch Lookups
+        var uomLookup = await context.UnitOfMeasures
+            .AsNoTracking()
+            .ToDictionaryAsync(u => u.Symbol.Trim().ToLower(), u => u.Id);
+
+        var batchLookup = await context.MaterialBatches
+            .AsNoTracking()
+            .ToDictionaryAsync(b => b.BatchNumber.Trim().ToLower(), b => b.Id);
+
+        // 2. Fetch Shelves with Full Hierarchy Path
+        var shelfHierarchy = await context.WarehouseLocationShelves
+            .AsNoTracking()
+            .Select(s => new
+            {
+                ShelfId = s.Id,
+                ShelfCode = s.Code.Trim().ToLower(),
+                WarehouseCode = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name.Trim().ToLower()
+            })
+            .ToListAsync();
+
+        var shelfLookup = shelfHierarchy
+            .ToDictionary(x => $"{x.WarehouseCode}|{x.ShelfCode}", x => x.ShelfId);
+
+        var shelfMaterialBatches = new List<ShelfMaterialBatch>();
+
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            string GetCell(string h) => headers.TryGetValue(h, out var header
+            ) ? worksheet.Cells[row, header].Text.Trim() : null;
+
+            var warehouseCode = GetCell("Warehouse")?.ToLower();
+            var shelfCode = GetCell("Shelves")?.ToLower();
+            var batchNo = GetCell("Batch No.");
+            var uomSymbol = GetCell("UOM")?.ToLower();
+
+            // Check if row is empty (based on mandatory fields)
+            if (string.IsNullOrEmpty(batchNo) && string.IsNullOrEmpty(shelfCode)) continue;
+
+            // 3. Validation: Material Batch
+            if (string.IsNullOrEmpty(batchNo) || !batchLookup.TryGetValue(batchNo.ToLower(), out var batchId))
+            {
+                return Error.NotFound("MaterialBatch", $"Row {row}: Batch Number '{batchNo}' was not found.");
+            }
+
+            // 4. Validation: Shelf & Warehouse hierarchy
+            var shelfKey = $"{warehouseCode}|{shelfCode}";
+            if (string.IsNullOrEmpty(shelfCode) || !shelfLookup.TryGetValue(shelfKey, out var shelfId))
+            {
+                return Error.NotFound("Shelf", $"Row {row}: Shelf Code '{shelfCode}' was not found in Warehouse '{warehouseCode}'.");
+            }
+
+            // 5. Validation: UOM (Using Symbol)
+            Guid? uomId = null;
+            if (!string.IsNullOrEmpty(uomSymbol))
+            {
+                if (uomLookup.TryGetValue(uomSymbol, out var foundUomId))
+                    uomId = foundUomId;
+                else
+                    return Error.NotFound("UOM", $"Row {row}: UOM Symbol '{uomSymbol}' was not found.");
+            }
+
+            // 6. Map to Entity
+            var stockEntry = new ShelfMaterialBatch
+            {
+                Id = Guid.NewGuid(),
+                WarehouseLocationShelfId = shelfId,
+                MaterialBatchId = batchId,
+                Quantity = decimal.TryParse(GetCell("Quantity"), out var qty) ? qty : 0,
+                UoMId = uomId,
+                Note = $"Imported via Excel. Waybill: {GetCell("Waybill")}, AR: {GetCell("AR No.")}"
+            };
+
+            shelfMaterialBatches.Add(stockEntry);
+        }
+
+        await context.ShelfMaterialBatches.AddRangeAsync(shelfMaterialBatches);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 }
