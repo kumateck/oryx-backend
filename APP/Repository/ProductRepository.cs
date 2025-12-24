@@ -3,9 +3,6 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.BillOfMaterials;
-using DOMAIN.Entities.Forms;
-using DOMAIN.Entities.Materials;
-using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
@@ -629,7 +626,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     }
 
     // Get paginated list of Equipments
-    public async Task<Result<Paginateable<IEnumerable<EquipmentDto>>>> GetEquipments(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<EquipmentDto>>>> GetEquipments(int page,
+        int pageSize, string searchQuery)
     {
         var query = context.Equipments
             .AsSplitQuery()
@@ -639,7 +637,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, e => e.Name, e => e.MachineId);
+            query = query.WhereSearch(searchQuery, e => e.Name,
+                e => e.EquipmentNumber);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -983,7 +982,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         return Result.Success();
     }
-    
+
     public async Task<Result> ImportProductStockFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -1036,8 +1035,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         // Create a composite lookup: "ProductCode|PackingName"
         var packingLookup = packingData.ToDictionary(
-            pp => $"{pp.Product.Code.Trim()}|{pp.Name.Trim()}", 
-            pp => pp, 
+            pp => $"{pp.Product.Code.Trim()}|{pp.Name.Trim()}",
+            pp => pp,
             StringComparer.OrdinalIgnoreCase);
 
         var manufacturingRecords = new List<BatchManufacturingRecord>();

@@ -94,7 +94,7 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
                 );
             }
 
-            if (!Enum.TryParse<Store>(storeType, true, out var inventoryStore) )
+            if (!Enum.TryParse<Store>(storeType, true, out var inventoryStore))
             {
                 return Error.Validation(
                     "ItemUpload.InvalidStore",
@@ -112,7 +112,7 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
 
             var uom = await context.UnitOfMeasures
                 .FirstOrDefaultAsync(u => u.Name == uomName);
-            
+
             var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(ic => ic.Name == categoryName);
 
             if (uom == null)

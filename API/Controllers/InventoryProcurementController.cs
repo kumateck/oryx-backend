@@ -421,7 +421,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     {
         return TypedResults.Ok(await repository.GenerateMemoCode());
     }
-    
+
     [HttpPost("upload-stock-entries/")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]

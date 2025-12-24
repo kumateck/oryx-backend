@@ -8,7 +8,7 @@ namespace DOMAIN.Entities.Products.Equipments;
 public class Equipment : BaseEntity
 {
     [StringLength(100)] public string Name { get; set; }
-    public string MachineId { get; set; }
+    [StringLength(100000)] public string EquipmentNumber { get; set; }
     public bool IsStorage { get; set; }
     public decimal CapacityQuantity { get; set; }
     public Guid UoMId { get; set; }
@@ -16,19 +16,23 @@ public class Equipment : BaseEntity
     public bool RelevanceCheck { get; set; }
     public Guid DepartmentId { get; set; }
     public Department Department { get; set; }
-    [StringLength(1000)] public string StorageLocation { get; set; }
+    [StringLength(1000)] public string Location { get; set; }
+    [StringLength(1000)] public string Model { get; set; }
+    [StringLength(1000)] public string SerialNumber { get; set; }
 }
 
 public class EquipmentDto : BaseDto
 {
     public string Name { get; set; }
-    public string MachineId { get; set; }
+    public string EquipmentNumber { get; set; }
     public bool IsStorage { get; set; }
     public decimal CapacityQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public bool RelevanceCheck { get; set; }
     public CollectionItemDto Department { get; set; }
-    public string StorageLocation { get; set; }
+    public string Location { get; set; }
+    public string Model { get; set; }
+    public string SerialNumber { get; set; }
 }
 
 public class CreateQcEquipment

@@ -465,7 +465,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
             ? TypedResults.NoContent()
             : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Imports product stock from an Excel file.
     /// </summary>

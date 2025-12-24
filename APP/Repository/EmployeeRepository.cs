@@ -500,7 +500,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
             if (warehouse.DepartmentId != employeeDto.DepartmentId)
             {
-                return Error.Validation("Warehouse.DepartmentId", 
+                return Error.Validation("Warehouse.DepartmentId",
                     "The warehouse selected does not match the department selected");
             }
         }
