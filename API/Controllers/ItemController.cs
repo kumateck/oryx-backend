@@ -31,7 +31,7 @@ public class ItemController(IItemRepository repository) : ControllerBase
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
-    [HttpPost]
+    [HttpPost("upload")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UploadItem([FromForm] ImportItemsRequest request)
