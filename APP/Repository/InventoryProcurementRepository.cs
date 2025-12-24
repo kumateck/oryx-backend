@@ -144,6 +144,7 @@ public class InventoryProcurementRepository(
                         Quantity = groupItem.item.Quantity,
                     });
                 }
+                
                 context.SourceInventoryRequisitions.Update(existingSourceRequisition);
             }
             else
@@ -162,6 +163,14 @@ public class InventoryProcurementRepository(
                 await context.SourceInventoryRequisitions.AddAsync(requisitionForVendor);
             }
         }
+        
+        var changePurchaseRequisitionStatus = await context.InventoryPurchaseRequisitions.FindAsync(request.InventoryPurchaseRequisitionId);
+        if (changePurchaseRequisitionStatus != null)
+        {
+            changePurchaseRequisitionStatus.Status = InventoryPurchaseRequisitionStatus.Complete;
+            context.InventoryPurchaseRequisitions.Update(changePurchaseRequisitionStatus);
+        }
+        
         await context.SaveChangesAsync();
         return Result.Success();
     }
