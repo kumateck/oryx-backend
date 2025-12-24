@@ -465,4 +465,25 @@ public class ProductController(IProductRepository repository) : ControllerBase
             ? TypedResults.NoContent()
             : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Imports product stock from an Excel file.
+    /// </summary>
+    /// <param name="file">The uploaded Excel file containing materials.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("upload/stock")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadProductStock(IFormFile file)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ImportProductStockFromExcel(file);
+
+        return result.IsSuccess
+            ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

@@ -2853,7 +2853,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetRaw(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+            string GetRaw(string h) => headers.TryGetValue(h, out var col) ? 
+                worksheet.Cells[row, col].Text.Trim() : null;
             
             var b = GetRaw("Batch No.");
             var s = GetRaw("Shelves");
@@ -2902,7 +2903,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             })
             .AsNoTracking().ToListAsync();
 
-        if (shelfHierarchy.GroupBy(x => $"{x.WarehouseName}|{x.ShelfCode}").Any(g => g.Count() > 1))
+        if (shelfHierarchy.GroupBy(x => $"{x.WarehouseName}|{x.ShelfCode}")
+            .Any(g => g.Count() > 1))
             return Error.Validation("Shelf.Duplicate", 
                 "System error: Multiple shelves found with same code in the same warehouse.");
 
