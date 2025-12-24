@@ -215,7 +215,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
 
     #region Trusted Vendor Specific
 
-    /// <summary>
+     /// <summary>
     /// Sends a quotation request to a specified trusted vendor.
     /// </summary>
     /// <param name="vendorId">The ID of the vendor to send the quotation request to.</param>
