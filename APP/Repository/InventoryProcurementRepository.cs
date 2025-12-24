@@ -445,6 +445,8 @@ public class InventoryProcurementRepository(
 
         await context.VendorQuotations.AddAsync(vendorQuotation);
         await context.SaveChangesAsync();
+        
+        await SendQuotationToVendor(sourceRequisition.Id);
         return Result.Success();
     }
 
