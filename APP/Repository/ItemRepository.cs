@@ -74,9 +74,9 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
 
         for (var row = 2; row <= lastRow; row++)
         {
-            var storeType = worksheet.Cells[row, 1].Text?.Trim();
+            var storeType = worksheet.Cells[row, 1].Text?.Replace(" ", "").Trim();
             var itemCode = worksheet.Cells[row, 3].Text?.Trim();
-            var categoryName = worksheet.Cells[row, 4].Text?.Trim();
+            var categoryName = worksheet.Cells[row, 4].Text?.Replace(" ", "").Trim();
             var uomName = worksheet.Cells[row, 5].Text?.Trim();
             var classificationText = worksheet.Cells[row, 6].Text?.Trim();
             var minimumLevel = worksheet.Cells[row, 7].Text?.Trim();
