@@ -27,6 +27,20 @@ public class ItemController(IItemRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Uploads items from an Excel file
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("upload")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadItem([FromForm] ImportItemsRequest request)
+    {
+        var result = await repository.UploadItems(request);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves a paginated list of items
     /// </summary>
     [HttpGet]

@@ -6,7 +6,7 @@ namespace APP.IRepository;
 
 public interface IJobRequestRepository
 {
-    Task<Result<Guid>> CreateJobRequest(CreateJobRequest request);
+    Task<Result<Guid>> CreateJobRequest(CreateJobRequest request, Guid departmentId, Guid issuedById);
     Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetJobRequests(int page, int pageSize, string searchQuery = null,
         JobRequestStatus? status = null, JobHandlingType? handlingType = null, Guid? departmentId = null);
     Task<Result<JobRequestDto>> GetJobRequest(Guid id);

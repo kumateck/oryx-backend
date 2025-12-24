@@ -4,8 +4,6 @@ namespace DOMAIN.Entities.JobRequests;
 
 public class CreateJobRequest
 {
-    [Required] public Guid DepartmentId { get; set; }
-
     [Required, StringLength(500)]
     public string Location { get; set; }
 
@@ -22,8 +20,6 @@ public class CreateJobRequest
 
     [Required]
     public DateTime PreferredCompletionDate { get; set; }
-
-    [Required] public Guid IssuedById { get; set; }
 }
 
 public class UpdateJobRequestRequest
@@ -43,6 +39,17 @@ public class AssignInternalJobRequest
     public string Notes { get; set; }
 }
 
+public class ReassignJobExecutionRequest
+{
+    [Required] public Guid JobExecutionId { get; set; }
+    [Required] public Guid NewEmployeeId { get; set; }
+
+    [Required, StringLength(2000)]
+    public string Reason { get; set; }
+
+    public string Notes { get; set; }
+}
+
 public class AcknowledgeJobExecutionRequest
 {
     [Required] public Guid JobExecutionId { get; set; }
@@ -51,6 +58,10 @@ public class AcknowledgeJobExecutionRequest
 public class StartJobExecutionRequest
 {
     [Required] public Guid JobExecutionId { get; set; }
+
+    [Required, StringLength(2000)]
+    public string ActivityDescription { get; set; }
+
     public string Notes { get; set; }
 }
 
@@ -87,8 +98,12 @@ public class RecordConsumedItemRequest
 public class CompleteJobExecutionRequest
 {
     [Required] public Guid JobExecutionId { get; set; }
+
+    [Required, StringLength(2000)]
+    public string ActivityDescription { get; set; }
+
     public string Notes { get; set; }
-    public List<RecordJobActivityRequest> Activities { get; set; } = [];
+    public List<RecordJobActivityRequest> AdditionalActivities { get; set; } = [];
     public List<RecordConsumedItemRequest> ConsumedItems { get; set; } = [];
 }
 

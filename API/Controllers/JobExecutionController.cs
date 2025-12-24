@@ -60,7 +60,10 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> StartJobExecution([FromBody] StartJobExecutionRequest request)
     {
-        var result = await repository.StartJobExecution(request);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.StartJobExecution(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -96,7 +99,25 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CompleteJobExecution([FromBody] CompleteJobExecutionRequest request)
     {
-        var result = await repository.CompleteJobExecution(request);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CompleteJobExecution(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Reassigns a job execution to another employee
+    /// </summary>
+    [HttpPost("reassign")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ReassignJobExecution([FromBody] ReassignJobExecutionRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.ReassignJobExecution(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

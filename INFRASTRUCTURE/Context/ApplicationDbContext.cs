@@ -659,6 +659,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<JobOrderExecution> JobOrderExecutions { get; set; }
     public DbSet<ServiceQuotation> ServiceQuotations { get; set; }
     public DbSet<QuotationItem> QuotationItems { get; set; }
+    public DbSet<ServiceProformaInvoice> ServiceProformaInvoices { get; set; }
+    public DbSet<ServiceProformaInvoiceItem> ServiceProformaInvoiceItems { get; set; }
     public DbSet<ServiceMemo> ServiceMemos { get; set; }
     public DbSet<ServiceMemoApproval> ServiceMemoApprovals { get; set; }
 
@@ -1540,6 +1542,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(jo => jo.SelectedQuotationId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // JobOrder has one ServiceProformaInvoice (without inverse navigation on ServiceProformaInvoice side)
+        modelBuilder.Entity<JobOrder>()
+            .HasOne(jo => jo.ServiceProformaInvoice)
+            .WithOne(spi => spi.JobOrder)
+            .HasForeignKey<ServiceProformaInvoice>(spi => spi.JobOrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // JobOrder has one ServiceMemo (without inverse navigation on ServiceMemo side)
         modelBuilder.Entity<JobOrder>()
             .HasOne(jo => jo.ServiceMemo)
@@ -1583,6 +1592,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(ci => ci.JobOrderExecutionId)
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
+
+        // ServiceProformaInvoice has many ServiceProformaInvoiceItems
+        modelBuilder.Entity<ServiceProformaInvoice>()
+            .HasMany(spi => spi.Items)
+            .WithOne(spii => spii.ServiceProformaInvoice)
+            .HasForeignKey(spii => spii.ServiceProformaInvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         #endregion
 

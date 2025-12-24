@@ -13,12 +13,12 @@ namespace APP.Repository;
 
 public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager) : IJobRequestRepository
 {
-    public async Task<Result<Guid>> CreateJobRequest(CreateJobRequest request)
+    public async Task<Result<Guid>> CreateJobRequest(CreateJobRequest request, Guid departmentId, Guid issuedById)
     {
-        var department = await context.Departments.AnyAsync(d => d.Id == request.DepartmentId);
+        var department = await context.Departments.AnyAsync(d => d.Id == departmentId);
         if (!department) return Error.Validation("Department.Invalid", "Invalid department");
 
-        var issuer = await userManager.FindByIdAsync(request.IssuedById.ToString());
+        var issuer = await userManager.FindByIdAsync(issuedById.ToString());
         if (issuer is null) return Error.Validation("User.Invalid", "User Invalid");
 
         if (request.EquipmentId.HasValue)
@@ -28,15 +28,22 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         }
 
         var jobRequest = mapper.Map<JobRequest>(request);
+        jobRequest.DepartmentId = departmentId;
+        jobRequest.IssuedById = issuedById;
         await context.JobRequests.AddAsync(jobRequest);
         await context.SaveChangesAsync();
         return jobRequest.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetJobRequests(int page, int pageSize,
-        string searchQuery = null, JobRequestStatus? status = null, JobHandlingType? handlingType = null, Guid? departmentId = null)
+    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetJobRequests(int page,
+        int pageSize,
+        string searchQuery = null,
+        JobRequestStatus? status = null,
+        JobHandlingType? handlingType = null,
+        Guid? departmentId = null)
     {
         var query = context.JobRequests
+            .AsSplitQuery()
             .Include(j => j.Department)
             .Include(j => j.Equipment)
             .Include(j => j.IssuedBy)
@@ -47,7 +54,8 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.DescriptionOfWork, q => q.Location);
+            query = query.WhereSearch(searchQuery, q => q.DescriptionOfWork,
+                q => q.Location);
         }
 
         if (status.HasValue)
@@ -66,12 +74,13 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
-            entity => mapper.Map<JobRequestDto>(entity));
+            mapper.Map<JobRequestDto>);
     }
 
     public async Task<Result<JobRequestDto>> GetJobRequest(Guid id)
     {
         var jobRequest = await context.JobRequests
+            .AsSplitQuery()
             .Include(j => j.Department)
             .Include(j => j.Equipment)
             .Include(j => j.IssuedBy)
@@ -136,7 +145,7 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
         // Update job request
         jobRequest.HandlingType = JobHandlingType.Internal;
-        jobRequest.Status = JobRequestStatus.AssignedInternal;
+        jobRequest.Status = JobRequestStatus.Assigned;
         jobRequest.AssignedToEmployeeId = request.AssignedToEmployeeId;
         jobRequest.AssignedAt = DateTime.UtcNow;
         jobRequest.AssignedById = request.AssignedById;

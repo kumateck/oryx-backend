@@ -40,6 +40,10 @@ public class JobOrder : BaseEntity
     public Guid? SelectedQuotationId { get; set; }
     public ServiceQuotation SelectedQuotation { get; set; }
 
+    // Proforma Invoice
+    public Guid? ServiceProformaInvoiceId { get; set; }
+    public ServiceProformaInvoice ServiceProformaInvoice { get; set; }
+
     // Service Memo
     public Guid? ServiceMemoId { get; set; }
     public ServiceMemo ServiceMemo { get; set; }
@@ -74,6 +78,8 @@ public enum JobOrderStatus
     SentToProviders,
     QuotationsReceived,
     QuotationSelected,
+    ProformaInvoiceRequested,
+    ProformaInvoiceReceived,
     MemoCreated,
     InProgress,
     Completed,
