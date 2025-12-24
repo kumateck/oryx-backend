@@ -1,4 +1,3 @@
-/*
 using APP.Utils;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Roles;
@@ -205,4 +204,3 @@ public class DepartmentSeeder : ISeeder
         dbContext.SaveChanges();
     }
 }
-*/

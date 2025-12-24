@@ -1,4 +1,3 @@
-/*
 using System.Diagnostics;
 using System.Security.Claims;
 using IdentityModel;
@@ -148,4 +147,3 @@ public class UserTableSeeders : ISeeder
         }
     }
 }
-*/

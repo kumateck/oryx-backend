@@ -1,4 +1,3 @@
-/*
 using APP.Utils;
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.Notifications;
@@ -183,4 +182,3 @@ public class NotificationAlertSeder : ISeeder
         dbContext.SaveChanges();
     }
 }
-*/
