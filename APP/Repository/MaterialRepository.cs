@@ -2883,6 +2883,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         // Batch Lookup
         var batchData = await context.MaterialBatches
+            .AsSplitQuery()
+            .Include(b => b.Material)
             .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
             .AsNoTracking().ToListAsync();
 
@@ -2891,7 +2893,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 "System error: Multiple Material Batches found with the same Number in database.");
 
         var batchLookup = batchData.ToDictionary(b =>
-            b.BatchNumber.Trim(), b => b.Id, StringComparer.OrdinalIgnoreCase);
+            b.BatchNumber.Trim(), b => b, StringComparer.OrdinalIgnoreCase);
 
         // Shelf Lookup (with hierarchy)
         var shelfHierarchy = await context.WarehouseLocationShelves
@@ -2926,13 +2928,21 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var shelfCode = GetCell("Shelves");
             var batchNo = GetCell("Batch No.");
             var uomSymbol = GetCell("UOM");
+            var materialCode = GetCell("Material Code");
 
             if (string.IsNullOrEmpty(batchNo) && string.IsNullOrEmpty(shelfCode)) continue;
 
             // Validation: Batch
-            if (string.IsNullOrEmpty(batchNo) || !batchLookup.TryGetValue(batchNo, out var batchId))
+            if (string.IsNullOrEmpty(batchNo) || !batchLookup.TryGetValue(batchNo, out var batch))
                 return Error.NotFound("MaterialBatch",
                     $"Row {row}: Batch Number '{batchNo}' was not found.");
+            
+            if (!string.Equals(materialCode, batch.Material?.Code, StringComparison.OrdinalIgnoreCase))
+            {
+                return Error.Validation("Material.Mismatch", 
+                    $"Row {row}: Material Code '{materialCode}' does not match Batch '{batchNo}'" +
+                    $" (System expected: '{batch.Material?.Code}').");
+            }
 
             // Validation: Shelf
             var shelfKey = $"{warehouseName}|{shelfCode}";
@@ -2953,7 +2963,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             {
                 Id = Guid.NewGuid(),
                 WarehouseLocationShelfId = shelfId,
-                MaterialBatchId = batchId,
+                MaterialBatchId = batch.Id,
                 Quantity = decimal.TryParse(GetCell("Quantity"), out var qty) ? qty : 0,
                 UoMId = uomId,
                 Note = $"Imported via Excel. Waybill: {GetCell("Waybill")}, AR: {GetCell("AR No.")}"
