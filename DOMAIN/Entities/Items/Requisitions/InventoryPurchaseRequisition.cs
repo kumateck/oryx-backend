@@ -38,7 +38,7 @@ public class InventoryPurchaseRequisition : BaseEntity
 public enum InventoryPurchaseRequisitionStatus
 {
     Pending,
-    Complete,
+    Complete
 }
 
 public class InventoryPurchaseRequisitionDto : BaseDto
