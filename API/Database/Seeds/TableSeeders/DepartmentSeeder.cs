@@ -190,7 +190,7 @@ public class DepartmentSeeder : ISeeder
                 Description = "The  beta finished goods warehouse",
                 CreatedAt = DateTime.UtcNow,
                 Type = WarehouseType.FinishedGoodsStorage,
-                IsBeta = true
+                //IsBeta = true
             },
             new Warehouse
             {
@@ -199,7 +199,7 @@ public class DepartmentSeeder : ISeeder
                 Description = "The  non beta finished goods warehouse",
                 CreatedAt = DateTime.UtcNow,
                 Type = WarehouseType.FinishedGoodsStorage,
-                IsBeta = false
+                //IsBeta = false
             });
         dbContext.SaveChanges();
     }
