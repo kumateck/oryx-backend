@@ -20,7 +20,13 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateJobRequest([FromBody] CreateJobRequest request)
     {
-        var result = await repository.CreateJobRequest(request);
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CreateJobRequest(request, Guid.Parse(departmentId), Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -34,10 +40,12 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] JobRequestStatus? status = null,
-        [FromQuery] JobHandlingType? handlingType = null,
-        [FromQuery] Guid? departmentId = null)
+        [FromQuery] JobHandlingType? handlingType = null)
     {
-        var result = await repository.GetJobRequests(page, pageSize, searchQuery, status, handlingType, departmentId);
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+
+        var result = await repository.GetJobRequests(page, pageSize, searchQuery, status, handlingType, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

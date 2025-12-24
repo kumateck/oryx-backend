@@ -208,7 +208,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         context.JobOrders.Update(jobOrder);
 
         // Update job request status
-        await jobRequestRepository.UpdateJobRequestStatus(jobOrder.JobRequestId, JobRequestStatus.InProgressExternal);
+        await jobRequestRepository.UpdateJobRequestStatus(jobOrder.JobRequestId, JobRequestStatus.JobStarted);
 
         await context.SaveChangesAsync();
 
@@ -320,7 +320,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         context.JobOrderExecutions.Update(execution);
 
         // Update job request status
-        await jobRequestRepository.UpdateJobRequestStatus(execution.JobOrder.JobRequestId, JobRequestStatus.CompletedExternal);
+        await jobRequestRepository.UpdateJobRequestStatus(execution.JobOrder.JobRequestId, JobRequestStatus.Completed);
 
         await context.SaveChangesAsync();
 
