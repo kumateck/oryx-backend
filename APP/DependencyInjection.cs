@@ -122,6 +122,7 @@ public static class DependencyInjection
         services.AddScoped<IJobExecutionRepository, JobExecutionRepository>();
         services.AddScoped<IJobOrderRepository, JobOrderRepository>();
         services.AddScoped<IServiceQuotationRepository, ServiceQuotationRepository>();
+        services.AddScoped<IServiceProformaInvoiceRepository, ServiceProformaInvoiceRepository>();
         services.AddScoped<IServiceMemoRepository, ServiceMemoRepository>();
 
 
