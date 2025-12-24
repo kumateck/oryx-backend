@@ -6,6 +6,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemTransactionLogs;
 using DOMAIN.Entities.Memos;
@@ -13,8 +14,10 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.VendorQuotations;
 using INFRASTRUCTURE.Context;
+using MassTransit.Initializers;
 using SHARED;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 
 namespace APP.Repository;
 
@@ -165,19 +168,35 @@ public class InventoryProcurementRepository(
 
     public async Task<Result> CreateMarketRequisition(CreateMarketRequisition request, Guid userId)
     {
-        var requisitionItem = await context.InventoryPurchaseRequisitionItems
-            .FirstOrDefaultAsync(item => item.Id == request.InventoryPurchaseRequisitionItemId);
+        if (request.InventoryPurchaseRequisitionItemId == null || !request.InventoryPurchaseRequisitionItemId.Any())
+            return Error.Validation("Requisition.EmptyItems", "No requisition items provided.");
 
-        if (requisitionItem is null)
-            return RequisitionErrors.NotFound(request.InventoryPurchaseRequisitionItemId);
+        var requisitionItems = await context.InventoryPurchaseRequisitionItems
+            .Where(item => request.InventoryPurchaseRequisitionItemId.Contains(item.Id))
+            .ToListAsync();
 
-        var marketRequisition = mapper.Map<MarketRequisition>(request);
-        await context.MarketRequisitions.AddAsync(marketRequisition);
+        if (requisitionItems.Count != request.InventoryPurchaseRequisitionItemId.Count)
+            return Error.NotFound("Requisition.ItemNotFound", "One or more requisition items were not found.");
 
-        requisitionItem.Status = RequestStatus.Sourced;
-        context.InventoryPurchaseRequisitionItems.Update(requisitionItem);
+        var marketRequisitions = new List<MarketRequisition>();
+
+        foreach (var requisitionItem in requisitionItems)
+        {
+            var marketRequisition = mapper.Map<MarketRequisition>(request);
+
+            // Ensure correct linkage
+            marketRequisition.InventoryPurchaseRequisitionItemId = requisitionItem.Id;
+
+            marketRequisitions.Add(marketRequisition);
+
+            requisitionItem.Status = RequestStatus.Sourced;
+        }
+
+        await context.MarketRequisitions.AddRangeAsync(marketRequisitions);
+        context.InventoryPurchaseRequisitionItems.UpdateRange(requisitionItems);
 
         await context.SaveChangesAsync();
+
         return Result.Success();
     }
 
@@ -627,6 +646,91 @@ public class InventoryProcurementRepository(
 
         context.MemoItems.Update(memoItem);
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+        public async Task<Result> UploadStockItems(ImportItemsRequest itemsRequest)
+    {
+        var file = itemsRequest.ItemFile;
+
+        if (file == null || file.Length == 0)
+            return Error.Validation("ItemsUpload.EmptyFile", "No file uploaded.");
+
+        var extension = Path.GetExtension(file.FileName);
+        if (extension != ".xlsx" && extension != ".xls")
+        {
+            return Error.Validation(
+                "ItemsUpload.InvalidFileType",
+                "Invalid file type. Only .xlsx or .xls files are allowed."
+            );
+        }
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+        if (worksheet?.Dimension == null || worksheet.Dimension.End.Row < 2)
+        {
+            return Error.Validation(
+                "ItemsFile.Empty",
+                "The uploaded Excel file is empty or does not contain any records."
+            );
+        }
+
+        var itemsToUpload = new List<StockEntry>();
+
+        var lastRow = worksheet.Dimension.End.Row;
+        while (lastRow >= 2 && string.IsNullOrWhiteSpace(worksheet.Cells[lastRow, 1].Text))
+        {
+            lastRow--;
+        }
+
+        for (var row = 2; row <= lastRow; row++)
+        {
+            var itemCode = worksheet.Cells[row, 3].Text?.Trim();
+            var memoCode = worksheet.Cells[row, 5].Text?.Trim();
+            var quantity = worksheet.Cells[row, 6].Text?.Trim();
+
+            if (string.IsNullOrWhiteSpace(memoCode) || string.IsNullOrWhiteSpace(itemCode) )
+            {
+                return Error.Validation(
+                    "ItemUpload.MissingFields",
+                    $"Missing required fields at row {row}. Memo Code and Item Code are required."
+                );
+            }
+
+            var itemExists = await context.Items.AnyAsync(i => i.Code == itemCode);
+            if (itemExists) continue;
+            
+            var item = await context.Items.FirstOrDefaultAsync(i => i.Code == memoCode).Select(i => i.Id);
+            var memo = await context.Memos.FirstOrDefaultAsync(m => m.Code == memoCode).Select(m => m.Id);
+
+            if (!int.TryParse(quantity, out var stockQuantity) && stockQuantity <= 0)
+            {
+                return Error.Validation(
+                    "ItemUpload.InvalidQuantity",
+                    $"Invalid Quantity at row {row}. Quantity must be a number greater than 0."
+                );
+            }
+
+            itemsToUpload.Add(new StockEntry
+            {
+                ItemId = item,
+                MemoId = memo,
+                Quantity = stockQuantity
+            });
+        }
+
+        if (itemsToUpload.Count == 0)
+            return Error.Validation("ItemsUpload.NoneAdded", "No new items were uploaded.");
+
+        await context.StockEntries.AddRangeAsync(itemsToUpload);
+        await context.SaveChangesAsync();
+
         return Result.Success();
     }
 
