@@ -54,14 +54,12 @@ public enum JobRequestStatus
 {
     Pending,
     Acknowledged,
-    AssignedInternal,
-    InProgressInternal,
-    CompletedInternal,
+    Assigned,
+    JobStarted,
+    Completed,
     SentToExternal,
     QuotationReceived,
     ContractorSelected,
-    InProgressExternal,
-    CompletedExternal,
     Approved,
     Cancelled
 }

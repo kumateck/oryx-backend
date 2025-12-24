@@ -7,15 +7,30 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
+/// <summary>
+/// Service Management API
+/// </summary>
+/// <remarks>
+/// Manages service definitions that can be used when creating job orders for external contractors.
+/// Services represent types of work that can be performed (e.g., "Equipment Repair", "Installation", "Maintenance").
+/// </remarks>
 [ApiController]
 [Authorize]
 [Route("api/v{version:apiVersion}/services")]
-public class
-    ServiceController(IServiceRepository repository) : ControllerBase
+[Tags("Services")]
+public class ServiceController(IServiceRepository repository) : ControllerBase
 {
     /// <summary>
-    /// Creates a service
+    /// Creates a new service
     /// </summary>
+    /// <remarks>
+    /// Creates a service definition that can be used when creating job orders. Services help categorize 
+    /// and organize different types of work that can be outsourced to contractors.
+    /// </remarks>
+    /// <param name="request">Service creation details</param>
+    /// <returns>Returns the ID of the created service</returns>
+    /// <response code="200">Service created successfully</response>
+    /// <response code="400">Invalid request data or service already exists</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

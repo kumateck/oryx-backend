@@ -7,14 +7,31 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
+/// <summary>
+/// Service Provider Management API
+/// </summary>
+/// <remarks>
+/// Manages service providers/contractors that can be used for external job orders. Service providers 
+/// are external companies or individuals that can perform services. They can be associated with 
+/// multiple services and can submit quotations for job orders.
+/// </remarks>
 [ApiController]
 [Route("api/v{version:apiVersion}/service-providers")]
 [Authorize]
+[Tags("Service Providers")]
 public class ServiceProviderController(IServiceProviderRepository repository) : ControllerBase
 {
     /// <summary>
-    /// Creates a service provider
+    /// Creates a new service provider
     /// </summary>
+    /// <remarks>
+    /// Creates a service provider (contractor) that can be used when sending job orders externally. 
+    /// Service providers can be associated with multiple services and will receive RFQs for job orders.
+    /// </remarks>
+    /// <param name="request">Service provider creation details</param>
+    /// <returns>Returns the ID of the created service provider</returns>
+    /// <response code="200">Service provider created successfully</response>
+    /// <response code="400">Invalid request data or provider already exists</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

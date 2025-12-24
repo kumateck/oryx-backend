@@ -18,6 +18,8 @@ public class JobOrderDto : BaseDto
     public List<ServiceQuotationDto> Quotations { get; set; } = [];
     public Guid? SelectedQuotationId { get; set; }
     public ServiceQuotationDto SelectedQuotation { get; set; }
+    public Guid? ServiceProformaInvoiceId { get; set; }
+    public ServiceProformaInvoiceDto ServiceProformaInvoice { get; set; }
     public ServiceMemoDto ServiceMemo { get; set; }
     public JobOrderExecutionDto Execution { get; set; }
 }

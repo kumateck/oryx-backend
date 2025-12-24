@@ -16,9 +16,18 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
 {
     public async Task<Result<Guid>> CreateServiceMemo(CreateServiceMemoRequest request)
     {
-        var jobOrder = await context.JobOrders.FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
+        var jobOrder = await context.JobOrders
+            .Include(j => j.ServiceProformaInvoice)
+            .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
         if (jobOrder is null)
             return Error.NotFound("JobOrder.NotFound", "Job order not found");
+
+        // Check if proforma invoice has been received and approved
+        if (jobOrder.ServiceProformaInvoice == null)
+            return Error.Validation("ProformaInvoice.NotRequested", "Proforma invoice must be requested before creating service memo");
+
+        if (jobOrder.ServiceProformaInvoice.Status != ServiceProformaInvoiceStatus.Approved)
+            return Error.Validation("ProformaInvoice.NotApproved", "Proforma invoice must be approved before creating service memo");
 
         var quotation = await context.ServiceQuotations
             .AsSplitQuery()
@@ -134,7 +143,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
         context.ServiceMemos.Update(memo);
 
         // Update job request status
-        await jobRequestRepository.UpdateJobRequestStatus(memo.JobOrder.JobRequestId, JobRequestStatus.InProgressExternal);
+        await jobRequestRepository.UpdateJobRequestStatus(memo.JobOrder.JobRequestId, JobRequestStatus.JobStarted);
 
         await context.SaveChangesAsync();
 
