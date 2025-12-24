@@ -118,7 +118,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
-        var result = await repository.GetJobRequests(page, pageSize, searchQuery, status, handlingType, Guid.Parse(departmentId));
+        var result = await repository.GetJobRequests(page, pageSize, searchQuery, status, handlingType, 
+            Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
