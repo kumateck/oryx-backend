@@ -72,7 +72,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateJobRequest(request, Guid.Parse(departmentId), Guid.Parse(userId));
+        var result = await repository.CreateJobRequest(request, Guid.Parse(departmentId),
+            Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -118,7 +119,7 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
-        var result = await repository.GetJobRequests(page, pageSize, searchQuery, status, handlingType, 
+        var result = await repository.GetJobRequests(page, pageSize, searchQuery, status, handlingType,
             Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }

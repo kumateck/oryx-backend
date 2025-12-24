@@ -4,7 +4,7 @@ using DOMAIN.Entities.ItemStockRequisitions;
 
 namespace DOMAIN.Entities.Items;
 
-public class  Item : BaseEntity
+public class Item : BaseEntity
 {
     public string Name { get; set; }
     public string Code { get; set; }

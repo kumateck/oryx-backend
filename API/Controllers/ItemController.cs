@@ -25,7 +25,7 @@ public class ItemController(IItemRepository repository) : ControllerBase
         var result = await repository.CreateItem(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Uploads items from an Excel file
     /// </summary>

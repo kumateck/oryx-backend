@@ -144,7 +144,7 @@ public class InventoryProcurementRepository(
                         Quantity = groupItem.item.Quantity,
                     });
                 }
-                
+
                 context.SourceInventoryRequisitions.Update(existingSourceRequisition);
             }
             else
@@ -163,14 +163,14 @@ public class InventoryProcurementRepository(
                 await context.SourceInventoryRequisitions.AddAsync(requisitionForVendor);
             }
         }
-        
+
         var changePurchaseRequisitionStatus = await context.InventoryPurchaseRequisitions.FindAsync(request.InventoryPurchaseRequisitionId);
         if (changePurchaseRequisitionStatus != null)
         {
             changePurchaseRequisitionStatus.Status = InventoryPurchaseRequisitionStatus.Complete;
             context.InventoryPurchaseRequisitions.Update(changePurchaseRequisitionStatus);
         }
-        
+
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -657,8 +657,8 @@ public class InventoryProcurementRepository(
         await context.SaveChangesAsync();
         return Result.Success();
     }
-    
-        public async Task<Result> UploadStockItems(ImportItemsRequest itemsRequest)
+
+    public async Task<Result> UploadStockItems(ImportItemsRequest itemsRequest)
     {
         var file = itemsRequest.ItemFile;
 
@@ -704,7 +704,7 @@ public class InventoryProcurementRepository(
             var memoCode = worksheet.Cells[row, 5].Text?.Trim();
             var quantity = worksheet.Cells[row, 6].Text?.Trim();
 
-            if (string.IsNullOrWhiteSpace(memoCode) || string.IsNullOrWhiteSpace(itemCode) )
+            if (string.IsNullOrWhiteSpace(memoCode) || string.IsNullOrWhiteSpace(itemCode))
             {
                 return Error.Validation(
                     "ItemUpload.MissingFields",
@@ -714,7 +714,7 @@ public class InventoryProcurementRepository(
 
             var itemExists = await context.Items.AnyAsync(i => i.Code == itemCode);
             if (itemExists) continue;
-            
+
             var item = await context.Items.FirstOrDefaultAsync(i => i.Code == memoCode).Select(i => i.Id);
             var memo = await context.Memos.FirstOrDefaultAsync(m => m.Code == memoCode).Select(m => m.Id);
 

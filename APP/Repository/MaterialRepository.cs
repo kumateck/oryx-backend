@@ -2824,7 +2824,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             mapper.Map<MaterialRejectDto>
         );
     }
-    
+
     public async Task<Result> ImportMaterialStockFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -2853,9 +2853,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetRaw(string h) => headers.TryGetValue(h, out var col) ? 
+            string GetRaw(string h) => headers.TryGetValue(h, out var col) ?
                 worksheet.Cells[row, col].Text.Trim() : null;
-            
+
             var b = GetRaw("Batch No.");
             var s = GetRaw("Shelves");
             var u = GetRaw("UOM");
@@ -2866,17 +2866,17 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // --- 2. FETCH FILTERED LOOKUPS & CHECK FOR DB DUPLICATES ---
-        
+
         // UOM Lookup
         var uomData = await context.UnitOfMeasures
             .Where(u => excelUomSymbols.Contains(u.Symbol))
             .AsNoTracking().ToListAsync();
-        
+
         if (uomData.GroupBy(u => u.Symbol.Trim())
             .Any(g => g.Count() > 1))
-            return Error.Validation("UOM.Duplicate", 
+            return Error.Validation("UOM.Duplicate",
                 "System error: Multiple UOMs found with the same symbol in database.");
-        
+
         var uomLookup = uomData.ToDictionary(u => u.Symbol.Trim(),
             u => u.Id, StringComparer.OrdinalIgnoreCase);
 
@@ -2886,7 +2886,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .AsNoTracking().ToListAsync();
 
         if (batchData.GroupBy(b => b.BatchNumber.Trim()).Any(g => g.Count() > 1))
-            return Error.Validation("Batch.Duplicate", 
+            return Error.Validation("Batch.Duplicate",
                 "System error: Multiple Material Batches found with the same Number in database.");
 
         var batchLookup = batchData.ToDictionary(b =>
@@ -2905,12 +2905,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (shelfHierarchy.GroupBy(x => $"{x.WarehouseName}|{x.ShelfCode}")
             .Any(g => g.Count() > 1))
-            return Error.Validation("Shelf.Duplicate", 
+            return Error.Validation("Shelf.Duplicate",
                 "System error: Multiple shelves found with same code in the same warehouse.");
 
         var shelfLookup = shelfHierarchy.ToDictionary(
-            x => $"{x.WarehouseName}|{x.ShelfCode}", 
-            x => x.ShelfId, 
+            x => $"{x.WarehouseName}|{x.ShelfCode}",
+            x => x.ShelfId,
             StringComparer.OrdinalIgnoreCase);
 
         // --- 3. PROCESS ROWS ---
@@ -2930,13 +2930,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             // Validation: Batch
             if (string.IsNullOrEmpty(batchNo) || !batchLookup.TryGetValue(batchNo, out var batchId))
-                return Error.NotFound("MaterialBatch", 
+                return Error.NotFound("MaterialBatch",
                     $"Row {row}: Batch Number '{batchNo}' was not found.");
 
             // Validation: Shelf
             var shelfKey = $"{warehouseName}|{shelfCode}";
             if (string.IsNullOrEmpty(shelfCode) || !shelfLookup.TryGetValue(shelfKey, out var shelfId))
-                return Error.NotFound("Shelf", 
+                return Error.NotFound("Shelf",
                     $"Row {row}: Shelf '{shelfCode}' not found in Warehouse '{warehouseName}'.");
 
             // Validation: UOM
@@ -2944,7 +2944,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             if (!string.IsNullOrEmpty(uomSymbol))
             {
                 if (uomLookup.TryGetValue(uomSymbol, out var foundId)) uomId = foundId;
-                else return Error.NotFound("UOM", 
+                else return Error.NotFound("UOM",
                     $"Row {row}: UOM Symbol '{uomSymbol}' not found.");
             }
 
