@@ -20,6 +20,12 @@ public class CreateJobRequest
 
     [Required]
     public DateTime PreferredCompletionDate { get; set; }
+
+    [StringLength(500)]
+    public string Item { get; set; }
+
+    [StringLength(500)]
+    public string ItemNumber { get; set; }
 }
 
 public class UpdateJobRequestRequest
@@ -29,6 +35,8 @@ public class UpdateJobRequestRequest
     public string EquipmentInstrumentNumber { get; set; }
     public string DescriptionOfWork { get; set; }
     public DateTime? PreferredCompletionDate { get; set; }
+    public string Item { get; set; }
+    public string ItemNumber { get; set; }
 }
 
 public class AssignInternalJobRequest
