@@ -17,6 +17,8 @@ public class JobRequestDto : WithAttachment
     public JobRequestStatus Status { get; set; }
     public string DescriptionOfWork { get; set; }
     public DateTime PreferredCompletionDate { get; set; }
+    public string Item { get; set; }
+    public string ItemNumber { get; set; }
     public UserDto IssuedBy { get; set; }
     public JobHandlingType HandlingType { get; set; }
 
