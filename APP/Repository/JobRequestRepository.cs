@@ -35,12 +35,8 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         return jobRequest.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetJobRequests(int page,
-        int pageSize,
-        string searchQuery = null,
-        JobRequestStatus? status = null,
-        JobHandlingType? handlingType = null,
-        Guid? departmentId = null)
+    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetJobRequests(int page, int pageSize, 
+        string searchQuery = null, JobRequestStatus? status = null, JobHandlingType? handlingType = null, Guid? departmentId = null)
     {
         var query = context.JobRequests
             .AsSplitQuery()
@@ -167,6 +163,7 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
         return jobExecution.Id;
     }
+
 
     public async Task<Result> UpdateJobRequestStatus(Guid id, JobRequestStatus status)
     {

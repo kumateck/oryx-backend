@@ -28,6 +28,12 @@ public class JobRequest : BaseEntity
 
     public DateTime PreferredCompletionDate { get; set; }
 
+    [StringLength(500)]
+    public string Item { get; set; }
+
+    [StringLength(500)]
+    public string ItemNumber { get; set; }
+
     public Guid IssuedById { get; set; }
     public User IssuedBy { get; set; }
 
