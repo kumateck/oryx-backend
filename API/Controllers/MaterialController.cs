@@ -767,7 +767,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.MoveMaterialBatchToWarehouseFromDistribute(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Imports material stock from an Excel file.
     /// </summary>

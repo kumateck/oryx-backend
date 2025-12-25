@@ -3,11 +3,9 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.BillOfMaterials;
-using DOMAIN.Entities.Forms;
-using DOMAIN.Entities.Materials;
-using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
@@ -628,7 +626,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     }
 
     // Get paginated list of Equipments
-    public async Task<Result<Paginateable<IEnumerable<EquipmentDto>>>> GetEquipments(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<EquipmentDto>>>> GetEquipments(int page,
+        int pageSize, string searchQuery)
     {
         var query = context.Equipments
             .AsSplitQuery()
@@ -638,7 +637,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, e => e.Name, e => e.MachineId);
+            query = query.WhereSearch(searchQuery, e => e.Name,
+                e => e.EquipmentNumber);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -978,6 +978,125 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         }
 
         await context.ProductPackages.AddRangeAsync(packages);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result> ImportProductStockFromExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null) return UploadErrors.WorksheetNotFound;
+
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            var header = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrEmpty(header)) headers[header] = col;
+        }
+
+        // 1. SCAN EXCEL FOR FILTER CRITERIA
+        var excelProductCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var excelPackingStyles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            string GetRaw(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+            var pCode = GetRaw("Product Code");
+            var pStyle = GetRaw("Packing Style");
+
+            if (!string.IsNullOrEmpty(pCode)) excelProductCodes.Add(pCode);
+            if (!string.IsNullOrEmpty(pStyle)) excelPackingStyles.Add(pStyle);
+        }
+
+        // 2. FETCH DEFAULTS AND LOOKUPS
+        // Fetch a default Production Schedule Product and Step (As requested)
+        var defaultScheduleProduct = await context.ProductionScheduleProducts.FirstOrDefaultAsync();
+        var defaultStep = await context.ProductionActivitySteps.FirstOrDefaultAsync();
+
+        if (defaultScheduleProduct == null || defaultStep == null)
+            return Error.Validation("Production.Config", "Missing default Production Schedule or Step in the system.");
+
+        // Fetch Product Packing with Product Hierarchy
+        var packingData = await context.ProductPackings
+            .Include(pp => pp.Product)
+            .Where(pp => excelPackingStyles.Contains(pp.Name) && excelProductCodes.Contains(pp.Product.Code))
+            .AsNoTracking()
+            .ToListAsync();
+
+        // Create a composite lookup: "ProductCode|PackingName"
+        var packingLookup = packingData.ToDictionary(
+            pp => $"{pp.Product.Code.Trim()}|{pp.Name.Trim()}",
+            pp => pp,
+            StringComparer.OrdinalIgnoreCase);
+
+        var manufacturingRecords = new List<BatchManufacturingRecord>();
+        var packagingRecords = new List<BatchPackagingRecord>();
+
+        // 3. PROCESS ROWS
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            string GetCell(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+
+            var productCode = GetCell("Product Code");
+            var packingStyle = GetCell("Packing Style");
+            var batchNo = GetCell("Batch No.");
+
+            if (string.IsNullOrEmpty(productCode) || string.IsNullOrEmpty(batchNo)) continue;
+
+            // Resolve Packing & Product
+            var packingKey = $"{productCode}|{packingStyle}";
+            if (!packingLookup.TryGetValue(packingKey, out var packing))
+            {
+                return Error.NotFound("ProductPacking", $"Row {row}: Packing style '{packingStyle}' for Product '{productCode}' not found.");
+            }
+
+            // Parse shared data
+            decimal.TryParse(GetCell("Total Quantity"), out var quantity);
+            DateTime.TryParse(GetCell("Manufacturing Date"), out var mfgDate);
+            DateTime.TryParse(GetCell("Expiry Date"), out var expDate);
+
+            // 4. Create Manufacturing Record
+            manufacturingRecords.Add(new BatchManufacturingRecord
+            {
+                Id = Guid.NewGuid(),
+                ProductionScheduleProductId = defaultScheduleProduct.Id,
+                ProductionActivityStepId = defaultStep.Id,
+                BatchNumber = batchNo,
+                ManufacturingDate = mfgDate,
+                ExpiryDate = expDate,
+                BatchQuantity = quantity,
+                Status = BatchManufacturingStatus.Approved, // Set appropriate default status
+                IssuedDate = DateTime.UtcNow
+            });
+
+            // 5. Create Packaging Record
+            packagingRecords.Add(new BatchPackagingRecord
+            {
+                Id = Guid.NewGuid(),
+                ProductionScheduleProductId = defaultScheduleProduct.Id,
+                ProductionActivityStepId = defaultStep.Id,
+                ProductPackingId = packing.Id,
+                BatchNumber = batchNo,
+                ManufacturingDate = mfgDate,
+                ExpiryDate = expDate,
+                BatchQuantity = quantity,
+                IssuedDate = DateTime.UtcNow
+            });
+        }
+
+        // 6. SAVE EVERYTHING
+        await context.BatchManufacturingRecords.AddRangeAsync(manufacturingRecords);
+        await context.BatchPackagingRecords.AddRangeAsync(packagingRecords);
         await context.SaveChangesAsync();
 
         return Result.Success();

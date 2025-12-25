@@ -46,7 +46,8 @@ public class JwtMiddleware(RequestDelegate next, IMemoryCache cache)
                     cachedData = (UserId: userId, DepartmentId: user.DepartmentId.ToString(), RoleIds: roleIds);
                     cache.Set(token, cachedData, new MemoryCacheEntryOptions
                     {
-                        SlidingExpiration = TimeSpan.FromMinutes(5)
+                        SlidingExpiration = TimeSpan.FromMinutes(5),
+                        AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(30),
                     });
                 }
             }

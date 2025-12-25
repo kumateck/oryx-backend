@@ -5,6 +5,7 @@ using APP.IRepository;
 using DOMAIN.Entities.Items.Requisitions;
 using APP.Utils;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.VendorQuotations;
@@ -214,7 +215,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
 
     #region Trusted Vendor Specific
 
-    /// <summary>
+     /// <summary>
     /// Sends a quotation request to a specified trusted vendor.
     /// </summary>
     /// <param name="vendorId">The ID of the vendor to send the quotation request to.</param>
@@ -420,6 +421,17 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     {
         return TypedResults.Ok(await repository.GenerateMemoCode());
     }
+
+    [HttpPost("upload-stock-entries/")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadStockEntries([FromForm] ImportItemsRequest request)
+    {
+        var result = await repository.UploadStockItems(request);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+
 
     #endregion
 }

@@ -5,6 +5,7 @@ using AutoMapper;
 using DOMAIN.Entities.Items;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 using SHARED;
 
 namespace APP.Repository;
@@ -29,6 +30,132 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
         await context.Items.AddAsync(item);
         await context.SaveChangesAsync();
         return item.Id;
+    }
+
+    public async Task<Result> UploadItems(ImportItemsRequest itemsRequest)
+    {
+        var file = itemsRequest.ItemFile;
+
+        if (file == null || file.Length == 0)
+            return Error.Validation("ItemsUpload.EmptyFile", "No file uploaded.");
+
+        var extension = Path.GetExtension(file.FileName);
+        if (extension != ".xlsx" && extension != ".xls")
+        {
+            return Error.Validation(
+                "ItemsUpload.InvalidFileType",
+                "Invalid file type. Only .xlsx or .xls files are allowed."
+            );
+        }
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+        if (worksheet?.Dimension == null || worksheet.Dimension.End.Row < 2)
+        {
+            return Error.Validation(
+                "ItemsFile.Empty",
+                "The uploaded Excel file is empty or does not contain any records."
+            );
+        }
+
+        var itemsToUpload = new List<Item>();
+
+        var lastRow = worksheet.Dimension.End.Row;
+        while (lastRow >= 2 && string.IsNullOrWhiteSpace(worksheet.Cells[lastRow, 1].Text))
+        {
+            lastRow--;
+        }
+
+        for (var row = 2; row <= lastRow; row++)
+        {
+            var storeType = worksheet.Cells[row, 1].Text?.Replace(" ", "").Trim();
+            var itemCode = worksheet.Cells[row, 3].Text?.Trim();
+            var categoryName = worksheet.Cells[row, 4].Text?.Replace(" ", "").Trim();
+            var uomName = worksheet.Cells[row, 5].Text?.Trim();
+            var classificationText = worksheet.Cells[row, 6].Text?.Replace(" ", "").Trim();
+            var minimumLevel = worksheet.Cells[row, 7].Text?.Trim();
+            var reorderLevelText = worksheet.Cells[row, 8].Text?.Trim();
+            var maximumLevelText = worksheet.Cells[row, 9].Text?.Trim();
+
+            if (string.IsNullOrWhiteSpace(storeType) ||
+                string.IsNullOrWhiteSpace(itemCode) ||
+                string.IsNullOrWhiteSpace(uomName) ||
+                string.IsNullOrWhiteSpace(classificationText))
+            {
+                return Error.Validation(
+                    "ItemUpload.MissingFields",
+                    $"Missing required fields at row {row}."
+                );
+            }
+
+            if (!Enum.TryParse<Store>(storeType, true, out var inventoryStore))
+            {
+                return Error.Validation(
+                    "ItemUpload.InvalidStore",
+                    $"Invalid store '{storeType}' at row {row}."
+                );
+            }
+
+            if (!Enum.TryParse<InventoryClassification>(classificationText, true, out var inventoryClassification))
+            {
+                return Error.Validation(
+                    "ItemUpload.InvalidClassification",
+                    $"Invalid classification '{classificationText}' at row {row}."
+                );
+            }
+
+            var uom = await context.UnitOfMeasures
+                .FirstOrDefaultAsync(u => u.Name == uomName);
+
+            var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(ic => ic.Name == categoryName);
+
+            if (uom == null)
+            {
+                return Error.Validation(
+                    "ItemUpload.InvalidUoM",
+                    $"Unit of Measure '{uomName}' not found at row {row}."
+                );
+            }
+
+            var itemExists = await context.Items.AnyAsync(i => i.Code == itemCode);
+            if (itemExists) continue;
+
+            if (!int.TryParse(minimumLevel, out var minLevel) ||
+                !int.TryParse(reorderLevelText, out var reorderLevel) ||
+                !int.TryParse(maximumLevelText, out var maxLevel))
+            {
+                return Error.Validation(
+                    "ItemUpload.InvalidLevels",
+                    $"Invalid inventory levels at row {row}. Levels must be integers."
+                );
+            }
+
+            itemsToUpload.Add(new Item
+            {
+                Store = inventoryStore,
+                Code = itemCode,
+                Classification = inventoryClassification,
+                ItemCategoryId = itemCategory?.Id,
+                MinimumLevel = minLevel,
+                ReorderLevel = reorderLevel,
+                MaximumLevel = maxLevel,
+                UnitOfMeasureId = uom.Id
+            });
+        }
+
+        if (itemsToUpload.Count == 0)
+            return Error.Validation("ItemsUpload.NoneAdded", "No new items were uploaded.");
+
+        await context.Items.AddRangeAsync(itemsToUpload);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
     }
 
     public async Task<Result<Paginateable<IEnumerable<ItemDto>>>> GetItems(int page, int pageSize,

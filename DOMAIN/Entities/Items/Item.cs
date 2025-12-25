@@ -25,8 +25,8 @@ public class Item : BaseEntity
 
 public enum Store
 {
-    IT,
-    General,
+    ITStore,
+    GeneralStore,
     EquipmentStore,
     ReagentStore
 }

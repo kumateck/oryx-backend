@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace DOMAIN.Entities.Items;
 
@@ -23,9 +24,12 @@ public class CreateItemsRequest
 
     [Required(ErrorMessage = "Status is required")]
     public bool IsActive { get; set; }
-
     public Guid? ItemCategoryId { get; set; }
 
-
     public string Description { get; set; }
+}
+
+public class ImportItemsRequest
+{
+    [Required] public IFormFile ItemFile { get; set; }
 }

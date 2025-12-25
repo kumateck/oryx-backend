@@ -48,7 +48,8 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.DescriptionOfWork, q => q.Location);
+            query = query.WhereSearch(searchQuery, q => q.DescriptionOfWork,
+                q => q.Location);
         }
 
         if (status.HasValue)
@@ -67,7 +68,7 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
-            entity => mapper.Map<JobRequestDto>(entity));
+            mapper.Map<JobRequestDto>);
     }
 
     public async Task<Result<JobRequestDto>> GetJobRequest(Guid id)
