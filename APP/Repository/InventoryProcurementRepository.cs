@@ -160,7 +160,11 @@ public class InventoryProcurementRepository(
                         Quantity = x.item.Quantity,
                     }).ToList(),
                 };
+
+                var exists = await context.SourceInventoryRequisitions.AnyAsync(r => r.InventoryPurchaseRequisitionId == request.InventoryPurchaseRequisitionId && r.VendorId == vendorId);
+                if (exists) return Error.Conflict("SourceRequisition", $"Source requisition with already exists.");
                 await context.SourceInventoryRequisitions.AddAsync(requisitionForVendor);
+                await SendQuotationToVendor(vendorId);
             }
         }
 
