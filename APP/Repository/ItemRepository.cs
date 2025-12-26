@@ -110,8 +110,13 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
                 );
             }
 
+            var name = uomName[..uomName.IndexOf('(')].Trim();
+            var symbol = uomName[(uomName.IndexOf('(') + 1)..^1].Trim();
+
             var uom = await context.UnitOfMeasures
-                .FirstOrDefaultAsync(u => u.Name == uomName);
+                .FirstOrDefaultAsync(u =>
+                    u.Name == name &&
+                    u.Symbol == symbol);
 
             var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(ic => ic.Name == categoryName);
 
