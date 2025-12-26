@@ -110,78 +110,100 @@ public class InventoryProcurementRepository(
 
     // --- Sourcing Logic ---
 
-    public async Task<Result> CreateSourceRequisition(CreateSourceInventoryRequisition request, Guid userId)
+    public async Task<Result> CreateSourceRequisition(
+        CreateSourceInventoryRequisition request,
+        Guid userId)
     {
-        var requisition = await context.InventoryPurchaseRequisitions
-            .AsSplitQuery()
-            .Include(r => r.Items)
-            .FirstOrDefaultAsync(r => r.Id == request.InventoryPurchaseRequisitionId);
+        await using var transaction = await context.Database.BeginTransactionAsync();
 
-        if (requisition is null)
-            return RequisitionErrors.NotFound(request.InventoryPurchaseRequisitionId);
-
-        var vendorGroupedItems = request.Items
-            .SelectMany(item => item.Vendors.Select(vendor => new { item, vendor }))
-            .GroupBy(x => x.vendor.VendorId);
-
-        foreach (var vendorGroup in vendorGroupedItems)
+        try
         {
-            var vendorId = vendorGroup.Key;
+            var requisition = await context.InventoryPurchaseRequisitions
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r =>
+                    r.Id == request.InventoryPurchaseRequisitionId);
 
-            var existingSourceRequisition = await context.SourceInventoryRequisitions
-                .AsSplitQuery()
-                .Include(sr => sr.Items)
-                .FirstOrDefaultAsync(sr => sr.VendorId == vendorId && sr.SentQuotationRequestAt == null);
+            if (requisition is null)
+                return RequisitionErrors.NotFound(request.InventoryPurchaseRequisitionId);
 
-            if (existingSourceRequisition is not null)
+            var vendorGroupedItems = request.Items
+                .SelectMany(i => i.Vendors.Select(v => new { i, v }))
+                .GroupBy(x => x.v.VendorId);
+
+            foreach (var vendorGroup in vendorGroupedItems)
             {
-                foreach (var groupItem in vendorGroup)
+                var vendorId = vendorGroup.Key;
+
+                var existing = await context.SourceInventoryRequisitions
+                    .Include(sr => sr.Items)
+                    .FirstOrDefaultAsync(sr =>
+                        sr.VendorId == vendorId &&
+                        sr.SentQuotationRequestAt == null);
+
+                if (existing != null)
                 {
-                    existingSourceRequisition.Items.Add(new SourceInventoryRequisitionItem
+                    foreach (var gi in vendorGroup)
                     {
-                        ItemId = groupItem.item.ItemId,
-                        UoMId = groupItem.item.UoMId,
-                        Quantity = groupItem.item.Quantity,
-                    });
+                        existing.Items.Add(new SourceInventoryRequisitionItem
+                        {
+                            ItemId = gi.i.ItemId,
+                            UoMId = gi.i.UoMId,
+                            Quantity = gi.i.Quantity
+                        });
+                    }
                 }
-
-                context.SourceInventoryRequisitions.Update(existingSourceRequisition);
-            }
-            else
-            {
-                var requisitionForVendor = new SourceInventoryRequisition
+                else
                 {
-                    InventoryPurchaseRequisitionId = request.InventoryPurchaseRequisitionId,
-                    VendorId = vendorId,
-                    Items = vendorGroup.Select(x => new SourceInventoryRequisitionItem
-                    {
-                        ItemId = x.item.ItemId,
-                        UoMId = x.item.UoMId,
-                        Quantity = x.item.Quantity,
-                    }).ToList(),
-                };
+                    var exists = await context.SourceInventoryRequisitions.AnyAsync(r =>
+                        r.InventoryPurchaseRequisitionId ==
+                        request.InventoryPurchaseRequisitionId &&
+                        r.VendorId == vendorId);
 
-                var exists = await context.SourceInventoryRequisitions.AnyAsync(r => r.InventoryPurchaseRequisitionId == request.InventoryPurchaseRequisitionId && r.VendorId == vendorId);
-                if (exists) return Error.Conflict("SourceRequisition", $"Source requisition with already exists.");
-                await context.SourceInventoryRequisitions.AddAsync(requisitionForVendor);
-                await SendQuotationToVendor(vendorId);
+                    if (exists)
+                        return Error.Conflict(
+                            "SourceRequisition",
+                            "Source requisition already exists for this vendor.");
+
+                    await context.SourceInventoryRequisitions.AddAsync(
+                        new SourceInventoryRequisition
+                        {
+                            InventoryPurchaseRequisitionId =
+                                request.InventoryPurchaseRequisitionId,
+                            VendorId = vendorId,
+                            Items = vendorGroup.Select(x =>
+                                new SourceInventoryRequisitionItem
+                                {
+                                    ItemId = x.i.ItemId,
+                                    UoMId = x.i.UoMId,
+                                    Quantity = x.i.Quantity
+                                }).ToList()
+                        });
+                }
             }
+            
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
-
-        var changePurchaseRequisitionStatus = await context.InventoryPurchaseRequisitions.FindAsync(request.InventoryPurchaseRequisitionId);
-        if (changePurchaseRequisitionStatus != null)
+        catch
         {
-            changePurchaseRequisitionStatus.Status = InventoryPurchaseRequisitionStatus.Complete;
-            context.InventoryPurchaseRequisitions.Update(changePurchaseRequisitionStatus);
+            await transaction.RollbackAsync();
+            throw;
+        }
+        
+        foreach (var vendorId in request.Items
+            .SelectMany(i => i.Vendors)
+            .Select(v => v.VendorId)
+            .Distinct())
+        {
+            await SendQuotationToVendor(vendorId);
         }
 
-        await context.SaveChangesAsync();
         return Result.Success();
     }
 
     public async Task<Result> CreateMarketRequisition(CreateMarketRequisition request, Guid userId)
     {
-        if (request.InventoryPurchaseRequisitionItemId == null || !request.InventoryPurchaseRequisitionItemId.Any())
+        if (request.InventoryPurchaseRequisitionItemId == null || request.InventoryPurchaseRequisitionItemId.Count == 0)
             return Error.Validation("Requisition.EmptyItems", "No requisition items provided.");
 
         var requisitionItems = await context.InventoryPurchaseRequisitionItems
