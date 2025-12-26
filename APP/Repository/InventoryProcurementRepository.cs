@@ -727,6 +727,7 @@ public class InventoryProcurementRepository(
 
         for (var row = 2; row <= lastRow; row++)
         {
+            var itemName = worksheet.Cells[row, 1].Text?.Trim();
             var itemCode = worksheet.Cells[row, 3].Text?.Trim();
             var memoCode = worksheet.Cells[row, 5].Text?.Trim();
             var quantity = worksheet.Cells[row, 6].Text?.Trim();
@@ -738,9 +739,6 @@ public class InventoryProcurementRepository(
                     $"Missing required fields at row {row}. Memo Code and Item Code are required."
                 );
             }
-
-            var itemExists = await context.Items.AnyAsync(i => i.Code == itemCode);
-            if (itemExists) continue;
 
             var item = await context.Items.FirstOrDefaultAsync(i => i.Code == memoCode).Select(i => i.Id);
             var memo = await context.Memos.FirstOrDefaultAsync(m => m.Code == memoCode).Select(m => m.Id);
