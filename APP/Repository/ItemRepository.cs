@@ -75,6 +75,7 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
         for (var row = 2; row <= lastRow; row++)
         {
             var storeType = worksheet.Cells[row, 1].Text?.Replace(" ", "").Trim();
+            var itemName = worksheet.Cells[row, 2].Text?.Trim();
             var itemCode = worksheet.Cells[row, 3].Text?.Trim();
             var categoryName = worksheet.Cells[row, 4].Text?.Replace(" ", "").Trim();
             var uomName = worksheet.Cells[row, 5].Text?.Trim();
@@ -143,6 +144,7 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
 
             itemsToUpload.Add(new Item
             {
+                Name = itemName,
                 Store = inventoryStore,
                 Code = itemCode,
                 Classification = inventoryClassification,
