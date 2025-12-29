@@ -690,16 +690,15 @@ public class InventoryProcurementRepository(
         var file = itemsRequest.ItemFile;
 
         if (file == null || file.Length == 0)
-            return Error.Validation("ItemsUpload.EmptyFile", "No file uploaded.");
+            return Error.Validation(
+                "ItemsUpload.EmptyFile",
+                "No file uploaded.");
 
         var extension = Path.GetExtension(file.FileName);
         if (extension != ".xlsx" && extension != ".xls")
-        {
             return Error.Validation(
                 "ItemsUpload.InvalidFileType",
-                "Invalid file type. Only .xlsx or .xls files are allowed."
-            );
-        }
+                "Only .xlsx or .xls files are allowed.");
 
         using var stream = new MemoryStream();
         await file.CopyToAsync(stream);
@@ -710,64 +709,77 @@ public class InventoryProcurementRepository(
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
 
         if (worksheet?.Dimension == null || worksheet.Dimension.End.Row < 2)
-        {
             return Error.Validation(
-                "ItemsFile.Empty",
-                "The uploaded Excel file is empty or does not contain any records."
-            );
-        }
+                "ItemsUpload.Empty",
+                "The uploaded Excel file contains no data.");
+        
+        var itemsLookup = await context.Items
+            .ToDictionaryAsync(i => i.Code, i => i.Id);
 
-        var itemsToUpload = new List<StockEntry>();
+        var memosLookup = await context.Memos
+            .ToDictionaryAsync(m => m.Code, m => m.Id);
+
+        var errors = new List<string>();
+        var stockEntries = new List<StockEntry>();
 
         var lastRow = worksheet.Dimension.End.Row;
         while (lastRow >= 2 && string.IsNullOrWhiteSpace(worksheet.Cells[lastRow, 1].Text))
-        {
             lastRow--;
-        }
 
         for (var row = 2; row <= lastRow; row++)
         {
             var memoCode = worksheet.Cells[row, 1].Text?.Trim();
             var itemCode = worksheet.Cells[row, 4].Text?.Trim();
-            var quantity = worksheet.Cells[row, 5].Text?.Trim();
-
-            if (string.IsNullOrWhiteSpace(memoCode) || string.IsNullOrWhiteSpace(itemCode))
+            var quantityText = worksheet.Cells[row, 5].Text?.Trim();
+            
+            if (string.IsNullOrWhiteSpace(memoCode) ||
+                string.IsNullOrWhiteSpace(itemCode))
             {
-                return Error.Validation(
-                    "ItemUpload.MissingFields",
-                    $"Missing required fields at row {row}. Memo Code and Item Code are required."
-                );
+                errors.Add($"Row {row}: Memo Code and Item Code are required.");
+                continue;
             }
             
-            // in case duplicates are not allowed
-            // var stockExists = await context.StockEntries
-            //     .AnyAsync(i => i.Memo.Code == memoCode && i.Item.Code == itemCode);
-            //
-            // if (stockExists) continue;
-
-            var item = await context.Items.FirstOrDefaultAsync(i => i.Code == memoCode).Select(i => i.Id);
-            var memo = await context.Memos.FirstOrDefaultAsync(m => m.Code == memoCode).Select(m => m.Id);
-
-            if (!int.TryParse(quantity, out var stockQuantity) && stockQuantity <= 0)
+            if (!itemsLookup.TryGetValue(itemCode, out var itemId))
             {
-                return Error.Validation(
-                    "ItemUpload.InvalidQuantity",
-                    $"Invalid Quantity at row {row}. Quantity must be a number greater than 0."
-                );
+                errors.Add($"Row {row}: Item with code '{itemCode}' does not exist.");
+                continue;
+            }
+            
+            if (!memosLookup.TryGetValue(memoCode, out var memoId))
+            {
+                errors.Add($"Row {row}: Memo with code '{memoCode}' does not exist.");
+                continue;
+            }
+            
+            if (!int.TryParse(quantityText, out var quantity) || quantity <= 0)
+            {
+                errors.Add($"Row {row}: Quantity must be a number greater than 0.");
+                continue;
             }
 
-            itemsToUpload.Add(new StockEntry
+            stockEntries.Add(new StockEntry
             {
-                ItemId = item,
-                MemoId = memo,
-                Quantity = stockQuantity
+                ItemId = itemId,
+                MemoId = memoId,
+                Quantity = quantity
             });
         }
+        
+        if (errors.Count != 0)
+        {
+            return Error.Validation(
+                "ItemsUpload.ValidationErrors",
+                string.Join(Environment.NewLine, errors));
+        }
 
-        if (itemsToUpload.Count == 0)
-            return Error.Validation("ItemsUpload.NoneAdded", "No new items were uploaded.");
-
-        await context.StockEntries.AddRangeAsync(itemsToUpload);
+        if (stockEntries.Count == 0)
+        {
+            return Error.Validation(
+                "ItemsUpload.NoneAdded",
+                "No valid stock entries were found in the file.");
+        }
+        
+        await context.StockEntries.AddRangeAsync(stockEntries);
         await context.SaveChangesAsync();
 
         return Result.Success();
