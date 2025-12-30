@@ -1135,7 +1135,9 @@ public class OryxMapper : Profile
 
         CreateMap<SourceInventoryRequisition, SourceInventoryRequisitionDto>();
         CreateMap<CreateSourceInventoryRequisitionItem, SourceInventoryRequisitionItemDto>();
-        CreateMap<SourceInventoryRequisition, VendorQuotationRequest>();
+        CreateMap<SourceInventoryRequisitionItem, SourceInventoryRequisitionItemDto>();
+        CreateMap<SourceInventoryRequisition, VendorQuotationRequest>()
+            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
 
         CreateMap<CreateMarketRequisitionVendor, MarketRequisitionVendor>();
         CreateMap<VendorQuotation, VendorQuotationDto>();
