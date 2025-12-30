@@ -86,10 +86,18 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     /// - `equipmentInstrumentNumber` (optional, max 1000 chars): Equipment identification number
     /// - `item` (optional, max 500 chars): Related item name
     /// - `itemNumber` (optional, max 500 chars): Related item number
+    /// - `activities` (optional, array): List of activities performed. Each activity includes:
+    ///   - `activityDescription` (required, max 2000 chars): Description of the activity
+    ///   - `performedAt` (required, DateTime): When the activity was performed
+    ///   - `performedById` (required, Guid): User who performed the activity
+    ///   - `notes` (optional, string): Additional notes
+    /// - `serviceIds` (optional, array of Guid): List of service IDs associated with this request. The first service will be set as the primary service.
     /// 
     /// **Business Rules:**
     /// - The `preferredCompletionDate` should be after `dateOfIssue`
     /// - If `equipmentId` is provided, the equipment must exist in the system
+    /// - If `serviceIds` are provided, all services must exist in the system
+    /// - If `activities` are provided, all `performedById` users must exist
     /// - Department is automatically determined from the user's authentication token
     /// 
     /// **Example Request:**
@@ -102,7 +110,18 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     ///   "descriptionOfWork": "Floor scale is not reading correctly. Needs calibration and repair.",
     ///   "preferredCompletionDate": "2024-01-20T17:00:00Z",
     ///   "item": "Floor Scale",
-    ///   "itemNumber": "FS-001"
+    ///   "itemNumber": "FS-001",
+    ///   "activities": [
+    ///     {
+    ///       "activityDescription": "Initial inspection completed",
+    ///       "performedAt": "2024-01-15T10:30:00Z",
+    ///       "performedById": "8d9e6679-7425-40de-944b-e07fc1f90ae8",
+    ///       "notes": "Found calibration issue"
+    ///     }
+    ///   ],
+    ///   "serviceIds": [
+    ///     "5fa85f64-5717-4562-b3fc-2c963f66afa7"
+    ///   ]
     /// }
     /// ```
     /// 
@@ -490,21 +509,49 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     }
     
     /// <summary>
-    /// Updates an existing job request status
+    /// Updates the status of a job request
     /// </summary>
-    /// <param name="id">Job request unique identifier</param>
-    /// <param name="request">Updated job request details</param>
+    /// <remarks>
+    /// Allows updating the status of a job request by passing the new status enum value.
+    /// 
+    /// **Status Values:**
+    /// - `0` = Pending
+    /// - `1` = Acknowledged
+    /// - `2` = Assigned
+    /// - `3` = JobStarted
+    /// - `4` = Completed
+    /// - `5` = SentToExternal
+    /// - `6` = QuotationReceived
+    /// - `7` = ContractorSelected
+    /// - `8` = Approved
+    /// - `9` = Cancelled
+    /// 
+    /// **Example Request:**
+    /// ```json
+    /// 2
+    /// ```
+    /// The request body should be the integer value of the enum (e.g., `2` for `Assigned`).
+    /// 
+    /// **Example Response:**
+    /// - Status 204: Status updated successfully (no response body)
+    /// - Status 400: Invalid status value or request cannot be updated
+    /// - Status 404: Job request not found
+    /// </remarks>
+    /// <param name="id">Job request unique identifier (Guid)</param>
+    /// <param name="status">New status enum value (JobRequestStatus)</param>
     /// <returns>No content on success</returns>
-    /// <response code="204">Job request updated successfully</response>
-    /// <response code="400">Invalid request data or request cannot be updated</response>
-    /// <response code="404">Job request not found</response>
+    /// <response code="204">Job request status updated successfully</response>
+    /// <response code="400">Invalid status value or request cannot be updated</response>
+    /// <response code="404">Job request not found with the provided ID</response>
+    /// <response code="401">Unauthorized - User must be authenticated</response>
     [HttpPut("status/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateJobRequestStatus([FromRoute] Guid id, [FromBody] JobRequestStatus request)
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> UpdateJobRequestStatus([FromRoute] Guid id, [FromBody] JobRequestStatus status)
     {
-        var result = await repository.UpdateJobRequestStatus(id, request);
+        var result = await repository.UpdateJobRequestStatus(id, status);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

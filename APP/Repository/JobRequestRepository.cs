@@ -27,11 +27,55 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
             if (!equipment) return Error.Validation("Equipment.Invalid", "Invalid equipment");
         }
 
+        // Validate services if provided
+        if (request.ServiceIds != null && request.ServiceIds.Any())
+        {
+            foreach (var serviceId in request.ServiceIds)
+            {
+                var serviceExists = await context.Services.AnyAsync(s => s.Id == serviceId);
+                if (!serviceExists) return Error.Validation("Service.Invalid", $"Invalid service: {serviceId}");
+            }
+        }
+
+        // Validate activities if provided
+        if (request.Activities != null && request.Activities.Any())
+        {
+            foreach (var activity in request.Activities)
+            {
+                var performedByExists = await userManager.FindByIdAsync(activity.PerformedById.ToString());
+                if (performedByExists is null) return Error.Validation("User.Invalid", $"Invalid user for activity: {activity.PerformedById}");
+            }
+        }
+
         var jobRequest = mapper.Map<JobRequest>(request);
         jobRequest.DepartmentId = departmentId;
         jobRequest.IssuedById = issuedById;
+        
+        // Set first service if provided
+        if (request.ServiceIds != null && request.ServiceIds.Any())
+        {
+            jobRequest.ServiceId = request.ServiceIds.First();
+        }
+
         await context.JobRequests.AddAsync(jobRequest);
         await context.SaveChangesAsync();
+
+        // Create activities if provided
+        if (request.Activities != null && request.Activities.Any())
+        {
+            var activities = request.Activities.Select(a => new JobActivity
+            {
+                JobExecutionId = null, // Activities at creation don't belong to an execution yet
+                ActivityDescription = a.ActivityDescription,
+                PerformedAt = a.PerformedAt,
+                PerformedById = a.PerformedById,
+                Notes = a.Notes
+            }).ToList();
+
+            await context.JobActivities.AddRangeAsync(activities);
+            await context.SaveChangesAsync();
+        }
+
         return jobRequest.Id;
     }
 

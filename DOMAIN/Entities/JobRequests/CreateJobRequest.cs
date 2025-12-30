@@ -19,6 +19,10 @@ public class CreateJobRequest
     public string Item { get; set; }
     [StringLength(500)]
     public string ItemNumber { get; set; }
+    
+    public List<RecordJobActivityRequest> Activities { get; set; } = [];
+    
+    public List<Guid> ServiceIds { get; set; } = [];
 }
 
 public class UpdateJobRequestRequest
