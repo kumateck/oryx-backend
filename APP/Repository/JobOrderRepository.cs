@@ -20,11 +20,21 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         if (jobRequest is null)
             return Error.NotFound("JobRequest.NotFound", "Job request not found");
 
-        var service = await context.Services.AnyAsync(s => s.Id == request.ServiceId);
-        if (!service) return Error.Validation("Service.Invalid", "Invalid service");
+        if (request.ServiceId.HasValue)
+        {
+            var service = await context.Services.AnyAsync(s => s.Id == request.ServiceId.Value);
+            if (!service) return Error.Validation("Service.Invalid", "Invalid service");
+        }
 
         var issuer = await userManager.FindByIdAsync(request.IssuedById.ToString());
         if (issuer is null) return Error.Validation("User.Invalid", "User Invalid");
+
+        // Get user signature if not provided
+        var signature = request.IssuedBySignature;
+        if (string.IsNullOrEmpty(signature) && !string.IsNullOrEmpty(issuer.Signature))
+        {
+            signature = issuer.Signature;
+        }
 
         // Validate service providers
         foreach (var providerId in request.ServiceProviderIds)
@@ -38,6 +48,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
 
         var jobOrder = mapper.Map<JobOrder>(request);
         jobOrder.Code = code;
+        jobOrder.IssuedBySignature = signature;
 
         // Add service providers
         jobOrder.ServiceProviders = request.ServiceProviderIds.Select(id => new JobOrderServiceProvider
@@ -50,7 +61,10 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         // Update job request
         jobRequest.HandlingType = JobHandlingType.External;
         jobRequest.Status = JobRequestStatus.SentToExternal;
-        jobRequest.ServiceId = request.ServiceId;
+        if (request.ServiceId.HasValue)
+        {
+            jobRequest.ServiceId = request.ServiceId.Value;
+        }
 
         await context.JobOrders.AddAsync(jobOrder);
         context.JobRequests.Update(jobRequest);
