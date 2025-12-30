@@ -6,24 +6,17 @@ public class CreateJobRequest
 {
     [Required, StringLength(500)]
     public string Location { get; set; }
-
     public Guid? EquipmentId { get; set; }
-
     [StringLength(1000)]
     public string EquipmentInstrumentNumber { get; set; }
-
     [Required]
     public DateTime DateOfIssue { get; set; }
-
     [Required, StringLength(2000)]
     public string DescriptionOfWork { get; set; }
-
     [Required]
     public DateTime PreferredCompletionDate { get; set; }
-
     [StringLength(500)]
     public string Item { get; set; }
-
     [StringLength(500)]
     public string ItemNumber { get; set; }
 }
@@ -77,13 +70,10 @@ public class RecordJobActivityRequest
 {
     [Required, StringLength(2000)]
     public string ActivityDescription { get; set; }
-
     [Required]
     public DateTime PerformedAt { get; set; }
-
     [Required]
     public Guid PerformedById { get; set; }
-
     public string Notes { get; set; }
 }
 
@@ -91,25 +81,19 @@ public class RecordConsumedItemRequest
 {
     [Required]
     public Guid ItemId { get; set; }
-
     [Required]
     public decimal QuantityConsumed { get; set; }
-
     [Required]
     public Guid UnitOfMeasureId { get; set; }
-
     public string Notes { get; set; }
-
     public ItemSource Source { get; set; } = ItemSource.FromStock;
 }
 
 public class CompleteJobExecutionRequest
 {
     [Required] public Guid JobExecutionId { get; set; }
-
     [Required, StringLength(2000)]
     public string ActivityDescription { get; set; }
-
     public string Notes { get; set; }
     public List<RecordJobActivityRequest> AdditionalActivities { get; set; } = [];
     public List<RecordConsumedItemRequest> ConsumedItems { get; set; } = [];

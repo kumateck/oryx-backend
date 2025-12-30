@@ -488,4 +488,23 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         var result = await repository.AssignInternalJob(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates an existing job request status
+    /// </summary>
+    /// <param name="id">Job request unique identifier</param>
+    /// <param name="request">Updated job request details</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Job request updated successfully</response>
+    /// <response code="400">Invalid request data or request cannot be updated</response>
+    /// <response code="404">Job request not found</response>
+    [HttpPut("status/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateJobRequestStatus([FromRoute] Guid id, [FromBody] JobRequestStatus request)
+    {
+        var result = await repository.UpdateJobRequestStatus(id, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }
