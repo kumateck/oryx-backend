@@ -88,13 +88,15 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering requisitions by code.</param>
+    /// <param name="status"></param>
     /// <returns>Returns a paginated list of Inventory Purchase Requisitions.</returns>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>))]
-    public async Task<IResult> GetInventoryPurchaseRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetInventoryPurchaseRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
+        [FromQuery] InventoryPurchaseRequisitionStatus status = InventoryPurchaseRequisitionStatus.Pending)
     {
-        var result = await repository.GetInventoryPurchaseRequisitions(page, pageSize, searchQuery);
+        var result = await repository.GetInventoryPurchaseRequisitions(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
