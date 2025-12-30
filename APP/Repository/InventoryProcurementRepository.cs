@@ -91,12 +91,13 @@ public class InventoryProcurementRepository(
         return mapper.Map<InventoryPurchaseRequisitionDto>(requisition);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>>> GetInventoryPurchaseRequisitions(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>>> GetInventoryPurchaseRequisitions(int page, int pageSize,
+        string searchQuery, InventoryPurchaseRequisitionStatus status = InventoryPurchaseRequisitionStatus.Pending)
     {
         var query = context.InventoryPurchaseRequisitions
             .AsSplitQuery()
             .Include(r => r.Items)
-            .Where(r => r.DeletedAt == null)
+            .Where(r => r.DeletedAt == null && r.Status == status)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -134,17 +135,35 @@ public class InventoryProcurementRepository(
             {
                 var vendorId = vendorGroup.Key;
 
-                var existing = await context.SourceInventoryRequisitions
+                var sourceRequisition = await context.SourceInventoryRequisitions
                     .Include(sr => sr.Items)
+                    .Include(sr => sr.Vendor)
                     .FirstOrDefaultAsync(sr =>
                         sr.VendorId == vendorId &&
                         sr.SentQuotationRequestAt == null);
 
-                if (existing != null)
+                if (sourceRequisition == null)
+                {
+                    sourceRequisition = new SourceInventoryRequisition
+                    {
+                        InventoryPurchaseRequisitionId = request.InventoryPurchaseRequisitionId,
+                        VendorId = vendorId,
+                        Items = vendorGroup.Select(x =>
+                            new SourceInventoryRequisitionItem
+                            {
+                                ItemId = x.i.ItemId,
+                                UoMId = x.i.UoMId,
+                                Quantity = x.i.Quantity
+                            }).ToList()
+                    };
+
+                    await context.SourceInventoryRequisitions.AddAsync(sourceRequisition);
+                }
+                else
                 {
                     foreach (var gi in vendorGroup)
                     {
-                        existing.Items.Add(new SourceInventoryRequisitionItem
+                        sourceRequisition.Items.Add(new SourceInventoryRequisitionItem
                         {
                             ItemId = gi.i.ItemId,
                             UoMId = gi.i.UoMId,
@@ -152,53 +171,28 @@ public class InventoryProcurementRepository(
                         });
                     }
                 }
-                else
-                {
-                    var exists = await context.SourceInventoryRequisitions.AnyAsync(r =>
-                        r.InventoryPurchaseRequisitionId ==
-                        request.InventoryPurchaseRequisitionId &&
-                        r.VendorId == vendorId);
 
-                    if (exists)
-                        return Error.Conflict(
-                            "SourceRequisition",
-                            "Source requisition already exists for this vendor.");
+                await context.SaveChangesAsync();
+                
+                var sendResult = await SendQuotationToVendor(sourceRequisition.VendorId);
 
-                    await context.SourceInventoryRequisitions.AddAsync(
-                        new SourceInventoryRequisition
-                        {
-                            InventoryPurchaseRequisitionId =
-                                request.InventoryPurchaseRequisitionId,
-                            VendorId = vendorId,
-                            Items = vendorGroup.Select(x =>
-                                new SourceInventoryRequisitionItem
-                                {
-                                    ItemId = x.i.ItemId,
-                                    UoMId = x.i.UoMId,
-                                    Quantity = x.i.Quantity
-                                }).ToList()
-                        });
-                }
+                if (!sendResult.IsSuccess)
+                    return sendResult;
             }
-            
+
+            requisition.Status = InventoryPurchaseRequisitionStatus.Complete;
+            context.InventoryPurchaseRequisitions.Update(requisition);
+
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            return Result.Success();
         }
         catch
         {
             await transaction.RollbackAsync();
             throw;
         }
-        
-        foreach (var vendorId in request.Items
-            .SelectMany(i => i.Vendors)
-            .Select(v => v.VendorId)
-            .Distinct())
-        {
-            await SendQuotationToVendor(vendorId);
-        }
-
-        return Result.Success();
     }
 
     public async Task<Result> CreateMarketRequisition(CreateMarketRequisition request, Guid userId)
@@ -310,6 +304,10 @@ public class InventoryProcurementRepository(
         return new List<VendorPriceComparison>();
     }
 
+    // public async Task<Result> CreateInventoryProformaInvoice(CreateInventoryProformaInvoiceRequest request)
+    // {
+    //     // return;
+    // }
 
     // --- Memo Creation Logic ---
 
@@ -688,7 +686,8 @@ public class InventoryProcurementRepository(
     public async Task<Result> UploadStockItems(ImportItemsRequest itemsRequest)
     {
         var file = itemsRequest.ItemFile;
-
+        const string memoCode = "MEMO-00256001";
+        
         if (file == null || file.Length == 0)
             return Error.Validation(
                 "ItemsUpload.EmptyFile",
@@ -728,14 +727,12 @@ public class InventoryProcurementRepository(
 
         for (var row = 2; row <= lastRow; row++)
         {
-            var memoCode = worksheet.Cells[row, 1].Text?.Trim();
-            var itemCode = worksheet.Cells[row, 4].Text?.Trim();
-            var quantityText = worksheet.Cells[row, 5].Text?.Trim();
+            var itemCode = worksheet.Cells[row, 3].Text?.Trim();
+            var quantityText = worksheet.Cells[row, 4].Text?.Trim();
             
-            if (string.IsNullOrWhiteSpace(memoCode) ||
-                string.IsNullOrWhiteSpace(itemCode))
+            if (string.IsNullOrWhiteSpace(itemCode))
             {
-                errors.Add($"Row {row}: Memo Code and Item Code are required.");
+                errors.Add($"Row {row}:Item Code is required.");
                 continue;
             }
             

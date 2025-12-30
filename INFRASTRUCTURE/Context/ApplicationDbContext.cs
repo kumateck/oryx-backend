@@ -589,6 +589,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Proforma Invoice
 
     public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
+    
+    // public DbSet<InventoryProformaInvoice> InventoryProformaInvoices { get; set; }
     public DbSet<ProformaInvoiceProduct> ProformaInvoiceProducts { get; set; }
     public DbSet<ProformaInvoiceApproval> ProformaInvoiceApprovals { get; set; }
 
