@@ -70,3 +70,9 @@ public class InventoryPurchaseRequisitionItemDto : BaseDto
     public decimal Quantity { get; set; }
     public RequestStatus Status { get; set; }
 }
+
+// public class CreateInventoryProformaInvoiceRequest
+// {
+//     public Guid VendorQuotationId { get; set; }
+//     
+// }

@@ -16,7 +16,8 @@ public interface IInventoryProcurementRepository
     Task<Result> UpdateInventoryPurchaseRequisition(Guid id, CreateInventoryPurchaseRequisition request);
     Task<Result> DeleteInventoryPurchaseRequisition(Guid id);
     Task<Result<InventoryPurchaseRequisitionDto>> GetInventoryPurchaseRequisition(Guid id);
-    Task<Result<Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>>> GetInventoryPurchaseRequisitions(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>>> GetInventoryPurchaseRequisitions(int page,
+        int pageSize, string searchQuery, InventoryPurchaseRequisitionStatus status);
 
     // Sourcing Logic
     Task<Result> CreateSourceRequisition(CreateSourceInventoryRequisition request, Guid userId);
