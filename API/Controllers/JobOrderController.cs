@@ -39,13 +39,14 @@ public class JobOrderController(IJobOrderRepository repository) : ControllerBase
     /// 
     /// **Prerequisites:**
     /// - Job request must exist
-    /// - Service must be defined
+    /// - Service is optional (can be null)
     /// - At least one service provider must be selected
     /// 
     /// **What Happens:**
     /// - Job order is created with status "Pending"
     /// - Job request status changes to "SentToExternal"
     /// - Job request handling type changes to "External"
+    /// - If `issuedBySignature` is not provided, it will be retrieved from the user's profile
     /// 
     /// **Next Steps:**
     /// - Send job order to providers using `/send-to-providers` endpoint
@@ -58,12 +59,15 @@ public class JobOrderController(IJobOrderRepository repository) : ControllerBase
     ///   "issuedDate": "2024-01-15T10:00:00Z",
     ///   "issuedById": "8d9e6679-7425-40de-944b-e07fc1f90ae8",
     ///   "description": "Fabrication and installation of ductwork at dispensing room",
+    ///   "issuedBySignature": "signature-reference-string",
     ///   "serviceProviderIds": [
     ///     "9e0f6679-7425-40de-944b-e07fc1f90ae9",
     ///     "af1f6679-7425-40de-944b-e07fc1f90afa"
     ///   ]
     /// }
     /// ```
+    /// 
+    /// **Note:** Both `serviceId` and `description` are optional. If `issuedBySignature` is not provided, the system will use the signature from the user's profile.
     /// </remarks>
     /// <param name="request">Job order creation details</param>
     /// <returns>Returns the ID of the created job order</returns>
