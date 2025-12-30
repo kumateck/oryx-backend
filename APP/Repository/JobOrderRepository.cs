@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -77,6 +76,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         JobOrderStatus? status = null, Guid? jobRequestId = null, Guid? serviceId = null)
     {
         var query = context.JobOrders
+            .AsSplitQuery()
             .Include(j => j.JobRequest)
             .Include(j => j.Service)
             .Include(j => j.IssuedBy)
@@ -102,12 +102,13 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
-            entity => mapper.Map<JobOrderDto>(entity));
+            mapper.Map<JobOrderDto>);
     }
 
     public async Task<Result<JobOrderDto>> GetJobOrder(Guid id)
     {
         var jobOrder = await context.JobOrders
+            .AsSplitQuery()
             .Include(j => j.JobRequest).ThenInclude(jr => jr.Department)
             .Include(j => j.Service)
             .Include(j => j.IssuedBy)
@@ -129,6 +130,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task<Result> SendJobOrderToProviders(SendJobOrderToProvidersRequest request)
     {
         var jobOrder = await context.JobOrders
+            .AsSplitQuery()
             .Include(j => j.ServiceProviders)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
 
@@ -163,6 +165,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task<Result> SelectQuotation(SelectQuotationRequest request)
     {
         var jobOrder = await context.JobOrders
+            .AsSplitQuery()
             .Include(j => j.Quotations)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
 
@@ -284,6 +287,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task<Result> CompleteJobOrderExecution(CompleteJobOrderExecutionRequest request)
     {
         var execution = await context.JobOrderExecutions
+            .AsSplitQuery()
             .Include(e => e.JobOrder)
             .FirstOrDefaultAsync(e => e.Id == request.JobOrderExecutionId);
 
@@ -367,6 +371,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task<Result> ApproveJobOrderExecution(ApproveJobOrderExecutionRequest request)
     {
         var execution = await context.JobOrderExecutions
+            .AsSplitQuery()
             .Include(e => e.JobOrder)
             .FirstOrDefaultAsync(e => e.Id == request.JobOrderExecutionId);
 
@@ -401,7 +406,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     private async Task<string> GenerateJobOrderCode()
     {
         var count = await context.JobOrders.CountAsync();
-        return $"JO-{DateTime.UtcNow:yyyyMM}-{(count + 1):D4}";
+        return $"JO-{DateTime.UtcNow:yyyyMM}-{count + 1:D4}";
     }
 }
 
