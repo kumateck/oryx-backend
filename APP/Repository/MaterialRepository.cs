@@ -1,3 +1,4 @@
+using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -2827,19 +2828,23 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await file.CopyToAsync(stream);
         stream.Position = 0;
 
+        // Set EPPlus License
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage(stream);
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
         if (worksheet == null) return UploadErrors.WorksheetNotFound;
 
+        // --- 1. PREPARE HEADERS ---
         var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (worksheet.Dimension == null) return UploadErrors.EmptyFile;
+
         for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             var header = worksheet.Cells[1, col].Text.Trim();
             if (!string.IsNullOrEmpty(header)) headers[header] = col;
         }
 
-        // --- 1. SCAN EXCEL FOR FILTER CRITERIA ---
+        // --- 2. SCAN EXCEL FOR LOOKUP CRITERIA ---
         var excelBatchNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelShelfCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelUomSymbols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -2860,37 +2865,34 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             if (!string.IsNullOrEmpty(m)) excelMaterialCodes.Add(m);
         }
 
-        // --- 2. FETCH LOOKUPS ---
-
-        // UOM Lookup
+        // --- 3. FETCH LOOKUPS (DATABASE) ---
         var uomLookup = await context.UnitOfMeasures
             .Where(u => excelUomSymbols.Contains(u.Symbol))
             .ToDictionaryAsync(u => u.Symbol.Trim(), u => u.Id, StringComparer.OrdinalIgnoreCase);
 
-        // Shelf Lookup
         var shelfHierarchy = await context.WarehouseLocationShelves
             .Where(s => excelShelfCodes.Contains(s.Code))
             .Select(s => new {
                 ShelfId = s.Id,
                 ShelfCode = s.Code.Trim(),
+                WarehouseId = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Id,
                 WarehouseName = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name.Trim()
             }).ToListAsync();
 
         var shelfLookup = shelfHierarchy.ToDictionary(
-            x => $"{x.WarehouseName}|{x.ShelfCode}", x => x.ShelfId, StringComparer.OrdinalIgnoreCase);
+            x => $"{x.WarehouseName}|{x.ShelfCode}", x => x, StringComparer.OrdinalIgnoreCase);
 
-        // Material Lookup (Required to create new batches)
         var materialLookup = await context.Materials
             .Where(m => excelMaterialCodes.Contains(m.Code))
             .ToDictionaryAsync(m => m.Code.Trim(), m => m.Id, StringComparer.OrdinalIgnoreCase);
 
-        // Existing Batch Lookup
         var batchLookup = await context.MaterialBatches
             .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
             .ToDictionaryAsync(b => b.BatchNumber.Trim(), b => b, StringComparer.OrdinalIgnoreCase);
 
-        // --- 3. PROCESS ROWS ---
+        // --- 4. PROCESS ROWS ---
         var shelfMaterialBatches = new List<ShelfMaterialBatch>();
+        var binCardEntries = new List<BinCardInformation>();
         var newBatches = new List<MaterialBatch>();
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
@@ -2902,6 +2904,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var batchNo = GetCell("Batch No.");
             var uomSymbol = GetCell("UOM");
             var materialCode = GetCell("Material Code");
+            var waybill = GetCell("Waybill");
+            var arNo = GetCell("AR No.");
+            var expiryDateStr = GetCell("Expiry Date");
+            var manufacturingDateStr = GetCell("Manufacturing Date");
             var rowQuantity = decimal.TryParse(GetCell("Quantity"), out var qty) ? qty : 0;
 
             if (string.IsNullOrEmpty(batchNo) || string.IsNullOrEmpty(shelfCode)) continue;
@@ -2909,46 +2915,72 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             // --- BATCH LOGIC: GET OR CREATE ---
             if (!batchLookup.TryGetValue(batchNo, out var batch))
             {
-                // If batch doesn't exist, we must have a Material Code to create it
                 if (string.IsNullOrEmpty(materialCode) || !materialLookup.TryGetValue(materialCode, out var materialId))
-                {
-                    return Error.NotFound("Material", $"Row {row}: Material '{materialCode}' not found. Cannot create new Batch '{batchNo}'.");
-                }
+                    return Error.NotFound("Material", $"Row {row}: Material '{materialCode}' not found. Cannot create Batch '{batchNo}'.");
 
                 batch = new MaterialBatch
                 {
                     Id = Guid.NewGuid(),
                     BatchNumber = batchNo,
                     MaterialId = materialId,
-                    TotalQuantity = rowQuantity,
-                    Status = BatchStatus.Available
+                    TotalQuantity = 0, // Will be incremented below
+                    Status = BatchStatus.Available,
+                    ExpiryDate = ParseDate(expiryDateStr),
+                    ManufacturingDate = ParseDate(manufacturingDateStr)
                 };
                 
-                // Add to dictionary and tracker so subsequent rows with the same new batch don't duplicate
                 batchLookup[batchNo] = batch;
                 newBatches.Add(batch);
             }
 
             // --- SHELF & UOM VALIDATION ---
             var shelfKey = $"{warehouseName}|{shelfCode}";
-            if (!shelfLookup.TryGetValue(shelfKey, out var shelfId))
+            if (!shelfLookup.TryGetValue(shelfKey, out var shelfInfo))
                 return Error.NotFound("Shelf", $"Row {row}: Shelf '{shelfCode}' not found in Warehouse '{warehouseName}'.");
 
             Guid? uomId = (uomSymbol != null && uomLookup.TryGetValue(uomSymbol, out var foundUomId)) ? foundUomId : null;
 
+            // Update Batch Running Total
+            batch.TotalQuantity += rowQuantity;
+
+            // 1. Add to Shelf Stock
             shelfMaterialBatches.Add(new ShelfMaterialBatch
             {
                 Id = Guid.NewGuid(),
-                WarehouseLocationShelfId = shelfId,
+                WarehouseLocationShelfId = shelfInfo.ShelfId,
                 MaterialBatchId = batch.Id,
                 Quantity = rowQuantity,
                 UoMId = uomId,
-                Note = $"Imported via Excel. Waybill: {GetCell("Waybill")}"
+                Note = $"Imported via Excel. Waybill: {waybill}"
             });
+
+            // 2. Add to Bin Card Information (Audit Trail)
+            binCardEntries.Add(new BinCardInformation
+            {
+                Id = Guid.NewGuid(),
+                MaterialBatchId = batch.Id,
+                WarehouseId = shelfInfo.WarehouseId,
+                UoMId = uomId,
+                WayBill = waybill,
+                ArNumber = arNo,
+                QuantityReceived = rowQuantity,
+                QuantityIssued = 0,
+                BalanceQuantity = rowQuantity,
+                Description = $"Stock Import - Batch: {batchNo}",
+                CreatedAt = DateTime.UtcNow
+            });
+            continue;
+
+            // Helper for Date Parsing (dd/mm/yyyy)
+            DateTime? ParseDate(string input) => 
+                DateTime.TryParseExact(input, "dd/MM/yyyy",
+                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null;
         }
 
+        // --- 5. SAVE CHANGES ---
         if (newBatches.Count != 0) await context.MaterialBatches.AddRangeAsync(newBatches);
         await context.ShelfMaterialBatches.AddRangeAsync(shelfMaterialBatches);
+        await context.BinCardInformation.AddRangeAsync(binCardEntries);
         
         await context.SaveChangesAsync();
 
