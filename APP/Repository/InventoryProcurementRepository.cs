@@ -444,7 +444,9 @@ public class InventoryProcurementRepository(
 
         try
         {
-            emailService.SendMail(sourceRequisition.Vendor.Name, sourceRequisition.Vendor.Email, "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
+            emailService.SendMail(sourceRequisition.Vendor.Name, sourceRequisition.Vendor.Email, 
+                "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", 
+                mailAttachments);
         }
         catch (Exception e)
         {
@@ -473,7 +475,9 @@ public class InventoryProcurementRepository(
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<VendorQuotationDto>>>> GetVendorQuotations(int page, int pageSize, bool received)
+    public async Task<Result<Paginateable<IEnumerable<VendorQuotationDto>>>> GetVendorQuotations(int page, 
+        int pageSize,
+        bool received)
     {
         var query = context.VendorQuotations
             .AsSplitQuery()
@@ -482,14 +486,17 @@ public class InventoryProcurementRepository(
             .Include(s => s.Vendor)
             .AsQueryable();
 
-        query = received ? query.Where(s => s.ReceivedQuotation) : query.Where(s => !s.ReceivedQuotation);
+        query = received ? query.Where(s => s.ReceivedQuotation) :
+            query.Where(s => !s.ReceivedQuotation);
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<VendorQuotationDto>);
     }
 
-    public async Task<Result> ReceiveQuotationFromVendor(List<VendorQuotationResponseDto> vendorQuotationResponse, Guid vendorQuotationId)
+    public async Task<Result> ReceiveQuotationFromVendor(List<VendorQuotationResponseDto> vendorQuotationResponse,
+        Guid vendorQuotationId)
     {
         var vendorQuotation = await context.VendorQuotations
+            .AsSplitQuery()
             .Include(s => s.Items)
             .FirstOrDefaultAsync(s => s.Id == vendorQuotationId);
 
@@ -557,7 +564,9 @@ public class InventoryProcurementRepository(
 
     public async Task<Result> CreateMarketRequisitionVendor(CreateMarketRequisitionVendor request)
     {
-        var marketRequisition = await context.MarketRequisitions.FirstOrDefaultAsync(mr => mr.Id == request.MarketRequisitionId);
+        var marketRequisition = await context.MarketRequisitions
+            .FirstOrDefaultAsync(mr => mr.Id == request.MarketRequisitionId);
+        
         if (marketRequisition is null)
         {
             return RequisitionErrors.NotFound(request.MarketRequisitionId);
@@ -571,7 +580,9 @@ public class InventoryProcurementRepository(
 
     public async Task<Result> ConfirmMarketRequisitionVendor(Guid marketRequisitionVendorId)
     {
-        var vendor = await context.MarketRequisitionVendors.FirstOrDefaultAsync(v => v.Id == marketRequisitionVendorId);
+        var vendor = await context.MarketRequisitionVendors
+            .FirstOrDefaultAsync(v => v.Id == marketRequisitionVendorId);
+            
         if (vendor is null)
         {
             return RequisitionErrors.NotFound(marketRequisitionVendorId);
