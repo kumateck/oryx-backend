@@ -375,7 +375,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         foreach (var m in paginatedResult.Data)
         {
-            var totalAvailableQuantity = await GetMassMaterialStockInWarehouse(m.Id, warehouse.Id);
+            var totalAvailableQuantity = await GetShelfMaterialStockInWarehouse(m.Id, warehouse.Id);
             if (totalAvailableQuantity.IsFailure) return totalAvailableQuantity.Errors;
 
             var unitOfMeasure = await GetUnitOfMeasureForMaterialDepartment(m.Id, userId);
