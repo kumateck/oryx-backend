@@ -323,74 +323,66 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return batches;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(int page,
-        int pageSize, string searchQuery, MaterialKind kind, Guid userId)
+    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(
+    int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null)
-            return UserErrors.NotFound(userId);
+        // 1. Fetch User and Department Info once
+        var user = await context.Users
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(u => u.Department)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user?.DepartmentId == null) return UserErrors.NotFound(userId);
 
         var warehouse = kind == MaterialKind.Raw ? user.GetUserRawWarehouse() : user.GetUserPackagingWarehouse();
+        if (warehouse is null) return UserErrors.WarehouseNotFound(kind);
 
-        if (warehouse is null)
-            return UserErrors.WarehouseNotFound(MaterialKind.Raw);
-
+        // 2. Build the base query for Materials
         var query = context.ShelfMaterialBatches
+            .IgnoreQueryFilters()
             .AsSplitQuery()
-            .Include(m => m.MaterialBatch)
-            .ThenInclude(mb => mb.Material)
-            .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-            .Where(m =>
-                m.MaterialBatch.Material.Kind == kind && 
-                m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id &&
+            .Where(m => m.MaterialBatch.Material.Kind == kind && 
+                        m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id &&
                         (m.MaterialBatch.Status == BatchStatus.Available || m.MaterialBatch.Status == BatchStatus.Frozen))
             .Select(m => m.MaterialBatch.Material)
-            .Distinct()
-            .AsQueryable();
+            .Distinct();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery,
-                m => m.Name, m => m.Description, m => m.Code);
+            query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description, m => m.Code);
         }
 
-
+        // 3. Paginate the IDs first to keep the memory footprint small
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<MaterialDto>);
+            query, page, pageSize, m => m);
 
-        //var materialIds = paginatedResult.Data.Select(m => m.Id).ToList();
+        var materialIds = paginatedResult.Data.Select(m => m.Id).ToList();
 
-        //gets only those assigned to shelf locations
-        // var totalAvailableQuantities = await context.ShelfMaterialBatches
-        //     .Include(m => m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-        //     .Where(smb => materialIds.Contains(smb.MaterialBatch.MaterialId) && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id && smb.MaterialBatch.Status == BatchStatus.Available)
-        //     .GroupBy(smb => smb.MaterialBatch.MaterialId)
-        //     .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(smb => smb.Quantity), UnitOfMeasure = g.FirstOrDefault(h => h.MaterialBatch.MaterialId == g.Key).MaterialBatch.UoM })
-        //     .ToListAsync();
+        var stocks = await context.ShelfMaterialBatches
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Where(s => materialIds.Contains(s.MaterialBatch.MaterialId) && 
+                        s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id)
+            .GroupBy(s => s.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Total = g.Sum(s => s.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Total);
 
-        var materialDetails = new List<MaterialDetailsDto>();
+        var uoms = await context.MaterialDepartments
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(md => md.UoM)
+            .Where(md => materialIds.Contains(md.MaterialId) && md.DepartmentId == user.DepartmentId)
+            .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
-        foreach (var m in paginatedResult.Data)
+        var materialDetails = paginatedResult.Data.Select(m => new MaterialDetailsDto
         {
-            var totalAvailableQuantity = await GetShelfMaterialStockInWarehouse(m.Id, warehouse.Id);
-            if (totalAvailableQuantity.IsFailure) return totalAvailableQuantity.Errors;
+            Material = mapper.Map<MaterialDto>(m),
+            UnitOfMeasure = uoms.GetValueOrDefault(m.Id),
+            TotalAvailableQuantity = stocks.GetValueOrDefault(m.Id, 0)
+        }).ToList();
 
-            var unitOfMeasure = await GetUnitOfMeasureForMaterialDepartment(m.Id, userId);
-            if (unitOfMeasure.IsFailure) return unitOfMeasure.Errors;
-
-            materialDetails.Add(new MaterialDetailsDto
-            {
-                Material = m,
-                UnitOfMeasure = unitOfMeasure.Value,
-                //TotalAvailableQuantity = totalAvailableQuantities.FirstOrDefault(q => q.MaterialId == m.Id)?.TotalQuantity ?? 0
-                TotalAvailableQuantity = totalAvailableQuantity.Value,
-            });
-        }
-
-        var result = new Paginateable<IEnumerable<MaterialDetailsDto>>
+        return Result.Success(new Paginateable<IEnumerable<MaterialDetailsDto>>
         {
             Data = materialDetails,
             PageIndex = paginatedResult.PageIndex,
@@ -399,9 +391,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             StartPageIndex = paginatedResult.StartPageIndex,
             NumberOfPagesToShow = paginatedResult.NumberOfPagesToShow,
             StopPageIndex = paginatedResult.StopPageIndex
-        };
-
-        return Result.Success(result);
+        });
     }
 
     public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page,
@@ -1375,7 +1365,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ThenInclude(w => w.WarehouseLocation)
             .ThenInclude(wl => wl.Warehouse)
             .Where(s => s.MaterialBatch.MaterialId == materialId &&
-                        s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId && !s.DeletedAt.HasValue)
+                        s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouseId &&
+                        !s.DeletedAt.HasValue)
             .SumAsync(s => s.Quantity);
 
         return Math.Max(totalQuantity, 0);
@@ -2309,8 +2300,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         return mapper.Map<UnitOfMeasureDto>((await context.MaterialDepartments
+            .AsSplitQuery()
             .Include(materialDepartment => materialDepartment.UoM)
-            .FirstOrDefaultAsync(m => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId.Value)).UoM);
+            .FirstOrDefaultAsync(m => m.MaterialId == materialId && m.DepartmentId == user.DepartmentId.Value))?.UoM);
     }
 
     public async Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(int page,
