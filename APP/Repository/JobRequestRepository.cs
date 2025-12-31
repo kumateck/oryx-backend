@@ -213,7 +213,14 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
     {
         var jobRequest = await context.JobRequests.FirstOrDefaultAsync(j => j.Id == id);
         if (jobRequest is null)
-            return Error.NotFound("JobRequest.NotFound", "Job request not found");
+            return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{id}' not found");
+
+        // Validate status value is within enum range
+        if (!Enum.IsDefined(typeof(JobRequestStatus), status))
+        {
+            return Error.Validation("JobRequest.InvalidStatus", 
+                $"Invalid status value '{status}'. Valid values are: 0 (Pending), 1 (Acknowledged), 2 (Assigned), 3 (JobStarted), 4 (Completed), 5 (SentToExternal), 6 (QuotationReceived), 7 (ContractorSelected), 8 (Approved), 9 (Cancelled)");
+        }
 
         jobRequest.Status = status;
         context.JobRequests.Update(jobRequest);

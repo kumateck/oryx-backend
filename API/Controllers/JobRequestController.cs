@@ -526,19 +526,145 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     /// - `8` = Approved
     /// - `9` = Cancelled
     /// 
-    /// **Example Request:**
-    /// ```json
-    /// 2
-    /// ```
-    /// The request body should be the integer value of the enum (e.g., `2` for `Assigned`).
+    /// **Example Requests:**
     /// 
-    /// **Example Response:**
-    /// - Status 204: Status updated successfully (no response body)
-    /// - Status 400: Invalid status value or request cannot be updated
-    /// - Status 404: Job request not found
+    /// **Valid Request (cURL):**
+    /// ```bash
+    /// curl -X PUT "http://164.90.142.68:8087/api/v1/job-requests/status/019b6e72-1dd0-7e08-b9b7-a0629ba0d9a4" \
+    ///   -H "Content-Type: application/json" \
+    ///   -H "Authorization: Bearer YOUR_TOKEN" \
+    ///   -d '{"status": 2}'
+    /// ```
+    /// 
+    /// **Valid Request (JSON Body):**
+    /// ```json
+    /// {
+    ///   "status": 2
+    /// }
+    /// ```
+    /// 
+    /// **Invalid Requests:**
+    /// 
+    /// **1. Missing status field:**
+    /// ```json
+    /// {}
+    /// ```
+    /// **Error Response:** Status 422 - `"Status is required. Valid values: 0 (Pending), 1 (Acknowledged), 2 (Assigned), 3 (JobStarted), 4 (Completed), 5 (SentToExternal), 6 (QuotationReceived), 7 (ContractorSelected), 8 (Approved), 9 (Cancelled)"`
+    /// 
+    /// **2. Invalid status value (out of range):**
+    /// ```json
+    /// {
+    ///   "status": 99
+    /// }
+    /// ```
+    /// **Error Response:** Status 400 - `"Invalid status value '99'. Valid values are: 0 (Pending), 1 (Acknowledged), 2 (Assigned), 3 (JobStarted), 4 (Completed), 5 (SentToExternal), 6 (QuotationReceived), 7 (ContractorSelected), 8 (Approved), 9 (Cancelled)"`
+    /// 
+    /// **3. Invalid status value (negative):**
+    /// ```json
+    /// {
+    ///   "status": -1
+    /// }
+    /// ```
+    /// **Error Response:** Status 400 - `"Invalid status value '-1'. Valid values are: 0 (Pending), 1 (Acknowledged), 2 (Assigned), 3 (JobStarted), 4 (Completed), 5 (SentToExternal), 6 (QuotationReceived), 7 (ContractorSelected), 8 (Approved), 9 (Cancelled)"`
+    /// 
+    /// **4. Invalid JSON format (missing Content-Type header):**
+    /// ```bash
+    /// curl -X PUT "http://164.90.142.68:8087/api/v1/job-requests/status/019b6e72-1dd0-7e08-b9b7-a0629ba0d9a4" \
+    ///   -d '{"status": 2}'
+    /// ```
+    /// **Error Response:** Status 415 - `"Unsupported Media Type"`
+    /// 
+    /// **5. Invalid JSON syntax:**
+    /// ```json
+    /// {
+    ///   "status": 2
+    /// ```
+    /// **Error Response:** Status 400 - `"The request body contains invalid JSON."`
+    /// 
+    /// **6. Wrong data type (string instead of number):**
+    /// ```json
+    /// {
+    ///   "status": "2"
+    /// }
+    /// ```
+    /// **Error Response:** Status 422 - Model validation error indicating status must be a number
+    /// 
+    /// **7. Invalid job request ID:**
+    /// ```json
+    /// {
+    ///   "status": 2
+    /// }
+    /// ```
+    /// **Error Response:** Status 404 - `"Job request with ID 'invalid-id' not found"`
+    /// 
+    /// **Example Responses:**
+    /// 
+    /// **Success (204 No Content):**
+    /// ```
+    /// (no response body)
+    /// ```
+    /// 
+    /// **Validation Error - Missing Status (422 Unprocessable Entity):**
+    /// ```json
+    /// {
+    ///   "type": "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
+    ///   "title": "One or more validation errors occurred.",
+    ///   "status": 422,
+    ///   "errors": [
+    ///     {
+    ///       "code": "Status",
+    ///       "description": "Status is required. Valid values: 0 (Pending), 1 (Acknowledged), 2 (Assigned), 3 (JobStarted), 4 (Completed), 5 (SentToExternal), 6 (QuotationReceived), 7 (ContractorSelected), 8 (Approved), 9 (Cancelled)"
+    ///     }
+    ///   ]
+    /// }
+    /// ```
+    /// 
+    /// **Not Found (404):**
+    /// ```json
+    /// {
+    ///   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+    ///   "title": "Not Found.",
+    ///   "status": 404,
+    ///   "extensions": {
+    ///     "errors": [
+    ///       {
+    ///         "code": "JobRequest.NotFound",
+    ///         "description": "Job request with ID '019b6e72-1dd0-7e08-b9b7-a0629ba0d9a4' not found"
+    ///       }
+    ///     ]
+    ///   }
+    /// }
+    /// ```
+    /// 
+    /// **Invalid Status Value (400 Bad Request):**
+    /// ```json
+    /// {
+    ///   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+    ///   "title": "Bad Request",
+    ///   "status": 400,
+    ///   "extensions": {
+    ///     "errors": [
+    ///       {
+    ///         "code": "JobRequest.InvalidStatus",
+    ///         "description": "Invalid status value '99'. Valid values are: 0 (Pending), 1 (Acknowledged), 2 (Assigned), 3 (JobStarted), 4 (Completed), 5 (SentToExternal), 6 (QuotationReceived), 7 (ContractorSelected), 8 (Approved), 9 (Cancelled)"
+    ///       }
+    ///     ]
+    ///   }
+    /// }
+    /// ```
+    /// 
+    /// **Invalid JSON Format (400 Bad Request):**
+    /// ```json
+    /// {
+    ///   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+    ///   "title": "Bad Request",
+    ///   "status": 400,
+    ///   "detail": "The request body contains invalid JSON."
+    /// }
+    /// ```
     /// </remarks>
     /// <param name="id">Job request unique identifier (Guid)</param>
-    /// <param name="status">New status enum value (JobRequestStatus)</param>
+    /// <param name="request">Request object containing the new status enum value</param>
     /// <returns>No content on success</returns>
     /// <response code="204">Job request status updated successfully</response>
     /// <response code="400">Invalid status value or request cannot be updated</response>
@@ -549,9 +675,9 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> UpdateJobRequestStatus([FromRoute] Guid id, [FromBody] JobRequestStatus status)
+    public async Task<IResult> UpdateJobRequestStatus([FromRoute] Guid id, [FromBody] UpdateJobRequestStatusRequest request)
     {
-        var result = await repository.UpdateJobRequestStatus(id, status);
+        var result = await repository.UpdateJobRequestStatus(id, request.Status);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
