@@ -2925,6 +2925,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     MaterialId = materialId,
                     TotalQuantity = 0, // Will be incremented below
                     Status = BatchStatus.Available,
+                    DateReceived = DateTime.UtcNow,
                     ExpiryDate = ParseDate(expiryDateStr),
                     ManufacturingDate = ParseDate(manufacturingDateStr)
                 };
@@ -2969,12 +2970,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 Description = $"Stock Import - Batch: {batchNo}",
                 CreatedAt = DateTime.UtcNow
             });
-            continue;
-
-            // Helper for Date Parsing (dd/mm/yyyy)
-            DateTime? ParseDate(string input) => 
-                DateTime.TryParseExact(input, "dd/MM/yyyy",
-                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null;
         }
 
         // --- 5. SAVE CHANGES ---
@@ -2985,5 +2980,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.SaveChangesAsync();
 
         return Result.Success();
+
+        DateTime? ParseDate(string input)
+        {
+            if (DateTime.TryParseExact(input, "dd/MM/yyyy",
+                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+            {
+                // Specify that this date is UTC to prevent local time offsets
+                return DateTime.SpecifyKind(d, DateTimeKind.Utc);
+            }
+            return null;
+        }
     }
 }
