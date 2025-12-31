@@ -119,22 +119,92 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
     public async Task<Result<JobRequestDto>> GetJobRequest(Guid id)
     {
-        var jobRequest = await context.JobRequests
-            .AsSplitQuery()
-            .Include(j => j.Department)
-            .Include(j => j.Equipment)
-            .Include(j => j.IssuedBy)
-            .Include(j => j.AssignedToEmployee)
-            .Include(j => j.AssignedBy)
-            .Include(j => j.Service)
-            .Include(j => j.Executions)
-            .Include(j => j.JobOrders)
-            .FirstOrDefaultAsync(j => j.Id == id);
+        try
+        {
+            var jobRequest = await context.JobRequests
+                .AsSplitQuery()
+                .Include(j => j.Department)
+                .Include(j => j.Equipment)
+                .Include(j => j.IssuedBy)
+                .Include(j => j.AssignedToEmployee)
+                .Include(j => j.AssignedBy)
+                .Include(j => j.Service)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.AssignedToEmployee)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.AssignedBy)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.VerifiedBy)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.ApprovedBy)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.Activities)
+                        .ThenInclude(a => a.PerformedBy)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.ConsumedItems)
+                        .ThenInclude(c => c.Item)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.ConsumedItems)
+                        .ThenInclude(c => c.UnitOfMeasure)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Service)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.IssuedBy)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.ServiceProviders)
+                        .ThenInclude(sp => sp.ServiceProvider)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Quotations)
+                        .ThenInclude(q => q.ServiceProvider)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Quotations)
+                        .ThenInclude(q => q.Items)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.SelectedQuotation)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.ServiceProformaInvoice)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.ServiceMemo)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.ServiceProvider)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.VerifiedBy)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.ApprovedBy)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.Activities)
+                            .ThenInclude(a => a.PerformedBy)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.ConsumedItems)
+                            .ThenInclude(c => c.Item)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.ConsumedItems)
+                        .ThenInclude(c => c.UnitOfMeasure)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(j => j.Id == id);
 
-        if (jobRequest is null)
-            return Error.NotFound("JobRequest.NotFound", "Job request not found");
+            if (jobRequest is null)
+                return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{id}' not found");
 
-        return mapper.Map<JobRequestDto>(jobRequest);
+            var dto = mapper.Map<JobRequestDto>(jobRequest);
+            return dto;
+        }
+        catch (DbUpdateException dbEx)
+        {
+            return Error.Failure("JobRequest.DatabaseError", 
+                $"Database error while retrieving job request: {dbEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            return Error.Failure("JobRequest.RetrievalError", 
+                $"An error occurred while retrieving job request: {ex.Message}. Stack trace: {ex.StackTrace}");
+        }
     }
 
     public async Task<Result> UpdateJobRequest(Guid id, UpdateJobRequestRequest request)
