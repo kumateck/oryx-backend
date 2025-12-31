@@ -25,8 +25,16 @@ public class ActivityLogMiddleware(RequestDelegate next)
         var userId = "";
         if (!string.IsNullOrEmpty(token))
         {
-            var jwtToken = new JwtSecurityToken(token);
-            userId = jwtToken.Subject ?? context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            try
+            {
+                var jwtToken = new JwtSecurityToken(token);
+                userId = jwtToken.Subject ?? context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            }
+            catch
+            {
+                // Invalid token format - try to get userId from claims if available
+                userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+            }
         }
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? context.Connection.RemoteIpAddress?.ToString();
         var userAgent = request.Headers["User-Agent"].ToString();
