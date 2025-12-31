@@ -2871,7 +2871,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // UOM Lookup
         var uomData = await context.UnitOfMeasures
             .Where(u => excelUomSymbols.Contains(u.Symbol))
-            .AsNoTracking().ToListAsync();
+            .ToListAsync();
 
         if (uomData.GroupBy(u => u.Symbol.Trim())
             .Any(g => g.Count() > 1))
@@ -2886,7 +2886,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .AsSplitQuery()
             .Include(b => b.Material)
             .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
-            .AsNoTracking().ToListAsync();
+            .ToListAsync();
 
         if (batchData.GroupBy(b => b.BatchNumber.Trim()).Any(g => g.Count() > 1))
             return Error.Validation("Batch.Duplicate",
