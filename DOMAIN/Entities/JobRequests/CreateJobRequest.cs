@@ -118,3 +118,9 @@ public class ApproveJobExecutionRequest
     [StringLength(1000)]
     public string ApprovalComments { get; set; }
 }
+
+public class UpdateJobRequestStatusRequest
+{
+    [Required(ErrorMessage = "Status is required. Valid values: 0 (Pending), 1 (Acknowledged), 2 (Assigned), 3 (JobStarted), 4 (Completed), 5 (SentToExternal), 6 (QuotationReceived), 7 (ContractorSelected), 8 (Approved), 9 (Cancelled)")]
+    public JobRequestStatus Status { get; set; }
+}
