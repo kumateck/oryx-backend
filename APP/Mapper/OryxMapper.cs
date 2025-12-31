@@ -44,6 +44,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
@@ -1210,6 +1211,13 @@ public class OryxMapper : Profile
         CreateMap<UpdateServiceMemoRequest, ServiceMemo>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         CreateMap<ServiceMemo, ServiceMemoDto>();
+
+        #endregion
+
+        #region Memo
+
+        CreateMap<Memo, MemoDto>();
+        
 
         #endregion
 
