@@ -2851,126 +2851,113 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var excelBatchNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelShelfCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelUomSymbols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var excelMaterialCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetRaw(string h) => headers.TryGetValue(h, out var col) ?
-                worksheet.Cells[row, col].Text.Trim() : null;
+            string GetRaw(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
 
             var b = GetRaw("Batch No.");
             var s = GetRaw("Shelves");
             var u = GetRaw("UOM");
+            var m = GetRaw("Material Code");
 
             if (!string.IsNullOrEmpty(b)) excelBatchNumbers.Add(b);
             if (!string.IsNullOrEmpty(s)) excelShelfCodes.Add(s);
             if (!string.IsNullOrEmpty(u)) excelUomSymbols.Add(u);
+            if (!string.IsNullOrEmpty(m)) excelMaterialCodes.Add(m);
         }
 
-        // --- 2. FETCH FILTERED LOOKUPS & CHECK FOR DB DUPLICATES ---
+        // --- 2. FETCH LOOKUPS ---
 
         // UOM Lookup
-        var uomData = await context.UnitOfMeasures
+        var uomLookup = await context.UnitOfMeasures
             .Where(u => excelUomSymbols.Contains(u.Symbol))
-            .ToListAsync();
+            .ToDictionaryAsync(u => u.Symbol.Trim(), u => u.Id, StringComparer.OrdinalIgnoreCase);
 
-        if (uomData.GroupBy(u => u.Symbol.Trim())
-            .Any(g => g.Count() > 1))
-            return Error.Validation("UOM.Duplicate",
-                "System error: Multiple UOMs found with the same symbol in database.");
-
-        var uomLookup = uomData.ToDictionary(u => u.Symbol.Trim(),
-            u => u.Id, StringComparer.OrdinalIgnoreCase);
-
-        // Batch Lookup
-        var batchData = await context.MaterialBatches
-            .AsSplitQuery()
-            .Include(b => b.Material)
-            .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
-            .ToListAsync();
-
-        if (batchData.GroupBy(b => b.BatchNumber.Trim()).Any(g => g.Count() > 1))
-            return Error.Validation("Batch.Duplicate",
-                "System error: Multiple Material Batches found with the same Number in database.");
-
-        var batchLookup = batchData.ToDictionary(b =>
-            b.BatchNumber.Trim(), b => b, StringComparer.OrdinalIgnoreCase);
-
-        // Shelf Lookup (with hierarchy)
+        // Shelf Lookup
         var shelfHierarchy = await context.WarehouseLocationShelves
             .Where(s => excelShelfCodes.Contains(s.Code))
-            .Select(s => new
-            {
+            .Select(s => new {
                 ShelfId = s.Id,
                 ShelfCode = s.Code.Trim(),
                 WarehouseName = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name.Trim()
-            })
-            .AsNoTracking().ToListAsync();
-
-        if (shelfHierarchy.GroupBy(x => $"{x.WarehouseName}|{x.ShelfCode}")
-            .Any(g => g.Count() > 1))
-            return Error.Validation("Shelf.Duplicate",
-                "System error: Multiple shelves found with same code in the same warehouse.");
+            }).ToListAsync();
 
         var shelfLookup = shelfHierarchy.ToDictionary(
-            x => $"{x.WarehouseName}|{x.ShelfCode}",
-            x => x.ShelfId,
-            StringComparer.OrdinalIgnoreCase);
+            x => $"{x.WarehouseName}|{x.ShelfCode}", x => x.ShelfId, StringComparer.OrdinalIgnoreCase);
+
+        // Material Lookup (Required to create new batches)
+        var materialLookup = await context.Materials
+            .Where(m => excelMaterialCodes.Contains(m.Code))
+            .ToDictionaryAsync(m => m.Code.Trim(), m => m.Id, StringComparer.OrdinalIgnoreCase);
+
+        // Existing Batch Lookup
+        var batchLookup = await context.MaterialBatches
+            .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
+            .ToDictionaryAsync(b => b.BatchNumber.Trim(), b => b, StringComparer.OrdinalIgnoreCase);
 
         // --- 3. PROCESS ROWS ---
         var shelfMaterialBatches = new List<ShelfMaterialBatch>();
+        var newBatches = new List<MaterialBatch>();
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetCell(string h) => headers.TryGetValue(h, out var col) ?
-                worksheet.Cells[row, col].Text.Trim() : null;
+            string GetCell(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
 
             var warehouseName = GetCell("Warehouse");
             var shelfCode = GetCell("Shelves");
             var batchNo = GetCell("Batch No.");
             var uomSymbol = GetCell("UOM");
             var materialCode = GetCell("Material Code");
+            var rowQuantity = decimal.TryParse(GetCell("Quantity"), out var qty) ? qty : 0;
 
-            if (string.IsNullOrEmpty(batchNo) && string.IsNullOrEmpty(shelfCode)) continue;
+            if (string.IsNullOrEmpty(batchNo) || string.IsNullOrEmpty(shelfCode)) continue;
 
-            // Validation: Batch
-            if (string.IsNullOrEmpty(batchNo) || !batchLookup.TryGetValue(batchNo, out var batch))
-                return Error.NotFound("MaterialBatch",
-                    $"Row {row}: Batch Number '{batchNo}' was not found.");
-            
-            if (!string.Equals(materialCode, batch.Material?.Code, StringComparison.OrdinalIgnoreCase))
+            // --- BATCH LOGIC: GET OR CREATE ---
+            if (!batchLookup.TryGetValue(batchNo, out var batch))
             {
-                return Error.Validation("Material.Mismatch", 
-                    $"Row {row}: Material Code '{materialCode}' does not match Batch '{batchNo}'" +
-                    $" (System expected: '{batch.Material?.Code}').");
+                // If batch doesn't exist, we must have a Material Code to create it
+                if (string.IsNullOrEmpty(materialCode) || !materialLookup.TryGetValue(materialCode, out var materialId))
+                {
+                    return Error.NotFound("Material", $"Row {row}: Material '{materialCode}' not found. Cannot create new Batch '{batchNo}'.");
+                }
+
+                batch = new MaterialBatch
+                {
+                    Id = Guid.NewGuid(),
+                    BatchNumber = batchNo,
+                    MaterialId = materialId,
+                    TotalQuantity = rowQuantity,
+                    Status = BatchStatus.Available
+                };
+                
+                // Add to dictionary and tracker so subsequent rows with the same new batch don't duplicate
+                batchLookup[batchNo] = batch;
+                newBatches.Add(batch);
             }
 
-            // Validation: Shelf
+            // --- SHELF & UOM VALIDATION ---
             var shelfKey = $"{warehouseName}|{shelfCode}";
-            if (string.IsNullOrEmpty(shelfCode) || !shelfLookup.TryGetValue(shelfKey, out var shelfId))
-                return Error.NotFound("Shelf",
-                    $"Row {row}: Shelf '{shelfCode}' not found in Warehouse '{warehouseName}'.");
+            if (!shelfLookup.TryGetValue(shelfKey, out var shelfId))
+                return Error.NotFound("Shelf", $"Row {row}: Shelf '{shelfCode}' not found in Warehouse '{warehouseName}'.");
 
-            // Validation: UOM
-            Guid? uomId = null;
-            if (!string.IsNullOrEmpty(uomSymbol))
-            {
-                if (uomLookup.TryGetValue(uomSymbol, out var foundId)) uomId = foundId;
-                else return Error.NotFound("UOM",
-                    $"Row {row}: UOM Symbol '{uomSymbol}' not found.");
-            }
+            Guid? uomId = (uomSymbol != null && uomLookup.TryGetValue(uomSymbol, out var foundUomId)) ? foundUomId : null;
 
             shelfMaterialBatches.Add(new ShelfMaterialBatch
             {
                 Id = Guid.NewGuid(),
                 WarehouseLocationShelfId = shelfId,
                 MaterialBatchId = batch.Id,
-                Quantity = decimal.TryParse(GetCell("Quantity"), out var qty) ? qty : 0,
+                Quantity = rowQuantity,
                 UoMId = uomId,
-                Note = $"Imported via Excel. Waybill: {GetCell("Waybill")}, AR: {GetCell("AR No.")}"
+                Note = $"Imported via Excel. Waybill: {GetCell("Waybill")}"
             });
         }
 
+        if (newBatches.Count != 0) await context.MaterialBatches.AddRangeAsync(newBatches);
         await context.ShelfMaterialBatches.AddRangeAsync(shelfMaterialBatches);
+        
         await context.SaveChangesAsync();
 
         return Result.Success();
