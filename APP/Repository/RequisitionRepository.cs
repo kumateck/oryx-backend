@@ -262,12 +262,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             w.DepartmentId == stockRequisition.DepartmentId && w.Type == WarehouseType.Production);
 
         if (productionWarehouse is null)
-            return Error.NotFound("User.Warehouse", "No production warehouse is associated with department who made stock requisition");
+            return Error.NotFound("User.Warehouse", 
+                "No production warehouse is associated with department who made stock requisition");
 
 
         foreach (var item in stockRequisition.Items)
         {
             var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
+            
+            var historicalBincards = await context.BinCardInformation
+                .AsSplitQuery()
+                .IgnoreQueryFilters()
+                .Include(binCardInformation => binCardInformation.MaterialBatch)
+                .Where(b => b.WarehouseId == appropriateWarehouse.Id)
+                .ToListAsync();
 
             if (stockRequisition.ProductionScheduleProductId == null)
                 return Error.Validation("Stock.Requisition",
@@ -278,7 +286,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             foreach (var batch in batchesToConsume)
             {
-                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m => m.Id == batch.MaterialBatch.Id);
+                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m => 
+                    m.Id == batch.MaterialBatch.Id);
                 if (materialBatch is null) continue;
 
                 materialBatch.QuantityAssigned = 0;
@@ -332,6 +341,17 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
 
                 await context.SaveChangesAsync();
+                
+                var history = historicalBincards
+                    .Where(b => b.MaterialBatch.MaterialId == materialBatch.MaterialId
+                                && b.WarehouseId == appropriateWarehouse.Id)
+                    .Select(b => new { b.QuantityReceived, b.QuantityIssued })
+                    .ToList();
+
+                var previousBalance = history.Sum(x => x.QuantityReceived) 
+                                      - history.Sum(x => x.QuantityIssued);
+            
+                var currentBalance = previousBalance - batch.Quantity;
 
                 var binCardEvent = new BinCardInformation
                 {
@@ -341,9 +361,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     ArNumber = "N/A",
                     QuantityReceived = 0,
                     QuantityIssued = batch.Quantity,
-                    BalanceQuantity = (await materialRepository.GetMaterialStockInWarehouseByBatch(materialBatch.Id, appropriateWarehouse.Id)).Value,
+                    BalanceQuantity = currentBalance,
                     UoMId = materialBatch.UoMId,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    WarehouseId = appropriateWarehouse.Id,
                 };
 
                 await context.BinCardInformation.AddAsync(binCardEvent);
@@ -438,7 +459,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             if (shelfMaterialBatch.Quantity < batch.Quantity)
             {
-                return Error.Validation("ShelfMaterialBatch.InsufficientQuantity", $"Insufficient quantity in ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId}.");
+                return Error.Validation("ShelfMaterialBatch.InsufficientQuantity", 
+                    $"Insufficient quantity in ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId}.");
             }
 
             var productionWarehouse = await context.Warehouses
@@ -450,7 +472,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             if (productionWarehouse == null)
             {
-                return Error.Validation("ProductionWarehouse.NotFound", "Production warehouse not found for the department.");
+                return Error.Validation("ProductionWarehouse.NotFound", 
+                    "Production warehouse not found for the department.");
             }
 
             // Update the quantity in the shelf
@@ -487,21 +510,46 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             await context.MassMaterialBatchMovements.AddAsync(batchMovement);
 
-            await context.SaveChangesAsync();
+            var fromWarehouse = shelfMaterialBatch
+                .WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse;
 
+            var toWarehouse = productionWarehouse;
+            
+            var warehouseIds = new List<Guid> { fromWarehouse.Id, toWarehouse.Id };
+            
+            var history = await context.BinCardInformation
+                .AsSplitQuery()
+                .IgnoreQueryFilters()
+                .Where(b => b.MaterialBatch.MaterialId == shelfMaterialBatch.MaterialBatch.MaterialId 
+                            && warehouseIds.Contains(b.WarehouseId.Value))
+                .Select(b => new { b.WarehouseId, b.QuantityReceived, b.QuantityIssued })
+                .ToListAsync();
+
+            var fromBalance = history
+                .Where(h => h.WarehouseId == fromWarehouse.Id)
+                .Sum(x => x.QuantityReceived - x.QuantityIssued);
+
+            var toBalance = history
+                .Where(h => h.WarehouseId == toWarehouse.Id)
+                .Sum(x => x.QuantityReceived - x.QuantityIssued);
+
+            var balanceAfterIssue = fromBalance - batch.Quantity;
+            var balanceAfterReceive = toBalance + batch.Quantity;
+            
             var toBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = shelfMaterialBatch.MaterialBatch.Id,
-                Description = shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Name,
+                Description = fromWarehouse.Name,
                 WayBill = "N/A",
                 ArNumber = "N/A",
                 QuantityReceived = 0,
                 QuantityIssued = batch.Quantity,
-                BalanceQuantity = (await materialRepository.GetShelfMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id)).Value,
+                BalanceQuantity = balanceAfterIssue,
                 UoMId = shelfMaterialBatch.MaterialBatch.UoMId,
                 ProductId = product.Id,
                 CreatedAt = DateTime.UtcNow,
-                CreatedById = userId
+                CreatedById = userId,
+                WarehouseId = fromWarehouse.Id
             };
 
             await context.BinCardInformation.AddAsync(toBinCardEvent);
@@ -514,11 +562,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 ArNumber = "N/A",
                 QuantityReceived = batch.Quantity,
                 QuantityIssued = 0,
-                BalanceQuantity = (await materialRepository.GetShelfMaterialStockInWarehouse(shelfMaterialBatch.MaterialBatch.MaterialId, productionWarehouse.Id)).Value,
+                BalanceQuantity = balanceAfterReceive,
                 UoMId = shelfMaterialBatch.MaterialBatch.UoMId,
                 ProductId = product.Id,
                 CreatedAt = DateTime.UtcNow,
-                CreatedById = userId
+                CreatedById = userId,
+                WarehouseId = productionWarehouse.Id
             };
 
             await context.BinCardInformation.AddAsync(fromBinCardEvent);

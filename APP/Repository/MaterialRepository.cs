@@ -982,6 +982,19 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .FirstOrDefaultAsync(w => w.Id == context.WarehouseLocationShelves
                 .FirstOrDefault(s => s.Id == request.ShelfMaterialBatches.First().WarehouseLocationShelfId)
                 .WarehouseLocationRack.WarehouseLocation.Warehouse.Id);
+        
+        var history = await context.BinCardInformation
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Where(b => b.MaterialBatch.MaterialId == materialBatch.MaterialId
+                        && b.WarehouseId == warehouse.Id)
+            .Select(b => new { b.QuantityReceived, b.QuantityIssued })
+            .ToListAsync();
+
+        var previousBalance = history.Sum(x => x.QuantityReceived) 
+                              - history.Sum(x => x.QuantityIssued);
+            
+        var currentBalance = previousBalance + totalQuantityToAssign;
 
         var binCardEvent = new BinCardInformation
         {
@@ -991,9 +1004,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             ArNumber = "N/A",
             QuantityReceived = totalQuantityToAssign,
             QuantityIssued = 0,
-            BalanceQuantity = (await GetShelfMaterialStockInWarehouse(materialBatch.Id, warehouse.Id)).Value,
+            BalanceQuantity = currentBalance,
             UoMId = materialBatch.UoMId,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            WarehouseId = warehouse.Id,
         };
 
         await context.BinCardInformation.AddAsync(binCardEvent);
