@@ -7,6 +7,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
+using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
@@ -307,6 +308,18 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
 
             case nameof(ProductionOrderWaybill):
                 return await context.ProductionOrderWaybills
+                    .IgnoreQueryFilters()
+                    .Where(p => p.Code.StartsWith(prefix))
+                    .CountAsync();
+            
+            case nameof(JobRequest):
+                return await context.JobRequests
+                    .IgnoreQueryFilters()
+                    .Where(p => p.Code.StartsWith(prefix))
+                    .CountAsync();
+            
+            case nameof(JobOrder):
+                return await context.JobOrders
                     .IgnoreQueryFilters()
                     .Where(p => p.Code.StartsWith(prefix))
                     .CountAsync();

@@ -4,6 +4,7 @@ namespace DOMAIN.Entities.JobRequests;
 
 public class CreateJobRequest
 {
+    [StringLength(255)] public string Code { get; set; }
     [Required, StringLength(500)]
     public string Location { get; set; }
     public Guid? EquipmentId { get; set; }

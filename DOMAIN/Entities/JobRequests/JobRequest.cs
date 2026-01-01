@@ -10,6 +10,7 @@ namespace DOMAIN.Entities.JobRequests;
 
 public class JobRequest : BaseEntity
 {
+    [StringLength(255)] public string Code { get; set; }
     public Guid DepartmentId { get; set; }
     public Department Department { get; set; }
     public string Location { get; set; }
