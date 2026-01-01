@@ -2943,7 +2943,26 @@ public class ProductionScheduleRepository(
                 UserId = userId
             };
             await context.MaterialBatchEvents.AddAsync(batchEvent);
-            await context.SaveChangesAsync();
+            
+            var warehouseIds = new List<Guid> { fromWarehouse.Id, toWarehouse.Id };
+
+            var history = await context.BinCardInformation
+                .IgnoreQueryFilters()
+                .Where(b => b.MaterialBatch.MaterialId == batch.MaterialId 
+                            && warehouseIds.Contains(b.WarehouseId.Value))
+                .Select(b => new { b.WarehouseId, b.QuantityReceived, b.QuantityIssued })
+                .ToListAsync();
+
+            var fromBalance = history
+                .Where(h => h.WarehouseId == fromWarehouse.Id)
+                .Sum(x => x.QuantityReceived - x.QuantityIssued);
+
+            var toBalance = history
+                .Where(h => h.WarehouseId == toWarehouse.Id)
+                .Sum(x => x.QuantityReceived - x.QuantityIssued);
+
+            var balanceAfterIssue = fromBalance - batchRequest.Quantity;
+            var balanceAfterReceive = toBalance + batchRequest.Quantity;
 
             var toBinCardEvent = new BinCardInformation
             {
@@ -2953,14 +2972,15 @@ public class ProductionScheduleRepository(
                 ArNumber = "N/A",
                 QuantityReceived = 0,
                 QuantityIssued = batchRequest.Quantity,
-                BalanceQuantity = (await materialRepository.GetShelfMaterialStockInWarehouse(batch.MaterialId, fromWarehouse.Id)).Value,
+                BalanceQuantity = balanceAfterIssue,
                 UoMId = batch.UoMId,
                 ProductId = productionExtraPacking.ProductionScheduleProduct.ProductId,
                 CreatedAt = DateTime.UtcNow,
-                CreatedById = userId
+                CreatedById = userId,
+                WarehouseId = fromWarehouse.Id,
             };
             await context.BinCardInformation.AddAsync(toBinCardEvent);
-
+            
             var fromBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = batch.Id,
@@ -2969,19 +2989,20 @@ public class ProductionScheduleRepository(
                 ArNumber = "N/A",
                 QuantityReceived = batchRequest.Quantity,
                 QuantityIssued = 0,
-                BalanceQuantity = (await materialRepository.GetShelfMaterialStockInWarehouse(batch.MaterialId, toWarehouse.Id)).Value,
+                BalanceQuantity = balanceAfterReceive,
                 UoMId = batch.UoMId,
                 ProductId = productionExtraPacking.ProductionScheduleProduct.ProductId,
                 CreatedAt = DateTime.UtcNow,
-                CreatedById = userId
+                CreatedById = userId,
+                WarehouseId = toWarehouse.Id,
             };
             await context.BinCardInformation.AddAsync(fromBinCardEvent);
-            await context.SaveChangesAsync();
 
             distributedBatches.Add(batch);
             remainingQuantity -= batchRequest.Quantity;
             if (remainingQuantity <= 0) break;
         }
+        await context.SaveChangesAsync();
 
         if (toWarehouse.ArrivalLocation == null)
         {
