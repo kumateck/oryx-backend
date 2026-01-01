@@ -9,6 +9,7 @@ namespace DOMAIN.Entities.JobRequests;
 
 public class JobRequestDto : WithAttachment
 {
+    public string Code { get; set; }
     public DepartmentDto Department { get; set; }
     public string Location { get; set; }
     public EquipmentDto Equipment { get; set; }

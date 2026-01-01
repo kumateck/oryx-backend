@@ -2587,10 +2587,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             {
                 case WarehouseType.RawMaterialStorage when materialKind != MaterialKind.Raw:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
-                            "Warehouse and material do not belong together. Warehouse is raw whiles material is packaging");
+                            "Warehouse and material do not belong together." +
+                            " Warehouse is raw whiles material is packaging");
                 case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
-                            "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw");
+                            "Warehouse and material do not belong together." +
+                            " Warehouse is packaging whiles material is raw");
                 case WarehouseType.FinishedGoodsStorage or WarehouseType.Production:
                     return Error.Validation("Warehouse.Shelf.Material.Kind",
                             "Warehouse type does not allow shelf to be assigned");
@@ -2619,7 +2621,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.MaterialBatchEvents.AddRangeAsync(materialBatchEvents);
         await context.BinCardInformation.AddRangeAsync(binCards);
 
-        distributeMaterial.DistributedRequisitionItem.DistributedRequisitionMaterial.Status = DistributedRequisitionMaterialStatus.Distributed;
+        distributeMaterial.DistributedRequisitionItem.DistributedRequisitionMaterial.Status 
+            = DistributedRequisitionMaterialStatus.Distributed;
         distributeMaterial.Status = DistributeMaterialStatus.Distributed;
         distributeMaterial.DistributedRequisitionItem.RequisitionItem.QuantityReceived +=
             request.ShelfMaterialBatches.Sum(b => b.Quantity);
@@ -2700,7 +2703,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             var material = await context.Materials.FirstOrDefaultAsync(m => m.Code == materialCode);
             if (material is null)
-                return Error.NotFound("Material.NotFound", $"Material with code '{materialCode}' not found (row {row})");
+                return Error.NotFound("Material.NotFound",
+                    $"Material with code '{materialCode}' not found (row {row})");
 
             var uom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name == uomName);
             if (uom is null)
@@ -2733,7 +2737,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 UoMId = uom.Id,
                 Status = BatchStatus.Received,
                 DateReceived = DateTime.UtcNow,
-                ManufacturingDate = DateTime.TryParse(GetCell("Manufacturing Date"), out var mfg) ? mfg : null,
+                ManufacturingDate = DateTime.TryParse(GetCell("Manufacturing Date"), out var mfg) 
+                    ? mfg : null,
                 ExpiryDate = DateTime.TryParse(GetCell("Expiry Date"), out var exp) ? exp : null,
                 RetestDate = DateTime.TryParse(GetCell("Retest Date"), out var retest) ? retest : null,
                 CreatedById = userId,
@@ -2807,7 +2812,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
 
             batches = batches.Where(b =>
-                b.Locations.Any(l => l.Location?.Id != null && filter.WarehouseIds.Contains(l.Location.Id.Value)))
+                b.Locations.Any(l => l.Location?.Id != null && 
+                                     filter.WarehouseIds.Contains(l.Location.Id.Value)))
                 .ToList();
         }
 
@@ -2829,7 +2835,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(int page, int pageSize, string searchQuery, MaterialKind? kind)
+    public async Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(int page, int pageSize,
+        string searchQuery, MaterialKind? kind)
     {
         var query = context.MaterialRejects
             .AsSplitQuery()
@@ -2846,7 +2853,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.MaterialBatch.BatchNumber,
-                q => q.MaterialBatch.Material.Name, q => q.MaterialBatch.Material.Description, q => q.MaterialBatch.Material.Code);
+                q => q.MaterialBatch.Material.Name, q => q.MaterialBatch.Material.Description,
+                q => q.MaterialBatch.Material.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -2906,7 +2914,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // --- 3. FETCH LOOKUPS (DATABASE) ---
         var uomLookup = await context.UnitOfMeasures
             .Where(u => excelUomSymbols.Contains(u.Symbol))
-            .ToDictionaryAsync(u => u.Symbol.Trim(), u => u.Id, StringComparer.OrdinalIgnoreCase);
+            .ToDictionaryAsync(u => u.Symbol.Trim(),
+                u => u.Id, StringComparer.OrdinalIgnoreCase);
 
         var shelfHierarchy = await context.WarehouseLocationShelves
             .Where(s => excelShelfCodes.Contains(s.Code))
