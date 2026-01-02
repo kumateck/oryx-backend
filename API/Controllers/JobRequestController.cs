@@ -337,20 +337,39 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     /// - `preferredCompletionDate` (DateTime?): Update preferred completion date
     /// - `item` (string, max 500 chars): Update item name
     /// - `itemNumber` (string, max 500 chars): Update item number
-    /// - `serviceIds` (array of Guid, optional): List of service IDs. The first service will be set as the primary service. Provide an empty array to clear the service.
+    /// - `serviceId` (Guid?, optional): Single service ID to set. Takes precedence over `serviceIds` if both are provided. Set to `null` to clear the service.
+    /// - `serviceIds` (array of Guid, optional): List of service IDs. The first service will be set as the primary service. Only used if `serviceId` is not provided. Provide an empty array to clear the service.
     /// 
     /// **Validation:**
     /// - If `equipmentId` is provided, the equipment must exist in the system
+    /// - If `serviceId` is provided, the service must exist in the system
     /// - If `serviceIds` are provided, all services must exist in the system
     /// - `preferredCompletionDate` must be in the future if provided
     /// 
-    /// **Example Request:**
+    /// **Example Request (using serviceId):**
+    /// ```json
+    /// {
+    ///   "location": "Updated Production Floor - Line 3",
+    ///   "descriptionOfWork": "Updated description with more details",
+    ///   "preferredCompletionDate": "2024-01-25T17:00:00Z",
+    ///   "serviceId": "5fa85f64-5717-4562-b3fc-2c963f66afa7"
+    /// }
+    /// ```
+    /// 
+    /// **Example Request (using serviceIds):**
     /// ```json
     /// {
     ///   "location": "Updated Production Floor - Line 3",
     ///   "descriptionOfWork": "Updated description with more details",
     ///   "preferredCompletionDate": "2024-01-25T17:00:00Z",
     ///   "serviceIds": ["5fa85f64-5717-4562-b3fc-2c963f66afa7"]
+    /// }
+    /// ```
+    /// 
+    /// **Example Request (clearing service):**
+    /// ```json
+    /// {
+    ///   "serviceId": null
     /// }
     /// ```
     /// 
