@@ -86,18 +86,12 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     /// - `equipmentInstrumentNumber` (optional, max 1000 chars): Equipment identification number
     /// - `item` (optional, max 500 chars): Related item name
     /// - `itemNumber` (optional, max 500 chars): Related item number
-    /// - `activities` (optional, array): List of activities performed. Each activity includes:
-    ///   - `activityDescription` (required, max 2000 chars): Description of the activity
-    ///   - `performedAt` (required, DateTime): When the activity was performed
-    ///   - `performedById` (required, Guid): User who performed the activity
-    ///   - `notes` (optional, string): Additional notes
     /// - `serviceIds` (optional, array of Guid): List of service IDs associated with this request. The first service will be set as the primary service.
     /// 
     /// **Business Rules:**
     /// - The `preferredCompletionDate` should be after `dateOfIssue`
     /// - If `equipmentId` is provided, the equipment must exist in the system
     /// - If `serviceIds` are provided, all services must exist in the system
-    /// - If `activities` are provided, all `performedById` users must exist
     /// - Department is automatically determined from the user's authentication token
     /// 
     /// **Example Request:**
@@ -111,14 +105,6 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     ///   "preferredCompletionDate": "2024-01-20T17:00:00Z",
     ///   "item": "Floor Scale",
     ///   "itemNumber": "FS-001",
-    ///   "activities": [
-    ///     {
-    ///       "activityDescription": "Initial inspection completed",
-    ///       "performedAt": "2024-01-15T10:30:00Z",
-    ///       "performedById": "8d9e6679-7425-40de-944b-e07fc1f90ae8",
-    ///       "notes": "Found calibration issue"
-    ///     }
-    ///   ],
     ///   "serviceIds": [
     ///     "5fa85f64-5717-4562-b3fc-2c963f66afa7"
     ///   ]
@@ -351,9 +337,11 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     /// - `preferredCompletionDate` (DateTime?): Update preferred completion date
     /// - `item` (string, max 500 chars): Update item name
     /// - `itemNumber` (string, max 500 chars): Update item number
+    /// - `serviceIds` (array of Guid, optional): List of service IDs. The first service will be set as the primary service. Provide an empty array to clear the service.
     /// 
     /// **Validation:**
     /// - If `equipmentId` is provided, the equipment must exist in the system
+    /// - If `serviceIds` are provided, all services must exist in the system
     /// - `preferredCompletionDate` must be in the future if provided
     /// 
     /// **Example Request:**
@@ -361,7 +349,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     /// {
     ///   "location": "Updated Production Floor - Line 3",
     ///   "descriptionOfWork": "Updated description with more details",
-    ///   "preferredCompletionDate": "2024-01-25T17:00:00Z"
+    ///   "preferredCompletionDate": "2024-01-25T17:00:00Z",
+    ///   "serviceIds": ["5fa85f64-5717-4562-b3fc-2c963f66afa7"]
     /// }
     /// ```
     /// 
@@ -679,5 +668,79 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     {
         var result = await repository.UpdateJobRequestStatus(id, request.Status);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves completed job requests for internal employees
+    /// </summary>
+    /// <remarks>
+    /// Returns a paginated list of completed job requests that were handled internally by employees.
+    /// This endpoint is specifically designed for internal employees to view their completed work.
+    /// 
+    /// **Query Parameters:**
+    /// - `page` (int, default: 1): Page number (1-based indexing)
+    /// - `pageSize` (int, default: 10): Number of items per page (max recommended: 100)
+    /// - `searchQuery` (string, optional): Searches across:
+    ///   - Location field
+    ///   - DescriptionOfWork field
+    ///   - EquipmentInstrumentNumber field
+    ///   - Case-insensitive partial matching
+    /// - `employeeId` (Guid, optional): Filter by specific employee ID. If not provided, returns all completed internal job requests.
+    /// 
+    /// **Response Structure:**
+    /// The response includes pagination metadata and the list of completed job requests:
+    /// ```json
+    /// {
+    ///   "data": [
+    ///     {
+    ///       "id": "guid",
+    ///       "location": "string",
+    ///       "status": 4,
+    ///       "handlingType": 1,
+    ///       "descriptionOfWork": "string",
+    ///       "dateOfIssue": "2024-01-15T10:00:00Z",
+    ///       "preferredCompletionDate": "2024-01-20T17:00:00Z",
+    ///       "department": { ... },
+    ///       "equipment": { ... },
+    ///       "issuedBy": { ... },
+    ///       "assignedToEmployee": { ... },
+    ///       "assignedAt": "2024-01-16T10:00:00Z",
+    ///       "assignedBy": { ... },
+    ///       "executions": [ ... ]
+    ///     }
+    ///   ],
+    ///   "page": 1,
+    ///   "pageSize": 10,
+    ///   "totalCount": 25,
+    ///   "totalPages": 3,
+    ///   "hasPreviousPage": false,
+    ///   "hasNextPage": true
+    /// }
+    /// ```
+    /// 
+    /// **Example Requests:**
+    /// - GET /api/v1/job-requests/completed/internal
+    /// - GET /api/v1/job-requests/completed/internal?page=1&amp;pageSize=20
+    /// - GET /api/v1/job-requests/completed/internal?employeeId=7c9e6679-7425-40de-944b-e07fc1f90ae7
+    /// - GET /api/v1/job-requests/completed/internal?searchQuery=floor scale&amp;page=1&amp;pageSize=10
+    /// </remarks>
+    /// <param name="page">Page number starting from 1 (default: 1)</param>
+    /// <param name="pageSize">Number of items per page (default: 10, recommended max: 100)</param>
+    /// <param name="searchQuery">Search term for location, description, or equipment number (case-insensitive)</param>
+    /// <param name="employeeId">Optional employee ID to filter by specific employee</param>
+    /// <returns>Paginated list of completed job requests for internal employees</returns>
+    /// <response code="200">Returns paginated list of completed job requests with pagination metadata</response>
+    /// <response code="401">Unauthorized - User must be authenticated with valid Bearer token</response>
+    [HttpGet("completed/internal")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<JobRequestDto>>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetCompletedJobRequestsForInternalEmployees(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] Guid? employeeId = null)
+    {
+        var result = await repository.GetCompletedJobRequestsForInternalEmployees(page, pageSize, searchQuery, employeeId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

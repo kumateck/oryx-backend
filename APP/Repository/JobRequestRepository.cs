@@ -37,16 +37,6 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
             }
         }
 
-        // Validate activities if provided
-        if (request.Activities != null && request.Activities.Any())
-        {
-            foreach (var activity in request.Activities)
-            {
-                var performedByExists = await userManager.FindByIdAsync(activity.PerformedById.ToString());
-                if (performedByExists is null) return Error.Validation("User.Invalid", $"Invalid user for activity: {activity.PerformedById}");
-            }
-        }
-
         var jobRequest = mapper.Map<JobRequest>(request);
         jobRequest.DepartmentId = departmentId;
         jobRequest.IssuedById = issuedById;
@@ -59,22 +49,6 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
         await context.JobRequests.AddAsync(jobRequest);
         await context.SaveChangesAsync();
-
-        // Create activities if provided
-        if (request.Activities != null && request.Activities.Any())
-        {
-            var activities = request.Activities.Select(a => new JobActivity
-            {
-                JobExecutionId = null, // Activities at creation don't belong to an execution yet
-                ActivityDescription = a.ActivityDescription,
-                PerformedAt = a.PerformedAt,
-                PerformedById = a.PerformedById,
-                Notes = a.Notes
-            }).ToList();
-
-            await context.JobActivities.AddRangeAsync(activities);
-            await context.SaveChangesAsync();
-        }
 
         return jobRequest.Id;
     }
@@ -219,7 +193,29 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
             if (!equipment) return Error.Validation("Equipment.Invalid", "Invalid equipment");
         }
 
+        // Validate services if provided
+        if (request.ServiceIds != null && request.ServiceIds.Any())
+        {
+            foreach (var serviceId in request.ServiceIds)
+            {
+                var serviceExists = await context.Services.AnyAsync(s => s.Id == serviceId);
+                if (!serviceExists) return Error.Validation("Service.Invalid", $"Invalid service: {serviceId}");
+            }
+        }
+
         mapper.Map(request, jobRequest);
+        
+        // Set first service if provided
+        if (request.ServiceIds != null && request.ServiceIds.Any())
+        {
+            jobRequest.ServiceId = request.ServiceIds.First();
+        }
+        else if (request.ServiceIds != null && request.ServiceIds.Count == 0)
+        {
+            // If empty list is provided, clear the service
+            jobRequest.ServiceId = null;
+        }
+
         context.JobRequests.Update(jobRequest);
         await context.SaveChangesAsync();
 
@@ -297,5 +293,36 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         await context.SaveChangesAsync();
 
         return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetCompletedJobRequestsForInternalEmployees(int page, int pageSize,
+        string searchQuery = null, Guid? employeeId = null)
+    {
+        var query = context.JobRequests
+            .AsSplitQuery()
+            .Include(j => j.Department)
+            .Include(j => j.Equipment)
+            .Include(j => j.IssuedBy)
+            .Include(j => j.AssignedToEmployee)
+            .Include(j => j.AssignedBy)
+            .Include(j => j.Service)
+            .Where(j => j.HandlingType == JobHandlingType.Internal && 
+                        j.Status == JobRequestStatus.Completed)
+            .AsQueryable();
+
+        // Filter by employee if provided
+        if (employeeId.HasValue)
+        {
+            query = query.Where(j => j.AssignedToEmployeeId == employeeId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.DescriptionOfWork,
+                q => q.Location);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
+            mapper.Map<JobRequestDto>);
     }
 }
