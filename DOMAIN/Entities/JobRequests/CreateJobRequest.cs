@@ -21,8 +21,6 @@ public class CreateJobRequest
     [StringLength(500)]
     public string ItemNumber { get; set; }
     
-    public List<RecordJobActivityRequest> Activities { get; set; } = [];
-    
     public List<Guid> ServiceIds { get; set; } = [];
 }
 
@@ -35,6 +33,7 @@ public class UpdateJobRequestRequest
     public DateTime? PreferredCompletionDate { get; set; }
     public string Item { get; set; }
     public string ItemNumber { get; set; }
+    public List<Guid> ServiceIds { get; set; } = [];
 }
 
 public class AssignInternalJobRequest
