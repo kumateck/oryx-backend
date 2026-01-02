@@ -25,5 +25,6 @@ public class Department
 
     public ICollection<Designation> Designations { get; set; } = new List<Designation>();
     public Division Division { get; set; }
+    public bool IsSeeded { get; set; }
 }
 

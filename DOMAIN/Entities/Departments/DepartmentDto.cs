@@ -14,6 +14,7 @@ public class DepartmentDto : BaseDto
     public List<WarehouseDto> Warehouses { get; set; } = [];
     public Division Division { get; set; }
     public CollectionItemDto ParentDepartment { get; set; }
+    public bool IsSeeded { get; set; }
 }
 
 public class DepartmentListDto : BaseDto
