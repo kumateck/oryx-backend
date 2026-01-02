@@ -14,6 +14,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
     public async Task<Result<Guid>> CreateServiceQuotation(CreateServiceQuotationRequest request)
     {
         var jobOrder = await context.JobOrders
+            .AsSplitQuery()
             .Include(j => j.ServiceProviders)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
 
@@ -56,7 +57,12 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
             Quantity = i.Quantity,
             UnitOfMeasureId = i.UnitOfMeasureId,
             UnitPrice = i.UnitPrice,
-            Supplier = i.Supplier
+        }).ToList();
+
+        quotation.ServiceCharges = request.ServiceCharges.Select(i => new ServiceCharge
+        {
+            Name = i.Name,
+            Cost = i.Cost
         }).ToList();
 
         await context.ServiceQuotations.AddAsync(quotation);
@@ -168,7 +174,8 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
 
         // Calculate negotiated total cost
         var negotiatedMaterialsCost = quotation.Items.Sum(i => i.NegotiatedTotalPrice ?? i.TotalPrice);
-        quotation.NegotiatedTotalCost = (request.NegotiatedServiceCharge ?? quotation.ServiceCharge) + negotiatedMaterialsCost;
+        quotation.NegotiatedTotalCost = (request.NegotiatedServiceCharge ?? quotation.TotalServiceCharge) 
+                                        + negotiatedMaterialsCost;
 
         context.ServiceQuotations.Update(quotation);
         await context.SaveChangesAsync();
@@ -185,7 +192,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
             .Include(q => q.Items).ThenInclude(i => i.Item)
             .Include(q => q.Items).ThenInclude(i => i.UnitOfMeasure)
             .Where(q => q.JobOrderId == request.JobOrderId)
-            .OrderBy(q => q.TotalCost)
+            .OrderBy(q => q.GrandTotal)
             .ToListAsync();
 
         if (!quotations.Any())
