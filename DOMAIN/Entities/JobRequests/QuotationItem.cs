@@ -30,9 +30,6 @@ public class QuotationItem : BaseEntity
 
     public decimal TotalPrice => Quantity * UnitPrice;
 
-    [StringLength(500)]
-    public string Supplier { get; set; }
-
     // Track if this was negotiated
     public decimal? NegotiatedUnitPrice { get; set; }
     public decimal? NegotiatedTotalPrice => NegotiatedUnitPrice.HasValue

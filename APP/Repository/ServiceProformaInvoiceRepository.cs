@@ -28,7 +28,7 @@ public class ServiceProformaInvoiceRepository(
             .ThenInclude(q => q.Items)
             .Include(j => j.SelectedQuotation)
             .ThenInclude(q => q.ServiceProvider)
-            .Include(j => j.JobRequest)
+            .Include(j => j.JobRequest).Include(jobOrder => jobOrder.Service)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
 
         if (jobOrder is null)
@@ -69,7 +69,7 @@ public class ServiceProformaInvoiceRepository(
             RequestedDate = DateTime.UtcNow,
             RequestedById = requestedById,
             Notes = request.Notes,
-            ServiceCharge = quotation.NegotiatedServiceCharge ?? quotation.ServiceCharge,
+            ServiceCharge = quotation.NegotiatedServiceCharge ?? quotation.TotalServiceCharge,
             CurrencyId = quotation.CurrencyId,
             Status = ServiceProformaInvoiceStatus.Requested,
             // Copy items from quotation
@@ -81,7 +81,6 @@ public class ServiceProformaInvoiceRepository(
                 Quantity = item.Quantity,
                 UnitOfMeasureId = item.UnitOfMeasureId,
                 UnitPrice = item.NegotiatedUnitPrice ?? item.UnitPrice,
-                Supplier = item.Supplier
             }).ToList()
         };
 

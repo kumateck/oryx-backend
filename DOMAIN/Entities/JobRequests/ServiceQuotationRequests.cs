@@ -16,8 +16,7 @@ public class CreateServiceQuotationRequest
     [Required]
     public DateTime SubmittedDate { get; set; }
 
-    [Required, Range(0, double.MaxValue)]
-    public decimal ServiceCharge { get; set; }
+    public List<CreateServiceCharge> ServiceCharges { get; set; } = [];
 
     [Required]
     public Guid CurrencyId { get; set; }
@@ -32,6 +31,12 @@ public class CreateServiceQuotationRequest
     public string Notes { get; set; }
 
     public List<CreateQuotationItemRequest> Items { get; set; } = [];
+}
+
+public class CreateServiceCharge
+{
+    public string Name { get; set; }
+    public decimal Cost { get; set; }
 }
 
 public class CreateQuotationItemRequest

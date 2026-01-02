@@ -40,6 +40,5 @@ public class ServiceProformaInvoiceItemDto : BaseDto
     public UnitOfMeasureDto UnitOfMeasure { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal TotalPrice { get; set; }
-    public string Supplier { get; set; }
 }
 

@@ -81,9 +81,6 @@ public class ServiceProformaInvoiceItem : BaseEntity
     public decimal UnitPrice { get; set; }
 
     public decimal TotalPrice => Quantity * UnitPrice;
-
-    [StringLength(500)]
-    public string Supplier { get; set; }
 }
 
 public enum ServiceProformaInvoiceStatus
