@@ -496,35 +496,40 @@ public class InventoryProcurementRepository(
         List<VendorQuotationResponseDto> vendorQuotationResponse,
         Guid vendorQuotationId)
     {
-        var vendorQuotation = await context.VendorQuotations
-            .Include(vq => vq.Items)
-            .ThenInclude(vendorQuotationItem => vendorQuotationItem.Item)
-            .FirstOrDefaultAsync(vq => vq.Id == vendorQuotationId);
+        if (vendorQuotationResponse == null || vendorQuotationResponse.Count == 0)
+            return Error.Validation("Vendor.Quotation", "No quotation responses provided.");
 
-        if (vendorQuotation is null)
-            return RequisitionErrors.NotFound(vendorQuotationId);
+        // Get all VendorQuotationItems for this quotation
+        var items = await context.VendorQuotationItems
+            .Where(vqi => vqi.VendorQuotationId == vendorQuotationId)
+            .ToListAsync();
 
-        if (vendorQuotation.Items.Count == 0)
-            return Error.Validation("Vendor.Quotation", "No items found.");
+        if (items.Count == 0)
+            return Error.Validation("Vendor.Quotation", "No items found for this quotation.");
+        
+        var responseLookup = vendorQuotationResponse.ToDictionary(r => r.Id);
 
-        var responseLookup = vendorQuotationResponse
-            .ToDictionary(r => r.Id);
-
-        foreach (var item in vendorQuotation.Items)
+        foreach (var item in items)
         {
             if (!responseLookup.TryGetValue(item.ItemId, out var response))
             {
                 return Error.Validation(
                     "Vendor.Quotation.MissingItem",
-                    $"Missing quoted price for item {item.Item?.Name}"
+                    $"Missing quoted price for item {item.ItemId}"
                 );
             }
-
+            
             item.QuotedPrice = response.Price;
-           
         }
 
-        vendorQuotation.ReceivedQuotation = true;
+        var quotation = await context.VendorQuotations
+            .FirstOrDefaultAsync(vq => vq.Id == vendorQuotationId);
+
+        if (quotation == null)
+            return Error.NotFound("Vendor.Quotation", "Vendor quotation not found.");
+
+        quotation.ReceivedQuotation = true;
+
         await context.SaveChangesAsync();
 
         return Result.Success();
