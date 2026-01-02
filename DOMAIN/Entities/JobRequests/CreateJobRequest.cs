@@ -33,6 +33,7 @@ public class UpdateJobRequestRequest
     public DateTime? PreferredCompletionDate { get; set; }
     public string Item { get; set; }
     public string ItemNumber { get; set; }
+    public Guid? ServiceId { get; set; }
     public List<Guid> ServiceIds { get; set; } = [];
 }
 
@@ -123,4 +124,15 @@ public class UpdateJobRequestStatusRequest
 {
     [Required(ErrorMessage = "Status is required. Valid values: 0 (Pending), 1 (Acknowledged), 2 (Assigned), 3 (JobStarted), 4 (Completed), 5 (SentToExternal), 6 (QuotationReceived), 7 (ContractorSelected), 8 (Approved), 9 (Cancelled)")]
     public JobRequestStatus Status { get; set; }
+}
+
+public class CompleteJobRequestRequest
+{
+    [Required]
+    public Guid JobRequestId { get; set; }
+    
+    [Required, StringLength(2000)]
+    public string ActivityPerformedNote { get; set; }
+    
+    public string Notes { get; set; }
 }
