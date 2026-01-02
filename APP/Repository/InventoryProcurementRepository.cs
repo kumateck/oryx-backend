@@ -492,37 +492,41 @@ public class InventoryProcurementRepository(
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<VendorQuotationDto>);
     }
 
-    public async Task<Result> ReceiveQuotationFromVendor(List<VendorQuotationResponseDto> vendorQuotationResponse,
+    public async Task<Result> ReceiveQuotationFromVendor(
+        List<VendorQuotationResponseDto> vendorQuotationResponse,
         Guid vendorQuotationId)
     {
         var vendorQuotation = await context.VendorQuotations
-            .AsSplitQuery()
-            .Include(s => s.Items)
-            .FirstOrDefaultAsync(s => s.Id == vendorQuotationId);
+            .Include(vq => vq.Items)
+            .ThenInclude(vendorQuotationItem => vendorQuotationItem.Item)
+            .FirstOrDefaultAsync(vq => vq.Id == vendorQuotationId);
 
-        if (vendorQuotation == null)
-        {
+        if (vendorQuotation is null)
             return RequisitionErrors.NotFound(vendorQuotationId);
-        }
 
         if (vendorQuotation.Items.Count == 0)
-        {
-            return Error.Validation("Vendor.Quotation", "No items found for this quotation.");
-        }
+            return Error.Validation("Vendor.Quotation", "No items found.");
+
+        var responseLookup = vendorQuotationResponse
+            .ToDictionary(r => r.Id);
 
         foreach (var item in vendorQuotation.Items)
         {
-            var response = vendorQuotationResponse.FirstOrDefault(s => s.Id == item.Id);
-            if (response != null)
+            if (!responseLookup.TryGetValue(item.ItemId, out var response))
             {
-                item.QuotedPrice = response.Price;
+                return Error.Validation(
+                    "Vendor.Quotation.MissingItem",
+                    $"Missing quoted price for item {item.Item?.Name}"
+                );
             }
+
+            item.QuotedPrice = response.Price;
+           
         }
 
         vendorQuotation.ReceivedQuotation = true;
-        context.VendorQuotations.Update(vendorQuotation);
-        context.VendorQuotationItems.UpdateRange(vendorQuotation.Items);
         await context.SaveChangesAsync();
+
         return Result.Success();
     }
 
