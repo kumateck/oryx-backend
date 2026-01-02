@@ -325,4 +325,66 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
             mapper.Map<JobRequestDto>);
     }
+
+    public async Task<Result> CompleteJobRequest(CompleteJobRequestRequest request, Guid userId)
+    {
+        var jobRequest = await context.JobRequests
+            .Include(j => j.AssignedToEmployee)
+            .Include(j => j.Executions)
+            .FirstOrDefaultAsync(j => j.Id == request.JobRequestId);
+
+        if (jobRequest is null)
+            return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{request.JobRequestId}' not found");
+
+        // Verify job request is assigned internally
+        if (jobRequest.HandlingType != JobHandlingType.Internal)
+            return Error.Validation("JobRequest.InvalidHandlingType", "Job request must be assigned internally to be completed");
+
+        if (!jobRequest.AssignedToEmployeeId.HasValue)
+            return Error.Validation("JobRequest.NotAssigned", "Job request must be assigned to an employee");
+
+        // Get the user to verify they match the assigned employee
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return Error.Validation("User.Invalid", "Invalid user");
+
+        // Verify the user's email matches the assigned employee's email
+        if (jobRequest.AssignedToEmployee?.Email != user.Email)
+            return Error.Validation("JobRequest.Unauthorized", "You are not authorized to complete this job request. Only the assigned employee can complete it.");
+
+        // Get the job execution if it exists
+        var jobExecution = jobRequest.Executions.FirstOrDefault();
+
+        // Create activity record
+        var activity = new JobActivity
+        {
+            JobExecutionId = jobExecution?.Id,
+            ActivityDescription = request.ActivityPerformedNote,
+            PerformedAt = DateTime.UtcNow,
+            PerformedById = userId,
+            Notes = request.Notes
+        };
+
+        await context.JobActivities.AddAsync(activity);
+
+        // Update job execution status if it exists
+        if (jobExecution != null)
+        {
+            jobExecution.Status = JobExecutionStatus.Completed;
+            jobExecution.CompletedAt = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(request.Notes))
+            {
+                jobExecution.Notes = request.Notes;
+            }
+            context.JobExecutions.Update(jobExecution);
+        }
+
+        // Update job request status to Completed
+        jobRequest.Status = JobRequestStatus.Completed;
+        context.JobRequests.Update(jobRequest);
+
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 }
