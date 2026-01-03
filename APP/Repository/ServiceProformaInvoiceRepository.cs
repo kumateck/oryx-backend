@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Email;
 using APP.Services.Pdf;
@@ -76,7 +75,6 @@ public class ServiceProformaInvoiceRepository(
             Items = quotation.Items.Select(item => new ServiceProformaInvoiceItem
             {
                 ItemId = item.ItemId,
-                Description = item.Description,
                 Quantity = item.Quantity,
                 UnitOfMeasureId = item.UnitOfMeasureId,
                 UnitPrice = item.NegotiatedUnitPrice ?? item.UnitPrice,

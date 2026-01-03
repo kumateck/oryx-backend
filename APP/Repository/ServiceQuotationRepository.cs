@@ -55,7 +55,6 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         quotation.Items = request.Items.Select(i => new QuotationItem
         {
             ItemId = i.ItemId,
-            Description = i.Description,
             Quantity = i.Quantity,
             UnitOfMeasureId = i.UnitOfMeasureId,
             UnitPrice = i.UnitPrice,
