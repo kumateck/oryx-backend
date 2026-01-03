@@ -950,7 +950,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         );
     }
 
-    public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
+    public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>>
+        GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
     {
         var query = context.BinCardInformation
             .AsSplitQuery()
@@ -975,7 +976,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         );
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid productId)
+    public async Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>>
+        GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid productId)
     {
         var query = context.ProductBinCardInformation
             .AsSplitQuery()

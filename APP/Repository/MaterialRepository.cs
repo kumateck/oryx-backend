@@ -2932,6 +2932,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 u => u.Id, StringComparer.OrdinalIgnoreCase);
 
         var shelfHierarchy = await context.WarehouseLocationShelves
+            .IgnoreQueryFilters()
             .Where(s => excelShelfCodes.Contains(s.Code))
             .Select(s => new
             {
@@ -2942,7 +2943,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             }).ToListAsync();
 
         var shelfLookup = shelfHierarchy.ToDictionary(
-            x => $"{x.WarehouseName}|{x.ShelfCode}", x => x, StringComparer.OrdinalIgnoreCase);
+            x => $"{x.WarehouseName}|{x.ShelfCode}",
+            x => x, StringComparer.OrdinalIgnoreCase);
 
         var materialLookup = await context.Materials
             .Where(m => excelMaterialCodes.Contains(m.Code))
@@ -2950,7 +2952,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var batchLookup = await context.MaterialBatches
             .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
-            .ToDictionaryAsync(b => b.BatchNumber.Trim(), b => b, StringComparer.OrdinalIgnoreCase);
+            .ToDictionaryAsync(b => b.BatchNumber.Trim(),
+                b => b, StringComparer.OrdinalIgnoreCase);
 
         // --- 4. PROCESS ROWS ---
         var shelfMaterialBatches = new List<ShelfMaterialBatch>();
@@ -2959,7 +2962,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetCell(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+            string GetCell(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() 
+                : null;
 
             var warehouseName = GetCell("Warehouse");
             var shelfCode = GetCell("Shelves");
@@ -2977,7 +2981,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             // --- BATCH LOGIC: GET OR CREATE ---
             if (!batchLookup.TryGetValue(batchNo, out var batch))
             {
-                if (string.IsNullOrEmpty(materialCode) || !materialLookup.TryGetValue(materialCode, out var materialId))
+                if (string.IsNullOrEmpty(materialCode) ||
+                    !materialLookup.TryGetValue(materialCode, out var materialId))
                     return Error.NotFound("Material",
                         $"Row {row}: Material '{materialCode}' not found. Cannot create Batch '{batchNo}'.");
 
