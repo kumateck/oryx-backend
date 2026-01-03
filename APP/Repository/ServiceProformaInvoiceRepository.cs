@@ -76,7 +76,6 @@ public class ServiceProformaInvoiceRepository(
             Items = quotation.Items.Select(item => new ServiceProformaInvoiceItem
             {
                 ItemId = item.ItemId,
-                ItemName = item.ItemName,
                 Description = item.Description,
                 Quantity = item.Quantity,
                 UnitOfMeasureId = item.UnitOfMeasureId,

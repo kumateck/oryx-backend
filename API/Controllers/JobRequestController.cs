@@ -515,7 +515,7 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         var result = await repository.AssignInternalJob(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the status of a job request
     /// </summary>

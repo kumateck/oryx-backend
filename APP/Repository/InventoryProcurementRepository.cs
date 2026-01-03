@@ -173,7 +173,7 @@ public class InventoryProcurementRepository(
                 }
 
                 await context.SaveChangesAsync();
-                
+
                 var sendResult = await SendQuotationToVendor(sourceRequisition.VendorId);
 
                 if (!sendResult.IsSuccess)
@@ -444,8 +444,8 @@ public class InventoryProcurementRepository(
 
         try
         {
-            emailService.SendMail(sourceRequisition.Vendor.Name, sourceRequisition.Vendor.Email, 
-                "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", 
+            emailService.SendMail(sourceRequisition.Vendor.Name, sourceRequisition.Vendor.Email,
+                "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.",
                 mailAttachments);
         }
         catch (Exception e)
@@ -471,11 +471,11 @@ public class InventoryProcurementRepository(
 
         await context.VendorQuotations.AddAsync(vendorQuotation);
         await context.SaveChangesAsync();
-        
+
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<VendorQuotationDto>>>> GetVendorQuotations(int page, 
+    public async Task<Result<Paginateable<IEnumerable<VendorQuotationDto>>>> GetVendorQuotations(int page,
         int pageSize,
         bool received)
     {
@@ -506,7 +506,7 @@ public class InventoryProcurementRepository(
 
         if (items.Count == 0)
             return Error.Validation("Vendor.Quotation", "No items found for this quotation.");
-        
+
         var responseLookup = vendorQuotationResponse.ToDictionary(r => r.Id);
 
         foreach (var item in items)
@@ -518,7 +518,7 @@ public class InventoryProcurementRepository(
                     $"Missing quoted price for item {item.ItemId}"
                 );
             }
-            
+
             item.QuotedPrice = response.Price;
         }
 
@@ -575,7 +575,7 @@ public class InventoryProcurementRepository(
     {
         var marketRequisition = await context.MarketRequisitions
             .FirstOrDefaultAsync(mr => mr.Id == request.MarketRequisitionId);
-        
+
         if (marketRequisition is null)
         {
             return RequisitionErrors.NotFound(request.MarketRequisitionId);
@@ -591,7 +591,7 @@ public class InventoryProcurementRepository(
     {
         var vendor = await context.MarketRequisitionVendors
             .FirstOrDefaultAsync(v => v.Id == marketRequisitionVendorId);
-            
+
         if (vendor is null)
         {
             return RequisitionErrors.NotFound(marketRequisitionVendorId);
@@ -707,7 +707,7 @@ public class InventoryProcurementRepository(
     {
         var file = itemsRequest.ItemFile;
         const string memoCode = "MEMO-00256001";
-        
+
         if (file == null || file.Length == 0)
             return Error.Validation(
                 "ItemsUpload.EmptyFile",
@@ -731,7 +731,7 @@ public class InventoryProcurementRepository(
             return Error.Validation(
                 "ItemsUpload.Empty",
                 "The uploaded Excel file contains no data.");
-        
+
         var itemsLookup = await context.Items
             .ToDictionaryAsync(i => i.Code, i => i.Id);
 
@@ -749,25 +749,25 @@ public class InventoryProcurementRepository(
         {
             var itemCode = worksheet.Cells[row, 3].Text?.Trim();
             var quantityText = worksheet.Cells[row, 4].Text?.Trim();
-            
+
             if (string.IsNullOrWhiteSpace(itemCode))
             {
                 errors.Add($"Row {row}:Item Code is required.");
                 continue;
             }
-            
+
             if (!itemsLookup.TryGetValue(itemCode, out var itemId))
             {
                 errors.Add($"Row {row}: Item with code '{itemCode}' does not exist.");
                 continue;
             }
-            
+
             if (!memosLookup.TryGetValue(memoCode, out var memoId))
             {
                 errors.Add($"Row {row}: Memo with code '{memoCode}' does not exist.");
                 continue;
             }
-            
+
             if (!int.TryParse(quantityText, out var quantity) || quantity <= 0)
             {
                 errors.Add($"Row {row}: Quantity must be a number greater than 0.");
@@ -781,7 +781,7 @@ public class InventoryProcurementRepository(
                 Quantity = quantity
             });
         }
-        
+
         if (errors.Count != 0)
         {
             return Error.Validation(
@@ -795,7 +795,7 @@ public class InventoryProcurementRepository(
                 "ItemsUpload.NoneAdded",
                 "No valid stock entries were found in the file.");
         }
-        
+
         await context.StockEntries.AddRangeAsync(stockEntries);
         await context.SaveChangesAsync();
 

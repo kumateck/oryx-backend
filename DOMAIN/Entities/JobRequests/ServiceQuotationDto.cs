@@ -22,7 +22,7 @@ public class ServiceQuotationDto : BaseDto
     public decimal? NegotiatedTotalCost { get; set; }
     public string NegotiationNotes { get; set; }
     public QuotationStatus Status { get; set; }
-    public decimal TotalServiceCharge {get;set;}
+    public decimal TotalServiceCharge { get; set; }
     public decimal TotalItemCost { get; set; }
     public decimal GrandTotal { get; set; }
 }

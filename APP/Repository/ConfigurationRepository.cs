@@ -311,13 +311,13 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                     .IgnoreQueryFilters()
                     .Where(p => p.Code.StartsWith(prefix))
                     .CountAsync();
-            
+
             case nameof(JobRequest):
                 return await context.JobRequests
                     .IgnoreQueryFilters()
                     .Where(p => p.Code.StartsWith(prefix))
                     .CountAsync();
-            
+
             case nameof(JobOrder):
                 return await context.JobOrders
                     .IgnoreQueryFilters()

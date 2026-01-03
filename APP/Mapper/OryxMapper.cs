@@ -1217,7 +1217,7 @@ public class OryxMapper : Profile
         #region Memo
 
         CreateMap<Memo, MemoDto>();
-        
+
 
         #endregion
 
