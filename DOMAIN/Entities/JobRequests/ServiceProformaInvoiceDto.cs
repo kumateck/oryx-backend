@@ -31,10 +31,7 @@ public class ServiceProformaInvoiceDto : BaseDto
 public class ServiceProformaInvoiceItemDto : BaseDto
 {
     public Guid ServiceProformaInvoiceId { get; set; }
-    public Guid? ItemId { get; set; }
     public ItemDto Item { get; set; }
-    public string ItemName { get; set; }
-    public string Description { get; set; }
     public decimal Quantity { get; set; }
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasureDto UnitOfMeasure { get; set; }

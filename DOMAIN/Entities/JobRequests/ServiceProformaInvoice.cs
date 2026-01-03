@@ -66,15 +66,7 @@ public class ServiceProformaInvoiceItem : BaseEntity
 
     public Guid? ItemId { get; set; }
     public Item Item { get; set; }
-
-    [StringLength(500)]
-    public string ItemName { get; set; }
-
-    [StringLength(1000)]
-    public string Description { get; set; }
-
     public decimal Quantity { get; set; }
-
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasure UnitOfMeasure { get; set; }
 

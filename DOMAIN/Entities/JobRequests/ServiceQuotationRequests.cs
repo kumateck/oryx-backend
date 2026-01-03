@@ -43,9 +43,6 @@ public class CreateQuotationItemRequest
 {
     public Guid? ItemId { get; set; }
 
-    [StringLength(1000)]
-    public string Description { get; set; }
-
     [Required, Range(0, double.MaxValue)]
     public decimal Quantity { get; set; }
 

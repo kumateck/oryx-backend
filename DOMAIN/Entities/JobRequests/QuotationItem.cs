@@ -13,19 +13,11 @@ public class QuotationItem : BaseEntity
     public ServiceQuotation ServiceQuotation { get; set; }
     public Guid? ItemId { get; set; }
     public Item Item { get; set; }
-
-    [StringLength(1000)]
-    public string Description { get; set; }
-
     public decimal Quantity { get; set; }
-
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasure UnitOfMeasure { get; set; }
-
     public decimal UnitPrice { get; set; }
-
     public decimal TotalPrice => Quantity * UnitPrice;
-
     // Track if this was negotiated
     public decimal? NegotiatedUnitPrice { get; set; }
     public decimal? NegotiatedTotalPrice => NegotiatedUnitPrice.HasValue
