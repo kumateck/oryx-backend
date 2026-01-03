@@ -959,6 +959,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(bci => bci.Product)
             .Include(bci => bci.UoM)
             .Where(bci => bci.MaterialBatch.MaterialId == materialId)
+            .OrderBy(b => b.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -983,6 +984,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(p => p.Product)
             .Include(bci => bci.UoM)
             .Where(bci => bci.Batch.ProductionScheduleProduct.ProductId == productId)
+            .OrderBy(b => b.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
