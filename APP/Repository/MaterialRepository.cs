@@ -2912,7 +2912,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetRaw(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+            string GetRaw(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() 
+                : null;
 
             var b = GetRaw("Batch No.");
             var s = GetRaw("Shelves");
@@ -2948,9 +2949,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var materialLookup = await context.Materials
             .Where(m => excelMaterialCodes.Contains(m.Code))
-            .ToDictionaryAsync(m => m.Code.Trim(), m => m.Id, StringComparer.OrdinalIgnoreCase);
+            .ToDictionaryAsync(m => m.Code.Trim(), m => m, StringComparer.OrdinalIgnoreCase);
 
         var batchLookup = await context.MaterialBatches
+            .AsSplitQuery()
+            .Include(b => b.Material)
             .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
             .ToDictionaryAsync(b => b.BatchNumber.Trim(),
                 b => b, StringComparer.OrdinalIgnoreCase);
@@ -2977,21 +2980,20 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var rowQuantity = decimal.TryParse(GetCell("Quantity"), out var qty) ? qty : 0;
 
             if (string.IsNullOrEmpty(batchNo) || string.IsNullOrEmpty(shelfCode)) continue;
+            
+            if (string.IsNullOrEmpty(materialCode) ||
+                !materialLookup.TryGetValue(materialCode, out var material))
+                return Error.NotFound("Material",
+                    $"Row {row}: Material '{materialCode}' not found. Cannot create Batch '{batchNo}'.");
 
-            // --- BATCH LOGIC: GET OR CREATE ---
             if (!batchLookup.TryGetValue(batchNo, out var batch))
             {
-                if (string.IsNullOrEmpty(materialCode) ||
-                    !materialLookup.TryGetValue(materialCode, out var materialId))
-                    return Error.NotFound("Material",
-                        $"Row {row}: Material '{materialCode}' not found. Cannot create Batch '{batchNo}'.");
-
                 batch = new MaterialBatch
                 {
                     Id = Guid.NewGuid(),
                     BatchNumber = batchNo,
-                    MaterialId = materialId,
-                    TotalQuantity = 0, // Will be incremented below
+                    MaterialId = material.Id,
+                    TotalQuantity = 0,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
                     ExpiryDate = ParseDate(expiryDateStr),
@@ -3001,6 +3003,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 batchLookup[batchNo] = batch;
                 newBatches.Add(batch);
             }
+
+            if (material.Id != batch.MaterialId)
+                return Error.Validation("Material.Batch",
+                    $"Material {material.Code} does not match with batch {batch.BatchNumber}." +
+                    $" Expected material {batch.Material.Code} for batch {batch.BatchNumber}.");
 
             // --- SHELF & UOM VALIDATION ---
             var shelfKey = $"{warehouseName}|{shelfCode}";
