@@ -337,20 +337,39 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     /// - `preferredCompletionDate` (DateTime?): Update preferred completion date
     /// - `item` (string, max 500 chars): Update item name
     /// - `itemNumber` (string, max 500 chars): Update item number
-    /// - `serviceIds` (array of Guid, optional): List of service IDs. The first service will be set as the primary service. Provide an empty array to clear the service.
+    /// - `serviceId` (Guid?, optional): Single service ID to set. Takes precedence over `serviceIds` if both are provided. Set to `null` to clear the service.
+    /// - `serviceIds` (array of Guid, optional): List of service IDs. The first service will be set as the primary service. Only used if `serviceId` is not provided. Provide an empty array to clear the service.
     /// 
     /// **Validation:**
     /// - If `equipmentId` is provided, the equipment must exist in the system
+    /// - If `serviceId` is provided, the service must exist in the system
     /// - If `serviceIds` are provided, all services must exist in the system
     /// - `preferredCompletionDate` must be in the future if provided
     /// 
-    /// **Example Request:**
+    /// **Example Request (using serviceId):**
+    /// ```json
+    /// {
+    ///   "location": "Updated Production Floor - Line 3",
+    ///   "descriptionOfWork": "Updated description with more details",
+    ///   "preferredCompletionDate": "2024-01-25T17:00:00Z",
+    ///   "serviceId": "5fa85f64-5717-4562-b3fc-2c963f66afa7"
+    /// }
+    /// ```
+    /// 
+    /// **Example Request (using serviceIds):**
     /// ```json
     /// {
     ///   "location": "Updated Production Floor - Line 3",
     ///   "descriptionOfWork": "Updated description with more details",
     ///   "preferredCompletionDate": "2024-01-25T17:00:00Z",
     ///   "serviceIds": ["5fa85f64-5717-4562-b3fc-2c963f66afa7"]
+    /// }
+    /// ```
+    /// 
+    /// **Example Request (clearing service):**
+    /// ```json
+    /// {
+    ///   "serviceId": null
     /// }
     /// ```
     /// 
@@ -496,7 +515,7 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         var result = await repository.AssignInternalJob(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Updates the status of a job request
     /// </summary>
@@ -742,5 +761,99 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     {
         var result = await repository.GetCompletedJobRequestsForInternalEmployees(page, pageSize, searchQuery, employeeId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Completes a job request by the assigned internal employee
+    /// </summary>
+    /// <remarks>
+    /// Allows an assigned internal employee to submit a completion note for a job request they were assigned to.
+    /// When submitted, the job request status automatically changes to `Completed`.
+    /// 
+    /// **Prerequisites:**
+    /// - Job request must exist
+    /// - Job request must be assigned internally (HandlingType = Internal)
+    /// - Job request must be assigned to an employee
+    /// - The authenticated user must be the employee assigned to the job request (verified by email match)
+    /// 
+    /// **What Happens:**
+    /// - A job activity is created with the activity performed note
+    /// - Job request status changes to `Completed` (4)
+    /// - Job execution status changes to `Completed` (if execution exists)
+    /// - Completion timestamp is recorded
+    /// 
+    /// **Request Fields:**
+    /// - `jobRequestId` (required, Guid): The job request to complete
+    /// - `activityPerformedNote` (required, max 2000 chars): Description of the work performed/completed
+    /// - `notes` (optional, string): Additional notes or comments
+    /// 
+    /// **Example Request:**
+    /// ```json
+    /// {
+    ///   "jobRequestId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///   "activityPerformedNote": "Completed calibration and repair of floor scale. Tested and verified accuracy. Equipment is now operational.",
+    ///   "notes": "Replaced faulty sensor and recalibrated. All tests passed."
+    /// }
+    /// ```
+    /// 
+    /// **Example Responses:**
+    /// 
+    /// **Success (204 No Content):**
+    /// ```
+    /// (no response body)
+    /// ```
+    /// 
+    /// **Validation Error (400 Bad Request):**
+    /// ```json
+    /// {
+    ///   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+    ///   "title": "Bad Request",
+    ///   "status": 400,
+    ///   "extensions": {
+    ///     "errors": [
+    ///       {
+    ///         "code": "JobRequest.Unauthorized",
+    ///         "description": "You are not authorized to complete this job request. Only the assigned employee can complete it."
+    ///       }
+    ///     ]
+    ///   }
+    /// }
+    /// ```
+    /// 
+    /// **Not Found (404):**
+    /// ```json
+    /// {
+    ///   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+    ///   "title": "Not Found.",
+    ///   "status": 404,
+    ///   "extensions": {
+    ///     "errors": [
+    ///       {
+    ///         "code": "JobRequest.NotFound",
+    ///         "description": "Job request with ID '3fa85f64-5717-4562-b3fc-2c963f66afa6' not found"
+    ///       }
+    ///     ]
+    ///   }
+    /// }
+    /// ```
+    /// </remarks>
+    /// <param name="request">Completion request with job request ID and activity performed note</param>
+    /// <returns>No content on success</returns>
+    /// <response code="204">Job request completed successfully</response>
+    /// <response code="400">Invalid request data, validation error, or unauthorized (not the assigned employee)</response>
+    /// <response code="404">Job request not found</response>
+    /// <response code="401">Unauthorized - User must be authenticated</response>
+    [HttpPost("complete")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> CompleteJobRequest([FromBody] CompleteJobRequestRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.CompleteJobRequest(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

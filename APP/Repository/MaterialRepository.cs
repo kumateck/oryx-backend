@@ -343,7 +343,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = context.ShelfMaterialBatches
             .IgnoreQueryFilters()
             .AsSplitQuery()
-            .Where(m => m.MaterialBatch.Material.Kind == kind && 
+            .Where(m => m.MaterialBatch.Material.Kind == kind &&
                         m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id &&
                         (m.MaterialBatch.Status == BatchStatus.Available || m.MaterialBatch.Status == BatchStatus.Frozen))
             .Select(m => m.MaterialBatch.Material)
@@ -363,7 +363,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var stocks = await context.ShelfMaterialBatches
             .IgnoreQueryFilters()
             .AsSplitQuery()
-            .Where(s => materialIds.Contains(s.MaterialBatch.MaterialId) && 
+            .Where(s => materialIds.Contains(s.MaterialBatch.MaterialId) &&
                         s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == warehouse.Id)
             .GroupBy(s => s.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, Total = g.Sum(s => s.Quantity) })
@@ -982,7 +982,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .FirstOrDefaultAsync(w => w.Id == context.WarehouseLocationShelves
                 .FirstOrDefault(s => s.Id == request.ShelfMaterialBatches.First().WarehouseLocationShelfId)
                 .WarehouseLocationRack.WarehouseLocation.Warehouse.Id);
-        
+
         var history = await context.BinCardInformation
             .AsSplitQuery()
             .IgnoreQueryFilters()
@@ -991,9 +991,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Select(b => new { b.QuantityReceived, b.QuantityIssued })
             .ToListAsync();
 
-        var previousBalance = history.Sum(x => x.QuantityReceived) 
+        var previousBalance = history.Sum(x => x.QuantityReceived)
                               - history.Sum(x => x.QuantityIssued);
-            
+
         var currentBalance = previousBalance + totalQuantityToAssign;
 
         var binCardEvent = new BinCardInformation
@@ -2356,7 +2356,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         );
     }
 
-    public async Task<Result> MoveMaterialBatchToWarehouseFromHolding(SupplyMaterialBatchFromHoldingRequest request, 
+    public async Task<Result> MoveMaterialBatchToWarehouseFromHolding(SupplyMaterialBatchFromHoldingRequest request,
         Guid userId)
     {
         var materialBatch = await context.MaterialBatches
@@ -2428,7 +2428,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             };
 
             await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
-            
+
             materialBatch.StockTransferId = holdingMaterial.StockTransferId;
 
             context.MaterialBatches.Update(materialBatch);
@@ -2489,7 +2489,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
     public async Task<Result> MoveMaterialBatchToWarehouseFromDistribute(
-        SupplyMaterialBatchFromHMaterialDistribute request, 
+        SupplyMaterialBatchFromHMaterialDistribute request,
         Guid userId)
     {
         var materialBatch = await context.MaterialBatches
@@ -2501,7 +2501,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
         }
-        
+
         var grn = await context.Grns
             .IgnoreQueryFilters()
             .AsSplitQuery()
@@ -2542,7 +2542,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 MovedAt = DateTime.UtcNow,
                 MovedById = userId
             });
-            
+
             materialBatchEvents.Add(new MaterialBatchEvent
             {
                 BatchId = materialBatch.Id,
@@ -2551,11 +2551,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 UserId = userId,
                 CreatedAt = DateTime.UtcNow
             });
-            
+
             var warehouse = await context.Warehouses
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(w => w.Id == distributeMaterial.WarehouseId);
-            
+
             var history = await context.BinCardInformation
                 .AsSplitQuery()
                 .IgnoreQueryFilters()
@@ -2564,11 +2564,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .Select(b => new { b.QuantityReceived, b.QuantityIssued })
                 .ToListAsync();
 
-            var previousBalance = history.Sum(x => x.QuantityReceived) 
+            var previousBalance = history.Sum(x => x.QuantityReceived)
                                   - history.Sum(x => x.QuantityIssued);
-            
+
             var currentBalance = previousBalance + movedBatch.Quantity;
-            
+
             binCards.Add(new BinCardInformation
             {
                 MaterialBatchId = materialBatch.Id,
@@ -2580,7 +2580,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 BalanceQuantity = currentBalance,
                 WarehouseId = warehouse?.Id,
             });
-            
+
             var targetShelf = await context.WarehouseLocationShelves
                     .AsSplitQuery()
                     .IgnoreQueryFilters()
@@ -2635,7 +2635,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.MaterialBatchEvents.AddRangeAsync(materialBatchEvents);
         await context.BinCardInformation.AddRangeAsync(binCards);
 
-        distributeMaterial.DistributedRequisitionItem.DistributedRequisitionMaterial.Status 
+        distributeMaterial.DistributedRequisitionItem.DistributedRequisitionMaterial.Status
             = DistributedRequisitionMaterialStatus.Distributed;
         distributeMaterial.Status = DistributeMaterialStatus.Distributed;
         distributeMaterial.DistributedRequisitionItem.RequisitionItem.QuantityReceived +=
@@ -2751,7 +2751,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 UoMId = uom.Id,
                 Status = BatchStatus.Received,
                 DateReceived = DateTime.UtcNow,
-                ManufacturingDate = DateTime.TryParse(GetCell("Manufacturing Date"), out var mfg) 
+                ManufacturingDate = DateTime.TryParse(GetCell("Manufacturing Date"), out var mfg)
                     ? mfg : null,
                 ExpiryDate = DateTime.TryParse(GetCell("Expiry Date"), out var exp) ? exp : null,
                 RetestDate = DateTime.TryParse(GetCell("Retest Date"), out var retest) ? retest : null,
@@ -2826,7 +2826,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
 
             batches = batches.Where(b =>
-                b.Locations.Any(l => l.Location?.Id != null && 
+                b.Locations.Any(l => l.Location?.Id != null &&
                                      filter.WarehouseIds.Contains(l.Location.Id.Value)))
                 .ToList();
         }
@@ -2933,7 +2933,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var shelfHierarchy = await context.WarehouseLocationShelves
             .Where(s => excelShelfCodes.Contains(s.Code))
-            .Select(s => new {
+            .Select(s => new
+            {
                 ShelfId = s.Id,
                 ShelfCode = s.Code.Trim(),
                 WarehouseId = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Id,
@@ -2977,7 +2978,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             if (!batchLookup.TryGetValue(batchNo, out var batch))
             {
                 if (string.IsNullOrEmpty(materialCode) || !materialLookup.TryGetValue(materialCode, out var materialId))
-                    return Error.NotFound("Material", 
+                    return Error.NotFound("Material",
                         $"Row {row}: Material '{materialCode}' not found. Cannot create Batch '{batchNo}'.");
 
                 batch = new MaterialBatch
@@ -2991,7 +2992,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     ExpiryDate = ParseDate(expiryDateStr),
                     ManufacturingDate = ParseDate(manufacturingDateStr)
                 };
-                
+
                 batchLookup[batchNo] = batch;
                 newBatches.Add(batch);
             }
@@ -2999,7 +3000,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             // --- SHELF & UOM VALIDATION ---
             var shelfKey = $"{warehouseName}|{shelfCode}";
             if (!shelfLookup.TryGetValue(shelfKey, out var shelfInfo))
-                return Error.NotFound("Shelf", 
+                return Error.NotFound("Shelf",
                     $"Row {row}: Shelf '{shelfCode}' not found in Warehouse '{warehouseName}'.");
 
             Guid? uomId = uomSymbol != null && uomLookup.TryGetValue(uomSymbol, out var foundUomId)
@@ -3040,7 +3041,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (newBatches.Count != 0) await context.MaterialBatches.AddRangeAsync(newBatches);
         await context.ShelfMaterialBatches.AddRangeAsync(shelfMaterialBatches);
         await context.BinCardInformation.AddRangeAsync(binCardEntries);
-        
+
         await context.SaveChangesAsync();
 
         return Result.Success();

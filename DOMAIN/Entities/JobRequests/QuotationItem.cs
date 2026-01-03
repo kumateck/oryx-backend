@@ -11,12 +11,8 @@ public class QuotationItem : BaseEntity
 {
     public Guid ServiceQuotationId { get; set; }
     public ServiceQuotation ServiceQuotation { get; set; }
-
     public Guid? ItemId { get; set; }
     public Item Item { get; set; }
-
-    [StringLength(500)]
-    public string ItemName { get; set; }
 
     [StringLength(1000)]
     public string Description { get; set; }

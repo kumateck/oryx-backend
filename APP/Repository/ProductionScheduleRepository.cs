@@ -2943,12 +2943,12 @@ public class ProductionScheduleRepository(
                 UserId = userId
             };
             await context.MaterialBatchEvents.AddAsync(batchEvent);
-            
+
             var warehouseIds = new List<Guid> { fromWarehouse.Id, toWarehouse.Id };
 
             var history = await context.BinCardInformation
                 .IgnoreQueryFilters()
-                .Where(b => b.MaterialBatch.MaterialId == batch.MaterialId 
+                .Where(b => b.MaterialBatch.MaterialId == batch.MaterialId
                             && warehouseIds.Contains(b.WarehouseId.Value))
                 .Select(b => new { b.WarehouseId, b.QuantityReceived, b.QuantityIssued })
                 .ToListAsync();
@@ -2980,7 +2980,7 @@ public class ProductionScheduleRepository(
                 WarehouseId = fromWarehouse.Id,
             };
             await context.BinCardInformation.AddAsync(toBinCardEvent);
-            
+
             var fromBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = batch.Id,

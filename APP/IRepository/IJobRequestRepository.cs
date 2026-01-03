@@ -14,6 +14,7 @@ public interface IJobRequestRepository
     Task<Result> DeleteJobRequest(Guid id, Guid userId);
     Task<Result<Guid>> AssignInternalJob(AssignInternalJobRequest request);
     Task<Result> UpdateJobRequestStatus(Guid id, JobRequestStatus status);
-    Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetCompletedJobRequestsForInternalEmployees(int page, int pageSize, 
+    Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetCompletedJobRequestsForInternalEmployees(int page, int pageSize,
         string searchQuery = null, Guid? employeeId = null);
+    Task<Result> CompleteJobRequest(CompleteJobRequestRequest request, Guid userId);
 }

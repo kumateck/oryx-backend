@@ -21,14 +21,17 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         if (jobOrder is null)
             return Error.NotFound("JobOrder.NotFound", "Job order not found");
 
-        var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp => sp.Id == request.ServiceProviderId);
+        var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp =>
+            sp.Id == request.ServiceProviderId);
         if (serviceProvider is null)
             return Error.Validation("ServiceProvider.Invalid", "Invalid service provider");
 
         // Verify this provider was sent the job order
-        var wasSentJobOrder = jobOrder.ServiceProviders.Any(sp => sp.ServiceProviderId == request.ServiceProviderId);
+        var wasSentJobOrder = jobOrder.ServiceProviders.Any(sp =>
+            sp.ServiceProviderId == request.ServiceProviderId);
         if (!wasSentJobOrder)
-            return Error.Validation("ServiceProvider.NotSentJobOrder", "This service provider was not sent this job order");
+            return Error.Validation("ServiceProvider.NotSentJobOrder",
+                "This service provider was not sent this job order");
 
         var currency = await context.Currencies.AnyAsync(c => c.Id == request.CurrencyId);
         if (!currency) return Error.Validation("Currency.Invalid", "Invalid currency");
@@ -52,7 +55,6 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         quotation.Items = request.Items.Select(i => new QuotationItem
         {
             ItemId = i.ItemId,
-            ItemName = i.ItemName,
             Description = i.Description,
             Quantity = i.Quantity,
             UnitOfMeasureId = i.UnitOfMeasureId,
@@ -174,7 +176,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
 
         // Calculate negotiated total cost
         var negotiatedMaterialsCost = quotation.Items.Sum(i => i.NegotiatedTotalPrice ?? i.TotalPrice);
-        quotation.NegotiatedTotalCost = (request.NegotiatedServiceCharge ?? quotation.TotalServiceCharge) 
+        quotation.NegotiatedTotalCost = (request.NegotiatedServiceCharge ?? quotation.TotalServiceCharge)
                                         + negotiatedMaterialsCost;
 
         context.ServiceQuotations.Update(quotation);

@@ -193,8 +193,15 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
             if (!equipment) return Error.Validation("Equipment.Invalid", "Invalid equipment");
         }
 
-        // Validate services if provided
-        if (request.ServiceIds != null && request.ServiceIds.Any())
+        // Validate ServiceId if provided (takes precedence over ServiceIds)
+        if (request.ServiceId.HasValue)
+        {
+            var serviceExists = await context.Services.AnyAsync(s => s.Id == request.ServiceId.Value);
+            if (!serviceExists) return Error.Validation("Service.Invalid", $"Invalid service: {request.ServiceId.Value}");
+        }
+
+        // Validate services if provided (only if ServiceId is not provided)
+        if (!request.ServiceId.HasValue && request.ServiceIds != null && request.ServiceIds.Any())
         {
             foreach (var serviceId in request.ServiceIds)
             {
@@ -203,18 +210,42 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
             }
         }
 
-        mapper.Map(request, jobRequest);
-        
-        // Set first service if provided
-        if (request.ServiceIds != null && request.ServiceIds.Any())
+        // Handle ServiceId before mapping (since mapper condition skips null values)
+        // We need to manually handle ServiceId to support clearing it with null
+        var serviceIdToSet = (Guid?)null;
+        var shouldClearService = false;
+
+        // ServiceId takes precedence over ServiceIds
+        if (request.ServiceId.HasValue)
         {
-            jobRequest.ServiceId = request.ServiceIds.First();
+            serviceIdToSet = request.ServiceId.Value;
+        }
+        else if (request.ServiceIds != null && request.ServiceIds.Any())
+        {
+            // Set first service from list if ServiceId not provided
+            serviceIdToSet = request.ServiceIds.First();
         }
         else if (request.ServiceIds != null && request.ServiceIds.Count == 0)
         {
             // If empty list is provided, clear the service
+            shouldClearService = true;
+        }
+        // Note: If both ServiceId and ServiceIds are null/not provided, we preserve existing value
+        // (handled by mapper condition which skips null values)
+
+        // Map other fields (ServiceId will be handled separately)
+        mapper.Map(request, jobRequest);
+        
+        // Set ServiceId after mapping
+        if (serviceIdToSet.HasValue)
+        {
+            jobRequest.ServiceId = serviceIdToSet.Value;
+        }
+        else if (shouldClearService)
+        {
             jobRequest.ServiceId = null;
         }
+        // If neither ServiceId nor ServiceIds are provided, existing ServiceId is preserved
 
         context.JobRequests.Update(jobRequest);
         await context.SaveChangesAsync();
@@ -324,5 +355,67 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
             mapper.Map<JobRequestDto>);
+    }
+
+    public async Task<Result> CompleteJobRequest(CompleteJobRequestRequest request, Guid userId)
+    {
+        var jobRequest = await context.JobRequests
+            .Include(j => j.AssignedToEmployee)
+            .Include(j => j.Executions)
+            .FirstOrDefaultAsync(j => j.Id == request.JobRequestId);
+
+        if (jobRequest is null)
+            return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{request.JobRequestId}' not found");
+
+        // Verify job request is assigned internally
+        if (jobRequest.HandlingType != JobHandlingType.Internal)
+            return Error.Validation("JobRequest.InvalidHandlingType", "Job request must be assigned internally to be completed");
+
+        if (!jobRequest.AssignedToEmployeeId.HasValue)
+            return Error.Validation("JobRequest.NotAssigned", "Job request must be assigned to an employee");
+
+        // Get the user to verify they match the assigned employee
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return Error.Validation("User.Invalid", "Invalid user");
+
+        // Verify the user's email matches the assigned employee's email
+        if (jobRequest.AssignedToEmployee?.Email != user.Email)
+            return Error.Validation("JobRequest.Unauthorized", "You are not authorized to complete this job request. Only the assigned employee can complete it.");
+
+        // Get the job execution if it exists
+        var jobExecution = jobRequest.Executions.FirstOrDefault();
+
+        // Create activity record
+        var activity = new JobActivity
+        {
+            JobExecutionId = jobExecution?.Id,
+            ActivityDescription = request.ActivityPerformedNote,
+            PerformedAt = DateTime.UtcNow,
+            PerformedById = userId,
+            Notes = request.Notes
+        };
+
+        await context.JobActivities.AddAsync(activity);
+
+        // Update job execution status if it exists
+        if (jobExecution != null)
+        {
+            jobExecution.Status = JobExecutionStatus.Completed;
+            jobExecution.CompletedAt = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(request.Notes))
+            {
+                jobExecution.Notes = request.Notes;
+            }
+            context.JobExecutions.Update(jobExecution);
+        }
+
+        // Update job request status to Completed
+        jobRequest.Status = JobRequestStatus.Completed;
+        context.JobRequests.Update(jobRequest);
+
+        await context.SaveChangesAsync();
+
+        return Result.Success();
     }
 }
