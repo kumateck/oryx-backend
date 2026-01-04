@@ -1805,6 +1805,23 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                             && r.DeletedAt == null)
                 .ToListAsync());
     }
+    
+    public async Task<List<MaterialBatchReservedQuantityDto>> 
+        GetConsumedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId,
+            Guid productionScheduleProductId)
+    {
+        return
+            mapper.Map<List<MaterialBatchReservedQuantityDto>>(await context.MaterialBatchReservedQuantities
+                .AsSplitQuery()
+                .IgnoreQueryFilters()
+                .Include(r => r.MaterialBatch)
+                .ThenInclude(b => b.Material)
+                .Include(b => b.WarehouseLocationShelf)
+                .Where(r => r.MaterialBatch.MaterialId == materialId &&
+                            r.WarehouseId == warehouseId && r.ProductionScheduleProductId == productionScheduleProductId
+                            && r.DeletedAt != null)
+                .ToListAsync());
+    }
 
 
     public async Task<Result> ConsumeMaterialAtLocation(Material material, Guid locationId, decimal quantity, Guid userId)
