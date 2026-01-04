@@ -360,7 +360,7 @@ public class ProductionScheduleRepository(
                     activityStep.ProductionActivity.Status = ProductionStatus.InProgress;
                 }
 
-                if (activityStep.Operation.Order == 5)
+                if (activityStep.Operation.Name == "Product Preparation")
                 {
                     var productionActivity = activityStep.ProductionActivity;
                     var product = await context.Products.IgnoreQueryFilters()
@@ -379,7 +379,8 @@ public class ProductionScheduleRepository(
                             var stockRequisitions = await context.Requisitions
                                 .AsSplitQuery()
                                 .Include(r => r.Items)
-                                .Where(r => r.ProductionActivityStepId == productionStepId).ToListAsync();
+                                .Where(r => r.ProductionScheduleProductId == 
+                                            activityStep.ProductionActivity.ProductionScheduleProductId).ToListAsync();
 
 
                             foreach (var stockRequisition in stockRequisitions)
