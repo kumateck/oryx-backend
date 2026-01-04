@@ -26,6 +26,7 @@ public class CreateJobRequest
 
 public class UpdateJobRequestRequest
 {
+    public string Code { get; set; }
     public string Location { get; set; }
     public Guid? EquipmentId { get; set; }
     public string EquipmentInstrumentNumber { get; set; }

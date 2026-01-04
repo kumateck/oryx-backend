@@ -1872,7 +1872,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             // 2️⃣ Add reserved if this is a production warehouse
             var reservedQty = await context.MaterialBatchReservedQuantities
-                .Where(r => r.WarehouseId == warehouse.Id && r.MaterialBatch.MaterialId == materialId)
+                .Where(r => r.WarehouseId == warehouse.Id && 
+                            r.MaterialBatch.MaterialId == materialId && r.DeletedAt == null)
                 .SumAsync(r => r.Quantity);
 
             var finalStock = grossStock;
