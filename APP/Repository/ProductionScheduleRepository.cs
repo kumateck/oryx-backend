@@ -448,22 +448,22 @@ public class ProductionScheduleRepository(
                         }
                     }
 
-                    var packageMaterialIds = stockRequisitions
-                        .SelectMany(s => s.Items)
-                        .Select(i => i.Material)
-                        .Where(m => m.Kind == MaterialKind.Package)
-                        .Select(m => m.Id)
-                        .Distinct()
-                        .ToList();
-                    
-                    var extraPackings =  await context.ProductionExtraPackings
-                        .Where(p => 
-                            p.ProductionScheduleProductId == productionActivity.ProductionScheduleProductId && 
-                            packageMaterialIds.Contains(p.MaterialId) &&
-                            p.Status == ProductionExtraPackingStatus.Approved)
-                        .ToListAsync();
-                    
-                    context.ProductionExtraPackings.RemoveRange(extraPackings);
+                    // var packageMaterialIds = stockRequisitions
+                    //     .SelectMany(s => s.Items)
+                    //     .Select(i => i.Material)
+                    //     .Where(m => m.Kind == MaterialKind.Package)
+                    //     .Select(m => m.Id)
+                    //     .Distinct()
+                    //     .ToList();
+                    //
+                    // var extraPackings =  await context.ProductionExtraPackings
+                    //     .Where(p => 
+                    //         p.ProductionScheduleProductId == productionActivity.ProductionScheduleProductId && 
+                    //         packageMaterialIds.Contains(p.MaterialId) &&
+                    //         p.Status == ProductionExtraPackingStatus.Approved)
+                    //     .ToListAsync();
+                    //
+                    // context.ProductionExtraPackings.RemoveRange(extraPackings);
                     await context.SaveChangesAsync();
                 }
 
@@ -927,12 +927,6 @@ public class ProductionScheduleRepository(
                 
                 var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
                 
-                var extraPackingQuantity = context.ProductionExtraPackings
-                    .FirstOrDefault(p => 
-                        p.ProductionScheduleProductId == productionScheduleProductId && 
-                        p.MaterialId == item.MaterialId &&
-                        p.Status == ProductionExtraPackingStatus.Approved)?.Quantity ?? 0;
-
                 return new ProductionScheduleProcurementDto
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
@@ -956,8 +950,7 @@ public class ProductionScheduleRepository(
                         MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
                     },
                     FrozenQuantity = reservedQuantity,
-                    ConsumedQuantity = consumedQuantity,
-                    ExtraPackingQuantity = extraPackingQuantity
+                    ConsumedQuantity = consumedQuantity
                 };
             }).ToList();
 
