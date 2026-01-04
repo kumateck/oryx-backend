@@ -387,19 +387,24 @@ public class InventoryProcurementRepository(
             Items = []
         };
 
+        var vendorQuotationItemIds = memos.Select(m => m.VendorQuotationItemId).ToList();
+        var vendorQuotationItems = await context.VendorQuotationItems
+            .Where(vqi => vendorQuotationItemIds.Contains(vqi.Id))
+            .ToListAsync();
+
         foreach (var itemRequest in memos)
         {
-            var vendorQuotationItem = await context.VendorQuotationItems
-                .FirstOrDefaultAsync(sqi => sqi.Id == itemRequest.VendorQuotationItemId);
+            var vendorQuotationItem = vendorQuotationItems
+                .FirstOrDefault(vqi => vqi.Id == itemRequest.VendorQuotationItemId);
 
             if (vendorQuotationItem is null)
                 return Error.Validation("VendorQuotationItem", $"Vendor quotation item with ID {itemRequest.VendorQuotationItemId} not found.");
-
-            if (itemRequest.ItemId == vendorQuotationItem.ItemId ||
-                itemRequest.UoMId == vendorQuotationItem.UoMId ||
-                itemRequest.Quantity == vendorQuotationItem.Quantity)
+            
+            if (itemRequest.ItemId != vendorQuotationItem.ItemId ||
+                itemRequest.UoMId != vendorQuotationItem.UoMId ||
+                itemRequest.Quantity != vendorQuotationItem.Quantity)
             {
-                return Error.Validation("ItemRequest", "Item request not matching vendor quotation.");
+                return Error.Validation("ItemRequest", $"Item request does not match vendor quotation for item {vendorQuotationItem.Id}.");
             }
 
             memo.Items.Add(new MemoItem
@@ -408,15 +413,15 @@ public class InventoryProcurementRepository(
                 ItemId = itemRequest.ItemId,
                 UoMId = itemRequest.UoMId,
                 Quantity = itemRequest.Quantity,
-                PricePerUnit = vendorQuotationItem.QuotedPrice.GetValueOrDefault()
+                PricePerUnit = vendorQuotationItem.QuotedPrice ?? 0
             });
 
             vendorQuotationItem.Status = VendorQuotationItemStatus.Processed;
-            context.VendorQuotationItems.Update(vendorQuotationItem);
         }
 
         await context.Memos.AddAsync(memo);
         await context.SaveChangesAsync();
+
         return Result.Success();
     }
 
@@ -520,6 +525,7 @@ public class InventoryProcurementRepository(
             }
 
             item.QuotedPrice = response.Price;
+   
         }
 
         var quotation = await context.VendorQuotations
