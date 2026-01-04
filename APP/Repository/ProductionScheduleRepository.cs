@@ -448,22 +448,22 @@ public class ProductionScheduleRepository(
                         }
                     }
 
-                    var packageMaterialIds = stockRequisitions
-                        .SelectMany(s => s.Items)
-                        .Select(i => i.Material)
-                        .Where(m => m.Kind == MaterialKind.Package)
-                        .Select(m => m.Id)
-                        .Distinct()
-                        .ToList();
-                    
-                    var extraPackings =  await context.ProductionExtraPackings
-                        .Where(p => 
-                            p.ProductionScheduleProductId == productionActivity.ProductionScheduleProductId && 
-                            packageMaterialIds.Contains(p.MaterialId) &&
-                            p.Status == ProductionExtraPackingStatus.Approved)
-                        .ToListAsync();
-                    
-                    context.ProductionExtraPackings.RemoveRange(extraPackings);
+                    // var packageMaterialIds = stockRequisitions
+                    //     .SelectMany(s => s.Items)
+                    //     .Select(i => i.Material)
+                    //     .Where(m => m.Kind == MaterialKind.Package)
+                    //     .Select(m => m.Id)
+                    //     .Distinct()
+                    //     .ToList();
+                    //
+                    // var extraPackings =  await context.ProductionExtraPackings
+                    //     .Where(p => 
+                    //         p.ProductionScheduleProductId == productionActivity.ProductionScheduleProductId && 
+                    //         packageMaterialIds.Contains(p.MaterialId) &&
+                    //         p.Status == ProductionExtraPackingStatus.Approved)
+                    //     .ToListAsync();
+                    //
+                    // context.ProductionExtraPackings.RemoveRange(extraPackings);
                     await context.SaveChangesAsync();
                 }
 
