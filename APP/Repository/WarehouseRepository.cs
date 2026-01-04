@@ -111,8 +111,6 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
         }
 
-
-
         warehouse.DeletedAt = DateTime.UtcNow;
         warehouse.LastDeletedById = userId;
 

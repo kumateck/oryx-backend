@@ -37,6 +37,7 @@ public class ProductionScheduleProcurementDto
     public MaterialDepartmentDetails MaterialDepartment { get; set; }
     public decimal FrozenQuantity { get; set; }
     public decimal ConsumedQuantity { get; set; }
+    public decimal ExtraQuantity { get; set; }
 }
 
 public class ProductionScheduleProcurementPackageDto
@@ -55,7 +56,7 @@ public class ProductionScheduleProcurementPackageDto
     public MaterialDepartmentDetails MaterialDepartment { get; set; }
     public decimal FrozenQuantity { get; set; }
     public decimal ConsumedQuantity { get; set; }
-    public decimal ExtraPackingQuantity { get; set; }
+    public decimal ExtraQuantity { get; set; }
 }
 
 public class MaterialDepartmentDetails

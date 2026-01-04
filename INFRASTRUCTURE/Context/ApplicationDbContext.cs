@@ -203,6 +203,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FinalPacking> FinalPackings { get; set; }
     public DbSet<FinalPackingMaterial> FinalPackingMaterials { get; set; }
     public DbSet<ProductionExtraPacking> ProductionExtraPackings { get; set; }
+    public DbSet<ProductionExtraPackingApproval> ProductionExtraPackingApprovals { get; set; }
 
     public DbSet<MarketType> MarketTypes { get; set; }
 
@@ -212,6 +213,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region FinishedGoodsTransferNote
 
     public DbSet<FinishedGoodsTransferNote> FinishedGoodsTransferNotes { get; set; }
+    public DbSet<FinishedGoodsTransferNoteApproval> FinishedGoodsTransferNoteApprovals { get; set; }
     public DbSet<FinishedProductBatchMovement> FinishedProductBatchMovements { get; set; }
     public DbSet<FinishedProductBatchEvent> FinishedProductBatchEvents { get; set; }
 
@@ -653,6 +655,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Job Requests
 
     public DbSet<JobRequest> JobRequests { get; set; }
+    public DbSet<JobRequestApproval> JobRequestApprovals { get; set; }
     public DbSet<JobExecution> JobExecutions { get; set; }
     public DbSet<JobActivity> JobActivities { get; set; }
     public DbSet<ConsumedItem> ConsumedItems { get; set; }

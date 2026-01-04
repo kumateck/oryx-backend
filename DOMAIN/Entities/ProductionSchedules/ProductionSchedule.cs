@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Departments;
@@ -69,7 +70,7 @@ public class CreateProductionExtraPacking
     public decimal Quantity { get; set; }
 }
 
-public class ProductionExtraPacking : BaseEntity
+public class ProductionExtraPacking : BaseEntity, IRequireApproval
 {
     public Guid ProductionScheduleProductId { get; set; }
     public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
@@ -82,12 +83,24 @@ public class ProductionExtraPacking : BaseEntity
     public DateTime? IssuedAt { get; set; }
     public Guid? IssuedById { get; set; }
     public User IssuedBy { get; set; }
+    public bool Approved { get; set; }
+    public List<ProductionExtraPackingApproval> Approvals { get; set; } = [];
+}
+
+public class ProductionExtraPackingApproval : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid ProductionExtraPackingId { get; set; }
+    public ProductionExtraPacking ProductionExtraPacking { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 public enum ProductionExtraPackingStatus
 {
-    InProgress,
-    Approved
+    Pending = 0,
+    InProgress = 1,
+    Approved = 2
 }
 
 
@@ -98,6 +111,7 @@ public class ProductionExtraPackingDto : BaseDto
     public UnitOfMeasureDto UoM { get; set; }
     public ProductionExtraPackingStatus Status { get; set; }
     public decimal Quantity { get; set; }
+    public bool Approved { get; set; }
 }
 
 public class ProductionExtraPackingWithBatchesDto : ProductionExtraPackingDto

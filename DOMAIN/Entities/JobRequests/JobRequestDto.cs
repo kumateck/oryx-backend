@@ -35,5 +35,6 @@ public class JobRequestDto : WithAttachment
     // Related entities
     public List<JobExecutionDto> Executions { get; set; } = [];
     public List<JobOrderDto> JobOrders { get; set; } = [];
+    public bool Approved { get; set; }
 }
 

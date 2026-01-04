@@ -11,7 +11,11 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager) : IJobRequestRepository
+public class JobRequestRepository(ApplicationDbContext context,
+    IMapper mapper, 
+    UserManager<User> userManager,
+    IApprovalRepository approvalRepository)
+    : IJobRequestRepository
 {
     public async Task<Result<Guid>> CreateJobRequest(CreateJobRequest request, Guid departmentId, Guid issuedById)
     {
@@ -49,6 +53,8 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
 
         await context.JobRequests.AddAsync(jobRequest);
         await context.SaveChangesAsync();
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(JobRequest), jobRequest.Id);
 
         return jobRequest.Id;
     }
