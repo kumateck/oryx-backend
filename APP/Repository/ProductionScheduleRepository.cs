@@ -927,12 +927,6 @@ public class ProductionScheduleRepository(
                 
                 var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
                 
-                var extraPackingQuantity = context.ProductionExtraPackings
-                    .FirstOrDefault(p => 
-                        p.ProductionScheduleProductId == productionScheduleProductId && 
-                        p.MaterialId == item.MaterialId &&
-                        p.Status == ProductionExtraPackingStatus.Approved)?.Quantity ?? 0;
-
                 return new ProductionScheduleProcurementDto
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
@@ -956,8 +950,7 @@ public class ProductionScheduleRepository(
                         MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
                     },
                     FrozenQuantity = reservedQuantity,
-                    ConsumedQuantity = consumedQuantity,
-                    ExtraPackingQuantity = extraPackingQuantity
+                    ConsumedQuantity = consumedQuantity
                 };
             }).ToList();
 
