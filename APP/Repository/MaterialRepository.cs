@@ -2216,71 +2216,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return results;
     }
     
-    // public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(
-    //     int page, 
-    //     int pageSize, 
-    //     string searchQuery, 
-    //     MaterialKind? kind,
-    //     Guid? materialCategoryId,
-    //     string sortLabel,
-    //     SortDirection? sortDirection,
-    //     Guid userId)
-    // {
-    //     // 1. Validation & Base Query
-    //     var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-    //     if (user is not { DepartmentId: not null }) return UserErrors.DepartmentNotFound;
-    //
-    //     var deptId = user.DepartmentId.Value;
-    //
-    //     var query = context.MaterialDepartments
-    //         .AsSplitQuery()
-    //         .Include(m => m.Material)
-    //         .ThenInclude(m => m.MaterialCategory)
-    //         .Include(m => m.UoM)
-    //         .AsQueryable();
-    //     
-    //     if (!string.IsNullOrWhiteSpace(searchQuery))
-    //     {
-    //         query = query.WhereSearch(searchQuery, 
-    //             q => q.Material.Name, q => q.Material.Code);
-    //     }
-    //
-    //     if (kind.HasValue)
-    //         query = query.Where(q => q.Material.Kind == kind);
-    //
-    //     if (materialCategoryId.HasValue)
-    //         query = query.Where(m => m.Material.MaterialCategoryId == materialCategoryId.Value);
-    //
-    //     // 2. Apply Filters & Sorting (on the Entity)
-    //     query = ApplySorting(query, sortLabel.ToLower(), sortDirection);
-    //
-    //     // 3. Project to DTO (This is where AutoMapper does the heavy lifting)
-    //     // Use .ProjectTo so all nested Material/Dept/UoM properties are included in the SQL
-    //     var projectedQuery = 
-    //         query.ProjectTo<MaterialDepartmentWithWarehouseStockDto>(
-    //         mapper.ConfigurationProvider, 
-    //         new { deptId } // Pass deptId if your MappingProfile needs it
-    //     );
-    //
-    //     // 4. Paginate the projected IQueryable
-    //     var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(
-    //         projectedQuery, 
-    //         page, 
-    //         pageSize
-    //     );
-    //
-    //     // 5. Convert IQueryable in the result to a List for the response
-    //     return new Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>
-    //     {
-    //         Data = await paginatedResult.Data.ToListAsync(), // Execute SQL here
-    //         PageIndex = paginatedResult.PageIndex,
-    //         PageCount = paginatedResult.PageCount,
-    //         TotalRecordCount = paginatedResult.TotalRecordCount,
-    //         StartPageIndex = paginatedResult.StartPageIndex,
-    //         StopPageIndex = paginatedResult.StopPageIndex
-    //     };
-    // }
-    
     public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(
         int page, 
         int pageSize, 
@@ -2367,7 +2302,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             result.ReservedQuantity = await context.MaterialBatchReservedQuantities
                 .AsSplitQuery()
                 .Include(m => m.MaterialBatch)
-                .Where(m => m.MaterialBatch.MaterialId == result.Material.Id && m.WarehouseId == warehouse.Id)
+                .Where(m => m.MaterialBatch.MaterialId == result.Material.Id 
+                            && m.WarehouseId == warehouse.Id)
                 .SumAsync(e => e.Quantity);
         }
     
