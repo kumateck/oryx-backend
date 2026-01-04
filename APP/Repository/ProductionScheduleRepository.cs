@@ -840,7 +840,8 @@ public class ProductionScheduleRepository(
         // Fetch stock levels for each material ID individually
         foreach (var materialId in activeBoM.BillOfMaterial.Items.Select(item => item.MaterialId).Distinct())
         {
-            var stockLevel = await materialRepository.GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockLevel = await materialRepository
+                .GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
             stockLevels[materialId] = stockLevels.GetValueOrDefault(materialId, 0) + stockLevel.Value;
         }
 
@@ -1734,6 +1735,12 @@ public class ProductionScheduleRepository(
                 .Include(p => p.ProductionActivityStep)
                 .Include(p => p.ProductionScheduleProduct)
                 .ThenInclude(p => p.Product)
+                .Include(p => p.ProductionScheduleProduct)
+                .ThenInclude(p => p.ProductPacking)
+                .ThenInclude(p => p.BasePackingUoM)
+                .Include(p => p.ProductionScheduleProduct)
+                .ThenInclude(p => p.ProductPacking)
+                .ThenInclude(p => p.PackingLists)
                 .FirstOrDefaultAsync(b => b.Id == id));
     }
 
@@ -1944,7 +1951,8 @@ public class ProductionScheduleRepository(
 
         foreach (var material in packageMaterialDetails)
         {
-            var batchResult = await materialRepository.BatchesToSupplyForGivenQuantity(material.Material.Id, material.StorageWarehouseId,
+            var batchResult = await materialRepository
+                .BatchesToSupplyForGivenQuantity(material.Material.Id, material.StorageWarehouseId,
                 material.QuantityNeeded);
 
             if (batchResult.IsSuccess)
@@ -1952,7 +1960,8 @@ public class ProductionScheduleRepository(
                 var batches = batchResult.Value;
                 foreach (var batch in batches)
                 {
-                    await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, material.ProductionWarehouseId, productionScheduleProductId,
+                    await materialRepository.ReserveQuantityFromBatchForProduction(batch.Batch.Id, 
+                        material.ProductionWarehouseId, productionScheduleProductId,
                         batch.QuantityToTake, batch.Batch.UoM?.Id, batch.WarehouseLocationShelfId);
                 }
             }

@@ -965,7 +965,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, b => b.Description);
+            query = query.WhereSearch(searchQuery, b => b.Description, 
+                b => b.ArNumber, b => b.MaterialBatch.BatchNumber);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

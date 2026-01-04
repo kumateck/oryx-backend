@@ -1,8 +1,10 @@
 using System.Globalization;
+using System.Linq.Expressions;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Departments;
@@ -2212,94 +2214,178 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         return results;
     }
-
+    
     public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(
-    int page,
-    int pageSize,
-    string searchQuery,
-    MaterialKind? kind,
-    Guid? materialCategoryId,
-    Guid userId)
+        int page, 
+        int pageSize, 
+        string searchQuery, 
+        MaterialKind? kind,
+        Guid? materialCategoryId,
+        string sortLabel,
+        SortDirection? sortDirection,
+        Guid userId)
     {
+        // 1. Validation & Base Query
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null) return UserErrors.NotFound(userId);
+        if (user is not { DepartmentId: not null }) return UserErrors.DepartmentNotFound;
+    
+        var deptId = user.DepartmentId.Value;
 
         var query = context.MaterialDepartments
             .AsSplitQuery()
             .Include(m => m.Material)
+            .ThenInclude(m => m.MaterialCategory)
             .Include(m => m.UoM)
             .AsQueryable();
-
+        
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Material.Name, q => q.Material.Code);
-        }
-
-        if (!user.DepartmentId.HasValue)
-        {
-            return UserErrors.DepartmentNotFound;
-        }
-
-        if (user.DepartmentId.HasValue)
-        {
-            query = query.Where(m => m.DepartmentId == user.DepartmentId.Value);
+            query = query.WhereSearch(searchQuery, 
+                q => q.Material.Name, q => q.Material.Code);
         }
 
         if (kind.HasValue)
-        {
             query = query.Where(q => q.Material.Kind == kind);
-        }
 
         if (materialCategoryId.HasValue)
-        {
             query = query.Where(m => m.Material.MaterialCategoryId == materialCategoryId.Value);
-        }
 
-        var results = await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<MaterialDepartmentWithWarehouseStockDto>
+        // 2. Apply Filters & Sorting (on the Entity)
+        query = ApplySorting(query, sortLabel, sortDirection);
+
+        // 3. Project to DTO (This is where AutoMapper does the heavy lifting)
+        // Use .ProjectTo so all nested Material/Dept/UoM properties are included in the SQL
+        var projectedQuery = 
+            query.ProjectTo<MaterialDepartmentWithWarehouseStockDto>(
+            mapper.ConfigurationProvider, 
+            new { deptId } // Pass deptId if your MappingProfile needs it
         );
 
-        results.Data = results.Data.ToList();
-        foreach (var result in results.Data)
+        // 4. Paginate the projected IQueryable
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(
+            projectedQuery, 
+            page, 
+            pageSize
+        );
+
+        // 5. Convert IQueryable in the result to a List for the response
+        return new Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>
         {
-            var warehouseType = result.Material.Kind == MaterialKind.Raw
-                ? WarehouseType.RawMaterialStorage
-                : WarehouseType.PackagedStorage;
+            Data = await paginatedResult.Data.ToListAsync(), // Execute SQL here
+            PageIndex = paginatedResult.PageIndex,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+    }
+    
+    //  public async Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(
+    // int page,
+    // int pageSize,
+    // string searchQuery,
+    // MaterialKind? kind,
+    // Guid? materialCategoryId,
+    // Guid userId)
+    // {
+    //     var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+    //     if (user == null) return UserErrors.NotFound(userId);
+    //
+    //     var query = context.MaterialDepartments
+    //         .AsSplitQuery()
+    //         .Include(m => m.Material)
+    //         .Include(m => m.UoM)
+    //         .AsQueryable();
+    //
+    //     if (!string.IsNullOrWhiteSpace(searchQuery))
+    //     {
+    //         query = query.WhereSearch(searchQuery, q => q.Material.Name, q => q.Material.Code);
+    //     }
+    //
+    //     if (!user.DepartmentId.HasValue)
+    //     {
+    //         return UserErrors.DepartmentNotFound;
+    //     }
+    //
+    //     if (user.DepartmentId.HasValue)
+    //     {
+    //         query = query.Where(m => m.DepartmentId == user.DepartmentId.Value);
+    //     }
+    //
+    //     if (kind.HasValue)
+    //     {
+    //         query = query.Where(q => q.Material.Kind == kind);
+    //     }
+    //
+    //     if (materialCategoryId.HasValue)
+    //     {
+    //         query = query.Where(m => m.Material.MaterialCategoryId == materialCategoryId.Value);
+    //     }
+    //
+    //     var results = await PaginationHelper.GetPaginatedResultAsync(
+    //         query,
+    //         page,
+    //         pageSize,
+    //         mapper.Map<MaterialDepartmentWithWarehouseStockDto>
+    //     );
+    //
+    //     results.Data = results.Data.ToList();
+    //     foreach (var result in results.Data)
+    //     {
+    //         var warehouseType = result.Material.Kind == MaterialKind.Raw
+    //             ? WarehouseType.RawMaterialStorage
+    //             : WarehouseType.PackagedStorage;
+    //
+    //         var warehouse = await context.Warehouses
+    //             .IgnoreQueryFilters()
+    //             .AsSplitQuery()
+    //             .FirstOrDefaultAsync(w => w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
+    //
+    //         if (warehouse == null)
+    //         {
+    //             return Error.NotFound("Warehouse", "Warehouse not found");
+    //         }
+    //
+    //         var warehouseStockResult = await GetShelfMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
+    //         if (warehouseStockResult.IsFailure) continue;
+    //
+    //         result.WarehouseStock = warehouseStockResult.Value;
+    //
+    //         result.PendingStockTransferQuantity = await context.StockTransferSources
+    //             .AsSplitQuery()
+    //             .Include(s => s.StockTransfer)
+    //             .Where(s => s.StockTransfer.MaterialId == result.Material.Id &&
+    //                         s.FromDepartmentId == user.DepartmentId &&
+    //                         s.Status == StockTransferStatus.InProgress)
+    //             .SumAsync(s => s.Quantity);
+    //
+    //         result.ReservedQuantity = await context.MaterialBatchReservedQuantities
+    //             .AsSplitQuery()
+    //             .Include(m => m.MaterialBatch)
+    //             .Where(m => m.MaterialBatch.MaterialId == result.Material.Id && m.WarehouseId == warehouse.Id)
+    //             .SumAsync(e => e.Quantity);
+    //     }
+    //
+    //     return results;
+    // }
 
-            var warehouse = await context.Warehouses
-                .IgnoreQueryFilters()
-                .AsSplitQuery()
-                .FirstOrDefaultAsync(w => w.DepartmentId == user.DepartmentId && w.Type == warehouseType);
+    private static IQueryable<MaterialDepartment> ApplySorting(IQueryable<MaterialDepartment> query,
+        string label, SortDirection? direction)
+    {
+        if (string.IsNullOrEmpty(label)) return query.OrderBy(m => m.Material.Name);
 
-            if (warehouse == null)
-            {
-                return Error.NotFound("Warehouse", "Warehouse not found");
-            }
+        Expression<Func<MaterialDepartment, object>> keySelector = label.ToLower() switch
+        {
+            "materialcode" => m => m.Material.Code,
+            "categoryname" => m => m.Material.MaterialCategory.Name,
+            _ => m => m.Material.Name
+        };
+        
+        if(!direction.HasValue) return query.OrderBy(keySelector);
 
-            var warehouseStockResult = await GetShelfMaterialStockInWarehouse(result.Material.Id, warehouse.Id);
-            if (warehouseStockResult.IsFailure) continue;
-
-            result.WarehouseStock = warehouseStockResult.Value;
-
-            result.PendingStockTransferQuantity = await context.StockTransferSources
-                .AsSplitQuery()
-                .Include(s => s.StockTransfer)
-                .Where(s => s.StockTransfer.MaterialId == result.Material.Id &&
-                            s.FromDepartmentId == user.DepartmentId &&
-                            s.Status == StockTransferStatus.InProgress)
-                .SumAsync(s => s.Quantity);
-
-            result.ReservedQuantity = await context.MaterialBatchReservedQuantities
-                .AsSplitQuery()
-                .Include(m => m.MaterialBatch)
-                .Where(m => m.MaterialBatch.MaterialId == result.Material.Id && m.WarehouseId == warehouse.Id)
-                .SumAsync(e => e.Quantity);
-        }
-
-        return results;
+        return direction == SortDirection.Ascending 
+            ? query.OrderBy(keySelector) 
+            : query.OrderByDescending(keySelector);
     }
 
     public async Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId)
