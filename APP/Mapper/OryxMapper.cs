@@ -78,6 +78,7 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Siblings;
+using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.UniformityOfWeights;
@@ -122,7 +123,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, WarehouseLocationName>();
         CreateMap<CreateItemRequest, QcEquipmentCategory>();
         CreateMap<CreateItemRequest, Reagent>();
-
+        CreateMap<CreateItemRequest, Site>();
 
         #endregion
 
@@ -195,6 +196,7 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationName, CollectionItemDto>();
         CreateMap<QcEquipmentCategory, CollectionItemDto>();
         CreateMap<Reagent, CollectionItemDto>();
+        CreateMap<Site, CollectionItemDto>();
         #endregion
 
         #region Operation

@@ -64,12 +64,13 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
             .Include(j => j.AssignedToEmployee)
             .Include(j => j.AssignedBy)
             .Include(j => j.Service)
+            .Include(j => j.Site)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.DescriptionOfWork,
-                q => q.Location);
+                q => q.Site.Name);
         }
 
         if (status.HasValue)
@@ -97,6 +98,7 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         {
             var jobRequest = await context.JobRequests
                 .AsSplitQuery()
+                .Include(j => j.Site)
                 .Include(j => j.Department)
                 .Include(j => j.Equipment)
                 .Include(j => j.IssuedBy)
@@ -337,6 +339,7 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
             .Include(j => j.AssignedToEmployee)
             .Include(j => j.AssignedBy)
             .Include(j => j.Service)
+            .Include(j => j.Site)
             .Where(j => j.HandlingType == JobHandlingType.Internal && 
                         j.Status == JobRequestStatus.Completed)
             .AsQueryable();
@@ -350,7 +353,7 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.DescriptionOfWork,
-                q => q.Location);
+                q => q.Site.Name);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,

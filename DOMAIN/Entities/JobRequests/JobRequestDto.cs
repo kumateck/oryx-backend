@@ -3,6 +3,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Services;
+using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.JobRequests;
@@ -11,7 +12,7 @@ public class JobRequestDto : WithAttachment
 {
     public string Code { get; set; }
     public DepartmentDto Department { get; set; }
-    public string Location { get; set; }
+    public SiteDto Site { get; set; }
     public EquipmentDto Equipment { get; set; }
     public string EquipmentInstrumentNumber { get; set; }
     public DateTime DateOfIssue { get; set; }
