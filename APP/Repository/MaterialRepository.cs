@@ -1801,7 +1801,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(b => b.Material)
                 .Include(b => b.WarehouseLocationShelf)
                 .Where(r => r.MaterialBatch.MaterialId == materialId &&
-                            r.WarehouseId == warehouseId && r.ProductionScheduleProductId == productionScheduleProductId)
+                            r.WarehouseId == warehouseId && r.ProductionScheduleProductId == productionScheduleProductId
+                            && r.DeletedAt == null)
                 .ToListAsync());
     }
 
