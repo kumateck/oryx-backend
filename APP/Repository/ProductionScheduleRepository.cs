@@ -360,7 +360,7 @@ public class ProductionScheduleRepository(
                     activityStep.ProductionActivity.Status = ProductionStatus.InProgress;
                 }
 
-                if (activityStep.Operation.Name == "Production Preparation")
+                if (activityStep.Operation.Order == 5)
                 {
                     var productionActivity = activityStep.ProductionActivity;
                     var product = await context.Products.IgnoreQueryFilters()
