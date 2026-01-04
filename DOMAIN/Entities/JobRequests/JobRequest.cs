@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
@@ -9,7 +10,7 @@ using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.JobRequests;
 
-public class JobRequest : BaseEntity
+public class JobRequest : BaseEntity, IRequireApproval
 {
     [StringLength(255)] public string Code { get; set; }
     public Guid DepartmentId { get; set; }
@@ -50,6 +51,17 @@ public class JobRequest : BaseEntity
     // Related entities
     public List<JobExecution> Executions { get; set; } = [];
     public List<JobOrder> JobOrders { get; set; } = [];
+    public bool Approved { get; set; }
+    public List<JobRequestApproval> Approvals { get; set; } = [];
+}
+
+public class JobRequestApproval : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid JobRequestId { get; set; }
+    public JobRequest JobRequest { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 public enum JobRequestStatus

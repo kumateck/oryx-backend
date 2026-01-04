@@ -101,7 +101,8 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             : mapper.Map<DepartmentDto>(department);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> GetDepartments(int page, int pageSize, string searchQuery, DepartmentType? type)
+    public async Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> 
+        GetDepartments(int page, int pageSize, string searchQuery, DepartmentType? type)
     {
         var query = context.Departments
             .AsSplitQuery()
