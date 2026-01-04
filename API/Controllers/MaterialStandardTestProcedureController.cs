@@ -60,6 +60,18 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
         var result = await repository.GetMaterialStandardTestProcedureByMaterial(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves the details of materials linked to a stp.
+    /// </summary>
+    [HttpGet("{stpNumber}/materials")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStandardTestProcedureDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStandardTestProcedureByMaterial(string stpNumber)
+    {
+        var result = await repository.GetMaterialStandardTestProcedureByStpNumber(stpNumber);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates the details of an existing material standard test procedure.
