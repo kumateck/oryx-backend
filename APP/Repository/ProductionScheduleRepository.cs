@@ -359,64 +359,112 @@ public class ProductionScheduleRepository(
                 {
                     activityStep.ProductionActivity.Status = ProductionStatus.InProgress;
                 }
+                
+                var productionActivity = activityStep.ProductionActivity;
+                var product = await context.Products.IgnoreQueryFilters()
+                    .AsSplitQuery()
+                    .FirstOrDefaultAsync(p => p.Id == productionActivity.ProductionScheduleProduct.ProductId);
 
-                if (activityStep.Operation.Name == "Product Preparation")
-                {
-                    var productionActivity = activityStep.ProductionActivity;
-                    var product = await context.Products.IgnoreQueryFilters()
-                        .AsSplitQuery()
-                        .FirstOrDefaultAsync(p => p.Id == productionActivity.ProductionScheduleProduct.ProductId);
-
-                    if (product is not null)
-                    {
-                        var productionWarehouse = await context.Warehouses
+                if (product is null) return ProductErrors.NotFound(productionActivity.ProductionScheduleProduct.ProductId);
+                
+                var productionWarehouse = await context.Warehouses
                             .IgnoreQueryFilters()
                             .FirstOrDefaultAsync(w =>
                                 w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.Production);
+                
+                if(productionWarehouse is null)
+                    return Error.Validation("Production.Consumption",
+                        "Unable to consume materials on production floor because" +
+                        " production floor for department cant be found");
 
-                        if (productionWarehouse is not null)
-                        {
-                            var stockRequisitions = await context.Requisitions
-                                .AsSplitQuery()
-                                .Include(r => r.Items)
-                                .Where(r => r.ProductionScheduleProductId == 
-                                            activityStep.ProductionActivity.ProductionScheduleProductId).ToListAsync();
+                var stockRequisitions = await context.Requisitions
+                    .AsSplitQuery()
+                    .Include(r => r.Items)
+                    .ThenInclude(requisitionItem => requisitionItem.Material)
+                    .Where(r => r.ProductionScheduleProductId == 
+                                activityStep.ProductionActivity.ProductionScheduleProductId).ToListAsync();
 
+                if (stockRequisitions.Count == 0)
+                    return Error.Validation("Stock.Requisition",
+                        "Stock requisition is empty. Perform a stock requisition first");
+      
 
-                            foreach (var stockRequisition in stockRequisitions)
+                if (activityStep.Operation.Name.StartsWith("Product Preparation"))
+                {
+                    foreach (var stockRequisition in stockRequisitions) 
+                    { 
+                        foreach (var item in stockRequisition.Items) 
+                        { 
+                            if(item.Material.Kind == MaterialKind.Package) continue;
+                            
+                            var batchesToConsume = 
+                                await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
+                                    item.MaterialId, 
+                                    productionWarehouse.Id, stockRequisition.ProductionScheduleProductId.Value);
+
+                            foreach (var batch in batchesToConsume)
                             {
-                                foreach (var item in stockRequisition.Items)
-                                {
-                                    var batchesToConsume =
-                                        await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
-                                            item.MaterialId,
-                                            productionWarehouse.Id, stockRequisition.ProductionScheduleProductId.Value);
-
-                                    foreach (var batch in batchesToConsume)
-                                    {
-                                        await materialRepository.ConsumeMaterialAtLocation(batch.MaterialBatch.Id,
-                                            productionWarehouse.Id, batch.Quantity, userId);
-                                    }
-
-                                    var batchesToRemove = await context.MaterialBatchReservedQuantities
-                                        .Where(b => batchesToConsume.Select(bc => bc.Id).Contains(b.Id))
-                                        .ToListAsync();
-
-                                    context.MaterialBatchReservedQuantities.RemoveRange(batchesToRemove);
-                                    await context.SaveChangesAsync();
-                                }
+                                await materialRepository.ConsumeMaterialAtLocation(batch.MaterialBatch.Id,
+                                    productionWarehouse.Id, batch.Quantity, userId);
                             }
-                        }
-                        else
-                        {
-                            return Error.Validation("Production.Consumption",
-                                "Unable to consume materials on production floor because production floor for department cant be found");
+
+                            var batchesToRemove = await context.MaterialBatchReservedQuantities
+                                .Where(b => batchesToConsume
+                                    .Select(bc => bc.Id).Contains(b.Id))
+                                .ToListAsync();
+
+                            context.MaterialBatchReservedQuantities.RemoveRange(batchesToRemove);
                         }
                     }
-                    else
-                    {
-                        return ProductErrors.NotFound(productionActivity.ProductionScheduleProductId);
+                    await context.SaveChangesAsync();
+                }
+                
+                if (activityStep.Operation.Name.StartsWith("Final Packing"))
+                {
+                    foreach (var stockRequisition in stockRequisitions) 
+                    { 
+                        foreach (var item in stockRequisition.Items) 
+                        { 
+                            if(item.Material.Kind == MaterialKind.Raw) continue;
+                            
+                            var batchesToConsume = 
+                                await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
+                                    item.MaterialId, 
+                                    productionWarehouse.Id, stockRequisition.ProductionScheduleProductId.Value);
+
+                            foreach (var batch in batchesToConsume)
+                            {
+                                await materialRepository.ConsumeMaterialAtLocation(batch.MaterialBatch.Id,
+                                    productionWarehouse.Id, batch.Quantity, userId);
+                            }
+
+                            var batchesToRemove = 
+                                await context.MaterialBatchReservedQuantities
+                                .Where(b => batchesToConsume
+                                    .Select(bc => bc.Id).Contains(b.Id))
+                                .ToListAsync();
+
+                            context.MaterialBatchReservedQuantities.RemoveRange(batchesToRemove);
+                        }
                     }
+
+                    var packageMaterialIds = stockRequisitions
+                        .SelectMany(s => s.Items)
+                        .Select(i => i.Material)
+                        .Where(m => m.Kind == MaterialKind.Package)
+                        .Select(m => m.Id)
+                        .Distinct()
+                        .ToList();
+                    
+                    var extraPackings =  await context.ProductionExtraPackings
+                        .Where(p => 
+                            p.ProductionScheduleProductId == productionActivity.ProductionScheduleProductId && 
+                            packageMaterialIds.Contains(p.MaterialId) &&
+                            p.Status == ProductionExtraPackingStatus.Approved)
+                        .ToListAsync();
+                    
+                    context.ProductionExtraPackings.RemoveRange(extraPackings);
+                    await context.SaveChangesAsync();
                 }
 
                 break;
@@ -878,6 +926,12 @@ public class ProductionScheduleRepository(
                         productionWarehouse.Id, productionScheduleProduct.Id).Result;
                 
                 var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
+                
+                var extraPackingQuantity = context.ProductionExtraPackings
+                    .FirstOrDefault(p => 
+                        p.ProductionScheduleProductId == productionScheduleProductId && 
+                        p.MaterialId == item.MaterialId &&
+                        p.Status == ProductionExtraPackingStatus.Approved)?.Quantity ?? 0;
 
                 return new ProductionScheduleProcurementDto
                 {
@@ -902,7 +956,8 @@ public class ProductionScheduleRepository(
                         MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
                     },
                     FrozenQuantity = reservedQuantity,
-                    ConsumedQuantity = consumedQuantity
+                    ConsumedQuantity = consumedQuantity,
+                    ExtraPackingQuantity = extraPackingQuantity
                 };
             }).ToList();
 
@@ -1050,6 +1105,12 @@ public class ProductionScheduleRepository(
                         productionWarehouse.Id, productionScheduleProduct.Id).Result;
                 
                 var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
+                
+                var extraPackingQuantity = context.ProductionExtraPackings
+                    .FirstOrDefault(p => 
+                        p.ProductionScheduleProductId == productionScheduleProductId && 
+                        p.MaterialId == item.MaterialId &&
+                        p.Status == ProductionExtraPackingStatus.Approved)?.Quantity ?? 0;
 
                 return new ProductionScheduleProcurementPackageDto
                 {
@@ -1077,7 +1138,8 @@ public class ProductionScheduleRepository(
                         MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
                     },
                     FrozenQuantity = reservedQuantity,
-                    ConsumedQuantity = consumedQuantity
+                    ConsumedQuantity = consumedQuantity,
+                    ExtraPackingQuantity = extraPackingQuantity
                 };
             }).ToList();
 
@@ -2888,7 +2950,8 @@ public class ProductionScheduleRepository(
     }
 
 
-    public async Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId, List<BatchTransferRequest> batches, Guid userId)
+    public async Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId, 
+        List<BatchTransferRequest> batches, Guid userId)
     {
         var productionExtraPacking = await context.ProductionExtraPackings
             .AsSplitQuery()

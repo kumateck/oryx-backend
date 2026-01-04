@@ -992,7 +992,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //     .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialReturnNotePartialReturn>()
             .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
-        modelBuilder.Entity<ProductionExtraPacking>().HasQueryFilter(entity => !entity.Material.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionExtraPacking>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialSpecification>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
@@ -1442,6 +1443,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Attendance Record Filter
 
         modelBuilder.Entity<AttendanceRecords>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Site Filters
+
+        modelBuilder.Entity<Site>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }
