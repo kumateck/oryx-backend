@@ -599,7 +599,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? kind = null,
         [FromQuery] Guid? materialCategoryId = null,
-        [FromQuery] string sortLabel = null,
+        [FromQuery] string sortLabel = "",
         [FromQuery] SortDirection? sortDirection = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
