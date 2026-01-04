@@ -870,8 +870,14 @@ public class ProductionScheduleRepository(
                 var reservedQuantityBatches =
                     materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
                         productionWarehouse.Id, productionScheduleProduct.Id).Result;
-
+                
                 var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
+                
+                var consumedQuantityBatches = 
+                    materialRepository.GetConsumedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
+                        productionWarehouse.Id, productionScheduleProduct.Id).Result;
+                
+                var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
 
                 return new ProductionScheduleProcurementDto
                 {
@@ -895,7 +901,8 @@ public class ProductionScheduleRepository(
                         MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
                         MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
                     },
-                    FrozenQuantity = reservedQuantity
+                    FrozenQuantity = reservedQuantity,
+                    ConsumedQuantity = consumedQuantity
                 };
             }).ToList();
 
@@ -1035,8 +1042,14 @@ public class ProductionScheduleRepository(
                 var reservedQuantityBatches =
                     materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
                         productionWarehouse.Id, productionScheduleProduct.Id).Result;
-
+                
                 var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
+
+                var consumedQuantityBatches = 
+                    materialRepository.GetConsumedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
+                        productionWarehouse.Id, productionScheduleProduct.Id).Result;
+                
+                var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
 
                 return new ProductionScheduleProcurementPackageDto
                 {
@@ -1063,7 +1076,8 @@ public class ProductionScheduleRepository(
                         MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
                         MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
                     },
-                    FrozenQuantity = reservedQuantity
+                    FrozenQuantity = reservedQuantity,
+                    ConsumedQuantity = consumedQuantity
                 };
             }).ToList();
 
