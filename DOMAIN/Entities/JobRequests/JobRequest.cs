@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
-using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Services;
 using DOMAIN.Entities.Sites;
