@@ -13,6 +13,9 @@ public interface IMaterialStandardTestProcedureRepository
 
     Task<Result<MaterialStandardTestProcedureDto>> GetMaterialStandardTestProcedure(Guid id);
     Task<Result<MaterialStandardTestProcedureDto>> GetMaterialStandardTestProcedureByMaterial(Guid id);
+
+    Task<Result<List<MaterialStandardTestProcedureDto>>>
+        GetMaterialStandardTestProcedureByStpNumber(string stpNumber);
     Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotUsedInStandardTestProcedure(
         int page, int pageSize, string searchQuery, MaterialKind kind);
     Task<Result> UpdateMaterialStandardTestProcedure(Guid id, CreateMaterialStandardTestProcedureRequest request);
