@@ -8,6 +8,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
+using SHARED;
 
 namespace API.Controllers;
 
@@ -584,21 +585,28 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="kind">The material kind to filter</param>
     /// <param name="materialCategoryId">The material category</param>
+    /// <param name="sortLabel">The label to which to sort by. Options are 'materialcode' 'categoryname'
+    /// and 'materialname' "</param>
+    /// <param name="sortDirection">The direction to sort the results. 1 for Ascending, 2 for Descending</param>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("department")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
-    public async Task<IResult> GetMaterialDepartments([FromQuery] int page = 1,
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
+    public async Task<IResult> GetMaterialDepartments(
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? kind = null,
-        [FromQuery] Guid? materialCategoryId = null)
+        [FromQuery] Guid? materialCategoryId = null,
+        [FromQuery] string sortLabel = null,
+        [FromQuery] SortDirection? sortDirection = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.GetMaterialDepartments(page, pageSize,
-            searchQuery, kind, materialCategoryId, Guid.Parse(userId));
+            searchQuery, kind, materialCategoryId,sortLabel, sortDirection,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

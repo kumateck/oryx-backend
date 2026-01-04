@@ -79,11 +79,13 @@ public interface IMaterialRepository
         Guid userId);
     Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId);
     Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery, MaterialKind? kind, Guid userId);
-    Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page,
-        int pageSize,
-        string searchQuery,
+    Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page, 
+        int pageSize, 
+        string searchQuery, 
         MaterialKind? kind,
         Guid? materialCategoryId,
+        string sortLabel,
+        SortDirection? sortDirection,
         Guid userId);
     Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId);
     Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
