@@ -189,7 +189,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (requisition.RequisitionType == RequisitionType.Purchase) return result;
 
         var user = await context.Users
-            .Include(u => u.Department).ThenInclude(u => u.Warehouses)
+            .AsSplitQuery()
+            .Include(u => u.Department)
+            .ThenInclude(u => u.Warehouses)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user?.Department is null)
