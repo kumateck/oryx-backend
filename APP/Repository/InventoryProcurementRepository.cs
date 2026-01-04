@@ -612,6 +612,7 @@ public class InventoryProcurementRepository(
     public async Task<Result<List<StockEntryDto>>> GetStockEntries(ApprovalStatus status)
     {
         var stockEntries = await context.StockEntries
+            .Include(s => s.Item)
             .Where(s => s.Status == status).ToListAsync();
         return mapper.Map<List<StockEntryDto>>(stockEntries);
     }

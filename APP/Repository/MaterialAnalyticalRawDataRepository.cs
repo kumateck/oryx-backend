@@ -32,8 +32,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         {
             return Error.Validation("Form.Invalid", "Form is invalid.");
         }
-
-
+        
         var stpNumber = await context.MaterialStandardTestProcedures
             .AnyAsync(mstp => mstp.Id == request.StpId);
 

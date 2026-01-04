@@ -12,27 +12,47 @@ namespace APP.Repository;
 
 public class MaterialStandardTestProcedureRepository(ApplicationDbContext context, IMapper mapper) : IMaterialStandardTestProcedureRepository
 {
-    public async Task<Result<Guid>> CreateMaterialStandardTestProcedure(CreateMaterialStandardTestProcedureRequest request)
+    public async Task<Result<Guid>> CreateMaterialStandardTestProcedure(
+        CreateMaterialStandardTestProcedureRequest request)
     {
-        var existingProcedure = await context.MaterialStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.StpNumber == request.StpNumber);
+        var material = await context.Materials
+            .FirstOrDefaultAsync(m => m.Id == request.MaterialId);
 
-        if (existingProcedure != null)
+        if (material is null)
+            return Error.Validation("Invalid.Material", "Invalid material.");
+
+        bool exists;
+
+        if (material.Kind == MaterialKind.Package)
         {
-            return Error.Validation("MaterialStandardTestProcedure.Exists", "Material Standard test procedure already exists.");
+            exists = await context.MaterialStandardTestProcedures.AnyAsync(stp =>
+                stp.StpNumber == request.StpNumber &&
+                stp.MaterialId == request.MaterialId
+            );
+        }
+        else
+        {
+            exists = await context.MaterialStandardTestProcedures.AnyAsync(stp =>
+                stp.StpNumber == request.StpNumber
+            );
         }
 
-        var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == request.MaterialId);
-
-        if (material == null)
+        if (exists)
         {
-            return Error.Validation("Invalid.Material", "Invalid material");
+            return Error.Validation(
+                "MaterialStandardTestProcedure.Exists",
+                material.Kind == MaterialKind.Package
+                    ? "This packaging material already has this STP."
+                    : "Material Standard Test Procedure already exists."
+            );
         }
 
-        var materialStandardTestProcedure = mapper.Map<MaterialStandardTestProcedure>(request);
+        var materialStandardTestProcedure =
+            mapper.Map<MaterialStandardTestProcedure>(request);
+
         await context.MaterialStandardTestProcedures.AddAsync(materialStandardTestProcedure);
-
         await context.SaveChangesAsync();
+
         return materialStandardTestProcedure.Id;
     }
 
@@ -90,6 +110,33 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found") :
             mapper.Map<MaterialStandardTestProcedureDto>(procedure
                 , opts => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); });
+    }
+    
+    public async Task<Result<List<MaterialStandardTestProcedureDto>>> 
+        GetMaterialStandardTestProcedureByStpNumber(string stpNumber)
+    {
+        if (string.IsNullOrWhiteSpace(stpNumber)) return Error.Validation("Invalid.StpNumber", "Invalid STP number.");
+        
+        var procedures = await context.MaterialStandardTestProcedures
+            .AsSplitQuery()
+            .Include(stp => stp.Material)
+            .Where(stp => stp.StpNumber == stpNumber)
+            .ToListAsync();
+
+        if (procedures.Count == 0)
+        {
+            return Error.NotFound(
+                "MaterialStandardTestProcedure.NotFound",
+                "Material Standard Test Procedure not found."
+            );
+        }
+
+        var result = mapper.Map<List<MaterialStandardTestProcedureDto>>(
+            procedures,
+            opts => opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure)
+        );
+
+        return result;
     }
 
     public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotUsedInStandardTestProcedure(int page, int pageSize, string searchQuery, MaterialKind kind)
