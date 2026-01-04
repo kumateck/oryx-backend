@@ -5,8 +5,7 @@ namespace DOMAIN.Entities.JobRequests;
 public class CreateJobRequest
 {
     [StringLength(255)] public string Code { get; set; }
-    [Required, StringLength(500)]
-    public string Location { get; set; }
+    public Guid? SiteId { get; set; }
     public Guid? EquipmentId { get; set; }
     [StringLength(1000)]
     public string EquipmentInstrumentNumber { get; set; }
@@ -27,7 +26,7 @@ public class CreateJobRequest
 public class UpdateJobRequestRequest
 {
     public string Code { get; set; }
-    public string Location { get; set; }
+    public Guid? SiteId { get; set; }
     public Guid? EquipmentId { get; set; }
     public string EquipmentInstrumentNumber { get; set; }
     public string DescriptionOfWork { get; set; }

@@ -2,8 +2,10 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Services;
+using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.JobRequests;
@@ -13,7 +15,9 @@ public class JobRequest : BaseEntity
     [StringLength(255)] public string Code { get; set; }
     public Guid DepartmentId { get; set; }
     public Department Department { get; set; }
-    public string Location { get; set; }
+    
+    public Guid? SiteId { get; set; }
+    public Site Site { get; set; }
     public Guid? EquipmentId { get; set; }
     public Equipment Equipment { get; set; }
     [StringLength(1000)]
