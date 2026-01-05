@@ -107,20 +107,56 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             async Task<Guid?> CreateStockRequisition(string prefix, List<CreateRequisitionItemRequest> items)
             {
-                if (items.Count == 0) return null; // Skip if no items
+                if (items == null || items.Count == 0) return null;
 
-                var beta = department.Division == Division.BetaLactam ? "B" : "N";
-                var year = DateTime.Now.Year.ToString("yy");
-                var count = await context.Requisitions
-                    .IgnoreQueryFilters()
-                    .CountAsync(c => c.RequisitionType == RequisitionType.Stock && c.Code.StartsWith(prefix)) + 1;
-                var requisition = mapper.Map<Requisition>(request);
-                requisition.Code = $"{prefix}/{beta}/{year}/{count:D3}";
-                requisition.RequestedById = userId;
-                requisition.DepartmentId = department.Id;
-                requisition.Items = mapper.Map<List<RequisitionItem>>(items);
-                await context.Requisitions.AddAsync(requisition);
-                return requisition.Id;
+                // Use a transaction to prevent two users from generating the same number simultaneously
+                await using var transaction = await context.Database.BeginTransactionAsync();
+                try
+                {
+                    var beta = department.Division == Division.BetaLactam ? "B" : "N";
+                    var year = DateTime.Now.ToString("yy");
+                    var searchPattern = $"{prefix}/{beta}/{year}/";
+
+                    // 1. Find the highest existing sequence number for this specific prefix/beta/year
+                    var lastCode = await context.Requisitions
+                        .IgnoreQueryFilters()
+                        .Where(c => c.Code.StartsWith(searchPattern))
+                        .OrderByDescending(c => c.Code)
+                        .Select(c => c.Code)
+                        .FirstOrDefaultAsync();
+
+                    int nextCount = 1;
+                    if (lastCode != null)
+                    {
+                        // Extract the digits after the last slash
+                        var lastPart = lastCode.Split('/').Last();
+                        if (int.TryParse(lastPart, out int lastNumber))
+                        {
+                            nextCount = lastNumber + 1;
+                        }
+                    }
+
+                    var requisition = mapper.Map<Requisition>(request);
+        
+                    // 2. Assign the unique code
+                    requisition.Code = $"{prefix}/{beta}/{year}/{nextCount:D3}";
+                    requisition.RequestedById = userId;
+                    requisition.DepartmentId = department.Id;
+                    requisition.Items = mapper.Map<List<RequisitionItem>>(items);
+
+                    await context.Requisitions.AddAsync(requisition);
+                    await context.SaveChangesAsync();
+
+                    // 3. Commit everything at once
+                    await transaction.CommitAsync();
+
+                    return requisition.Id;
+                }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
 
             var productionActivityStep =

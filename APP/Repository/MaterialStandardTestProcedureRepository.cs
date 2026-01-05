@@ -10,7 +10,8 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class MaterialStandardTestProcedureRepository(ApplicationDbContext context, IMapper mapper) : IMaterialStandardTestProcedureRepository
+public class MaterialStandardTestProcedureRepository(ApplicationDbContext context, IMapper mapper) :
+    IMaterialStandardTestProcedureRepository
 {
     public async Task<Result> CreateMaterialStandardTestProcedure(
         CreateMaterialStandardTestProcedureRequest request)
@@ -77,7 +78,9 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, MaterialKind materialKind, bool unused)
+    public async Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> 
+        GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, MaterialKind materialKind, 
+            bool unused)
     {
         var query = context.MaterialStandardTestProcedures
             .AsSplitQuery()
@@ -88,7 +91,8 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
 
         if (unused)
         {
-            var usedStpIds = await context.MaterialAnalyticalRawData.Select(item => item.StpId).ToListAsync();
+            var usedStpIds = await context.MaterialAnalyticalRawData
+                .Select(item => item.StpId).ToListAsync();
             query = query.Where(stp => !usedStpIds.Contains(stp.Id));
         }
 
@@ -103,7 +107,8 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
                 pageSize,
                 entity => mapper.Map<MaterialStandardTestProcedureDto>(
                     entity,
-                    opts => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); }
+                    opts 
+                        => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); }
                 ));
     }
 
@@ -115,9 +120,11 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .FirstOrDefaultAsync(stp => stp.Id == id);
 
         return procedure is null ?
-            Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found") :
+            Error.NotFound("MaterialStandardTestProcedure.NotFound",
+                "Material Standard test procedure not found") :
             mapper.Map<MaterialStandardTestProcedureDto>(procedure
-            , opts => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); });
+            , opts 
+                => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); });
     }
 
     public async Task<Result<MaterialStandardTestProcedureDto>> GetMaterialStandardTestProcedureByMaterial(Guid id)
@@ -128,15 +135,18 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .FirstOrDefaultAsync(stp => stp.MaterialId == id);
 
         return procedure is null ?
-            Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found") :
+            Error.NotFound("MaterialStandardTestProcedure.NotFound",
+                "Material Standard test procedure not found") :
             mapper.Map<MaterialStandardTestProcedureDto>(procedure
-                , opts => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); });
+                , opts 
+                    => { opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure); });
     }
     
     public async Task<Result<List<MaterialStandardTestProcedureDto>>> 
         GetMaterialStandardTestProcedureByStpNumber(string stpNumber)
     {
-        if (string.IsNullOrWhiteSpace(stpNumber)) return Error.Validation("Invalid.StpNumber", "Invalid STP number.");
+        if (string.IsNullOrWhiteSpace(stpNumber)) return Error.Validation("Invalid.StpNumber",
+            "Invalid STP number.");
         
         var procedures = await context.MaterialStandardTestProcedures
             .AsSplitQuery()
@@ -157,7 +167,8 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
 
         var result = mapper.Map<List<MaterialStandardTestProcedureDto>>(
             procedures,
-            opts => opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure)
+            opts 
+                => opts.Items[AppConstants.ModelType] = nameof(MaterialStandardTestProcedure)
         );
 
         return result;
@@ -168,7 +179,8 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         var query = context.Materials
             .AsSplitQuery()
             .Include(m => m.MaterialCategory)
-            .Where(m => m.Kind == kind && !context.MaterialStandardTestProcedures.Any(stp => stp.MaterialId == m.Id))
+            .Where(m => m.Kind == kind && !context.MaterialStandardTestProcedures
+                .Any(stp => stp.MaterialId == m.Id))
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -184,14 +196,16 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         );
     }
 
-    public async Task<Result> UpdateMaterialStandardTestProcedure(Guid id, CreateMaterialStandardTestProcedureRequest request)
+    public async Task<Result> UpdateMaterialStandardTestProcedure(Guid id, 
+        CreateMaterialStandardTestProcedureRequest request)
     {
         var procedure = await context.MaterialStandardTestProcedures
             .FirstOrDefaultAsync(stp => stp.Id == id);
 
         if (procedure is null)
         {
-            return Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found");
+            return Error.NotFound("MaterialStandardTestProcedure.NotFound",
+                "Material Standard test procedure not found");
         }
 
         mapper.Map(request, procedure);
@@ -208,7 +222,8 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .FirstOrDefaultAsync(stp => stp.Id == id);
         if (procedure is null)
         {
-            return Error.NotFound("MaterialStandardTestProcedure.NotFound", "Material Standard test procedure not found");
+            return Error.NotFound("MaterialStandardTestProcedure.NotFound",
+                "Material Standard test procedure not found");
         }
 
         procedure.DeletedAt = DateTime.UtcNow;
