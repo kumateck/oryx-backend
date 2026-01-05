@@ -17,12 +17,12 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// Creates a material standard test procedure
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialStandardTestProcedureDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateStandardTestProcedure([FromBody] CreateMaterialStandardTestProcedureRequest request)
     {
         var result = await repository.CreateMaterialStandardTestProcedure(request);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
     /// <summary>

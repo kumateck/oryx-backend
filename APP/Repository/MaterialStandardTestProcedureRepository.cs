@@ -12,48 +12,69 @@ namespace APP.Repository;
 
 public class MaterialStandardTestProcedureRepository(ApplicationDbContext context, IMapper mapper) : IMaterialStandardTestProcedureRepository
 {
-    public async Task<Result<Guid>> CreateMaterialStandardTestProcedure(
+    public async Task<Result> CreateMaterialStandardTestProcedure(
         CreateMaterialStandardTestProcedureRequest request)
     {
-        var material = await context.Materials
-            .FirstOrDefaultAsync(m => m.Id == request.MaterialId);
+        if (request.MaterialIds == null || request.MaterialIds.Count == 0)
+            return Error.Validation("Invalid.Materials", "At least one material is required.");
 
-        if (material is null)
-            return Error.Validation("Invalid.Material", "Invalid material.");
+        var materials = await context.Materials
+            .Where(m => request.MaterialIds.Contains(m.Id))
+            .ToListAsync();
 
-        bool exists;
+        if (materials.Count != request.MaterialIds.Count)
+            return Error.Validation("Invalid.Material", "One or more materials are invalid.");
 
-        if (material.Kind == MaterialKind.Package)
-        {
-            exists = await context.MaterialStandardTestProcedures.AnyAsync(stp =>
-                stp.StpNumber == request.StpNumber &&
-                stp.MaterialId == request.MaterialId
-            );
-        }
-        else
-        {
-            exists = await context.MaterialStandardTestProcedures.AnyAsync(stp =>
-                stp.StpNumber == request.StpNumber
-            );
-        }
+        // Fetch existing STPs for this STP number
+        var existingStps = await context.MaterialStandardTestProcedures
+            .Include(stp => stp.Material)
+            .Where(stp => stp.StpNumber == request.StpNumber)
+            .ToListAsync();
 
-        if (exists)
+        //  if STP already used by a raw material → block everything
+        if (existingStps.Any(stp => stp.Material.Kind != MaterialKind.Package))
         {
             return Error.Validation(
                 "MaterialStandardTestProcedure.Exists",
-                material.Kind == MaterialKind.Package
-                    ? "This packaging material already has this STP."
-                    : "Material Standard Test Procedure already exists."
+                "This STP number is already assigned to a raw material."
             );
         }
 
-        var materialStandardTestProcedure =
-            mapper.Map<MaterialStandardTestProcedure>(request);
+        // cannot assign non-packaging materials if STP already exists
+        if (existingStps.Count != 0 && materials.Any(m => m.Kind != MaterialKind.Package))
+        {
+            return Error.Validation(
+                "MaterialStandardTestProcedure.Invalid",
+                "Raw materials can only have one material per STP number."
+            );
+        }
 
-        await context.MaterialStandardTestProcedures.AddAsync(materialStandardTestProcedure);
+        foreach (var material in materials)
+        {
+            // packaging materials → only once per material
+            var alreadyExistsForMaterial = existingStps.Any(stp =>
+                stp.MaterialId == material.Id
+            );
+
+            if (alreadyExistsForMaterial)
+            {
+                return Error.Validation(
+                    "MaterialStandardTestProcedure.Exists",
+                    $"Material '{material.Name}' already has this STP number."
+                );
+            }
+
+            var procedure = new MaterialStandardTestProcedure
+            {
+                StpNumber = request.StpNumber,
+                MaterialId = material.Id,
+                Description = request.Description
+            };
+
+            await context.MaterialStandardTestProcedures.AddAsync(procedure);
+        }
         await context.SaveChangesAsync();
-
-        return materialStandardTestProcedure.Id;
+        return Result.Success();
     }
 
     public async Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, MaterialKind materialKind, bool unused)

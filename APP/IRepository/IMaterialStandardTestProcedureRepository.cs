@@ -7,7 +7,7 @@ namespace APP.IRepository;
 
 public interface IMaterialStandardTestProcedureRepository
 {
-    Task<Result<Guid>> CreateMaterialStandardTestProcedure(CreateMaterialStandardTestProcedureRequest request);
+    Task<Result> CreateMaterialStandardTestProcedure(CreateMaterialStandardTestProcedureRequest request);
 
     Task<Result<Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>>> GetMaterialStandardTestProcedures(int page, int pageSize, string searchQuery, MaterialKind materialKind, bool unused);
 
