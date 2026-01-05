@@ -27,3 +27,9 @@ public class ServiceQuotationDto : BaseDto
     public decimal GrandTotal { get; set; }
 }
 
+public class ServiceChargeDto
+{ 
+    public string Name { get; set; }
+    public decimal Cost { get; set; }
+}
+

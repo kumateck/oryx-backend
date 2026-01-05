@@ -45,15 +45,11 @@ public class CreateQuotationItemRequest
 
     [Required, Range(0, double.MaxValue)]
     public decimal Quantity { get; set; }
-
     [Required]
     public Guid UnitOfMeasureId { get; set; }
 
     [Required, Range(0, double.MaxValue)]
     public decimal UnitPrice { get; set; }
-
-    [StringLength(500)]
-    public string Supplier { get; set; }
 }
 
 public class UpdateServiceQuotationRequest

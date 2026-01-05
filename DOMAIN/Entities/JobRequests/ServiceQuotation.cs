@@ -13,10 +13,8 @@ public class ServiceQuotation : BaseEntity
 {
     [StringLength(100)]
     public string QuotationNumber { get; set; }
-
     public Guid JobOrderId { get; set; }
     public JobOrder JobOrder { get; set; }
-
     public Guid ServiceProviderId { get; set; }
     public ServiceProvider ServiceProvider { get; set; }
 
