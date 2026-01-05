@@ -143,6 +143,9 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .Include(stp => stp.Material)
             .Where(stp => stp.StpNumber == stpNumber)
             .ToListAsync();
+        
+        var materialStp = await context.MaterialSpecifications
+            .FirstOrDefaultAsync(m => m.MaterialId == procedures[0].MaterialId);
 
         if (procedures.Count == 0)
         {
