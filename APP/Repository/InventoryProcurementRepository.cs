@@ -609,12 +609,14 @@ public class InventoryProcurementRepository(
         return Result.Success();
     }
 
-    public async Task<Result<List<StockEntryDto>>> GetStockEntries(ApprovalStatus status)
+    public async Task<Result<Paginateable<IEnumerable<StockEntryDto>>>> GetStockEntries(ApprovalStatus status, int page, int pageSize, Store store)
     {
-        var stockEntries = await context.StockEntries
+        var query = context.StockEntries
             .Include(s => s.Item)
-            .Where(s => s.Status == status).ToListAsync();
-        return mapper.Map<List<StockEntryDto>>(stockEntries);
+            .Where(s => s.Status == status && s.Item.Store == store).AsQueryable();
+        return await PaginationHelper
+            .GetPaginatedResultAsync(
+            query, page, pageSize, mapper.Map<StockEntryDto>);
     }
 
     public async Task<Result<MemoDto>> GetMemo(Guid id)
