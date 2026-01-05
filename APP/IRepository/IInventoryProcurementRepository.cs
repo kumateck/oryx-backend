@@ -46,7 +46,8 @@ public interface IInventoryProcurementRepository
     Task<Result> ApproveItem(Guid stockEntryId);
     Task<Result> RejectItem(Guid stockEntryId);
 
-    Task<Result<List<StockEntryDto>>> GetStockEntries(ApprovalStatus status);
+    Task<Result<Paginateable<IEnumerable<StockEntryDto>>>> GetStockEntries(ApprovalStatus status, int page,
+        int pageSize, Store store);
     Task<Result> UploadStockItems(ImportItemsRequest itemsRequest);
     Task<Result<MemoDto>> GetMemo(Guid id);
 

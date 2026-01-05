@@ -386,9 +386,10 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     [HttpGet("purchased-items")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockEntryDto>))]
-    public async Task<IResult> GetStockEntries([FromQuery] ApprovalStatus status)
+    public async Task<IResult> GetStockEntries([FromQuery] ApprovalStatus status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] Store store = Store.EquipmentStore)
     {
-        var result = await repository.GetStockEntries(status);
+        var result = await repository.GetStockEntries(status, page, pageSize, store);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
