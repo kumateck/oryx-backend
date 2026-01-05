@@ -18,9 +18,11 @@ namespace APP.Repository;
 
 public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, IMapper mapper) : IMaterialAnalyticalRawDataRepository
 {
+    //TODO: endpoint to get materials that don't have an ARD
     public async Task<Result<Guid>> CreateAnalyticalRawData(CreateMaterialAnalyticalRawDataRequest request)
     {
-        var existingAnalyticalRawData = await context.MaterialAnalyticalRawData.FirstOrDefaultAsync(ad => ad.SpecNumber == request.SpecNumber);
+        var existingAnalyticalRawData = await context.MaterialAnalyticalRawData
+            .FirstOrDefaultAsync(ad => ad.SpecNumber == request.SpecNumber);
         if (existingAnalyticalRawData is not null)
         {
             return Error.Validation("MaterialAnalyticalRawData.Exists", $"Analytical raw data with this spec number {request.SpecNumber} already exists.");
@@ -34,7 +36,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         }
         
         var stpNumber = await context.MaterialStandardTestProcedures
-            .AnyAsync(mstp => mstp.Id == request.StpId);
+            .AnyAsync(mstp => mstp.Id == request.StpId && mstp.MaterialId == request.MaterialId);
 
         if (!stpNumber)
         {
