@@ -8,6 +8,8 @@ public class CreateMaterialAnalyticalRawDataRequest
     public string Description { get; set; }
     [Required] public Guid StpId { get; set; }
     [Required] public Guid FormId { get; set; }
+    
+    [Required] public Guid MaterialId { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public Guid? UniformityOfWeightId { get; set; }
 }

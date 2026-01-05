@@ -50,7 +50,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             : mapper.Map<MaterialDto>(material);
     }
 
-    // Get paginated list of Materials
+    // Get a paginated list of Materials
     public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page,
         int pageSize, string searchQuery, MaterialKind kind)
     {
@@ -63,6 +63,36 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description, m => m.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialDto>
+        );
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<MaterialDto>>>> 
+        GetMaterialsNotLinkedToArd(
+            int page,
+            int pageSize,
+            string searchQuery,
+            MaterialKind kind)
+    {
+        var query = context.Materials
+            .Where(m => m.Kind == kind)
+            .Where(m => !context.MaterialAnalyticalRawData
+                .Any(ard => ard.MaterialStandardTestProcedure.MaterialId == m.Id))
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(
+                searchQuery,
+                m => m.Name,
+                m => m.Code
+            );
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
