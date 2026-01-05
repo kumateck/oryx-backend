@@ -1204,6 +1204,7 @@ public class OryxMapper : Profile
         CreateMap<ServiceCharge, ServiceChargeDto>();
 
         // Quotation Item
+        CreateMap<CreateQuotationItemRequest, QuotationItem>();
         CreateMap<QuotationItem, QuotationItemDto>();
 
         // Service Proforma Invoice
