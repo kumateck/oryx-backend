@@ -1,3 +1,4 @@
+using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -1063,8 +1064,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
             // Parse shared data
             decimal.TryParse(GetCell("Total Quantity"), out var quantity);
-            DateTime.TryParse(GetCell("Manufacturing Date"), out var mfgDate);
-            DateTime.TryParse(GetCell("Expiry Date"), out var expDate);
+            var mfgDate = GetCell("Manufacturing Date");
+            var expiryDate = GetCell("Expiry Date");
 
             // 4. Create Manufacturing Record
             manufacturingRecords.Add(new BatchManufacturingRecord
@@ -1073,8 +1074,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 ProductionScheduleProductId = defaultScheduleProduct.Id,
                 ProductionActivityStepId = defaultStep.Id,
                 BatchNumber = batchNo,
-                ManufacturingDate = mfgDate,
-                ExpiryDate = expDate,
+                ManufacturingDate = ParseDate(mfgDate),
+                ExpiryDate = ParseDate(expiryDate),
                 BatchQuantity = quantity,
                 Status = BatchManufacturingStatus.Approved, // Set appropriate default status
                 IssuedDate = DateTime.UtcNow
@@ -1088,8 +1089,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 ProductionActivityStepId = defaultStep.Id,
                 ProductPackingId = packing.Id,
                 BatchNumber = batchNo,
-                ManufacturingDate = mfgDate,
-                ExpiryDate = expDate,
+                ManufacturingDate = ParseDate(mfgDate),
+                ExpiryDate = ParseDate(expiryDate),
                 BatchQuantity = quantity,
                 IssuedDate = DateTime.UtcNow
             });
@@ -1101,5 +1102,16 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         await context.SaveChangesAsync();
 
         return Result.Success();
+    }
+    
+    DateTime? ParseDate(string input)
+    {
+        if (DateTime.TryParseExact(input, "dd/MM/yyyy",
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+        {
+            // Specify that this date is UTC to prevent local time offsets
+            return DateTime.SpecifyKind(d, DateTimeKind.Utc);
+        }
+        return null;
     }
 }
