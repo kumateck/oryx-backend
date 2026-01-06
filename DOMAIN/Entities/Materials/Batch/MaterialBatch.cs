@@ -256,6 +256,13 @@ public class MaterialBatchReservedQuantity : BaseEntity
     public decimal Quantity { get; set; }
 }
 
+public class MaterialReservedQuantity
+{
+    public WarehouseWithoutLocationDto Warehouse { get; set; }
+    public decimal Quantity { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+}
+
 public class ApprovedProductDto
 {
     public ProductListDto Product { get; set; }

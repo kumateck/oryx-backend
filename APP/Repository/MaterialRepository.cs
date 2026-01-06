@@ -2748,6 +2748,37 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
+    public async Task<Result<IEnumerable<MaterialReservedQuantity>>> GetReservedQuantitiesForMaterial(Guid materialId,
+        Guid? departmentId)
+    {
+        var reservedMaterialQuery = context.MaterialBatchReservedQuantities
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(m => m.Warehouse)
+            .Include(materialBatchReservedQuantity => materialBatchReservedQuantity.UoM)
+            .Where(m => m.MaterialBatch.MaterialId == materialId && !m.DeletedAt.HasValue)
+            .AsQueryable();
+
+        if (departmentId.HasValue)
+        {
+            reservedMaterialQuery = reservedMaterialQuery
+                .Where(r => r.Warehouse.DepartmentId == departmentId.Value);
+        }
+
+        var reservedMaterials = await reservedMaterialQuery.ToListAsync();
+
+        return reservedMaterials
+            .GroupBy(r => r.Warehouse)
+            .Select(item => new MaterialReservedQuantity
+            {
+                Warehouse = mapper.Map<WarehouseWithoutLocationDto>(item.Key),
+                Quantity = item.Sum(i => i.Quantity),
+                UoM = mapper.Map<UnitOfMeasureDto>(item.
+                    Select(i => i.UoM).FirstOrDefault())
+            }).ToList();
+    }
+
+
     public async Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId)
     {
         if (file == null || file.Length == 0)
