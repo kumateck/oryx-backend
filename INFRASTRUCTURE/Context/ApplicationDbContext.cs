@@ -591,7 +591,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Proforma Invoice
 
     public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
-
+    
     // public DbSet<InventoryProformaInvoice> InventoryProformaInvoices { get; set; }
     public DbSet<ProformaInvoiceProduct> ProformaInvoiceProducts { get; set; }
     public DbSet<ProformaInvoiceApproval> ProformaInvoiceApprovals { get; set; }
@@ -655,7 +655,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Job Requests
 
     public DbSet<JobRequest> JobRequests { get; set; }
-    public DbSet<JobRequestApproval> JobRequestApprovals { get; set; }
     public DbSet<JobExecution> JobExecutions { get; set; }
     public DbSet<JobActivity> JobActivities { get; set; }
     public DbSet<ConsumedItem> ConsumedItems { get; set; }
@@ -995,8 +994,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //     .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialReturnNotePartialReturn>()
             .HasQueryFilter(entity => !entity.DestinationWarehouse.DeletedAt.HasValue);
-        modelBuilder.Entity<ProductionExtraPacking>().HasQueryFilter(entity =>
-            !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<ProductionExtraPacking>().HasQueryFilter(entity => !entity.Material.DeletedAt.HasValue);
         modelBuilder.Entity<MaterialSpecification>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
@@ -1446,12 +1444,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Attendance Record Filter
 
         modelBuilder.Entity<AttendanceRecords>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
-
-        #endregion
-
-        #region Site Filters
-
-        modelBuilder.Entity<Site>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }
