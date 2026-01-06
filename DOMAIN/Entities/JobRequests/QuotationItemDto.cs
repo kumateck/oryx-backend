@@ -11,7 +11,6 @@ public class QuotationItemDto : BaseDto
     public UnitOfMeasureDto UnitOfMeasure { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal TotalPrice { get; set; }
-    public string Supplier { get; set; }
     public decimal? NegotiatedUnitPrice { get; set; }
     public decimal? NegotiatedTotalPrice { get; set; }
 }

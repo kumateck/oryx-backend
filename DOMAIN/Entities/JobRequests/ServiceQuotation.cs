@@ -33,7 +33,7 @@ public class ServiceQuotation : BaseEntity
     public decimal TotalItemCost => Items.Sum(i => i.TotalPrice);
 
     // Total cost (service charge + sum of items)
-    public decimal GrandTotal => TotalServiceCharge + TotalItemCost;
+    public decimal GrandTotal => ServiceCharges.Sum(i => i.Cost) + Items.Sum(i => i.TotalPrice);
 
     // Estimated completion time
     public int EstimatedDays { get; set; }
