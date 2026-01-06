@@ -198,16 +198,16 @@ public class ServiceQuotationController(IServiceQuotationRepository repository) 
     /// }
     /// ```
     /// </remarks>
-    /// <param name="request">Job order ID</param>
+    /// <param name="jobOrderId">The job order id</param>
     /// <returns>List of quotations sorted by total cost</returns>
     /// <response code="200">Returns list of quotations for comparison</response>
     /// <response code="400">Invalid request data or no quotations found</response>
-    [HttpPost("compare")]
+    [HttpPost("compare/{jobOrderId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ServiceQuotationDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CompareQuotations([FromBody] CompareQuotationsRequest request)
+    public async Task<IResult> CompareQuotations([FromRoute] Guid jobOrderId)
     {
-        var result = await repository.CompareQuotations(request);
+        var result = await repository.CompareQuotations(jobOrderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

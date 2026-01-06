@@ -184,22 +184,30 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         return Result.Success();
     }
 
-    public async Task<Result<List<ServiceQuotationDto>>> CompareQuotations(CompareQuotationsRequest request)
+    public async Task<Result<List<ServiceQuotationDto>>> CompareQuotations(Guid jobOrderId)
     {
         var quotations = await context.ServiceQuotations
             .AsSplitQuery()
             .Include(q => q.ServiceProvider)
+            .ThenInclude(q => q.Country)
+            .Include(q => q.ServiceProvider)
+            .ThenInclude(q => q.Currency)
             .Include(q => q.Currency)
-            .Include(q => q.Items).ThenInclude(i => i.Item)
-            .Include(q => q.Items).ThenInclude(i => i.UnitOfMeasure)
-            .Where(q => q.JobOrderId == request.JobOrderId)
-            .OrderBy(q => q.GrandTotal)
+            .Include(q => q.Items)
+                .ThenInclude(i => i.Item)
+            .Include(q => q.Items)
+                .ThenInclude(i => i.UnitOfMeasure)
+            .Include(q => q.Items)
+                .ThenInclude(i => i.Item)
+                    .ThenInclude(i => i.ItemCategory)
+            .Where(q => q.JobOrderId == jobOrderId)
             .ToListAsync();
 
-        if (!quotations.Any())
+        if (quotations.Count == 0)
             return Error.NotFound("Quotations.NotFound", "No quotations found for this job order");
 
-        return mapper.Map<List<ServiceQuotationDto>>(quotations);
+        var quotationDto = mapper.Map<List<ServiceQuotationDto>>(quotations);
+        return quotationDto.OrderBy(q => q.GrandTotal).ToList();
     }
 }
 
