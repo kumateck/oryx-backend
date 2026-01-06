@@ -61,7 +61,7 @@ public static class MenuConfig
                 new("Quotations Responses", [PermissionKeys.CanViewForeignQuotationResponse, PermissionKeys.CanSendForeignQuotationResponse, PermissionKeys.CanViewLocalQuotationResponse, PermissionKeys.CanSendLocalQuotationResponse], route: "/procurement/quotations-responses", order: 3),
                 new("Price Comparison", [PermissionKeys.CanViewForeignVendorPricing, PermissionKeys.CanApplyChangesForForeignVendorPricingSelection, PermissionKeys.CanViewLocalVendorPricing, PermissionKeys.CanApplyChangesForLocalVendorPricingSelection], route: "/procurement/price-comparison", order: 4),
                 new("Proforma Request", [PermissionKeys.CanViewForeignProformaRequest, PermissionKeys.CanSendForeignProformaRequest, PermissionKeys.CanViewLocalProformaRequest, PermissionKeys.CanSendLocalProformaRequest], route: "/procurement/proforma-request", order: 5),
-                new("Proforma Responses", [PermissionKeys.CanViewForeignProformaInvoiceSubmissions, PermissionKeys.CanUploadForeignProformaInvoice, PermissionKeys.CanViewLocalProformaInvoiceSubmissions, PermissionKeys.CanUploadLocalProformaInvoice], route: "/procurement/proforma-responses", order: 6),
+                new("Proforma Responses", [PermissionKeys.CanViewForeignProformaInvoiceSubmissions, PermissionKeys.CanSendForeignProformaInvoice, PermissionKeys.CanViewLocalProformaInvoiceSubmissions, PermissionKeys.CanSendLocalProformaInvoice], route: "/procurement/proforma-responses", order: 6),
                 new("Create Purchase Orders", [PermissionKeys.CanViewForeignPurchaseOrder, PermissionKeys.CanCreateForeignPurchaseOrder, PermissionKeys.CanViewLocalPurchaseOrder, PermissionKeys.CanCreateLocalPurchaseOrder], route: "/procurement/create-purchase-orders", order: 7),
                 new("Purchase Order List", [PermissionKeys.CanReviseForeignPurchaseOrder, PermissionKeys.CanReviseLocalPurchaseOrder], route: "/procurement/purchase-order-list", order: 8),
                 new("Material Distribution", [PermissionKeys.CanViewMaterialDistribution, PermissionKeys.CanDistributeMaterial], route: "/procurement/material-distribution", order: 9)
@@ -82,7 +82,7 @@ public static class MenuConfig
                 new(PermissionSubmodules.ShipmentDocument, [PermissionKeys.CanCreateShipmentDocument, PermissionKeys.CanViewShipmentDocument, PermissionKeys.CanChangeShipmentDocumentStatus, PermissionKeys.CanEditShipmentDocument, PermissionKeys.CanDeleteShipmentDocument], route: "/logistics/shipment-document", order: 2),
                 new(PermissionSubmodules.BillingSheet, [PermissionKeys.CanCreateBillingSheet, PermissionKeys.CanViewBillingSheet, PermissionKeys.CanEditBillingSheet], route: "/logistics/billing-sheet", order: 3),
                 new(PermissionSubmodules.Waybill, [PermissionKeys.CanCreateWaybill, PermissionKeys.CanViewWaybill, PermissionKeys.CanChangeWaybillStatus], route: "/logistics/waybill", order: 4),
-                new(PermissionSubmodules.AvailableStock, [PermissionKeys.CanViewRawMaterialStock, PermissionKeys.CanFilterRawMaterialStockByDepartment, PermissionKeys.CanViewPackingMaterialStock, PermissionKeys.CanFilterPackingMaterialStockByDepartment], route: "/logistics/available-stock", order: 5)
+                new(PermissionSubmodules.AvailableStock, [PermissionKeys.CanViewRawMaterialStock, PermissionKeys.CanViewRawMaterialStock, PermissionKeys.CanViewPackingMaterialStock], route: "/logistics/available-stock", order: 5)
             ]
         ),
 
@@ -96,16 +96,16 @@ public static class MenuConfig
             order: 4,
             children:
             [
-                new(PermissionSubmodules.ReceivingArea, [PermissionKeys.CanViewRawMaterialsItems, PermissionKeys.CanCreateChecklistForRawMaterials, PermissionKeys.CanCreateGrnForRawMaterialsChecklistedItems, PermissionKeys.CanViewPackagingMaterialsItems, PermissionKeys.CanCreateChecklistForPackagingMaterials, PermissionKeys.CanCreateGrnForPackagingMaterialsChecklistedItems], route: "/warehouse/receiving-area", order: 1),
-                new(PermissionSubmodules.QuarantineAreaGrn, [PermissionKeys.CanViewQuarantineRawMaterials, PermissionKeys.CanAssignRawMaterialsStockToShelves, PermissionKeys.CanViewQuarantinePackagingMaterials, PermissionKeys.CanAssignPackagingMaterialsStockToShelves], name: "Quarantine / GRN", route: "/warehouse/quarantine-grn", order: 2),
+                new(PermissionSubmodules.ReceivingArea, [PermissionKeys.CanViewRawMaterialsItems, PermissionKeys.CanCreateChecklistForRawMaterials, PermissionKeys.CanCreateGrnForPackagingMaterials, PermissionKeys.CanViewPackagingMaterialsItems, PermissionKeys.CanCreateChecklistForPackagingMaterials, PermissionKeys.CanCreateGrnForPackagingMaterials], route: "/warehouse/receiving-area", order: 1),
+                new(PermissionSubmodules.QuarantineAreaGrn, [PermissionKeys.CanViewRawMaterials, PermissionKeys.CanAssignRawMaterialsStockToShelves, PermissionKeys.CanViewPackageMaterialRequisitionsForCreation, PermissionKeys.CanAssignPackagingMaterialsStockToShelves], name: "Quarantine / GRN", route: "/warehouse/quarantine-grn", order: 2),
                 new(PermissionSubmodules.LinkedMaterials, [PermissionKeys.CanViewLinkedRawMaterials, PermissionKeys.CanUnlinkRawMaterials, PermissionKeys.CanViewLinkedPackagingMaterials, PermissionKeys.CanUnlinkPackagingMaterials], route: "/warehouse/linked-materials", order: 3),
                 new(PermissionSubmodules.UnlinkedMaterials, [PermissionKeys.CanViewUnlinkedRawMaterials, PermissionKeys.CanLinkRawMaterials, PermissionKeys.CanViewUnlinkedPackagingMaterials, PermissionKeys.CanLinkPackagingMaterials], route: "/warehouse/unlinked-materials", order: 4),
                 new(PermissionSubmodules.Materials, [PermissionKeys.CanViewRawMaterials, PermissionKeys.CanCreateNewRawMaterials, PermissionKeys.CanEditRawMaterials, PermissionKeys.CanDeleteRawMaterials, PermissionKeys.CanViewPackagingMaterials, PermissionKeys.CanCreateNewPackagingMaterials, PermissionKeys.CanEditPackagingMaterials, PermissionKeys.CanDeletePackagingMaterials], route: "/warehouse/materials", order: 5),
                 new(PermissionSubmodules.ApprovedMaterials, [PermissionKeys.CanViewApprovedRawMaterials, PermissionKeys.CanViewApprovedPackagingMaterials], route: "/warehouse/approved-materials", order: 6),
-                new(PermissionSubmodules.RejectedMaterials, [PermissionKeys.CanViewRejectedRawMaterials, PermissionKeys.CanViewRejectedPackingMaterials], route: "/warehouse/rejected-materials", order: 7),
+                new(PermissionSubmodules.RejectedMaterials, [PermissionKeys.CanViewRejectedRawMaterials, PermissionKeys.CanViewRejectedPackagingMaterials], route: "/warehouse/rejected-materials", order: 7),
                 new(PermissionSubmodules.IssueStockRequisitions, [PermissionKeys.CanViewRawMaterialRequisitions, PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions], route: "/warehouse/issue-stock-requisitions", order: 8),
                 new(PermissionSubmodules.StockTransferIssues, [PermissionKeys.CanViewRawMaterialTransferList, PermissionKeys.CanIssueRawMaterialStockTransfers, PermissionKeys.CanViewPackagingMaterialTransferList, PermissionKeys.CanIssuePackagingMaterialStockTransfers], route: "/warehouse/stock-transfer-issues", order: 9),
-                new(PermissionSubmodules.LocationChartRecord, [PermissionKeys.CanViewRawMaterialLocationChartList, PermissionKeys.CanReassignRawMaterialStock, PermissionKeys.CanViewPackagingMaterialLocationChartList, PermissionKeys.CanReassignPackagingMaterialStock], route: "/warehouse/location-chart-record", order: 10)
+                new(PermissionSubmodules.Locations, [PermissionKeys.CanViewRawMaterialLocationChartList, PermissionKeys.CanReassignRawMaterialStock, PermissionKeys.CanViewPackagingMaterialLocationChartList, PermissionKeys.CanReassignPackagingMaterialStock], route: "/warehouse/location-chart-record", order: 10)
             ]
         ),
 
@@ -119,10 +119,10 @@ public static class MenuConfig
             order: 5,
             children:
             [
-                new(PermissionSubmodules.Requisitions, [PermissionKeys.CanViewMaterialRequisitions, PermissionKeys.CanViewMaterialRequisitionDetailsPage], route: "/production/requisitions", order: 1),
+                new(PermissionSubmodules.Requisitions, [PermissionKeys.CanViewRawMaterialRequisitions], route: "/production/requisitions", order: 1),
                 new(PermissionSubmodules.CreatePurchaseRequisitions, [PermissionKeys.CanViewRawMaterialRequisitionsForCreation, PermissionKeys.CanCreateRawMaterialRequisitions, PermissionKeys.CanViewPackageMaterialRequisitionsForCreation, PermissionKeys.CanCreatePackageMaterialRequisitions], route: "/production/create-purchase-requisitions", order: 2),
-                new(PermissionSubmodules.Planning, [PermissionKeys.CanViewPlannedProducts, PermissionKeys.CanCreateNewProductionPlan, PermissionKeys.CanEditProductionPlan], route: "/production/planning", order: 3),
-                new(PermissionSubmodules.StockTransferRequests, [PermissionKeys.CanViewIncomingStockTransferRequests, PermissionKeys.CanApproveOrRejectIncomingStockTransferRequest, PermissionKeys.CanViewOutgoingStockTransferRequests], route: "/production/stock-transfer-requests", order: 4),
+                //new(PermissionSubmodules.Planning, [PermissionKeys.CanViewPlannedProducts, PermissionKeys.CanCreateNewProductionPlan, PermissionKeys.CanEditProductionPlan], route: "/production/planning", order: 3),
+                new(PermissionSubmodules.StockTransferRequests, [PermissionKeys.CanViewIncomingStockTransferRequests, PermissionKeys.CanApproveIncomingStockTransferRequest, PermissionKeys.CanViewOutgoingStockTransferRequests], route: "/production/stock-transfer-requests", order: 4),
                 new(PermissionSubmodules.ProductSchedule, [PermissionKeys.CanViewProductSchedules, PermissionKeys.CanCreateProductSchedule], route: "/production/product-schedule", order: 5)
             ]
         ),
@@ -179,7 +179,7 @@ public static class MenuConfig
                 new(PermissionSubmodules.PackingList, [PermissionKeys.CanViewPackingList], route: "/finished-goods/packing-list", order: 3),
                 new(PermissionSubmodules.ProformaInvoice, [PermissionKeys.CanGenerateProformaInvoice, PermissionKeys.CanViewProformaInvoice], route: "/finished-goods/proforma-invoice", order: 4),
                 new(PermissionSubmodules.Invoice, [PermissionKeys.CanViewInvoice], route: "/finished-goods/invoice", order: 5),
-                new(PermissionSubmodules.WaybillFgw, [PermissionKeys.CanViewWaybillForFgw, PermissionKeys.CanCreateWaybillForFgw, PermissionKeys.CanEditWaybillForFgw, PermissionKeys.CanDeleteWaybillForFgw], name: "Waybill", route: "/finished-goods/waybill", order: 6)
+                new(PermissionSubmodules.Waybill, [PermissionKeys.CanViewWaybillForFgw, PermissionKeys.CanCreateWaybillForFgw, PermissionKeys.CanEditWaybillForFgw, PermissionKeys.CanDeleteWaybillForFgw], name: "Waybill", route: "/finished-goods/waybill", order: 6)
             ]
         ),
 
@@ -199,7 +199,7 @@ public static class MenuConfig
                 new(PermissionSubmodules.Locations, [PermissionKeys.CanViewLocations, PermissionKeys.CanAddNewLocation, PermissionKeys.CanEditLocation, PermissionKeys.CanDeleteLocation], route: "/inventory/locations", order: 4),
                 new(PermissionSubmodules.Racks, [PermissionKeys.CanViewRacks, PermissionKeys.CanAddNewRack, PermissionKeys.CanEditRack, PermissionKeys.CanDeleteRack], route: "/inventory/racks", order: 5),
                 new(PermissionSubmodules.Shelves, [PermissionKeys.CanViewShelves, PermissionKeys.CanAddNewShelf, PermissionKeys.CanEditShelf, PermissionKeys.CanDeleteShelf], route: "/inventory/shelves", order: 6),
-                new(PermissionSubmodules.Equipment, [PermissionKeys.CanViewEquipment, PermissionKeys.CanAddNewEquipment, PermissionKeys.CanEditEquipmentDetails, PermissionKeys.CanDeleteEquipment], route: "/inventory/equipment", order: 7),
+                new(PermissionSubmodules.Equipment, [PermissionKeys.CanViewEquipment, PermissionKeys.CanCreateNewItemInEquipmentStore, PermissionKeys.CanEditEquipmentDetails, PermissionKeys.CanDeleteEquipment], route: "/inventory/equipment", order: 7),
                 new(PermissionSubmodules.UnitOfMeasure, [PermissionKeys.CanViewUnitOfMeasure, PermissionKeys.CanCreateUnitOfMeasure, PermissionKeys.CanEditUnitOfMeasure, PermissionKeys.CanDeleteUnitOfMeasure], route: "/inventory/unit-of-measure", order: 8)
             ]
         ),
@@ -214,11 +214,11 @@ public static class MenuConfig
             order: 10,
             children:
             [
-                new(PermissionSubmodules.EmployeeManagement, [PermissionKeys.CanViewEmployee, PermissionKeys.CanRegisterEmployee, PermissionKeys.CanUpdateEmployeeInfo, PermissionKeys.CanViewEmployeeDetails], route: "/hr/employee-management", order: 1),
+                new(PermissionSubmodules.EmployeeManagement, [PermissionKeys.CanViewEmployeeDetails, PermissionKeys.CanRegisterEmployee, PermissionKeys.CanUpdateEmployeeInfo, PermissionKeys.CanViewEmployeeDetails], route: "/hr/employee-management", order: 1),
                 new(PermissionSubmodules.DepartmentEmployeeExport, [PermissionKeys.CanViewDepartmentEmployee, PermissionKeys.CanExportDepartmentEmployee], name: "Department Employees", route: "/hr/department-employees", order: 2),
                 new(PermissionSubmodules.DesignationManagement, [PermissionKeys.CanViewDesignation, PermissionKeys.CanCreateDesignation, PermissionKeys.CanEditDesignation, PermissionKeys.CanDeleteDesignation], route: "/hr/designation-management", order: 3),
-                new(PermissionSubmodules.LeaveManagement, [PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanCreateLeaveRequest, PermissionKeys.CanEditLeaveRequest, PermissionKeys.CanDeleteLeaveRequest, PermissionKeys.CanRecallLeave], route: "/hr/leave-management", order: 4),
-                new(PermissionSubmodules.LeaveTypeConfiguration, [PermissionKeys.CanViewLeaveTypeConfig, PermissionKeys.CanCreateLeaveTypeConfig, PermissionKeys.CanEditLeaveTypeConfig, PermissionKeys.CanDeleteLeaveTypeConfig], route: "/hr/leave-type-config", order: 5),
+                new(PermissionSubmodules.LeaveManagement, [PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanCreateLeaveRequest, PermissionKeys.CanEditLeaveRequest, PermissionKeys.CanRecallLeave, PermissionKeys.CanRecallLeave], route: "/hr/leave-management", order: 4),
+                new(PermissionSubmodules.LeaveTypeConfiguration, [PermissionKeys.CanViewLeaveType, PermissionKeys.CanEditLeaveType, PermissionKeys.CanDeleteLeaveType], route: "/hr/leave-type-config", order: 5),
                 new(PermissionSubmodules.StaffRequisition, [PermissionKeys.CanViewStaffRequisition, PermissionKeys.CanCreateStaffRequisition, PermissionKeys.CanEditStaffRequisition, PermissionKeys.CanDeleteStaffRequisition], route: "/hr/staff-requisition", order: 6),
                 new(PermissionSubmodules.AttendanceReportUpload, [PermissionKeys.CanViewAttendanceReportUpload, PermissionKeys.CanSubmitAttendanceReportUpload, PermissionKeys.CanCancelAttendanceReportUpload], route: "/hr/attendance-upload", order: 7),
                 new(PermissionSubmodules.ShiftScheduleReportUpload, [PermissionKeys.CanViewShiftScheduleReportUpload, PermissionKeys.CanSubmitShiftScheduleReportUpload], route: "/hr/shift-schedule-upload", order: 8),
@@ -254,9 +254,9 @@ public static class MenuConfig
             order: 12,
             children:
             [
-                new(PermissionSubmodules.UserManagement, [PermissionKeys.CanViewUserDirectory, PermissionKeys.CanCreateUser, PermissionKeys.CanEditUser, PermissionKeys.CanBlockUser], route: "/it/user-management", order: 1),
-                new(PermissionSubmodules.AuditTrail, [PermissionKeys.CanViewAuditTrail, PermissionKeys.CanFilterAuditTrailByUser, PermissionKeys.CanFilterAuditTrailByDepartment, PermissionKeys.CanExportAuditTrail], route: "/it/audit-trail", order: 2),
-                new(PermissionSubmodules.ManageRoles, [PermissionKeys.CanViewRoles, PermissionKeys.CanCreateRole, PermissionKeys.CanEditRole, PermissionKeys.CanDeleteARole], route: "/it/manage-roles", order: 3),
+                new(PermissionSubmodules.UserManagement, [PermissionKeys.CanViewActiveUser, PermissionKeys.CanCreateUser, PermissionKeys.CanEditUser, PermissionKeys.CanBlockUser], route: "/it/user-management", order: 1),
+                new(PermissionSubmodules.AuditTrail, [PermissionKeys.CanViewAuditTrail], route: "/it/audit-trail", order: 2),
+                new(PermissionSubmodules.ManageRoles, [PermissionKeys.CanViewRoles, PermissionKeys.CanCreateRole, PermissionKeys.CanEditRole, PermissionKeys.CanDeleteRole], route: "/it/manage-roles", order: 3),
                 new(PermissionSubmodules.ManagePermissions, [PermissionKeys.CanViewPermissions, PermissionKeys.CanUpdateExistingPermission, PermissionKeys.CanResetPermission], route: "/it/manage-permissions", order: 4)
             ]
         ),
@@ -271,7 +271,7 @@ public static class MenuConfig
             order: 13,
             children:
             [
-                new(PermissionSubmodules.SystemSettings, [PermissionKeys.CanViewGeneralSettingsConfigurations], route: "/settings/system-settings", order: 1),
+                new(PermissionSubmodules.GeneralSettings, [PermissionKeys.CanViewCodeSettings, PermissionKeys.CanViewSignatureSettings], route: "/settings/system-settings", order: 1),
                 new(PermissionSubmodules.ProductsCategory, [PermissionKeys.CanViewProductCategories, PermissionKeys.CanCreateProductCategory, PermissionKeys.CanEditProductCategory, PermissionKeys.CanDeleteProductCategory], route: "/settings/product-categories", order: 2),
                 new(PermissionSubmodules.Products, [PermissionKeys.CanViewRawCategories, PermissionKeys.CanCreateRawCategory, PermissionKeys.CanEditRawCategory, PermissionKeys.CanDeleteRawCategory, PermissionKeys.CanViewPackageCategories, PermissionKeys.CanCreatePackageCategory, PermissionKeys.CanEditPackageCategory, PermissionKeys.CanDeletePackageCategory, PermissionKeys.CanViewMaterialTypes, PermissionKeys.CanCreateMaterialType, PermissionKeys.CanEditMaterialType, PermissionKeys.CanDeleteMaterialType, PermissionKeys.CanViewPackageStyle, PermissionKeys.CanCreatePackageStyle, PermissionKeys.CanEditPackageStyle, PermissionKeys.CanDeletePackageStyle, PermissionKeys.CanViewProductState, PermissionKeys.CanCreateProductState, PermissionKeys.CanEditProductState, PermissionKeys.CanDeleteProductState], route: "/settings/products", order: 3),
                 new(PermissionSubmodules.Procedures, [PermissionKeys.CanViewResources, PermissionKeys.CanCreateResource, PermissionKeys.CanEditResource, PermissionKeys.CanDeleteResource, PermissionKeys.CanViewOperations, PermissionKeys.CanCreateOperation, PermissionKeys.CanEditOperation, PermissionKeys.CanDeleteOperation, PermissionKeys.CanViewWorkCenters, PermissionKeys.CanCreateWorkCenter, PermissionKeys.CanEditWorkCenter, PermissionKeys.CanDeleteWorkCenter], route: "/settings/procedures", order: 4),
