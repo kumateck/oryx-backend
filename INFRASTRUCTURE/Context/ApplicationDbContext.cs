@@ -655,6 +655,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Job Requests
 
     public DbSet<JobRequest> JobRequests { get; set; }
+    public DbSet<JobRequestApproval> JobRequestApprovals { get; set; }
     public DbSet<JobExecution> JobExecutions { get; set; }
     public DbSet<JobActivity> JobActivities { get; set; }
     public DbSet<ConsumedItem> ConsumedItems { get; set; }
