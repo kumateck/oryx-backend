@@ -1024,13 +1024,12 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         var defaultStep = await context.ProductionActivitySteps.FirstOrDefaultAsync();
 
         if (defaultScheduleProduct == null || defaultStep == null)
-            return Error.Validation("Production.Config", "Missing default Production Schedule or Step in the system.");
+            return Error.Validation("Production.Config",
+                "Missing default Production Schedule or Step in the system.");
 
         // Fetch Product Packing with Product Hierarchy
         var packingData = await context.ProductPackings
-            .Include(pp => pp.Product)
             .Where(pp => excelPackingStyles.Contains(pp.Name) && excelProductCodes.Contains(pp.Product.Code))
-            .AsNoTracking()
             .ToListAsync();
 
         // Create a composite lookup: "ProductCode|PackingName"
@@ -1045,7 +1044,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // 3. PROCESS ROWS
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetCell(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+            string GetCell(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() 
+                : null;
 
             var productCode = GetCell("Product Code");
             var packingStyle = GetCell("Packing Style");
@@ -1057,7 +1057,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var packingKey = $"{productCode}|{packingStyle}";
             if (!packingLookup.TryGetValue(packingKey, out var packing))
             {
-                return Error.NotFound("ProductPacking", $"Row {row}: Packing style '{packingStyle}' for Product '{productCode}' not found.");
+                return Error.NotFound("ProductPacking",
+                    $"Row {row}: Packing style '{packingStyle}' for Product '{productCode}' not found.");
             }
 
             // Parse shared data
