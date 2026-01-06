@@ -76,6 +76,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of materials.</returns>
     [HttpGet("not-linked-to-ards")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDto>>))]
     public async Task<IResult> GetMaterialsNotLinkedToArd([FromQuery] MaterialKind kind, [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
