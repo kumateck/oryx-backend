@@ -441,7 +441,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
 
         var query = context.ShelfMaterialBatches
-            .AsNoTracking()
             .Where(m =>
                 m.MaterialBatch.Material.Kind == kind &&
                 (m.MaterialBatch.Status == BatchStatus.Available || m.MaterialBatch.Status == BatchStatus.Frozen) &&
@@ -932,7 +931,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId)
     {
-        var materialBatch = await context.MaterialBatches.Include(materialBatch => materialBatch.Material)
+        var materialBatch = await context.MaterialBatches
+            .AsSplitQuery()
+            .Include(materialBatch => materialBatch.Material)
             .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
 
         if (materialBatch == null)
@@ -947,20 +948,24 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return MaterialErrors.InsufficientStock; // Not enough stock in source shelf to move
         }
 
+        var warehouseLocationShelfIds = request
+            .ShelfMaterialBatches.Select(i => i.WarehouseLocationShelfId).ToList();
+        
+        var shelves = await context.WarehouseLocationShelves
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(warehouseLocationShelf => warehouseLocationShelf.WarehouseLocationRack)
+            .ThenInclude(warehouseLocationRack => warehouseLocationRack.WarehouseLocation)
+            .ThenInclude(warehouseLocation => warehouseLocation.Warehouse)
+            .Where(s => warehouseLocationShelfIds.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => s);
+
         foreach (var shelfBatch in request.ShelfMaterialBatches)
         {
-            var shelf = await context.WarehouseLocationShelves
-                .AsNoTracking()
-                .IgnoreQueryFilters()
-                .AsSplitQuery()
-                .Include(warehouseLocationShelf => warehouseLocationShelf.WarehouseLocationRack)
-                .ThenInclude(warehouseLocationRack => warehouseLocationRack.WarehouseLocation)
-                .ThenInclude(warehouseLocation => warehouseLocation.Warehouse)
-                .FirstOrDefaultAsync(s => s.Id == shelfBatch.WarehouseLocationShelfId);
-
-            if (shelf == null)
+            if (!shelves.TryGetValue(shelfBatch.WarehouseLocationShelfId, out var shelf) || shelf == null)
             {
-                return Error.NotFound("Shelf.NotFound", $"Shelf with ID {shelfBatch.WarehouseLocationShelfId} not found");
+                return Error.NotFound("Shelf.NotFound",
+                    $"Shelf with ID {shelfBatch.WarehouseLocationShelfId} not found");
             }
 
             var warehouseType = shelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type;
@@ -2108,7 +2113,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments, Guid userId)
     {
         var user = await context.Users
-            .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
@@ -2167,7 +2171,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId)
     {
         var user = await context.Users
-            .AsNoTracking()
             .Select(u => new { u.Id, u.DepartmentId })
             .FirstOrDefaultAsync(u => u.Id == userId);
 
