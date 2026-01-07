@@ -1106,7 +1106,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 Id = Guid.NewGuid(),
                 TransferNoteNumber = "",
                 TotalQuantity = quantity,
-                BatchManufacturingRecordId = (await context.BatchManufacturingRecords.FirstAsync()).Id
+                ProductPackingId = packing.Id,
+                BatchManufacturingRecordId = (await context.BatchManufacturingRecords
+                    .FirstAsync(b => 
+                        b.ProductionScheduleProductId == defaultScheduleProduct.Id)).Id
             });
         }
 
