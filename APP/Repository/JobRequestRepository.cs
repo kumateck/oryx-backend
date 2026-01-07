@@ -68,6 +68,7 @@ public class JobRequestRepository(ApplicationDbContext context,
     {
         var query = context.JobRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(j => j.Department)
             .Include(j => j.Equipment)
             .Include(j => j.IssuedBy)
@@ -75,7 +76,7 @@ public class JobRequestRepository(ApplicationDbContext context,
             .Include(j => j.AssignedBy)
             .Include(j => j.Service)
             .Include(j => j.Site)
-            .OrderByDescending(j => j.CreatedAt)
+            .Where(j => !j.DeletedAt.HasValue)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
