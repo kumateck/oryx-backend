@@ -579,17 +579,81 @@ public class InventoryProcurementRepository(
 
     public async Task<Result> CreateMarketRequisitionVendor(CreateMarketRequisitionVendor request)
     {
-        var marketRequisition = await context.MarketRequisitions
-            .FirstOrDefaultAsync(mr => mr.Id == request.MarketRequisitionId);
+        var marketRequisitionExists = await context.MarketRequisitions
+            .AnyAsync(mr => mr.Id == request.MarketRequisitionId);
 
-        if (marketRequisition is null)
+        if (!marketRequisitionExists)
         {
             return RequisitionErrors.NotFound(request.MarketRequisitionId);
         }
 
-        var marketRequisitionVendor = mapper.Map<MarketRequisitionVendor>(request);
-        await context.MarketRequisitionVendors.AddAsync(marketRequisitionVendor);
+        if (request.Vendors == null || request.Vendors.Count == 0)
+        {
+            return Error.Validation(
+                "Vendors.Empty",
+                "At least one vendor must be provided."
+            );
+        }
+        
+        var today = DateTime.UtcNow.Date;
+        
+        foreach (var vendor in request.Vendors)
+        {
+            if (vendor.PricePerUnit <= 0)
+            {
+                return Error.Validation(
+                    "Vendor.InvalidPrice",
+                    $"Price per unit must be greater than zero for vendor '{vendor.VendorName}'."
+                );
+            }
+
+            if (vendor.EstimatedDeliveryDate.Date <= today)
+            {
+                return Error.Validation(
+                    "Vendor.InvalidDeliveryDate",
+                    $"Estimated delivery date must be in the future for vendor '{vendor.VendorName}'."
+                );
+            }
+        }
+        
+        var duplicateInRequest = request.Vendors
+            .GroupBy(v => v.VendorName.Trim().ToLower())
+            .FirstOrDefault(g => g.Count() > 1);
+
+        if (duplicateInRequest != null)
+        {
+            return Error.Validation(
+                "Vendor.DuplicateInRequest",
+                $"Vendor '{duplicateInRequest.Key}' appears more than once in the request."
+            );
+        }
+        
+        var existingVendorNames = await context.MarketRequisitionVendors
+            .Where(v => v.MarketRequisitionId == request.MarketRequisitionId)
+            .Select(v => v.VendorName.ToLower())
+            .ToListAsync();
+
+        var duplicateExistingVendor = request.Vendors
+            .FirstOrDefault(v => existingVendorNames.Contains(v.VendorName.ToLower()));
+
+        if (duplicateExistingVendor != null)
+        {
+            return Error.Validation(
+                "Vendor.AlreadyExists",
+                $"Vendor '{duplicateExistingVendor.VendorName}' already exists for this market requisition."
+            );
+        }
+        
+        var entities = request.Vendors.Select(vendor =>
+        {
+            var entity = mapper.Map<MarketRequisitionVendor>(vendor);
+            entity.MarketRequisitionId = request.MarketRequisitionId;
+            return entity;
+        }).ToList();
+
+        await context.MarketRequisitionVendors.AddRangeAsync(entities);
         await context.SaveChangesAsync();
+
         return Result.Success();
     }
 

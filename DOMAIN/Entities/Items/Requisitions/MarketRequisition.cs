@@ -34,14 +34,7 @@ public class MarketRequisitionDto
 public class CreateMarketRequisitionVendor
 {
     public Guid MarketRequisitionId { get; set; }
-    public string VendorName { get; set; }
-    public string VendorAddress { get; set; }
-    public string VendorPhoneNumber { get; set; }
-    public decimal PricePerUnit { get; set; }
-    public string ModeOfPayment { get; set; }
-    public Guid TermsOfPaymentId { get; set; }
-    public string DeliveryMode { get; set; }
-    public DateTime EstimatedDeliveryDate { get; set; }
+    public List<MarketRequisitionVendorDto> Vendors { get; set; }
 }
 
 public class MarketRequisitionVendor : BaseEntity
