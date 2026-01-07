@@ -1200,7 +1200,10 @@ public class OryxMapper : Profile
         CreateMap<CreateServiceQuotationRequest, ServiceQuotation>();
         CreateMap<UpdateServiceQuotationRequest, ServiceQuotation>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<ServiceQuotation, ServiceQuotationDto>();
+        CreateMap<ServiceQuotation, ServiceQuotationDto>()
+            .ForMember(dest => dest.Service,
+                opt => 
+                    opt.MapFrom(src => src.JobOrder.Service));
         CreateMap<CreateServiceCharge, ServiceCharge>();
         CreateMap<ServiceCharge, ServiceChargeDto>();
 
