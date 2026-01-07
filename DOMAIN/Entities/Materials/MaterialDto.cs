@@ -1,6 +1,5 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.MaterialSpecifications;
-using SHARED;
 
 namespace DOMAIN.Entities.Materials;
 

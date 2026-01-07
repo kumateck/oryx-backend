@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
@@ -1044,6 +1045,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var manufacturingRecords = new List<BatchManufacturingRecord>();
         var packagingRecords = new List<BatchPackagingRecord>();
+        var finishedGoodsTransferNotes = new List<FinishedGoodsTransferNote>();
 
         // 3. PROCESS ROWS
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
@@ -1097,11 +1099,21 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 BatchQuantity = quantity,
                 IssuedDate = DateTime.UtcNow
             });
+            
+            // 6. Create Finished Goods Transfer Note
+            finishedGoodsTransferNotes.Add(new FinishedGoodsTransferNote
+            {
+                Id = Guid.NewGuid(),
+                TransferNoteNumber = "",
+                TotalQuantity = quantity,
+                BatchManufacturingRecordId = (await context.BatchManufacturingRecords.FirstAsync()).Id
+            });
         }
 
         // 6. SAVE EVERYTHING
         await context.BatchManufacturingRecords.AddRangeAsync(manufacturingRecords);
         await context.BatchPackagingRecords.AddRangeAsync(packagingRecords);
+        await context.FinishedGoodsTransferNotes.AddRangeAsync(finishedGoodsTransferNotes);
         await context.SaveChangesAsync();
 
         return Result.Success();
