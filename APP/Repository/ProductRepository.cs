@@ -1030,6 +1030,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         // Fetch Product Packing with Product Hierarchy
         var packingData = await context.ProductPackings
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(p => p.Product)
             .Where(pp => excelPackingStyles.Contains(pp.Name) && excelProductCodes.Contains(pp.Product.Code))
             .ToListAsync();
 

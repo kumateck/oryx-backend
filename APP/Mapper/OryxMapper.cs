@@ -197,6 +197,7 @@ public class OryxMapper : Profile
         CreateMap<QcEquipmentCategory, CollectionItemDto>();
         CreateMap<Reagent, CollectionItemDto>();
         CreateMap<Site, CollectionItemDto>();
+        CreateMap<Memo, CollectionItemDto>();
         #endregion
 
         #region Operation

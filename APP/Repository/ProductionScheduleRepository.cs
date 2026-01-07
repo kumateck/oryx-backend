@@ -1686,7 +1686,8 @@ public class ProductionScheduleRepository(
             .ToListAsync();
 
         if (products.Count == 0)
-            return Error.NotFound("Product", "No `approved` finished good transfer notes for this product found");
+            return Error.NotFound("Product",
+                "No `approved` finished good transfer notes for this product found");
 
         // get details
         var finishedGoodsTransferNoteResult = await GetApprovedProductDetails(productId);
@@ -1950,7 +1951,10 @@ public class ProductionScheduleRepository(
         return batchRecord.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<BatchPackagingRecordDto>>>> GetBatchPackagingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
+    public async Task<Result<Paginateable<IEnumerable<BatchPackagingRecordDto>>>> GetBatchPackagingRecords(int page,
+        int pageSize, 
+        string searchQuery = null, 
+        ProductionStatus? status = null)
     {
         var query = context.BatchPackagingRecords
             .AsSplitQuery()
@@ -2017,7 +2021,10 @@ public class ProductionScheduleRepository(
     public async Task<Result> IssueBatchPackagingRecord(Guid id, Guid userId)
     {
         var batchRecord = await context.BatchPackagingRecords
-            .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionActivityStep).FirstOrDefaultAsync(p => p.Id == id);
+            .AsSplitQuery()
+            .Include(batchManufacturingRecord => 
+                batchManufacturingRecord.ProductionActivityStep)
+            .FirstOrDefaultAsync(p => p.Id == id);
         if (batchRecord is null)
         {
             return ProductErrors.NotFound(id);
@@ -2049,7 +2056,8 @@ public class ProductionScheduleRepository(
 
         foreach (var material in materialDetails)
         {
-            var batchResult = await materialRepository.BatchesToSupplyForGivenQuantity(material.Material.Id, material.StorageWarehouseId,
+            var batchResult = await materialRepository.BatchesToSupplyForGivenQuantity(material.Material.Id, 
+                material.StorageWarehouseId,
                 material.QuantityNeeded);
 
             if (batchResult.IsSuccess)
