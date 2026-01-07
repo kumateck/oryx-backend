@@ -64,6 +64,22 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
             );
         }
 
+        var uomLookup = await context.UnitOfMeasures
+            .Select(u => new
+            {
+                u.Id,
+                Key = $"{u.Name}|{u.Symbol}"
+            })
+            .ToDictionaryAsync(x => x.Key, x => x.Id);
+
+        var categoryLookup = await context.ItemCategories
+            .Select(c => new { c.Id, c.Name })
+            .ToDictionaryAsync(c => c.Name, c => c.Id);
+
+        var existingItemCodes = await context.Items
+            .Select(i => i.Code)
+            .ToHashSetAsync();
+
         var itemsToUpload = new List<Item>();
 
         var lastRow = worksheet.Dimension.End.Row;
@@ -74,19 +90,19 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
 
         for (var row = 2; row <= lastRow; row++)
         {
-            var storeType = worksheet.Cells[row, 1].Text?.Replace(" ", "").Trim();
+            var storeText = worksheet.Cells[row, 1].Text?.Replace(" ", "").Trim();
             var itemName = worksheet.Cells[row, 2].Text?.Trim();
             var itemCode = worksheet.Cells[row, 3].Text?.Trim();
             var categoryName = worksheet.Cells[row, 4].Text?.Replace(" ", "").Trim();
-            var uomName = worksheet.Cells[row, 5].Text?.Trim();
+            var uomText = worksheet.Cells[row, 5].Text?.Trim();
             var classificationText = worksheet.Cells[row, 6].Text?.Replace(" ", "").Trim();
-            var minimumLevel = worksheet.Cells[row, 7].Text?.Trim();
-            var reorderLevelText = worksheet.Cells[row, 8].Text?.Trim();
-            var maximumLevelText = worksheet.Cells[row, 9].Text?.Trim();
+            var minText = worksheet.Cells[row, 7].Text?.Trim();
+            var reorderText = worksheet.Cells[row, 8].Text?.Trim();
+            var maxText = worksheet.Cells[row, 9].Text?.Trim();
 
-            if (string.IsNullOrWhiteSpace(storeType) ||
+            if (string.IsNullOrWhiteSpace(storeText) ||
                 string.IsNullOrWhiteSpace(itemCode) ||
-                string.IsNullOrWhiteSpace(uomName) ||
+                string.IsNullOrWhiteSpace(uomText) ||
                 string.IsNullOrWhiteSpace(classificationText))
             {
                 return Error.Validation(
@@ -95,15 +111,15 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
                 );
             }
 
-            if (!Enum.TryParse<Store>(storeType, true, out var inventoryStore))
+            if (!TryParseStrictEnum(storeText, out Store store))
             {
                 return Error.Validation(
                     "ItemUpload.InvalidStore",
-                    $"Invalid store '{storeType}' at row {row}."
+                    $"Invalid store '{storeText}' at row {row}."
                 );
             }
 
-            if (!Enum.TryParse<InventoryClassification>(classificationText, true, out var inventoryClassification))
+            if (!TryParseStrictEnum(classificationText, out InventoryClassification classification))
             {
                 return Error.Validation(
                     "ItemUpload.InvalidClassification",
@@ -111,30 +127,42 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
                 );
             }
 
-            var name = uomName[..uomName.IndexOf('(')].Trim();
-            var symbol = uomName[(uomName.IndexOf('(') + 1)..^1].Trim();
+            if (existingItemCodes.Contains(itemCode))
+                continue;
 
-            var uom = await context.UnitOfMeasures
-                .FirstOrDefaultAsync(u =>
-                    u.Name == name &&
-                    u.Symbol == symbol);
-
-            var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(ic => ic.Name == categoryName);
-
-            if (uom == null)
+            if (!uomText.Contains('(') || !uomText.EndsWith(')'))
             {
                 return Error.Validation(
-                    "ItemUpload.InvalidUoM",
-                    $"Unit of Measure '{uomName}' not found at row {row}."
+                    "ItemUpload.InvalidUoMFormat",
+                    $"Invalid Unit of Measure format '{uomText}' at row {row}."
                 );
             }
 
-            var itemExists = await context.Items.AnyAsync(i => i.Code == itemCode);
-            if (itemExists) continue;
+            var name = uomText[..uomText.IndexOf('(')].Trim();
+            var symbol = uomText[(uomText.IndexOf('(') + 1)..^1].Trim();
+            var uomKey = $"{name}|{symbol}";
 
-            if (!int.TryParse(minimumLevel, out var minLevel) ||
-                !int.TryParse(reorderLevelText, out var reorderLevel) ||
-                !int.TryParse(maximumLevelText, out var maxLevel))
+            if (!uomLookup.TryGetValue(uomKey, out var uomId))
+            {
+                return Error.Validation(
+                    "ItemUpload.InvalidUoM",
+                    $"Unit of Measure '{uomText}' not found at row {row}."
+                );
+            }
+
+            if (string.IsNullOrWhiteSpace(categoryName))
+            {
+                return Error.Validation("ItemUpload.MissingCategory", $"Item category is required at row {row}.");
+            }
+            
+            if (!categoryLookup.TryGetValue(categoryName, out var categoryId))
+            {
+                return Error.Validation("Category.NotFound", $"Item category '{categoryName}' not found at row {row}.");
+            }
+
+            if (!int.TryParse(minText, out var minLevel) ||
+                !int.TryParse(reorderText, out var reorderLevel) ||
+                !int.TryParse(maxText, out var maxLevel))
             {
                 return Error.Validation(
                     "ItemUpload.InvalidLevels",
@@ -142,27 +170,49 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
                 );
             }
 
+            if (minLevel < 0 || reorderLevel < 0 || maxLevel < 0)
+            {
+                return Error.Validation(
+                    "ItemUpload.InvalidLevels",
+                    $"Inventory levels cannot be negative at row {row}."
+                );
+            }
+
             itemsToUpload.Add(new Item
             {
                 Name = itemName,
-                Store = inventoryStore,
+                Store = store,
                 Code = itemCode,
-                Classification = inventoryClassification,
-                ItemCategoryId = itemCategory?.Id,
+                Classification = classification,
+                ItemCategoryId = categoryId,
                 MinimumLevel = minLevel,
                 ReorderLevel = reorderLevel,
                 MaximumLevel = maxLevel,
-                UnitOfMeasureId = uom.Id
+                UnitOfMeasureId = uomId
             });
+
+            existingItemCodes.Add(itemCode);
         }
 
         if (itemsToUpload.Count == 0)
-            return Error.Validation("ItemsUpload.NoneAdded", "No new items were uploaded.");
+        {
+            return Error.Validation(
+                "ItemsUpload.NoneAdded",
+                "No new items were uploaded."
+            );
+        }
 
         await context.Items.AddRangeAsync(itemsToUpload);
         await context.SaveChangesAsync();
 
         return Result.Success();
+    }
+
+    private static bool TryParseStrictEnum<TEnum>(string value, out TEnum result)
+        where TEnum : struct, Enum
+    {
+        return Enum.TryParse(value, true, out result)
+               && Enum.IsDefined(result);
     }
 
     public async Task<Result<Paginateable<IEnumerable<ItemDto>>>> GetItems(int page, int pageSize,
