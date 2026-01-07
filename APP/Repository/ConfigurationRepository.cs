@@ -6,6 +6,7 @@ using DOMAIN.Entities.Configurations;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.Materials;
@@ -320,6 +321,12 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
 
             case nameof(JobOrder):
                 return await context.JobOrders
+                    .IgnoreQueryFilters()
+                    .Where(p => p.Code.StartsWith(prefix))
+                    .CountAsync();
+            
+            case nameof(InventoryPurchaseRequisition):
+                return await context.InventoryPurchaseRequisitions
                     .IgnoreQueryFilters()
                     .Where(p => p.Code.StartsWith(prefix))
                     .CountAsync();
