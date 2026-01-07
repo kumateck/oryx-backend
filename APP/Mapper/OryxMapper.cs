@@ -354,7 +354,11 @@ public class OryxMapper : Profile
                     .SelectMany(b => b.ShelfMaterialBatches)
                     .Sum(smb => smb.Quantity)))
             .ForMember(dest => dest.Specification,
-                opt => opt.MapFrom<MaterialSpecificationResolver>());
+                opt => 
+                    opt.MapFrom<MaterialSpecificationResolver>())
+            .ForMember(dest => dest.ReservedStock,
+                opt =>
+                    opt.MapFrom<ReservedMaterialStockResolver>());
 
         CreateMap<Material, MaterialWithWarehouseStockDto>()
             .ForMember(dest => dest.TotalStock,
