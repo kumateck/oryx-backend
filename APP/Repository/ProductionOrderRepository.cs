@@ -123,7 +123,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result<Guid>> CreateProformaInvoice(CreateProformaInvoice request)
     {
-        var productionOrder = await context.AllocateProductionOrders.FirstOrDefaultAsync(po => po.Id == request.AllocateProductionOrderId);
+        var productionOrder = await context.AllocateProductionOrders
+            .FirstOrDefaultAsync(po => po.Id == request.AllocateProductionOrderId);
         if (productionOrder is null)
         {
             return Error.NotFound("Allocation.ProductionOrder.NotFound", "Allocation production Order not found");
@@ -557,7 +558,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             foreach (var quantityToFulfill in reqProduct.FulfilledQuantities)
             {
                 var finishedGoodsTransferNote = await context.FinishedGoodsTransferNotes
-                    .FirstOrDefaultAsync(f => f.Id == quantityToFulfill.FinishedGoodsTransferNoteId);
+                    .FirstOrDefaultAsync(f =>
+                        f.Id == quantityToFulfill.FinishedGoodsTransferNoteId);
 
                 if (finishedGoodsTransferNote is null)
                     return Error.NotFound("FinishedGoodsTransferNote.NotFound",
@@ -566,7 +568,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
                 // Update product fulfilled quantities
                 var existingAllocationProductForNote = allocationProduct
                     .FulfilledQuantities
-                    .FirstOrDefault(p => p.FinishedGoodsTransferNoteId == quantityToFulfill.FinishedGoodsTransferNoteId);
+                    .FirstOrDefault(p => 
+                        p.FinishedGoodsTransferNoteId == quantityToFulfill.FinishedGoodsTransferNoteId);
 
                 if (existingAllocationProductForNote is not null)
                 {
@@ -611,8 +614,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     }
 
 
-    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(bool? approved, int page,
-        int pageSize, string searchQuery, Guid? productionOrderId)
+    public async Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> 
+        GetProductAllocations(bool? approved, int page, int pageSize, string searchQuery, Guid? productionOrderId)
     {
         var query = context.AllocateProductionOrders
             .IgnoreQueryFilters()

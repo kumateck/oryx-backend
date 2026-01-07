@@ -866,9 +866,11 @@ public class ApprovalRepository(ApplicationDbContext context,
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
 
                 if (proformaInvoice is null)
-                    return Error.Validation("AllocationProductionOrder.NotFound", $"Allocation production order {modelId} not found.");
+                    return Error.Validation("AllocationProductionOrder.NotFound",
+                        $"Allocation production order {modelId} not found.");
 
-                var allocateProductionOrderApprovalStages = proformaInvoice.Approvals.Select(item => new ResponsibleApprovalStage
+                var allocateProductionOrderApprovalStages = proformaInvoice
+                    .Approvals.Select(item => new ResponsibleApprovalStage
                 {
                     RoleId = item.RoleId,
                     UserId = item.UserId,
