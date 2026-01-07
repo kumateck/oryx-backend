@@ -59,8 +59,12 @@ public class JobRequestRepository(ApplicationDbContext context,
         return jobRequest.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetJobRequests(int page, int pageSize, 
-        string searchQuery = null, JobRequestStatus? status = null, JobHandlingType? handlingType = null, Guid? departmentId = null)
+    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetJobRequests(int page, 
+        int pageSize, 
+        string searchQuery = null, 
+        JobRequestStatus? status = null, 
+        JobHandlingType? handlingType = null, 
+        Guid? departmentId = null)
     {
         var query = context.JobRequests
             .AsSplitQuery()
@@ -71,6 +75,7 @@ public class JobRequestRepository(ApplicationDbContext context,
             .Include(j => j.AssignedBy)
             .Include(j => j.Service)
             .Include(j => j.Site)
+            .OrderByDescending(j => j.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
