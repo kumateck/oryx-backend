@@ -96,8 +96,12 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
             .Include(q => q.JobOrder)
             .Include(q => q.ServiceProvider)
             .Include(q => q.Currency)
-            .Include(q => q.Items).ThenInclude(i => i.Item)
-            .Include(q => q.Items).ThenInclude(i => i.UnitOfMeasure)
+            .Include(q => q.Items)
+                .ThenInclude(i => i.Item)
+            .Include(q => q.Items)
+                .ThenInclude(i => i.UnitOfMeasure)
+            .Include(q => q.JobOrder)
+                .ThenInclude(j => j.Service)
             .AsQueryable();
 
         if (status.HasValue)
@@ -116,7 +120,7 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
-            entity => mapper.Map<ServiceQuotationDto>(entity));
+            mapper.Map<ServiceQuotationDto>);
     }
 
     public async Task<Result<ServiceQuotationDto>> GetServiceQuotation(Guid id)
@@ -200,6 +204,8 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
             .Include(q => q.Items)
                 .ThenInclude(i => i.Item)
                     .ThenInclude(i => i.ItemCategory)
+            .Include(q => q.JobOrder)
+                .ThenInclude(j => j.Service)
             .Where(q => q.JobOrderId == jobOrderId)
             .ToListAsync();
 

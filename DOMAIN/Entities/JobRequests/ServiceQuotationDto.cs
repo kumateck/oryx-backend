@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.ServiceProviders;
+using DOMAIN.Entities.Services;
 
 namespace DOMAIN.Entities.JobRequests;
 
@@ -8,6 +9,7 @@ public class ServiceQuotationDto : BaseDto
 {
     public string QuotationNumber { get; set; }
     public Guid JobOrderId { get; set; }
+    public ServiceDto Service { get; set; }
     public ServiceProviderDto ServiceProvider { get; set; }
     public DateTime SubmittedDate { get; set; }
     public decimal ServiceCharge { get; set; }
