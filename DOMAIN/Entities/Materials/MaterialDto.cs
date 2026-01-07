@@ -16,6 +16,7 @@ public class MaterialDto
     public MaterialCategoryDto MaterialCategory { get; set; }
     public MaterialSpecificationReducedDto Specification { get; set; }
     public decimal TotalStock { get; set; }
+    public decimal ReservedStock { get; set; }
 }
 
 public class MaterialWithWarehouseStockDto : MaterialDto

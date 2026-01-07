@@ -88,7 +88,9 @@ using ServiceProvider = DOMAIN.Entities.ServiceProviders.ServiceProvider;
 
 namespace INFRASTRUCTURE.Context;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService currentUserService) : IdentityDbContext<User, Role, Guid>(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options,
+    ICurrentUserService currentUserService) 
+    : IdentityDbContext<User, Role, Guid>(options)
 {
 
     #region Auth
