@@ -215,17 +215,25 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
                && Enum.IsDefined(result);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ItemDto>>>> GetItems(int page, int pageSize,
-        string searchQuery, Store? store)
+    public async Task<Result<Paginateable<IEnumerable<ItemDto>>>> GetItems(
+        int page,
+        int pageSize,
+        string searchQuery,
+        Store? store)
     {
         var query = context.Items
+            .AsNoTracking()
             .Include(i => i.UnitOfMeasure)
+            .Include(i => i.ItemCategory)
             .AsQueryable();
 
-        if (!string.IsNullOrEmpty(searchQuery))
+        if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, i => i.Name,
-                i => i.Code);
+            query = query.WhereSearch(
+                searchQuery,
+                i => i.Name,
+                i => i.Code
+            );
         }
 
         if (store.HasValue)
@@ -233,25 +241,22 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
             query = query.Where(i => i.Store == store.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            if (Enum.TryParse<Store>(searchQuery, true, out var itemStore))
-            {
-                query = query.Where(q => q.Store == itemStore);
-            }
-        }
-
-        return await PaginationHelper.GetPaginatedResultAsync(query,
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
             page,
             pageSize,
-            entity => mapper.Map<ItemDto>(entity, opts =>
-            opts.Items[AppConstants.ModelType] = nameof(Item)));
+            entity => mapper.Map<ItemDto>(
+                entity,
+                opts => opts.Items[AppConstants.ModelType] = nameof(Item)
+            )
+        );
     }
 
     public async Task<Result<ItemDto>> GetItem(Guid id)
     {
         var item = await context.Items
             .Include(i => i.UnitOfMeasure)
+            .Include(i => i.ItemCategory)
             .FirstOrDefaultAsync(i => i.Id == id);
         return item is null ?
             Error.NotFound("Item.NotFound", "Item not found") :

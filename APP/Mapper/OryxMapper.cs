@@ -1088,7 +1088,7 @@ public class OryxMapper : Profile
         #endregion
 
         #region Items
-
+        CreateMap<ItemCategory, ItemCategoryDto>();
         CreateMap<CreateItemsRequest, Item>();
         CreateMap<Item, ItemDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
