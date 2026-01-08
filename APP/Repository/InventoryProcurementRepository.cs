@@ -735,32 +735,37 @@ public class InventoryProcurementRepository(
         );
     }
 
-    public async Task<Result> MarkMemoItemAsPaid(Guid memoItemId, DateTime? purchasedAt = null)
+    public async Task<Result> MarkMemoItemAsPaid(
+        Guid memoItemId,
+        DateTime? purchasedAt = null)
     {
-        var memoItem = await context.MemoItems
-            .AsSplitQuery()
-            .Include(memoItem => memoItem.Memo)
-            .FirstOrDefaultAsync(m => m.Id == memoItemId);
+        await using var transaction = await context.Database.BeginTransactionAsync();
 
-        if (memoItem == null)
-            return Error.NotFound("Memo", "Memo item not found.");
+        var memoItem = await context.MemoItems
+            .Include(mi => mi.Memo)
+            .FirstOrDefaultAsync(mi => mi.Id == memoItemId);
+
+        if (memoItem is null)
+            return Error.NotFound("MemoItem", "Memo item not found.");
 
         if (memoItem.PurchasedAt.HasValue)
-            return Error.Validation("Memo", "Memo item is already marked as paid.");
+            return Error.Validation("MemoItem", "Memo item is already marked as paid.");
 
         memoItem.PurchasedAt = purchasedAt ?? DateTime.UtcNow;
-        context.MemoItems.Update(memoItem);
-        await context.SaveChangesAsync();
 
-        var stockEntry = new StockEntry
+        var stockEntryExists = await context.StockEntries.AnyAsync(se =>
+            se.MemoId == memoItem.MemoId &&
+            se.ItemId == memoItem.ItemId);
+
+        if (!stockEntryExists)
         {
-            ItemId = memoItem.ItemId,
-            MemoId = memoItem.MemoId,
-            Quantity = memoItem.Quantity
-        };
-
-        await context.StockEntries.AddAsync(stockEntry);
-        await context.SaveChangesAsync();
+            await context.StockEntries.AddAsync(new StockEntry
+            {
+                ItemId = memoItem.ItemId,
+                MemoId = memoItem.MemoId,
+                Quantity = memoItem.Quantity
+            });
+        }
 
         var allItemsPaid = await context.MemoItems
             .Where(mi => mi.MemoId == memoItem.MemoId)
@@ -771,8 +776,9 @@ public class InventoryProcurementRepository(
             memoItem.Memo.Paid = true;
         }
 
-        context.MemoItems.Update(memoItem);
         await context.SaveChangesAsync();
+        await transaction.CommitAsync();
+
         return Result.Success();
     }
 
