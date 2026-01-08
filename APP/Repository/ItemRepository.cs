@@ -93,7 +93,7 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
             var storeText = worksheet.Cells[row, 1].Text?.Replace(" ", "").Trim();
             var itemName = worksheet.Cells[row, 2].Text?.Trim();
             var itemCode = worksheet.Cells[row, 3].Text?.Trim();
-            var categoryName = worksheet.Cells[row, 4].Text?.Replace(" ", "").Trim();
+            var categoryName = worksheet.Cells[row, 4].Text?.Trim();
             var uomText = worksheet.Cells[row, 5].Text?.Trim();
             var classificationText = worksheet.Cells[row, 6].Text?.Replace(" ", "").Trim();
             var minText = worksheet.Cells[row, 7].Text?.Trim();
