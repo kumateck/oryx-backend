@@ -198,6 +198,7 @@ public class OryxMapper : Profile
         CreateMap<Reagent, CollectionItemDto>();
         CreateMap<Site, CollectionItemDto>();
         CreateMap<Memo, CollectionItemDto>();
+        CreateMap<JobOrder, CollectionItemDto>();
         #endregion
 
         #region Operation

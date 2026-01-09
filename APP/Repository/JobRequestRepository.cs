@@ -31,26 +31,10 @@ public class JobRequestRepository(ApplicationDbContext context,
             if (!equipment) return Error.Validation("Equipment.Invalid", "Invalid equipment");
         }
 
-        // Validate services if provided
-        if (request.ServiceIds != null && request.ServiceIds.Any())
-        {
-            foreach (var serviceId in request.ServiceIds)
-            {
-                var serviceExists = await context.Services.AnyAsync(s => s.Id == serviceId);
-                if (!serviceExists) return Error.Validation("Service.Invalid", $"Invalid service: {serviceId}");
-            }
-        }
-
         var jobRequest = mapper.Map<JobRequest>(request);
         jobRequest.DepartmentId = departmentId;
         jobRequest.IssuedById = issuedById;
         
-        // Set first service if provided
-        if (request.ServiceIds != null && request.ServiceIds.Any())
-        {
-            jobRequest.ServiceId = request.ServiceIds.First();
-        }
-
         await context.JobRequests.AddAsync(jobRequest);
         await context.SaveChangesAsync();
         
