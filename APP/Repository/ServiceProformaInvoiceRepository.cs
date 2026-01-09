@@ -204,7 +204,9 @@ public class ServiceProformaInvoiceRepository(
         var query = context.ServiceProformaInvoices
             .AsSplitQuery()
             .Include(p => p.JobOrder)
+                .ThenInclude(p => p.Service)
             .Include(p => p.ServiceQuotation)
+                .ThenInclude(p => p.ServiceProvider)
             .Include(p => p.ServiceProvider)
             .Include(p => p.Currency)
             .Include(p => p.Items)
