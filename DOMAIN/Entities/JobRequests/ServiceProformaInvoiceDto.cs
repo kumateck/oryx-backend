@@ -1,7 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Items;
-using DOMAIN.Entities.ServiceProviders;
 using SHARED;
 
 namespace DOMAIN.Entities.JobRequests;
@@ -10,8 +9,7 @@ public class ServiceProformaInvoiceDto : BaseDto
 {
     public string InvoiceNumber { get; set; }
     public CollectionItemDto JobOrder { get; set; }
-    public ServiceQuotationDto ServiceQuotation { get; set; }
-    public ServiceProviderDto ServiceProvider { get; set; }
+    public ServiceQuotationReducedDto ServiceQuotation { get; set; }
     public DateTime RequestedDate { get; set; }
     public Guid RequestedById { get; set; }
     public DateTime? ResponseReceivedDate { get; set; }
