@@ -1366,7 +1366,8 @@ public class ApprovalRepository(ApplicationDbContext context,
         }
     }
 
-    public async Task<Result> RejectItem(string modelType, Guid modelId, Guid userId, List<Guid> roleIds, string comments = null)
+    public async Task<Result> RejectItem(string modelType, Guid modelId, Guid userId, List<Guid> roleIds, 
+        string comments = null)
     {
         if (modelType is "PurchaseRequisition" or "StockRequisition")
         {
@@ -1996,7 +1997,8 @@ public class ApprovalRepository(ApplicationDbContext context,
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
             .Where(po => po.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                && a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var po in purchaseOrders)
@@ -2022,7 +2024,8 @@ public class ApprovalRepository(ApplicationDbContext context,
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
             .Where(po => po.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) 
+                && a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var r in requisitions)
@@ -2061,7 +2064,8 @@ public class ApprovalRepository(ApplicationDbContext context,
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
             .Where(bs => bs.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && 
+                a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var bs in billingSheets)
@@ -2084,7 +2088,8 @@ public class ApprovalRepository(ApplicationDbContext context,
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
             .Where(bs => bs.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && 
+                a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var bs in overtimeRequests)
@@ -2109,7 +2114,8 @@ public class ApprovalRepository(ApplicationDbContext context,
             .Include(a => a.Employee)
             .ThenInclude(a => a.Department)
             .Where(bs => bs.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && 
+                a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var bs in leaveRequests)
@@ -2132,7 +2138,8 @@ public class ApprovalRepository(ApplicationDbContext context,
             .Include(po => po.CreatedBy)
             .ThenInclude(po => po.Department)
             .Where(bs => bs.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && 
+                a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var bs in responses)
@@ -2157,7 +2164,8 @@ public class ApprovalRepository(ApplicationDbContext context,
             .Include(a => a.CreatedBy)
             .ThenInclude(a => a.Department)
             .Where(bs => bs.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) &&
+                a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var proformaInvoice in proformaInvoices)
@@ -2180,7 +2188,8 @@ public class ApprovalRepository(ApplicationDbContext context,
             .Include(a => a.CreatedBy)
             .ThenInclude(a => a.Department)
             .Where(bs => bs.Approvals.Any(a =>
-                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && a.Status != ApprovalStatus.Approved))
+                (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value))) && 
+                a.Status != ApprovalStatus.Approved))
             .ToListAsync();
 
         foreach (var shipmentDocument in shipmentDocuments)

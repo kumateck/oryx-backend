@@ -2964,7 +2964,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var query = context.MaterialRejects
             .AsSplitQuery()
-            .Include(m => m.MaterialBatch).ThenInclude(m => m.Material)
+            .Include(m => m.MaterialBatch).
+            ThenInclude(m => m.Material)
             .Include(m => m.Response)
             .OrderByDescending(m => m.CreatedAt)
             .AsQueryable();

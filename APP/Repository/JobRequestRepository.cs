@@ -197,54 +197,9 @@ public class JobRequestRepository(ApplicationDbContext context,
             var serviceExists = await context.Services.AnyAsync(s => s.Id == request.ServiceId.Value);
             if (!serviceExists) return Error.Validation("Service.Invalid", $"Invalid service: {request.ServiceId.Value}");
         }
-
-        // Validate services if provided (only if ServiceId is not provided)
-        if (!request.ServiceId.HasValue && request.ServiceIds != null && request.ServiceIds.Any())
-        {
-            foreach (var serviceId in request.ServiceIds)
-            {
-                var serviceExists = await context.Services.AnyAsync(s => s.Id == serviceId);
-                if (!serviceExists) return Error.Validation("Service.Invalid", $"Invalid service: {serviceId}");
-            }
-        }
-
-        // Handle ServiceId before mapping (since mapper condition skips null values)
-        // We need to manually handle ServiceId to support clearing it with null
-        var serviceIdToSet = (Guid?)null;
-        var shouldClearService = false;
-
-        // ServiceId takes precedence over ServiceIds
-        if (request.ServiceId.HasValue)
-        {
-            serviceIdToSet = request.ServiceId.Value;
-        }
-        else if (request.ServiceIds != null && request.ServiceIds.Any())
-        {
-            // Set first service from list if ServiceId not provided
-            serviceIdToSet = request.ServiceIds.First();
-        }
-        else if (request.ServiceIds != null && request.ServiceIds.Count == 0)
-        {
-            // If empty list is provided, clear the service
-            shouldClearService = true;
-        }
-        // Note: If both ServiceId and ServiceIds are null/not provided, we preserve existing value
-        // (handled by mapper condition which skips null values)
-
-        // Map other fields (ServiceId will be handled separately)
+        
         mapper.Map(request, jobRequest);
         
-        // Set ServiceId after mapping
-        if (serviceIdToSet.HasValue)
-        {
-            jobRequest.ServiceId = serviceIdToSet.Value;
-        }
-        else if (shouldClearService)
-        {
-            jobRequest.ServiceId = null;
-        }
-        // If neither ServiceId nor ServiceIds are provided, existing ServiceId is preserved
-
         context.JobRequests.Update(jobRequest);
         await context.SaveChangesAsync();
 
