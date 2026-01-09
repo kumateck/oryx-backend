@@ -199,6 +199,7 @@ public class OryxMapper : Profile
         CreateMap<Site, CollectionItemDto>();
         CreateMap<Memo, CollectionItemDto>();
         CreateMap<JobOrder, CollectionItemDto>();
+        CreateMap<ServiceProvider, CollectionItemDto>();
         #endregion
 
         #region Operation
@@ -1206,6 +1207,10 @@ public class OryxMapper : Profile
         CreateMap<UpdateServiceQuotationRequest, ServiceQuotation>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         CreateMap<ServiceQuotation, ServiceQuotationDto>()
+            .ForMember(dest => dest.Service,
+                opt => 
+                    opt.MapFrom(src => src.JobOrder.Service));
+        CreateMap<ServiceQuotation, ServiceQuotationReducedDto>()
             .ForMember(dest => dest.Service,
                 opt => 
                     opt.MapFrom(src => src.JobOrder.Service));
