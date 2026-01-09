@@ -2284,6 +2284,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = context.MaterialDepartments
             .AsSplitQuery()
             .Include(m => m.Material)
+            .ThenInclude(m => m.MaterialCategory)
             .Include(m => m.UoM)
             .AsQueryable();
     
