@@ -72,6 +72,7 @@ using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockEntries;
+using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.VendorQuotations;
@@ -682,6 +683,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Reagent
 
     public DbSet<Reagent> Reagents => Set<Reagent>();
+
+    #endregion
+
+    #region Threshold
+
+    public DbSet<Threshold> Threshold => Set<Threshold>();
 
     #endregion
 
