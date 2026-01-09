@@ -205,7 +205,8 @@ public class InventoryProcurementRepository(
             .ToListAsync();
 
         if (requisitionItems.Count != request.InventoryPurchaseRequisitionItemId.Count)
-            return Error.NotFound("Requisition.ItemNotFound", "One or more requisition items were not found.");
+            return Error.NotFound("Requisition.ItemNotFound",
+                "One or more requisition items were not found.");
 
         var marketRequisitions = new List<MarketRequisition>();
 

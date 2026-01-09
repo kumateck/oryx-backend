@@ -186,7 +186,8 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     /// <returns>Paginated list of proforma invoices</returns>
     /// <response code="200">Returns paginated list of proforma invoices</response>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ServiceProformaInvoiceDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<ServiceProformaInvoiceDto>>))]
     public async Task<IResult> GetServiceProformaInvoices(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,

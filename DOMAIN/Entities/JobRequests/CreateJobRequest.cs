@@ -19,8 +19,7 @@ public class CreateJobRequest
     public string Item { get; set; }
     [StringLength(500)]
     public string ItemNumber { get; set; }
-
-    public List<Guid> ServiceIds { get; set; } = [];
+    public Guid? ServiceId { get; set; }
 }
 
 public class UpdateJobRequestRequest
