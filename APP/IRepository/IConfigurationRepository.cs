@@ -1,6 +1,7 @@
 using SHARED;
 using APP.Utils;
 using DOMAIN.Entities.Configurations;
+using DOMAIN.Entities.Thresholds;
 
 namespace APP.IRepository
 {
@@ -13,5 +14,7 @@ namespace APP.IRepository
         Task<Result> UpdateConfiguration(CreateConfigurationRequest request, Guid configurationId);
         Task<Result> DeleteConfiguration(Guid configurationId);
         Task<Result<int>> GetCountForCodeConfiguration(string modelType, string prefix);
+        Task<Result> CreateThreshold(CreateThreshold request);
+        Task<Result<ThresholdDto>> GetThreshold();
     }
 }

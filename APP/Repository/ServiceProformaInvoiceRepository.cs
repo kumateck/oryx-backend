@@ -134,10 +134,12 @@ public class ServiceProformaInvoiceRepository(
             .FirstOrDefaultAsync(p => p.Id == request.ServiceProformaInvoiceId);
 
         if (proformaInvoice is null)
-            return Error.NotFound("ServiceProformaInvoice.NotFound", "Service proforma invoice not found");
+            return Error.NotFound("ServiceProformaInvoice.NotFound",
+                "Service proforma invoice not found");
 
         if (proformaInvoice.Status != ServiceProformaInvoiceStatus.Requested)
-            return Error.Validation("ProformaInvoice.InvalidStatus", "Proforma invoice has already been responded to");
+            return Error.Validation("ProformaInvoice.InvalidStatus",
+                "Proforma invoice has already been responded to");
 
         proformaInvoice.InvoiceNumber = request.InvoiceNumber;
         proformaInvoice.ResponseReceivedDate = request.ResponseDate;
@@ -150,7 +152,8 @@ public class ServiceProformaInvoiceRepository(
         {
             foreach (var updatedItem in request.UpdatedItems)
             {
-                var item = proformaInvoice.Items.FirstOrDefault(i => i.Id == updatedItem.ServiceProformaInvoiceItemId);
+                var item = proformaInvoice.Items.FirstOrDefault(i 
+                    => i.Id == updatedItem.ServiceProformaInvoiceItemId);
                 if (item != null)
                 {
                     if (updatedItem.UnitPrice.HasValue)
@@ -179,13 +182,16 @@ public class ServiceProformaInvoiceRepository(
             .FirstOrDefaultAsync(p => p.Id == request.ServiceProformaInvoiceId);
 
         if (proformaInvoice is null)
-            return Error.NotFound("ServiceProformaInvoice.NotFound", "Service proforma invoice not found");
+            return Error.NotFound("ServiceProformaInvoice.NotFound",
+                "Service proforma invoice not found");
 
         if (proformaInvoice.Status != ServiceProformaInvoiceStatus.ResponseReceived)
-            return Error.Validation("ProformaInvoice.InvalidStatus", "Proforma invoice must have a response before approval");
+            return Error.Validation("ProformaInvoice.InvalidStatus",
+                "Proforma invoice must have a response before approval");
 
         var approvedBy = await userManager.FindByIdAsync(request.ApprovedById.ToString());
-        if (approvedBy is null) return Error.Validation("User.Invalid", "User Invalid");
+        if (approvedBy is null) return Error.Validation("User.Invalid",
+            "User Invalid");
 
         proformaInvoice.Status = ServiceProformaInvoiceStatus.Approved;
         context.ServiceProformaInvoices.Update(proformaInvoice);

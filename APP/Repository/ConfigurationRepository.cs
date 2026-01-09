@@ -24,6 +24,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Services;
 using DOMAIN.Entities.Shipments;
+using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.WorkOrders;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -334,5 +335,33 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
             default:
                 return Error.Validation("ModelType", "Invalid model type sent");
         }
+    }
+
+    public async Task<Result> CreateThreshold(CreateThreshold request)
+    {
+        var existingThreshold = await context.Threshold.SingleOrDefaultAsync();
+        if (existingThreshold != null)
+        {
+            existingThreshold.MemoThreshold = request.MemoThreshold;
+            existingThreshold.StoreThreshold = request.StoreThreshold;
+            await context.SaveChangesAsync();
+            return Result.Success();
+        }
+
+        await context.Threshold
+            .AddAsync(new Threshold
+            {
+                MemoThreshold = request.MemoThreshold,
+                StoreThreshold = request.StoreThreshold,
+            });
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<ThresholdDto>> GetThreshold()
+    {
+        return mapper.Map<ThresholdDto>(await context.Threshold
+            .SingleOrDefaultAsync());
     }
 }

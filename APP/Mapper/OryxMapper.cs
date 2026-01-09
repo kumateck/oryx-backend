@@ -81,6 +81,7 @@ using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockEntries;
+using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
@@ -1253,6 +1254,12 @@ public class OryxMapper : Profile
         CreateMap<CreateSwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
         CreateMap<SwapRequest, SwapRequestDto>();
         CreateMap<SwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
+
+        #endregion
+
+        #region Threshold
+
+        CreateMap<Threshold, ThresholdDto>();
 
         #endregion
     }
