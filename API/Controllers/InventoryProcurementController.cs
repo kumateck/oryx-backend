@@ -340,13 +340,17 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Optional search query to filter by memo code.</param>
+    /// <param name="status">The status of the memo. (0 = Memo, 1 = PurchaseOrder)</param>
     /// <returns>Returns a paginated list of memos.</returns>
     [HttpGet("memo")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MemoDto>>))]
-    public async Task<IResult> GetMemos([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetMemos([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MemoStatus? status = null)
     {
-        var result = await repository.GetMemos(page, pageSize, searchQuery);
+        var result = await repository.GetMemos(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

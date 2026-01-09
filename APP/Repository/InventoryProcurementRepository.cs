@@ -375,6 +375,16 @@ public class InventoryProcurementRepository(
             }
 
         }
+        
+        var threshold = await context.Threshold.SingleOrDefaultAsync();
+        if (threshold != null)
+        {
+            if (memo.Items.Sum(i => i.Quantity * i.PricePerUnit) > threshold.MemoThreshold)
+            {
+                memo.Status = MemoStatus.PurchaseOrder;
+            }
+        }
+        
         await context.Memos.AddAsync(memo);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -418,6 +428,15 @@ public class InventoryProcurementRepository(
             });
 
             vendorQuotationItem.Status = VendorQuotationItemStatus.Processed;
+        }
+        
+        var threshold = await context.Threshold.SingleOrDefaultAsync();
+        if (threshold != null)
+        {
+            if (memo.Items.Sum(i => i.Quantity * i.PricePerUnit) > threshold.MemoThreshold)
+            {
+                memo.Status = MemoStatus.PurchaseOrder;
+            }
         }
 
         await context.Memos.AddAsync(memo);
@@ -707,7 +726,10 @@ public class InventoryProcurementRepository(
     }
 
 
-    public async Task<Result<Paginateable<IEnumerable<MemoDto>>>> GetMemos(int page, int pageSize, string searchQuery = null)
+    public async Task<Result<Paginateable<IEnumerable<MemoDto>>>> GetMemos(int page, 
+        int pageSize, 
+        string searchQuery = null,
+        MemoStatus? status = null)
     {
         var query = context.Memos
             .AsSplitQuery()
@@ -726,6 +748,11 @@ public class InventoryProcurementRepository(
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery, m => m.Code);
+        }
+
+        if (status != null)
+        {
+            query = query.Where(m => m.Status == status);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
