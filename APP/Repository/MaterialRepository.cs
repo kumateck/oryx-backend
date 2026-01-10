@@ -1797,7 +1797,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var shelfBatch = await context.ShelfMaterialBatches
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(smb => smb.MaterialBatchId == batchId
-                                            && smb.WarehouseLocationShelfId == warehouseLocationShelfId.Value);
+                                            && smb.WarehouseLocationShelfId == warehouseLocationShelfId.Value 
+                                            && !smb.DeletedAt.HasValue);
 
             if (shelfBatch == null)
                 return Error.NotFound("ShelfMaterialBatch", "No shelf allocation found for this batch.");
@@ -1826,7 +1827,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     }
 
 
-    public async Task<List<MaterialBatchReservedQuantityDto>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, Guid productionScheduleProductId)
+    public async Task<List<MaterialBatchReservedQuantityDto>> GetReservedBatchesAndQuantityForProductionWarehouse(
+        Guid materialId, 
+        Guid warehouseId, 
+        Guid productionScheduleProductId)
     {
         return
             mapper.Map<List<MaterialBatchReservedQuantityDto>>(await context.MaterialBatchReservedQuantities
@@ -2290,7 +2294,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Material.Name, q => q.Material.Code);
+            query = query.WhereSearch(searchQuery, q => q.Material.Name,
+                q => q.Material.Code);
         }
     
         if (!user.DepartmentId.HasValue)
@@ -2322,7 +2327,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             mapper.Map<MaterialDepartmentWithWarehouseStockDto>
         );
     
-        results.Data = results.Data.ToList();
+        //results.Data = results.Data.ToList();
         foreach (var result in results.Data)
         {
             var warehouseType = result.Material.Kind == MaterialKind.Raw

@@ -174,7 +174,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetRequiredMaterialStock([FromRoute] Guid productionScheduleProductId, [FromQuery] MaterialRequisitionStatus? status = null)
+    public async Task<IResult> GetRequiredMaterialStock([FromRoute] Guid productionScheduleProductId, 
+        [FromQuery] MaterialRequisitionStatus? status = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -192,7 +193,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleProductId, status);
+        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleProductId, 
+            status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
