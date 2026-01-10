@@ -733,6 +733,7 @@ public class InventoryProcurementRepository(
     {
         var query = context.Memos
             .AsSplitQuery()
+            .Include(m => m.CreatedBy)
             .Include(m => m.Items)
             .ThenInclude(mi => mi.Item)
             .Include(m => m.Items)
