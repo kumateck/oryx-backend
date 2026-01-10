@@ -6,7 +6,7 @@ namespace DOMAIN.Entities.Items.Requisitions;
 
 public class CreateMarketRequisition
 {
-    public List<Guid> InventoryPurchaseRequisitionItemId { get; set; }
+    public Guid InventoryPurchaseRequisitionItemId { get; set; }
     public Guid ItemId { get; set; }
     public Guid UoMId { get; set; }
     public decimal Quantity { get; set; }

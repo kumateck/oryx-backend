@@ -126,18 +126,18 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     /// <summary>
     /// Creates a new Market Requisition for a specific item that needs to be sourced from the open market.
     /// </summary>
-    /// <param name="request">The CreateMarketRequisition object containing item and requisition details.</param>
+    /// <param name="requests">A list of CreateMarketRequisition object containing item and requisition details.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("market")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateMarketRequisition([FromBody] CreateMarketRequisition request)
+    public async Task<IResult> CreateMarketRequisition([FromBody] List<CreateMarketRequisition> requests)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateMarketRequisition(request, Guid.Parse(userId));
+        var result = await repository.CreateMarketRequisition(requests);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
