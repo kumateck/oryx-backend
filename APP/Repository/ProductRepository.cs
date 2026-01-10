@@ -1109,7 +1109,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 ProductPackingId = packing.Id,
                 BatchManufacturingRecordId = (await context.BatchManufacturingRecords
                     .FirstAsync(b => 
-                        b.ProductionScheduleProductId == defaultScheduleProduct.Id)).Id
+                        b.ProductionScheduleProductId == defaultScheduleProduct.Id)).Id,
+                Approved = true
             });
         }
 
