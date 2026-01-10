@@ -21,7 +21,7 @@ public interface IInventoryProcurementRepository
 
     // Sourcing Logic
     Task<Result> CreateSourceRequisition(CreateSourceInventoryRequisition request, Guid userId);
-    Task<Result> CreateMarketRequisition(CreateMarketRequisition request, Guid userId);
+    Task<Result> CreateMarketRequisition(List<CreateMarketRequisition> request);
     Task<Result<Paginateable<IEnumerable<MarketRequisitionDto>>>> GetMarketRequisitions(int page, int pageSize);
     Task<Result<List<VendorPriceComparison>>> GetPriceComparisonOfItem(InventoryRequisitionSource source);
 

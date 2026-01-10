@@ -195,33 +195,26 @@ public class InventoryProcurementRepository(
         }
     }
 
-    public async Task<Result> CreateMarketRequisition(CreateMarketRequisition request, Guid userId)
+    public async Task<Result> CreateMarketRequisition(List<CreateMarketRequisition> requests)
     {
-        if (request.InventoryPurchaseRequisitionItemId == null || request.InventoryPurchaseRequisitionItemId.Count == 0)
-            return Error.Validation("Requisition.EmptyItems", "No requisition items provided.");
+        var inventoryPurchaseRequisitionItemIds = requests
+            .Select(r => r.InventoryPurchaseRequisitionItemId).ToList();
 
         var requisitionItems = await context.InventoryPurchaseRequisitionItems
-            .Where(item => request.InventoryPurchaseRequisitionItemId.Contains(item.Id))
+            .Where(item => inventoryPurchaseRequisitionItemIds.Contains(item.Id))
             .ToListAsync();
 
-        if (requisitionItems.Count != request.InventoryPurchaseRequisitionItemId.Count)
+        if (requisitionItems.Count != inventoryPurchaseRequisitionItemIds.Count)
             return Error.NotFound("Requisition.ItemNotFound",
                 "One or more requisition items were not found.");
 
-        var marketRequisitions = new List<MarketRequisition>();
-
-        foreach (var requisitionItem in requisitionItems)
+        var marketRequisitions = mapper.Map<List<MarketRequisition>>(requests);
+        
+        foreach (var inventoryPurchaseRequisitionItem in requisitionItems)
         {
-            var marketRequisition = mapper.Map<MarketRequisition>(request);
-
-            // Ensure correct linkage
-            marketRequisition.InventoryPurchaseRequisitionItemId = requisitionItem.Id;
-
-            marketRequisitions.Add(marketRequisition);
-
-            requisitionItem.Status = RequestStatus.Sourced;
+            inventoryPurchaseRequisitionItem.Status = RequestStatus.Sourced;
         }
-
+        
         await context.MarketRequisitions.AddRangeAsync(marketRequisitions);
         context.InventoryPurchaseRequisitionItems.UpdateRange(requisitionItems);
 
@@ -457,7 +450,8 @@ public class InventoryProcurementRepository(
 
         if (sourceRequisition is null || sourceRequisition.Items.Count == 0)
         {
-            return Error.Validation("Vendor.Quotation", "No unsent items found for the specified vendor.");
+            return Error.Validation("Vendor.Quotation", 
+                "No unsent items found for the specified vendor.");
         }
 
         var vendorQuotationDto = mapper.Map<VendorQuotationRequest>(sourceRequisition);
