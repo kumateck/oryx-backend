@@ -340,6 +340,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
                     productionWarehouse.Id, stockRequisition.ProductionScheduleProductId.Value);
 
+            if (batchesToConsume.Count == 0)
+                return Error.Validation("Stock.Requisition", 
+                    $"No reserved quantities to issue for {item.Material.Name}");
+
             foreach (var batch in batchesToConsume)
             {
                 var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m =>
