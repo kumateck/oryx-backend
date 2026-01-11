@@ -14,7 +14,6 @@ using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.VendorQuotations;
 using INFRASTRUCTURE.Context;
-using MassTransit.Initializers;
 using SHARED;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
@@ -120,6 +119,7 @@ public class InventoryProcurementRepository(
         try
         {
             var requisition = await context.InventoryPurchaseRequisitions
+                .AsSplitQuery()
                 .Include(r => r.Items)
                 .FirstOrDefaultAsync(r =>
                     r.Id == request.InventoryPurchaseRequisitionId);
@@ -244,6 +244,7 @@ public class InventoryProcurementRepository(
         if (source == InventoryRequisitionSource.TrustedVendor)
         {
             var quotations = await context.VendorQuotationItems
+                .AsSplitQuery()
                 .Include(s => s.Item)
                 .Include(s => s.UoM)
                 .Include(s => s.VendorQuotation).ThenInclude(s => s.Vendor)
@@ -443,6 +444,7 @@ public class InventoryProcurementRepository(
     public async Task<Result> SendQuotationToVendor(Guid vendorId)
     {
         var sourceRequisition = await context.SourceInventoryRequisitions
+            .AsSplitQuery()
             .Include(sr => sr.Vendor)
             .Include(sr => sr.Items).ThenInclude(item => item.Item)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)

@@ -486,4 +486,22 @@ public class ProductController(IProductRepository repository) : ControllerBase
         return result.IsSuccess
             ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Imports equipment from an Excel file.
+    /// </summary>
+    /// <param name="file">The uploaded Excel file containing materials.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("upload/equipment")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadEquipment(IFormFile file)
+    {
+        var result = await repository.ImportEquipmentFromExcel(file);
+
+        return result.IsSuccess
+            ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

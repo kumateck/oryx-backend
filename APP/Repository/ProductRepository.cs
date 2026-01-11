@@ -1123,6 +1123,109 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
     
+    public async Task<Result> ImportEquipmentFromExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        var equipmentsToInsert = new List<Equipment>();
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
+
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            var header = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrEmpty(header))
+                headers[header] = col;
+        }
+
+        // Mapping headers based on your requirements
+        var requiredHeaders = new[]
+        {
+            "EQUIPMENT NO", "EQUIPMENT NAME", "UOM", "DEPARTMENT"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
+
+        // Lookups for Foreign Keys
+        var uoms = await context.UnitOfMeasures
+            .AsNoTracking()
+            .ToDictionaryAsync(u => u.Symbol.ToLower(), u => u.Id);
+
+        var departments = await context.Departments
+            .AsNoTracking()
+            .ToDictionaryAsync(d => d.Name.ToLower(), d => d.Id);
+
+        var existingNumbers = await context.Equipments
+            .IgnoreQueryFilters()
+            .Select(e => e.EquipmentNumber)
+            .ToHashSetAsync();
+
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            string GetCell(string header) => headers.TryGetValue(header, out var header1) 
+                ? worksheet.Cells[row, header1].Text.Trim() : string.Empty;
+
+            var equipmentNo = GetCell("EQUIPMENT NO");
+            if (string.IsNullOrWhiteSpace(equipmentNo) || existingNumbers.Contains(equipmentNo))
+                return Error.Validation("EquipmentNo",
+                    $"Equipment number not found for row {row}");
+
+            var uomSymbol = GetCell("UOM").ToLower();
+            var deptName = GetCell("DEPARTMENT").ToLower();
+
+            // Business logic for boolean "Storage" check
+            var isStorageStr = GetCell("STORAGE").ToLower();
+            bool isStorage = isStorageStr == "yes" || isStorageStr == "true" || isStorageStr == "1";
+
+            // Business logic for Relevance Check
+            var relCheckStr = GetCell("RELEVANT FOR CAPACITY PLANNING").ToLower();
+            bool relevanceCheck = relCheckStr == "yes" || relCheckStr == "true" || relCheckStr == "1";
+
+            var equipment = new Equipment
+            {
+                EquipmentNumber = equipmentNo,
+                Name = GetCell("EQUIPMENT NAME"),
+                Model = GetCell("MODEL"),
+                SerialNumber = GetCell("SERIAL NO"),
+                Location = GetCell("LOCATION"),
+                IsStorage = isStorage,
+                RelevanceCheck = relevanceCheck,
+                CapacityQuantity = decimal.TryParse(GetCell("CAPACITY QUANTITY"), out var cq) ? cq : 0,
+                UoMId = uoms.TryGetValue(uomSymbol, out var uomId) ? uomId : Guid.Empty,
+                DepartmentId = departments.TryGetValue(deptName, out var deptId) ? deptId : Guid.Empty
+            };
+
+            // Basic Validation: Ensure Guid IDs are found before adding
+            if (equipment.UoMId != Guid.Empty && equipment.DepartmentId != Guid.Empty)
+            {
+                equipmentsToInsert.Add(equipment);
+                existingNumbers.Add(equipmentNo);
+            }
+        }
+
+        if (equipmentsToInsert.Count != 0)
+        {
+            await context.Equipments.AddRangeAsync(equipmentsToInsert);
+            await context.SaveChangesAsync();
+        }
+
+        return Result.Success();
+    }
+    
     DateTime? ParseDate(string input)
     {
         if (DateTime.TryParseExact(input, "dd/MM/yyyy",

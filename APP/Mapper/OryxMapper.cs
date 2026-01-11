@@ -1183,7 +1183,8 @@ public class OryxMapper : Profile
 
         CreateMap<CreateJobRequest, JobRequest>();
         CreateMap<UpdateJobRequestRequest, JobRequest>()
-            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            .ForAllMembers(opts 
+                => opts.Condition((_, dest, srcMember) => srcMember != null));
         CreateMap<JobRequest, JobRequestDto>();
 
         // Job Execution
@@ -1260,6 +1261,12 @@ public class OryxMapper : Profile
         #region Threshold
 
         CreateMap<Threshold, ThresholdDto>();
+
+        #endregion
+
+        #region Site
+
+        CreateMap<Site, SiteDto>();
 
         #endregion
     }

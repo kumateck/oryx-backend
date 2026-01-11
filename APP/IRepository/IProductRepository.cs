@@ -45,4 +45,5 @@ public interface IProductRepository
         Guid userId);
     Task<Result<IEnumerable<ProductPackingDto>>> GetProductPackings(Guid productId);
     Task<Result> ImportProductStockFromExcel(IFormFile file);
+    Task<Result> ImportEquipmentFromExcel(IFormFile file);
 }
