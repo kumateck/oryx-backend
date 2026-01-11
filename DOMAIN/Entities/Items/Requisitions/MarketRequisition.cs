@@ -25,6 +25,7 @@ public class MarketRequisition : BaseEntity
 
 public class MarketRequisitionDto
 {
+    public Guid Id { get; set; }
     public InventoryPurchaseRequisitionItemDto InventoryPurchaseRequisitionItem { get; set; }
     public ItemDto Item { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
