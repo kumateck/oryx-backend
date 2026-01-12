@@ -3,7 +3,6 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.ServiceProviders;
-using DOMAIN.Entities.Services;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -40,7 +39,10 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
     }
 
 
-    public async Task<Result<Paginateable<IEnumerable<ServiceProviderDto>>>> GetServiceProviders(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ServiceProviderReducedDto>>>> GetServiceProviders(int page,
+        int pageSize,
+        string searchQuery,
+        Guid? serviceId = null)
     {
         var query = context.ServiceProviders
             .AsSplitQuery()
@@ -56,7 +58,24 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
                 , sp => sp.Phone, sp => sp.Address);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ServiceProviderDto>);
+        if (serviceId.HasValue)
+        {
+            query = query.Where(q => q.Services.Any(s => s.Id == serviceId.Value));
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, 
+            mapper.Map<ServiceProviderReducedDto>);
+    }
+
+    public async Task<Result<IEnumerable<ServiceProviderDto>>> GetServiceProvidersByService(Guid serviceId)
+    {
+        return mapper.Map<List<ServiceProviderDto>>(await context.ServiceProviders
+            .AsSplitQuery()
+            .Include(s => s.Country)
+            .Include(s => s.Currency)
+            .Include(s => s.Services)
+            .Where(q => q.Services.Any(s => s.Id == serviceId))
+            .ToListAsync());
     }
 
     public async Task<Result<ServiceProviderDto>> GetServiceProvider(Guid id)

@@ -1080,6 +1080,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateServiceProviderRequest, ServiceProvider>();
         CreateMap<ServiceProvider, ServiceProviderDto>();
+        CreateMap<ServiceProvider, ServiceProviderReducedDto>();
 
         #endregion
 
