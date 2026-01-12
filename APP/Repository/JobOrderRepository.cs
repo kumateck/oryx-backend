@@ -68,6 +68,12 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         await context.JobOrders.AddAsync(jobOrder);
         context.JobRequests.Update(jobRequest);
         await context.SaveChangesAsync();
+        
+        await SendJobOrderToProviders(new SendJobOrderToProvidersRequest
+        {
+            JobOrderId = jobOrder.Id,
+            ServiceProviderIds = request.ServiceProviderIds
+        });
 
         return jobOrder.Id;
     }
@@ -144,7 +150,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
             if (!exists) return Error.Validation("ServiceProvider.Invalid", $"Invalid service provider: {providerId}");
 
             // Check if already sent to this provider
-            if (!jobOrder.ServiceProviders.Any(sp => sp.ServiceProviderId == providerId))
+            if (jobOrder.ServiceProviders.All(sp => sp.ServiceProviderId != providerId))
             {
                 jobOrder.ServiceProviders.Add(new JobOrderServiceProvider
                 {
