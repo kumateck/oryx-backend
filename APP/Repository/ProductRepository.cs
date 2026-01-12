@@ -1151,7 +1151,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // Mapping headers based on your requirements
         var requiredHeaders = new[]
         {
-            "EQUIPMENT NO", "EQUIPMENT NAME", "UOM", "DEPARTMENT"
+            "EQUIPMENT NO", "EQUIPMENT NAME", "UOM", "DEPARTMENT CODE"
         };
 
         foreach (var header in requiredHeaders)
@@ -1167,7 +1167,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var departments = await context.Departments
             .AsNoTracking()
-            .ToDictionaryAsync(d => d.Name.ToLower(), d => d.Id);
+            .ToDictionaryAsync(d => d.Code.ToLower(), d => d.Id);
 
         var existingNumbers = await context.Equipments
             .IgnoreQueryFilters()
@@ -1185,15 +1185,15 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                     $"Equipment number not found for row {row}");
 
             var uomSymbol = GetCell("UOM").ToLower();
-            var deptName = GetCell("DEPARTMENT").ToLower();
+            var deptName = GetCell("DEPARTMENT CODE").ToLower();
 
             // Business logic for boolean "Storage" check
             var isStorageStr = GetCell("STORAGE").ToLower();
-            bool isStorage = isStorageStr == "yes" || isStorageStr == "true" || isStorageStr == "1";
+            bool isStorage = isStorageStr is "yes" or "true" or "1";
 
             // Business logic for Relevance Check
             var relCheckStr = GetCell("RELEVANT FOR CAPACITY PLANNING").ToLower();
-            bool relevanceCheck = relCheckStr == "yes" || relCheckStr == "true" || relCheckStr == "1";
+            bool relevanceCheck = relCheckStr is "yes" or "true" or "1";
 
             var equipment = new Equipment
             {
