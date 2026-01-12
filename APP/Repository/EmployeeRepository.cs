@@ -285,7 +285,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         var employees = await context.Employees
             .Include(e => e.Department)
             .Include(e => e.Designation)
-            .Where(e => e.DepartmentId == departmentId)
+            .Where(e => e.DepartmentId == departmentId || e.Department.ParentDepartmentId == departmentId)
             .ToListAsync();
 
         var employeeDtos = employees.Select(e => mapper.Map<EmployeeDto>(e,

@@ -964,4 +964,12 @@ public class InventoryProcurementRepository(
         var nextNumber = numberPart + 1;
         return $"MEMO-{nextNumber:D6}";
     }
+
+    public async Task<Result<MarketRequisitionDto>> GetMarketRequisition(Guid id)
+    {
+        var marketRequisition = await context.MarketRequisitions.FirstOrDefaultAsync(m => m.Id == id);
+        return marketRequisition is null ? 
+            Error.NotFound("MarketRequisition", "Market requisition not found.") : 
+            mapper.Map<MarketRequisitionDto>(marketRequisition);
+    }
 }

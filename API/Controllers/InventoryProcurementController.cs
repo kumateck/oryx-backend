@@ -155,6 +155,19 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
         var result = await repository.GetMarketRequisitions(page, pageSize);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    /// <summary>
+    /// Retrieves a market requisition by its ID.
+    /// </summary>
+
+    /// <returns>Returns a paginated list of market requisitions.</returns>
+    [HttpGet("market/{id:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MarketRequisitionDto))]
+    public async Task<IResult> GetMarketRequisitions([FromRoute] Guid id)
+    {
+        var result = await repository.GetMarketRequisition(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a list of vendor price comparisons for items based on the sourcing method.
