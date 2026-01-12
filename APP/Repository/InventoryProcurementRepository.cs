@@ -909,30 +909,41 @@ public class InventoryProcurementRepository(
     public async Task<Result> ApproveItem(Guid stockEntryId)
     {
         var stockEntry = await context.StockEntries
-            .Include(stockEntry => stockEntry.Item)
-            .FirstOrDefaultAsync(s => s.Id == stockEntryId);
-        if (stockEntry == null) return Error.NotFound("StockEntry", "Stock entry not found.");
+            .Include(se => se.Item)
+            .FirstOrDefaultAsync(se => se.Id == stockEntryId);
 
-        stockEntry.Status = ApprovalStatus.Approved;
-        context.StockEntries.Update(stockEntry);
-        await context.SaveChangesAsync();
+        if (stockEntry == null)
+            return Error.NotFound("StockEntry", "Stock entry not found.");
+
+        if (stockEntry.Status == ApprovalStatus.Approved)
+            return Error.Validation("StockEntry", "Stock entry already approved.");
 
         var lastTransaction = await context.ItemTransactionLogs
-            .OrderByDescending(i => i.CreatedAt)
-            .FirstOrDefaultAsync(i => i.ItemCode == stockEntry.Item.Code);
+            .Where(t => t.ItemCode == stockEntry.Item.Code)
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstOrDefaultAsync();
 
-        var newTransaction = new ItemTransactionLog
+        var previousBalance = lastTransaction?.TotalBalance ?? 0;
+        var newBalance = previousBalance + stockEntry.Quantity;
+
+        var transaction = new ItemTransactionLog
         {
             Id = Guid.NewGuid(),
             ItemCode = stockEntry.Item.Code,
             Credit = stockEntry.Quantity,
-            TransactionType = "Stock Entry",
             Debit = 0,
-            TotalBalance = (lastTransaction?.TotalBalance ?? 0) + stockEntry.Quantity
+            TransactionType = "Stock Entry",
+            TotalBalance = newBalance,
+            CreatedAt = DateTime.UtcNow
         };
 
-        await context.ItemTransactionLogs.AddAsync(newTransaction);
+        stockEntry.Quantity = newBalance;
+        stockEntry.Status = ApprovalStatus.Approved;
+        stockEntry.Item.AvailableQuantity = (int) newBalance;
+
+        await context.ItemTransactionLogs.AddAsync(transaction);
         await context.SaveChangesAsync();
+
         return Result.Success();
     }
 
