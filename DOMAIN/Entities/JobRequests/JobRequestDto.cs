@@ -11,7 +11,7 @@ namespace DOMAIN.Entities.JobRequests;
 public class JobRequestDto : WithAttachment
 {
     public string Code { get; set; }
-    public DepartmentDto Department { get; set; }
+    public DepartmentListDto Department { get; set; }
     public SiteDto Site { get; set; }
     public EquipmentDto Equipment { get; set; }
     public string EquipmentInstrumentNumber { get; set; }
