@@ -115,4 +115,17 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
         await context.SaveChangesAsync();
         return Result.Success();
     }
+
+    public async Task<Result<List<VendorDto>>> GetVendorsByItem(Guid itemId)
+    {
+        var vendors = await context.VendorItems
+            .Where(vi => vi.ItemId == itemId)
+            .Select(vi => vi.Vendor)
+            .Distinct()
+            .ToListAsync();
+
+        var vendorDtos = mapper.Map<List<VendorDto>>(vendors);
+
+        return Result.Success(vendorDtos);
+    }
 }

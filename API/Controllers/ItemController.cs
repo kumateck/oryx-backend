@@ -46,7 +46,8 @@ public class ItemController(IItemRepository repository) : ControllerBase
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemDto>>))]
-    public async Task<IResult> GetItems([FromQuery] Store? store, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetItems([FromQuery] Store? store, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetItems(page, pageSize, searchQuery, store);
