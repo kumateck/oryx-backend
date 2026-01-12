@@ -54,4 +54,5 @@ public interface IInventoryProcurementRepository
 
     // Helper methods
     Task<string> GenerateMemoCode();
+    Task<Result<MarketRequisitionDto>> GetMarketRequisition(Guid id);
 }
