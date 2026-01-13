@@ -120,7 +120,6 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
             .AsSplitQuery()
             .Include(j => j.JobOrder)
             .Include(j => j.ServiceProvider)
-            .Where(j => j.ResponseReceived)
             .ToListAsync();
         
         return mapper.Map<List<JobOrderServiceProviderDto>>(jobOrderServiceProviders);
