@@ -169,6 +169,12 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
 
     public async Task<Result> IssueStockRequisition(Guid id, IssueStockAgainstRequisitionRequest request)
     {
+        if (request?.QuantitiesToIssue == null || request.QuantitiesToIssue.Count == 0)
+        {
+            return Error.Validation("Request.Quantities",
+                "You must specify at least one item to issue.");
+        }
+        
         var requisition = await context.ItemStockRequisitions
             .Include(r => r.RequisitionItems)
             .ThenInclude(i => i.Item)
