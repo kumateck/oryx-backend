@@ -58,12 +58,7 @@ public class StockItems
 
 public class ItemStockRequisitionItemDto : BaseDto
 {
-    public Guid ItemStockRequisitionId { get; set; }
-    public ItemStockRequisitionDto ItemStockRequisition { get; set; }
-
-    public Guid ItemId { get; set; }
     public ItemDto Item { get; set; }
-
     public int QuantityRequested { get; set; }
 }
 
