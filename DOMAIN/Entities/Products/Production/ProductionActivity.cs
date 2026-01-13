@@ -36,6 +36,7 @@ public class ProductionActivityStep : BaseEntity
     public ProductionStatus Status { get; set; }
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public bool IsCritical { get; set; }
 }
 
 public class ProductionActivityStepUser : BaseEntity
@@ -126,6 +127,7 @@ public class ProductionActivityStepDto : BaseDto
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public int Order { get; set; }
+    public bool IsCritical { get; set; }
 }
 
 public class ProductionActivityStepUserDto : BaseDto

@@ -264,14 +264,16 @@ public class ProductionScheduleRepository(
             var totalUsers = userActionsMap.Keys
                 .Select(k => k.userId)
                 .Distinct()
-                .Select(uId => users.FirstOrDefault(u => u.Id == uId) ?? usersInRole.FirstOrDefault(u => u.Id == uId))
+                .Select(uId => users.FirstOrDefault(u => u.Id == uId) 
+                               ?? usersInRole.FirstOrDefault(u => u.Id == uId))
                 .Where(u => u != null)
                 .Distinct()
                 .ToList();
 
             if (totalUsers.Count == 0)
                 return Error.Validation("Product.Validation",
-                    "This product has no users associated for procedures defined hence a production activity cannot commence.");
+                    "This product has no users associated for procedures defined" +
+                    " hence a production activity cannot commence.");
 
             var activity = new ProductionActivity
             {
@@ -299,6 +301,7 @@ public class ProductionScheduleRepository(
                             ProductAnalyticalRawDataId = kvp.Value.productArdId,
                             Action = kvp.Value.action
                         }).ToList(),
+                    IsCritical = r.IsCritical
                 }).ToList(),
                 ActivityLogs =
                 [
