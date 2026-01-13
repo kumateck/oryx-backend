@@ -34,4 +34,3 @@ public class JobOrderServiceProviderDto
     public bool ResponseReceived { get; set; }
     public DateTime? ResponseDate { get; set; }
 }
-
