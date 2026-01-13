@@ -88,6 +88,25 @@ public class JobRequestRepository(ApplicationDbContext context,
             mapper.Map<JobRequestDto>);
     }
 
+    public async Task<Result<IEnumerable<JobRequestDto>>> GetJobRequestsInJobOrders()
+    {
+        var jobRequests = await context.JobRequests
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .IgnoreAutoIncludes()
+            .Where(j => context.JobOrders.Any(jo => jo.JobRequestId == j.Id))
+            .Include(j => j.Department)
+            .Include(j => j.Equipment)
+            .Include(j => j.IssuedBy)
+            .Include(j => j.AssignedToEmployee)
+            .Include(j => j.AssignedBy)
+            .Include(j => j.Service)
+            .Include(j => j.Site)
+            .ToListAsync();
+        
+        return mapper.Map<List<JobRequestDto>>(jobRequests);
+    }
+
     public async Task<Result<JobRequestDto>> GetJobRequest(Guid id)
     {
         try

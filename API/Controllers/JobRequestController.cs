@@ -316,6 +316,19 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         var result = await repository.GetJobRequest(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves job requests that have been used in a job order.
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("orders")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(JobRequestDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetJobRequestInJobOrder()
+    {
+        var result = await repository.GetJobRequestsInJobOrders();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates an existing job request
