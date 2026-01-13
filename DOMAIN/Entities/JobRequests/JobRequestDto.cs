@@ -33,8 +33,8 @@ public class JobRequestDto : WithAttachment
     public ServiceDto Service { get; set; }
 
     // Related entities
-    public List<JobExecutionDto> Executions { get; set; } = [];
-    public List<JobOrderDto> JobOrders { get; set; } = [];
+    //public List<JobExecutionDto> Executions { get; set; } = [];
+    //public List<JobOrderDto> JobOrders { get; set; } = [];
     public bool Approved { get; set; }
 }
 
