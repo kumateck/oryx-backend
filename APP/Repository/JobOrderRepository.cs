@@ -86,8 +86,10 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
             .Include(j => j.JobRequest)
             .Include(j => j.Service)
             .Include(j => j.IssuedBy)
-            .Include(j => j.ServiceProviders).ThenInclude(sp => sp.ServiceProvider)
-            .Include(j => j.Quotations).ThenInclude(q => q.ServiceProvider)
+            .Include(j => j.ServiceProviders)
+                .ThenInclude(sp => sp.ServiceProvider)
+            .Include(j => j.Quotations)
+                .ThenInclude(q => q.ServiceProvider)
             .Include(j => j.SelectedQuotation)
             .Include(j => j.ServiceMemo)
             .AsQueryable();
@@ -109,6 +111,19 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
             mapper.Map<JobOrderDto>);
+    }
+    
+
+    public async Task<Result<IEnumerable<JobOrderServiceProviderDto>>> GetJobOrderResponseServiceProviders()
+    {
+        var jobOrderServiceProviders = await context.JobOrderServiceProviders
+            .AsSplitQuery()
+            .Include(j => j.JobOrder)
+            .Include(j => j.ServiceProvider)
+            .Where(j => j.ResponseReceived)
+            .ToListAsync();
+        
+        return mapper.Map<List<JobOrderServiceProviderDto>>(jobOrderServiceProviders);
     }
 
     public async Task<Result<JobOrderDto>> GetJobOrder(Guid id)
@@ -147,7 +162,8 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         foreach (var providerId in request.ServiceProviderIds)
         {
             var exists = await context.ServiceProviders.AnyAsync(sp => sp.Id == providerId);
-            if (!exists) return Error.Validation("ServiceProvider.Invalid", $"Invalid service provider: {providerId}");
+            if (!exists) return Error.Validation("ServiceProvider.Invalid",
+                $"Invalid service provider: {providerId}");
 
             // Check if already sent to this provider
             if (jobOrder.ServiceProviders.All(sp => sp.ServiceProviderId != providerId))
@@ -179,7 +195,8 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
             return Error.NotFound("JobOrder.NotFound", "Job order not found");
 
         var quotation = await context.ServiceQuotations
-            .FirstOrDefaultAsync(q => q.Id == request.QuotationId && q.JobOrderId == request.JobOrderId);
+            .FirstOrDefaultAsync(q => q.Id == request.QuotationId &&
+                                      q.JobOrderId == request.JobOrderId);
 
         if (quotation is null)
             return Error.NotFound("Quotation.NotFound", "Quotation not found");

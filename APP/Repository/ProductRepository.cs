@@ -1163,7 +1163,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // Lookups for Foreign Keys
         var uoms = await context.UnitOfMeasures
             .AsNoTracking()
-            .ToDictionaryAsync(u => u.Symbol.ToLower(), u => u.Id);
+            .ToDictionaryAsync(
+                u => u.Symbol, 
+                u => u.Id
+            );
 
         var departments = await context.Departments
             .AsNoTracking()
@@ -1180,9 +1183,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 ? worksheet.Cells[row, header1].Text.Trim() : string.Empty;
 
             var equipmentNo = GetCell("EQUIPMENT NO");
-            if (string.IsNullOrWhiteSpace(equipmentNo) || existingNumbers.Contains(equipmentNo))
+            if (equipmentNo != "-"  && existingNumbers.Contains(equipmentNo) && !string.IsNullOrWhiteSpace(equipmentNo))
                 return Error.Validation("EquipmentNo",
-                    $"Equipment number not found for row {row}");
+                    $"Equipment number {equipmentNo} already exists. See row {row}");
 
             var uomSymbol = GetCell("UOM").ToLower();
             var deptName = GetCell("DEPARTMENT CODE").ToLower();
@@ -1205,16 +1208,18 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 IsStorage = isStorage,
                 RelevanceCheck = relevanceCheck,
                 CapacityQuantity = decimal.TryParse(GetCell("CAPACITY QUANTITY"), out var cq) ? cq : 0,
-                UoMId = uoms.TryGetValue(uomSymbol, out var uomId) ? uomId : Guid.Empty,
+                UoMId = uoms.TryGetValue(uomSymbol, out var uomId) ? uomId : null,
                 DepartmentId = departments.TryGetValue(deptName, out var deptId) ? deptId : Guid.Empty
             };
 
             // Basic Validation: Ensure Guid IDs are found before adding
-            if (equipment.UoMId != Guid.Empty && equipment.DepartmentId != Guid.Empty)
+            if (equipment.DepartmentId == Guid.Empty)
             {
-                equipmentsToInsert.Add(equipment);
-                existingNumbers.Add(equipmentNo);
+                return Error.Validation("MissingValue", 
+                    $"Missing value for department at row {row}");
             }
+            equipmentsToInsert.Add(equipment);
+            existingNumbers.Add(equipmentNo);
         }
 
         if (equipmentsToInsert.Count != 0)
