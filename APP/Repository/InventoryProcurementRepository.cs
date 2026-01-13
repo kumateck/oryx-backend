@@ -329,9 +329,9 @@ public class InventoryProcurementRepository(
                     return Error.Validation("MarketRequisitionVendor", $"marketRequisitionVendor with ID {itemRequest.MarketRequisitionVendorId} not found.");
 
 
-                if (itemRequest.ItemId == marketRequisitionVendor.MarketRequisition.ItemId ||
-                    itemRequest.UoMId == marketRequisitionVendor.MarketRequisition.UoMId ||
-                    itemRequest.Quantity == marketRequisitionVendor.MarketRequisition.Quantity)
+                if (itemRequest.ItemId != marketRequisitionVendor.MarketRequisition.ItemId ||
+                    itemRequest.UoMId != marketRequisitionVendor.MarketRequisition.UoMId ||
+                    itemRequest.Quantity != marketRequisitionVendor.MarketRequisition.Quantity)
                 {
                     return Error.Validation("ItemRequest", "Item request not matching open market requisitions.");
                 }
