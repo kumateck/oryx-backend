@@ -1,8 +1,10 @@
+using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.BillOfMaterials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
@@ -1024,13 +1026,15 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         var defaultStep = await context.ProductionActivitySteps.FirstOrDefaultAsync();
 
         if (defaultScheduleProduct == null || defaultStep == null)
-            return Error.Validation("Production.Config", "Missing default Production Schedule or Step in the system.");
+            return Error.Validation("Production.Config",
+                "Missing default Production Schedule or Step in the system.");
 
         // Fetch Product Packing with Product Hierarchy
         var packingData = await context.ProductPackings
-            .Include(pp => pp.Product)
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(p => p.Product)
             .Where(pp => excelPackingStyles.Contains(pp.Name) && excelProductCodes.Contains(pp.Product.Code))
-            .AsNoTracking()
             .ToListAsync();
 
         // Create a composite lookup: "ProductCode|PackingName"
@@ -1041,11 +1045,13 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var manufacturingRecords = new List<BatchManufacturingRecord>();
         var packagingRecords = new List<BatchPackagingRecord>();
+        var finishedGoodsTransferNotes = new List<FinishedGoodsTransferNote>();
 
         // 3. PROCESS ROWS
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetCell(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+            string GetCell(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() 
+                : null;
 
             var productCode = GetCell("Product Code");
             var packingStyle = GetCell("Packing Style");
@@ -1057,13 +1063,14 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var packingKey = $"{productCode}|{packingStyle}";
             if (!packingLookup.TryGetValue(packingKey, out var packing))
             {
-                return Error.NotFound("ProductPacking", $"Row {row}: Packing style '{packingStyle}' for Product '{productCode}' not found.");
+                return Error.NotFound("ProductPacking",
+                    $"Row {row}: Packing style '{packingStyle}' for Product '{productCode}' not found.");
             }
 
             // Parse shared data
             decimal.TryParse(GetCell("Total Quantity"), out var quantity);
-            DateTime.TryParse(GetCell("Manufacturing Date"), out var mfgDate);
-            DateTime.TryParse(GetCell("Expiry Date"), out var expDate);
+            var mfgDate = GetCell("Manufacturing Date");
+            var expiryDate = GetCell("Expiry Date");
 
             // 4. Create Manufacturing Record
             manufacturingRecords.Add(new BatchManufacturingRecord
@@ -1072,8 +1079,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 ProductionScheduleProductId = defaultScheduleProduct.Id,
                 ProductionActivityStepId = defaultStep.Id,
                 BatchNumber = batchNo,
-                ManufacturingDate = mfgDate,
-                ExpiryDate = expDate,
+                ManufacturingDate = ParseDate(mfgDate),
+                ExpiryDate = ParseDate(expiryDate),
                 BatchQuantity = quantity,
                 Status = BatchManufacturingStatus.Approved, // Set appropriate default status
                 IssuedDate = DateTime.UtcNow
@@ -1087,18 +1094,146 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 ProductionActivityStepId = defaultStep.Id,
                 ProductPackingId = packing.Id,
                 BatchNumber = batchNo,
-                ManufacturingDate = mfgDate,
-                ExpiryDate = expDate,
+                ManufacturingDate = ParseDate(mfgDate),
+                ExpiryDate = ParseDate(expiryDate),
                 BatchQuantity = quantity,
                 IssuedDate = DateTime.UtcNow
+            });
+            
+            // 6. Create Finished Goods Transfer Note
+            finishedGoodsTransferNotes.Add(new FinishedGoodsTransferNote
+            {
+                Id = Guid.NewGuid(),
+                TransferNoteNumber = "",
+                TotalQuantity = quantity,
+                ProductPackingId = packing.Id,
+                BatchManufacturingRecordId = (await context.BatchManufacturingRecords
+                    .FirstAsync(b => 
+                        b.ProductionScheduleProductId == defaultScheduleProduct.Id)).Id,
+                Approved = true
             });
         }
 
         // 6. SAVE EVERYTHING
         await context.BatchManufacturingRecords.AddRangeAsync(manufacturingRecords);
         await context.BatchPackagingRecords.AddRangeAsync(packagingRecords);
+        await context.FinishedGoodsTransferNotes.AddRangeAsync(finishedGoodsTransferNotes);
         await context.SaveChangesAsync();
 
         return Result.Success();
+    }
+    
+    public async Task<Result> ImportEquipmentFromExcel(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return UploadErrors.EmptyFile;
+
+        var equipmentsToInsert = new List<Equipment>();
+
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
+
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
+        {
+            var header = worksheet.Cells[1, col].Text.Trim();
+            if (!string.IsNullOrEmpty(header))
+                headers[header] = col;
+        }
+
+        // Mapping headers based on your requirements
+        var requiredHeaders = new[]
+        {
+            "EQUIPMENT NO", "EQUIPMENT NAME", "UOM", "DEPARTMENT CODE"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
+
+        // Lookups for Foreign Keys
+        var uoms = await context.UnitOfMeasures
+            .AsNoTracking()
+            .ToDictionaryAsync(u => u.Symbol.ToLower(), u => u.Id);
+
+        var departments = await context.Departments
+            .AsNoTracking()
+            .ToDictionaryAsync(d => d.Code.ToLower(), d => d.Id);
+
+        var existingNumbers = await context.Equipments
+            .IgnoreQueryFilters()
+            .Select(e => e.EquipmentNumber)
+            .ToHashSetAsync();
+
+        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        {
+            string GetCell(string header) => headers.TryGetValue(header, out var header1) 
+                ? worksheet.Cells[row, header1].Text.Trim() : string.Empty;
+
+            var equipmentNo = GetCell("EQUIPMENT NO");
+            if (string.IsNullOrWhiteSpace(equipmentNo) || existingNumbers.Contains(equipmentNo))
+                return Error.Validation("EquipmentNo",
+                    $"Equipment number not found for row {row}");
+
+            var uomSymbol = GetCell("UOM").ToLower();
+            var deptName = GetCell("DEPARTMENT CODE").ToLower();
+
+            // Business logic for boolean "Storage" check
+            var isStorageStr = GetCell("STORAGE").ToLower();
+            bool isStorage = isStorageStr is "yes" or "true" or "1";
+
+            // Business logic for Relevance Check
+            var relCheckStr = GetCell("RELEVANT FOR CAPACITY PLANNING").ToLower();
+            bool relevanceCheck = relCheckStr is "yes" or "true" or "1";
+
+            var equipment = new Equipment
+            {
+                EquipmentNumber = equipmentNo,
+                Name = GetCell("EQUIPMENT NAME"),
+                Model = GetCell("MODEL"),
+                SerialNumber = GetCell("SERIAL NO"),
+                Location = GetCell("LOCATION"),
+                IsStorage = isStorage,
+                RelevanceCheck = relevanceCheck,
+                CapacityQuantity = decimal.TryParse(GetCell("CAPACITY QUANTITY"), out var cq) ? cq : 0,
+                UoMId = uoms.TryGetValue(uomSymbol, out var uomId) ? uomId : Guid.Empty,
+                DepartmentId = departments.TryGetValue(deptName, out var deptId) ? deptId : Guid.Empty
+            };
+
+            // Basic Validation: Ensure Guid IDs are found before adding
+            if (equipment.UoMId != Guid.Empty && equipment.DepartmentId != Guid.Empty)
+            {
+                equipmentsToInsert.Add(equipment);
+                existingNumbers.Add(equipmentNo);
+            }
+        }
+
+        if (equipmentsToInsert.Count != 0)
+        {
+            await context.Equipments.AddRangeAsync(equipmentsToInsert);
+            await context.SaveChangesAsync();
+        }
+
+        return Result.Success();
+    }
+    
+    DateTime? ParseDate(string input)
+    {
+        if (DateTime.TryParseExact(input, "dd/MM/yyyy",
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+        {
+            // Specify that this date is UTC to prevent local time offsets
+            return DateTime.SpecifyKind(d, DateTimeKind.Utc);
+        }
+        return null;
     }
 }

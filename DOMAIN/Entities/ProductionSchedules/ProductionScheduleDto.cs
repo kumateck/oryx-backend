@@ -36,6 +36,9 @@ public class ProductionScheduleProcurementDto
     public Guid ProductionWarehouseId { get; set; }
     public MaterialDepartmentDetails MaterialDepartment { get; set; }
     public decimal FrozenQuantity { get; set; }
+    public decimal TotalFrozenQuantity { get; set; }
+    public decimal ConsumedQuantity { get; set; }
+    public decimal ExtraQuantity { get; set; }
 }
 
 public class ProductionScheduleProcurementPackageDto
@@ -53,6 +56,9 @@ public class ProductionScheduleProcurementPackageDto
     public Guid ProductionWarehouseId { get; set; }
     public MaterialDepartmentDetails MaterialDepartment { get; set; }
     public decimal FrozenQuantity { get; set; }
+    public decimal TotalFrozenQuantity { get; set; }
+    public decimal ConsumedQuantity { get; set; }
+    public decimal ExtraQuantity { get; set; }
 }
 
 public class MaterialDepartmentDetails
@@ -87,5 +93,6 @@ public enum MaterialRequisitionStatus
     Foreign = 4,
     StockRequisition = 5,
     Issued = 6,
-    InHouse = 7
+    InHouse = 7,
+    Supplied = 8,
 }

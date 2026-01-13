@@ -88,13 +88,15 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering requisitions by code.</param>
+    /// <param name="status"></param>
     /// <returns>Returns a paginated list of Inventory Purchase Requisitions.</returns>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>))]
-    public async Task<IResult> GetInventoryPurchaseRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetInventoryPurchaseRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
+        [FromQuery] InventoryPurchaseRequisitionStatus status = InventoryPurchaseRequisitionStatus.Pending)
     {
-        var result = await repository.GetInventoryPurchaseRequisitions(page, pageSize, searchQuery);
+        var result = await repository.GetInventoryPurchaseRequisitions(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -124,18 +126,18 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     /// <summary>
     /// Creates a new Market Requisition for a specific item that needs to be sourced from the open market.
     /// </summary>
-    /// <param name="request">The CreateMarketRequisition object containing item and requisition details.</param>
+    /// <param name="requests">A list of CreateMarketRequisition object containing item and requisition details.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("market")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateMarketRequisition([FromBody] CreateMarketRequisition request)
+    public async Task<IResult> CreateMarketRequisition([FromBody] List<CreateMarketRequisition> requests)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateMarketRequisition(request, Guid.Parse(userId));
+        var result = await repository.CreateMarketRequisition(requests);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -151,6 +153,19 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     public async Task<IResult> GetMarketRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         var result = await repository.GetMarketRequisitions(page, pageSize);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    /// <summary>
+    /// Retrieves a market requisition by its ID.
+    /// </summary>
+
+    /// <returns>Returns a paginated list of market requisitions.</returns>
+    [HttpGet("market/{id:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MarketRequisitionDto))]
+    public async Task<IResult> GetMarketRequisitions([FromRoute] Guid id)
+    {
+        var result = await repository.GetMarketRequisition(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -215,7 +230,7 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
 
     #region Trusted Vendor Specific
 
-     /// <summary>
+    /// <summary>
     /// Sends a quotation request to a specified trusted vendor.
     /// </summary>
     /// <param name="vendorId">The ID of the vendor to send the quotation request to.</param>
@@ -338,13 +353,17 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Optional search query to filter by memo code.</param>
+    /// <param name="status">The status of the memo. (0 = Memo, 1 = PurchaseOrder)</param>
     /// <returns>Returns a paginated list of memos.</returns>
     [HttpGet("memo")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MemoDto>>))]
-    public async Task<IResult> GetMemos([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetMemos([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MemoStatus? status = null)
     {
-        var result = await repository.GetMemos(page, pageSize, searchQuery);
+        var result = await repository.GetMemos(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -384,9 +403,10 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     [HttpGet("purchased-items")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockEntryDto>))]
-    public async Task<IResult> GetStockEntries([FromQuery] ApprovalStatus status)
+    public async Task<IResult> GetStockEntries([FromQuery] ApprovalStatus status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] Store store = Store.EquipmentStore)
     {
-        var result = await repository.GetStockEntries(status);
+        var result = await repository.GetStockEntries(status, page, pageSize, store);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

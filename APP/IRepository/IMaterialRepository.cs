@@ -14,6 +14,7 @@ public interface IMaterialRepository
     Task<Result<Guid>> CreateMaterial(CreateMaterialRequest request, Guid userId);
     Task<Result<MaterialDto>> GetMaterial(Guid materialId);
     Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page, int pageSize, string searchQuery, MaterialKind kind);
+    Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotLinkedToArd(int page, int pageSize, string searchQuery, MaterialKind kind);
     Task<Result<List<MaterialCategoryDto>>> GetMaterialCategories(MaterialKind? materialKind);
     Task<Result<List<MaterialDto>>> GetMaterials();
     Task<Result> UpdateMaterial(CreateMaterialRequest request, Guid materialId, Guid userId);
@@ -72,18 +73,23 @@ public interface IMaterialRepository
         decimal requestedQuantity);
     Task<Result> ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleProductId, decimal quantity, Guid? uomId, Guid? warehouseLocationShelfId);
     Task<List<MaterialBatchReservedQuantityDto>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId,
-        Guid warehouseId, Guid productionScheduleProductId);
-
+        Guid warehouseId, Guid productionScheduleProductId); 
+    Task<List<MaterialBatchReservedQuantityDto>>
+        GetConsumedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, 
+            Guid productionScheduleProductId);
+    
     Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
     Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments,
         Guid userId);
     Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId);
     Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery, MaterialKind? kind, Guid userId);
-    Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page,
-        int pageSize,
-        string searchQuery,
+    Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page, 
+        int pageSize, 
+        string searchQuery, 
         MaterialKind? kind,
         Guid? materialCategoryId,
+        string sortLabel,
+        SortDirection? sortDirection,
         Guid userId);
     Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId);
     Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
@@ -96,5 +102,7 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(int page, int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result> MoveMaterialBatchToWarehouseFromDistribute(
         SupplyMaterialBatchFromHMaterialDistribute request, Guid userId);
+   Task<Result<IEnumerable<MaterialReservedQuantity>>> GetReservedQuantitiesForMaterial(Guid materialId,
+        Guid? departmentId);
     Task<Result> ImportMaterialStockFromExcel(IFormFile file);
 }

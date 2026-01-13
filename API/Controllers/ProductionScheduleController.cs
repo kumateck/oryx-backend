@@ -174,7 +174,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetRequiredMaterialStock([FromRoute] Guid productionScheduleProductId, [FromQuery] MaterialRequisitionStatus? status = null)
+    public async Task<IResult> GetRequiredMaterialStock([FromRoute] Guid productionScheduleProductId, 
+        [FromQuery] MaterialRequisitionStatus? status = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -192,7 +193,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleProductId, status);
+        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleProductId, 
+            status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -527,7 +529,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateFinishedGoodsTransferNote([FromRoute] Guid id, [FromBody] CreateFinishedGoodsTransferNoteRequest request)
+    public async Task<IResult> UpdateFinishedGoodsTransferNote([FromRoute] Guid id, 
+        [FromBody] CreateFinishedGoodsTransferNoteRequest request)
     {
         var result = await repository.UpdateTransferNote(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -538,8 +541,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("manufacturing")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BatchManufacturingRecordDto>>))]
-    public async Task<IResult> GetBatchManufacturingRecords([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<BatchManufacturingRecordDto>>))]
+    public async Task<IResult> GetBatchManufacturingRecords([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetBatchManufacturingRecords(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

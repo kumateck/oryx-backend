@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Forms;
@@ -152,7 +153,7 @@ public class FinishedProductBatchMovement : BaseEntity
     public MovementType MovementType { get; set; }
 }
 
-public class FinishedGoodsTransferNote : BaseEntity
+public class FinishedGoodsTransferNote : BaseEntity, IRequireApproval
 {
     public string TransferNoteNumber { get; set; }
     public Guid? FromWarehouseId { get; set; }
@@ -177,6 +178,17 @@ public class FinishedGoodsTransferNote : BaseEntity
     public decimal AllocatedQuantity { get; set; }
     public decimal RemainingQuantity => TotalQuantity - AllocatedQuantity;
     public List<FinishedGoodsTransferNoteQuantity> Quantities { get; set; } = [];
+    public bool Approved { get; set; }
+    public List<FinishedGoodsTransferNoteApproval>  Approvals { get; set; } = [];
+}
+
+public class FinishedGoodsTransferNoteApproval: ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid FinishedGoodsTransferNoteId { get; set; }
+    public FinishedGoodsTransferNote FinishedGoodsTransferNote { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 [Owned]
@@ -206,6 +218,7 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public decimal AllocatedQuantity { get; set; }
     public decimal RemainingQuantity { get; set; }
     public decimal PendingAllocatedQuantity { get; set; }
+    public bool Approved { get; set; }
 }
 
 public class FinishedGoodsListTransferNoteDto
@@ -241,6 +254,13 @@ public class MaterialBatchReservedQuantity : BaseEntity
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
+}
+
+public class MaterialReservedQuantity
+{
+    public WarehouseWithoutLocationDto Warehouse { get; set; }
+    public decimal Quantity { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
 }
 
 public class ApprovedProductDto

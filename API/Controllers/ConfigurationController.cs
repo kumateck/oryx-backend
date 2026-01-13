@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Configurations;
+using DOMAIN.Entities.Thresholds;
 using SHARED.Requests;
 
 namespace API.Controllers;
@@ -153,6 +154,35 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     public async Task<IResult> GetConfiguration([FromRoute] string modelType, [FromQuery] string prefix)
     {
         var result = await repository.GetCountForCodeConfiguration(modelType, prefix);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Creates the threshold configuration
+    /// </summary>
+    [HttpPost("threshold")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CreateThreshold(CreateThreshold request)
+    {
+        var result = await repository.CreateThreshold(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Retrieves the threshold configuration
+    /// </summary>
+    /// <returns>Returns the threshold dto.</returns>
+    [HttpGet("threshold")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ThresholdDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetThreshold()
+    {
+        var result = await repository.GetThreshold();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

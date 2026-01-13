@@ -11,7 +11,11 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager) : IJobRequestRepository
+public class JobRequestRepository(ApplicationDbContext context,
+    IMapper mapper, 
+    UserManager<User> userManager,
+    IApprovalRepository approvalRepository)
+    : IJobRequestRepository
 {
     public async Task<Result<Guid>> CreateJobRequest(CreateJobRequest request, Guid departmentId, Guid issuedById)
     {
@@ -30,32 +34,39 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         var jobRequest = mapper.Map<JobRequest>(request);
         jobRequest.DepartmentId = departmentId;
         jobRequest.IssuedById = issuedById;
+        
         await context.JobRequests.AddAsync(jobRequest);
         await context.SaveChangesAsync();
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(JobRequest), jobRequest.Id);
+
         return jobRequest.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetJobRequests(int page,
-        int pageSize,
-        string searchQuery = null,
-        JobRequestStatus? status = null,
-        JobHandlingType? handlingType = null,
+    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetJobRequests(int page, 
+        int pageSize, 
+        string searchQuery = null, 
+        JobRequestStatus? status = null, 
+        JobHandlingType? handlingType = null, 
         Guid? departmentId = null)
     {
         var query = context.JobRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(j => j.Department)
             .Include(j => j.Equipment)
             .Include(j => j.IssuedBy)
             .Include(j => j.AssignedToEmployee)
             .Include(j => j.AssignedBy)
             .Include(j => j.Service)
+            .Include(j => j.Site)
+            .Where(j => !j.DeletedAt.HasValue)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.DescriptionOfWork,
-                q => q.Location);
+                q => q.Site.Name);
         }
 
         if (status.HasValue)
@@ -77,24 +88,114 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
             mapper.Map<JobRequestDto>);
     }
 
-    public async Task<Result<JobRequestDto>> GetJobRequest(Guid id)
+    public async Task<Result<IEnumerable<JobRequestDto>>> GetJobRequestsInJobOrders()
     {
-        var jobRequest = await context.JobRequests
+        var jobRequests = await context.JobRequests
             .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .IgnoreAutoIncludes()
+            .Where(j => context.JobOrders.Any(jo => jo.JobRequestId == j.Id))
             .Include(j => j.Department)
             .Include(j => j.Equipment)
             .Include(j => j.IssuedBy)
             .Include(j => j.AssignedToEmployee)
             .Include(j => j.AssignedBy)
             .Include(j => j.Service)
-            .Include(j => j.Executions)
-            .Include(j => j.JobOrders)
-            .FirstOrDefaultAsync(j => j.Id == id);
+            .Include(j => j.Site)
+            .ToListAsync();
+        
+        return mapper.Map<List<JobRequestDto>>(jobRequests);
+    }
 
-        if (jobRequest is null)
-            return Error.NotFound("JobRequest.NotFound", "Job request not found");
+    public async Task<Result<JobRequestDto>> GetJobRequest(Guid id)
+    {
+        try
+        {
+            var jobRequest = await context.JobRequests
+                .AsSplitQuery()
+                .Include(j => j.Site)
+                .Include(j => j.Department)
+                .Include(j => j.Equipment)
+                .Include(j => j.IssuedBy)
+                .Include(j => j.AssignedToEmployee)
+                .Include(j => j.AssignedBy)
+                .Include(j => j.Service)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.AssignedToEmployee)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.AssignedBy)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.VerifiedBy)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.ApprovedBy)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.Activities)
+                        .ThenInclude(a => a.PerformedBy)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.ConsumedItems)
+                        .ThenInclude(c => c.Item)
+                .Include(j => j.Executions)
+                    .ThenInclude(e => e.ConsumedItems)
+                        .ThenInclude(c => c.UnitOfMeasure)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Service)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.IssuedBy)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.ServiceProviders)
+                        .ThenInclude(sp => sp.ServiceProvider)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Quotations)
+                        .ThenInclude(q => q.ServiceProvider)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Quotations)
+                        .ThenInclude(q => q.Items)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.SelectedQuotation)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.ServiceProformaInvoice)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.ServiceMemo)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.ServiceProvider)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.VerifiedBy)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.ApprovedBy)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.Activities)
+                            .ThenInclude(a => a.PerformedBy)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.ConsumedItems)
+                            .ThenInclude(c => c.Item)
+                .Include(j => j.JobOrders)
+                    .ThenInclude(jo => jo.Execution)
+                        .ThenInclude(e => e.ConsumedItems)
+                        .ThenInclude(c => c.UnitOfMeasure)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(j => j.Id == id);
 
-        return mapper.Map<JobRequestDto>(jobRequest);
+            if (jobRequest is null)
+                return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{id}' not found");
+
+            var dto = mapper.Map<JobRequestDto>(jobRequest);
+            return dto;
+        }
+        catch (DbUpdateException dbEx)
+        {
+            return Error.Failure("JobRequest.DatabaseError", 
+                $"Database error while retrieving job request: {dbEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            return Error.Failure("JobRequest.RetrievalError", 
+                $"An error occurred while retrieving job request: {ex.Message}. Stack trace: {ex.StackTrace}");
+        }
     }
 
     public async Task<Result> UpdateJobRequest(Guid id, UpdateJobRequestRequest request)
@@ -109,7 +210,15 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
             if (!equipment) return Error.Validation("Equipment.Invalid", "Invalid equipment");
         }
 
+        // Validate ServiceId if provided (takes precedence over ServiceIds)
+        if (request.ServiceId.HasValue)
+        {
+            var serviceExists = await context.Services.AnyAsync(s => s.Id == request.ServiceId.Value);
+            if (!serviceExists) return Error.Validation("Service.Invalid", $"Invalid service: {request.ServiceId.Value}");
+        }
+        
         mapper.Map(request, jobRequest);
+        
         context.JobRequests.Update(jobRequest);
         await context.SaveChangesAsync();
 
@@ -168,14 +277,116 @@ public class JobRequestRepository(ApplicationDbContext context, IMapper mapper, 
         return jobExecution.Id;
     }
 
+
     public async Task<Result> UpdateJobRequestStatus(Guid id, JobRequestStatus status)
     {
         var jobRequest = await context.JobRequests.FirstOrDefaultAsync(j => j.Id == id);
         if (jobRequest is null)
-            return Error.NotFound("JobRequest.NotFound", "Job request not found");
+            return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{id}' not found");
+
+        // Validate status value is within enum range
+        if (!Enum.IsDefined(typeof(JobRequestStatus), status))
+        {
+            return Error.Validation("JobRequest.InvalidStatus", 
+                $"Invalid status value '{status}'. Valid values are: 0 (Pending), 1 (Acknowledged), 2 (Assigned), 3 (JobStarted), 4 (Completed), 5 (SentToExternal), 6 (QuotationReceived), 7 (ContractorSelected), 8 (Approved), 9 (Cancelled)");
+        }
 
         jobRequest.Status = status;
         context.JobRequests.Update(jobRequest);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetCompletedJobRequestsForInternalEmployees(int page, int pageSize,
+        string searchQuery = null, Guid? employeeId = null)
+    {
+        var query = context.JobRequests
+            .AsSplitQuery()
+            .Include(j => j.Department)
+            .Include(j => j.Equipment)
+            .Include(j => j.IssuedBy)
+            .Include(j => j.AssignedToEmployee)
+            .Include(j => j.AssignedBy)
+            .Include(j => j.Service)
+            .Include(j => j.Site)
+            .Where(j => j.HandlingType == JobHandlingType.Internal && 
+                        j.Status == JobRequestStatus.Completed)
+            .AsQueryable();
+
+        // Filter by employee if provided
+        if (employeeId.HasValue)
+        {
+            query = query.Where(j => j.AssignedToEmployeeId == employeeId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.DescriptionOfWork,
+                q => q.Site.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
+            mapper.Map<JobRequestDto>);
+    }
+
+    public async Task<Result> CompleteJobRequest(CompleteJobRequestRequest request, Guid userId)
+    {
+        var jobRequest = await context.JobRequests
+            .Include(j => j.AssignedToEmployee)
+            .Include(j => j.Executions)
+            .FirstOrDefaultAsync(j => j.Id == request.JobRequestId);
+
+        if (jobRequest is null)
+            return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{request.JobRequestId}' not found");
+
+        // Verify job request is assigned internally
+        if (jobRequest.HandlingType != JobHandlingType.Internal)
+            return Error.Validation("JobRequest.InvalidHandlingType", "Job request must be assigned internally to be completed");
+
+        if (!jobRequest.AssignedToEmployeeId.HasValue)
+            return Error.Validation("JobRequest.NotAssigned", "Job request must be assigned to an employee");
+
+        // Get the user to verify they match the assigned employee
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return Error.Validation("User.Invalid", "Invalid user");
+
+        // Verify the user's email matches the assigned employee's email
+        if (jobRequest.AssignedToEmployee?.Email != user.Email)
+            return Error.Validation("JobRequest.Unauthorized", "You are not authorized to complete this job request. Only the assigned employee can complete it.");
+
+        // Get the job execution if it exists
+        var jobExecution = jobRequest.Executions.FirstOrDefault();
+
+        // Create activity record
+        var activity = new JobActivity
+        {
+            JobExecutionId = jobExecution?.Id,
+            ActivityDescription = request.ActivityPerformedNote,
+            PerformedAt = DateTime.UtcNow,
+            PerformedById = userId,
+            Notes = request.Notes
+        };
+
+        await context.JobActivities.AddAsync(activity);
+
+        // Update job execution status if it exists
+        if (jobExecution != null)
+        {
+            jobExecution.Status = JobExecutionStatus.Completed;
+            jobExecution.CompletedAt = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(request.Notes))
+            {
+                jobExecution.Notes = request.Notes;
+            }
+            context.JobExecutions.Update(jobExecution);
+        }
+
+        // Update job request status to Completed
+        jobRequest.Status = JobRequestStatus.Completed;
+        context.JobRequests.Update(jobRequest);
+
         await context.SaveChangesAsync();
 
         return Result.Success();

@@ -101,7 +101,8 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             : mapper.Map<DepartmentDto>(department);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> GetDepartments(int page, int pageSize, string searchQuery, DepartmentType? type)
+    public async Task<Result<Paginateable<IEnumerable<DepartmentDto>>>> 
+        GetDepartments(int page, int pageSize, string searchQuery, DepartmentType? type)
     {
         var query = context.Departments
             .AsSplitQuery()
@@ -133,6 +134,7 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             .AsSplitQuery()
             .Include(d => d.Warehouses)
             .FirstOrDefaultAsync(d => d.Id == departmentId);
+        
         if (existingDepartment is null)
         {
             return Error.NotFound("Department.NotFound", "Department not found");
@@ -154,7 +156,11 @@ public class DepartmentRepository(ApplicationDbContext context, IMapper mapper) 
             }
         }
 
-        context.Warehouses.RemoveRange(existingDepartment.Warehouses);
+        if (!existingDepartment.IsSeeded)
+        {
+            context.Warehouses.RemoveRange(existingDepartment.Warehouses);
+        }
+
         mapper.Map(request, existingDepartment);
         context.Departments.Update(existingDepartment);
 

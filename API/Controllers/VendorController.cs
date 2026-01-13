@@ -73,4 +73,16 @@ public class VendorController(IVendorRepository repository) : ControllerBase
         var result = await repository.DeleteVendor(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of vendors based on an item
+    /// </summary>
+    [HttpGet("item/{id:guid}")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<VendorDto>))]
+    public async Task<IResult> GetItems([FromRoute] Guid id)
+    {
+        var result = await repository.GetVendorsByItem(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

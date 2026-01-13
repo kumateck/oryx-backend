@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -20,11 +19,21 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         if (jobRequest is null)
             return Error.NotFound("JobRequest.NotFound", "Job request not found");
 
-        var service = await context.Services.AnyAsync(s => s.Id == request.ServiceId);
-        if (!service) return Error.Validation("Service.Invalid", "Invalid service");
+        if (request.ServiceId.HasValue)
+        {
+            var service = await context.Services.AnyAsync(s => s.Id == request.ServiceId.Value);
+            if (!service) return Error.Validation("Service.Invalid", "Invalid service");
+        }
 
         var issuer = await userManager.FindByIdAsync(request.IssuedById.ToString());
         if (issuer is null) return Error.Validation("User.Invalid", "User Invalid");
+
+        // Get user signature if not provided
+        var signature = request.IssuedBySignature;
+        if (string.IsNullOrEmpty(signature) && !string.IsNullOrEmpty(issuer.Signature))
+        {
+            signature = issuer.Signature;
+        }
 
         // Validate service providers
         foreach (var providerId in request.ServiceProviderIds)
@@ -38,6 +47,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
 
         var jobOrder = mapper.Map<JobOrder>(request);
         jobOrder.Code = code;
+        jobOrder.IssuedBySignature = signature;
 
         // Add service providers
         jobOrder.ServiceProviders = request.ServiceProviderIds.Select(id => new JobOrderServiceProvider
@@ -50,11 +60,20 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         // Update job request
         jobRequest.HandlingType = JobHandlingType.External;
         jobRequest.Status = JobRequestStatus.SentToExternal;
-        jobRequest.ServiceId = request.ServiceId;
+        if (request.ServiceId.HasValue)
+        {
+            jobRequest.ServiceId = request.ServiceId.Value;
+        }
 
         await context.JobOrders.AddAsync(jobOrder);
         context.JobRequests.Update(jobRequest);
         await context.SaveChangesAsync();
+        
+        await SendJobOrderToProviders(new SendJobOrderToProvidersRequest
+        {
+            JobOrderId = jobOrder.Id,
+            ServiceProviderIds = request.ServiceProviderIds
+        });
 
         return jobOrder.Id;
     }
@@ -63,6 +82,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         JobOrderStatus? status = null, Guid? jobRequestId = null, Guid? serviceId = null)
     {
         var query = context.JobOrders
+            .AsSplitQuery()
             .Include(j => j.JobRequest)
             .Include(j => j.Service)
             .Include(j => j.IssuedBy)
@@ -88,12 +108,13 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
-            entity => mapper.Map<JobOrderDto>(entity));
+            mapper.Map<JobOrderDto>);
     }
 
     public async Task<Result<JobOrderDto>> GetJobOrder(Guid id)
     {
         var jobOrder = await context.JobOrders
+            .AsSplitQuery()
             .Include(j => j.JobRequest).ThenInclude(jr => jr.Department)
             .Include(j => j.Service)
             .Include(j => j.IssuedBy)
@@ -115,6 +136,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task<Result> SendJobOrderToProviders(SendJobOrderToProvidersRequest request)
     {
         var jobOrder = await context.JobOrders
+            .AsSplitQuery()
             .Include(j => j.ServiceProviders)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
 
@@ -128,7 +150,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
             if (!exists) return Error.Validation("ServiceProvider.Invalid", $"Invalid service provider: {providerId}");
 
             // Check if already sent to this provider
-            if (!jobOrder.ServiceProviders.Any(sp => sp.ServiceProviderId == providerId))
+            if (jobOrder.ServiceProviders.All(sp => sp.ServiceProviderId != providerId))
             {
                 jobOrder.ServiceProviders.Add(new JobOrderServiceProvider
                 {
@@ -149,6 +171,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task<Result> SelectQuotation(SelectQuotationRequest request)
     {
         var jobOrder = await context.JobOrders
+            .AsSplitQuery()
             .Include(j => j.Quotations)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
 
@@ -270,6 +293,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task<Result> CompleteJobOrderExecution(CompleteJobOrderExecutionRequest request)
     {
         var execution = await context.JobOrderExecutions
+            .AsSplitQuery()
             .Include(e => e.JobOrder)
             .FirstOrDefaultAsync(e => e.Id == request.JobOrderExecutionId);
 
@@ -353,6 +377,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     public async Task<Result> ApproveJobOrderExecution(ApproveJobOrderExecutionRequest request)
     {
         var execution = await context.JobOrderExecutions
+            .AsSplitQuery()
             .Include(e => e.JobOrder)
             .FirstOrDefaultAsync(e => e.Id == request.JobOrderExecutionId);
 
@@ -387,7 +412,7 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     private async Task<string> GenerateJobOrderCode()
     {
         var count = await context.JobOrders.CountAsync();
-        return $"JO-{DateTime.UtcNow:yyyyMM}-{(count + 1):D4}";
+        return $"JO-{DateTime.UtcNow:yyyyMM}-{count + 1:D4}";
     }
 }
 

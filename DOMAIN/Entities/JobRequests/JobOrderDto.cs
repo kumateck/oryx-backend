@@ -13,6 +13,7 @@ public class JobOrderDto : BaseDto
     public DateTime IssuedDate { get; set; }
     public UserDto IssuedBy { get; set; }
     public string Description { get; set; }
+    public string IssuedBySignature { get; set; }
     public JobOrderStatus Status { get; set; }
     public List<JobOrderServiceProviderDto> ServiceProviders { get; set; } = [];
     public List<ServiceQuotationDto> Quotations { get; set; } = [];

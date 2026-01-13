@@ -83,6 +83,8 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
     public async Task<Result<ItemStockRequisitionDto>> GetItemStockRequisition(Guid id)
     {
         var itemStockReq = await context.ItemStockRequisitions
+            .Include(r => r.RequisitionItems)
+            .ThenInclude(i => i.Item)
             .Include(u => u.CreatedBy)
             .FirstOrDefaultAsync(isr => isr.Id == id);
         return itemStockReq is null ?

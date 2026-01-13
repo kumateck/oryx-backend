@@ -1752,6 +1752,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Division")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsSeeded")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -3697,6 +3700,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("IssuedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("IssuedBySignature")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTime>("IssuedDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -3712,7 +3719,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("SelectedQuotationId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ServiceId")
+                    b.Property<Guid?>("ServiceId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ServiceMemoId")
@@ -3872,6 +3879,9 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("Approved")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("AssignedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3880,6 +3890,10 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("AssignedToEmployeeId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3913,19 +3927,27 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("IssuedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Item")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ItemNumber")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Location")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("PreferredCompletionDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("ServiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SiteId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Status")
@@ -3954,7 +3976,70 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ServiceId");
 
+                    b.HasIndex("SiteId");
+
                     b.ToTable("JobRequests");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.JobRequests.JobRequestApproval", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ApprovalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovalTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("JobRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("StageStartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovalId");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("JobRequestId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("JobRequestApprovals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.JobRequests.QuotationItem", b =>
@@ -3972,16 +4057,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
                     b.Property<Guid?>("ItemId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("ItemName")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -3997,10 +4074,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid>("ServiceQuotationId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("Supplier")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("UnitOfMeasureId")
                         .HasColumnType("uuid");
@@ -4285,16 +4358,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
                     b.Property<Guid?>("ItemId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("ItemName")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -4307,10 +4372,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid>("ServiceProformaInvoiceId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("Supplier")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("UnitOfMeasureId")
                         .HasColumnType("uuid");
@@ -4391,9 +4452,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("QuotationNumber")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
-
-                    b.Property<decimal>("ServiceCharge")
-                        .HasColumnType("numeric");
 
                     b.Property<Guid>("ServiceProviderId")
                         .HasColumnType("uuid");
@@ -4918,6 +4976,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("AllocatedQuantity")
                         .HasColumnType("numeric");
 
+                    b.Property<bool>("Approved")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("BatchManufacturingRecordId")
                         .HasColumnType("uuid");
 
@@ -5000,6 +5061,67 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("UoMId");
 
                     b.ToTable("FinishedGoodsTransferNotes");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNoteApproval", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ApprovalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovalTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FinishedGoodsTransferNoteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("StageStartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovalId");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("FinishedGoodsTransferNoteId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("FinishedGoodsTransferNoteApprovals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchEvent", b =>
@@ -6036,6 +6158,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<bool>("Paid")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -7320,6 +7445,9 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("Approved")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -7376,6 +7504,67 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("UoMId");
 
                     b.ToTable("ProductionExtraPackings");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionExtraPackingApproval", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ApprovalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovalTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProductionExtraPackingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("StageStartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovalId");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("ProductionExtraPackingId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ProductionExtraPackingApprovals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>
@@ -11449,6 +11638,23 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("StockEntries");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Thresholds.Threshold", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("MemoThreshold")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("StoreThreshold")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Threshold");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.UniformityOfWeights.UniformityOfWeight", b =>
                 {
                     b.Property<Guid>("Id")
@@ -15234,9 +15440,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Services.Service", "Service")
                         .WithMany()
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ServiceId");
 
                     b.Navigation("CreatedBy");
 
@@ -15363,6 +15567,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("ServiceId");
 
+                    b.HasOne("DOMAIN.Entities.Sites.Site", "Site")
+                        .WithMany()
+                        .HasForeignKey("SiteId");
+
                     b.Navigation("AssignedBy");
 
                     b.Navigation("AssignedToEmployee");
@@ -15380,6 +15588,45 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Service");
+
+                    b.Navigation("Site");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.JobRequests.JobRequestApproval", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
+                        .WithMany()
+                        .HasForeignKey("ApprovalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById");
+
+                    b.HasOne("DOMAIN.Entities.JobRequests.JobRequest", "JobRequest")
+                        .WithMany("Approvals")
+                        .HasForeignKey("JobRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Approval");
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("JobRequest");
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.JobRequests.QuotationItem", b =>
@@ -15651,6 +15898,32 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.OwnsMany("DOMAIN.Entities.JobRequests.ServiceCharge", "ServiceCharges", b1 =>
+                        {
+                            b1.Property<Guid>("ServiceQuotationId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<decimal>("Cost")
+                                .HasColumnType("numeric");
+
+                            b1.Property<string>("Name")
+                                .HasMaxLength(1000)
+                                .HasColumnType("character varying(1000)");
+
+                            b1.HasKey("ServiceQuotationId", "Id");
+
+                            b1.ToTable("ServiceCharge");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ServiceQuotationId");
+                        });
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("Currency");
@@ -15660,6 +15933,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ServiceCharges");
 
                     b.Navigation("ServiceProvider");
                 });
@@ -16031,6 +16306,43 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ToWarehouse");
 
                     b.Navigation("UoM");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNoteApproval", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
+                        .WithMany()
+                        .HasForeignKey("ApprovalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById");
+
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", "FinishedGoodsTransferNote")
+                        .WithMany("Approvals")
+                        .HasForeignKey("FinishedGoodsTransferNoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Approval");
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("FinishedGoodsTransferNote");
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedProductBatchEvent", b =>
@@ -17729,6 +18041,43 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ProductionScheduleProduct");
 
                     b.Navigation("UoM");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionExtraPackingApproval", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
+                        .WithMany()
+                        .HasForeignKey("ApprovalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById");
+
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionExtraPacking", "ProductionExtraPacking")
+                        .WithMany("Approvals")
+                        .HasForeignKey("ProductionExtraPackingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Approval");
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("ProductionExtraPacking");
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>
@@ -21445,6 +21794,8 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.JobRequests.JobRequest", b =>
                 {
+                    b.Navigation("Approvals");
+
                     b.Navigation("Executions");
 
                     b.Navigation("JobOrders");
@@ -21473,6 +21824,11 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", b =>
                 {
                     b.Navigation("FormSections");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", b =>
+                {
+                    b.Navigation("Approvals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MaterialBatch", b =>
@@ -21552,6 +21908,11 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.Packing.FinalPacking", b =>
                 {
                     b.Navigation("Materials");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionExtraPacking", b =>
+                {
+                    b.Navigation("Approvals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>

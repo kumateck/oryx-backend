@@ -17,7 +17,7 @@ public class JobOrder : BaseEntity
     public Guid JobRequestId { get; set; }
     public JobRequest JobRequest { get; set; }
 
-    public Guid ServiceId { get; set; }
+    public Guid? ServiceId { get; set; }
     public Service Service { get; set; }
 
     public DateTime IssuedDate { get; set; }
@@ -27,6 +27,9 @@ public class JobOrder : BaseEntity
 
     [StringLength(2000)]
     public string Description { get; set; }
+
+    [StringLength(100)]
+    public string IssuedBySignature { get; set; }
 
     public JobOrderStatus Status { get; set; } = JobOrderStatus.Pending;
 

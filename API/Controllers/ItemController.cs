@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.ItemTransactionLogs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,8 +45,10 @@ public class ItemController(IItemRepository repository) : ControllerBase
     /// Retrieves a paginated list of items
     /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemDto>>))]
-    public async Task<IResult> GetItems([FromQuery] Store store, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetItems([FromQuery] Store? store, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetItems(page, pageSize, searchQuery, store);
@@ -90,5 +93,20 @@ public class ItemController(IItemRepository repository) : ControllerBase
 
         var result = await repository.DeleteItem(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Displays the transactions on an item
+    /// </summary>
+    /// <param name="itemCode"> The item code</param>
+    /// <param name="transactionType"> The transaction type</param>
+    /// <returns></returns>
+    [HttpGet("{itemCode}/transactions")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ItemTransactionLogDto>))]
+    public async Task<IResult> GetItemTransactions([FromRoute] string itemCode, [FromQuery] string transactionType)
+    {
+        var result = await repository.GetItemTransactions(itemCode, transactionType);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

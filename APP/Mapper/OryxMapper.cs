@@ -44,6 +44,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
@@ -77,8 +78,10 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Siblings;
+using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockEntries;
+using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
@@ -121,7 +124,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, WarehouseLocationName>();
         CreateMap<CreateItemRequest, QcEquipmentCategory>();
         CreateMap<CreateItemRequest, Reagent>();
-
+        CreateMap<CreateItemRequest, Site>();
 
         #endregion
 
@@ -194,6 +197,10 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationName, CollectionItemDto>();
         CreateMap<QcEquipmentCategory, CollectionItemDto>();
         CreateMap<Reagent, CollectionItemDto>();
+        CreateMap<Site, CollectionItemDto>();
+        CreateMap<Memo, CollectionItemDto>();
+        CreateMap<JobOrder, CollectionItemDto>();
+        CreateMap<ServiceProvider, CollectionItemDto>();
         #endregion
 
         #region Operation
@@ -350,7 +357,11 @@ public class OryxMapper : Profile
                     .SelectMany(b => b.ShelfMaterialBatches)
                     .Sum(smb => smb.Quantity)))
             .ForMember(dest => dest.Specification,
-                opt => opt.MapFrom<MaterialSpecificationResolver>());
+                opt => 
+                    opt.MapFrom<MaterialSpecificationResolver>())
+            .ForMember(dest => dest.ReservedStock,
+                opt =>
+                    opt.MapFrom<ReservedMaterialStockResolver>());
 
         CreateMap<Material, MaterialWithWarehouseStockDto>()
             .ForMember(dest => dest.TotalStock,
@@ -1069,6 +1080,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateServiceProviderRequest, ServiceProvider>();
         CreateMap<ServiceProvider, ServiceProviderDto>();
+        CreateMap<ServiceProvider, ServiceProviderReducedDto>();
 
         #endregion
 
@@ -1084,7 +1096,7 @@ public class OryxMapper : Profile
         #endregion
 
         #region Items
-
+        CreateMap<ItemCategory, ItemCategoryDto>();
         CreateMap<CreateItemsRequest, Item>();
         CreateMap<Item, ItemDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
@@ -1135,9 +1147,12 @@ public class OryxMapper : Profile
 
         CreateMap<SourceInventoryRequisition, SourceInventoryRequisitionDto>();
         CreateMap<CreateSourceInventoryRequisitionItem, SourceInventoryRequisitionItemDto>();
-        CreateMap<SourceInventoryRequisition, VendorQuotationRequest>();
+        CreateMap<SourceInventoryRequisitionItem, SourceInventoryRequisitionItemDto>();
+        CreateMap<SourceInventoryRequisition, VendorQuotationRequest>()
+            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
 
         CreateMap<CreateMarketRequisitionVendor, MarketRequisitionVendor>();
+        CreateMap<CreateMarketRequisitionVendorDetails, MarketRequisitionVendor>();
         CreateMap<VendorQuotation, VendorQuotationDto>();
         CreateMap<VendorQuotationItem, VendorQuotationItemDto>();
 
@@ -1170,7 +1185,8 @@ public class OryxMapper : Profile
 
         CreateMap<CreateJobRequest, JobRequest>();
         CreateMap<UpdateJobRequestRequest, JobRequest>()
-            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            .ForAllMembers(opts 
+                => opts.Condition((_, dest, srcMember) => srcMember != null));
         CreateMap<JobRequest, JobRequestDto>();
 
         // Job Execution
@@ -1194,9 +1210,19 @@ public class OryxMapper : Profile
         CreateMap<CreateServiceQuotationRequest, ServiceQuotation>();
         CreateMap<UpdateServiceQuotationRequest, ServiceQuotation>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<ServiceQuotation, ServiceQuotationDto>();
+        CreateMap<ServiceQuotation, ServiceQuotationDto>()
+            .ForMember(dest => dest.Service,
+                opt => 
+                    opt.MapFrom(src => src.JobOrder.Service));
+        CreateMap<ServiceQuotation, ServiceQuotationReducedDto>()
+            .ForMember(dest => dest.Service,
+                opt => 
+                    opt.MapFrom(src => src.JobOrder.Service));
+        CreateMap<CreateServiceCharge, ServiceCharge>();
+        CreateMap<ServiceCharge, ServiceChargeDto>();
 
         // Quotation Item
+        CreateMap<CreateQuotationItemRequest, QuotationItem>();
         CreateMap<QuotationItem, QuotationItemDto>();
 
         // Service Proforma Invoice
@@ -1208,6 +1234,14 @@ public class OryxMapper : Profile
         CreateMap<UpdateServiceMemoRequest, ServiceMemo>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         CreateMap<ServiceMemo, ServiceMemoDto>();
+
+        #endregion
+
+        #region Memo
+
+        CreateMap<Memo, MemoDto>();
+        CreateMap<MemoItem, MemoItemDto>();
+
 
         #endregion
 
@@ -1223,6 +1257,18 @@ public class OryxMapper : Profile
         CreateMap<CreateSwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
         CreateMap<SwapRequest, SwapRequestDto>();
         CreateMap<SwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
+
+        #endregion
+
+        #region Threshold
+
+        CreateMap<Threshold, ThresholdDto>();
+
+        #endregion
+
+        #region Site
+
+        CreateMap<Site, SiteDto>();
 
         #endregion
     }

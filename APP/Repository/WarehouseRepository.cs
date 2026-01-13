@@ -111,8 +111,6 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
         }
 
-
-
         warehouse.DeletedAt = DateTime.UtcNow;
         warehouse.LastDeletedById = userId;
 
@@ -950,7 +948,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         );
     }
 
-    public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
+    public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>>
+        GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
     {
         var query = context.BinCardInformation
             .AsSplitQuery()
@@ -959,11 +958,13 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .Include(bci => bci.Product)
             .Include(bci => bci.UoM)
             .Where(bci => bci.MaterialBatch.MaterialId == materialId)
+            .OrderBy(b => b.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, b => b.Description);
+            query = query.WhereSearch(searchQuery, b => b.Description, 
+                b => b.ArNumber, b => b.MaterialBatch.BatchNumber);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -974,7 +975,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         );
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid productId)
+    public async Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>>
+        GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid productId)
     {
         var query = context.ProductBinCardInformation
             .AsSplitQuery()
@@ -983,6 +985,7 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(p => p.Product)
             .Include(bci => bci.UoM)
             .Where(bci => bci.Batch.ProductionScheduleProduct.ProductId == productId)
+            .OrderBy(b => b.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

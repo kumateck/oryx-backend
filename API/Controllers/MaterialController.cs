@@ -8,6 +8,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
+using SHARED;
 
 namespace API.Controllers;
 
@@ -47,6 +48,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetMaterial(materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
 
     /// <summary>
     /// Retrieves a paginated list of materials.
@@ -62,6 +64,24 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     public async Task<IResult> GetMaterials([FromQuery] MaterialKind kind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetMaterials(page, pageSize, searchQuery, kind);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of materials not linked to ARDs.
+    /// </summary>
+    /// <param name="kind">The kind of material being requested</param>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <returns>Returns a paginated list of materials.</returns>
+    [HttpGet("not-linked-to-ards")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDto>>))]
+    public async Task<IResult> GetMaterialsNotLinkedToArd([FromQuery] MaterialKind kind, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetMaterialsNotLinkedToArd(page, pageSize, searchQuery, kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -431,7 +451,9 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetApprovedRawMaterials([FromQuery] MaterialKind kind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetApprovedRawMaterials([FromQuery] MaterialKind kind,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -453,13 +475,19 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of approved raw materials.</returns>
     [HttpGet("department/approved-materials")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetApprovedRawMaterialsByDepartment([FromQuery] Guid warehouseId, [FromQuery] Guid departmentId, [FromQuery] MaterialKind kind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetApprovedRawMaterialsByDepartment([FromQuery] Guid warehouseId, 
+        [FromQuery] Guid departmentId, 
+        [FromQuery] MaterialKind kind, 
+        [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
-        var result = await repository.GetApprovedMaterialsByDepartment(page, pageSize, searchQuery, kind, warehouseId, departmentId);
+        var result = await repository.GetApprovedMaterialsByDepartment(page, pageSize, 
+            searchQuery, kind, warehouseId, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -477,12 +505,16 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShelfMaterialBatchDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialBatchesByMaterialIdV2([FromRoute] Guid materialId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    public async Task<IResult> GetMaterialBatchesByMaterialIdV2([FromRoute] Guid materialId, 
+        [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize, materialId, Guid.Parse(userId));
+        var result = await repository.GetMaterialBatchesByMaterialIdV2(page, pageSize, 
+            materialId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -562,15 +594,19 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns the materials that have not been linked.</returns>
     [HttpGet("department/not-linked")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetNotLinkedMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 5,
-        [FromQuery] string searchQuery = null, [FromQuery] MaterialKind? kind = null)
+    public async Task<IResult> GetNotLinkedMaterials([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 5,
+        [FromQuery] string searchQuery = null, 
+        [FromQuery] MaterialKind? kind = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetMaterialsThatHaveNotBeenLinked(page, pageSize, searchQuery, kind, Guid.Parse(userId));
+        var result = await repository.GetMaterialsThatHaveNotBeenLinked(page, pageSize, 
+            searchQuery, kind, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -582,21 +618,28 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="kind">The material kind to filter</param>
     /// <param name="materialCategoryId">The material category</param>
+    /// <param name="sortLabel">The label to which to sort by. Options are 'materialcode' 'categoryname'
+    /// and 'materialname' "</param>
+    /// <param name="sortDirection">The direction to sort the results. 1 for Ascending, 2 for Descending</param>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("department")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
-    public async Task<IResult> GetMaterialDepartments([FromQuery] int page = 1,
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>))]
+    public async Task<IResult> GetMaterialDepartments(
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] MaterialKind? kind = null,
-        [FromQuery] Guid? materialCategoryId = null)
+        [FromQuery] Guid? materialCategoryId = null,
+        [FromQuery] string sortLabel = "",
+        [FromQuery] SortDirection? sortDirection = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.GetMaterialDepartments(page, pageSize,
-            searchQuery, kind, materialCategoryId, Guid.Parse(userId));
+            searchQuery, kind, materialCategoryId,sortLabel, sortDirection,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -629,7 +672,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("holding")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<HoldingMaterialTransferDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<HoldingMaterialTransferDto>>))]
     public async Task<IResult> GetMaterialDepartments([FromQuery] bool withProcessed = false,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
@@ -638,7 +682,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
-        var result = await repository.GetHoldingMaterialTransfers(page, pageSize, searchQuery, withProcessed, Guid.Parse(departmentId), kind);
+        var result = await repository.GetHoldingMaterialTransfers(page, pageSize, 
+            searchQuery, withProcessed, Guid.Parse(departmentId), kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -766,6 +811,21 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
 
         var result = await repository.MoveMaterialBatchToWarehouseFromDistribute(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of reserved material quantities. If departmentId is passed you should expect only one item
+    /// in the response
+    /// </summary>
+    /// <returns>Returns a paginated list of material departments.</returns>
+    [HttpGet("{materialId}/reserved")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<MaterialReservedQuantity>))]
+    public async Task<IResult> GetMaterialReservedQuantity([FromRoute] Guid materialId, 
+        [FromQuery] Guid? departmentId = null)
+    {
+        var result = await repository.GetReservedQuantitiesForMaterial(materialId, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>

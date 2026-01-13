@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Email;
 using APP.Services.Pdf;
@@ -28,14 +27,15 @@ public class ServiceProformaInvoiceRepository(
             .ThenInclude(q => q.Items)
             .Include(j => j.SelectedQuotation)
             .ThenInclude(q => q.ServiceProvider)
-            .Include(j => j.JobRequest)
+            .Include(j => j.JobRequest).Include(jobOrder => jobOrder.Service)
             .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
 
         if (jobOrder is null)
             return Error.NotFound("JobOrder.NotFound", "Job order not found");
 
         if (jobOrder.Status != JobOrderStatus.QuotationSelected)
-            return Error.Validation("JobOrder.InvalidStatus", "A quotation must be selected before requesting proforma invoice");
+            return Error.Validation("JobOrder.InvalidStatus", 
+                "A quotation must be selected before requesting proforma invoice");
 
         var quotation = await context.ServiceQuotations
             .AsSplitQuery()
@@ -69,19 +69,16 @@ public class ServiceProformaInvoiceRepository(
             RequestedDate = DateTime.UtcNow,
             RequestedById = requestedById,
             Notes = request.Notes,
-            ServiceCharge = quotation.NegotiatedServiceCharge ?? quotation.ServiceCharge,
+            ServiceCharge = quotation.NegotiatedServiceCharge ?? quotation.TotalServiceCharge,
             CurrencyId = quotation.CurrencyId,
             Status = ServiceProformaInvoiceStatus.Requested,
             // Copy items from quotation
             Items = quotation.Items.Select(item => new ServiceProformaInvoiceItem
             {
                 ItemId = item.ItemId,
-                ItemName = item.ItemName,
-                Description = item.Description,
                 Quantity = item.Quantity,
                 UnitOfMeasureId = item.UnitOfMeasureId,
                 UnitPrice = item.NegotiatedUnitPrice ?? item.UnitPrice,
-                Supplier = item.Supplier
             }).ToList()
         };
 
@@ -137,10 +134,12 @@ public class ServiceProformaInvoiceRepository(
             .FirstOrDefaultAsync(p => p.Id == request.ServiceProformaInvoiceId);
 
         if (proformaInvoice is null)
-            return Error.NotFound("ServiceProformaInvoice.NotFound", "Service proforma invoice not found");
+            return Error.NotFound("ServiceProformaInvoice.NotFound",
+                "Service proforma invoice not found");
 
         if (proformaInvoice.Status != ServiceProformaInvoiceStatus.Requested)
-            return Error.Validation("ProformaInvoice.InvalidStatus", "Proforma invoice has already been responded to");
+            return Error.Validation("ProformaInvoice.InvalidStatus",
+                "Proforma invoice has already been responded to");
 
         proformaInvoice.InvoiceNumber = request.InvoiceNumber;
         proformaInvoice.ResponseReceivedDate = request.ResponseDate;
@@ -153,7 +152,8 @@ public class ServiceProformaInvoiceRepository(
         {
             foreach (var updatedItem in request.UpdatedItems)
             {
-                var item = proformaInvoice.Items.FirstOrDefault(i => i.Id == updatedItem.ServiceProformaInvoiceItemId);
+                var item = proformaInvoice.Items.FirstOrDefault(i 
+                    => i.Id == updatedItem.ServiceProformaInvoiceItemId);
                 if (item != null)
                 {
                     if (updatedItem.UnitPrice.HasValue)
@@ -182,13 +182,16 @@ public class ServiceProformaInvoiceRepository(
             .FirstOrDefaultAsync(p => p.Id == request.ServiceProformaInvoiceId);
 
         if (proformaInvoice is null)
-            return Error.NotFound("ServiceProformaInvoice.NotFound", "Service proforma invoice not found");
+            return Error.NotFound("ServiceProformaInvoice.NotFound",
+                "Service proforma invoice not found");
 
         if (proformaInvoice.Status != ServiceProformaInvoiceStatus.ResponseReceived)
-            return Error.Validation("ProformaInvoice.InvalidStatus", "Proforma invoice must have a response before approval");
+            return Error.Validation("ProformaInvoice.InvalidStatus",
+                "Proforma invoice must have a response before approval");
 
         var approvedBy = await userManager.FindByIdAsync(request.ApprovedById.ToString());
-        if (approvedBy is null) return Error.Validation("User.Invalid", "User Invalid");
+        if (approvedBy is null) return Error.Validation("User.Invalid",
+            "User Invalid");
 
         proformaInvoice.Status = ServiceProformaInvoiceStatus.Approved;
         context.ServiceProformaInvoices.Update(proformaInvoice);
@@ -198,17 +201,24 @@ public class ServiceProformaInvoiceRepository(
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ServiceProformaInvoiceDto>>>> GetServiceProformaInvoices(int page, int pageSize,
-        ServiceProformaInvoiceStatus? status = null, Guid? jobOrderId = null, Guid? serviceProviderId = null)
+    public async Task<Result<Paginateable<IEnumerable<ServiceProformaInvoiceDto>>>> GetServiceProformaInvoices(int page, 
+        int pageSize,
+        ServiceProformaInvoiceStatus? status = null, 
+        Guid? jobOrderId = null, 
+        Guid? serviceProviderId = null)
     {
         var query = context.ServiceProformaInvoices
             .AsSplitQuery()
             .Include(p => p.JobOrder)
+                .ThenInclude(p => p.Service)
             .Include(p => p.ServiceQuotation)
+                .ThenInclude(p => p.ServiceProvider)
             .Include(p => p.ServiceProvider)
             .Include(p => p.Currency)
-            .Include(p => p.Items).ThenInclude(i => i.Item)
-            .Include(p => p.Items).ThenInclude(i => i.UnitOfMeasure)
+            .Include(p => p.Items)
+                .ThenInclude(i => i.Item)
+            .Include(p => p.Items)
+                .ThenInclude(i => i.UnitOfMeasure)
             .AsQueryable();
 
         if (status.HasValue)
@@ -227,7 +237,7 @@ public class ServiceProformaInvoiceRepository(
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
-            entity => mapper.Map<ServiceProformaInvoiceDto>(entity));
+            mapper.Map<ServiceProformaInvoiceDto>);
     }
 
     public async Task<Result<ServiceProformaInvoiceDto>> GetServiceProformaInvoice(Guid id)

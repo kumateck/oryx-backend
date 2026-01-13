@@ -72,6 +72,7 @@ using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockEntries;
+using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.VendorQuotations;
@@ -88,7 +89,9 @@ using ServiceProvider = DOMAIN.Entities.ServiceProviders.ServiceProvider;
 
 namespace INFRASTRUCTURE.Context;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService currentUserService) : IdentityDbContext<User, Role, Guid>(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options,
+    ICurrentUserService currentUserService) 
+    : IdentityDbContext<User, Role, Guid>(options)
 {
 
     #region Auth
@@ -203,6 +206,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FinalPacking> FinalPackings { get; set; }
     public DbSet<FinalPackingMaterial> FinalPackingMaterials { get; set; }
     public DbSet<ProductionExtraPacking> ProductionExtraPackings { get; set; }
+    public DbSet<ProductionExtraPackingApproval> ProductionExtraPackingApprovals { get; set; }
 
     public DbSet<MarketType> MarketTypes { get; set; }
 
@@ -212,6 +216,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region FinishedGoodsTransferNote
 
     public DbSet<FinishedGoodsTransferNote> FinishedGoodsTransferNotes { get; set; }
+    public DbSet<FinishedGoodsTransferNoteApproval> FinishedGoodsTransferNoteApprovals { get; set; }
     public DbSet<FinishedProductBatchMovement> FinishedProductBatchMovements { get; set; }
     public DbSet<FinishedProductBatchEvent> FinishedProductBatchEvents { get; set; }
 
@@ -589,6 +594,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Proforma Invoice
 
     public DbSet<ProformaInvoice> ProformaInvoices { get; set; }
+    
+    // public DbSet<InventoryProformaInvoice> InventoryProformaInvoices { get; set; }
     public DbSet<ProformaInvoiceProduct> ProformaInvoiceProducts { get; set; }
     public DbSet<ProformaInvoiceApproval> ProformaInvoiceApprovals { get; set; }
 
@@ -651,6 +658,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Job Requests
 
     public DbSet<JobRequest> JobRequests { get; set; }
+    public DbSet<JobRequestApproval> JobRequestApprovals { get; set; }
     public DbSet<JobExecution> JobExecutions { get; set; }
     public DbSet<JobActivity> JobActivities { get; set; }
     public DbSet<ConsumedItem> ConsumedItems { get; set; }
@@ -675,6 +683,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Reagent
 
     public DbSet<Reagent> Reagents => Set<Reagent>();
+
+    #endregion
+
+    #region Threshold
+
+    public DbSet<Threshold> Threshold => Set<Threshold>();
 
     #endregion
 
