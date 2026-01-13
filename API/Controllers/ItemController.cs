@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.ItemTransactionLogs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -92,5 +93,20 @@ public class ItemController(IItemRepository repository) : ControllerBase
 
         var result = await repository.DeleteItem(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Displays the transactions on an item
+    /// </summary>
+    /// <param name="itemCode"> The item code</param>
+    /// <param name="transactionType"> The transaction type</param>
+    /// <returns></returns>
+    [HttpGet("{itemCode}/transactions")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ItemTransactionLogDto>))]
+    public async Task<IResult> GetItemTransactions([FromRoute] string itemCode, [FromQuery] string transactionType)
+    {
+        var result = await repository.GetItemTransactions(itemCode, transactionType);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

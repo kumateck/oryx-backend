@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.ItemTransactionLogs;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
@@ -288,5 +289,27 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
         context.Items.Update(item);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<Result<List<ItemTransactionLogDto>>> GetItemTransactions(
+        string itemCode,
+        string transactionType)
+
+    {
+        var query = context.ItemTransactionLogs
+            .Where(i => i.ItemCode == itemCode);
+
+        if (!string.IsNullOrWhiteSpace(transactionType))
+        {
+            query = query.Where(i => i.TransactionType == transactionType);
+        }
+
+        var transactions = await query
+            .OrderByDescending(i => i.CreatedAt)
+            .ToListAsync();
+
+        var result = mapper.Map<List<ItemTransactionLogDto>>(transactions);
+
+        return Result.Success(result);
     }
 }

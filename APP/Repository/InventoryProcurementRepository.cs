@@ -283,7 +283,7 @@ public class InventoryProcurementRepository(
                     Quantity = itemGroup.First().MarketRequisition.Quantity,
                     VendorPrices = itemGroup.Select(mrv => new VendorPrice
                     {
-                        Vendor = new CollectionItemDto { Name = mrv.VendorName },
+                        Vendor = new CollectionItemDto { Id = mrv.Id, Name = mrv.VendorName },
                         PricePerUnit = mrv.PricePerUnit,
                         VendorName = mrv.VendorName,
                         VendorAddress = mrv.VendorAddress,
