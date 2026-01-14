@@ -1151,7 +1151,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // Mapping headers based on your requirements
         var requiredHeaders = new[]
         {
-            "EQUIPMENT NO", "EQUIPMENT NAME", "UOM", "DEPARTMENT CODE"
+            "EQUIPMENT NO", "EQUIPMENT NAME", "UOM", "DEPARTMENT CODE", "Storage Location"
         };
 
         foreach (var header in requiredHeaders)
@@ -1204,12 +1204,12 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 Name = GetCell("EQUIPMENT NAME"),
                 Model = GetCell("MODEL"),
                 SerialNumber = GetCell("SERIAL NO"),
-                Location = GetCell("LOCATION"),
+                Location = GetCell("Storage Location"),
                 IsStorage = isStorage,
                 RelevanceCheck = relevanceCheck,
                 CapacityQuantity = decimal.TryParse(GetCell("CAPACITY QUANTITY"), out var cq) ? cq : 0,
                 UoMId = uoms.TryGetValue(uomSymbol, out var uomId) ? uomId : null,
-                DepartmentId = departments.TryGetValue(deptName, out var deptId) ? deptId : Guid.Empty
+                DepartmentId = departments.TryGetValue(deptName, out var deptId) ? deptId : Guid.Empty,
             };
 
             // Basic Validation: Ensure Guid IDs are found before adding

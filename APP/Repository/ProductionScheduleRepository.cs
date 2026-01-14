@@ -211,6 +211,7 @@ public class ProductionScheduleRepository(
 
             var users = product.Routes.SelectMany(r => r.ResponsibleUsers)
                 .Select(r => r.User).ToList();
+            users = users.Where(u => u.DepartmentId == product.DepartmentId).ToList();
             var roles = product.Routes.SelectMany(r => r.ResponsibleRoles)
                 .Select(r => r.Role).ToList();
             var usersInRole = new List<User>();
