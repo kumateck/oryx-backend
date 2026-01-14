@@ -41,6 +41,14 @@ public class ProductionScheduleProcurementDto
     public decimal ExtraQuantity { get; set; }
 }
 
+public class ForecastMaterialDto
+{
+    public MaterialDto Material { get; set; }
+    public decimal QuantityNeeded { get; set; }
+    public decimal QuantityOnHand { get; set; }
+    public bool IsAvailable => QuantityOnHand > QuantityNeeded;
+}
+
 public class ProductionScheduleProcurementPackageDto
 {
     public MaterialDto Material { get; set; }
