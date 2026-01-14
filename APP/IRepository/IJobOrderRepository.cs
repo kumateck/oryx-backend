@@ -11,7 +11,8 @@ public interface IJobOrderRepository
         JobOrderStatus? status = null, Guid? jobRequestId = null, Guid? serviceId = null);
     Task<Result<JobOrderDto>> GetJobOrder(Guid id);
     Task<Result> SendJobOrderToProviders(SendJobOrderToProvidersRequest request);
-    Task<Result<IEnumerable<JobOrderServiceProviderDto>>> GetJobOrderResponseServiceProviders();
+    Task<Result<Paginateable<IEnumerable<JobOrderServiceProviderDto>>>> GetJobOrderResponseServiceProviders(int page,
+        int pageSize, string searchQuery);
     Task<Result> SelectQuotation(SelectQuotationRequest request);
     Task<Result<Guid>> StartJobOrderExecution(StartJobOrderExecutionRequest request);
     Task<Result<Guid>> RecordJobOrderActivity(Guid jobOrderExecutionId, RecordJobActivityRequest request);

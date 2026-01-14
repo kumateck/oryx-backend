@@ -1,3 +1,4 @@
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -114,15 +115,22 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     }
     
 
-    public async Task<Result<IEnumerable<JobOrderServiceProviderDto>>> GetJobOrderResponseServiceProviders()
+    public async Task<Result<Paginateable<IEnumerable<JobOrderServiceProviderDto>>>> GetJobOrderResponseServiceProviders(int page, int pageSize, string searchQuery)
     {
-        var jobOrderServiceProviders = await context.JobOrderServiceProviders
+        var query = context.JobOrderServiceProviders
             .AsSplitQuery()
             .Include(j => j.JobOrder)
             .Include(j => j.ServiceProvider)
-            .ToListAsync();
-        
-        return mapper.Map<List<JobOrderServiceProviderDto>>(jobOrderServiceProviders);
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.JobOrder.Code,
+                q => q.ServiceProvider.Name);
+        }
+
+        return await PaginationHelper
+            .GetPaginatedResultAsync(query, page, pageSize, mapper.Map<JobOrderServiceProviderDto>);
     }
 
     public async Task<Result<JobOrderDto>> GetJobOrder(Guid id)
