@@ -1218,5 +1218,29 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
 
     #endregion
 
+    #region Forecast
+
+    /// <summary>
+    /// Get forecast for production schedule
+    /// </summary>
+    /// <returns>Returns a list of Production Schedule summary report DTOs.</returns>
+    [HttpGet("forecast")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ForecastMaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ForecastProductionScheduleProduct([FromQuery] Guid productId,
+        [FromQuery] int numberOfBatches,
+        [FromQuery] Guid productPackingId,
+        [FromQuery] BatchSize batchSize)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.ForecastProductionScheduleProduct(productId, numberOfBatches, 
+            productPackingId, batchSize, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    #endregion
 
 }
