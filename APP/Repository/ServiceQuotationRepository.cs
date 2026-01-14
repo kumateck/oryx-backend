@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -69,7 +68,8 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         await context.ServiceQuotations.AddAsync(quotation);
 
         // Update job order service provider response
-        var jobOrderProvider = jobOrder.ServiceProviders.FirstOrDefault(sp => sp.ServiceProviderId == request.ServiceProviderId);
+        var jobOrderProvider = jobOrder.ServiceProviders.FirstOrDefault(sp 
+            => sp.ServiceProviderId == request.ServiceProviderId);
         if (jobOrderProvider != null)
         {
             jobOrderProvider.ResponseReceived = true;
@@ -88,8 +88,11 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         return quotation.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ServiceQuotationDto>>>> GetServiceQuotations(int page, int pageSize,
-        QuotationStatus? status = null, Guid? jobOrderId = null, Guid? serviceProviderId = null)
+    public async Task<Result<Paginateable<IEnumerable<ServiceQuotationDto>>>> GetServiceQuotations(int page, 
+        int pageSize,
+        QuotationStatus? status = null, 
+        Guid? jobOrderId = null, 
+        Guid? serviceProviderId = null)
     {
         var query = context.ServiceQuotations
             .AsSplitQuery()

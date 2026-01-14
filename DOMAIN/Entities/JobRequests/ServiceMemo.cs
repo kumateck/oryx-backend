@@ -48,6 +48,7 @@ public class ServiceMemo : BaseEntity, IRequireApproval
     public bool Approved { get; set; }
 
     public DateTime? ApprovedDate { get; set; }
+    public bool Paid { get; set; }
 }
 
 public class ServiceMemoApproval : ResponsibleApprovalStage

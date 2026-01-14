@@ -122,6 +122,19 @@ public class ServiceMemoController(IServiceMemoRepository repository) : Controll
         var result = await repository.UpdateServiceMemo(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Updates an existing service memo
+    /// </summary>
+    [HttpPut("paid/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> MarkServiceMemoAsPaid([FromRoute] Guid id)
+    {
+        var result = await repository.MarkServiceMemoAsPaid(id);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Issues a service memo to the contractor

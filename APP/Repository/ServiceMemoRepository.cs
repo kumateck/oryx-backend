@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -24,10 +23,12 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
 
         // Check if proforma invoice has been received and approved
         if (jobOrder.ServiceProformaInvoice == null)
-            return Error.Validation("ProformaInvoice.NotRequested", "Proforma invoice must be requested before creating service memo");
+            return Error.Validation("ProformaInvoice.NotRequested", 
+                "Proforma invoice must be requested before creating service memo");
 
         if (jobOrder.ServiceProformaInvoice.Status != ServiceProformaInvoiceStatus.Approved)
-            return Error.Validation("ProformaInvoice.NotApproved", "Proforma invoice must be approved before creating service memo");
+            return Error.Validation("ProformaInvoice.NotApproved", 
+                "Proforma invoice must be approved before creating service memo");
 
         var quotation = await context.ServiceQuotations
             .AsSplitQuery()
@@ -121,6 +122,18 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
 
         mapper.Map(request, memo);
         context.ServiceMemos.Update(memo);
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+    
+    public async Task<Result> MarkServiceMemoAsPaid(Guid id)
+    {
+        var memo = await context.ServiceMemos.FirstOrDefaultAsync(m => m.Id == id);
+        if (memo is null)
+            return Error.NotFound("ServiceMemo.NotFound", "Service memo not found");
+        
+        memo.Paid = true;
         await context.SaveChangesAsync();
 
         return Result.Success();

@@ -22,5 +22,6 @@ public class ServiceMemoDto : BaseDto
     public ServiceMemoStatus Status { get; set; }
     public bool Approved { get; set; }
     public DateTime? ApprovedDate { get; set; }
+    public bool Paid { get; set; }
 }
 
