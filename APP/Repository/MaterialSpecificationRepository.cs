@@ -1,3 +1,4 @@
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -43,6 +44,14 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Include(ms => ms.Response)
             .Where(ms => ms.Material.Kind == materialKind)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, 
+ q => q.SpecificationNumber,
+                q => q.Description,
+                q => q.Material.Name);
+        }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
             mapper.Map<MaterialSpecificationDto>);
