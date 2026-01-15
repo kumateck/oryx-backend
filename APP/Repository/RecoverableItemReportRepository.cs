@@ -34,7 +34,7 @@ public class RecoverableItemReportRepository(ApplicationDbContext context, IMapp
             Id = Guid.NewGuid(),
             ItemCode = item.Code,
             Credit = request.Quantity,
-            TransactionType = "Returned Stock",
+            TransactionType = TransactionType.Returned,
             Debit = 0,
             TotalBalance = itemTransaction.TotalBalance + request.Quantity
         };

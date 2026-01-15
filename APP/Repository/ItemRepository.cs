@@ -299,11 +299,10 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
         var query = context.ItemTransactionLogs
             .Where(i => i.ItemCode == itemCode);
 
-        if (!string.IsNullOrWhiteSpace(transactionType))
+        if (Enum.TryParse<TransactionType>(transactionType, out var transaction))
         {
-            query = query.Where(i => i.TransactionType == transactionType);
+            query = query.Where(i => i.TransactionType == transaction);
         }
-
         var transactions = await query
             .OrderByDescending(i => i.CreatedAt)
             .ToListAsync();
