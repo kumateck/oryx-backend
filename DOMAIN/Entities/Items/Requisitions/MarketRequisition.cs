@@ -46,7 +46,7 @@ public class CreateMarketRequisitionVendorDetails
     public string ModeOfPayment { get; set; }
     public Guid TermsOfPaymentId { get; set; }
     public string DeliveryMode { get; set; }
-    public DateTime EstimatedDeliveryDate { get; set; }
+    // public DateTime EstimatedDeliveryDate { get; set; }
     public bool Complete { get; set; }
 }
 

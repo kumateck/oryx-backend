@@ -9,7 +9,7 @@ namespace DOMAIN.Entities.ItemStockRequisitions;
 public class ItemStockRequisition : BaseEntity
 {
     [StringLength(1000)] public string Number { get; set; }
-    public DateTime RequisitionDate { get; set; }
+    public DateTime RequisitionDate { get; set; } = DateTime.UtcNow;
 
     public Guid RequestedById { get; set; }
     public User RequestedBy { get; set; }

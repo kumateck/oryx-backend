@@ -622,14 +622,6 @@ public class InventoryProcurementRepository(
                     $"Price per unit must be greater than zero for vendor '{vendor.VendorName}'."
                 );
             }
-
-            if (vendor.EstimatedDeliveryDate.Date <= today)
-            {
-                return Error.Validation(
-                    "Vendor.InvalidDeliveryDate",
-                    $"Estimated delivery date must be in the future for vendor '{vendor.VendorName}'."
-                );
-            }
         }
         
         var duplicateInRequest = request.Vendors
