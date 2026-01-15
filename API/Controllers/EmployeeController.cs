@@ -83,6 +83,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// Retrieves a list of employees based on their department.
     /// </summary>
     [HttpGet("departments/{id:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<EmployeeDto>))]
     public async Task<IResult> GetEmployeesByDepartment([FromRoute] Guid id)
     {
