@@ -14,5 +14,5 @@ public class ItemStockRequisitionDto : BaseDto
     public DepartmentDto Department { get; set; }
     public string Justification { get; set; }
     public LeaveStatus Status { get; set; }
-    public ICollection<ItemStockRequisitionItemDto> RequisitionItems { get; set; } = [];
+    public ICollection<ItemStockRequisitionItemDto> RequisitionItems { get; set; }
 }
