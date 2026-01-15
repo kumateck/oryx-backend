@@ -9,6 +9,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -1005,6 +1006,19 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var header = worksheet.Cells[1, col].Text.Trim();
             if (!string.IsNullOrEmpty(header)) headers[header] = col;
         }
+        
+        var requiredHeaders = new[]
+        {
+            "Warehouse", "Product Code", "Product Name", "Packing Style",
+            "Total Quantity", "Batch No.", "FGTN ID",
+            " AR No.", " Manufacturing Date", "Expiry Date"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
 
         // 1. SCAN EXCEL FOR FILTER CRITERIA
         var excelProductCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1042,6 +1056,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             pp => $"{pp.Product.Code.Trim()}|{pp.Name.Trim()}",
             pp => pp,
             StringComparer.OrdinalIgnoreCase);
+
+        var warehouses = await context.Warehouses
+            .Where(w => w.Type == WarehouseType.FinishedGoodsStorage)
+            .ToDictionaryAsync(w => w.Name.ToLower(), w => w);
 
         var manufacturingRecords = new List<BatchManufacturingRecord>();
         var packagingRecords = new List<BatchPackagingRecord>();
@@ -1104,7 +1122,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             finishedGoodsTransferNotes.Add(new FinishedGoodsTransferNote
             {
                 Id = Guid.NewGuid(),
-                TransferNoteNumber = "",
+                TransferNoteNumber = GetCell("FGTN ID"),
+                ToWarehouseId = warehouses.TryGetValue(GetCell("Warehouse").ToLower(), out var warehouse) ? 
+                    warehouse.Id : null,
                 TotalQuantity = quantity,
                 ProductPackingId = packing.Id,
                 BatchManufacturingRecordId = (await context.BatchManufacturingRecords
