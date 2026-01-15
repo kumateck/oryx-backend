@@ -1110,7 +1110,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 BatchManufacturingRecordId = (await context.BatchManufacturingRecords
                     .FirstAsync(b => 
                         b.ProductionScheduleProductId == defaultScheduleProduct.Id)).Id,
-                Approved = true
+                Approved = true,
+                IsApproved = true
             });
         }
 
