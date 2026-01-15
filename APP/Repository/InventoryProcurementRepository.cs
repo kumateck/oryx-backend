@@ -924,7 +924,7 @@ public class InventoryProcurementRepository(
             ItemCode = stockEntry.Item.Code,
             Credit = stockEntry.Quantity,
             Debit = 0,
-            TransactionType = "Stock Entry",
+            TransactionType = TransactionType.Purchased,
             TotalBalance = newBalance,
             CreatedAt = DateTime.UtcNow
         };

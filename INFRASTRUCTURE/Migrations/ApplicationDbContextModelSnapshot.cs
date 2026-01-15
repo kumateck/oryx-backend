@@ -4153,9 +4153,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<bool>("Paid")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid>("ServiceProviderId")
                         .HasColumnType("uuid");
 
