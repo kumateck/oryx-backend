@@ -261,7 +261,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>Returns a paginated list of Production Activities.</returns>
     [HttpGet("activity")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionActivityDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<ProductionActivityDto>>))]
     public async Task<IResult> GetProductionActivities([FromQuery] ProductionFilter filter)
     {
         var result = await repository.GetProductionActivities(filter);

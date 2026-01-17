@@ -183,7 +183,6 @@ public class ProductionScheduleRepository(
 
             var productionScheduleProduct = await context.ProductionScheduleProducts
                 .AsSplitQuery()
-                .IgnoreQueryFilters()
                 .Include(productionSchedule => productionSchedule.ProductionSchedule)
                 .FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
 
@@ -193,7 +192,6 @@ public class ProductionScheduleRepository(
 
             var product = await context.Products
                 .AsSplitQuery()
-                .IgnoreQueryFilters()
                 .Include(product => product.Routes).ThenInclude(route => route.Resources)
                 .Include(product => product.Routes).ThenInclude(route => route.WorkCenters)
                 .Include(product => product.Routes).ThenInclude(route => route.ResponsibleUsers)

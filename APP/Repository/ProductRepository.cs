@@ -288,10 +288,15 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         if (route == null)
             return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
 
-        context.RouteResources.RemoveRange(route.Resources);
-        context.RouteResponsibleRoles.RemoveRange(route.ResponsibleRoles);
-        context.RouteResponsibleUsers.RemoveRange(route.ResponsibleUsers);
-        context.RouteWorkCenters.RemoveRange(route.WorkCenters);
+        await context.RouteResources.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
+        await context.RouteResponsibleRoles.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
+        await context.RouteResponsibleUsers.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
+        await context.RouteWorkCenters.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
+
+        route.Resources.Clear();
+        route.ResponsibleRoles.Clear();
+        route.ResponsibleUsers.Clear();
+        route.WorkCenters.Clear();
 
         mapper.Map(request, route);
         route.LastUpdatedById = userId;
@@ -304,17 +309,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result> DeleteRoute(Guid routeId, Guid userId)
     {
-        var route = await context.Routes
-            .Include(r => r.Resources)
-            .FirstOrDefaultAsync(r => r.Id == routeId);
+        await context.Routes.Where(r => r.Id == routeId).ExecuteDeleteAsync();
 
-        if (route == null)
-            return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
-
-        route.DeletedAt = DateTime.UtcNow;
-        route.LastDeletedById = userId;
-
-        context.Routes.Update(route);
         await context.SaveChangesAsync();
 
         return Result.Success();
