@@ -9,7 +9,7 @@ public class ServiceMemoDto : BaseDto
     public string MemoNumber { get; set; }
     public Guid JobOrderId { get; set; }
     public Guid ServiceQuotationId { get; set; }
-    public ServiceProviderDto ServiceProvider { get; set; }
+    public ServiceProviderReducedDto ServiceProvider { get; set; }
     public DateTime IssuedDate { get; set; }
     public UserDto IssuedBy { get; set; }
     public decimal AgreedServiceCharge { get; set; }
