@@ -2,8 +2,11 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
+using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -14,22 +17,33 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
 {
     public async Task<Result<Guid>> CreateItemStockRequisition(CreateItemStockRequisitionRequest request)
     {
-        var existingItemStockReq =
-            await context.ItemStockRequisitions.FirstOrDefaultAsync(nps => nps.Number == request.Number);
+        // Check for a duplicate requisition number
+        if (await context.ItemStockRequisitions
+            .AnyAsync(r => r.Number == request.Number))
+        {
+            return Error.Validation(
+                "ItemStockRequisition.Exists",
+                "Item Stock Requisition already exists");
+        }
 
-        if (existingItemStockReq != null)
-            return Error.Validation("ItemStockRequisition.Exists", "Item Stock Requisition already exists");
+        var stockItems = request.StockItems;
 
-        var validStockItems = await context.Items
-            .Where(s => request.StockItems.Select(si => si.ItemId).Contains(s.Id))
-            .Select(s => s.Id)
-            .ToListAsync();
+        // Prevent duplicate items in the same requisition
+        var duplicateItems = stockItems
+            .GroupBy(i => i.ItemId)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
 
-        var missingIds = request.StockItems.Select(s => s.ItemId).Except(validStockItems).ToList();
-        if (missingIds.Count != 0)
-            return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
+        if (duplicateItems.Count != 0)
+        {
+            return Error.Validation(
+                "Items.Duplicated",
+                $"Duplicate items found: {string.Join(", ", duplicateItems)}");
+        }
 
-        var invalidQuantities = request.StockItems
+        // Validate quantities
+        var invalidQuantities = stockItems
             .Where(i => i.QuantityRequested <= 0)
             .Select(i => i.ItemId)
             .ToList();
@@ -38,25 +52,48 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
         {
             return Error.Validation(
                 "Items.InvalidQuantity",
-                $"Quantity requested must be greater than zero for items: {string.Join(", ", invalidQuantities)}"
-            );
+                $"Quantity must be greater than zero for items: {string.Join(", ", invalidQuantities)}");
         }
 
-        var itemStockReq = mapper.Map<ItemStockRequisition>(request);
-        await context.AddAsync(itemStockReq);
-        await context.SaveChangesAsync();
+        // Validate that all items exist
+        var itemIds = stockItems.Select(i => i.ItemId).ToList();
+        var validItemIds = await context.Items
+            .Where(i => itemIds.Contains(i.Id))
+            .Select(i => i.Id)
+            .ToListAsync();
 
-        var itemsToAdd = request.StockItems.Select(s => new ItemStockRequisitionItem
+        var missingItems = itemIds.Except(validItemIds).ToList();
+        if (missingItems.Count != 0)
         {
-            ItemStockRequisitionId = itemStockReq.Id,
-            ItemId = s.ItemId,
-            QuantityRequested = s.QuantityRequested
-        }).ToList();
+            return Error.NotFound(
+                "Items.NotFound",
+                $"Some items were not found: {string.Join(", ", missingItems)}");
+        }
 
-        await context.ItemStockRequisitionItems.AddRangeAsync(itemsToAdd);
+        // Generate the requisition ID upfront
+        var requisitionId = Guid.NewGuid();
+
+        // Create requisition
+        var requisition = new ItemStockRequisition
+        {
+            Id = requisitionId,
+            Number = request.Number,
+            Justification = request.Justification,
+            RequestedById = request.RequestedById,
+            DepartmentId = request.DepartmentId,
+            RequisitionItems = stockItems.Select(i => new ItemStockRequisitionItem
+            {
+                Id = Guid.NewGuid(),
+                ItemStockRequisitionId = requisitionId,
+                ItemId = i.ItemId,
+                QuantityRequested = i.QuantityRequested
+            }).ToList()
+        };
+        
+        await context.ItemStockRequisitions.AddAsync(requisition);
         await context.SaveChangesAsync();
 
-        return itemStockReq.Id;
+        return Result.Success(requisitionId);
     }
 
     public async Task<Result<Paginateable<IEnumerable<ItemStockRequisitionDto>>>> GetItemStockRequisitions(int page, int pageSize, string searchQuery)
@@ -82,14 +119,57 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
 
     public async Task<Result<ItemStockRequisitionDto>> GetItemStockRequisition(Guid id)
     {
-        var itemStockReq = await context.ItemStockRequisitions
-            .Include(r => r.RequisitionItems)
-            .ThenInclude(i => i.Item)
-            .Include(u => u.CreatedBy)
-            .FirstOrDefaultAsync(isr => isr.Id == id);
-        return itemStockReq is null ?
-            Error.NotFound("ItemStockRequisition.NotFound", "Item stock requisition not found")
-            : mapper.Map<ItemStockRequisitionDto>(itemStockReq);
+        var dto = await context.ItemStockRequisitions
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(r => new ItemStockRequisitionDto
+            {
+                Id = r.Id,
+                Number = r.Number,
+                RequisitionDate = r.RequisitionDate,
+                Justification = r.Justification,
+                Status = (LeaveStatus)r.Status,
+
+                RequestedBy = new UserDto
+                {
+                    Id = r.RequestedBy.Id,
+                    FirstName = r.RequestedBy.FirstName,
+                    LastName = r.RequestedBy.LastName,
+                    Email = r.RequestedBy.Email
+                },
+
+                Department = new DepartmentDto
+                {
+                    Id = r.Department.Id,
+                    Name = r.Department.Name
+                },
+
+                RequisitionItems = r.RequisitionItems
+                    .Select(ri => new ItemStockRequisitionItemDto
+                    {
+                        ItemStockRequisitionId = ri.ItemStockRequisitionId,
+                        Id = ri.Id,
+                        QuantityRequested = ri.QuantityRequested,
+
+                        Item = new Item
+                        {
+                            Id = ri.Item.Id,
+                            Code = ri.Item.Code,
+                            Name = ri.Item.Name
+                        }
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (dto is null)
+        {
+            return Error.NotFound(
+                "ItemStockRequisition.NotFound",
+                "Item stock requisition not found");
+        }
+
+        return Result.Success(dto);
     }
 
     public async Task<Result> UpdateItemStockRequisition(Guid id, CreateItemStockRequisitionRequest request)
@@ -169,6 +249,12 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
 
     public async Task<Result> IssueStockRequisition(Guid id, IssueStockAgainstRequisitionRequest request)
     {
+        if (request?.QuantitiesToIssue == null || request.QuantitiesToIssue.Count == 0)
+        {
+            return Error.Validation("Request.Quantities",
+                "You must specify at least one item to issue.");
+        }
+        
         var requisition = await context.ItemStockRequisitions
             .Include(r => r.RequisitionItems)
             .ThenInclude(i => i.Item)

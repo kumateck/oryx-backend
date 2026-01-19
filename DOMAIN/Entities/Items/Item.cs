@@ -25,7 +25,7 @@ public class Item : BaseEntity
 
 public enum Store
 {
-    ITStore,
+    ItStore,
     GeneralStore,
     EquipmentStore,
     ReagentStore
@@ -59,11 +59,10 @@ public class StockItems
 public class ItemStockRequisitionItemDto : BaseDto
 {
     public Guid ItemStockRequisitionId { get; set; }
-    public ItemStockRequisitionDto ItemStockRequisition { get; set; }
+    public ItemStockRequisition ItemStockRequisition { get; set; }
 
     public Guid ItemId { get; set; }
-    public ItemDto Item { get; set; }
-
+    public Item Item { get; set; }
     public int QuantityRequested { get; set; }
 }
 

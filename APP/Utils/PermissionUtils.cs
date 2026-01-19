@@ -247,7 +247,9 @@ public static class PermissionKeys
     public const string CanViewRawMaterials = "CanViewRawMaterials";
     public const string CanViewQuarantineRawMaterials = "CanViewQuarantineRawMaterials";
     public const string CanDistributeRawMaterials = "CanDistributeRawMaterials";
+    public const string CanViewDistributedRawMaterials = "CanViewDistributedRawMaterials";
     public const string CanViewPackagingMaterials = "CanViewPackagingMaterials";
+    public const string CanViewDistributedPackagingMaterials = "CanViewDistributedPackagingMaterials";
     public const string CanViewQuarantinePackagingMaterials = "CanViewQuarantinePackagingMaterials";
     public const string CanDistributePackagingMaterials = "CanDistributePackagingMaterials";
     public const string CanAssignRawMaterialsStockToShelves = "CanAssignRawMaterialsStockToShelves";
@@ -851,10 +853,12 @@ public static class PermissionUtils
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateChecklistForPackagingMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateGrnForPackagingMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewRawMaterials);
-        //addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewQuarantineRawMaterials);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewQuarantineRawMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanDistributeRawMaterials);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewDistributedRawMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewPackagingMaterials);
-        //addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewQuarantinePackagingMaterials);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewDistributedPackagingMaterials);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewQuarantinePackagingMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanDistributePackagingMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.DistributedArea, PermissionKeys.CanViewRawMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.DistributedArea, PermissionKeys.CanAssignRawMaterialsStockToShelves);

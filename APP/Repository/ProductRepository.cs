@@ -9,6 +9,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -287,10 +288,15 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         if (route == null)
             return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
 
-        context.RouteResources.RemoveRange(route.Resources);
-        context.RouteResponsibleRoles.RemoveRange(route.ResponsibleRoles);
-        context.RouteResponsibleUsers.RemoveRange(route.ResponsibleUsers);
-        context.RouteWorkCenters.RemoveRange(route.WorkCenters);
+        await context.RouteResources.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
+        await context.RouteResponsibleRoles.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
+        await context.RouteResponsibleUsers.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
+        await context.RouteWorkCenters.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
+
+        route.Resources.Clear();
+        route.ResponsibleRoles.Clear();
+        route.ResponsibleUsers.Clear();
+        route.WorkCenters.Clear();
 
         mapper.Map(request, route);
         route.LastUpdatedById = userId;
@@ -303,17 +309,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result> DeleteRoute(Guid routeId, Guid userId)
     {
-        var route = await context.Routes
-            .Include(r => r.Resources)
-            .FirstOrDefaultAsync(r => r.Id == routeId);
+        await context.Routes.Where(r => r.Id == routeId).ExecuteDeleteAsync();
 
-        if (route == null)
-            return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
-
-        route.DeletedAt = DateTime.UtcNow;
-        route.LastDeletedById = userId;
-
-        context.Routes.Update(route);
         await context.SaveChangesAsync();
 
         return Result.Success();
@@ -1005,6 +1002,19 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var header = worksheet.Cells[1, col].Text.Trim();
             if (!string.IsNullOrEmpty(header)) headers[header] = col;
         }
+        
+        var requiredHeaders = new[]
+        {
+            "Warehouse", "Product Code", "Product Name", "Packing Style",
+            "Total Quantity", "Batch No.", "FGTN ID",
+            " AR No.", " Manufacturing Date", "Expiry Date"
+        };
+
+        foreach (var header in requiredHeaders)
+        {
+            if (!headers.ContainsKey(header))
+                return UploadErrors.MissingRequiredHeader(header);
+        }
 
         // 1. SCAN EXCEL FOR FILTER CRITERIA
         var excelProductCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1042,6 +1052,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             pp => $"{pp.Product.Code.Trim()}|{pp.Name.Trim()}",
             pp => pp,
             StringComparer.OrdinalIgnoreCase);
+
+        var warehouses = await context.Warehouses
+            .Where(w => w.Type == WarehouseType.FinishedGoodsStorage)
+            .ToDictionaryAsync(w => w.Name.ToLower(), w => w);
 
         var manufacturingRecords = new List<BatchManufacturingRecord>();
         var packagingRecords = new List<BatchPackagingRecord>();
@@ -1104,13 +1118,16 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             finishedGoodsTransferNotes.Add(new FinishedGoodsTransferNote
             {
                 Id = Guid.NewGuid(),
-                TransferNoteNumber = "",
+                TransferNoteNumber = GetCell("FGTN ID"),
+                ToWarehouseId = warehouses.TryGetValue(GetCell("Warehouse").ToLower(), out var warehouse) ? 
+                    warehouse.Id : null,
                 TotalQuantity = quantity,
                 ProductPackingId = packing.Id,
                 BatchManufacturingRecordId = (await context.BatchManufacturingRecords
                     .FirstAsync(b => 
                         b.ProductionScheduleProductId == defaultScheduleProduct.Id)).Id,
-                Approved = true
+                Approved = true,
+                IsApproved = true
             });
         }
 
@@ -1151,7 +1168,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // Mapping headers based on your requirements
         var requiredHeaders = new[]
         {
-            "EQUIPMENT NO", "EQUIPMENT NAME", "UOM", "DEPARTMENT CODE"
+            "EQUIPMENT NO", "EQUIPMENT NAME", "UOM", "DEPARTMENT CODE", "Storage Location"
         };
 
         foreach (var header in requiredHeaders)
@@ -1163,7 +1180,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // Lookups for Foreign Keys
         var uoms = await context.UnitOfMeasures
             .AsNoTracking()
-            .ToDictionaryAsync(u => u.Symbol.ToLower(), u => u.Id);
+            .ToDictionaryAsync(
+                u => u.Symbol, 
+                u => u.Id
+            );
 
         var departments = await context.Departments
             .AsNoTracking()
@@ -1180,9 +1200,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 ? worksheet.Cells[row, header1].Text.Trim() : string.Empty;
 
             var equipmentNo = GetCell("EQUIPMENT NO");
-            if (string.IsNullOrWhiteSpace(equipmentNo) || existingNumbers.Contains(equipmentNo))
+            if (equipmentNo != "-"  && existingNumbers.Contains(equipmentNo) && !string.IsNullOrWhiteSpace(equipmentNo))
                 return Error.Validation("EquipmentNo",
-                    $"Equipment number not found for row {row}");
+                    $"Equipment number {equipmentNo} already exists. See row {row}");
 
             var uomSymbol = GetCell("UOM").ToLower();
             var deptName = GetCell("DEPARTMENT CODE").ToLower();
@@ -1201,20 +1221,22 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 Name = GetCell("EQUIPMENT NAME"),
                 Model = GetCell("MODEL"),
                 SerialNumber = GetCell("SERIAL NO"),
-                Location = GetCell("LOCATION"),
+                Location = GetCell("Storage Location"),
                 IsStorage = isStorage,
                 RelevanceCheck = relevanceCheck,
                 CapacityQuantity = decimal.TryParse(GetCell("CAPACITY QUANTITY"), out var cq) ? cq : 0,
-                UoMId = uoms.TryGetValue(uomSymbol, out var uomId) ? uomId : Guid.Empty,
-                DepartmentId = departments.TryGetValue(deptName, out var deptId) ? deptId : Guid.Empty
+                UoMId = uoms.TryGetValue(uomSymbol, out var uomId) ? uomId : null,
+                DepartmentId = departments.TryGetValue(deptName, out var deptId) ? deptId : Guid.Empty,
             };
 
             // Basic Validation: Ensure Guid IDs are found before adding
-            if (equipment.UoMId != Guid.Empty && equipment.DepartmentId != Guid.Empty)
+            if (equipment.DepartmentId == Guid.Empty)
             {
-                equipmentsToInsert.Add(equipment);
-                existingNumbers.Add(equipmentNo);
+                return Error.Validation("MissingValue", 
+                    $"Missing value for department at row {row}");
             }
+            equipmentsToInsert.Add(equipment);
+            existingNumbers.Add(equipmentNo);
         }
 
         if (equipmentsToInsert.Count != 0)

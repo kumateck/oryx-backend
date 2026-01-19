@@ -11,6 +11,7 @@ public interface IServiceMemoRepository
         ServiceMemoStatus? status = null, Guid? jobOrderId = null, Guid? serviceProviderId = null);
     Task<Result<ServiceMemoDto>> GetServiceMemo(Guid id);
     Task<Result> UpdateServiceMemo(Guid id, UpdateServiceMemoRequest request);
+    Task<Result> MarkServiceMemoAsPaid(Guid id);
     Task<Result> IssueServiceMemo(IssueServiceMemoRequest request);
 }
 

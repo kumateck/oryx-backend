@@ -31,7 +31,8 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Retrieves a paginated list of item stock requisitions
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemStockRequisitionDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<ItemStockRequisitionDto>>))]
     public async Task<IResult> GetItems([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
@@ -43,6 +44,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Retrieves an item stock requisition by its ID
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemStockRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItem([FromRoute] Guid id)

@@ -142,6 +142,11 @@ public interface IProductionScheduleRepository
         string searchQuery, Guid productId);
     Task<Result<IEnumerable<ProductionScheduleReportDto>>> GetProductionScheduleSummaryReport(
         ProductionScheduleReportFilter filter);
-    Task<Result<IEnumerable<ProductionScheduleDetailedReportDto>>> GetProductionScheduleDetailedReport(
-        ProductionScheduleReportFilter filter);
+    Task<Result<IEnumerable<ProductionScheduleDetailedReportDto>>> GetProductionScheduleDetailedReport
+        (ProductionScheduleReportFilter filter);
+    Task<Result<List<ForecastMaterialDto>>> ForecastProductionScheduleProduct(Guid productId,
+        int numberOfBatches,
+        Guid productPackingId,
+        BatchSize batchSize,
+        Guid userId);
 }

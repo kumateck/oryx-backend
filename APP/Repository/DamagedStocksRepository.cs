@@ -52,7 +52,8 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
             {
                 Id = Guid.NewGuid(),
                 ItemCode = item.Code,
-                TransactionType = "Missing/Damaged Stock",
+                TransactionType = request.DamageStatus == DamageStatus.Damage ? 
+                    TransactionType.Damaged: TransactionType.Missing,
                 Credit = 0,
                 Debit = request.QuantityDamaged,
                 TotalBalance = itemTransaction.TotalBalance - request.QuantityDamaged
@@ -155,7 +156,8 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
                 ItemCode = damagedStock.Item.Code,
                 Credit = 0,
                 Debit = difference > 0 ? difference : 0,
-                TransactionType = "Missing/Damaged Stock",
+                TransactionType = request.DamageStatus == DamageStatus.Damage 
+                    ? TransactionType.Damaged : TransactionType.Missing,
                 TotalBalance = previousBalance - (difference > 0 ? difference : 0),
                 CreatedAt = DateTime.UtcNow
             };
@@ -202,7 +204,8 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
             {
                 Id = Guid.NewGuid(),
                 ItemCode = damagedStock.Item.Code,
-                TransactionType = "Missing/Damaged Stock deleted",
+                TransactionType = damagedStock.DamageStatus == DamageStatus.Damage ? 
+                    TransactionType.Damaged : TransactionType.Missing,
                 Credit = damagedStock.QuantityDamaged,
                 Debit = 0,
                 TotalBalance = (lastTransaction?.TotalBalance ?? 0) + damagedStock.QuantityDamaged,

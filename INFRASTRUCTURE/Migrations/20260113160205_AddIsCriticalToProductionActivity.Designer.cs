@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260113160205_AddIsCriticalToProductionActivity")]
+    partial class AddIsCriticalToProductionActivity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2956,8 +2959,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("TotalBalance")
                         .HasColumnType("numeric");
 
-                    b.Property<int>("TransactionType")
-                        .HasColumnType("integer");
+                    b.Property<string>("TransactionType")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -4152,9 +4155,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("MemoNumber")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("Paid")
-                        .HasColumnType("boolean");
 
                     b.Property<Guid>("ServiceProviderId")
                         .HasColumnType("uuid");
@@ -7919,7 +7919,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<Guid?>("UoMId")
+                    b.Property<Guid>("UoMId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -18313,7 +18313,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
-                        .HasForeignKey("UoMId");
+                        .HasForeignKey("UoMId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("CreatedBy");
 
