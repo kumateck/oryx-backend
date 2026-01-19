@@ -64,12 +64,12 @@ public class ServiceMemoApproval : ResponsibleApprovalStage
 
 public enum ServiceMemoStatus
 {
-    Draft,
-    PendingApproval,
-    Approved,
-    Rejected,
-    Issued,
-    Completed,
-    Cancelled
+    Draft = 0,
+    PendingApproval = 1,
+    Approved = 2, 
+    Rejected = 3,
+    Issued = 4,
+    Completed = 5,
+    Cancelled = 6 
 }
 

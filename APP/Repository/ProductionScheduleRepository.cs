@@ -1880,7 +1880,8 @@ public class ProductionScheduleRepository(
         return Result.Success();
     }*/
 
-    public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
+    public async Task<Result<Paginateable<IEnumerable<BatchManufacturingRecordDto>>>> 
+        GetBatchManufacturingRecords(int page, int pageSize, string searchQuery = null, ProductionStatus? status = null)
     {
         var query = context.BatchManufacturingRecords
             .AsSplitQuery()

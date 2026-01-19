@@ -92,15 +92,17 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
-            entity => mapper.Map<ServiceMemoDto>(entity));
+            mapper.Map<ServiceMemoDto>);
     }
 
     public async Task<Result<ServiceMemoDto>> GetServiceMemo(Guid id)
     {
         var memo = await context.ServiceMemos
             .AsSplitQuery()
-            .Include(m => m.JobOrder).ThenInclude(j => j.JobRequest)
-            .Include(m => m.ServiceQuotation).ThenInclude(q => q.Items)
+            .Include(m => m.JobOrder)
+                .ThenInclude(j => j.JobRequest)
+            .Include(m => m.ServiceQuotation)
+                .ThenInclude(q => q.Items)
             .Include(m => m.ServiceProvider)
             .Include(m => m.IssuedBy)
             .FirstOrDefaultAsync(m => m.Id == id);
