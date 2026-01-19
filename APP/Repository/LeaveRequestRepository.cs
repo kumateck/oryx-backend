@@ -20,7 +20,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         if (request.StartDate > request.EndDate)
             return Error.Validation("Request.InvalidDates", "Start date must be before end date.");
 
-        var totalDays = (request.EndDate - request.StartDate).TotalDays;
+        var totalDays = GetWeekdaysInclusive(request.StartDate, request.EndDate);
 
         var existingEmployee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == request.EmployeeId);
@@ -69,31 +69,31 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                             int balanceDeducted;
                             if (leaveType.DeductionLimit > 0)
                             {
-                                paidDays = (int)Math.Min(totalDays, leaveType.DeductionLimit ?? 0);
-                                var remaining = (int)totalDays - paidDays;
+                                paidDays = Math.Min(totalDays, leaveType.DeductionLimit ?? 0);
+                                var remaining = totalDays - paidDays;
 
                                 balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, remaining);
                                 unpaidDays = remaining - balanceDeducted;
                             }
                             else
                             {
-                                balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, (int)totalDays);
+                                balanceDeducted = Math.Min(existingEmployee.AnnualLeaveDays, totalDays);
                                 paidDays = balanceDeducted;
-                                unpaidDays = (int)totalDays - balanceDeducted;
+                                unpaidDays = totalDays - balanceDeducted;
                             }
 
                             existingEmployee.AnnualLeaveDays -= balanceDeducted;
                         }
                         else
                         {
-                            paidDays = (int)totalDays;
+                            paidDays = totalDays;
                             unpaidDays = 0;
                         }
                     }
                     else
                     {
                         paidDays = 0;
-                        unpaidDays = (int)totalDays;
+                        unpaidDays = totalDays;
                     }
 
                     break;
@@ -122,20 +122,20 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                         {
                             if (balance >= totalDays - deductionLimit)
                             {
-                                paidDays = (int)totalDays;
-                                existingEmployee.AnnualLeaveDays -= (int)(totalDays - deductionLimit);
+                                paidDays = totalDays;
+                                existingEmployee.AnnualLeaveDays -= totalDays - deductionLimit;
                             }
                             else
                             {
                                 paidDays = balance + deductionLimit;
-                                unpaidDays = (int)totalDays - paidDays;
+                                unpaidDays = totalDays - paidDays;
                             }
                         }
                     }
                     else
                     {
                         paidDays = 0;
-                        unpaidDays = (int)totalDays;
+                        unpaidDays = totalDays;
                     }
 
                     break;
@@ -193,6 +193,29 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
 
         return entity.Id;
     }
+    
+    private static int GetWeekdaysInclusive(DateTime startDate, DateTime endDate)
+    {
+        if (startDate > endDate)
+            return 0;
+
+        var count = 0;
+        var current = startDate.Date;
+
+        while (current <= endDate.Date)
+        {
+            if (current.DayOfWeek != DayOfWeek.Saturday &&
+                current.DayOfWeek != DayOfWeek.Sunday)
+            {
+                count++;
+            }
+
+            current = current.AddDays(1);
+        }
+
+        return count;
+    }
+    
     public async Task<Result<Paginateable<IEnumerable<LeaveRequestDto>>>> GetLeaveRequests(int page, int pageSize, string searchQuery,
         LeaveStatus? status, RequestCategory? leaveCategory, Guid? departmentId)
     {
