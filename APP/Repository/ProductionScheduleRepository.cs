@@ -3381,8 +3381,10 @@ public class ProductionScheduleRepository(
             .Include(product => product.BillOfMaterials)
             .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
             .ThenInclude(billOfMaterial => billOfMaterial.Items)
-            .ThenInclude(billOfMaterialItem => billOfMaterialItem.BaseUoM).Include(product => product.Packages)
-            .ThenInclude(productPackage => productPackage.Material).Include(product => product.Packages)
+            .ThenInclude(billOfMaterialItem => billOfMaterialItem.BaseUoM)
+            .Include(product => product.Packages)
+            .ThenInclude(productPackage => productPackage.Material)
+            .Include(product => product.Packages)
             .ThenInclude(productPackage => productPackage.DirectLinkMaterial)
             .FirstOrDefaultAsync(p => p.Id == productId);
         
@@ -3441,7 +3443,7 @@ public class ProductionScheduleRepository(
             })
             .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
 
-        var materialDepartments = await context.MaterialDepartments
+        var rawMaterialDepartments = await context.MaterialDepartments
             .AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
@@ -3454,7 +3456,7 @@ public class ProductionScheduleRepository(
    
         
         var materialDetails = activeBoM.BillOfMaterial.Items
-            .Where(i => materialDepartments.ContainsKey(i.MaterialId))
+            .Where(i => rawMaterialDepartments.ContainsKey(i.MaterialId))
             .Select(item =>
             {
                 var quantityOnHand = rawStockLevels.GetValueOrDefault(item.MaterialId, 0);
@@ -3466,7 +3468,8 @@ public class ProductionScheduleRepository(
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
-                    QuantityOnHand = quantityOnHand
+                    QuantityOnHand = quantityOnHand,
+                    UoM = mapper.Map<UnitOfMeasureDto>(rawMaterialDepartments[item.MaterialId].UoM)
                 };
             }).ToList();
         
@@ -3491,10 +3494,21 @@ public class ProductionScheduleRepository(
             })
             .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
         
+        var packageMaterialDepartments = await context.MaterialDepartments
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(m => m.UoM)
+            .Include(m => m.Material)
+            .Include(m => m.Department)
+            .Where(m => product.Packages.Select(i =>
+                            i.MaterialId).Distinct().Contains(m.MaterialId)
+                        && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
+            .ToDictionaryAsync(k => k.MaterialId, v => v);
+        
         var packageMaterialDetails = product.Packages
             .Where(p =>
                 p.ProductPackingId == productPackingId || !p.ProductPackingId.HasValue &&
-                materialDepartments.ContainsKey(p.MaterialId))
+                packageMaterialDepartments.ContainsKey(p.MaterialId))
             .Select(item =>
             {
                 var quantityOnHand = packingStockLevels.GetValueOrDefault(item.MaterialId, 0);
@@ -3506,7 +3520,8 @@ public class ProductionScheduleRepository(
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded *  numberOfBatches,
-                    QuantityOnHand = quantityOnHand
+                    QuantityOnHand = quantityOnHand,
+                    UoM = mapper.Map<UnitOfMeasureDto>(packageMaterialDepartments[item.MaterialId].UoM)
                 };
             }).ToList();
 

@@ -221,7 +221,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         if (product.Routes.Count != 0)
         {
-            context.Routes.RemoveRange(product.Routes);
+            await context.Routes.Where(x => x.ProductId == productId).ExecuteDeleteAsync();
         }
 
         var routes = new List<Route>();
@@ -346,7 +346,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // Remove old packages if they exist
         if (product.Packages.Count != 0)
         {
-            context.ProductPackages.RemoveRange(product.Packages);
+            await context.ProductPackages.Where(x => x.ProductId == productId).ExecuteDeleteAsync();
         }
 
         // Map and add new packages
@@ -462,13 +462,12 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     public async Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId)
     {
         var productPackage = await context.ProductPackages
-            .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
+            .FirstOrDefaultAsync(p => p.Id == productPackageId);
 
         if (productPackage == null)
             return Error.NotFound("ProductPackage.NotFound", $"Product package with ID {productPackageId} not found.");
 
-        productPackage.DeletedAt = DateTime.UtcNow;
-        productPackage.LastDeletedById = userId;
+        await context.ProductPackages.Where(x => x.Id == productPackageId).ExecuteDeleteAsync();
 
         context.ProductPackages.Update(productPackage);
         await context.SaveChangesAsync();

@@ -46,6 +46,7 @@ public class ForecastMaterialDto
     public MaterialDto Material { get; set; }
     public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
     public bool IsAvailable => QuantityOnHand > QuantityNeeded;
 }
 
