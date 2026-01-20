@@ -3447,12 +3447,22 @@ public class ProductionScheduleRepository(
             .AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
-            .Include(m => m.Material)
-            .Include(m => m.Department)
             .Where(m => activeBoM.BillOfMaterial.Items.Select(i =>
                             i.MaterialId).Distinct().Contains(m.MaterialId)
                         && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
+        
+        var rawTotalReservedQuantities = context.MaterialBatchReservedQuantities
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Where(r => rawMaterialDepartments.Keys.Contains(r.MaterialBatch.MaterialId) &&
+                        r.WarehouseId == productionWarehouse.Id &&
+                        r.DeletedAt == null)
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .ToDictionary(
+                g => g.Key,      
+                g => g.Sum(r => r.Quantity)
+            );
    
         
         var materialDetails = activeBoM.BillOfMaterial.Items
@@ -3469,6 +3479,7 @@ public class ProductionScheduleRepository(
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
                     QuantityOnHand = quantityOnHand,
+                    ReservedQuantity = rawTotalReservedQuantities[item.MaterialId],
                     UoM = mapper.Map<UnitOfMeasureDto>(rawMaterialDepartments[item.MaterialId].UoM)
                 };
             }).ToList();
@@ -3498,12 +3509,22 @@ public class ProductionScheduleRepository(
             .AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
-            .Include(m => m.Material)
-            .Include(m => m.Department)
             .Where(m => product.Packages.Select(i =>
                             i.MaterialId).Distinct().Contains(m.MaterialId)
                         && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
+        
+        var packingTotalReservedQuantities = context.MaterialBatchReservedQuantities
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Where(r => packageMaterialDepartments.Keys.Contains(r.MaterialBatch.MaterialId) &&
+                        r.WarehouseId == productionWarehouse.Id &&
+                        r.DeletedAt == null)
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .ToDictionary(
+                g => g.Key,      
+                g => g.Sum(r => r.Quantity)
+            );
         
         var packageMaterialDetails = product.Packages
             .Where(p =>
@@ -3521,6 +3542,7 @@ public class ProductionScheduleRepository(
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded *  numberOfBatches,
                     QuantityOnHand = quantityOnHand,
+                    ReservedQuantity = packingTotalReservedQuantities[item.MaterialId],
                     UoM = mapper.Map<UnitOfMeasureDto>(packageMaterialDepartments[item.MaterialId].UoM)
                 };
             }).ToList();
