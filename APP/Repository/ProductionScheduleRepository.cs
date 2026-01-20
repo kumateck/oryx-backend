@@ -3479,7 +3479,7 @@ public class ProductionScheduleRepository(
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
                     QuantityOnHand = quantityOnHand,
-                    ReservedQuantity = rawTotalReservedQuantities[item.MaterialId],
+                    ReservedQuantity = rawTotalReservedQuantities.GetValueOrDefault(item.MaterialId),
                     UoM = mapper.Map<UnitOfMeasureDto>(rawMaterialDepartments[item.MaterialId].UoM)
                 };
             }).ToList();
@@ -3542,7 +3542,7 @@ public class ProductionScheduleRepository(
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded *  numberOfBatches,
                     QuantityOnHand = quantityOnHand,
-                    ReservedQuantity = packingTotalReservedQuantities[item.MaterialId],
+                    ReservedQuantity = packingTotalReservedQuantities.GetValueOrDefault(item.MaterialId, 0),
                     UoM = mapper.Map<UnitOfMeasureDto>(packageMaterialDepartments[item.MaterialId].UoM)
                 };
             }).ToList();
