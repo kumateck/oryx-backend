@@ -2,7 +2,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
-using SHARED;
 
 namespace DOMAIN.Entities.ProductionSchedules.Packing;
 

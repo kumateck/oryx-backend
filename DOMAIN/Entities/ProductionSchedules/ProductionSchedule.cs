@@ -7,7 +7,6 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Users;
-using SHARED;
 
 namespace DOMAIN.Entities.ProductionSchedules;
 

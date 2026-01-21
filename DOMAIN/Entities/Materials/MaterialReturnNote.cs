@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
-using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
