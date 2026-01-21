@@ -3200,6 +3200,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return Error.NotFound("Warehouse.NotFound", "Warehouse not found.");
 
         var query = context.MaterialBatchReservedQuantities
+            .Include(r => r.Warehouse)
             .Where(r => r.WarehouseId == warehouseId)
             .AsQueryable();
         
