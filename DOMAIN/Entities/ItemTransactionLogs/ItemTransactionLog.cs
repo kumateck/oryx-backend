@@ -30,7 +30,7 @@ public class ItemTransactionLogDto : BaseDto
     public string ItemCode { get; set; }
     public decimal Credit { get; set; }
     public decimal Debit { get; set; }
-    public decimal TotalBalance => Credit - Debit;
+    public decimal TotalBalance { get; set; }
     public decimal ShadowHold { get; set; }
 
 }
