@@ -262,18 +262,21 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
 
         // Track total quantities already issued
         var issuedSoFar = await context.IssueItemStockRequisitions
-            .Where(iss => requisition.RequisitionItems.Select(x => x.Id).Contains(iss.ItemStockRequisitionId))
+            .Where(iss => requisition.RequisitionItems
+            .Select(x => x.Id)
+            .Contains(iss.ItemStockRequisitionId))
             .GroupBy(iss => iss.ItemStockRequisitionId)
-            .ToDictionaryAsync(g => g.Key, g => g.Sum(x => x.QuantityIssued));
+            .ToDictionaryAsync(g => g.Key,
+            g => g.Sum(x => x.QuantityIssued));
 
         var anyIssued = false;
 
         foreach (var item in requisition.RequisitionItems)
         {
-            if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var issueQty) || issueQty <= 0)
+            if (!request.QuantitiesToIssue.TryGetValue(item.ItemStockRequisitionId, out var issueQty) || issueQty <= 0)
                 continue;
 
-            var alreadyIssued = issuedSoFar.GetValueOrDefault(item.Id, 0);
+            var alreadyIssued = issuedSoFar.GetValueOrDefault(item.ItemStockRequisitionId, 0);
             var remainingToIssue = item.QuantityRequested - alreadyIssued;
 
             if (issueQty > remainingToIssue)
@@ -289,12 +292,12 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
             context.IssueItemStockRequisitions.Add(new IssueItemStockRequisition
             {
                 Id = Guid.NewGuid(),
-                ItemStockRequisitionId = item.Id,
+                ItemStockRequisitionId = item.ItemStockRequisitionId,
                 QuantityIssued = issueQty
             });
 
             // Update issuedSoFar for status calculation
-            issuedSoFar[item.Id] = alreadyIssued + issueQty;
+            issuedSoFar[item.ItemStockRequisitionId] = alreadyIssued + issueQty;
             anyIssued = true;
             
             context.ItemTransactionLogs.Add(new ItemTransactionLog
@@ -314,7 +317,7 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
             return Error.Validation("Request.Quantities", "No valid quantities to issue.");
 
         var fullyIssued = requisition.RequisitionItems.All(i =>
-            issuedSoFar.GetValueOrDefault(i.Id, 0) >= i.QuantityRequested);
+            issuedSoFar.GetValueOrDefault(i.ItemStockRequisitionId, 0) >= i.QuantityRequested);
 
         requisition.Status = fullyIssued
             ? IssueItemStockRequisitionStatus.Completed
@@ -347,7 +350,7 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
             if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var qtyNowIssued) || qtyNowIssued <= 0)
                 continue;
 
-            var alreadyIssued = existingIssues.GetValueOrDefault(item.Id, 0);
+            var alreadyIssued = existingIssues.GetValueOrDefault(item.ItemStockRequisitionId, 0);
             var qtyOutstanding = item.QuantityRequested - alreadyIssued;
 
             if (qtyNowIssued > qtyOutstanding)
@@ -362,17 +365,17 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
             // Add or update issue record
             if (!existingIssues.TryAdd(item.Id, qtyNowIssued))
             {
-                existingIssues[item.Id] += qtyNowIssued;
+                existingIssues[item.ItemStockRequisitionId] += qtyNowIssued;
                 var existingRecord = await context.IssueItemStockRequisitions
-                    .FirstAsync(x => x.ItemStockRequisitionId == item.Id);
-                existingRecord.QuantityIssued = existingIssues[item.Id];
+                    .FirstAsync(x => x.ItemStockRequisitionId == item.ItemStockRequisitionId);
+                existingRecord.QuantityIssued = existingIssues[item.ItemStockRequisitionId];
             }
             else
             {
                 context.IssueItemStockRequisitions.Add(new IssueItemStockRequisition
                 {
                     Id = Guid.NewGuid(),
-                    ItemStockRequisitionId = item.Id,
+                    ItemStockRequisitionId = item.ItemStockRequisitionId,
                     QuantityIssued = qtyNowIssued
                 });
             }
