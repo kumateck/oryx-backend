@@ -128,11 +128,13 @@ public interface IProductionScheduleRepository
     Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
         List<BatchTransferRequest> batches, Guid userId);
     Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
-        bool? onlyApproved,
         int page,
         int pageSize,
         string searchQuery = null,
-        Division? division = null);
+        Division? division = null,
+        bool? onlyApproved = null,
+        bool? partial = null,
+        bool? fulfilled = null);
     Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(
         int page, int pageSize,
         string searchQuery, Guid productId);
