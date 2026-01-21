@@ -1662,6 +1662,29 @@ public class ProductionScheduleRepository(
             mapper.Map<ProductBinCardInformationDto>
         );
     }
+    
+    public async Task<Result<List<FinishedGoodsTransferNoteDto>>> GetFinishedGoodsTransferNotesByBmr(
+        Guid batchManufacturingRecordId)
+    {
+        var transferNote = await context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.ProductionScheduleProduct)
+            .ThenInclude(b => b.Product)
+            .Include(b => b.FromWarehouse)
+            .Include(u => u.UoM)
+            .Include(b => b.ToWarehouse)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
+            .Include(b => b.CreatedBy)
+            .Where(f => f.Id == batchManufacturingRecordId)
+            .ToListAsync();
+
+       return mapper.Map<List<FinishedGoodsTransferNoteDto>>(transferNote);
+    }
 
 
     public async Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id)

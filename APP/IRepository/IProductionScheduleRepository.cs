@@ -90,6 +90,8 @@ public interface IProductionScheduleRepository
     Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
 
     Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id);
+    Task<Result<List<FinishedGoodsTransferNoteDto>>> GetFinishedGoodsTransferNotesByBmr(
+        Guid batchManufacturingRecordId);
     Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request);
 
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
