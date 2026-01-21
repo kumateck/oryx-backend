@@ -247,35 +247,31 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
         return Result.Success();
     }
 
-    public async Task<Result> IssueStockRequisition(Guid id, IssueStockAgainstRequisitionRequest request)
+     public async Task<Result> IssueStockRequisition(Guid id, IssueStockAgainstRequisitionRequest request)
     {
         if (request?.QuantitiesToIssue == null || request.QuantitiesToIssue.Count == 0)
-        {
-            return Error.Validation("Request.Quantities",
-                "You must specify at least one item to issue.");
-        }
-        
+            return Error.Validation("Request.Quantities", "You must specify at least one item to issue.");
+
         var requisition = await context.ItemStockRequisitions
             .Include(r => r.RequisitionItems)
-            .ThenInclude(i => i.Item)
+                .ThenInclude(i => i.Item)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (requisition == null)
             return Error.NotFound("Requisition.NotFound", "Requisition not found.");
 
-        // Get total quantities already issued per requisition item
+        // Track total quantities already issued
         var issuedSoFar = await context.IssueItemStockRequisitions
             .Where(iss => requisition.RequisitionItems.Select(x => x.Id).Contains(iss.ItemStockRequisitionId))
             .GroupBy(iss => iss.ItemStockRequisitionId)
             .ToDictionaryAsync(g => g.Key, g => g.Sum(x => x.QuantityIssued));
 
+        var anyIssued = false;
+
         foreach (var item in requisition.RequisitionItems)
         {
-            if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var issueQty))
+            if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var issueQty) || issueQty <= 0)
                 continue;
-
-            if (issueQty < 0)
-                return Error.Validation("Quantity.Invalid", $"Issued quantity for item {item.Id} cannot be negative.");
 
             var alreadyIssued = issuedSoFar.GetValueOrDefault(item.Id, 0);
             var remainingToIssue = item.QuantityRequested - alreadyIssued;
@@ -285,31 +281,30 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
 
             if (issueQty > item.Item.AvailableQuantity)
                 return Error.Validation("Stock.Insufficient", $"Not enough stock for material {item.ItemId}.");
-        }
 
-        foreach (var item in requisition.RequisitionItems)
-        {
-            if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var issueQty) || issueQty <= 0)
-                continue;
-
+            // Issue the stock
             context.IssueItemStockRequisitions.Add(new IssueItemStockRequisition
             {
                 Id = Guid.NewGuid(),
-                ItemStockRequisitionId = item.ItemStockRequisitionId,
+                ItemStockRequisitionId = item.Id,
                 QuantityIssued = issueQty
             });
 
             item.Item.AvailableQuantity -= issueQty;
+
+            // Update issuedSoFar for status calculation
+            issuedSoFar[item.Id] = alreadyIssued + issueQty;
+            anyIssued = true;
         }
 
-        // Determine status
-        var fullyIssued = requisition.RequisitionItems.All(i =>
-        {
-            var alreadyIssued = issuedSoFar.GetValueOrDefault(i.Id, 0);
-            return alreadyIssued + request.QuantitiesToIssue.GetValueOrDefault(i.Id, 0) >= i.QuantityRequested;
-        });
-
-        requisition.Status = fullyIssued
+        if (!anyIssued)
+            return Error.Validation("Request.Quantities", "No valid quantities to issue.");
+        
+        var status = requisition.RequisitionItems.All(i =>
+            issuedSoFar.GetValueOrDefault(i.Id, 0) >= i.QuantityRequested);
+        
+        // Update requisition status
+        requisition.Status = status
             ? IssueItemStockRequisitionStatus.Completed
             : IssueItemStockRequisitionStatus.Partial;
 
@@ -321,23 +316,26 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
     {
         var requisition = await context.ItemStockRequisitions
             .Include(r => r.RequisitionItems)
-            .ThenInclude(i => i.Item)
-            .FirstOrDefaultAsync(r => r.Id == requisitionId && r.Status.Equals(IssueItemStockRequisitionStatus.Partial));
+                .ThenInclude(i => i.Item)
+            .FirstOrDefaultAsync(r => r.Id == requisitionId && r.Status == IssueItemStockRequisitionStatus.Partial);
 
         if (requisition == null)
             return Error.NotFound("Requisition.NotFound", "Requisition not found.");
 
-        var issuedSoFar = await context.IssueItemStockRequisitions
-            .Where(iss => requisition.RequisitionItems.Select(x => x.Id).Contains(iss.ItemStockRequisitionId))
-            .GroupBy(iss => iss.ItemStockRequisitionId)
-            .ToDictionaryAsync(g => g.Key, g => g.Sum(x => x.QuantityIssued));
+        if (request?.QuantitiesToIssue == null || request.QuantitiesToIssue.Count == 0)
+            return Error.Validation("Request.Quantities", "You must specify at least one item to issue.");
+
+        // Load all existing issued quantities for the requisition
+        var existingIssues = await context.IssueItemStockRequisitions
+            .Where(x => requisition.RequisitionItems.Select(i => i.Id).Contains(x.ItemStockRequisitionId))
+            .ToDictionaryAsync(x => x.ItemStockRequisitionId, x => x.QuantityIssued);
 
         foreach (var item in requisition.RequisitionItems)
         {
             if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var qtyNowIssued) || qtyNowIssued <= 0)
                 continue;
 
-            var alreadyIssued = issuedSoFar.GetValueOrDefault(item.Id, 0);
+            var alreadyIssued = existingIssues.GetValueOrDefault(item.Id, 0);
             var qtyOutstanding = item.QuantityRequested - alreadyIssued;
 
             if (qtyNowIssued > qtyOutstanding)
@@ -345,24 +343,17 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
 
             if (qtyNowIssued > item.Item.AvailableQuantity)
                 return Error.Validation("Stock.Insufficient", $"Not enough stock for item {item.ItemId}.");
-        }
-
-
-        foreach (var item in requisition.RequisitionItems)
-        {
-            if (!request.QuantitiesToIssue.TryGetValue(item.Id, out var qtyNowIssued) || qtyNowIssued <= 0)
-                continue;
 
             // Deduct stock
             item.Item.AvailableQuantity -= qtyNowIssued;
 
-            // Either update the existing record or insert a new one
-            var existingIssue = await context.IssueItemStockRequisitions
-                .FirstOrDefaultAsync(x => x.ItemStockRequisitionId == item.Id);
-
-            if (existingIssue != null)
+            // Add or update issue record
+            if (!existingIssues.TryAdd(item.Id, qtyNowIssued))
             {
-                existingIssue.QuantityIssued += qtyNowIssued;
+                existingIssues[item.Id] += qtyNowIssued;
+                var existingRecord = await context.IssueItemStockRequisitions
+                    .FirstAsync(x => x.ItemStockRequisitionId == item.Id);
+                existingRecord.QuantityIssued = existingIssues[item.Id];
             }
             else
             {
@@ -375,18 +366,13 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
             }
         }
 
-        var fullyIssued = requisition.RequisitionItems.All(i =>
-        {
-            var alreadyIssued = issuedSoFar.GetValueOrDefault(i.Id, 0);
-            return alreadyIssued + request.QuantitiesToIssue.GetValueOrDefault(i.Id, 0) >= i.QuantityRequested;
-        });
-
-        requisition.Status = fullyIssued
+        var status = requisition.RequisitionItems.All(i => existingIssues.GetValueOrDefault(i.Id, 0) >= i.QuantityRequested);
+        // Update requisition status using updated issued quantities
+        requisition.Status = status
             ? IssueItemStockRequisitionStatus.Completed
             : IssueItemStockRequisitionStatus.Partial;
 
         await context.SaveChangesAsync();
-
         return Result.Success();
     }
 }
