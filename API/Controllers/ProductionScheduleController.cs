@@ -499,6 +499,18 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var result = await repository.GetFinishedGoodsTransferNote(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of finished goods transfer note by bmr id
+    /// </summary>
+    [HttpGet("finished-goods-transfer-note/bmr/{batchManufacturingRecordId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FinishedGoodsTransferNoteDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferNoteByBmr([FromRoute] Guid batchManufacturingRecordId)
+    {
+        var result = await repository.GetFinishedGoodsTransferNotesByBmr(batchManufacturingRecordId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves the details of a finished good transfer note by product Id
