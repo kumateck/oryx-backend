@@ -4,7 +4,6 @@ using DOMAIN.Entities.Countries;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
-using Microsoft.EntityFrameworkCore;
 
 namespace DOMAIN.Entities.Procurement.Suppliers;
 

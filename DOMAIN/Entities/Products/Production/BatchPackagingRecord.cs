@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Users;
-using SHARED;
 
 namespace DOMAIN.Entities.Products.Production;
 

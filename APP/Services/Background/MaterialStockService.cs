@@ -3,7 +3,6 @@ using APP.IRepository;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Users;
-using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

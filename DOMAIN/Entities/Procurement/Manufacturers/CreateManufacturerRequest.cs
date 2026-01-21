@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using DOMAIN.Entities.Procurement.Suppliers;
 
 namespace DOMAIN.Entities.Procurement.Manufacturers;
 
