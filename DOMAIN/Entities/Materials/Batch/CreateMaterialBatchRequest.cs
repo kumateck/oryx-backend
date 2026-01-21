@@ -42,4 +42,5 @@ public class CreateFinishedGoodsTransferNoteRequest
     public decimal TotalQuantity { get; set; }
     public Guid? UoMId { get; set; }
     public string QarNumber { get; set; }
+    public bool IsPartial { get; set; } = false;
 }

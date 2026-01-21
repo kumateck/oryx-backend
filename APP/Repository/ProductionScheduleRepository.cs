@@ -1374,6 +1374,7 @@ public class ProductionScheduleRepository(
         if (bmr is null) throw new Exception("Bmr not found");
 
         var finishedGoodsTransferNote = await context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
             .Include(f => f.Quantities)
             .FirstOrDefaultAsync(f => f.BatchManufacturingRecordId == batchManufacturingRecordId);
 
@@ -1383,7 +1384,8 @@ public class ProductionScheduleRepository(
                finishedGoodsTransferNote.Quantities.Sum(q => q.Quantity);
     }
 
-    public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId)
+    public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request,
+        Guid userId)
     {
         var bmr = await context.BatchManufacturingRecords
            .AsSplitQuery()
@@ -1431,30 +1433,42 @@ public class ProductionScheduleRepository(
         if (finishedGoodsWarehouse is null)
             return Error.NotFound("User.Warehouse",
                 "No finished goods warehouses found in the system");
-
-        FinishedGoodsTransferNote transferNote = null;
-
-        if (await context.FinishedGoodsTransferNotes.AnyAsync(f
-                => f.BatchManufacturingRecordId == bmr.Id))
+        
+        var transferNotes = await context.FinishedGoodsTransferNotes
+            .Where(f => f.BatchManufacturingRecordId == bmr.Id)
+            .ToListAsync();
+        
+        if (request.IsPartial)
         {
-            transferNote = await context.FinishedGoodsTransferNotes
-                .FirstOrDefaultAsync(f => f.BatchManufacturingRecordId == bmr.Id);
-        }
-
-        if (transferNote is null)
-        {
-            transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
-            transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
-            transferNote.FromWarehouseId = productionWarehouse.Id;
-            context.FinishedGoodsTransferNotes.Add(transferNote);
+            if (request.TotalQuantity > bmr.BatchQuantity)
+                return Error.Validation("TransferNote.Partial", $"Request quantity {request.TotalQuantity}" +
+                                                                $"exceeds bmr quantity {bmr.BatchQuantity}");
+            if (transferNotes.Count > 0)
+            {
+                if (transferNotes.Sum(t => t.TotalQuantity) + request.TotalQuantity > bmr.BatchQuantity)
+                    return Error.Validation("TransferNote.Partial",
+                        $"The already exists a transfer note and adding " +
+                        $"quantity of {transferNotes.Sum(t => t.TotalQuantity)}" +
+                        $" exceeds the amount of quantity of bmr which is {bmr.BatchQuantity}");
+            }
         }
         else
         {
-            mapper.Map(transferNote, request);
-            transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
-            transferNote.FromWarehouseId = productionWarehouse.Id;
-            context.FinishedGoodsTransferNotes.Update(transferNote);
+            if (transferNotes.Count > 0)
+                return Error.Validation("TransferNote.Partial",
+                    "This needs to be a partial request given that there already exists finished goods" +
+                    " transfer note for this bmr. Set `isPartial` to true");
+
+            if (request.TotalQuantity != bmr.BatchQuantity)
+                return Error.Validation("TransferNote.Partial",
+                    $"This is not a partial request so the requested quantity must be equal" +
+                    $" to the bmr quantity: {bmr.BatchQuantity}");
         }
+
+        var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
+        transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
+        transferNote.FromWarehouseId = productionWarehouse.Id;
+        context.FinishedGoodsTransferNotes.Add(transferNote);
 
         var movement = new FinishedProductBatchMovement
         {
@@ -1521,32 +1535,54 @@ public class ProductionScheduleRepository(
 
         await context.DistributedFinishedProducts.AddAsync(distributedFinishedProduct);
 
-        await context.SaveChangesAsync();
-
         var productionActivityStep =
             await context.ProductionActivitySteps
                 .FirstOrDefaultAsync(p => p.Id == request.ProductionActivityStepId);
+        
+        if(productionActivityStep is null)
+            return Error.NotFound("ProductionActivityStep", $"Production activity step" +
+                                                            $" {request.ProductionActivityStepId} not found");
+        
+        productionActivityStep.StartedAt = (request.IsPartial && transferNotes.Count == 0) 
+                                           || !request.IsPartial ? DateTime.UtcNow : productionActivityStep.StartedAt;
 
-        if (productionActivityStep is not null)
+        bool isFulfilled = transferNotes.Sum(t => t.TotalQuantity) + request.TotalQuantity
+                          == bmr.BatchQuantity;
+
+        if (!request.IsPartial || isFulfilled)
         {
-            productionActivityStep.StartedAt = DateTime.UtcNow;
             productionActivityStep.CompletedAt = DateTime.UtcNow;
             productionActivityStep.Status = ProductionStatus.Completed;
             context.ProductionActivitySteps.Update(productionActivityStep);
-            await context.SaveChangesAsync();
         }
         
-        await approvalRepository.CreateInitialApprovalsAsync(nameof(FinishedGoodsTransferNote), transferNote.Id);
+        await context.SaveChangesAsync();
+
+        if (isFulfilled)
+        {
+            var noteIds = transferNotes.Select(tn => tn.Id).ToList();
+
+            await context.FinishedGoodsTransferNotes
+                .Where(tn => noteIds.Contains(tn.Id))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(tn => tn.IsFulfilled, true)
+                );
+        }
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(FinishedGoodsTransferNote),
+            transferNote.Id);
 
         return Result.Success();
     }
 
     public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
-        bool? onlyApproved,
         int page,
         int pageSize,
         string searchQuery = null,
-        Division? division = null)
+        Division? division = null,
+        bool? onlyApproved = null,
+        bool? partial = null,
+        bool? fulfilled = null)
     {
         var query = context.FinishedGoodsTransferNotes
             .AsSplitQuery()
@@ -1578,6 +1614,20 @@ public class ProductionScheduleRepository(
             query = onlyApproved.Value ?
                 query.Where(q => q.IsApproved) :
                 query.Where(q => !q.IsApproved);
+        }
+
+        if (partial.HasValue)
+        {
+            query = partial.Value ?
+                query.Where(q => q.IsPartial) :
+                query.Where(q => !q.IsPartial);
+        }
+
+        if (fulfilled.HasValue)
+        {
+            query = fulfilled.Value ?
+                query.Where(q => q.IsFulfilled) :
+                query.Where(q => !q.IsFulfilled);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

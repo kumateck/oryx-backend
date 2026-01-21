@@ -180,6 +180,8 @@ public class FinishedGoodsTransferNote : BaseEntity, IRequireApproval
     public List<FinishedGoodsTransferNoteQuantity> Quantities { get; set; } = [];
     public bool Approved { get; set; }
     public List<FinishedGoodsTransferNoteApproval>  Approvals { get; set; } = [];
+    public bool IsPartial { get; set; }
+    public bool IsFulfilled { get; set; }
 }
 
 public class FinishedGoodsTransferNoteApproval: ResponsibleApprovalStage
@@ -219,6 +221,8 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public decimal RemainingQuantity { get; set; }
     public decimal PendingAllocatedQuantity { get; set; }
     public bool Approved { get; set; }
+    public bool IsPartial { get; set; }
+    public bool IsFulfilled { get; set; }
 }
 
 public class FinishedGoodsListTransferNoteDto

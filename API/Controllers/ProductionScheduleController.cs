@@ -474,14 +474,17 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [HttpGet("finished-goods-transfer-note")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
     public async Task<IResult> GetFinishedGoodsTransferNotes(
-        bool? onlyApproved = null,
-        int page = 1,
-        int pageSize = 10,
-        string searchQuery = null,
-        Division? division = null)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery]string searchQuery = null,
+        [FromQuery] Division? division = null,
+        [FromQuery] bool? onlyApproved = null,
+        [FromQuery] bool? partial = null,
+        [FromQuery] bool? fulfilled = null
+        )
     {
         var result = await repository
-            .GetFinishedGoodsTransferNote(onlyApproved, page, pageSize, searchQuery, division);
+            .GetFinishedGoodsTransferNote(page, pageSize, searchQuery, division, onlyApproved, partial, fulfilled);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

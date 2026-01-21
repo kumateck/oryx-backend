@@ -17,12 +17,12 @@ namespace API.Controllers;
 /// 1. **Create Job Order** - Convert job request to job order
 /// 2. **Send to Providers** - Send RFQ to multiple contractors
 /// 3. **Receive Quotations** - Contractors submit quotations
-/// 4. **Compare & Select** - Compare quotations and select winner
+/// 4. **Compare Select** - Compare quotations and select winner
 /// 5. **Request Proforma Invoice** - Request formal invoice from selected contractor
 /// 6. **Receive Proforma Invoice** - Contractor submits proforma invoice
 /// 7. **Create Service Memo** - Generate formal service memo
 /// 8. **Execute Service** - Contractor performs the work
-/// 9. **Verify & Approve** - Supervisor verifies, requester approves
+/// 9. **Verify Approve** - Supervisor verifies, requester approves
 /// </remarks>
 [ApiController]
 [Route("api/v{version:apiVersion}/job-orders")]

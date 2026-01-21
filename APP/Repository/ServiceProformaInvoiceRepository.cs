@@ -116,7 +116,7 @@ public class ServiceProformaInvoiceRepository(
                 emailBody,
                 new List<(byte[] fileContent, string fileName, string fileType)>());
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Log error but don't fail the operation
             // In production, you might want to log this to a logging service
