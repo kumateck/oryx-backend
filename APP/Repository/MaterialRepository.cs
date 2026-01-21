@@ -3186,4 +3186,49 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return null;
         }
     }
+
+    public async Task<Result<MaterialBatchCountDto>> GetMaterialBatchCount(
+        Guid warehouseId,
+        Guid? materialId,
+        MaterialKind? materialKind,
+        Guid? departmentId)
+    {
+        var exists = await context.Warehouses
+            .AnyAsync(w => w.Id == warehouseId);
+
+        if (!exists)
+            return Error.NotFound("Warehouse.NotFound", "Warehouse not found.");
+
+        var query = context.MaterialBatchReservedQuantities
+            .Where(r => r.WarehouseId == warehouseId)
+            .AsQueryable();
+        
+        if (materialId.HasValue)
+        {
+            query = query.Where(r => r.MaterialBatch.Material.Id == materialId.Value);
+        }
+
+        if (materialKind.HasValue)
+        {
+            query = query.Where(r => r.MaterialBatch.Material.Kind == materialKind.Value);
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(r => r.Warehouse.DepartmentId == departmentId.Value);
+        }
+
+        var distinctBatchCount = await query
+            .Select(r => r.MaterialBatchId)
+            .Distinct()
+            .CountAsync();
+
+        var result = new MaterialBatchCountDto
+        {
+            WarehouseId = warehouseId,
+            BatchCount = distinctBatchCount
+        };
+
+        return Result.Success(result);
+    }
 }
