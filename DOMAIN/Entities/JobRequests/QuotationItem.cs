@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Items;
 

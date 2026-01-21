@@ -1,7 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Items;
-using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.ItemStockRequisitions;

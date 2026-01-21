@@ -5,7 +5,6 @@ using AutoMapper;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
-using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -128,7 +127,7 @@ public class ItemStockRequisitionRepository(ApplicationDbContext context, IMappe
                 Number = r.Number,
                 RequisitionDate = r.RequisitionDate,
                 Justification = r.Justification,
-                Status = (LeaveStatus)r.Status,
+                Status = r.Status,
 
                 RequestedBy = new UserDto
                 {

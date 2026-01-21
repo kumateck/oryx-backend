@@ -1,8 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
-using DOMAIN.Entities.Procurement.Manufacturers;
-using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using SHARED;
