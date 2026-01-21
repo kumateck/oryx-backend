@@ -16,7 +16,7 @@ public class LeaveRequest : BaseEntity, IRequireApproval
 
     public string Justification { get; set; }
 
-    public DateTime RecallDate { get; set; }
+    public DateTime? RecallDate { get; set; }
 
     public string RecallReason { get; set; }
 
