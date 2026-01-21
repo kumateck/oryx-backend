@@ -104,4 +104,7 @@ public interface IMaterialRepository
    Task<Result<IEnumerable<MaterialReservedQuantity>>> GetReservedQuantitiesForMaterial(Guid materialId,
         Guid? departmentId);
     Task<Result> ImportMaterialStockFromExcel(IFormFile file);
+    
+    Task<Result<MaterialBatchCountDto>> GetMaterialBatchCount(Guid warehouseId, Guid? materialId,
+        MaterialKind? materialKind, Guid? departmentId);
 }
