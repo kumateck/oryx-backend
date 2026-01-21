@@ -659,6 +659,7 @@ public class ApprovalRepository(ApplicationDbContext context,
                 if (allRequiredOrApproved)
                 {
                     overtimeRequest.Approved = true;
+                    overtimeRequest.Status = OvertimeStatus.Approved;
                     overtimeRequest.ApprovalStatus = ApprovalStatus.Approved;
                     context.OvertimeRequests.Update(overtimeRequest);
                 }
@@ -3226,7 +3227,7 @@ public class ApprovalRepository(ApplicationDbContext context,
 
         var stagesToAutoApprove = currentApprovalStages
             .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue &&
-                        (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
+                        DateTime.UtcNow - s.ActivatedAt.Value > escalationDuration)
             .ToList();
 
         if (stagesToAutoApprove.Count != 0)
@@ -3291,6 +3292,7 @@ public class ApprovalRepository(ApplicationDbContext context,
             if (allRequiredApproved)
             {
                 overtimeRequest.Approved = true;
+                overtimeRequest.ApprovalStatus = ApprovalStatus.Approved;
                 overtimeRequest.Status = OvertimeStatus.Approved;
             }
 
