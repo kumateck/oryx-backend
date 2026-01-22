@@ -11,7 +11,7 @@ public class ServiceQuotationDto : BaseDto
     public string QuotationNumber { get; set; }
     public Guid JobOrderId { get; set; }
     public ServiceDto Service { get; set; }
-    public ServiceProviderDto ServiceProvider { get; set; }
+    public ServiceProviderReducedDto ServiceProvider { get; set; }
     public DateTime SubmittedDate { get; set; }
     public decimal ServiceCharge { get; set; }
     public CurrencyDto Currency { get; set; }
@@ -28,6 +28,7 @@ public class ServiceQuotationDto : BaseDto
     public decimal TotalServiceCharge { get; set; }
     public decimal TotalItemCost { get; set; }
     public decimal GrandTotal { get; set; }
+    public List<ServiceCharge> ServiceCharges { get; set; } = [];
 }
 
 public class ServiceQuotationReducedDto : BaseDto

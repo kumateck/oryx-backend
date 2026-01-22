@@ -1191,6 +1191,7 @@ public class OryxMapper : Profile
             .ForAllMembers(opts 
                 => opts.Condition((_, dest, srcMember) => srcMember != null));
         CreateMap<JobRequest, JobRequestDto>();
+        CreateMap<JobRequest, JobRequestReducedDto>();
 
         // Job Execution
         CreateMap<JobExecution, JobExecutionDto>();
@@ -1204,6 +1205,7 @@ public class OryxMapper : Profile
         // Job Order
         CreateMap<CreateJobOrderRequest, JobOrder>();
         CreateMap<JobOrder, JobOrderDto>();
+        CreateMap<JobOrder, JobOrderReducedDto>();
         CreateMap<JobOrderServiceProvider, JobOrderServiceProviderDto>();
 
         // Job Order Execution
