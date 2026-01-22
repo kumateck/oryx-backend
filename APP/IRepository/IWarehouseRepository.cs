@@ -64,7 +64,9 @@ public interface IWarehouseRepository
         MaterialKind? kind, Status? status, bool? onlyApproved);
 
     Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize,
-        string searchQuery, Guid materialId);
+        string searchQuery,           
+        DateTime? date,
+        Guid materialId);
 
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery, Guid warehouseId, Guid materialId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery, Guid warehouseId, Guid materialBatchId);
