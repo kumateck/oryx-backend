@@ -499,6 +499,90 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success(result);
     }
 
+    public async Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartmentV2(int page, int pageSize, 
+        string searchQuery, MaterialKind? kind, Guid? departmentId, Guid? materialCategoryId)
+    {
+        var query = context.ShelfMaterialBatches
+            .Include(m => m.MaterialBatch.Material)
+            .Where(m =>
+                m.MaterialBatch.Status == BatchStatus.Available ||
+                m.MaterialBatch.Status == BatchStatus.Frozen
+            );
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(m =>
+                m.WarehouseLocationShelf
+                    .WarehouseLocationRack
+                    .WarehouseLocation
+                    .Warehouse
+                    .DepartmentId == departmentId.Value
+                &&
+                m.WarehouseLocationShelf
+                    .WarehouseLocationRack
+                    .WarehouseLocation
+                    .Warehouse
+                    .Department.IsSeeded
+            );
+        }
+
+        if (kind.HasValue)
+        {
+            query = query.Where(m => m.MaterialBatch.Material.Kind == kind);
+        }
+
+        if (materialCategoryId.HasValue)
+        {
+            query = query.Where(m => m.MaterialBatch.Material.MaterialCategoryId == materialCategoryId);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, m => m.MaterialBatch.Material.Name,
+                m => m.MaterialBatch.Material.Description);
+        }
+
+
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialDto>);
+
+        var materialDetails = new List<MaterialDetailsDto>();
+
+        foreach (var m in paginatedResult.Data)
+        {
+            
+            var unitOfMeasureDto = await context.MaterialDepartments
+                .Where(md => md.DepartmentId == departmentId)
+                .Select(md => mapper.Map<UnitOfMeasureDto>(md.UoM))
+                .FirstOrDefaultAsync();
+
+            if (unitOfMeasureDto == null)
+                return Error.NotFound("MaterialDepartment.NotFound", "Unit of measure not found for this department.");
+
+            materialDetails.Add(new MaterialDetailsDto
+            {
+                Material = m,
+                UnitOfMeasure = unitOfMeasureDto,
+            });
+        }
+
+        var result = new Paginateable<IEnumerable<MaterialDetailsDto>>
+        {
+            Data = materialDetails,
+            PageIndex = paginatedResult.PageIndex,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            NumberOfPagesToShow = paginatedResult.NumberOfPagesToShow,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+
+        return Result.Success(result);
+    }
+
     public async Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page, int pageSize, Guid materialId, Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
