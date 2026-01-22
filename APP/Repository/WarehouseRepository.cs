@@ -7,6 +7,7 @@ using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
@@ -16,7 +17,8 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository) : IWarehouseRepository
+public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, IMaterialRepository materialRepository) 
+    : IWarehouseRepository
 {
     public async Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request)
     {
@@ -47,6 +49,76 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         return warehouse is null
             ? Error.NotFound("Warehouse.NotFound", "Warehouse not found")
             : mapper.Map<WarehouseDto>(warehouse);
+    }
+    
+    public async Task<Result<List<WarehouseDto>>> GetWarehousesByDepartment(Guid departmentId)
+    {
+        var department = await context.Departments
+            .IgnoreAutoIncludes()
+            .FirstOrDefaultAsync(d => d.Id == departmentId);
+        if (department is null)
+            return Error.NotFound("Department.NotFound", "Department not found");
+        
+        var warehouses = await context.Warehouses
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(w => w.Locations)
+            .ThenInclude(wl => wl.Racks)
+            .ThenInclude(r => r.Shelves)
+            .ThenInclude(s => s.MaterialBatches)
+            .ThenInclude(smb => smb.MaterialBatch)
+            .ThenInclude(mb => mb.Material)
+            .Include(w => w.Locations)
+            .ThenInclude(wl => wl.Racks)
+            .ThenInclude(r => r.Shelves)
+            .ThenInclude(s => s.MaterialBatches)
+            .ThenInclude(smb => smb.MaterialBatch)
+            .ThenInclude(mb => mb.Checklist)
+            .Where(w => w.DepartmentId == departmentId)
+            .ToListAsync();
+
+        if (department.Division == Division.BetaLactam)
+        {
+            var betaWarehouse = await context.Warehouses
+                    .AsSplitQuery()
+                    .IgnoreQueryFilters()
+                    .Include(w => w.Locations)
+                    .ThenInclude(wl => wl.Racks)
+                    .ThenInclude(r => r.Shelves)
+                    .ThenInclude(s => s.MaterialBatches)
+                    .ThenInclude(smb => smb.MaterialBatch)
+                    .ThenInclude(mb => mb.Material)
+                    .Include(w => w.Locations)
+                    .ThenInclude(wl => wl.Racks)
+                    .ThenInclude(r => r.Shelves)
+                    .ThenInclude(s => s.MaterialBatches)
+                    .ThenInclude(smb => smb.MaterialBatch)
+                    .ThenInclude(mb => mb.Checklist)
+                    .FirstOrDefaultAsync(w => !w.DepartmentId.HasValue && w.Division == Division.BetaLactam);
+            warehouses.Add(betaWarehouse);
+        }
+        else
+        {
+            var nonBetaWarehouse = await context.Warehouses
+                .AsSplitQuery()
+                .IgnoreQueryFilters()
+                .Include(w => w.Locations)
+                .ThenInclude(wl => wl.Racks)
+                .ThenInclude(r => r.Shelves)
+                .ThenInclude(s => s.MaterialBatches)
+                .ThenInclude(smb => smb.MaterialBatch)
+                .ThenInclude(mb => mb.Material)
+                .Include(w => w.Locations)
+                .ThenInclude(wl => wl.Racks)
+                .ThenInclude(r => r.Shelves)
+                .ThenInclude(s => s.MaterialBatches)
+                .ThenInclude(smb => smb.MaterialBatch)
+                .ThenInclude(mb => mb.Checklist)
+                .FirstOrDefaultAsync(w => !w.DepartmentId.HasValue && w.Division == Division.NonBetaLactam);
+            warehouses.Add(nonBetaWarehouse);
+        }
+        
+        return mapper.Map<List<WarehouseDto>>(warehouses);
     }
 
     public async Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery, WarehouseType? type)
