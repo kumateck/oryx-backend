@@ -195,6 +195,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var invoice = await context.ProformaInvoices
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(p => p.AllocateProductionOrder)
             .ThenInclude(p => p.ProductionOrder)
             .ThenInclude(p => p.Customer)
