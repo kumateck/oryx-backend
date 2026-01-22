@@ -3,7 +3,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -91,6 +90,8 @@ public interface IProductionScheduleRepository
     Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
 
     Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id);
+    Task<Result<List<FinishedGoodsTransferNoteDto>>> GetFinishedGoodsTransferNotesByBmr(
+        Guid batchManufacturingRecordId);
     Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request);
 
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
@@ -129,11 +130,13 @@ public interface IProductionScheduleRepository
     Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
         List<BatchTransferRequest> batches, Guid userId);
     Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
-        bool? onlyApproved,
         int page,
         int pageSize,
         string searchQuery = null,
-        Division? division = null);
+        Division? division = null,
+        bool? onlyApproved = null,
+        bool? partial = null,
+        bool? fulfilled = null);
     Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(
         int page, int pageSize,
         string searchQuery, Guid productId);

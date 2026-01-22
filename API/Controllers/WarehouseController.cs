@@ -47,6 +47,19 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
         var result = await repository.GetWarehouse(warehouseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves warehouses by department id
+    /// </summary>
+    [HttpGet("department/{departmentId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<WarehouseDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetWarehousesByDepartment([FromRoute] Guid departmentId)
+    {
+        var result = await repository.GetWarehousesByDepartment(departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a paginated list of warehouses based on search criteria.
@@ -740,9 +753,10 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     public async Task<IResult> GetBinCardInformation([FromRoute] Guid materialId, 
         [FromQuery] int page = 1, 
         [FromQuery] int pageSize = 10, 
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery = null,
+        [FromQuery] DateTime? date = null)
     {
-        var result = await repository.GetBinCardInformation(page, pageSize, searchQuery, materialId);
+        var result = await repository.GetBinCardInformation(page, pageSize, searchQuery, date, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

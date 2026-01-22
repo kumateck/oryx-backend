@@ -58,10 +58,8 @@ public class JobOrder : BaseEntity
 /// <summary>
 /// Junction table for many-to-many relationship between JobOrders and ServiceProviders
 /// </summary>
-public class JobOrderServiceProvider
+public class JobOrderServiceProvider : BaseEntity
 {
-    public Guid Id { get; set; }
-
     public Guid JobOrderId { get; set; }
     public JobOrder JobOrder { get; set; }
 

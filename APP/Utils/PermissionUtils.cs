@@ -239,6 +239,7 @@ public static class PermissionKeys
 
     // Warehouse
     public const string CanViewRawMaterialsItems = "CanViewRawMaterialsItems";
+    public const string CanCreatePreSamplingChecklist= "CanCreatePreSamplingChecklist";
     public const string CanCreateChecklistForRawMaterials = "CanCreateChecklistForRawMaterials";
     public const string CanCreateGrnForRawMaterials = "CanCreateGrnForRawMaterials";
     public const string CanViewPackagingMaterialsItems = "CanViewPackagingMaterialsItems";
@@ -248,10 +249,12 @@ public static class PermissionKeys
     public const string CanViewQuarantineRawMaterials = "CanViewQuarantineRawMaterials";
     public const string CanDistributeRawMaterials = "CanDistributeRawMaterials";
     public const string CanViewDistributedRawMaterials = "CanViewDistributedRawMaterials";
+    public const string CanViewRawMaterialsReceivedList = "CanViewRawMaterialsReceivedList";
     public const string CanViewPackagingMaterials = "CanViewPackagingMaterials";
     public const string CanViewDistributedPackagingMaterials = "CanViewDistributedPackagingMaterials";
     public const string CanViewQuarantinePackagingMaterials = "CanViewQuarantinePackagingMaterials";
     public const string CanDistributePackagingMaterials = "CanDistributePackagingMaterials";
+    public const string CanViewPackagingMaterialsReceivedList = "CanViewPackagingMaterialsReceivedList";
     public const string CanAssignRawMaterialsStockToShelves = "CanAssignRawMaterialsStockToShelves";
     public const string CanAssignPackagingMaterialsStockToShelves = "CanAssignPackagingMaterialsStockToShelves";
     public const string CanViewApprovedRawMaterials = "CanViewApprovedRawMaterials";
@@ -847,6 +850,8 @@ public static class PermissionUtils
 
         // Warehouse
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanViewRawMaterialsItems);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanViewRawMaterialsReceivedList);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreatePreSamplingChecklist);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateChecklistForRawMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateGrnForRawMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanViewPackagingMaterialsItems);
@@ -880,6 +885,7 @@ public static class PermissionUtils
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanEditRawMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanDeleteRawMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanViewPackagingMaterials);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanViewPackagingMaterialsReceivedList);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanCreateNewPackagingMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanEditPackagingMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanDeletePackagingMaterials);

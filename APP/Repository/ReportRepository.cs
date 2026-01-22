@@ -9,7 +9,6 @@ using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
-using DOMAIN.Entities.ProductAnalyticalRawData;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;

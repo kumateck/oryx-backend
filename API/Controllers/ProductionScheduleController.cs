@@ -13,7 +13,6 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
-using SHARED;
 using SHARED.Requests;
 
 namespace API.Controllers;
@@ -475,14 +474,17 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [HttpGet("finished-goods-transfer-note")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
     public async Task<IResult> GetFinishedGoodsTransferNotes(
-        bool? onlyApproved = null,
-        int page = 1,
-        int pageSize = 10,
-        string searchQuery = null,
-        Division? division = null)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery]string searchQuery = null,
+        [FromQuery] Division? division = null,
+        [FromQuery] bool? onlyApproved = null,
+        [FromQuery] bool? partial = null,
+        [FromQuery] bool? fulfilled = null
+        )
     {
         var result = await repository
-            .GetFinishedGoodsTransferNote(onlyApproved, page, pageSize, searchQuery, division);
+            .GetFinishedGoodsTransferNote(page, pageSize, searchQuery, division, onlyApproved, partial, fulfilled);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -495,6 +497,18 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     public async Task<IResult> GetFinishedGoodsTransferNote([FromRoute] Guid id)
     {
         var result = await repository.GetFinishedGoodsTransferNote(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of finished goods transfer note by bmr id
+    /// </summary>
+    [HttpGet("finished-goods-transfer-note/bmr/{batchManufacturingRecordId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FinishedGoodsTransferNoteDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferNoteByBmr([FromRoute] Guid batchManufacturingRecordId)
+    {
+        var result = await repository.GetFinishedGoodsTransferNotesByBmr(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -1,7 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemTransactionLogs;
-using Microsoft.AspNetCore.Http;
 using SHARED;
 
 namespace APP.IRepository;
@@ -14,6 +13,5 @@ public interface IItemRepository
     Task<Result<ItemDto>> GetItem(Guid id);
     Task<Result> UpdateItem(Guid id, CreateItemsRequest request);
     Task<Result> DeleteItem(Guid id, Guid userId);
-    
-    Task<Result<List<ItemTransactionLogDto>>> GetItemTransactions(string itemCode, string? transactionType);
+    Task<Result<List<ItemTransactionLogDto>>> GetItemTransactions(string itemCode, string transactionType);
 }

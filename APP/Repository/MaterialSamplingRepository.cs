@@ -5,7 +5,6 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Bcpg;
 using SHARED;
 
 namespace APP.Repository;

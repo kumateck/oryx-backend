@@ -34,7 +34,6 @@ public interface IMaterialRepository
     Task<Result> ApproveMaterialBatch(Guid batchId, Guid userId);
     Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, decimal quantity,
         Guid userId);
-    Task<Result<decimal>> GetMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<List<DepartmentDto>>> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity);
     Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
@@ -60,6 +59,10 @@ public interface IMaterialRepository
 
     Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page, int pageSize,
         string searchQuery, MaterialKind kind, Guid warehouseId, Guid departmentId);
+
+    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartmentV2(int page,
+        int pageSize,
+        string searchQuery, MaterialKind? kind, Guid? departmentId, Guid? materialCategoryId);
 
     Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page,
         int pageSize, Guid materialId, Guid userId);
@@ -105,4 +108,7 @@ public interface IMaterialRepository
    Task<Result<IEnumerable<MaterialReservedQuantity>>> GetReservedQuantitiesForMaterial(Guid materialId,
         Guid? departmentId);
     Task<Result> ImportMaterialStockFromExcel(IFormFile file);
+    
+    Task<Result<MaterialBatchCountDto>> GetMaterialBatchCount(Guid warehouseId, Guid? materialId,
+        MaterialKind? materialKind, Guid? departmentId);
 }

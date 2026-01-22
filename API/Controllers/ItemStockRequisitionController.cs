@@ -1,7 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
-using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -86,6 +85,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// </summary>
     /// <returns></returns>
     [HttpPost("{stockRequisitionId:guid}/issue-stock-against-requisition")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(IssueItemStockRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> IssueStockAgainstRequisition([FromRoute] Guid stockRequisitionId, [FromBody] IssueStockAgainstRequisitionRequest request)

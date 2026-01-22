@@ -14,7 +14,9 @@ public interface IWarehouseRepository
 {
     Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request);
     Task<Result<WarehouseDto>> GetWarehouse(Guid warehouseId);
-    Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery, WarehouseType? type);
+    Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery, 
+        WarehouseType? type);
+   Task<Result<List<WarehouseDto>>> GetWarehousesByDepartment(Guid departmentId);
     Task<Result> UpdateWarehouse(CreateWarehouseRequest request, Guid warehouseId, Guid userId);
     Task<Result> DeleteWarehouse(Guid warehouseId, Guid userId);
     Task<Result<Guid>> CreateWarehouseLocation(CreateWarehouseLocationRequest request, Guid warehouseId,
@@ -62,7 +64,9 @@ public interface IWarehouseRepository
         MaterialKind? kind, Status? status, bool? onlyApproved);
 
     Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize,
-        string searchQuery, Guid materialId);
+        string searchQuery,           
+        DateTime? date,
+        Guid materialId);
 
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery, Guid warehouseId, Guid materialId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery, Guid warehouseId, Guid materialBatchId);

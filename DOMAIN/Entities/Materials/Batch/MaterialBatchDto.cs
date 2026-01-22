@@ -213,3 +213,10 @@ public class MaterialBatchReservedQuantityDto : BaseDto
     public decimal Quantity { get; set; }
 }
 
+public class MaterialBatchCountDto
+{
+    public Guid WarehouseId { get; set; }
+    public WarehouseDto Warehouse { get; set; }
+    public int BatchCount { get; set; }
+}
+

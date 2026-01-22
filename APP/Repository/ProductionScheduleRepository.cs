@@ -1374,6 +1374,7 @@ public class ProductionScheduleRepository(
         if (bmr is null) throw new Exception("Bmr not found");
 
         var finishedGoodsTransferNote = await context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
             .Include(f => f.Quantities)
             .FirstOrDefaultAsync(f => f.BatchManufacturingRecordId == batchManufacturingRecordId);
 
@@ -1383,7 +1384,8 @@ public class ProductionScheduleRepository(
                finishedGoodsTransferNote.Quantities.Sum(q => q.Quantity);
     }
 
-    public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId)
+    public async Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request,
+        Guid userId)
     {
         var bmr = await context.BatchManufacturingRecords
            .AsSplitQuery()
@@ -1431,30 +1433,42 @@ public class ProductionScheduleRepository(
         if (finishedGoodsWarehouse is null)
             return Error.NotFound("User.Warehouse",
                 "No finished goods warehouses found in the system");
-
-        FinishedGoodsTransferNote transferNote = null;
-
-        if (await context.FinishedGoodsTransferNotes.AnyAsync(f
-                => f.BatchManufacturingRecordId == bmr.Id))
+        
+        var transferNotes = await context.FinishedGoodsTransferNotes
+            .Where(f => f.BatchManufacturingRecordId == bmr.Id)
+            .ToListAsync();
+        
+        if (request.IsPartial)
         {
-            transferNote = await context.FinishedGoodsTransferNotes
-                .FirstOrDefaultAsync(f => f.BatchManufacturingRecordId == bmr.Id);
-        }
-
-        if (transferNote is null)
-        {
-            transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
-            transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
-            transferNote.FromWarehouseId = productionWarehouse.Id;
-            context.FinishedGoodsTransferNotes.Add(transferNote);
+            if (request.TotalQuantity > bmr.BatchQuantity)
+                return Error.Validation("TransferNote.Partial", $"Request quantity {request.TotalQuantity}" +
+                                                                $"exceeds bmr quantity {bmr.BatchQuantity}");
+            if (transferNotes.Count > 0)
+            {
+                if (transferNotes.Sum(t => t.TotalQuantity) + request.TotalQuantity > bmr.BatchQuantity)
+                    return Error.Validation("TransferNote.Partial",
+                        $"The already exists a transfer note and adding " +
+                        $"quantity of {transferNotes.Sum(t => t.TotalQuantity)}" +
+                        $" exceeds the amount of quantity of bmr which is {bmr.BatchQuantity}");
+            }
         }
         else
         {
-            mapper.Map(transferNote, request);
-            transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
-            transferNote.FromWarehouseId = productionWarehouse.Id;
-            context.FinishedGoodsTransferNotes.Update(transferNote);
+            if (transferNotes.Count > 0)
+                return Error.Validation("TransferNote.Partial",
+                    "This needs to be a partial request given that there already exists finished goods" +
+                    " transfer note for this bmr. Set `isPartial` to true");
+
+            if (request.TotalQuantity != bmr.BatchQuantity)
+                return Error.Validation("TransferNote.Partial",
+                    $"This is not a partial request so the requested quantity must be equal" +
+                    $" to the bmr quantity: {bmr.BatchQuantity}");
         }
+
+        var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
+        transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
+        transferNote.FromWarehouseId = productionWarehouse.Id;
+        context.FinishedGoodsTransferNotes.Add(transferNote);
 
         var movement = new FinishedProductBatchMovement
         {
@@ -1521,32 +1535,54 @@ public class ProductionScheduleRepository(
 
         await context.DistributedFinishedProducts.AddAsync(distributedFinishedProduct);
 
-        await context.SaveChangesAsync();
-
         var productionActivityStep =
             await context.ProductionActivitySteps
                 .FirstOrDefaultAsync(p => p.Id == request.ProductionActivityStepId);
+        
+        if(productionActivityStep is null)
+            return Error.NotFound("ProductionActivityStep", $"Production activity step" +
+                                                            $" {request.ProductionActivityStepId} not found");
+        
+        productionActivityStep.StartedAt = (request.IsPartial && transferNotes.Count == 0) 
+                                           || !request.IsPartial ? DateTime.UtcNow : productionActivityStep.StartedAt;
 
-        if (productionActivityStep is not null)
+        bool isFulfilled = transferNotes.Sum(t => t.TotalQuantity) + request.TotalQuantity
+                          == bmr.BatchQuantity;
+
+        if (!request.IsPartial || isFulfilled)
         {
-            productionActivityStep.StartedAt = DateTime.UtcNow;
             productionActivityStep.CompletedAt = DateTime.UtcNow;
             productionActivityStep.Status = ProductionStatus.Completed;
             context.ProductionActivitySteps.Update(productionActivityStep);
-            await context.SaveChangesAsync();
         }
         
-        await approvalRepository.CreateInitialApprovalsAsync(nameof(FinishedGoodsTransferNote), transferNote.Id);
+        await context.SaveChangesAsync();
+
+        if (isFulfilled)
+        {
+            var noteIds = transferNotes.Select(tn => tn.Id).ToList();
+
+            await context.FinishedGoodsTransferNotes
+                .Where(tn => noteIds.Contains(tn.Id))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(tn => tn.IsFulfilled, true)
+                );
+        }
+        
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(FinishedGoodsTransferNote),
+            transferNote.Id);
 
         return Result.Success();
     }
 
     public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
-        bool? onlyApproved,
         int page,
         int pageSize,
         string searchQuery = null,
-        Division? division = null)
+        Division? division = null,
+        bool? onlyApproved = null,
+        bool? partial = null,
+        bool? fulfilled = null)
     {
         var query = context.FinishedGoodsTransferNotes
             .AsSplitQuery()
@@ -1580,6 +1616,20 @@ public class ProductionScheduleRepository(
                 query.Where(q => !q.IsApproved);
         }
 
+        if (partial.HasValue)
+        {
+            query = partial.Value ?
+                query.Where(q => q.IsPartial) :
+                query.Where(q => !q.IsPartial);
+        }
+
+        if (fulfilled.HasValue)
+        {
+            query = fulfilled.Value ?
+                query.Where(q => q.IsFulfilled) :
+                query.Where(q => !q.IsFulfilled);
+        }
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
@@ -1611,6 +1661,29 @@ public class ProductionScheduleRepository(
             pageSize,
             mapper.Map<ProductBinCardInformationDto>
         );
+    }
+    
+    public async Task<Result<List<FinishedGoodsTransferNoteDto>>> GetFinishedGoodsTransferNotesByBmr(
+        Guid batchManufacturingRecordId)
+    {
+        var transferNote = await context.FinishedGoodsTransferNotes
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(b => b.BatchManufacturingRecord)
+            .ThenInclude(b => b.ProductionScheduleProduct)
+            .ThenInclude(b => b.Product)
+            .Include(b => b.FromWarehouse)
+            .Include(u => u.UoM)
+            .Include(b => b.ToWarehouse)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.PackingLists)
+            .Include(tn => tn.ProductPacking)
+            .ThenInclude(p => p.BasePackingUoM)
+            .Include(b => b.CreatedBy)
+            .Where(f => f.Id == batchManufacturingRecordId)
+            .ToListAsync();
+
+       return mapper.Map<List<FinishedGoodsTransferNoteDto>>(transferNote);
     }
 
 
@@ -3381,8 +3454,10 @@ public class ProductionScheduleRepository(
             .Include(product => product.BillOfMaterials)
             .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
             .ThenInclude(billOfMaterial => billOfMaterial.Items)
-            .ThenInclude(billOfMaterialItem => billOfMaterialItem.BaseUoM).Include(product => product.Packages)
-            .ThenInclude(productPackage => productPackage.Material).Include(product => product.Packages)
+            .ThenInclude(billOfMaterialItem => billOfMaterialItem.BaseUoM)
+            .Include(product => product.Packages)
+            .ThenInclude(productPackage => productPackage.Material)
+            .Include(product => product.Packages)
             .ThenInclude(productPackage => productPackage.DirectLinkMaterial)
             .FirstOrDefaultAsync(p => p.Id == productId);
         
@@ -3441,20 +3516,30 @@ public class ProductionScheduleRepository(
             })
             .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
 
-        var materialDepartments = await context.MaterialDepartments
+        var rawMaterialDepartments = await context.MaterialDepartments
             .AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
-            .Include(m => m.Material)
-            .Include(m => m.Department)
             .Where(m => activeBoM.BillOfMaterial.Items.Select(i =>
                             i.MaterialId).Distinct().Contains(m.MaterialId)
                         && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
+        
+        var rawTotalReservedQuantities = context.MaterialBatchReservedQuantities
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Where(r => rawMaterialDepartments.Keys.Contains(r.MaterialBatch.MaterialId) &&
+                        r.WarehouseId == productionWarehouse.Id &&
+                        r.DeletedAt == null)
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .ToDictionary(
+                g => g.Key,      
+                g => g.Sum(r => r.Quantity)
+            );
    
         
         var materialDetails = activeBoM.BillOfMaterial.Items
-            .Where(i => materialDepartments.ContainsKey(i.MaterialId))
+            .Where(i => rawMaterialDepartments.ContainsKey(i.MaterialId))
             .Select(item =>
             {
                 var quantityOnHand = rawStockLevels.GetValueOrDefault(item.MaterialId, 0);
@@ -3466,7 +3551,9 @@ public class ProductionScheduleRepository(
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
-                    QuantityOnHand = quantityOnHand
+                    QuantityOnHand = quantityOnHand,
+                    ReservedQuantity = rawTotalReservedQuantities.GetValueOrDefault(item.MaterialId),
+                    UoM = mapper.Map<UnitOfMeasureDto>(rawMaterialDepartments[item.MaterialId].UoM)
                 };
             }).ToList();
         
@@ -3491,10 +3578,31 @@ public class ProductionScheduleRepository(
             })
             .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
         
+        var packageMaterialDepartments = await context.MaterialDepartments
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(m => m.UoM)
+            .Where(m => product.Packages.Select(i =>
+                            i.MaterialId).Distinct().Contains(m.MaterialId)
+                        && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
+            .ToDictionaryAsync(k => k.MaterialId, v => v);
+        
+        var packingTotalReservedQuantities = context.MaterialBatchReservedQuantities
+            .AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Where(r => packageMaterialDepartments.Keys.Contains(r.MaterialBatch.MaterialId) &&
+                        r.WarehouseId == productionWarehouse.Id &&
+                        r.DeletedAt == null)
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .ToDictionary(
+                g => g.Key,      
+                g => g.Sum(r => r.Quantity)
+            );
+        
         var packageMaterialDetails = product.Packages
             .Where(p =>
                 p.ProductPackingId == productPackingId || !p.ProductPackingId.HasValue &&
-                materialDepartments.ContainsKey(p.MaterialId))
+                packageMaterialDepartments.ContainsKey(p.MaterialId))
             .Select(item =>
             {
                 var quantityOnHand = packingStockLevels.GetValueOrDefault(item.MaterialId, 0);
@@ -3506,7 +3614,9 @@ public class ProductionScheduleRepository(
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded *  numberOfBatches,
-                    QuantityOnHand = quantityOnHand
+                    QuantityOnHand = quantityOnHand,
+                    ReservedQuantity = packingTotalReservedQuantities.GetValueOrDefault(item.MaterialId, 0),
+                    UoM = mapper.Map<UnitOfMeasureDto>(packageMaterialDepartments[item.MaterialId].UoM)
                 };
             }).ToList();
 

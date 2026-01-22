@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260121194524_AddIsPartialToFGTN")]
+    partial class AddIsPartialToFGTN
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4601,7 +4604,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int?>("PaidDays")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("RecallDate")
+                    b.Property<DateTime>("RecallDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("RecallReason")
@@ -7319,10 +7322,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<decimal>("BatchSize")
                         .HasColumnType("numeric");
-
-                    b.Property<string>("Comment")
-                        .HasMaxLength(100000)
-                        .HasColumnType("character varying(100000)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

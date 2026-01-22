@@ -17,7 +17,13 @@ public class CreateItemStockRequisitionRequest
     public List<StockItems> StockItems { get; set; }
 }
 
+public class IssueQuantityDto
+{
+    public Guid ItemId { get; set; }
+    public int Quantity { get; set; }
+}
+
 public class IssueStockAgainstRequisitionRequest
 {
-    public Dictionary<Guid, int> QuantitiesToIssue { get; set; }
+    public List<IssueQuantityDto> QuantitiesToIssue { get; set; }
 }
