@@ -1021,7 +1021,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
     }
 
     public async Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>>
-        GetBinCardInformation(int page, int pageSize, string searchQuery, Guid materialId)
+        GetBinCardInformation(int page, 
+            int pageSize, 
+            string searchQuery,
+            DateTime? date,
+            Guid materialId)
     {
         var query = context.BinCardInformation
             .AsSplitQuery()
@@ -1037,6 +1041,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         {
             query = query.WhereSearch(searchQuery, b => b.Description, 
                 b => b.ArNumber, b => b.MaterialBatch.BatchNumber);
+        }
+
+        if (date.HasValue)
+        {
+            query = query.Where(bci => bci.CreatedAt == date.Value);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

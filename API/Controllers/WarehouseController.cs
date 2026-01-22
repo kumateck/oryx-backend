@@ -753,9 +753,10 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     public async Task<IResult> GetBinCardInformation([FromRoute] Guid materialId, 
         [FromQuery] int page = 1, 
         [FromQuery] int pageSize = 10, 
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery = null,
+        [FromQuery] DateTime? date = null)
     {
-        var result = await repository.GetBinCardInformation(page, pageSize, searchQuery, materialId);
+        var result = await repository.GetBinCardInformation(page, pageSize, searchQuery, date, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
