@@ -38,3 +38,27 @@ public class JobRequestDto : WithAttachment
     public bool Approved { get; set; }
 }
 
+
+public class JobRequestReducedDto
+{
+    public string Code { get; set; }
+    public SiteDto Site { get; set; }
+    public EquipmentDto Equipment { get; set; }
+    public string EquipmentInstrumentNumber { get; set; }
+    public DateTime DateOfIssue { get; set; }
+    public JobRequestStatus Status { get; set; }
+    public string DescriptionOfWork { get; set; }
+    public DateTime PreferredCompletionDate { get; set; }
+    public string Item { get; set; }
+    public string ItemNumber { get; set; }
+    // public UserDto IssuedBy { get; set; }
+    // public JobHandlingType HandlingType { get; set; }
+    //
+    // // For internal assignment
+    // public EmployeeDto AssignedToEmployee { get; set; }
+    // public DateTime? AssignedAt { get; set; }
+    // public UserDto AssignedBy { get; set; }
+    //
+    // public bool Approved { get; set; }
+}
+
