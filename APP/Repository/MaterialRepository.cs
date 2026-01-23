@@ -583,12 +583,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success(result);
     }
 
-    public async Task<Paginateable<IEnumerable<MaterialBatchDepartmentDto>>> GetMaterialsWithBatchesAndDepartments(int page, int pageSize, string searchQuery, MaterialKind? kind,
-        Guid? departmentId)
+    public async Task<Result<Paginateable<IEnumerable<MaterialBatchDepartmentDto>>>>
+        GetMaterialsWithBatchesAndDepartments(int page, int pageSize, string searchQuery, MaterialKind? kind,
+            Guid? departmentId)
     {
- 
-
-    
     var query = context.Materials
         .AsSplitQuery()
         .Include(m => m.Batches)
