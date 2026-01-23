@@ -853,6 +853,32 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
             ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     
+    /// <summary>
+    /// Retrieves a paginated list of approved materials for a specific warehouse.
+    /// </summary>
+    /// <param name="kind">The kind of material needed.</param>
+    /// <param name="page">The current page number.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="departmentId">The department id for filtering results.</param>
+    /// <returns>Returns a paginated list of materials with their batches and production departments.</returns>
+    [HttpGet("batches/departments")]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<MaterialBatchDepartmentDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetApprovedRawMaterialsByDepartment(
+        [FromQuery] Guid departmentId, 
+        [FromQuery] MaterialKind kind, 
+        [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null)
+    {
+        var result = await repository.GetMaterialsWithBatchesAndDepartments(page, pageSize, 
+            searchQuery, kind, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     
     
 }
