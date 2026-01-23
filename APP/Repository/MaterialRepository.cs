@@ -583,6 +583,67 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success(result);
     }
 
+    public async Task<Result<Paginateable<IEnumerable<MaterialBatchDepartmentDto>>>>
+        GetMaterialsWithBatchesAndDepartments(int page, int pageSize, string searchQuery, MaterialKind? kind,
+            Guid? departmentId)
+    {
+    var query = context.Materials
+        .AsSplitQuery()
+        .Include(m => m.Batches)
+        .Include(m => m.Departments)
+            .ThenInclude(md => md.Department)
+        .Include(m => m.Departments)
+            .ThenInclude(md => md.UoM)
+        .AsQueryable();
+    
+    if (kind.HasValue)
+    {
+        query = query.Where(m => m.Kind == kind.Value);
+    }
+
+    if (departmentId.HasValue)
+    {
+        query = query.Where(m =>
+            m.Departments.Any(md => md.DepartmentId == departmentId.Value
+            && md.Department.IsSeeded));
+    }
+
+    if (!string.IsNullOrWhiteSpace(searchQuery))
+    {
+        query = query.WhereSearch(searchQuery, 
+            m => m.Name, m => m.Description);
+    }
+    
+    return await PaginationHelper.GetPaginatedResultAsync(
+        query,
+        page,
+        pageSize,
+        m => new MaterialBatchDepartmentDto
+        {
+            Material = mapper.Map<MaterialDto>(m),
+
+            Batches = m.Batches
+                .Select(mapper.Map<MaterialBatchDto>)
+                .ToList(),
+
+            ProductionDepartments = m.Departments
+                .Select(md => new MaterialDepartmentDto
+                {
+                    Department = new CollectionItemDto
+                    {
+                        Id = md.DepartmentId,
+                        Name = md.Department.Name
+                    },
+                    ReOrderLevel = md.ReOrderLevel,
+                    MinimumStockLevel = md.MinimumStockLevel,
+                    MaximumStockLevel = md.MaximumStockLevel
+                })
+                .ToList()
+        }
+    );
+
+    }
+
     public async Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page, int pageSize, Guid materialId, Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);

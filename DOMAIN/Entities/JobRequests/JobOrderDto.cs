@@ -25,11 +25,22 @@ public class JobOrderDto : BaseDto
     public JobOrderExecutionDto Execution { get; set; }
 }
 
+public class JobOrderReducedDto : BaseDto
+{
+    public string Code { get; set; }
+    public JobRequestReducedDto JobRequest { get; set; }
+    public ServiceDto Service { get; set; }
+    public DateTime IssuedDate { get; set; }
+    public UserDto IssuedBy { get; set; }
+    public string Description { get; set; }
+    public string IssuedBySignature { get; set; }
+    public JobOrderStatus Status { get; set; }
+}
+
 public class JobOrderServiceProviderDto
 {
     public Guid Id { get; set; }
-    public Guid JobOrderId { get; set; }
-    public ServiceProviderDto ServiceProvider { get; set; }
+    public ServiceProviderReducedDto ServiceProvider { get; set; }
     public DateTime SentAt { get; set; }
     public bool ResponseReceived { get; set; }
     public DateTime? ResponseDate { get; set; }

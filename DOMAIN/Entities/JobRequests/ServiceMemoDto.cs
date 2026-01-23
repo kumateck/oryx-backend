@@ -7,8 +7,8 @@ namespace DOMAIN.Entities.JobRequests;
 public class ServiceMemoDto : BaseDto
 {
     public string MemoNumber { get; set; }
-    public Guid JobOrderId { get; set; }
-    public Guid ServiceQuotationId { get; set; }
+    public JobOrderReducedDto JobOrder { get; set; }
+    public ServiceQuotationDto ServiceQuotation { get; set; }
     public ServiceProviderReducedDto ServiceProvider { get; set; }
     public DateTime IssuedDate { get; set; }
     public UserDto IssuedBy { get; set; }
