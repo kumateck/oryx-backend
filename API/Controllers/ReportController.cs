@@ -6,6 +6,7 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
+using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Warehouses;
 
@@ -214,4 +215,64 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetQcDashboardReport(filter, productId, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    [HttpGet("finished-goods-transfer-summary")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FinishedGoodsTransferSummaryReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferSummaryReport(
+        [FromQuery] ReportFilter filter,
+        [FromQuery] Guid? productId = null,
+        [FromQuery] Guid? warehouseId = null)
+    {
+        var result = await repository.GetFinishedGoodsTransferSummaryReport(filter, productId, warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("finished-goods-transfer-detailed")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FinishedGoodsTransferDetailedReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferDetailedReport(
+        [FromQuery] ReportFilter filter,
+        [FromQuery] Guid? productId = null,
+        [FromQuery] Guid? warehouseId = null)
+    {
+        var result = await repository.GetFinishedGoodsTransferDetailedReport(filter, productId, warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the product stock summary report.
+    /// </summary>
+    [HttpGet("product-stock-summary")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(List<ProductStockSummaryReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductStockSummaryReport(
+        [FromQuery] Guid? productId,
+        [FromQuery] Guid? warehouseId,
+        [FromQuery] Guid? departmentId)
+    {
+        var result = await repository.GetProductStockSummaryReport(productId, warehouseId, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    /// <summary>
+    /// Retrieves the detailed product stock report with batch and expiry information.
+    /// </summary>
+    [HttpGet("product-stock-detailed")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(List<ProductStockDetailedReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductStockDetailedReport(
+        [FromQuery] Guid? productId = null,
+        [FromQuery] Guid? warehouseId = null,
+        [FromQuery] Guid? departmentId = null,
+        [FromQuery] string? batchNumber = null,
+        [FromQuery] DateTime? expiryDateFrom = null,
+        [FromQuery] DateTime? expiryDateTo = null)
+    {
+        var result = await repository.GetProductStockDetailedReport(productId, warehouseId, departmentId, batchNumber, expiryDateFrom, expiryDateTo);
+
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+
 }
