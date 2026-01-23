@@ -7,12 +7,14 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
+using Microsoft.AspNetCore.Authorization;
 using SHARED;
 
 namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/material")]
 [ApiController]
+[Authorize]
 
 public class MaterialController(IMaterialRepository repository) : ControllerBase
 {
