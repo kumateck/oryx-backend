@@ -10,9 +10,11 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Reports;
+using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
@@ -1204,4 +1206,445 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             NumberOfClearedWaybills = await shipments.CountAsync(s => s.Type == DocType.Waybill && s.Status == ShipmentStatus.Cleared),
         };
     }
+    public async Task<Result<List<FinishedGoodsTransferSummaryReportDto>>>
+    GetFinishedGoodsTransferSummaryReport(ReportFilter filter, Guid? productId = null, Guid? warehouseId = null)
+    {
+        var query = context.FinishedGoodsTransferNotes
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Include(f => f.ProductPacking)
+                .ThenInclude(pp => pp.Product)
+            .Include(f => f.UoM)
+            .Include(f => f.FromWarehouse)
+            .Include(f => f.ToWarehouse)
+            .Include(f => f.BatchManufacturingRecord)
+            .Include(f => f.Approvals)
+            .Where(f => f.IsApproved && f.TotalQuantity > 0 && !f.DeletedAt.HasValue);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(f => f.CreatedAt >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(f => f.CreatedAt < filter.EndDate.Value.AddDays(1));
+
+        if (productId.HasValue)
+            query = query.Where(f => f.ProductPacking != null && f.ProductPacking.ProductId == productId.Value);
+
+        if (warehouseId.HasValue)
+            query = query.Where(f => f.ToWarehouseId == warehouseId.Value);
+
+        var rawData = await query
+            .Select(f => new
+            {
+                ProductName = f.ProductPacking != null && f.ProductPacking.Product != null
+                    ? f.ProductPacking.Product.Name
+                    : null,
+
+                ProductCode = f.ProductPacking != null && f.ProductPacking.Product != null
+                    ? f.ProductPacking.Product.Code
+                    : null,
+
+                BatchNumber = f.BatchManufacturingRecord != null
+                    ? f.BatchManufacturingRecord.BatchNumber
+                    : "No Batch",
+
+                TotalQuantity = f.TotalQuantity,
+                UomName = f.UoM != null ? f.UoM.Name : "N/A",
+
+                ProductionDepartment = f.FromWarehouse != null
+                    ? f.FromWarehouse.Name
+                    : "Unknown Production Floor",
+
+                DestinationWarehouse = f.ToWarehouse != null
+                    ? f.ToWarehouse.Name
+                    : "Unknown Warehouse",
+
+                TransferDate = f.CreatedAt,
+
+                AcceptedDate = f.Approvals.Any()
+                    ? f.Approvals.Max(a => a.CreatedAt)
+                    : (DateTime?)null
+            })
+            .Where(x => x.ProductName != null)
+            .ToListAsync();
+
+        if (!rawData.Any())
+        {
+            return Result<List<FinishedGoodsTransferSummaryReportDto>>.Success(
+                new List<FinishedGoodsTransferSummaryReportDto>());
+        }
+
+        var groupedData = rawData
+            .GroupBy(x => new
+            {
+                x.ProductName,
+                x.ProductCode,
+                x.UomName,
+                x.ProductionDepartment,
+                x.DestinationWarehouse
+            })
+            .Select(g => new
+            {
+                Key = g.Key,
+                NumberOfBatches = g.Where(x => !string.IsNullOrEmpty(x.BatchNumber) && x.BatchNumber != "No Batch")
+                    .Select(x => x.BatchNumber)
+                    .Distinct()
+                    .Count(),
+                TotalQuantity = g.Sum(x => x.TotalQuantity),
+                EarliestTransferDate = g.Min(x => x.TransferDate),
+                LatestAcceptedDate = g.Max(x => x.AcceptedDate)
+            })
+            .OrderBy(g => g.Key.ProductName)
+            .ThenBy(g => g.Key.ProductCode)
+            .ToList();
+
+        // Map to DTO
+        var result = groupedData
+            .Select((g, index) => new FinishedGoodsTransferSummaryReportDto
+            {
+                No = index + 1,
+                ProductName = g.Key.ProductName,
+                ProductCode = g.Key.ProductCode,
+                NumberOfBatches = g.NumberOfBatches,
+                TotalQuantity = g.TotalQuantity,
+                UomName = g.Key.UomName,
+                ProductionDepartment = g.Key.ProductionDepartment,
+                DestinationWarehouse = g.Key.DestinationWarehouse,
+                TransferDate = g.EarliestTransferDate,
+                AcceptedDate = g.LatestAcceptedDate
+            })
+            .ToList();
+
+        return Result<List<FinishedGoodsTransferSummaryReportDto>>.Success(result);
+    }
+
+    public async Task<Result<List<FinishedGoodsTransferDetailedReportDto>>>
+    GetFinishedGoodsTransferDetailedReport(ReportFilter filter, Guid? productId = null, Guid? warehouseId = null)
+    {
+        var query = context.FinishedGoodsTransferNotes
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Include(f => f.ProductPacking)
+                .ThenInclude(pp => pp.Product)
+            .Include(f => f.UoM)
+            .Include(f => f.FromWarehouse)
+            .Include(f => f.ToWarehouse)
+            .Include(f => f.BatchManufacturingRecord)
+            .Include(f => f.Approvals)
+            .Where(f => f.IsApproved && f.TotalQuantity > 0 && !f.DeletedAt.HasValue);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(f => f.CreatedAt >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(f => f.CreatedAt < filter.EndDate.Value.AddDays(1));
+
+        if (productId.HasValue)
+            query = query.Where(f => f.ProductPacking != null && f.ProductPacking.ProductId == productId.Value);
+
+        if (warehouseId.HasValue)
+            query = query.Where(f => f.ToWarehouseId == warehouseId.Value);
+
+        var rawData = await query
+            .Select(f => new
+            {
+                ProductName = f.ProductPacking != null && f.ProductPacking.Product != null
+                    ? f.ProductPacking.Product.Name
+                    : null,
+
+                ProductCode = f.ProductPacking != null && f.ProductPacking.Product != null
+                    ? f.ProductPacking.Product.Code
+                    : null,
+
+                BatchNumber = f.BatchManufacturingRecord != null
+                    ? f.BatchManufacturingRecord.BatchNumber
+                    : "No Batch",
+
+                QuantityTransferred = f.QuantityReceived > 0 ? f.QuantityReceived : f.TotalQuantity,
+
+                ManufacturingDate = f.BatchManufacturingRecord != null
+                    ? f.BatchManufacturingRecord.ManufacturingDate
+                    : (DateTime?)null,
+
+                ExpiryDate = f.BatchManufacturingRecord != null
+                    ? f.BatchManufacturingRecord.ExpiryDate
+                    : (DateTime?)null,
+
+                PackingStyle = f.ProductPacking != null
+                    ? f.ProductPacking.Name
+                    : "N/A",
+
+                UomName = f.UoM != null ? f.UoM.Name : "N/A",
+
+                ProductionDepartment = f.FromWarehouse != null
+                    ? f.FromWarehouse.Name
+                    : "Unknown Production Floor",
+
+                DestinationWarehouse = f.ToWarehouse != null
+                    ? f.ToWarehouse.Name
+                    : "Unknown Warehouse",
+
+                TransferDate = f.CreatedAt,
+
+                AcceptedDate = f.Approvals.Any()
+                    ? f.Approvals.Max(a => a.CreatedAt)
+                    : (DateTime?)null,
+
+
+            })
+            .Where(x => x.ProductName != null)
+            .OrderBy(x => x.ProductName)
+            .ThenBy(x => x.TransferDate)
+            .ToListAsync();
+
+        if (!rawData.Any())
+        {
+            return Result<List<FinishedGoodsTransferDetailedReportDto>>.Success(
+                new List<FinishedGoodsTransferDetailedReportDto>());
+        }
+
+        var result = rawData
+            .Select((item, index) => new FinishedGoodsTransferDetailedReportDto
+            {
+                No = index + 1,
+                ProductName = item.ProductName,
+                ProductCode = item.ProductCode,
+                BatchNumber = item.BatchNumber,
+                QuantityTransferred = item.QuantityTransferred,
+                ManufacturingDate = item.ManufacturingDate,
+                ExpiryDate = item.ExpiryDate,
+                PackingStyle = item.PackingStyle,
+                UomName = item.UomName,
+                ProductionDepartment = item.ProductionDepartment,
+                DestinationWarehouse = item.DestinationWarehouse,
+                TransferDate = item.TransferDate,
+                AcceptedDate = item.AcceptedDate,
+            })
+            .ToList();
+
+        return Result<List<FinishedGoodsTransferDetailedReportDto>>.Success(result);
+    }
+
+    public async Task<Result<List<ProductStockSummaryReportDto>>> GetProductStockSummaryReport(
+     Guid? productId = null,
+     Guid? warehouseId = null,
+     Guid? departmentId = null)
+    {
+        var query = context.FinishedGoodsTransferNotes
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(f => f.BatchManufacturingRecord)
+                .ThenInclude(b => b.ProductionScheduleProduct)
+                .ThenInclude(psp => psp.Product)
+                .ThenInclude(p => p.Department)
+            .Include(f => f.ProductPacking)
+                .ThenInclude(pp => pp.Product)
+                .ThenInclude(p => p.Department)
+            .Include(f => f.UoM)
+            .Include(f => f.ToWarehouse)
+            .Where(f => f.IsApproved && !f.DeletedAt.HasValue)
+            .AsEnumerable()
+            .Where(f => f.RemainingQuantity > 0);
+
+        if (productId.HasValue)
+        {
+            query = query.Where(f =>
+                f.BatchManufacturingRecord?.ProductionScheduleProduct?.ProductId == productId.Value ||
+                f.ProductPacking?.ProductId == productId.Value);
+        }
+
+        if (warehouseId.HasValue)
+        {
+            query = query.Where(f => f.ToWarehouseId == warehouseId.Value);
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(f =>
+                f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product?.DepartmentId == departmentId.Value ||
+                f.ProductPacking?.Product?.DepartmentId == departmentId.Value);
+        }
+
+        var rawData = query
+            .Select(f => new
+            {
+                Product = f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product
+                          ?? f.ProductPacking?.Product,
+                Warehouse = f.ToWarehouse?.Name ?? "Unknown Warehouse",
+                BatchNumber = f.BatchManufacturingRecord?.BatchNumber,
+                CurrentStockQuantity = f.RemainingQuantity,
+                UomName = f.UoM?.Name ?? "N/A"
+            })
+            .Select(x => new
+            {
+                ProductName = x.Product?.Name,
+                ProductCode = x.Product?.Code,
+                ProductionDepartment = x.Product?.Department?.Name ?? "Unknown Department",
+                x.Warehouse,
+                x.BatchNumber,
+                x.CurrentStockQuantity,
+                x.UomName
+            })
+            .Where(x => x.ProductName != null && x.ProductCode != null)
+            .ToList();
+
+        if (!rawData.Any())
+        {
+            return Result<List<ProductStockSummaryReportDto>>.Success(new List<ProductStockSummaryReportDto>());
+        }
+
+        var groupedData = rawData
+            .GroupBy(x => new
+            {
+                x.ProductName,
+                x.ProductCode,
+                x.Warehouse,
+                x.ProductionDepartment,
+                x.UomName
+            })
+            .Select(g => new
+            {
+                Key = g.Key,
+                NumberOfBatches = g.Where(x => !string.IsNullOrEmpty(x.BatchNumber))
+                                   .Select(x => x.BatchNumber)
+                                   .Distinct()
+                                   .Count(),
+                TotalQuantity = g.Sum(x => x.CurrentStockQuantity)
+            })
+            .OrderBy(g => g.Key.ProductName)
+            .ThenBy(g => g.Key.Warehouse)
+            .ThenBy(g => g.Key.ProductionDepartment)
+            .ToList();
+
+        var result = groupedData
+            .Select((g, index) => new ProductStockSummaryReportDto
+            {
+                No = index + 1,
+                ProductName = g.Key.ProductName,
+                ProductCode = g.Key.ProductCode,
+                Warehouse = g.Key.Warehouse,
+                ProductionDepartment = g.Key.ProductionDepartment,
+                NumberOfBatches = g.NumberOfBatches,
+                TotalQuantity = g.TotalQuantity,
+                UomName = g.Key.UomName
+            })
+            .ToList();
+
+        return Result<List<ProductStockSummaryReportDto>>.Success(result);
+    }
+
+    public async Task<Result<List<ProductStockDetailedReportDto>>> GetProductStockDetailedReport(
+     Guid? productId = null,
+     Guid? warehouseId = null,
+     Guid? departmentId = null,
+     string batchNumber = null,
+     DateTime? expiryDateFrom = null,
+     DateTime? expiryDateTo = null)
+    {
+        var query = context.FinishedGoodsTransferNotes
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(f => f.BatchManufacturingRecord)
+                .ThenInclude(b => b.ProductionScheduleProduct)
+                .ThenInclude(psp => psp.Product)
+                .ThenInclude(p => p.Department)
+            .Include(f => f.ProductPacking)
+                .ThenInclude(pp => pp.Product)
+                .ThenInclude(p => p.Department)
+            .Include(f => f.UoM)
+            .Include(f => f.ToWarehouse)
+            .Where(f => f.IsApproved && !f.DeletedAt.HasValue)
+            .AsEnumerable()
+            .Where(f => f.RemainingQuantity > 0);
+
+        if (productId.HasValue)
+        {
+            query = query.Where(f =>
+                (f.BatchManufacturingRecord?.ProductionScheduleProduct?.ProductId == productId.Value) ||
+                (f.ProductPacking?.ProductId == productId.Value));
+        }
+
+        if (warehouseId.HasValue)
+        {
+            query = query.Where(f => f.ToWarehouseId == warehouseId.Value);
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(f =>
+                (f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product?.DepartmentId == departmentId.Value) ||
+                (f.ProductPacking?.Product?.DepartmentId == departmentId.Value));
+        }
+
+        if (!string.IsNullOrWhiteSpace(batchNumber))
+        {
+            query = query.Where(f => f.BatchManufacturingRecord?.BatchNumber.Contains(batchNumber) == true);
+        }
+
+        if (expiryDateFrom.HasValue)
+        {
+            query = query.Where(f => f.BatchManufacturingRecord?.ExpiryDate >= expiryDateFrom.Value);
+        }
+
+        if (expiryDateTo.HasValue)
+        {
+            query = query.Where(f => f.BatchManufacturingRecord?.ExpiryDate <= expiryDateTo.Value);
+        }
+
+        var rawData = query
+            .Select(f => new
+            {
+                Product = f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product
+                          ?? f.ProductPacking?.Product,
+                BatchNumber = f.BatchManufacturingRecord?.BatchNumber ?? "No Batch",
+                ManufacturingDate = f.BatchManufacturingRecord?.ManufacturingDate,
+                ExpiryDate = f.BatchManufacturingRecord?.ExpiryDate,
+                TotalQuantity = f.RemainingQuantity,
+                UomName = f.UoM?.Name ?? "N/A",
+                Warehouse = f.ToWarehouse?.Name ?? "Unknown Warehouse"
+            })
+            .Select(x => new
+            {
+                ProductName = x.Product?.Name,
+                ProductCode = x.Product?.Code,
+                ProductionDepartment = x.Product?.Department?.Name ?? "Unknown Department",
+                x.BatchNumber,
+                x.ManufacturingDate,
+                x.ExpiryDate,
+                x.TotalQuantity,
+                x.UomName,
+                x.Warehouse
+            })
+            .Where(x => x.ProductName != null && x.ProductCode != null)
+            .OrderBy(x => x.ProductName)
+            .ThenBy(x => x.BatchNumber)
+            .ThenBy(x => x.ExpiryDate)
+            .ToList();
+
+        if (!rawData.Any())
+        {
+            return Result<List<ProductStockDetailedReportDto>>.Success(new List<ProductStockDetailedReportDto>());
+        }
+
+        var result = rawData
+            .Select((item, index) => new ProductStockDetailedReportDto
+            {
+                No = index + 1,
+                ProductName = item.ProductName,
+                ProductCode = item.ProductCode,
+                BatchNumber = item.BatchNumber,
+                ManufacturingDate = item.ManufacturingDate,
+                ExpiryDate = item.ExpiryDate,
+                TotalQuantity = item.TotalQuantity,
+                UomName = item.UomName,
+                ProductionDepartment = item.ProductionDepartment,
+                Warehouse = item.Warehouse
+            })
+            .ToList();
+
+        return Result<List<ProductStockDetailedReportDto>>.Success(result);
+    }
+
 }
