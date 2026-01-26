@@ -15,7 +15,6 @@ namespace APP.Repository;
 
 public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, IMapper mapper) : IMaterialAnalyticalRawDataRepository
 {
-    //TODO: endpoint to get materials that don't have an ARD
     public async Task<Result<Guid>> CreateAnalyticalRawData(CreateMaterialAnalyticalRawDataRequest request)
     {
         var existingAnalyticalRawData = await context.MaterialAnalyticalRawData
@@ -61,7 +60,9 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery,
-                ad => ad.SpecNumber);
+                ad => ad.SpecNumber,
+                ad => ad.MaterialStandardTestProcedure.StpNumber,
+                ad => ad.MaterialStandardTestProcedure.Material.Name);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

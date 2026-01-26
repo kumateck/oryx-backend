@@ -59,7 +59,9 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery,
-                ad => ad.SpecNumber);
+                ad => ad.SpecNumber,
+                ad => ad.ProductStandardTestProcedure.StpNumber,
+                ad => ad.ProductStandardTestProcedure.Product.Name);
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
