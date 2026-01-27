@@ -471,13 +471,11 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Retrieves a paginated list of approved materials for a specific warehouse.
     /// </summary>
     /// <param name="kind">The kind of material needed.</param>
-    /// <param name="page">The current page number.</param>
-    /// <param name="pageSize">The number of items per page.</param>
-    /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="materialCategoryId">The material category id.</param>
     /// <param name="departmentId">The department id for filtering results.</param>
     /// <returns>Returns a paginated list of approved raw materials.</returns>
     [HttpGet("department/approved-materials/v2")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, 
         Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -485,13 +483,9 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     public async Task<IResult> GetApprovedRawMaterialsByDepartment(
         [FromQuery] Guid departmentId, 
         [FromQuery] MaterialKind kind, 
-        [FromQuery] Guid materialCategoryId, 
-        [FromQuery] int page = 1, 
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null)
+        [FromQuery] Guid materialCategoryId)
     {
-        var result = await repository.GetApprovedMaterialsByDepartmentV2(page, pageSize, 
-            searchQuery, kind, departmentId, materialCategoryId);
+        var result = await repository.GetApprovedMaterialsByDepartmentV2(kind, departmentId, materialCategoryId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -503,8 +497,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The ID of the material.</param>
     /// <param name="searchQuery">Search material</param>
     /// <returns>Returns a paginated list of material batches.</returns>
-    [HttpGet("{materialId}/batches/v2")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShelfMaterialBatchDto>>))]
+    [HttpGet("{materialId:guid}/batches/v2")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShelfMaterialBatchDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialBatchesByMaterialIdV2([FromRoute] Guid materialId, 

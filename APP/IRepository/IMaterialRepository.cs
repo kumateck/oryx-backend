@@ -60,9 +60,8 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page, int pageSize,
         string searchQuery, MaterialKind kind, Guid warehouseId, Guid departmentId);
 
-    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartmentV2(int page,
-        int pageSize,
-        string searchQuery, MaterialKind? kind, Guid? departmentId, Guid? materialCategoryId);
+    Task<Result<List<MaterialDetailsDto>>> GetApprovedMaterialsByDepartmentV2(MaterialKind? kind, Guid? departmentId,
+        Guid? materialCategoryId);
 
     Task<Result<Paginateable<IEnumerable<MaterialBatchDepartmentDto>>>>
         GetMaterialsWithBatchesAndDepartments(
