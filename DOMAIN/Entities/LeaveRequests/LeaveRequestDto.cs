@@ -32,9 +32,15 @@ public class LeaveRequestDto : WithAttachment
     public int UnpaidDays { get; set; }
 
     public int PaidDays { get; set; }
+    
+    public int NumberOfDays => UnpaidDays + PaidDays;   
+    
+    public int NumberOfDaysUsed => Employee.Designation.MaximumLeaveDays - Employee.AnnualLeaveDays;
 
     public Guid EmployeeId { get; set; }
 
     public EmployeeDto Employee { get; set; }
+    
+    public int LeaveBalance => Employee.AnnualLeaveDays - NumberOfDays;
 
 }

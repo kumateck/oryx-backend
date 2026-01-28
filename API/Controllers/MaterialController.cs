@@ -475,7 +475,6 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="departmentId">The department id for filtering results.</param>
     /// <returns>Returns a paginated list of approved raw materials.</returns>
     [HttpGet("department/approved-materials/v2")]
-    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, 
         Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
