@@ -586,25 +586,24 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success(result);
     }
     public async Task<Result<Paginateable<IEnumerable<MaterialBatchDepartmentDto>>>>
-        GetMaterialsWithBatchesAndDepartments(
-            int page,
-            int pageSize,
-            string searchQuery,
-            MaterialKind? kind,
-            Guid? departmentId)
+    GetMaterialsWithBatchesAndDepartments(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? kind,
+        Guid? departmentId)
     {
         var query = context.Materials
+            .Include(m => m.Batches)
             .Include(m => m.Departments)
             .ThenInclude(md => md.Department)
-            .Include(m => m.Batches)
-            .AsSplitQuery()
             .AsQueryable();
 
         if (kind.HasValue)
         {
             query = query.Where(m => m.Kind == kind.Value);
         }
-
+        
         if (departmentId.HasValue)
         {
             query = query.Where(m =>
@@ -618,7 +617,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 m => m.Name,
                 m => m.Description);
         }
-
+        
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
@@ -630,17 +629,32 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 Batches = m.Batches
                     .Select(mapper.Map<MaterialBatchDto>)
                     .ToList(),
+                ProductionDepartments =
+                    departmentId.HasValue
+                        // Only selected department
+                        ? m.Departments
+                            .Where(md => md.DepartmentId == departmentId.Value)
+                            .Select(md => new MaterialDepartmentDto
+                            {
+                                Department = new CollectionItemDto
+                                {
+                                    Id = md.DepartmentId,
+                                    Name = md.Department.Name
+                                }
+                            })
+                            .ToList()
 
-                ProductionDepartments = m.Departments
-                    .Select(md => new MaterialDepartmentDto
-                    {
-                        Department = new CollectionItemDto
-                        {
-                            Id = md.DepartmentId,
-                            Name = md.Department.Name
-                        }
-                    })
-                    .ToList()
+                        // All departments
+                        : m.Departments
+                            .Select(md => new MaterialDepartmentDto
+                            {
+                                Department = new CollectionItemDto
+                                {
+                                    Id = md.DepartmentId,
+                                    Name = md.Department.Name
+                                }
+                            })
+                            .ToList()
             }
         );
     }
