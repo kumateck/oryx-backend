@@ -11,6 +11,8 @@ using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Warehouses;
+using DOMAIN.Entities.Reports.Procurement;
+using APP.Utils;
 
 namespace API.Controllers;
 
@@ -275,6 +277,34 @@ public class ReportController(IReportRepository repository) : ControllerBase
 
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    /// <summary>
+    /// Retrieves the dashboard KPI report for finished goods transfer notes.
+    /// </summary>
+    [HttpGet("fgtn/dashboard-kpi")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DashboardKpiReportDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDashboardKpiReport([FromQuery] DashboardFilterDto filter)
+    {
+        var result = await repository.GetDashboardKpiReport(filter);
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+/// <summary>
+/// Retrieves a report of supplier materials based on filters.
+/// </summary>
+[HttpGet("supplier-materials")]
+[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierMaterialReportDto))]
+[ProducesResponseType(StatusCodes.Status404NotFound)]
+public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMaterialFilters filters
+        )
+    {
+        var result = await repository.GetSupplierMaterialAReport(filters );
+
+    return result.IsSuccess
+        ? TypedResults.Ok(result.Value)
+        : result.ToProblemDetails();
+}
     
     /// <summary>
     /// Retrieves a paginated list of items
