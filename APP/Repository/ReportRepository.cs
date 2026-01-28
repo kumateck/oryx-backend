@@ -1,4 +1,5 @@
 using APP.IRepository;
+using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
@@ -10,6 +11,9 @@ using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
+using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
@@ -17,6 +21,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
+using DOMAIN.Entities.Reports.Procurement;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
@@ -1807,6 +1812,272 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             InventoryClassification = r.Classification,
             UnitOfMeasure = r.UnitOfMeasure,
             VendorName = r.VendorName
+        }).ToList();
+
+        return Result.Success(result);
+    }
+    public async Task<Result<DashboardKpiReportDto>> GetDashboardKpiReport(DashboardFilterDto filter)
+    {
+
+        DateTime? startDate = null;
+        DateTime? endDate = null;
+
+        switch (filter.DateFilter)
+        {
+            case DateFilterType.OneWeek:
+                startDate = DateTime.UtcNow.AddDays(-7);
+                endDate = DateTime.UtcNow;
+                break;
+            case DateFilterType.Custom:
+                startDate = filter.CustomStartDate;
+                endDate = filter.CustomEndDate;
+                break;
+            case DateFilterType.AllTime:
+            default:
+
+                break;
+        }
+
+        var productQuery = context.Products
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(p => !p.DeletedAt.HasValue);
+
+        if (filter.DepartmentId.HasValue)
+        {
+            productQuery = productQuery.Where(p => p.DepartmentId == filter.DepartmentId.Value);
+        }
+        if (filter.ProductId.HasValue)
+        {
+            productQuery = productQuery.Where(p => p.Id == filter.ProductId.Value);
+        }
+
+
+        if (startDate.HasValue)
+            productQuery = productQuery.Where(p => p.CreatedAt >= startDate.Value);
+
+        if (endDate.HasValue)
+            productQuery = productQuery.Where(p => p.CreatedAt <= endDate.Value);
+
+        var betaProductCount = await productQuery
+            .Where(p => p.Division == Division.BetaLactam)
+            .CountAsync();
+
+        var nonBetaProductCount = await productQuery
+            .Where(p => p.Division == Division.NonBetaLactam)
+            .CountAsync();
+
+        var totalProductCount = betaProductCount + nonBetaProductCount;
+
+
+        var customerQuery = context.Customers
+            .AsNoTracking()
+            .Where(c => !c.DeletedAt.HasValue);
+
+
+        if (startDate.HasValue)
+            customerQuery = customerQuery.Where(c => c.CreatedAt >= startDate.Value);
+
+        if (endDate.HasValue)
+            customerQuery = customerQuery.Where(c => c.CreatedAt <= endDate.Value);
+
+        var totalCustomers = await customerQuery.CountAsync();
+
+
+        var productionOrderQuery = context.ProductionOrders
+            .AsNoTracking()
+            .Include(po => po.Products)
+            .Where(po => !po.DeletedAt.HasValue);
+
+        if (filter.DepartmentId.HasValue)
+        {
+            productionOrderQuery = productionOrderQuery
+                .Where(po => po.Products.Any(p => p.Product != null &&
+                                                 p.Product.DepartmentId == filter.DepartmentId.Value));
+        }
+        if (filter.ProductId.HasValue)
+        {
+            productionOrderQuery = productionOrderQuery
+                .Where(po => po.Products.Any(p => p.ProductId == filter.ProductId.Value));
+        }
+
+
+        if (startDate.HasValue)
+            productionOrderQuery = productionOrderQuery.Where(po => po.CreatedAt >= startDate.Value);
+
+        if (endDate.HasValue)
+            productionOrderQuery = productionOrderQuery.Where(po => po.CreatedAt <= endDate.Value);
+
+        var pendingOrders = await productionOrderQuery
+            .Where(po => po.Status == ProductionOrderStatus.Pending)
+            .CountAsync();
+
+        var partialPackingReadyOrders = await productionOrderQuery
+            .Where(po => po.Status == ProductionOrderStatus.PartialPackingReady)
+            .CountAsync();
+
+        var fullPackingReadyOrders = await productionOrderQuery
+            .Where(po => po.Status == ProductionOrderStatus.FullPackingReady)
+            .CountAsync();
+
+        var totalProductionOrders = pendingOrders + partialPackingReadyOrders + fullPackingReadyOrders;
+
+
+        var fgtnQuery = context.FinishedGoodsTransferNotes
+            .IgnoreQueryFilters()
+            .Include(f => f.Approvals)
+            .Include(f => f.ProductPacking)
+                .ThenInclude(pp => pp.Product)
+            .Include(f => f.BatchManufacturingRecord)
+                .ThenInclude(bmr => bmr.ProductionScheduleProduct)
+                .ThenInclude(psp => psp.Product)
+            .Where(f => !f.DeletedAt.HasValue);
+
+        if (filter.DepartmentId.HasValue)
+        {
+            fgtnQuery = fgtnQuery.Where(f =>
+                (f.ProductPacking != null &&
+                 f.ProductPacking.Product != null &&
+                 f.ProductPacking.Product.DepartmentId == filter.DepartmentId.Value) ||
+                (f.BatchManufacturingRecord != null &&
+                 f.BatchManufacturingRecord.ProductionScheduleProduct != null &&
+                 f.BatchManufacturingRecord.ProductionScheduleProduct.Product != null &&
+                 f.BatchManufacturingRecord.ProductionScheduleProduct.Product.DepartmentId == filter.DepartmentId.Value));
+        }
+        if (filter.ProductId.HasValue)
+        {
+            fgtnQuery = fgtnQuery.Where(f =>
+                (f.ProductPacking != null && f.ProductPacking.ProductId == filter.ProductId.Value) ||
+                (f.BatchManufacturingRecord != null &&
+                 f.BatchManufacturingRecord.ProductionScheduleProduct != null &&
+                 f.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == filter.ProductId.Value));
+        }
+
+
+        if (filter.MaterialId.HasValue)
+        {
+            fgtnQuery = fgtnQuery.Where(f =>
+          f.BatchManufacturingRecord != null &&
+          f.BatchManufacturingRecord.ProductionScheduleProduct != null &&
+          f.BatchManufacturingRecord.ProductionScheduleProduct.Product != null &&
+          f.BatchManufacturingRecord.ProductionScheduleProduct.Product.BillOfMaterials
+              .Any(bom => bom.BillOfMaterialId == filter.MaterialId.Value)
+      );
+
+        }
+
+
+        if (startDate.HasValue)
+            fgtnQuery = fgtnQuery.Where(f => f.CreatedAt >= startDate.Value);
+
+        if (endDate.HasValue)
+            fgtnQuery = fgtnQuery.Where(f => f.CreatedAt <= endDate.Value);
+
+
+        var pendingFgtn = await fgtnQuery
+            .Where(f => !f.IsApproved || !f.Approvals.Any())
+            .CountAsync();
+
+
+        var acceptedFgtn = await fgtnQuery
+            .Where(f => f.IsApproved && f.Approvals.Any())
+            .CountAsync();
+
+        var totalFgtn = pendingFgtn + acceptedFgtn;
+
+
+        var dashboardKpi = new DashboardKpiReportDto
+        {
+            ProductCount = new ProductCountKpiDto
+            {
+                BetaProducts = betaProductCount,
+                NonBetaProducts = nonBetaProductCount,
+                TotalProducts = totalProductCount
+            },
+            TotalCustomers = totalCustomers,
+            ProductionOrders = new ProductionOrderKpiDto
+            {
+                PendingProductionOrders = pendingOrders,
+                PartialPackingReady = partialPackingReadyOrders,
+                FullPackingReady = fullPackingReadyOrders,
+                TotalProductionOrders = totalProductionOrders
+            },
+            FinishedGoodsTransferNotes = new FgtnKpiDto
+            {
+                PendingTransferNote = pendingFgtn,
+                AcceptedTransferNote = acceptedFgtn,
+                TotalFgtnTransferNotes = totalFgtn
+            }
+        };
+
+        return Result.Success(dashboardKpi);
+    }
+    
+    public async Task<Result<List<SupplierMaterialReportDto>>>
+        GetSupplierMaterialAReport(SupplierMaterialFilters filters)
+    {
+        var query = context.SupplierManufacturers
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(sm => !sm.DeletedAt.HasValue)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filters.MaterialName))
+            query = query.Where(sm =>
+                sm.Material != null &&
+                sm.Material.Name.Contains(filters.MaterialName));
+
+        if (filters.MaterialType.HasValue)
+            query = query.Where(sm =>
+                sm.Material != null &&
+                sm.Material.Kind == filters.MaterialType.Value);
+
+        if (!string.IsNullOrWhiteSpace(filters.SupplierName))
+            query = query.Where(sm =>
+                sm.Supplier != null &&
+                sm.Supplier.Name.Contains(filters.SupplierName));
+
+        if (!string.IsNullOrWhiteSpace(filters.ManufacturerName))
+            query = query.Where(sm =>
+                sm.Manufacturer != null &&
+                sm.Manufacturer.Name.Contains(filters.ManufacturerName));
+
+        if (filters.SupplierId.HasValue)
+            query = query.Where(sm => sm.SupplierId == filters.SupplierId.Value);
+
+        if (filters.ManufacturerId.HasValue)
+            query = query.Where(sm => sm.ManufacturerId == filters.ManufacturerId.Value);
+        
+
+        var raw = await query
+            .GroupBy(sm => new
+            {
+                sm.SupplierId,
+                sm.ManufacturerId,
+                sm.UoMId
+            })
+            .Select(g => new
+            {
+                Supplier = g.Select(x => x.Supplier).FirstOrDefault(),
+                Manufacturer = g.Select(x => x.Manufacturer).FirstOrDefault(),
+                Uom = g.Select(x => x.UoM).FirstOrDefault(),
+
+                Materials = context.ManufacturerMaterials
+                    .IgnoreQueryFilters()
+                    .Where(mm =>
+                        !mm.DeletedAt.HasValue &&
+                        mm.ManufacturerId == g.Key.ManufacturerId &&
+                        g.Select(x => x.MaterialId).Contains(mm.MaterialId)
+                    )
+            })
+            .ToListAsync();
+
+        var result = raw.Select(r => new SupplierMaterialReportDto
+        {
+            Supplier = mapper.Map<SupplierListDto>(r.Supplier),
+            Manufacturers = mapper.Map<ManufacturerListDto>(r.Manufacturer),
+            Uom = mapper.Map<UnitOfMeasureDto>(r.Uom),
+            Materials = mapper.Map<List<ManufacturerMaterialDto>>(r.Materials.ToList())
         }).ToList();
 
         return Result.Success(result);

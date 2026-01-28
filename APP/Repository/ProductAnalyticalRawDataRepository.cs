@@ -18,6 +18,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     {
         var existingAnalyticalRawData = await context.ProductAnalyticalRawData
             .IgnoreQueryFilters()
+            .Where(ad => !ad.DeletedAt.HasValue)
             .AnyAsync(ad => ad.SpecNumber == request.SpecNumber);
         if (existingAnalyticalRawData)
         {
@@ -54,6 +55,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .IgnoreQueryFilters()
             .Include(ad => ad.ProductStandardTestProcedure)
             .ThenInclude(p => p.Product)
+            .Where(ad => !ad.DeletedAt.HasValue)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -88,6 +90,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .Include(ad => ad.Form)
             .Include(ad => ad.ProductStandardTestProcedure)
             .ThenInclude(ad => ad.Product)
+            .Where(ad => !ad.DeletedAt.HasValue)
             .FirstOrDefaultAsync(ad => ad.Id == id);
 
         return analyticalRawData is null ?
@@ -108,7 +111,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .ThenInclude(f => f.Question)
             .Include(ad => ad.ProductStandardTestProcedure)
             .ThenInclude(ad => ad.Product)
-            .Where(ad => ad.ProductStandardTestProcedure.ProductId == id)
+            .Where(ad => ad.ProductStandardTestProcedure.ProductId == id && !ad.DeletedAt.HasValue)
             .ToListAsync();
 
         return mapper.Map<List<ProductAnalyticalRawDataDto>>(analyticalRawData, opt =>
@@ -124,6 +127,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .IgnoreQueryFilters()
             .Include(batchManufacturingRecord => batchManufacturingRecord.IssuedBy)
             .Include(b => b.ProductionScheduleProduct)
+            .Where(b => !b.DeletedAt.HasValue)
             .FirstOrDefaultAsync(m => m.Id == batchManufacturingRecordId);
 
         if (bmr is null) return Error.NotFound("Bmr.NotFound", "Bmr not found.");
@@ -138,6 +142,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(p => p.ProductStandardTestProcedure)
+            .Where(p => !p.DeletedAt.HasValue)
             .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == bmr.ProductionScheduleProduct.ProductId);
 
         return new ProductBatchArd

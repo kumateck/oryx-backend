@@ -57,6 +57,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
                 .ThenInclude(r => r.FormResponses)
                 .ThenInclude(r => r.FormField)
                 .Include(ps => ps.FormSections)
+                .Where(ps => !ps.DeletedAt.HasValue)
                 .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
@@ -72,6 +73,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Include(ps => ps.Form)
             .Include(ps => ps.CreatedBy)
             .Include(ps => ps.FormSections)
+            .Where(ps => !ps.DeletedAt.HasValue)
             .FirstOrDefaultAsync(ps => ps.ProductId == productId);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
@@ -97,7 +99,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .ThenInclude(r => r.FormResponses)
             .ThenInclude(r => r.FormField)
             .Include(ps => ps.FormSections)
-            .Where(ps => ps.ProductId == productId)
+            .Where(ps => ps.ProductId == productId && !ps.DeletedAt.HasValue)
             .ToListAsync();
 
         return mapper.Map<List<ProductSpecificationDto>>(productSpec);
