@@ -480,9 +480,9 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetApprovedRawMaterialsByDepartment(
-        [FromQuery] Guid departmentId, 
-        [FromQuery] MaterialKind kind, 
-        [FromQuery] Guid materialCategoryId)
+        [FromQuery] Guid? departmentId, 
+        [FromQuery] MaterialKind? kind, 
+        [FromQuery] Guid? materialCategoryId)
     {
         var result = await repository.GetApprovedMaterialsByDepartmentV2(kind, departmentId, materialCategoryId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
