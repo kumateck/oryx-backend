@@ -1954,7 +1954,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     join sd in context.ShipmentDocuments on si.ShipmentInvoiceId equals sd.ShipmentInvoiceId
                     where sr.RequisitionId == r.RequisitionId
                           && r.MaterialId == item.MaterialId
-                          && (r.Quantity - r.QuantityReceived) != 0
+                          && r.Quantity - r.QuantityReceived != 0
                           && sd.Id == shipmentDocumentId // Ensuring linkage to the shipment document
                     select r
                 ).Distinct().ToListAsync();
@@ -2033,7 +2033,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     join sd in context.ShipmentDocuments on si.ShipmentInvoiceId equals sd.ShipmentInvoiceId
                     where sr.RequisitionId == r.RequisitionId
                           && r.MaterialId == item.MaterialId
-                          && (r.Quantity - r.QuantityReceived) != 0
+                          && r.Quantity - r.QuantityReceived != 0
                           && sd.Id == shipmentDocumentId // Ensuring linkage to the shipment document
                     select r
                 ).IgnoreQueryFilters().Distinct().ToListAsync();
