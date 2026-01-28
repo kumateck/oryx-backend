@@ -194,7 +194,7 @@ public class ApprovalRepository(ApplicationDbContext context,
                 .OrderBy(s => s.Order)
                 .ToList();
 
-            if (nextPendingStages.Any())
+            if (nextPendingStages.Count != 0)
             {
                 // Get the current approval stages after the approval
                 var updatedApprovalStages = requisition.Approvals.Select(item => new ResponsibleApprovalStage
@@ -3094,10 +3094,10 @@ public class ApprovalRepository(ApplicationDbContext context,
         if (currentApprovalStages.Count <= 1) return;
 
         var stagesToAutoApprove = currentApprovalStages
-            .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue && (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
+            .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue && DateTime.UtcNow - s.ActivatedAt.Value > escalationDuration)
             .ToList();
 
-        if (stagesToAutoApprove.Any())
+        if (stagesToAutoApprove.Count != 0)
         {
             foreach (var stage in stagesToAutoApprove)
             {
@@ -3138,10 +3138,10 @@ public class ApprovalRepository(ApplicationDbContext context,
         if (currentApprovalStages.Count <= 1) return;
 
         var stagesToAutoApprove = currentApprovalStages
-            .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue && (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
+            .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue && DateTime.UtcNow - s.ActivatedAt.Value > escalationDuration)
             .ToList();
 
-        if (stagesToAutoApprove.Any())
+        if (stagesToAutoApprove.Count != 0)
         {
             foreach (var stage in stagesToAutoApprove)
             {
@@ -3183,7 +3183,7 @@ public class ApprovalRepository(ApplicationDbContext context,
 
         var stagesToAutoApprove = currentApprovalStages
             .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue &&
-                        (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
+                        DateTime.UtcNow - s.ActivatedAt.Value > escalationDuration)
             .ToList();
 
         if (stagesToAutoApprove.Count != 0)
@@ -3272,10 +3272,10 @@ public class ApprovalRepository(ApplicationDbContext context,
 
         var stagesToAutoApprove = currentApprovalStages
             .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue &&
-                        (DateTime.UtcNow - s.ActivatedAt.Value) > escalationDuration)
+                        DateTime.UtcNow - s.ActivatedAt.Value > escalationDuration)
             .ToList();
 
-        if (stagesToAutoApprove.Any())
+        if (stagesToAutoApprove.Count != 0)
         {
             foreach (var stage in stagesToAutoApprove)
             {

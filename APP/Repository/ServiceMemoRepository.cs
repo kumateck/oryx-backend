@@ -175,7 +175,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
     private async Task<string> GenerateServiceMemoNumber()
     {
         var count = await context.ServiceMemos.CountAsync();
-        return $"SM-{DateTime.UtcNow:yyyyMM}-{(count + 1):D4}";
+        return $"SM-{DateTime.UtcNow:yyyyMM}-{count + 1:D4}";
     }
 }
 

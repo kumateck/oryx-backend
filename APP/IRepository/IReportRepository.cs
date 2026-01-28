@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
@@ -49,4 +50,26 @@ public interface IReportRepository
    Task<Result<List<SupplierMaterialReportDto>>> GetSupplierMaterialAReport(
     SupplierMaterialFilters filters)
 ;
+    Task<Result<List<ProductStockDetailedReportDto>>> GetProductStockDetailedReport(Guid? productId = null, Guid? warehouseId = null, Guid? departmentId = null,
+        string batchNumber = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null);
+    
+    Task<Result<List<ItemDto>>> GetItemsPerStoreType(Store? store, InventoryClassification? inventoryClassification,
+        Guid? itemId, Guid? categoryId);
+
+    Task<Result<List<StoreItemStockSummaryDto>>> GetStockSummaryPerStoreType();
+
+    Task<Result<List<VendorStoreItemStockSummaryDto>>>
+        GetVendorItemMapping(
+            Store? store,
+            Guid? vendorId,
+            Guid? itemId,
+            Guid? categoryId,
+            InventoryClassification? classification);
+
+    Task<Result<List<VendorItemStoreSummaryDto>>>
+        GetVendorItemMappingPerStoreTypeSummary(
+            Guid? itemId,
+            Guid? categoryId,
+            InventoryClassification? classification,
+            Store? store);
 }

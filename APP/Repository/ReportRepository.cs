@@ -6,6 +6,7 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -261,7 +262,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         var staffRequisitionCount = await staffRequisitions.CountAsync();
 
-        var ratio = (employeeStats?.Female > 0)
+        var ratio = employeeStats?.Female > 0
             ? (decimal)employeeStats.Male / employeeStats.Female
             : 0;
 
@@ -720,7 +721,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .CountAsync();
 
         var averageEmployees = (startCount + endCount) / 2.0;
-        var turnoverRate = averageEmployees == 0 ? 0 : (leavers.Count / averageEmployees) * 100.0;
+        var turnoverRate = averageEmployees == 0 ? 0 : leavers.Count / averageEmployees * 100.0;
 
         var exitedEmployees = await context.Employees
             .Include(e => e.Department)
@@ -1273,9 +1274,9 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .Where(x => x.ProductName != null)
             .ToListAsync();
 
-        if (!rawData.Any())
+        if (rawData.Count == 0)
         {
-            return Result<List<FinishedGoodsTransferSummaryReportDto>>.Success(
+            return Result.Success(
                 new List<FinishedGoodsTransferSummaryReportDto>());
         }
 
@@ -1320,7 +1321,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             })
             .ToList();
 
-        return Result<List<FinishedGoodsTransferSummaryReportDto>>.Success(result);
+        return Result.Success(result);
     }
 
     public async Task<Result<List<FinishedGoodsTransferDetailedReportDto>>>
@@ -1402,9 +1403,9 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .ThenBy(x => x.TransferDate)
             .ToListAsync();
 
-        if (!rawData.Any())
+        if (rawData.Count == 0)
         {
-            return Result<List<FinishedGoodsTransferDetailedReportDto>>.Success(
+            return Result.Success(
                 new List<FinishedGoodsTransferDetailedReportDto>());
         }
 
@@ -1427,7 +1428,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             })
             .ToList();
 
-        return Result<List<FinishedGoodsTransferDetailedReportDto>>.Success(result);
+        return Result.Success(result);
     }
 
     public async Task<Result<List<ProductStockSummaryReportDto>>> GetProductStockSummaryReport(
@@ -1477,7 +1478,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 Product = f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product
                           ?? f.ProductPacking?.Product,
                 Warehouse = f.ToWarehouse?.Name ?? "Unknown Warehouse",
-                BatchNumber = f.BatchManufacturingRecord?.BatchNumber,
+                f.BatchManufacturingRecord?.BatchNumber,
                 CurrentStockQuantity = f.RemainingQuantity,
                 UomName = f.UoM?.Name ?? "N/A"
             })
@@ -1494,9 +1495,9 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .Where(x => x.ProductName != null && x.ProductCode != null)
             .ToList();
 
-        if (!rawData.Any())
+        if (rawData.Count == 0)
         {
-            return Result<List<ProductStockSummaryReportDto>>.Success(new List<ProductStockSummaryReportDto>());
+            return Result.Success(new List<ProductStockSummaryReportDto>());
         }
 
         var groupedData = rawData
@@ -1536,7 +1537,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             })
             .ToList();
 
-        return Result<List<ProductStockSummaryReportDto>>.Success(result);
+        return Result.Success(result);
     }
 
     public async Task<Result<List<ProductStockDetailedReportDto>>> GetProductStockDetailedReport(
@@ -1567,8 +1568,8 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         if (productId.HasValue)
         {
             query = query.Where(f =>
-                (f.BatchManufacturingRecord?.ProductionScheduleProduct?.ProductId == productId.Value) ||
-                (f.ProductPacking?.ProductId == productId.Value));
+                f.BatchManufacturingRecord?.ProductionScheduleProduct?.ProductId == productId.Value ||
+                f.ProductPacking?.ProductId == productId.Value);
         }
 
         if (warehouseId.HasValue)
@@ -1579,8 +1580,8 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         if (departmentId.HasValue)
         {
             query = query.Where(f =>
-                (f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product?.DepartmentId == departmentId.Value) ||
-                (f.ProductPacking?.Product?.DepartmentId == departmentId.Value));
+                f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product?.DepartmentId == departmentId.Value ||
+                f.ProductPacking?.Product?.DepartmentId == departmentId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(batchNumber))
@@ -1604,8 +1605,8 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 Product = f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product
                           ?? f.ProductPacking?.Product,
                 BatchNumber = f.BatchManufacturingRecord?.BatchNumber ?? "No Batch",
-                ManufacturingDate = f.BatchManufacturingRecord?.ManufacturingDate,
-                ExpiryDate = f.BatchManufacturingRecord?.ExpiryDate,
+                f.BatchManufacturingRecord?.ManufacturingDate,
+                f.BatchManufacturingRecord?.ExpiryDate,
                 TotalQuantity = f.RemainingQuantity,
                 UomName = f.UoM?.Name ?? "N/A",
                 Warehouse = f.ToWarehouse?.Name ?? "Unknown Warehouse"
@@ -1628,9 +1629,9 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .ThenBy(x => x.ExpiryDate)
             .ToList();
 
-        if (!rawData.Any())
+        if (rawData.Count == 0)
         {
-            return Result<List<ProductStockDetailedReportDto>>.Success(new List<ProductStockDetailedReportDto>());
+            return Result.Success(new List<ProductStockDetailedReportDto>());
         }
 
         var result = rawData
@@ -1649,7 +1650,171 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             })
             .ToList();
 
-        return Result<List<ProductStockDetailedReportDto>>.Success(result);
+        return Result.Success(result);
+    }
+
+    public async Task<Result<List<ItemDto>>> GetItemsPerStoreType(
+        Store? store,
+        InventoryClassification? inventoryClassification,
+        Guid? itemId,
+        Guid? categoryId)
+    {
+        var query = context.Items
+            .AsQueryable();
+
+        if (store.HasValue)
+        {
+            query = query.Where(i => i.Store == store.Value);
+        }
+
+        if (inventoryClassification.HasValue)
+        {
+            query = query.Where(i => i.Classification == inventoryClassification.Value);
+        }
+
+        if (itemId.HasValue)
+        {
+            query = query.Where(i => i.Id == itemId.Value);
+        }
+
+        if (categoryId.HasValue)
+        {
+            query = query.Where(i => i.ItemCategoryId == categoryId.Value);
+        }
+
+        var items = await query
+            .AsNoTracking()
+            .Select(i => new ItemDto
+            {
+                Id = i.Id,
+                Name = i.Name,
+                Store = i.Store,
+                Classification = i.Classification,
+
+                ItemCategory = i.ItemCategory == null
+                    ? null
+                    : new ItemCategoryDto
+                    {
+                        Id = i.ItemCategory.Id,
+                        Name = i.ItemCategory.Name
+                    },
+
+                UnitOfMeasure = i.UnitOfMeasure == null
+                    ? null
+                    : new UnitOfMeasureDto
+                    {
+                        Id = i.UnitOfMeasure.Id,
+                        Name = i.UnitOfMeasure.Name
+                    }
+            })
+            .ToListAsync();
+
+        return Result.Success(items);
+    }
+    
+    /// <summary>
+    /// Provides a stock quantity overview per store type and item,
+    /// showing total item quantities across all locations.
+    /// </summary>
+    public async Task<Result<List<StoreItemStockSummaryDto>>> GetStockSummaryPerStoreType()
+    {
+        var raw = await context.Items
+            .AsNoTracking()
+            .GroupBy(i => new
+            {
+                i.Store,
+                i.Id,
+                i.Name,
+                i.Code,
+                CategoryName = i.ItemCategory.Name,
+                UomName = i.UnitOfMeasure.Name
+            })
+            .Select(g => new
+            {
+                g.Key.Store,
+                g.Key.Id,
+                g.Key.Name,
+                g.Key.Code,
+                g.Key.CategoryName,
+                g.Key.UomName,
+                TotalQuantity = g.Sum(x => x.AvailableQuantity)
+            })
+            .OrderBy(r => r.Store)
+            .ThenBy(r => r.Name)
+            .ToListAsync();
+        
+        var result = raw.Select((r, index) => new StoreItemStockSummaryDto
+        {
+            No = index + 1,
+            Store = r.Store,
+            ItemName = r.Name,
+            ItemCode = r.Code,
+            Category = r.CategoryName,
+            TotalQuantity = r.TotalQuantity,
+            UnitOfMeasure = r.UomName
+        }).ToList();
+
+        return Result.Success(result);
+    }
+
+    public async Task<Result<List<VendorStoreItemStockSummaryDto>>> 
+        GetVendorItemMapping(
+            Store? store,
+            Guid? vendorId,
+            Guid? itemId,
+            Guid? categoryId,
+            InventoryClassification? classification)
+    {
+        var query = context.VendorItems
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (store.HasValue)
+            query = query.Where(v => v.Item.Store == store.Value);
+
+        if (vendorId.HasValue)
+            query = query.Where(v => v.VendorId == vendorId.Value);
+
+        if (itemId.HasValue)
+            query = query.Where(v => v.ItemId == itemId.Value);
+
+        if (categoryId.HasValue)
+            query = query.Where(v => v.Item.ItemCategoryId == categoryId.Value);
+
+        if (classification.HasValue)
+            query = query.Where(v => v.Item.Classification == classification.Value);
+
+        var raw = await query
+            .Select(v => new
+            {
+                v.Item.Store,
+                ItemName = v.Item.Name,
+                ItemCode = v.Item.Code,
+                Category = v.Item.ItemCategory.Name,
+                v.Item.Classification,
+                UnitOfMeasure = v.Item.UnitOfMeasure.Name,
+                VendorName = v.Vendor.Name
+            })
+            .OrderBy(r => r.Store)
+            .ThenBy(r => r.ItemName)
+            .ThenBy(r => r.ItemCode)
+            .ThenBy(r => r.VendorName)
+            .ToListAsync();
+
+        var result = raw.Select((r, index) => new VendorStoreItemStockSummaryDto
+        {
+            No = index + 1,
+
+            Store = r.Store,
+            ItemName = r.ItemName,
+            ItemCode = r.ItemCode,
+            Category = r.Category,
+            InventoryClassification = r.Classification,
+            UnitOfMeasure = r.UnitOfMeasure,
+            VendorName = r.VendorName
+        }).ToList();
+
+        return Result.Success(result);
     }
     public async Task<Result<DashboardKpiReportDto>> GetDashboardKpiReport(DashboardFilterDto filter)
     {
@@ -1951,4 +2116,76 @@ public async Task<Result<List<SupplierMaterialReportDto>>> GetSupplierMaterialAR
 
     return Result.Success(result);
 }
+    
+    public async Task<Result<List<VendorItemStoreSummaryDto>>>
+        GetVendorItemMappingPerStoreTypeSummary(
+            Guid? itemId,
+            Guid? categoryId,
+            InventoryClassification? classification,
+            Store? store)
+    {
+        var query = context.VendorItems
+            .AsNoTracking()
+            .AsQueryable();
+        
+
+        if (itemId.HasValue)
+        {
+            query = query.Where(v => v.ItemId == itemId.Value);
+        }
+
+        if (categoryId.HasValue)
+        {
+            query = query.Where(v => v.Item.ItemCategoryId == categoryId.Value);
+        }
+
+        if (classification.HasValue)
+        {
+            query = query.Where(v => v.Item.Classification == classification.Value);
+        }
+
+        if (store.HasValue)
+        {
+            query = query.Where(v => v.Item.Store == store.Value);
+        }
+        
+
+        var raw = await query
+            .GroupBy(v => new
+            {
+                v.Item.Store,
+                v.Item.Id,
+                v.Item.Name,
+                v.Item.Code,
+                Category = v.Item.ItemCategory.Name,
+                v.Item.Classification
+            })
+            .Select(g => new
+            {
+                g.Key.Store,
+                g.Key.Name,
+                g.Key.Code,
+                g.Key.Category,
+                g.Key.Classification,
+                VendorCount = g.Select(x => x.VendorId).Distinct().Count()
+            })
+            .OrderBy(r => r.Store)
+            .ThenBy(r => r.Name)
+            .ToListAsync();
+
+        var result = raw.Select((r, index) => new VendorItemStoreSummaryDto
+        {
+            No = index + 1,
+            Store = r.Store,
+            ItemName = r.Name,
+            ItemCode = r.Code,
+            Category = r.Category,
+            Classification = r.Classification,
+            VendorCount = r.VendorCount
+        }).ToList();
+
+        return Result.Success(result);
+    }
 }
+
+

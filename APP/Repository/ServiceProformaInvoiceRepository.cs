@@ -148,7 +148,7 @@ public class ServiceProformaInvoiceRepository(
         proformaInvoice.Status = ServiceProformaInvoiceStatus.ResponseReceived;
 
         // Update items if provided
-        if (request.UpdatedItems != null && request.UpdatedItems.Any())
+        if (request.UpdatedItems != null && request.UpdatedItems.Count != 0)
         {
             foreach (var updatedItem in request.UpdatedItems)
             {
