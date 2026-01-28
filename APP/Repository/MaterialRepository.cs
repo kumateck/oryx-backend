@@ -1545,6 +1545,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(s => s.MaterialBatch)
+            .ThenInclude(mb => mb.Material)
             .Include(s => s.WarehouseLocationShelf)
             .ThenInclude(wls => wls.WarehouseLocationRack)
             .ThenInclude(w => w.WarehouseLocation)
