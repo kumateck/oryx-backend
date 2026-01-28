@@ -21,10 +21,10 @@ namespace DOMAIN.Entities.Reports.Procurement
 
     public class SupplierMaterialFilters
 {
-    public string? MaterialName { get; set; }
+    public string MaterialName { get; set; }
     public MaterialKind? MaterialType { get; set; }
-    public string? SupplierName { get; set; }
-    public string? ManufacturerName { get; set; }
+    public string SupplierName { get; set; }
+    public string ManufacturerName { get; set; }
     public DateTime? ValidityDateFrom { get; set; }
     public DateTime? ValidityDateTo { get; set; }
     public Guid? SupplierId { get; set; }

@@ -583,7 +583,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             TotalAvailableQuantity = r.TotalAvailableQuantity
         }).ToList();
 
-        return Result.Success(result);
+        return result;
     }
     public async Task<Result<Paginateable<IEnumerable<MaterialBatchDepartmentDto>>>>
     GetMaterialsWithBatchesAndDepartments(
