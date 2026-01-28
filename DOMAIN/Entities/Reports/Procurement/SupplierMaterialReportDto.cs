@@ -12,7 +12,7 @@ namespace DOMAIN.Entities.Reports.Procurement
     public class SupplierMaterialReportDto
     {
         public ManufacturerListDto Manufacturers { get; set; }
-        public List<ManufacturerMaterialDto> Materials { get; set; } = [];
+        public List<ManufacturerMaterialDto> Materials { get; set; } 
         public UnitOfMeasureDto Uom { get; set; }
 
         public SupplierListDto Supplier { get; set; }

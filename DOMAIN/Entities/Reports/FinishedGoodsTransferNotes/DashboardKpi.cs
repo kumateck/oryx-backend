@@ -22,7 +22,7 @@ namespace DOMAIN.Entities.Reports.FinishedGoodsTransferNotes
 
     public class ProductionOrderKpiDto
     {
-        public int Pending { get; set; }
+        public int PendingProductionOrders { get; set; }
         public int PartialPackingReady { get; set; }
         public int FullPackingReady { get; set; }
         public int TotalProductionOrders { get; set; }

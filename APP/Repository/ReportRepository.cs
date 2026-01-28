@@ -1759,7 +1759,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
 
         var fgtnQuery = context.FinishedGoodsTransferNotes
-            .AsNoTracking()
             .IgnoreQueryFilters()
             .Include(f => f.Approvals)
             .Include(f => f.ProductPacking)
@@ -1833,7 +1832,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             TotalCustomers = totalCustomers,
             ProductionOrders = new ProductionOrderKpiDto
             {
-                Pending = pendingOrders,
+                PendingProductionOrders = pendingOrders,
                 PartialPackingReady = partialPackingReadyOrders,
                 FullPackingReady = fullPackingReadyOrders,
                 TotalProductionOrders = totalProductionOrders
@@ -1846,7 +1845,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             }
         };
 
-        return Result<DashboardKpiReportDto>.Success(dashboardKpi);
+        return Result.Success(dashboardKpi);
     }
 public async Task<Result<List<SupplierMaterialReportDto>>> GetSupplierMaterialAReport(
     SupplierMaterialFilters filters)
