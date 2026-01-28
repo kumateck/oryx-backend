@@ -2,7 +2,9 @@ using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
+using APP.Utils;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
@@ -271,6 +273,55 @@ public class ReportController(IReportRepository repository) : ControllerBase
     {
         var result = await repository.GetProductStockDetailedReport(productId, warehouseId, departmentId, batchNumber, expiryDateFrom, expiryDateTo);
 
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a paginated list of items
+    /// </summary>
+    [HttpGet("items-per-store-type")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ItemDto>))]
+    public async Task<IResult> GetItemsPerStoreType([FromQuery] Store? store, [FromQuery] InventoryClassification? inventoryClassification,
+        [FromQuery] Guid? itemId, [FromQuery] Guid? categoryId)
+    {
+        var result = await repository.GetItemsPerStoreType(store, inventoryClassification, itemId, categoryId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Provides a stock quantity overview per store type, showing total item quantities.
+    /// </summary>
+    [HttpGet("stock-summary-per-store-type")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StoreItemStockSummaryDto>))]
+    public async Task<IResult> GetStockSummaryPerStoreType()
+    {
+        var result = await repository.GetStockSummaryPerStoreType();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Provides a stock quantity overview per store type, showing total item quantities.
+    /// </summary>
+    [HttpGet("vendor-item")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<VendorStoreItemStockSummaryDto>))]
+    public async Task<IResult> GetVendorItemMapping([FromQuery] Store? store, [FromQuery] Guid? vendorId,
+        [FromQuery] Guid? itemId, [FromQuery] Guid? categoryId, [FromQuery] InventoryClassification? classification)
+    {
+        var result = await repository.GetVendorItemMapping(store,vendorId,itemId,categoryId,classification);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Provides a stock quantity overview per store type, showing total item quantities.
+    /// </summary>
+    [HttpGet("vendor-item/summary")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<VendorStoreItemStockSummaryDto>))]
+    public async Task<IResult> GetVendorItemMappingSummary([FromQuery] Guid? itemId, [FromQuery] Guid? categoryId,
+        [FromQuery] InventoryClassification? classification, [FromQuery] Store? store)
+    {
+        var result = await repository.GetVendorItemMappingPerStoreTypeSummary(itemId, categoryId, classification, store);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

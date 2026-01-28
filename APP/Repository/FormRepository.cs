@@ -275,7 +275,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .Where(f => f.Required && response.FormResponses.All(r => r.FormFieldId != f.Id))
             .ToList();
 
-        if (missingFields.Any())
+        if (missingFields.Count != 0)
         {
             var missingList = string.Join(", ", missingFields.Select(f => f.Id));
             return Error.Validation("Response.MissingFields", $"Missing required fields: {missingList}");
@@ -539,7 +539,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .Where(f => f.Required && formAssignee.FieldAssignees.All(r => r.FormFieldId != f.Id))
             .ToList();
 
-        if (missingFields.Any())
+        if (missingFields.Count != 0)
         {
             var missingList = string.Join(", ", missingFields.Select(f => f.Id));
             return Error.Validation("Response.MissingFields", $"Missing required fields: {missingList}");
