@@ -1839,9 +1839,9 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             },
             FinishedGoodsTransferNotes = new FgtnKpiDto
             {
-                Pending = pendingFgtn,
-                Accepted = acceptedFgtn,
-                TotalFgtn = totalFgtn
+                PendingTransferNote = pendingFgtn,
+                AcceptedTransferNote = acceptedFgtn,
+                TotalFgtnTransferNotes = totalFgtn
             }
         };
 

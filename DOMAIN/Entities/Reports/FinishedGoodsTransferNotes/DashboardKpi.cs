@@ -30,9 +30,9 @@ namespace DOMAIN.Entities.Reports.FinishedGoodsTransferNotes
 
     public class FgtnKpiDto
     {
-        public int Pending { get; set; }
-        public int Accepted { get; set; }
-        public int TotalFgtn { get; set; }
+        public int PendingTransferNote { get; set; }
+        public int AcceptedTransferNote { get; set; }
+        public int TotalFgtnTransferNotes { get; set; }
     }
 
     public class DashboardFilterDto
