@@ -230,7 +230,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         return entity.Id;
     }
     
-    public static int GetWeekdaysInclusive(DateTime startDate, DateTime endDate)
+    private static int GetWeekdaysInclusive(DateTime startDate, DateTime endDate)
     {
         if (startDate > endDate)
             return 0;

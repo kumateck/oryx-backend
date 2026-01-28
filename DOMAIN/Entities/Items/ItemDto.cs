@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Vendors;
 
 namespace DOMAIN.Entities.Items;
 
@@ -18,4 +19,32 @@ public class ItemDto : WithAttachment
     public string Description { get; set; }
     public ItemCategoryDto ItemCategory { get; set; }
     public int AvailableQuantity { get; set; }
+}
+
+public class StoreItemStockSummaryDto
+{
+    public int No { get; set; }                 
+    public Store Store { get; set; }            
+    public string ItemName { get; set; }
+    public string ItemCode { get; set; }
+    public string Category { get; set; }
+    public decimal TotalQuantity { get; set; }
+    public string UnitOfMeasure { get; set; }
+}
+
+public class VendorStoreItemStockSummaryDto : StoreItemStockSummaryDto
+{
+    public string VendorName { get; set; }   
+    public InventoryClassification InventoryClassification { get; set; }
+}
+
+public class VendorItemStoreSummaryDto
+{
+    public int No { get; set; }
+    public string ItemName { get; set; }
+    public string ItemCode { get; set; }
+    public string Category { get; set; }
+    public InventoryClassification Classification { get; set; }
+    public Store Store { get; set; }
+    public int VendorCount { get; set; }
 }

@@ -201,7 +201,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             string Get(string header)
             {
                 var index = headers[header];
-                return (index < parts.Length) ? parts[index].Trim() : "";
+                return index < parts.Length ? parts[index].Trim() : "";
             }
 
             var code = Get("Code").ToLower();
