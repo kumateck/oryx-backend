@@ -1674,7 +1674,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(po => po.Supplier)
             .Include(po => po.Items)
             .Where(po => po.SupplierId == supplierId &&
-                         po.Status != PurchaseOrderStatus.Linked)
+                         po.Status != PurchaseOrderStatus.Linked && !po.DeletedAt.HasValue)
             .ToListAsync();
 
         // ✅ filter out fully invoiced items

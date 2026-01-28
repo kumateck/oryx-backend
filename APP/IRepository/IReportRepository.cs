@@ -45,7 +45,6 @@ public interface IReportRepository
     Task<Result<List<FinishedGoodsTransferDetailedReportDto>>> GetFinishedGoodsTransferDetailedReport(ReportFilter filter, Guid? productId = null, Guid? warehouseId = null);
 
     Task<Result<List<ProductStockSummaryReportDto>>> GetProductStockSummaryReport(Guid? productId = null, Guid? warehouseId = null, Guid? departmentId = null);
-    Task<Result<List<ProductStockDetailedReportDto>>> GetProductStockDetailedReport(Guid? productId = null, Guid? warehouseId = null, Guid? departmentId = null, string batchNumber = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null);
     Task<Result<DashboardKpiReportDto>> GetDashboardKpiReport(DashboardFilterDto filter);
    Task<Result<List<SupplierMaterialReportDto>>> GetSupplierMaterialAReport(
     SupplierMaterialFilters filters)

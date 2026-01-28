@@ -44,6 +44,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(p => p.Products)
             .ThenInclude(p => p.ProductPacking)
             .ThenInclude(p => p.BasePackingUoM)
+            .Where(po => !po.DeletedAt.HasValue)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -73,6 +74,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(p => p.Products)
             .ThenInclude(p => p.ProductPacking)
             .ThenInclude(p => p.BasePackingUoM)
+            .Where(po => !po.DeletedAt.HasValue)
             .FirstOrDefaultAsync(po => po.Id == id);
 
         if (productionOrder == null)
@@ -201,6 +203,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .ThenInclude(p => p.Customer)
             .Include(p => p.Products)
             .ThenInclude(p => p.Product)
+            .Where(p => !p.DeletedAt.HasValue)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         return invoice is null

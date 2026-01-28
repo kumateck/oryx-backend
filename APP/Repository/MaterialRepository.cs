@@ -507,6 +507,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var query = context.ShelfMaterialBatches
             .IgnoreQueryFilters()
+            .Where(m => !m.DeletedAt.HasValue)
             .AsQueryable();
 
         if (departmentId.HasValue)

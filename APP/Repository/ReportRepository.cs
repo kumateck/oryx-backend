@@ -2012,110 +2012,76 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         return Result.Success(dashboardKpi);
     }
-public async Task<Result<List<SupplierMaterialReportDto>>> GetSupplierMaterialAReport(
-    SupplierMaterialFilters filters)
-{
-    Console.WriteLine("=== START GetSupplierMaterialAReport ===");
     
-    // Start with SupplierManufacturers query with includes - USE SPLIT QUERY
-    var supplierManufacturersQuery = context.SupplierManufacturers
-        .IgnoreQueryFilters()
-        .Where(sm => !sm.DeletedAt.HasValue)
-        .AsSplitQuery() // THIS IS THE KEY FIX
-        .Include(sm => sm.Supplier)
-        .Include(sm => sm.Manufacturer)
-        .Include(sm => sm.UoM)
-        .Include(sm => sm.Material)
-        .AsQueryable();
+    public async Task<Result<List<SupplierMaterialReportDto>>>
+        GetSupplierMaterialAReport(SupplierMaterialFilters filters)
+    {
+        var query = context.SupplierManufacturers
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(sm => !sm.DeletedAt.HasValue)
+            .AsQueryable();
 
-    // Apply filters on SupplierManufacturers
-    if (!string.IsNullOrWhiteSpace(filters.MaterialName))
-        supplierManufacturersQuery = supplierManufacturersQuery
-            .Where(sm => sm.Material != null && sm.Material.Name.Contains(filters.MaterialName));
+        if (!string.IsNullOrWhiteSpace(filters.MaterialName))
+            query = query.Where(sm =>
+                sm.Material != null &&
+                sm.Material.Name.Contains(filters.MaterialName));
 
-    if (filters.MaterialType.HasValue)
-        supplierManufacturersQuery = supplierManufacturersQuery
-            .Where(sm => sm.Material != null && sm.Material.Kind == filters.MaterialType.Value);
+        if (filters.MaterialType.HasValue)
+            query = query.Where(sm =>
+                sm.Material != null &&
+                sm.Material.Kind == filters.MaterialType.Value);
 
-    if (!string.IsNullOrWhiteSpace(filters.SupplierName))
-        supplierManufacturersQuery = supplierManufacturersQuery
-            .Where(sm => sm.Supplier != null && sm.Supplier.Name.Contains(filters.SupplierName));
+        if (!string.IsNullOrWhiteSpace(filters.SupplierName))
+            query = query.Where(sm =>
+                sm.Supplier != null &&
+                sm.Supplier.Name.Contains(filters.SupplierName));
 
-    if (!string.IsNullOrWhiteSpace(filters.ManufacturerName))
-        supplierManufacturersQuery = supplierManufacturersQuery
-            .Where(sm => sm.Manufacturer != null && sm.Manufacturer.Name.Contains(filters.ManufacturerName));
+        if (!string.IsNullOrWhiteSpace(filters.ManufacturerName))
+            query = query.Where(sm =>
+                sm.Manufacturer != null &&
+                sm.Manufacturer.Name.Contains(filters.ManufacturerName));
 
-    if (filters.SupplierId.HasValue)
-        supplierManufacturersQuery = supplierManufacturersQuery
-            .Where(sm => sm.SupplierId == filters.SupplierId.Value);
+        if (filters.SupplierId.HasValue)
+            query = query.Where(sm => sm.SupplierId == filters.SupplierId.Value);
 
-    if (filters.ManufacturerId.HasValue)
-        supplierManufacturersQuery = supplierManufacturersQuery
-            .Where(sm => sm.ManufacturerId == filters.ManufacturerId.Value);
+        if (filters.ManufacturerId.HasValue)
+            query = query.Where(sm => sm.ManufacturerId == filters.ManufacturerId.Value);
+        
 
-    // Get ManufacturerMaterials query with includes - USE SPLIT QUERY
-    var manufacturerMaterialsQuery = context.ManufacturerMaterials
-        .IgnoreQueryFilters()
-        .Where(mm => !mm.DeletedAt.HasValue)
-        .AsSplitQuery() // THIS IS THE KEY FIX
-        .Include(mm => mm.Material)
-        .Include(mm => mm.Manufacturer)
-        .Include(mm => mm.QuantityPerPackOption)
-        .AsQueryable();
+        var raw = await query
+            .GroupBy(sm => new
+            {
+                sm.SupplierId,
+                sm.ManufacturerId,
+                sm.UoMId
+            })
+            .Select(g => new
+            {
+                Supplier = g.Select(x => x.Supplier).FirstOrDefault(),
+                Manufacturer = g.Select(x => x.Manufacturer).FirstOrDefault(),
+                Uom = g.Select(x => x.UoM).FirstOrDefault(),
 
-    // Apply manufacturer filter if exists
-    if (filters.ManufacturerId.HasValue)
-        manufacturerMaterialsQuery = manufacturerMaterialsQuery
-            .Where(mm => mm.ManufacturerId == filters.ManufacturerId.Value);
+                Materials = context.ManufacturerMaterials
+                    .IgnoreQueryFilters()
+                    .Where(mm =>
+                        !mm.DeletedAt.HasValue &&
+                        mm.ManufacturerId == g.Key.ManufacturerId &&
+                        g.Select(x => x.MaterialId).Contains(mm.MaterialId)
+                    )
+            })
+            .ToListAsync();
 
-    // Execute both queries
-    var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-    var supplierManufacturers = await supplierManufacturersQuery.ToListAsync();
-    Console.WriteLine($"Query 1 took: {stopwatch.ElapsedMilliseconds}ms");
-    
-    stopwatch.Restart();
-    var manufacturerMaterials = await manufacturerMaterialsQuery.ToListAsync();
-    Console.WriteLine($"Query 2 took: {stopwatch.ElapsedMilliseconds}ms");
-    
-    Console.WriteLine($"Filtered SupplierManufacturers: {supplierManufacturers.Count}");
-    Console.WriteLine($"Filtered ManufacturerMaterials: {manufacturerMaterials.Count}");
-
-    // Join in memory
-    stopwatch.Restart();
-    var joinedData = (from sm in supplierManufacturers
-                      from mm in manufacturerMaterials
-                      where sm.ManufacturerId == mm.ManufacturerId 
-                         && sm.MaterialId == mm.MaterialId
-                      select new { sm, mm }).ToList();
-    Console.WriteLine($"Join took: {stopwatch.ElapsedMilliseconds}ms");
-    Console.WriteLine($"Joined results: {joinedData.Count}");
-
-    // Group and map to DTOs
-    stopwatch.Restart();
-    var result = joinedData
-        .GroupBy(x => new
+        var result = raw.Select(r => new SupplierMaterialReportDto
         {
-            SupplierId = x.sm.SupplierId,
-            ManufacturerId = x.sm.ManufacturerId,
-            UomId = x.sm.UoMId
-        })
-        .Select(g => new SupplierMaterialReportDto
-        {
-            Supplier = mapper.Map<SupplierListDto>(g.First().sm.Supplier),
-            Manufacturers = mapper.Map<ManufacturerListDto>(g.First().sm.Manufacturer),
-            Uom = mapper.Map<UnitOfMeasureDto>(g.First().sm.UoM),
-            Materials = mapper.Map<List<ManufacturerMaterialDto>>(
-                g.Select(x => x.mm).ToList()
-            )
-        })
-        .ToList();
-    Console.WriteLine($"Mapping took: {stopwatch.ElapsedMilliseconds}ms");
+            Supplier = mapper.Map<SupplierListDto>(r.Supplier),
+            Manufacturers = mapper.Map<ManufacturerListDto>(r.Manufacturer),
+            Uom = mapper.Map<UnitOfMeasureDto>(r.Uom),
+            Materials = mapper.Map<List<ManufacturerMaterialDto>>(r.Materials.ToList())
+        }).ToList();
 
-    Console.WriteLine($"Final DTO count: {result.Count}");
-    Console.WriteLine("=== END GetSupplierMaterialAReport ===");
-
-    return Result.Success(result);
-}
+        return Result.Success(result);
+    }
     
     public async Task<Result<List<VendorItemStoreSummaryDto>>>
         GetVendorItemMappingPerStoreTypeSummary(
