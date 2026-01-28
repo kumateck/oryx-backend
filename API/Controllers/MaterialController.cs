@@ -856,13 +856,14 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="departmentId">The department id for filtering results.</param>
     /// <returns>Returns a paginated list of materials with their batches and production departments.</returns>
     [HttpGet("batches/departments")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, 
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDepartmentDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetApprovedRawMaterialsByDepartment(
-        [FromQuery] Guid departmentId, 
-        [FromQuery] MaterialKind kind, 
+        [FromQuery] Guid? departmentId, 
+        [FromQuery] MaterialKind? kind, 
         [FromQuery] int page = 1, 
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
