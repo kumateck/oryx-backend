@@ -2047,8 +2047,17 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         if (filters.ManufacturerId.HasValue)
             query = query.Where(sm => sm.ManufacturerId == filters.ManufacturerId.Value);
-        
 
+        if (filters.ValidityDateFrom.HasValue)
+        {
+            query = query.Where(sm => sm.Manufacturer.ValidityDate >= filters.ValidityDateFrom.Value);
+        }
+
+        if (filters.ValidityDateTo.HasValue)
+        {
+            query = query.Where(sm => sm.Manufacturer.ValidityDate <= filters.ValidityDateTo.Value);
+        }
+        
         var raw = await query
             .GroupBy(sm => new
             {
