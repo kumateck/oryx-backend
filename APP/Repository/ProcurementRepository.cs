@@ -193,7 +193,8 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
 
     public async Task<Result> UpdateSupplierStatus(Guid supplierId, SupplierStatus status, Guid userId)
     {
-        var supplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Id == supplierId);
+        var supplier = await context.Suppliers
+            .FirstOrDefaultAsync(s => s.Id == supplierId);
         if (supplier is null)
         {
             return Error.NotFound("Supplier.NotFound", "Supplier not found");
@@ -202,6 +203,19 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
         supplier.Status = status;
         supplier.LastUpdatedById = userId;
         context.Suppliers.Update(supplier);
+
+        if (status == SupplierStatus.Approved)
+        {
+            var manufacturerIds = context.SupplierManufacturers
+                .Where(sm => sm.SupplierId == supplierId)
+                .Select(sm => sm.ManufacturerId);
+
+            await context.Manufacturers
+                .Where(m => manufacturerIds.Contains(m.Id))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(m => m.ApprovedAt, DateTime.UtcNow));
+        }
+        
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -1660,7 +1674,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
             .Include(po => po.Supplier)
             .Include(po => po.Items)
             .Where(po => po.SupplierId == supplierId &&
-                         po.Status != PurchaseOrderStatus.Linked)
+                         po.Status != PurchaseOrderStatus.Linked && !po.DeletedAt.HasValue)
             .ToListAsync();
 
         // ✅ filter out fully invoiced items
@@ -1954,7 +1968,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     join sd in context.ShipmentDocuments on si.ShipmentInvoiceId equals sd.ShipmentInvoiceId
                     where sr.RequisitionId == r.RequisitionId
                           && r.MaterialId == item.MaterialId
-                          && (r.Quantity - r.QuantityReceived) != 0
+                          && r.Quantity - r.QuantityReceived != 0
                           && sd.Id == shipmentDocumentId // Ensuring linkage to the shipment document
                     select r
                 ).Distinct().ToListAsync();
@@ -2033,7 +2047,7 @@ public class ProcurementRepository(ApplicationDbContext context, IMapper mapper,
                     join sd in context.ShipmentDocuments on si.ShipmentInvoiceId equals sd.ShipmentInvoiceId
                     where sr.RequisitionId == r.RequisitionId
                           && r.MaterialId == item.MaterialId
-                          && (r.Quantity - r.QuantityReceived) != 0
+                          && r.Quantity - r.QuantityReceived != 0
                           && sd.Id == shipmentDocumentId // Ensuring linkage to the shipment document
                     select r
                 ).IgnoreQueryFilters().Distinct().ToListAsync();

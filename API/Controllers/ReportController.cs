@@ -2,12 +2,17 @@ using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
+using APP.Utils;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
+using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Warehouses;
+using DOMAIN.Entities.Reports.Procurement;
+using APP.Utils;
 
 namespace API.Controllers;
 
@@ -214,4 +219,141 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetQcDashboardReport(filter, productId, materialId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    [HttpGet("finished-goods-transfer-summary")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FinishedGoodsTransferSummaryReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferSummaryReport(
+        [FromQuery] ReportFilter filter,
+        [FromQuery] Guid? productId = null,
+        [FromQuery] Guid? warehouseId = null)
+    {
+        var result = await repository.GetFinishedGoodsTransferSummaryReport(filter, productId, warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("finished-goods-transfer-detailed")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FinishedGoodsTransferDetailedReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferDetailedReport(
+        [FromQuery] ReportFilter filter,
+        [FromQuery] Guid? productId = null,
+        [FromQuery] Guid? warehouseId = null)
+    {
+        var result = await repository.GetFinishedGoodsTransferDetailedReport(filter, productId, warehouseId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves the product stock summary report.
+    /// </summary>
+    [HttpGet("product-stock-summary")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(List<ProductStockSummaryReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductStockSummaryReport(
+        [FromQuery] Guid? productId,
+        [FromQuery] Guid? warehouseId,
+        [FromQuery] Guid? departmentId)
+    {
+        var result = await repository.GetProductStockSummaryReport(productId, warehouseId, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    /// <summary>
+    /// Retrieves the detailed product stock report with batch and expiry information.
+    /// </summary>
+    [HttpGet("product-stock-detailed")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(List<ProductStockDetailedReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductStockDetailedReport(
+        [FromQuery] Guid? productId = null,
+        [FromQuery] Guid? warehouseId = null,
+        [FromQuery] Guid? departmentId = null,
+        [FromQuery] string? batchNumber = null,
+        [FromQuery] DateTime? expiryDateFrom = null,
+        [FromQuery] DateTime? expiryDateTo = null)
+    {
+        var result = await repository.GetProductStockDetailedReport(productId, warehouseId, departmentId, batchNumber, expiryDateFrom, expiryDateTo);
+
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    /// <summary>
+    /// Retrieves the dashboard KPI report for finished goods transfer notes.
+    /// </summary>
+    [HttpGet("fgtn/dashboard-kpi")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DashboardKpiReportDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDashboardKpiReport([FromQuery] DashboardFilterDto filter)
+    {
+        var result = await repository.GetDashboardKpiReport(filter);
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+/// <summary>
+/// Retrieves a report of supplier materials based on filters.
+/// </summary>
+[HttpGet("supplier-materials")]
+[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierMaterialReportDto))]
+[ProducesResponseType(StatusCodes.Status404NotFound)]
+public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMaterialFilters filters
+        )
+    {
+        var result = await repository.GetSupplierMaterialAReport(filters );
+
+    return result.IsSuccess
+        ? TypedResults.Ok(result.Value)
+        : result.ToProblemDetails();
+}
+    
+    /// <summary>
+    /// Retrieves a paginated list of items
+    /// </summary>
+    [HttpGet("items-per-store-type")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ItemDto>))]
+    public async Task<IResult> GetItemsPerStoreType([FromQuery] Store? store, [FromQuery] InventoryClassification? inventoryClassification,
+        [FromQuery] Guid? itemId, [FromQuery] Guid? categoryId)
+    {
+        var result = await repository.GetItemsPerStoreType(store, inventoryClassification, itemId, categoryId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Provides a stock quantity overview per store type, showing total item quantities.
+    /// </summary>
+    [HttpGet("stock-summary-per-store-type")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StoreItemStockSummaryDto>))]
+    public async Task<IResult> GetStockSummaryPerStoreType()
+    {
+        var result = await repository.GetStockSummaryPerStoreType();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Provides a stock quantity overview per store type, showing total item quantities.
+    /// </summary>
+    [HttpGet("vendor-item")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<VendorStoreItemStockSummaryDto>))]
+    public async Task<IResult> GetVendorItemMapping([FromQuery] Store? store, [FromQuery] Guid? vendorId,
+        [FromQuery] Guid? itemId, [FromQuery] Guid? categoryId, [FromQuery] InventoryClassification? classification)
+    {
+        var result = await repository.GetVendorItemMapping(store,vendorId,itemId,categoryId,classification);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    
+    /// <summary>
+    /// Provides a stock quantity overview per store type, showing total item quantities.
+    /// </summary>
+    [HttpGet("vendor-item/summary")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<VendorStoreItemStockSummaryDto>))]
+    public async Task<IResult> GetVendorItemMappingSummary([FromQuery] Guid? itemId, [FromQuery] Guid? categoryId,
+        [FromQuery] InventoryClassification? classification, [FromQuery] Store? store)
+    {
+        var result = await repository.GetVendorItemMappingPerStoreTypeSummary(itemId, categoryId, classification, store);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+
 }

@@ -95,28 +95,31 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                     );
                 }
 
+                // Payment classification
                 if (leaveType!.IsPaid)
                 {
-                    if (leaveType.DeductFromBalance)
-                    {
-                        var deductionLimit = leaveType.DeductionLimit ?? 0;
-                        var balance = employee.AnnualLeaveDays;
-
-                        paidDays = Math.Min(totalDays, deductionLimit + balance);
-                        unpaidDays = totalDays - paidDays;
-
-                        employee.AnnualLeaveDays -= Math.Max(0, paidDays - deductionLimit);
-                    }
-                    else
-                    {
-                        paidDays = totalDays;
-                    }
+                    paidDays = totalDays;
+                    unpaidDays = 0;
                 }
                 else
                 {
+                    paidDays = 0;
                     unpaidDays = totalDays;
                 }
 
+                // Balance deduction
+                if (leaveType.DeductFromBalance)
+                {
+                    if (employee.AnnualLeaveDays < totalDays)
+                    {
+                        return Error.Validation(
+                            "AbsenceRequest.InsufficientBalance",
+                            "Insufficient annual leave balance."
+                        );
+                    }
+
+                    employee.AnnualLeaveDays -= totalDays;
+                }
                 break;
             }
 
@@ -139,21 +142,31 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                     );
                 }
 
+                // Payment classification
                 if (leaveType!.IsPaid)
                 {
-                    var deductionLimit = leaveType.DeductionLimit ?? 0;
-                    var balance = employee.AnnualLeaveDays;
-
-                    paidDays = Math.Min(totalDays, balance + deductionLimit);
-                    unpaidDays = totalDays - paidDays;
-
-                    employee.AnnualLeaveDays -= Math.Max(0, paidDays - deductionLimit);
+                    paidDays = totalDays;
+                    unpaidDays = 0;
                 }
                 else
                 {
+                    paidDays = 0;
                     unpaidDays = totalDays;
                 }
 
+                // Balance deduction
+                if (leaveType.DeductFromBalance)
+                {
+                    if (employee.AnnualLeaveDays < totalDays)
+                    {
+                        return Error.Validation(
+                            "LeaveRequest.InsufficientBalance",
+                            "Insufficient annual leave balance."
+                        );
+                    }
+
+                    employee.AnnualLeaveDays -= totalDays;
+                }
                 break;
             }
 
@@ -166,7 +179,6 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                         "Exit pass must be for a single day."
                     );
                 }
-
                 break;
             }
 
@@ -203,6 +215,8 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         entity.Id = Guid.NewGuid();
         entity.PaidDays = paidDays;
         entity.UnpaidDays = unpaidDays;
+        
+        context.Employees.Update(employee);
 
         await context.LeaveRequests.AddAsync(entity);
         await context.SaveChangesAsync();
