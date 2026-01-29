@@ -168,18 +168,20 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
     public async Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id)
     {
-        foreach (var roleName in request.RoleNames)
-        {
-            if (!await ValidRoleName(roleName))
-            {
-                return UserErrors.InvalidRoleName(roleName);
-            }
-        }
+        if(request.RoleNames.Count != 1)
+            return Error.Validation("RoleNames.Count", "Only one role per user");
+        
+        var role = await context.Roles.FirstOrDefaultAsync(item => item.Name == request.RoleNames[0]);
+        if (role == null) return Error.Validation("Role.Name", 
+            $"Could not find role for {request.RoleNames[0]}");
 
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id);
+        if (user == null)
+            return Error.NotFound("User", $"Could not find user {id}");
+        
         var existingRoles = await userManager.GetRolesAsync(user);
         await userManager.RemoveFromRolesAsync(user, existingRoles);
-        await userManager.AddToRolesAsync(user, request.RoleNames);
+        await userManager.AddToRoleAsync(user, role.Name ?? "");
         await context.SaveChangesAsync();
         return Result.Success();
     }
