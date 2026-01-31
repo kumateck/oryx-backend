@@ -463,12 +463,16 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDistributedRequisitionMaterials([FromQuery] MaterialKind kind,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+        [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] DistributedRequisitionMaterialStatus? status = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetDistributedRequisitionMaterials(page, pageSize, searchQuery, kind, Guid.Parse(userId));
+        var result = await repository.GetDistributedRequisitionMaterials(page, pageSize, searchQuery, kind, 
+            status,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
