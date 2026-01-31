@@ -3062,7 +3062,7 @@ public class ProductionScheduleRepository(
     }
 
     public async Task<Result<Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>>>
-        GetProductionExtraPackings(int page, int pageSize, string searchQuery)
+        GetProductionExtraPackings(int page, int pageSize, string searchQuery, MaterialKind? kind)
     {
         var query = context.ProductionExtraPackings
             .AsSplitQuery()
@@ -3079,6 +3079,11 @@ public class ProductionScheduleRepository(
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.Material.Name);
+        }
+
+        if (kind.HasValue)
+        {
+            query = query.Where(q => q.Material.Kind == kind.Value);
         }
 
         var results = await PaginationHelper.GetPaginatedResultAsync(
