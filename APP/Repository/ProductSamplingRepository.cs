@@ -64,7 +64,7 @@ public class ProductSamplingRepository(ApplicationDbContext context, IMapper map
 
         productSampling.IssueNumber = issueNumber;
         productSampling.IssuedById = userId;
-        productSampling.IssuedAt = DateTime.Now;
+        productSampling.IssuedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
         return Result.Success();
     }

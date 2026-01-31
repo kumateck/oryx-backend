@@ -114,7 +114,7 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         var role = await context.Roles.FirstOrDefaultAsync(item => item.Id == id);
         if (role == null) return RoleErrors.NotFound(id);
 
-        role.DeletedAt = DateTime.Now;
+        role.DeletedAt = DateTime.UtcNow;
         role.LastUpdatedById = userId;
         context.Roles.Update(role);
         await context.SaveChangesAsync();
