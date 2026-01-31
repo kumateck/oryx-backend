@@ -96,7 +96,7 @@ public class AuthRepository(IEmailService emailService, ApplicationDbContext con
             UserId = user.Id,
             Token = token,
             KeyName = key,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.UtcNow
         });
 
         await context.SaveChangesAsync();

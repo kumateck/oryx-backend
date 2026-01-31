@@ -117,7 +117,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 try
                 {
                     var beta = department.Division == Division.BetaLactam ? "B" : "N";
-                    var year = DateTime.Now.ToString("yy");
+                    var year = DateTime.UtcNow.ToString("yy");
                     var searchPattern = $"{prefix}/{beta}/{year}/";
 
                     // 1. Find the highest existing sequence number for this specific prefix/beta/year
