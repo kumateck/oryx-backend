@@ -294,6 +294,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
 /// Retrieves a report of supplier materials based on filters.
 /// </summary>
 [HttpGet("supplier-materials")]
+[AllowAnonymous]
 [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierMaterialReportDto))]
 [ProducesResponseType(StatusCodes.Status404NotFound)]
 public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMaterialFilters filters
