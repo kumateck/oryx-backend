@@ -457,7 +457,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             return Error.NotFound("LeaveRequest.NotFound", "Leave request not found");
         }
 
-        if (leaveRequest.LeaveStatus == LeaveStatus.Approved && leaveRequest.StartDate > DateTime.UtcNow.Date)
+        if (leaveRequest.StartDate > DateTime.UtcNow.Date)
         {
             var daysRemaining = GetWeekdaysInclusive(leaveRequest.StartDate.Date, leaveRequest.EndDate.Date);
 
