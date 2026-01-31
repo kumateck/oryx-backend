@@ -1182,7 +1182,12 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         );
     }
 
-    public async Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId)
+    public async Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> 
+        GetDistributedRequisitionMaterials(int page, int pageSize, 
+            string searchQuery, 
+            MaterialKind kind, 
+            DistributedRequisitionMaterialStatus? status,
+            Guid userId)
     {
 
         var user = await context.Users
@@ -1227,6 +1232,11 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, drm => drm.Material.Name, drm => drm.Material.Code);
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(q => q.Status == status.Value);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

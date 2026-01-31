@@ -73,7 +73,9 @@ public interface IWarehouseRepository
 
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize,
         string searchQuery, Guid warehouseId);
-    Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
+    Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> 
+        GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind,
+            DistributedRequisitionMaterialStatus? status, Guid userId);
     Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetStockTransferDetails(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
     Task<Result<Paginateable<IEnumerable<DistributedFinishedProductDto>>>> GetFinishedGoodsDetails(int page, int pageSize, string searchQuery, Guid userId);
     Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialsById(
