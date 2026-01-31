@@ -44,7 +44,7 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
 
         materialSample.IssueNumber = issueNumber;
         materialSample.IssuedById = userId;
-        materialSample.IssuedAt = DateTime.Now;
+        materialSample.IssuedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
         return Result.Success();
     }

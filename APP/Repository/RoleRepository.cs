@@ -113,8 +113,13 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
     {
         var role = await context.Roles.FirstOrDefaultAsync(item => item.Id == id);
         if (role == null) return RoleErrors.NotFound(id);
+        
+        if(await context.UserRoles.AnyAsync(r => r.RoleId == role.Id))
+            return Error.Validation("Role.Delete", 
+                "This role cannot be deleted as it is currently assigned to users." +
+                " Kindly unassign this roles from users before deleting");
 
-        role.DeletedAt = DateTime.Now;
+        role.DeletedAt = DateTime.UtcNow;
         role.LastUpdatedById = userId;
         context.Roles.Update(role);
         await context.SaveChangesAsync();

@@ -111,7 +111,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         var productionOrder = await context.ProductionOrders.FirstOrDefaultAsync(po => po.Id == id);
         if (productionOrder == null) return Error.NotFound("ProductionOrder.NotFound", "Production Order not found");
 
-        productionOrder.DeletedAt = DateTime.Now;
+        productionOrder.DeletedAt = DateTime.UtcNow;
         productionOrder.LastDeletedById = userId;
         context.ProductionOrders.Update(productionOrder);
 
@@ -243,7 +243,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         if (invoice is null)
             return Error.NotFound("ProformaInvoice.NotFound", "Proforma Invoice not found");
 
-        invoice.DeletedAt = DateTime.Now;
+        invoice.DeletedAt = DateTime.UtcNow;
         invoice.LastDeletedById = userId;
         context.ProformaInvoices.Update(invoice);
 
@@ -320,7 +320,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         if (invoice is null)
             return Error.NotFound("Invoice.NotFound", "Invoice not found");
 
-        invoice.DeletedAt = DateTime.Now;
+        invoice.DeletedAt = DateTime.UtcNow;
         invoice.LastDeletedById = userId;
 
         context.Invoices.Update(invoice);
