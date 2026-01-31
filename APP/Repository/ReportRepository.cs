@@ -2016,49 +2016,46 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     public async Task<Result<List<SupplierMaterialReportDto>>>
         GetSupplierMaterialAReport(SupplierMaterialFilters filters)
     {
-        var query = context.SupplierManufacturers
-            .IgnoreQueryFilters()
+        var baseQuery = context.SupplierManufacturers
             .AsNoTracking()
-            .Where(sm => !sm.DeletedAt.HasValue)
-            .AsQueryable();
+            .IgnoreQueryFilters()
+            .Where(sm => sm.DeletedAt == null);
 
         if (!string.IsNullOrWhiteSpace(filters.MaterialName))
-            query = query.Where(sm =>
+            baseQuery = baseQuery.Where(sm =>
                 sm.Material != null &&
                 sm.Material.Name.Contains(filters.MaterialName));
 
         if (filters.MaterialType.HasValue)
-            query = query.Where(sm =>
+            baseQuery = baseQuery.Where(sm =>
                 sm.Material != null &&
                 sm.Material.Kind == filters.MaterialType.Value);
 
         if (!string.IsNullOrWhiteSpace(filters.SupplierName))
-            query = query.Where(sm =>
+            baseQuery = baseQuery.Where(sm =>
                 sm.Supplier != null &&
                 sm.Supplier.Name.Contains(filters.SupplierName));
 
         if (!string.IsNullOrWhiteSpace(filters.ManufacturerName))
-            query = query.Where(sm =>
+            baseQuery = baseQuery.Where(sm =>
                 sm.Manufacturer != null &&
                 sm.Manufacturer.Name.Contains(filters.ManufacturerName));
 
         if (filters.SupplierId.HasValue)
-            query = query.Where(sm => sm.SupplierId == filters.SupplierId.Value);
+            baseQuery = baseQuery.Where(sm => sm.SupplierId == filters.SupplierId.Value);
 
         if (filters.ManufacturerId.HasValue)
-            query = query.Where(sm => sm.ManufacturerId == filters.ManufacturerId.Value);
+            baseQuery = baseQuery.Where(sm => sm.ManufacturerId == filters.ManufacturerId.Value);
 
         if (filters.ValidityDateFrom.HasValue)
-        {
-            query = query.Where(sm => sm.Manufacturer.ValidityDate >= filters.ValidityDateFrom.Value);
-        }
+            baseQuery = baseQuery.Where(sm =>
+                sm.Manufacturer.ValidityDate >= filters.ValidityDateFrom.Value);
 
         if (filters.ValidityDateTo.HasValue)
-        {
-            query = query.Where(sm => sm.Manufacturer.ValidityDate <= filters.ValidityDateTo.Value);
-        }
-        
-        var raw = await query
+            baseQuery = baseQuery.Where(sm =>
+                sm.Manufacturer.ValidityDate <= filters.ValidityDateTo.Value);
+
+        var groups = await baseQuery
             .GroupBy(sm => new
             {
                 sm.SupplierId,
@@ -2067,31 +2064,64 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             })
             .Select(g => new
             {
+                g.Key.SupplierId,
+                g.Key.ManufacturerId,
+                g.Key.UoMId,
+
                 Supplier = g.Select(x => x.Supplier).FirstOrDefault(),
                 Manufacturer = g.Select(x => x.Manufacturer).FirstOrDefault(),
                 Uom = g.Select(x => x.UoM).FirstOrDefault(),
 
-                Materials = context.ManufacturerMaterials
-                    .IgnoreQueryFilters()
-                    .Where(mm =>
-                        !mm.DeletedAt.HasValue &&
-                        mm.ManufacturerId == g.Key.ManufacturerId &&
-                        g.Select(x => x.MaterialId).Contains(mm.MaterialId)
-                    )
+                MaterialIds = g.Select(x => x.MaterialId)
+                               .Where(id => id != null)
+                               .Distinct()
+                               .ToList()
             })
             .ToListAsync();
 
-        var result = raw.Select(r => new SupplierMaterialReportDto
+        if (groups.Count == 0)
+            return Result.Success(new List<SupplierMaterialReportDto>());
+
+        var manufacturerIds = groups
+            .Select(g => g.ManufacturerId)
+            .Distinct()
+            .ToList();
+
+        var manufacturerMaterials = await context.ManufacturerMaterials
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(mm =>
+                mm.DeletedAt == null &&
+                manufacturerIds.Contains(mm.ManufacturerId))
+            .ToListAsync();
+        
+        var materialLookup = manufacturerMaterials
+            .GroupBy(mm => mm.ManufacturerId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        
+        var result = groups.Select(g =>
         {
-            Supplier = mapper.Map<SupplierListDto>(r.Supplier),
-            Manufacturers = mapper.Map<ManufacturerListDto>(r.Manufacturer),
-            Uom = mapper.Map<UnitOfMeasureDto>(r.Uom),
-            Materials = mapper.Map<List<ManufacturerMaterialDto>>(r.Materials.ToList())
+            var materialIdSet = g.MaterialIds.ToHashSet();
+
+            materialLookup.TryGetValue(g.ManufacturerId, out var materialsForManufacturer);
+
+            return new SupplierMaterialReportDto
+            {
+                Supplier = mapper.Map<SupplierListDto>(g.Supplier),
+                Manufacturers = mapper.Map<ManufacturerListDto>(g.Manufacturer),
+                Uom = mapper.Map<UnitOfMeasureDto>(g.Uom),
+                Materials = mapper.Map<List<ManufacturerMaterialDto>>(
+                    (object)materialsForManufacturer?
+                        .Where(mm => materialIdSet.Contains(mm.MaterialId))
+                        .ToList()
+                    ?? new List<ManufacturerMaterialDto>()
+                )
+            };
         }).ToList();
 
         return Result.Success(result);
     }
-    
+        
     public async Task<Result<List<VendorItemStoreSummaryDto>>>
         GetVendorItemMappingPerStoreTypeSummary(
             Guid? itemId,

@@ -121,7 +121,7 @@ public interface IProductionScheduleRepository
     Task<Result> CreateExtraPacking(Guid productionScheduleProductId,
         List<CreateProductionExtraPacking> extraPackings);
     Task<Result<Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>>> GetProductionExtraPackings(int page,
-         int pageSize, string searchQuery);
+         int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result<ProductionExtraPackingWithBatchesDto>> GetProductionExtraPackingById(
         Guid productionExtraPackingId);
     Task<Result<List<ProductionExtraPackingWithBatchesDto>>> GetProductionExtraPackingByProduct(

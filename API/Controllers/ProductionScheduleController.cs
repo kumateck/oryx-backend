@@ -1081,13 +1081,18 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="kind">The kind of material</param>
     /// <returns>Returns a paginated list of Extra Packing entries.</returns>
     [HttpGet("extra-packing")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>))]
-    public async Task<IResult> GetProductionExtraPackings([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = "")
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>))]
+    public async Task<IResult> GetProductionExtraPackings([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MaterialKind? kind = null)
     {
-        var result = await repository.GetProductionExtraPackings(page, pageSize, searchQuery);
+        var result = await repository.GetProductionExtraPackings(page, pageSize, searchQuery, kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
