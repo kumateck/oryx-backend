@@ -53,9 +53,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> GetProducts([FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
-        [FromQuery] Guid? departmentId = null)
+        [FromQuery] Guid? departmentId = null,
+        [FromQuery] Division? division = null,
+        [FromQuery] string category = null)
     {
-        var result = await repository.GetProducts(page, pageSize, searchQuery, departmentId);
+        var result = await repository.GetProducts(page, pageSize, searchQuery, departmentId, division, category);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
