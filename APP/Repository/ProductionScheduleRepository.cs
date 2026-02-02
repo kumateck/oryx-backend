@@ -1576,6 +1576,8 @@ public class ProductionScheduleRepository(
     }
 
     public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
+        Guid roleId,
+        Guid departmentId,
         int page,
         int pageSize,
         string searchQuery = null,
@@ -1584,6 +1586,12 @@ public class ProductionScheduleRepository(
         bool? partial = null,
         bool? fulfilled = null)
     {
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
+        if (role is null) return Error.NotFound("Role.NotFound", "Role not found");
+        
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
+        if (department is null) return Error.NotFound("Department.NotFound", "Department not found");
+        
         var query = context.FinishedGoodsTransferNotes
             .AsSplitQuery()
             .IgnoreQueryFilters()
@@ -1597,6 +1605,15 @@ public class ProductionScheduleRepository(
             .Include(tn => tn.ProductPacking)
             .ThenInclude(p => p.BasePackingUoM)
             .AsQueryable();
+
+        if (role.Type == DepartmentType.Production)
+        {
+            query = query
+                .Where(q =>
+                    q.BatchManufacturingRecord
+                        .ProductionScheduleProduct.Product.Department.Division == department.Division);
+        }
+        
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -1778,9 +1795,17 @@ public class ProductionScheduleRepository(
 
     }
 
-    public async Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts()
+    public async Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts(Guid roleId,
+        Guid departmentId)
     {
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
+        if (role is null) return Error.NotFound("Role.NotFound", "Role not found");
+        
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
+        if (department is null) return Error.NotFound("Department.NotFound", "Department not found");
+        
         var productsQuery = context.FinishedGoodsTransferNotes
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.ProductionScheduleProduct)
@@ -1791,6 +1816,14 @@ public class ProductionScheduleRepository(
             .ThenInclude(p => p.BasePackingUoM)
             .Where(p => p.IsApproved)
             .AsQueryable();
+
+        if (role.Type == DepartmentType.Production)
+        {
+            productsQuery = productsQuery
+                .Where(q =>
+                    q.BatchManufacturingRecord
+                        .ProductionScheduleProduct.Product.Department.Division == department.Division);
+        }
 
         var products = await productsQuery.ToListAsync();
 
