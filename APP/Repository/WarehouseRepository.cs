@@ -121,9 +121,22 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
         return mapper.Map<List<WarehouseDto>>(warehouses);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery, WarehouseType? type)
+    public async Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(Guid roleId,
+        Guid departmentId,
+        int page, 
+        int pageSize, 
+        string searchQuery, 
+        WarehouseType? type)
     {
+        
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
+        if (role is null) return Error.NotFound("Role.NotFound", "Role not found");
+        
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
+        if (department is null) return Error.NotFound("Department.NotFound", "Department not found");
+        
         var query = context.Warehouses
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(w => w.Locations)
             .ThenInclude(wl => wl.Racks)
@@ -139,6 +152,13 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .ThenInclude(mb => mb.Checklist)
             .Where(w => w.Type != WarehouseType.Production)
             .AsQueryable();
+
+        if (role.Type == DepartmentType.Production)
+        {
+            query = query.Where(w => 
+                w.DepartmentId == departmentId ||
+                (w.Type == WarehouseType.FinishedGoodsStorage && w.Division == department.Division));
+        }
 
         if (type.HasValue)
         {
@@ -1264,7 +1284,8 @@ public class WarehouseRepository(ApplicationDbContext context, IMapper mapper, I
             .FirstOrDefaultAsync(drm => drm.Id == distributedMaterialId));
     }
 
-    public async Task<Result<Paginateable<IEnumerable<DistributedFinishedProductDto>>>> GetFinishedGoodsDetails(int page, int pageSize, string searchQuery, Guid userId)
+    public async Task<Result<Paginateable<IEnumerable<DistributedFinishedProductDto>>>>
+        GetFinishedGoodsDetails(int page, int pageSize, string searchQuery, Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)

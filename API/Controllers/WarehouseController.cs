@@ -66,10 +66,20 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// </summary>
     [HttpGet]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<WarehouseDto>>))]
-    public async Task<IResult> GetWarehouses([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, WarehouseType? type = null)
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<WarehouseDto>>))]
+    public async Task<IResult> GetWarehouses([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null, 
+        [FromQuery] WarehouseType? type = null)
     {
-        var result = await repository.GetWarehouses(page, pageSize, searchQuery, type);
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+        
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
+        
+        var result = await repository.GetWarehouses(roleIds[0],
+            Guid.Parse(departmentId), page, pageSize, searchQuery, type);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
