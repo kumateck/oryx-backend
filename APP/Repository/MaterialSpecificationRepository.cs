@@ -61,7 +61,6 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     {
         var materialSpec = await context.MaterialSpecifications
             .IgnoreAutoIncludes()
-            .AsNoTracking()
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
@@ -88,7 +87,6 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     {
         var materialSpec = await context.MaterialSpecifications
             .IgnoreAutoIncludes()
-            .AsNoTracking()
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)

@@ -19,7 +19,11 @@ public interface IFormRepository
     Task<Result> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId);
     Task<Result> SubmitFormResponseFinal(Guid responseId);
     Task<Result> SubmitFormResponse(CreateResponseRequest request, Guid userId);
-    Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests, Guid? materialSpecificationId, Guid? productSpecificationId);
+    Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests, 
+        Guid? materialSpecificationId, Guid? productSpecificationId);
+   Task<Result> UpdateFormSectionValue(
+        List<SubmitFormSectionValue> requests, Guid? materialSpecificationId = null,
+        Guid? productSpecificationId = null);
     Task<Result<ResponseDetailDto>> GetFormResponse(Guid formResponseId);
 
     Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId);

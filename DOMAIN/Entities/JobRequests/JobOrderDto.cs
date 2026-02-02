@@ -40,6 +40,7 @@ public class JobOrderReducedDto : BaseDto
 public class JobOrderServiceProviderDto
 {
     public Guid Id { get; set; }
+    public Guid JobOrderId { get; set; }
     public ServiceProviderReducedDto ServiceProvider { get; set; }
     public DateTime SentAt { get; set; }
     public bool ResponseReceived { get; set; }

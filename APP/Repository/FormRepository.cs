@@ -449,7 +449,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
-    public async Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests, Guid? materialSpecificationId, Guid? productSpecificationId)
+    public async Task<Result> 
+        SubmitFormSectionValue(List<SubmitFormSectionValue> requests, Guid? materialSpecificationId, Guid? productSpecificationId)
     {
         var formSections = await context.FormSections
             .Where(s => requests.Select(r => r.FormSectionId).Contains(s.Id))
@@ -461,6 +462,39 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             formSection.Value = request.Value;
             formSection.MaterialSpecificationId = materialSpecificationId;
             formSection.ProductSpecificationId = productSpecificationId;
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+    
+    public async Task<Result> UpdateFormSectionValue(
+        List<SubmitFormSectionValue> requests, 
+        Guid? materialSpecificationId = null, 
+        Guid? productSpecificationId = null)
+    {
+        var sectionIds = requests.Select(r => r.FormSectionId).ToList();
+
+        var query = context.FormSections.Where(s => sectionIds.Contains(s.Id));
+
+        if (materialSpecificationId.HasValue)
+        {
+            query = query.Where(s => s.MaterialSpecificationId == materialSpecificationId);
+        }
+        else if (productSpecificationId.HasValue)
+        {
+            query = query.Where(s => s.ProductSpecificationId == productSpecificationId);
+        }
+
+        var formSections = await
+            query.ToDictionaryAsync(k => k.Id, v => v);
+
+        foreach (var request in requests)
+        {
+            if (formSections.TryGetValue(request.FormSectionId, out var formSection))
+            {
+                formSection.Value = request.Value;
+            }
         }
 
         await context.SaveChangesAsync();

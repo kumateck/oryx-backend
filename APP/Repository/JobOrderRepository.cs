@@ -115,7 +115,8 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
     }
     
 
-    public async Task<Result<Paginateable<IEnumerable<JobOrderServiceProviderDto>>>> GetJobOrderResponseServiceProviders(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<JobOrderServiceProviderDto>>>> 
+        GetJobOrderResponseServiceProviders(int page, int pageSize, string searchQuery)
     {
         var query = context.JobOrderServiceProviders
             .AsSplitQuery()
