@@ -95,7 +95,8 @@ public interface IProductionScheduleRepository
     Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request);
 
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
-    Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts();
+    Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts(Guid roleId,
+        Guid departmentId);
     Task<Result<ApprovedProductDetailDto>> GetApprovedProduct(Guid productId);
     Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId);
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
@@ -129,7 +130,10 @@ public interface IProductionScheduleRepository
     Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId);
     Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
         List<BatchTransferRequest> batches, Guid userId);
+
     Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
+        Guid roleId,
+        Guid departmentId,
         int page,
         int pageSize,
         string searchQuery = null,
