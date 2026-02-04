@@ -105,6 +105,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         );
     }
 
+    public async Task<Result<List<ProductCategory>>> GetProductCategories()
+    {
+        return await context.ProductCategories.ToListAsync();
+    }
+
     public async Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId)
     {
         var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
