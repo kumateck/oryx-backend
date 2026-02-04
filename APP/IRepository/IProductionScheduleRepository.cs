@@ -18,8 +18,12 @@ public interface IProductionScheduleRepository
 {
     Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId);
     Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId);
-    Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page,
-        int pageSize, string searchQuery, Guid departmentId);
+    Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(
+        Guid roleId,
+        int page,
+        int pageSize, 
+        string searchQuery, 
+        Guid departmentId);
     Task<Result> UpdateProductionSchedule(UpdateProductionScheduleRequest request, Guid scheduleId,
         Guid userId);
     Task<Result> DeleteProductionSchedule(Guid scheduleId, Guid userId);
