@@ -13,6 +13,8 @@ public interface IProductRepository
     Task<Result<ProductDto>> GetProduct(Guid productId);
     Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize,
         string searchQuery, Guid? departmentId, Division? division, string category);
+    
+    Task<Result<List<ProductCategory>>> GetProductCategories();
     Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId);
     Task<Result> DeleteProduct(Guid productId, Guid userId);
     Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId);
