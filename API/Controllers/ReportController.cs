@@ -13,6 +13,7 @@ using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Reports.Procurement;
 using APP.Utils;
+using DOMAIN.Entities.Reports.Shipments;
 
 namespace API.Controllers;
 
@@ -355,6 +356,21 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
         var result = await repository.GetVendorItemMappingPerStoreTypeSummary(itemId, categoryId, classification, store);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves the shipment report.
+    /// </summary>
+    [HttpGet("shipment")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShipmentReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetShipmentReport([FromQuery] ShipmentReportFilter filter)
+    {
+        var result = await repository.GetShipmentReport(filter);
+        return result.IsSuccess 
+            ? TypedResults.Ok(result.Value) 
+            : result.ToProblemDetails();
+    }
+
 
 
 }

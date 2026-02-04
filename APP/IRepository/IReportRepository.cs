@@ -7,6 +7,7 @@ using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
+using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
@@ -71,4 +72,5 @@ public interface IReportRepository
             Guid? categoryId,
             InventoryClassification? classification,
             Store? store);
+    Task<Result<List<ShipmentReportDto>>> GetShipmentReport(ShipmentReportFilter filter );
 }
