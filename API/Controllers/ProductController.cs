@@ -11,6 +11,7 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/product")]
 [ApiController]
+[Authorize]
 public class ProductController(IProductRepository repository) : ControllerBase
 {
     // Product CRUD operations (existing)
@@ -19,7 +20,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new product.
     /// </summary>
     [HttpPost]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProduct([FromBody] CreateProductRequest request)
@@ -35,7 +35,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a specific product by its ID.
     /// </summary>
     [HttpGet("{productId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProduct(Guid productId)
@@ -48,7 +47,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a paginated list of products.
     /// </summary>
     [HttpGet]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductListDto>>))]
     public async Task<IResult> GetProducts([FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
@@ -60,12 +58,22 @@ public class ProductController(IProductRepository repository) : ControllerBase
         var result = await repository.GetProducts(page, pageSize, searchQuery, departmentId, division, category);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a list of product categories.
+    /// </summary>
+    [HttpGet("categories")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductCategory>))]
+    public async Task<IResult> GetProductCategories()
+    {
+        var result = await repository.GetProductCategories();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Updates a specific product by its ID.
     /// </summary>
     [HttpPut("{productId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -82,7 +90,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Updates a specific product package description by its ID.
     /// </summary>
     [HttpPut("package-description/{productId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -99,7 +106,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Deletes a specific product by its ID.
     /// </summary>
     [HttpDelete("{productId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteProduct(Guid productId)
@@ -115,7 +121,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves the active bom for the product.
     /// </summary>
     [HttpGet("{productId}/bom")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductBillOfMaterialDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetBillOfMaterial(Guid productId)
@@ -128,7 +133,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new route for a product.
     /// </summary>
     [HttpPost("{productId}/routes")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateRoute([FromBody] List<CreateRouteRequest> request, Guid productId)
@@ -144,7 +148,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a specific route by its ID.
     /// </summary>
     [HttpGet("routes/{routeId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RouteDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetRoute(Guid routeId)
@@ -157,7 +160,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a paginated list of routes.
     /// </summary>
     [HttpGet("{productId}/routes")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<RouteDto>))]
     public async Task<IResult> GetRoutes(Guid productId)
     {
@@ -169,7 +171,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Deletes a specific route by its ID.
     /// </summary>
     [HttpDelete("routes/{routeId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteRoute(Guid routeId)
@@ -185,7 +186,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new product package.
     /// </summary>
     [HttpPost("{productId}/packages")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProductPackage([FromBody] List<CreateProductPackageRequest> request, Guid productId)
@@ -201,7 +201,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new product package.
     /// </summary>
     [HttpPost("{productId}/packing")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProductPacking([FromBody] List<CreateProductPacking> request, Guid productId)
@@ -217,7 +216,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves packings lists for a product
     /// </summary>
     [HttpGet("{productId}/packing")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductPackingDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductPackings([FromRoute] Guid productId)
@@ -230,7 +228,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a specific product package by its ID.
     /// </summary>
     [HttpGet("packages/{productPackageId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductPackageDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductPackage(Guid productPackageId)
@@ -243,7 +240,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a paginated list of product packages.
     /// </summary>
     [HttpGet("{productId}/packages")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductPackageDto>))]
     public async Task<IResult> GetProductPackages(Guid productId)
     {
@@ -255,7 +251,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Updates a specific product package by its ID.
     /// </summary>
     [HttpPut("packages/{productPackageId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -272,7 +267,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Deletes a specific product package by its ID.
     /// </summary>
     [HttpDelete("packages/{productPackageId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteProductPackage(Guid productPackageId)
@@ -288,7 +282,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new finished product.
     /// </summary>
     [HttpPost("{productId}/finished")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateFinishedProduct([FromBody] List<CreateFinishedProductRequest> request, Guid productId)
@@ -306,7 +299,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="productId">The ID of the Product for which the bom should be archived.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{productId}/bom/archive")]
-    //[Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -323,7 +315,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new equipment.
     /// </summary>
     [HttpPost("equipment")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateEquipment([FromBody] CreateEquipmentRequest request)
@@ -339,7 +330,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves specific equipment by its ID.
     /// </summary>
     [HttpGet("equipment/{equipmentId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EquipmentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetEquipment(Guid equipmentId)
@@ -352,7 +342,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a paginated list of equipment.
     /// </summary>
     [HttpGet("equipment")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EquipmentDto>>))]
     public async Task<IResult> GetEquipments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
@@ -364,7 +353,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a list of all equipment.
     /// </summary>
     [HttpGet("equipment/all")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EquipmentDto>))]
     public async Task<IResult> GetAllEquipments()
     {
@@ -376,7 +364,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Updates specific equipment by its ID.
     /// </summary>
     [HttpPut("equipment/{equipmentId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -393,7 +380,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Deletes specific equipment by its ID.
     /// </summary>
     [HttpDelete("equipment/{equipmentId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteEquipment(Guid equipmentId)
@@ -411,7 +397,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing product data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload")]
-    [Authorize]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -432,7 +417,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing BOM data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("bom/upload")]
-    [Authorize]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -453,7 +437,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing package data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("packages/upload")]
-    [Authorize]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -474,7 +457,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing materials.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload/stock")]
-    [Authorize]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -495,7 +477,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing materials.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload/equipment")]
-    [Authorize]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
