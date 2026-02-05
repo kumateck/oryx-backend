@@ -112,7 +112,8 @@ public class JobOrderController(IJobOrderRepository repository) : ControllerBase
     
     
     [HttpGet("service-providers")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<JobOrderServiceProviderDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<JobOrderServiceProviderDto>>))]
     public async Task<IResult> GetJobOrderServiceProviders(int page = 1, int pageSize = 10, string searchQuery = null)
     {
         var result = await repository.GetJobOrderResponseServiceProviders(page, pageSize, searchQuery);

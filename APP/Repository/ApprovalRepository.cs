@@ -522,6 +522,7 @@ public class ApprovalRepository(ApplicationDbContext context,
             case nameof(LeaveRequest):
                 var leaveRequest = await context.LeaveRequests
                     .Include(lr => lr.Approvals)
+                    .Include(lr => lr.Employee)
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
 
                 if (leaveRequest is null)
@@ -1527,6 +1528,7 @@ public class ApprovalRepository(ApplicationDbContext context,
                 break;
 
             case nameof(LeaveRequest):
+            {
                 var leaveRequest = await context.LeaveRequests
                     .Include(lr => lr.Approvals)
                     .FirstOrDefaultAsync(lr => lr.Id == modelId);
@@ -1559,7 +1561,7 @@ public class ApprovalRepository(ApplicationDbContext context,
                 // Approve the leave request stage in the actual tracked list
                 var stageToApproveLr = leaveRequest.Approvals.First(
                     stage => (stage.UserId == leaveRequestApprovingStage.UserId && stage.UserId == userId) ||
-                    (stage.RoleId == leaveRequestApprovingStage.RoleId && leaveRequestApprovingStage.RoleId.HasValue && roleIds.Contains(leaveRequestApprovingStage.RoleId.Value)));
+                             (stage.RoleId == leaveRequestApprovingStage.RoleId && leaveRequestApprovingStage.RoleId.HasValue && roleIds.Contains(leaveRequestApprovingStage.RoleId.Value)));
 
                 stageToApproveLr.Status = ApprovalStatus.Rejected;
                 stageToApproveLr.ApprovalTime = DateTime.UtcNow;
@@ -1572,12 +1574,25 @@ public class ApprovalRepository(ApplicationDbContext context,
                     ModelId = leaveRequest.Id,
                 });
                 await context.SaveChangesAsync();
+                
+                await using var transaction = await context.Database.BeginTransactionAsync();
+
+                var employee = await context.Employees
+                    .FirstOrDefaultAsync(e => e.Id == leaveRequest.EmployeeId);
+
+                if (employee != null)
+                {
+                    employee.AnnualLeaveDays += leaveRequest.PaidDays ?? 0 + leaveRequest.UnpaidDays ?? 0;
+                    await context.SaveChangesAsync();
+                }
 
                 leaveRequest.LeaveStatus = LeaveStatus.Rejected;
-                context.LeaveRequests.Update(leaveRequest);
+
                 await context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 break;
+            }
 
             case nameof(OvertimeRequest):
                 var overtimeRequest = await context.OvertimeRequests
@@ -2547,7 +2562,7 @@ public class ApprovalRepository(ApplicationDbContext context,
     {
         var approval = await context.Approvals.FirstOrDefaultAsync(a => a.ItemType == modelType);
         if (approval == null)
-            logger.LogError($"Approval not found for {modelType}");
+            logger.LogError("Approval not found for {ModelType}", modelType);
 
         var approvalStages = await context.Approvals
             .Where(s => s.ItemType == modelType)

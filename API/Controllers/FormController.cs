@@ -186,6 +186,27 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.SubmitFormSectionValue(request, materialSpecificationId, productSpecificationId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Submits a response to a form section.
+    /// </summary>
+    /// <param name="request">The CreateResponseRequest object containing response data.</param>
+    /// <param name="materialSpecificationId">The id of the material spec</param>
+    /// <param name="productSpecificationId">The id of the product spec</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("responses/section")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UpdateFormSectionResponse([FromBody] List<SubmitFormSectionValue> request,
+        [FromQuery] Guid? materialSpecificationId, [FromQuery] Guid? productSpecificationId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateFormSectionValue(request, materialSpecificationId, productSpecificationId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves a specific form response by its ID.

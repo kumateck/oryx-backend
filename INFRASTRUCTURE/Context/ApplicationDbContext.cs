@@ -1262,7 +1262,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         #region Finished Goods
 
-        modelBuilder.Entity<FinishedGoodsTransferNote>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<FinishedGoodsTransferNote>().HasQueryFilter(entity 
+            => !entity.DeletedAt.HasValue);
 
         #endregion
 

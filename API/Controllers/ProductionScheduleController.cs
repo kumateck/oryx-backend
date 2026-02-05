@@ -65,13 +65,19 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>Returns a paginated list of Production Schedules.</returns>
     [HttpGet]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionScheduleDto>>))]
-    public async Task<IResult> GetProductionSchedules([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<ProductionScheduleDto>>))]
+    public async Task<IResult> GetProductionSchedules([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null)
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+        
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
-        var result = await repository.GetProductionSchedules(page, pageSize, searchQuery, Guid.Parse(departmentId));
+        var result = await repository.GetProductionSchedules(roleIds[0],
+            page, pageSize, searchQuery, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -483,8 +489,14 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         [FromQuery] bool? fulfilled = null
         )
     {
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+        
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
+        
         var result = await repository
-            .GetFinishedGoodsTransferNote(page, pageSize, searchQuery, division, onlyApproved, partial, fulfilled);
+            .GetFinishedGoodsTransferNote(roleIds[0], Guid.Parse(departmentId), 
+                page, pageSize, searchQuery, division, onlyApproved, partial, fulfilled);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -1170,7 +1182,12 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetApprovedProducts()
     {
-        var result = await repository.GetApprovedProducts();
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+        
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
+        
+        var result = await repository.GetApprovedProducts(roleIds[0], Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

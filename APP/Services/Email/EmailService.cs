@@ -52,11 +52,11 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
             client.Send(message);
             client.Disconnect(true);
 
-            logger.LogInformation($"Email sent to {to}");
+            logger.LogInformation("Email sent to {To}", to);
         }
         catch (Exception ex)
         {
-            logger.LogError($"Error sending email: {ex.Message}");
+            logger.LogError("Error sending email: {ExMessage}", ex.Message);
             throw new Exception($"Error sending email: {ex.Message}");
         }
     }

@@ -14,7 +14,12 @@ public interface IWarehouseRepository
 {
     Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request);
     Task<Result<WarehouseDto>> GetWarehouse(Guid warehouseId);
-    Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(int page, int pageSize, string searchQuery, 
+
+    Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(Guid roleId,
+        Guid departmentId,
+        int page,
+        int pageSize,
+        string searchQuery,
         WarehouseType? type);
    Task<Result<List<WarehouseDto>>> GetWarehousesByDepartment(Guid departmentId);
     Task<Result> UpdateWarehouse(CreateWarehouseRequest request, Guid warehouseId, Guid userId);
@@ -73,7 +78,9 @@ public interface IWarehouseRepository
 
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize,
         string searchQuery, Guid warehouseId);
-    Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
+    Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> 
+        GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind,
+            DistributedRequisitionMaterialStatus? status, Guid userId);
     Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetStockTransferDetails(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
     Task<Result<Paginateable<IEnumerable<DistributedFinishedProductDto>>>> GetFinishedGoodsDetails(int page, int pageSize, string searchQuery, Guid userId);
     Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialsById(

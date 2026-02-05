@@ -7,7 +7,7 @@ public class AssignEmployeeDto
     [Required] public Guid DesignationId { get; set; }
 
     [Required] public Guid DepartmentId { get; set; }
-    public Guid? WarehouseId { get; set; }
+    public List<Guid?> WarehouseIds { get; set; }
     public string StaffNumber { get; set; }
 
     public EmployeeLevel? Level { get; set; }

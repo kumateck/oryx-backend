@@ -21,6 +21,7 @@ using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using SHARED;
 
 namespace APP.Repository;
@@ -113,25 +114,57 @@ public class ProductionScheduleRepository(
     }
 
 
-    public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page,
-        int pageSize, string searchQuery, Guid departmentId)
+    public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(
+        Guid roleId,
+        int page,
+        int pageSize, 
+        string searchQuery, 
+        Guid departmentId)
     {
-        var query = context.ProductionSchedules
-            .AsSplitQuery()
-            .Include(s => 
-                s.Products.Where(p => p.Product.DepartmentId == departmentId))
-                .ThenInclude(p => p.Product)
-            .Include(s => s.Products)
-                .ThenInclude(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
-            .Where(s => 
-                s.Products.Any(p => p.Product.DepartmentId == departmentId))
-            .AsQueryable();
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
+        if (role is null) return Error.NotFound("Role.NotFound", "Role not found");
+        
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
+        if (department is null) return Error.NotFound("Department.NotFound", "Department not found");
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<ProductionScheduleDto>);
+
+        if (role.Type == DepartmentType.Production)
+        {
+            var query = context.ProductionSchedules
+                .IgnoreQueryFilters()
+                .AsSplitQuery()
+                .Include(s => 
+                    s.Products.Where(p => p.Product.DepartmentId == departmentId))
+                .ThenInclude(p => p.Product)
+                .Include(s => s.Products)
+                .ThenInclude(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
+                .Where(s => 
+                    s.Products.Any(p => p.Product.DepartmentId == departmentId))
+                .AsQueryable();
+            
+            return await PaginationHelper.GetPaginatedResultAsync(
+                query,
+                page,
+                pageSize,
+                mapper.Map<ProductionScheduleDto>);
+        }
+        else
+        {
+            var query = context.ProductionSchedules
+                .IgnoreQueryFilters()
+                .AsSplitQuery()
+                .Include(s => s.Products)
+                .ThenInclude(p => p.Product)
+                .Include(s => s.Products)
+                .ThenInclude(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
+                .AsQueryable();
+            
+            return await PaginationHelper.GetPaginatedResultAsync(
+                query,
+                page,
+                pageSize,
+                mapper.Map<ProductionScheduleDto>);
+        }
     }
 
     public async Task<Result> UpdateProductionSchedule(UpdateProductionScheduleRequest request, Guid scheduleId,
@@ -1576,6 +1609,8 @@ public class ProductionScheduleRepository(
     }
 
     public async Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
+        Guid roleId,
+        Guid departmentId,
         int page,
         int pageSize,
         string searchQuery = null,
@@ -1584,6 +1619,12 @@ public class ProductionScheduleRepository(
         bool? partial = null,
         bool? fulfilled = null)
     {
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
+        if (role is null) return Error.NotFound("Role.NotFound", "Role not found");
+        
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
+        if (department is null) return Error.NotFound("Department.NotFound", "Department not found");
+        
         var query = context.FinishedGoodsTransferNotes
             .AsSplitQuery()
             .IgnoreQueryFilters()
@@ -1597,6 +1638,15 @@ public class ProductionScheduleRepository(
             .Include(tn => tn.ProductPacking)
             .ThenInclude(p => p.BasePackingUoM)
             .AsQueryable();
+
+        if (role.Type == DepartmentType.Production)
+        {
+            query = query
+                .Where(q =>
+                    q.BatchManufacturingRecord
+                        .ProductionScheduleProduct.Product.Department.Division == department.Division);
+        }
+        
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -1778,9 +1828,17 @@ public class ProductionScheduleRepository(
 
     }
 
-    public async Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts()
+    public async Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts(Guid roleId,
+        Guid departmentId)
     {
+        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
+        if (role is null) return Error.NotFound("Role.NotFound", "Role not found");
+        
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
+        if (department is null) return Error.NotFound("Department.NotFound", "Department not found");
+        
         var productsQuery = context.FinishedGoodsTransferNotes
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
             .ThenInclude(b => b.ProductionScheduleProduct)
@@ -1791,6 +1849,14 @@ public class ProductionScheduleRepository(
             .ThenInclude(p => p.BasePackingUoM)
             .Where(p => p.IsApproved)
             .AsQueryable();
+
+        if (role.Type == DepartmentType.Production)
+        {
+            productsQuery = productsQuery
+                .Where(q =>
+                    q.BatchManufacturingRecord
+                        .ProductionScheduleProduct.Product.Department.Division == department.Division);
+        }
 
         var products = await productsQuery.ToListAsync();
 

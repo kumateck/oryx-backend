@@ -69,7 +69,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return product is null ? ProductErrors.NotFound(productId) : mapper.Map<ProductDto>(product);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(int page, int pageSize, string searchQuery, Guid? departmentId)
+    public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts
+    (int page, int pageSize, string searchQuery, Guid? departmentId, Division? division,
+        string category)
     {
         var query = context.Products
             .AsSplitQuery()
@@ -85,12 +87,27 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             query = query.Where(p => p.DepartmentId == departmentId);
         }
 
+        if (division.HasValue)
+        {
+            query = query.Where(p => p.Division == division);
+        }
+
+        if (!string.IsNullOrEmpty(category))
+        {
+            query = query.Where(p => p.Category.Name == category);
+        }
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
             mapper.Map<ProductListDto>
         );
+    }
+
+    public async Task<Result<List<ProductCategory>>> GetProductCategories()
+    {
+        return await context.ProductCategories.ToListAsync();
     }
 
     public async Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId)

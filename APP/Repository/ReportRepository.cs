@@ -22,6 +22,7 @@ using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
+using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
@@ -1711,7 +1712,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         return Result.Success(items);
     }
-    
+
     /// <summary>
     /// Provides a stock quantity overview per store type and item,
     /// showing total item quantities across all locations.
@@ -1742,7 +1743,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .OrderBy(r => r.Store)
             .ThenBy(r => r.Name)
             .ToListAsync();
-        
+
         var result = raw.Select((r, index) => new StoreItemStockSummaryDto
         {
             No = index + 1,
@@ -1757,7 +1758,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         return Result.Success(result);
     }
 
-    public async Task<Result<List<VendorStoreItemStockSummaryDto>>> 
+    public async Task<Result<List<VendorStoreItemStockSummaryDto>>>
         GetVendorItemMapping(
             Store? store,
             Guid? vendorId,
@@ -2012,7 +2013,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         return Result.Success(dashboardKpi);
     }
-    
+
     public async Task<Result<List<SupplierMaterialReportDto>>>
         GetSupplierMaterialAReport(SupplierMaterialFilters filters)
     {
@@ -2094,11 +2095,11 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 mm.DeletedAt == null &&
                 manufacturerIds.Contains(mm.ManufacturerId))
             .ToListAsync();
-        
+
         var materialLookup = manufacturerMaterials
             .GroupBy(mm => mm.ManufacturerId)
             .ToDictionary(g => g.Key, g => g.ToList());
-        
+
         var result = groups.Select(g =>
         {
             var materialIdSet = g.MaterialIds.ToHashSet();
@@ -2121,7 +2122,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         return Result.Success(result);
     }
-        
+
     public async Task<Result<List<VendorItemStoreSummaryDto>>>
         GetVendorItemMappingPerStoreTypeSummary(
             Guid? itemId,
@@ -2132,7 +2133,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var query = context.VendorItems
             .AsNoTracking()
             .AsQueryable();
-        
+
 
         if (itemId.HasValue)
         {
@@ -2153,7 +2154,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         {
             query = query.Where(v => v.Item.Store == store.Value);
         }
-        
+
 
         var raw = await query
             .GroupBy(v => new
@@ -2191,6 +2192,149 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         return Result.Success(result);
     }
+
+    public async Task<Result<List<ShipmentReportDto>>> GetShipmentReport(ShipmentReportFilter filter)
+    {
+        var baseQuery = context.BillingSheets
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(bs => bs.DeletedAt == null);
+        if (filter.StartDate.HasValue)
+        {
+            baseQuery = baseQuery.Where(bs => bs.CreatedAt >= filter.StartDate.Value);
+            ;
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            baseQuery = baseQuery.Where(bs => bs.CreatedAt <= filter.EndDate.Value);
+        }
+        if (filter.SupplierIds != null && filter.SupplierIds.Any())
+        {
+            baseQuery = baseQuery.Where(bs =>
+                bs.SupplierId.HasValue &&
+                filter.SupplierIds.Contains(bs.SupplierId.Value));
+        }
+        if (filter.Statuses != null && filter.Statuses.Any())
+        {
+            baseQuery = baseQuery.Where(bs => filter.Statuses.Contains(bs.Status.ToString()));
+        }
+        var groups = await baseQuery
+            .GroupBy(bs => new
+            {
+                bs.Id,
+                bs.SupplierId,
+                bs.InvoiceId
+            })
+            .Select(g => new
+            {
+                BillingSheetId = g.Key.Id,
+                g.Key.SupplierId,
+                g.Key.InvoiceId,
+                BillingSheet = g.First(),
+                Supplier = g.Select(x => x.Supplier).FirstOrDefault(),
+                Invoice = g.Select(x => x.Invoice).FirstOrDefault()
+            })
+            .ToListAsync();
+
+        if (groups.Count == 0)
+            return Result.Success(new List<ShipmentReportDto>());
+
+        var supplierIds = groups
+            .Select(g => g.SupplierId)
+            .Where(id => id.HasValue)
+            .Select(id => id.Value)
+            .Distinct()
+            .ToList();
+
+        // Include TermsOfPayment in the query
+        var purchaseOrders = await context.PurchaseOrders
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Include(po => po.TermsOfPayment)
+            .Where(po => po.DeletedAt == null && supplierIds.Contains(po.SupplierId))
+            .Select(po => new
+            {
+                po.Id,
+                po.SupplierId,
+                po.CreatedAt,
+                TermsOfPaymentName = po.TermsOfPayment != null ? po.TermsOfPayment.Name : null,
+                po.TotalCifValue
+            })
+            .ToListAsync();
+
+        var purchaseOrderIds = purchaseOrders.Select(po => po.Id).ToList();
+
+        var purchaseOrderItems = await context.PurchaseOrderItems
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(poi => poi.DeletedAt == null && purchaseOrderIds.Contains(poi.PurchaseOrderId))
+            .Select(poi => new { poi.PurchaseOrderId, poi.MaterialId })
+            .ToListAsync();
+
+        var materialIds = purchaseOrderItems
+            .Select(poi => poi.MaterialId)
+            .Distinct()
+            .ToList();
+
+        var materials = await context.Materials
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(m => materialIds.Contains(m.Id))
+            .Select(m => new { m.Id, m.Name })
+            .ToListAsync();
+
+        var materialLookup = materials.ToDictionary(m => m.Id, m => m.Name);
+        var poiLookup = purchaseOrderItems
+            .GroupBy(poi => poi.PurchaseOrderId)
+            .ToDictionary(g => g.Key, g => g.Select(poi => poi.MaterialId).ToList());
+        var poLookup = purchaseOrders
+            .GroupBy(po => po.SupplierId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var result = groups.Select((g, index) =>
+        {
+            List<string> materialNames = new List<string>();
+            string transactionType = "N/A";
+            decimal transactionAmount = 0;
+
+            if (g.SupplierId.HasValue && poLookup.TryGetValue(g.SupplierId.Value, out var supplierPOs))
+            {
+                var recentPO = supplierPOs.OrderByDescending(po => po.CreatedAt).FirstOrDefault();
+                if (recentPO != null)
+                {
+                    transactionAmount = recentPO.TotalCifValue;
+                    transactionType = recentPO.TermsOfPaymentName;
+
+                    if (poiLookup.TryGetValue(recentPO.Id, out var matIds))
+                    {
+                        materialNames = matIds
+                            .Select(id => materialLookup.TryGetValue(id, out var name) ? name : null)
+                            .Where(n => n != null)
+                            .ToList();
+                    }
+                }
+            }
+
+            return new ShipmentReportDto
+            {
+                No = index + 1,
+                SupplierName = g.Supplier?.Name,
+                InvoiceAmount = transactionAmount,
+                Materials = materialNames,
+                ExpectedArrivalDate = g.BillingSheet.ExpectedArrivalDate,
+                FreeDays = g.BillingSheet.FreeTimeDuration,
+                DemurrageStarts = g.BillingSheet.DemurrageStartDate,
+                ContainerSize = g.BillingSheet.ContainerNumber,
+                BillOfLadingNo = g.BillingSheet.BillOfLading,
+                TransactionType = transactionType,
+                Status = g.BillingSheet.Status.ToString()
+            };
+        }).ToList();
+
+        return Result.Success(result);
+    }
+
 }
 
 
