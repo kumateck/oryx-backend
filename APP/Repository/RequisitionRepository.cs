@@ -1082,7 +1082,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             s.SupplierId == supplierId && s.Items.Any(si => si.Status == SupplierQuotationItemStatus.NotProcessed));
     }
 
-    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, int pageSize, SupplierType supplierType, bool received)
+    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, 
+        int pageSize, SupplierType supplierType, bool received)
     {
 
         var query = context.SupplierQuotations
@@ -1137,6 +1138,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             item.QuotedPrice = supplierQuotationResponse.FirstOrDefault(s =>
                 s.Id == item.Id)?.Price;
+            item.PriceUoM = supplierQuotationResponse.FirstOrDefault(s =>
+                s.Id == item.Id)?.PriceUoM;
         }
 
         supplierQuotation.ReceivedQuotation = true;
