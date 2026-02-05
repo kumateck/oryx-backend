@@ -73,6 +73,7 @@ public class SupplierQuotationItem : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
     public decimal? QuotedPrice { get; set; }
+    [StringLength(100)] public string PriceUoM { get; set; }
     public SupplierQuotationItemStatus Status { get; set; }
     public Guid? PurchaseOrderId { get; set; }
 }
@@ -92,6 +93,7 @@ public class SupplierQuotationItemDto
     public ManufacturerListDto DefaultManufacturer { get; set; }
     public decimal Quantity { get; set; }
     public decimal? QuotedPrice { get; set; }
+    public string PriceUoM { get; set; }
 }
 
 public class SourceRequisitionItemDto
@@ -118,6 +120,7 @@ public class SupplierQuotationResponseDto
 {
     public Guid Id { get; set; }
     public decimal Price { get; set; }
+    public string PriceUoM { get; set; }
 }
 
 public class SupplierPriceComparison
