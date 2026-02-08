@@ -22,6 +22,7 @@ using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
+using DOMAIN.Entities.Reports.PurchaseOrder;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
@@ -2335,6 +2336,135 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         return Result.Success(result);
     }
 
+    public async Task<Result<List<PurchaseOrderReportDto>>> GetPurchaseOrderReportAsync(PurchaseOrderFilter filter)
+    {
+        var baseQuery =context.PurchaseOrders
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(po => po.DeletedAt == null);
+
+        if (filter.StartDate.HasValue)
+        {
+            baseQuery = baseQuery.Where(po => po.CreatedAt >= filter.StartDate.Value);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            baseQuery = baseQuery.Where(po => po.CreatedAt <= filter.EndDate.Value);
+        }
+
+        if (filter.SupplierIds != null && filter.SupplierIds.Any())
+        {
+            baseQuery = baseQuery.Where(po => filter.SupplierIds.Contains(po.SupplierId));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.PoNumber))
+        {
+            baseQuery = baseQuery.Where(po => filter.PoNumber.Contains(po.Code));
+        }
+
+        var purchaseOrders = await baseQuery
+            .Select(po => new
+            {
+                po.Id,
+                po.Code,
+                po.ProFormaInvoiceNumber,
+                po.SupplierId,
+                po.CreatedAt,
+                po.ExpectedDeliveryDate,
+            }).ToListAsync();
+        var purchaseOrderIds= purchaseOrders.Select(o => o.Id).ToList();
+        var supplierIds= purchaseOrders.Select(o=>o.SupplierId).Distinct().ToList();
+        var suppliers= await context.Suppliers
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(s => supplierIds.Contains(s.Id))
+            .Select(s=> new {s.Id, s.Name})
+            .ToListAsync();
+        var supplierLookup = suppliers.ToDictionary(s => s.Id, s => s.Name);
+        var purchaseOrderItems = await context.PurchaseOrderItems
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(poi => poi.DeletedAt == null && purchaseOrderIds.Contains(poi.PurchaseOrderId))
+            .Select(poi => new
+                { poi.PurchaseOrderId, poi.MaterialId, poi.Quantity, poi.Price, poi.UoMId, poi.CurrencyId })
+            .ToListAsync();
+        var materialIds = purchaseOrderItems.Select(poi => poi.MaterialId).Distinct().ToList();
+        var uomIds = purchaseOrderItems.Select(poi => poi.UoMId).Distinct().ToList();
+        var currencyIds = purchaseOrderItems
+            .Where(poi => poi.CurrencyId.HasValue)
+            .Select(poi => poi.CurrencyId.Value)
+            .Distinct()
+            .ToList();
+
+        var materials = await context.Materials
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(m => materialIds.Contains(m.Id))
+            .Select(m => new { m.Id, m.Name }).ToListAsync();
+        var materialLookup = materials.ToDictionary(m => m.Id, m => m.Name);
+        var uoms = await context.UnitOfMeasures
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(u => uomIds.Contains(u.Id))
+            .Select(u => new { u.Id,u.Symbol })
+            .ToListAsync();
+
+        var uomLookup = uoms.ToDictionary(u => u.Id,u=> u.Symbol);
+           var currencies = await context.Currencies
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(c => currencyIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.Symbol })
+            .ToListAsync();
+           var currencyLookup = currencies.ToDictionary(c => c.Id, c => c.Symbol);
+        
+           var result = purchaseOrders
+               .SelectMany(po =>
+               {
+                 
+                   var items = purchaseOrderItems
+                       .Where(poi => poi.PurchaseOrderId == po.Id)
+                       .ToList();
+
+                   return items.Select(poi => new { po, poi });
+               })
+               .Select((x, index) =>
+               {
+                   var po = x.po;
+                   var poi = x.poi;
+
+                   return new PurchaseOrderReportDto
+                   {
+                       No = index + 1,
+
+                       SupplierName = supplierLookup.TryGetValue(po.SupplierId, out var sName) ? sName : null,
+
+                       ProformaInvoiceNumber = po.ProFormaInvoiceNumber,
+                       PurchaseOrderNumber = po.Code,
+
+                       MaterialName = materialLookup.TryGetValue(poi.MaterialId, out var mName) ? mName : null,
+
+                       OrderQuantity = poi.Quantity,
+                       UomName = uomLookup.TryGetValue(poi.UoMId, out var uName) ? uName : null,
+
+                       UnitPrice = poi.Price,
+                       CurrencyCode = poi.CurrencyId.HasValue &&
+                                      currencyLookup.TryGetValue(poi.CurrencyId.Value, out var cSymbol)
+                           ? cSymbol
+                           : null,
+
+
+                       PurchaseOrderDate = po.CreatedAt,
+                       ExpectedDeliverydate = po.ExpectedDeliveryDate
+                   };
+               })
+               .ToList();
+
+           return Result.Success(result);
+
+        
+    }
 }
 
 

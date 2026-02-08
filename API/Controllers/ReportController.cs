@@ -13,6 +13,7 @@ using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Reports.Procurement;
 using APP.Utils;
+using DOMAIN.Entities.Reports.PurchaseOrder;
 using DOMAIN.Entities.Reports.Shipments;
 
 namespace API.Controllers;
@@ -371,6 +372,19 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
             : result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Retrieves the purchase order report based on the specified filter.
+    /// </summary>
+    [HttpGet("purchase-orders")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchaseOrderReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetPurchaseOrderReport([FromQuery] PurchaseOrderFilter filter)
+    {
+        var result = await repository.GetPurchaseOrderReportAsync(filter);
+        return result.IsSuccess 
+            ? TypedResults.Ok(result.Value) 
+            : result.ToProblemDetails();
+    }
 
 
 }
