@@ -182,6 +182,7 @@ public class FinishedGoodsTransferNote : BaseEntity, IRequireApproval
     public List<FinishedGoodsTransferNoteApproval>  Approvals { get; set; } = [];
     public bool IsPartial { get; set; }
     public bool IsFulfilled { get; set; }
+    public DateTime? AcceptedAt { get; set; }
 }
 
 public class FinishedGoodsTransferNoteApproval: ResponsibleApprovalStage
