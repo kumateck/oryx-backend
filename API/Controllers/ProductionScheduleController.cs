@@ -543,7 +543,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     [HttpPut("finished-goods-transfer-note/{id:guid}/approve")]
-    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, [FromBody] ApproveTransferNoteRequest quantityReceived)
+    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, 
+        [FromBody] ApproveTransferNoteRequest quantityReceived)
     {
         var result = await repository.ApproveTransferNote(id, quantityReceived);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
