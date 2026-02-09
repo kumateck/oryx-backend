@@ -1316,7 +1316,8 @@ public class ApprovalRepository(ApplicationDbContext context,
 
                 // Activate next pending stages
                 var nextFgtnStage = finishedGoodsTransferNote.Approvals
-                    .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
+                    .Where(s => 
+                        s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
                     .OrderBy(s => s.Order)
                     .ToList();
 
@@ -1342,7 +1343,8 @@ public class ApprovalRepository(ApplicationDbContext context,
                     {
                         var actualStage = finishedGoodsTransferNote.Approvals.First(ra =>
                             ra.Status != ApprovalStatus.Approved &&
-                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
+                            (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue || 
+                             (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)));
                         
                         actualStage.ActivatedAt = DateTime.UtcNow;
                         context.FinishedGoodsTransferNoteApprovals.Update(actualStage);
