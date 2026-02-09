@@ -32,6 +32,6 @@ public class ShipmentReportFilter
 {
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-    public List<Guid>? SupplierIds { get; set; }
-    public List<string>? Statuses { get; set; }
+    public List<Guid> SupplierIds { get; set; }
+    public List<string> Statuses { get; set; }
 }
