@@ -1393,9 +1393,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
                 TransferDate = f.CreatedAt,
 
-                AcceptedDate = f.Approvals.Any()
-                    ? f.Approvals.Max(a => a.CreatedAt)
-                    : (DateTime?)null,
+                AcceptedDate = f.AcceptedAt
 
 
             })
@@ -2378,9 +2376,10 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .AsNoTracking()
             .IgnoreQueryFilters()
             .Where(s => supplierIds.Contains(s.Id))
-            .Select(s=> new {s.Id, s.Name})
+            .Select(s=> new {s.Id, s.Name,s.CurrencyId})
             .ToListAsync();
-        var supplierLookup = suppliers.ToDictionary(s => s.Id, s => s.Name);
+        var supplierLookup = suppliers.ToDictionary(s => s.Id);
+
         var purchaseOrderItems = await context.PurchaseOrderItems
             .AsNoTracking()
             .IgnoreQueryFilters()
@@ -2390,9 +2389,9 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             .ToListAsync();
         var materialIds = purchaseOrderItems.Select(poi => poi.MaterialId).Distinct().ToList();
         var uomIds = purchaseOrderItems.Select(poi => poi.UoMId).Distinct().ToList();
-        var currencyIds = purchaseOrderItems
-            .Where(poi => poi.CurrencyId.HasValue)
-            .Select(poi => poi.CurrencyId.Value)
+        var currencyIds = suppliers
+            .Where(s => s.CurrencyId.HasValue)
+            .Select(s => s.CurrencyId.Value)
             .Distinct()
             .ToList();
 
@@ -2437,7 +2436,10 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                    {
                        No = index + 1,
 
-                       SupplierName = supplierLookup.TryGetValue(po.SupplierId, out var sName) ? sName : null,
+                       SupplierName = supplierLookup.TryGetValue(po.SupplierId, out var suppliers)
+                           ? suppliers.Name
+                           : null,
+                       
 
                        ProformaInvoiceNumber = po.ProFormaInvoiceNumber,
                        PurchaseOrderNumber = po.Code,
@@ -2448,10 +2450,17 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                        UomName = uomLookup.TryGetValue(poi.UoMId, out var uName) ? uName : null,
 
                        UnitPrice = poi.Price,
-                       CurrencyCode = poi.CurrencyId.HasValue &&
-                                      currencyLookup.TryGetValue(poi.CurrencyId.Value, out var cSymbol)
-                           ? cSymbol
-                           : null,
+                       CurrencySymbol =
+                           (
+                               poi.CurrencyId
+                               ?? (supplierLookup.TryGetValue(po.SupplierId, out var supplier)
+                                   ? supplier.CurrencyId
+                                   : null)
+                           ) is { } currencyId
+                           && currencyLookup.TryGetValue(currencyId, out var cSymbol)
+                               ? cSymbol
+                               : null,
+
 
 
                        PurchaseOrderDate = po.CreatedAt,

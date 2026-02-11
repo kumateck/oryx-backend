@@ -10,7 +10,7 @@ public class PurchaseOrderReportDto
     public decimal OrderQuantity {get; set;}
     public string UomName {get; set;}
     public decimal UnitPrice {get; set;}
-    public string CurrencyCode {get; set;}
+    public string CurrencySymbol {get; set;}
     public decimal MaterialValue=> OrderQuantity * UnitPrice;
     public DateTime  PurchaseOrderDate {get; set;}
     public DateTime? ExpectedDeliverydate {get; set;}
