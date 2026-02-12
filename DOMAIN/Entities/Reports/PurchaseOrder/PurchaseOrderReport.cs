@@ -47,6 +47,6 @@ public class PurchaseOrderFilter
 {
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-    public List<Guid>? SupplierIds { get; set; }
+    public List<Guid> SupplierIds { get; set; }
     public string PoNumber {get; set;}
 }

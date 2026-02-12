@@ -390,7 +390,7 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
     /// </summary>
     [HttpGet("purchased-po-report")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchasedPoReportDto>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+   
     public async Task<IResult> GetPurchasedPoReport([FromQuery] PurchaseOrderFilter filter)
     {
         var result = await repository.GetPurchasedPoReportAsync(filter);

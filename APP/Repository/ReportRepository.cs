@@ -2375,7 +2375,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var suppliers= await context.Suppliers
             .AsNoTracking()
             .IgnoreQueryFilters()
-            .Where(s => supplierIds.Contains(s.Id))
+            .Where(s => supplierIds.Contains(s.Id) && s.DeletedAt == null)
             .Select(s=> new {s.Id, s.Name,s.CurrencyId})
             .ToListAsync();
         var supplierLookup = suppliers.ToDictionary(s => s.Id);
@@ -2398,13 +2398,13 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var materials = await context.Materials
             .AsNoTracking()
             .IgnoreQueryFilters()
-            .Where(m => materialIds.Contains(m.Id))
+            .Where(m => materialIds.Contains(m.Id) && m.DeletedAt == null)
             .Select(m => new { m.Id, m.Name }).ToListAsync();
         var materialLookup = materials.ToDictionary(m => m.Id, m => m.Name);
         var uoms = await context.UnitOfMeasures
             .AsNoTracking()
             .IgnoreQueryFilters()
-            .Where(u => uomIds.Contains(u.Id))
+            .Where(u => uomIds.Contains(u.Id) && u.DeletedAt == null)
             .Select(u => new { u.Id,u.Symbol })
             .ToListAsync();
 
@@ -2412,7 +2412,7 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
            var currencies = await context.Currencies
             .AsNoTracking()
             .IgnoreQueryFilters()
-            .Where(c => currencyIds.Contains(c.Id))
+            .Where(c => currencyIds.Contains(c.Id) && c.DeletedAt == null)
             .Select(c => new { c.Id, c.Symbol })
             .ToListAsync();
            var currencyLookup = currencies.ToDictionary(c => c.Id, c => c.Symbol);
@@ -2490,14 +2490,14 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         baseQuery = baseQuery.Where(po => po.CreatedAt <= filter.EndDate.Value);
     }
 
-    if (filter.SupplierIds != null && filter.SupplierIds.Any())
+    if (filter.SupplierIds.Any())
     {
         baseQuery = baseQuery.Where(po => filter.SupplierIds.Contains(po.SupplierId));
     }
 
     if (!string.IsNullOrWhiteSpace(filter.PoNumber))
     {
-        baseQuery = baseQuery.Where(po => po.Code.Contains(filter.PoNumber));
+        baseQuery = baseQuery.Where(po => po.Code==filter.PoNumber);
     }
 
     var purchaseOrders = await baseQuery
