@@ -75,4 +75,5 @@ public interface IReportRepository
             Store? store);
     Task<Result<List<ShipmentReportDto>>> GetShipmentReport(ShipmentReportFilter filter );
     Task<Result<List<PurchaseOrderReportDto>>> GetPurchaseOrderReportAsync(PurchaseOrderFilter filter);
+    Task<Result<List<PurchasedPoReportDto>>> GetPurchasedPoReportAsync(PurchaseOrderFilter filter);
 }

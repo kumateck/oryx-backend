@@ -385,6 +385,20 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
             ? TypedResults.Ok(result.Value) 
             : result.ToProblemDetails();
     }
+    /// <summary>
+    /// Retrieves the purchased PO report based on the specified filter.
+    /// </summary>
+    [HttpGet("purchased-po-report")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchasedPoReportDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetPurchasedPoReport([FromQuery] PurchaseOrderFilter filter)
+    {
+        var result = await repository.GetPurchasedPoReportAsync(filter);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
 
 
 }

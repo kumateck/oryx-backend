@@ -2473,6 +2473,209 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
         
     }
+  public async Task<Result<List<PurchasedPoReportDto>>> GetPurchasedPoReportAsync(PurchaseOrderFilter filter)
+{
+    var baseQuery = context.PurchaseOrders
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(po => po.DeletedAt == null);
+
+    if (filter.StartDate.HasValue)
+    {
+        baseQuery = baseQuery.Where(po => po.CreatedAt >= filter.StartDate.Value);
+    }
+
+    if (filter.EndDate.HasValue)
+    {
+        baseQuery = baseQuery.Where(po => po.CreatedAt <= filter.EndDate.Value);
+    }
+
+    if (filter.SupplierIds != null && filter.SupplierIds.Any())
+    {
+        baseQuery = baseQuery.Where(po => filter.SupplierIds.Contains(po.SupplierId));
+    }
+
+    if (!string.IsNullOrWhiteSpace(filter.PoNumber))
+    {
+        baseQuery = baseQuery.Where(po => po.Code.Contains(filter.PoNumber));
+    }
+
+    var purchaseOrders = await baseQuery
+        .Select(po => new
+        {
+            po.Id,
+            po.Code,
+            po.ProFormaInvoiceNumber,
+            po.SupplierId
+        })
+        .ToListAsync();
+
+    var proformaCodes = purchaseOrders
+        .Where(po => !string.IsNullOrEmpty(po.ProFormaInvoiceNumber))
+        .Select(po => po.ProFormaInvoiceNumber)
+        .Distinct()
+        .ToList();
+
+    var shipmentInvoices = await context.ShipmentInvoices
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(si => si.DeletedAt == null && proformaCodes.Contains(si.Code))
+        .Select(si => new
+        {
+            si.Code,
+            si.SupplierId,
+            si.CreatedAt,
+            si.CurrencyId
+        })
+        .ToListAsync();
+
+    var shipmentLookup = shipmentInvoices
+        .ToDictionary(si => si.Code);
+
+    
+    purchaseOrders = purchaseOrders
+        .Where(po => po.ProFormaInvoiceNumber != null &&
+                     shipmentLookup.ContainsKey(po.ProFormaInvoiceNumber))
+        .ToList();
+
+    var purchaseOrderIds = purchaseOrders.Select(po => po.Id).ToList();
+    var supplierIds = purchaseOrders.Select(po => po.SupplierId).Distinct().ToList();
+
+    var suppliers = await context.Suppliers
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(s => supplierIds.Contains(s.Id))
+        .Select(s => new
+        {
+            s.Id,
+            s.Name,
+            s.Type,
+            s.CurrencyId
+        })
+        .ToListAsync();
+
+    var supplierLookup = suppliers.ToDictionary(s => s.Id);
+
+    var purchaseOrderItems = await context.PurchaseOrderItems
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(poi => poi.DeletedAt == null &&
+                      purchaseOrderIds.Contains(poi.PurchaseOrderId))
+        .Select(poi => new
+        {
+            poi.PurchaseOrderId,
+            poi.MaterialId,
+            poi.Quantity,
+            poi.Price,
+            poi.UoMId,
+            poi.CurrencyId,
+            poi.QuantityInvoiced,
+        })
+        .ToListAsync();
+
+    var materialIds = purchaseOrderItems.Select(poi => poi.MaterialId).Distinct().ToList();
+    var uomIds = purchaseOrderItems.Select(poi => poi.UoMId).Distinct().ToList();
+
+    var currencyIds = suppliers
+        .Where(s => s.CurrencyId.HasValue)
+        .Select(s => s.CurrencyId.Value)
+        .Distinct()
+        .ToList();
+
+
+    var materials = await context.Materials
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(m => materialIds.Contains(m.Id))
+        .Select(m => new { m.Id, m.Name })
+        .ToListAsync();
+
+    var materialLookup = materials.ToDictionary(m => m.Id, m => m.Name);
+
+    var uoms = await context.UnitOfMeasures
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(u => uomIds.Contains(u.Id))
+        .Select(u => new { u.Id, u.Symbol })
+        .ToListAsync();
+
+    var uomLookup = uoms.ToDictionary(u => u.Id, u => u.Symbol);
+
+    var currencies = await context.Currencies
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(c => currencyIds.Contains(c.Id))
+        .Select(c => new { c.Id, c.Symbol })
+        .ToListAsync();
+
+    var currencyLookup = currencies.ToDictionary(c => c.Id, c => c.Symbol);
+
+    var result = purchaseOrders
+        .SelectMany(po =>
+        {
+            var invoice = shipmentLookup[po.ProFormaInvoiceNumber];
+
+            var items = purchaseOrderItems
+                .Where(poi => poi.PurchaseOrderId == po.Id)
+                .ToList();
+
+            return items.Select(poi => new { po, poi, invoice });
+        })
+        .Select((x, index) =>
+        {
+            var po = x.po;
+            var poi = x.poi;
+            var invoice = x.invoice;
+
+            supplierLookup.TryGetValue(po.SupplierId, out var supplier);
+
+           
+
+            return new PurchasedPoReportDto
+            {
+                No = index + 1,
+
+                SupplierName = supplier?.Name,
+                SupplierType = supplier?.Type.ToString(),
+
+                PoNumber = po.Code,
+                InvoiceNumber = invoice.Code,
+
+                MaterialName = materialLookup.TryGetValue(poi.MaterialId, out var mName)
+                    ? mName
+                    : null,
+
+                OrderedQuantity = poi.Quantity,
+                OrderedUom = uomLookup.TryGetValue(poi.UoMId, out var uSymbol)
+                    ? uSymbol
+                    : null,
+
+                QuantityReceived = poi.QuantityInvoiced,
+                ReceivedUom = uomLookup.TryGetValue(poi.UoMId, out var rSymbol)
+                    ? rSymbol
+                    : null,
+
+                UnitCost = poi.Price,
+                CurrencySymbol =
+                    (
+                        poi.CurrencyId
+                        ?? (supplierLookup.TryGetValue(po.SupplierId, out var suppliers)
+                            ? supplier.CurrencyId
+                            : null)
+                    ) is { } currencyIds
+                    && currencyLookup.TryGetValue(currencyIds, out var cSymbol)
+                        ? cSymbol
+                        : null,
+                
+                InvoiceDate = invoice.CreatedAt
+            };
+        })
+        .ToList();
+
+    return Result.Success(result);
+}
+
+
 }
 
 
