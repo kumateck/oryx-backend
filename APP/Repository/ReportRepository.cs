@@ -2350,14 +2350,14 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
             baseQuery = baseQuery.Where(po => po.CreatedAt <= filter.EndDate.Value);
         }
 
-        if (filter.SupplierIds != null && filter.SupplierIds.Any())
+        if (filter.SupplierIds.Any())
         {
             baseQuery = baseQuery.Where(po => filter.SupplierIds.Contains(po.SupplierId));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.PoNumber))
         {
-            baseQuery = baseQuery.Where(po => filter.PoNumber.Contains(po.Code));
+            baseQuery = baseQuery.Where(po => filter.PoNumber==po.Code);
         }
 
         var purchaseOrders = await baseQuery
