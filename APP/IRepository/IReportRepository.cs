@@ -7,6 +7,7 @@ using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
+using DOMAIN.Entities.Reports.PurchaseOrder;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
@@ -73,4 +74,6 @@ public interface IReportRepository
             InventoryClassification? classification,
             Store? store);
     Task<Result<List<ShipmentReportDto>>> GetShipmentReport(ShipmentReportFilter filter );
+    Task<Result<List<PurchaseOrderReportDto>>> GetPurchaseOrderReportAsync(PurchaseOrderFilter filter);
+    Task<Result<List<PurchasedPoReportDto>>> GetPurchasedPoReportAsync(PurchaseOrderFilter filter);
 }
