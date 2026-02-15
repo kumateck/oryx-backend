@@ -413,7 +413,8 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.ProcessQuotationAndCreatePurchaseOrder(processQuotations, supplierType, Guid.Parse(userId));
+        var result = await repository.ProcessQuotationAndCreatePurchaseOrder(processQuotations, 
+            supplierType, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

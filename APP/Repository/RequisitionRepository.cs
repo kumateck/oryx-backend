@@ -1189,7 +1189,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                             Supplier.AssociatedManufacturers.First(m =>
                                 m.MaterialId == item.Key.Material.Id && m.Default).Manufacturer),
                         Status = s.Status,
-                        Price = s.QuotedPrice
+                        Price = s.QuotedPrice,
+                        PriceUoM = s.PriceUoM
                     }).ToList()
             }).ToList();
     }
@@ -1234,7 +1235,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                         Supplier = mapper.Map<SupplierDto>(s.SupplierQuotation.Supplier),
                         SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
                         Status = s.Status,
-                        Price = s.QuotedPrice
+                        Price = s.QuotedPrice,
+                        PriceUoM = s.PriceUoM
                     }).ToList()
             }).ToList();
     }

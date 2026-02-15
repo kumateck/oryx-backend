@@ -609,6 +609,15 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result> SubmitFormAssignee(CreateFormAssigneeRequest request, Guid userId)
     {
+        if(await context.FormAssignees.AnyAsync(f => 
+               f.FormId == request.FormId && 
+               f.MaterialBatchId == request.MaterialBatchId && 
+               f.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
+               f.Stage == request.Stage &&
+               f.ProductionActivityStepId == request.ProductionActivityStepId))
+            return Error.Validation("FormAssignee.NotFound", 
+                $"FormAssignee {request.FormId} for {request.MaterialBatchId} batch already assigned");
+        
         var formAssignee = new FormAssignee
         {
             FormId = request.FormId,
@@ -629,7 +638,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
             if (formField == null)
             {
-                return Error.Validation("Response.FormField", $"FormField not found {fieldAssignee.FormFieldId}");
+                return Error.Validation("Response.FormField", 
+                    $"FormField not found {fieldAssignee.FormFieldId}");
             }
 
             formAssignee.FieldAssignees.Add(new FormFieldAssignee

@@ -138,6 +138,7 @@ public class SupplierPrice
     public SupplierQuotationItemStatus? Status { get; set; }
     public ManufacturerListDto DefaultManufacturer { get; set; }
     public decimal? Price { get; set; }
+    public string PriceUoM { get; set; }
 }
 
 public class ProcessQuotation

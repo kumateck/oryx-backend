@@ -1799,13 +1799,16 @@ public class ProductionScheduleRepository(
 
     public async Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request)
     {
-        var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
+        var transferNote = await context.FinishedGoodsTransferNotes
+            .FirstOrDefaultAsync(f => f.Id == id);
 
-        if (transferNote == null) return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
+        if (transferNote == null) 
+            return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
 
         transferNote.IsApproved = true;
         transferNote.QuantityReceived = request.QuantityReceived;
         transferNote.Notes = request.Notes;
+        transferNote.AcceptedAt = DateTime.UtcNow;
         //transferNote.Loose = request.Loose;
 
         context.FinishedGoodsTransferNotes.Update(transferNote);
@@ -1815,10 +1818,14 @@ public class ProductionScheduleRepository(
 
     public async Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request)
     {
-        var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f => f.Id == id);
-        if (transferNote == null) return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
+        var transferNote = await context.FinishedGoodsTransferNotes
+            .FirstOrDefaultAsync(f => f.Id == id);
+        if (transferNote == null) 
+            return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
 
-        if (!transferNote.IsApproved) return Error.Validation("TransferNote.NotApproved", "Cannot edit transfer note that is not approved");
+        if (!transferNote.IsApproved) 
+            return Error.Validation("TransferNote.NotApproved", 
+                "Cannot edit transfer note that is not approved");
 
         var finishedGoodTransferNote = mapper.Map<FinishedGoodsTransferNote>(request);
         context.FinishedGoodsTransferNotes.Update(finishedGoodTransferNote);
