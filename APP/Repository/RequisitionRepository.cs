@@ -1176,6 +1176,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             {
                 Material = mapper.Map<CollectionItemDto>(item.Key.Material),
                 UoM = mapper.Map<UnitOfMeasureDto>(item.Key.UoM),
+                PriceUoM = item.Select(s => s.PriceUoM).First(),
                 Quantity = item.Select(s => s.Quantity).First(),
                 SupplierQuotation = item
                     .GroupBy(s => s.SupplierQuotation.SupplierId)
