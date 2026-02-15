@@ -127,7 +127,6 @@ public class SupplierPriceComparison
 {
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
-    public string PriceUoM { get; set; }
     public decimal Quantity { get; set; }
     public List<SupplierPrice> SupplierQuotation { get; set; } = [];
 }
@@ -139,6 +138,7 @@ public class SupplierPrice
     public SupplierQuotationItemStatus? Status { get; set; }
     public ManufacturerListDto DefaultManufacturer { get; set; }
     public decimal? Price { get; set; }
+    public string PriceUoM { get; set; }
 }
 
 public class ProcessQuotation
