@@ -6,7 +6,7 @@ namespace DOMAIN.Entities.MaterialSampling;
 
 public class MaterialSamplingDto
 {
-    public GrnDto GrnDto { get; set; }
+    public GrnListDto GrnDto { get; set; }
     public CollectionItemDto MaterialBatch { get; set; }
     public string ArNumber { get; set; }
     public Guid GrnId { get; set; }
