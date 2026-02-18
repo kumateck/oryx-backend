@@ -53,6 +53,7 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
     {
         var materialSampling = await context.MaterialSamplings
             .AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(m => m.IssuedBy)
             .Include(m => m.Grn)
             .Include(m => m.MaterialBatch)
