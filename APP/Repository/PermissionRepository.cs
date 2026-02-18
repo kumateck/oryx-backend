@@ -94,7 +94,14 @@ public class PermissionRepository(ApplicationDbContext context, UserManager<User
             .ToList();
 
         var serializedData = JsonConvert.SerializeObject(response);
-        await redisCache.StringSetAsync(cacheKey, serializedData, _cacheExpiry);
+        try
+        {
+            await redisCache.StringSetAsync(cacheKey, serializedData, _cacheExpiry);
+        }
+        catch (Exception e)
+        {
+            logger.LogError("Error whiles setting permission cache, Message: {Message}", e);
+        }
         return response;
     }
 
@@ -156,7 +163,14 @@ public class PermissionRepository(ApplicationDbContext context, UserManager<User
             .ToList();
 
         var serializedData = JsonConvert.SerializeObject(response);
-        await redisCache.StringSetAsync(cacheKey, serializedData, _cacheExpiry);
+        try
+        {
+            await redisCache.StringSetAsync(cacheKey, serializedData, _cacheExpiry);
+        }
+        catch (Exception e)
+        {
+            logger.LogError("Error whiles setting permission cache, Message: {Message}", e);
+        }
         return response;
         /*return allPermissions
             .GroupBy(permission => permission.Module)
