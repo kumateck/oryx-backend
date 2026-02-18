@@ -364,6 +364,23 @@ public class ProductionScheduleRepository(
             });
 
             await transaction.CommitAsync();
+            
+            var allProductsStarted = await context.ProductionScheduleProducts
+                .Where(p => 
+                    p.ProductionScheduleId == productionScheduleProduct.ProductionScheduleId)
+                .AllAsync(p => context.ProductionActivities
+                    .Any(a => a.ProductionScheduleProductId == p.Id));
+
+            if (allProductsStarted)
+            {
+                var productionSchedule = productionScheduleProduct.ProductionSchedule;
+                if (productionSchedule != null)
+                {
+                    productionSchedule.Status = ProductionStatus.InProgress;
+                    context.ProductionSchedules.Update(productionSchedule);
+                    await context.SaveChangesAsync();
+                }
+            }
 
             return activity.Id;
         }
@@ -568,6 +585,39 @@ public class ProductionScheduleRepository(
 
         context.ProductionActivitySteps.Update(activityStep);
         await context.SaveChangesAsync();
+        
+        
+        var allProductsStarted = await context.ProductionScheduleProducts
+            .Where(p => 
+                p.ProductionScheduleId 
+                == activityStep.ProductionActivity.ProductionScheduleProduct.ProductionScheduleId)
+            .AllAsync(p => context.ProductionActivities
+                .Any(a => a.ProductionScheduleProductId == p.Id));
+
+        if (allProductsStarted)
+        {
+            
+            var allActivitiesCompleted = await context.ProductionActivitySteps
+                .Where(p => 
+                    p.ProductionActivity.ProductionScheduleProduct.ProductionScheduleId 
+                    == activityStep.ProductionActivity.ProductionScheduleProduct.ProductionScheduleId)
+                .AllAsync(p => p.CompletedAt.HasValue);
+            
+            if (allActivitiesCompleted)
+            {
+                var productionSchedule = await context.ProductionSchedules
+                    .FirstOrDefaultAsync(p
+                        => p.Id == activityStep.ProductionActivity.ProductionScheduleProduct.ProductionScheduleId);
+
+                if (productionSchedule is not null)
+                {
+                    productionSchedule.Status = ProductionStatus.Completed;
+                    context.ProductionSchedules.Update(productionSchedule);
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+        
         return Result.Success();
     }
 
