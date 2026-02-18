@@ -2363,6 +2363,11 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         {
             baseQuery = baseQuery.Where(po => filter.PoNumber==po.Code);
         }
+        if (filter.SupplierType.HasValue)
+        {
+            baseQuery = baseQuery.Where(po =>
+                po.Supplier.Type == filter.SupplierType.Value);
+        }
 
         var purchaseOrders = await baseQuery
             .Select(po => new
@@ -2503,6 +2508,12 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     {
         baseQuery = baseQuery.Where(po => po.Code==filter.PoNumber);
     }
+    if (filter.SupplierType.HasValue)
+    {
+        baseQuery = baseQuery.Where(po =>
+            po.Supplier.Type == filter.SupplierType.Value);
+    }
+
 
     var purchaseOrders = await baseQuery
         .Select(po => new
@@ -2662,14 +2673,12 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 UnitCost = poi.Price,
                 CurrencySymbol =
                     (
-                        poi.CurrencyId
-                        ?? (supplierLookup.TryGetValue(po.SupplierId, out var suppliers)
-                            ? supplier.CurrencyId
-                            : null)
-                    ) is { } currencyIds
-                    && currencyLookup.TryGetValue(currencyIds, out var cSymbol)
+                        poi.CurrencyId ?? supplier?.CurrencyId
+                    ) is { } currencyId
+                    && currencyLookup.TryGetValue(currencyId, out var cSymbol)
                         ? cSymbol
                         : null,
+
                 
                 InvoiceDate = invoice.CreatedAt
             };
