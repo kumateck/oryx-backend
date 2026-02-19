@@ -13,6 +13,7 @@ using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionOrders;
+using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
@@ -20,8 +21,11 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
+using DOMAIN.Entities.Reports.Material;
 using DOMAIN.Entities.Reports.Procurement;
+using DOMAIN.Entities.Reports.ProductionSchedule;
 using DOMAIN.Entities.Reports.PurchaseOrder;
+using DOMAIN.Entities.Reports.Requisition;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
@@ -2359,6 +2363,11 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         {
             baseQuery = baseQuery.Where(po => filter.PoNumber==po.Code);
         }
+        if (filter.SupplierType.HasValue)
+        {
+            baseQuery = baseQuery.Where(po =>
+                po.Supplier.Type == filter.SupplierType.Value);
+        }
 
         var purchaseOrders = await baseQuery
             .Select(po => new
@@ -2499,6 +2508,12 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     {
         baseQuery = baseQuery.Where(po => po.Code==filter.PoNumber);
     }
+    if (filter.SupplierType.HasValue)
+    {
+        baseQuery = baseQuery.Where(po =>
+            po.Supplier.Type == filter.SupplierType.Value);
+    }
+
 
     var purchaseOrders = await baseQuery
         .Select(po => new
@@ -2658,14 +2673,12 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
                 UnitCost = poi.Price,
                 CurrencySymbol =
                     (
-                        poi.CurrencyId
-                        ?? (supplierLookup.TryGetValue(po.SupplierId, out var suppliers)
-                            ? supplier.CurrencyId
-                            : null)
-                    ) is { } currencyIds
-                    && currencyLookup.TryGetValue(currencyIds, out var cSymbol)
+                        poi.CurrencyId ?? supplier?.CurrencyId
+                    ) is { } currencyId
+                    && currencyLookup.TryGetValue(currencyId, out var cSymbol)
                         ? cSymbol
                         : null,
+
                 
                 InvoiceDate = invoice.CreatedAt
             };
@@ -2675,6 +2688,160 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     return Result.Success(result);
 }
 
+public async Task<Result<List<RequisitionReportDto>>> GetRequisitionReport(Guid departmentId)
+{
+    var query = context.Requisitions
+        .IgnoreQueryFilters()
+        .Where(r => r.DepartmentId == departmentId && r.DeletedAt == null);
+
+    var counts = await query
+        .GroupBy(r => r.Status)
+        .Select(g => new
+        {
+            Status = g.Key,
+            Count = g.Count()
+        })
+        .ToListAsync();
+
+    var result = new RequisitionReportDto
+    {
+        NewRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.New)?.Count ?? 0,
+        PendingRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.Pending)?.Count ?? 0,
+        CompletedRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.Completed)?.Count ?? 0,
+        SourcedRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.Sourced)?.Count ?? 0,
+        RejectedRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.Rejected)?.Count ?? 0
+    };
+
+    return Result.Success(new List<RequisitionReportDto> { result });
+}
+
+public async Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReorderLevel(Guid departmentId)
+{
+    
+  var materialDepartments = await context.MaterialDepartments
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(md => md.DepartmentId == departmentId && md.DeletedAt == null)
+        .Select(md => new
+        {
+            md.MaterialId,
+            md.ReOrderLevel,
+            UomSymbol = md.UoM != null ? md.UoM.Symbol : null
+        })
+        .ToListAsync();
+
+    if (!materialDepartments.Any())
+        return Result.Success(new List<MaterialReorderReportDto>());
+
+    var materialIds = materialDepartments.Select(md => md.MaterialId).Distinct().ToList();
+
+  
+    var materials = await context.Materials
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(m => materialIds.Contains(m.Id))
+        .Select(m => new
+        {
+            m.Id,
+            m.Name,
+            m.Code
+        })
+        .ToListAsync();
+
+    var materialLookup = materials.ToDictionary(m => m.Id);
+
+   
+    var shelfQuantities = await context.ShelfMaterialBatches
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(smb => smb.DeletedAt == null && materialIds.Contains(smb.MaterialBatch.MaterialId))
+        .GroupBy(smb => smb.MaterialBatch.MaterialId)
+        .Select(g => new
+        {
+            MaterialId = g.Key,
+            TotalQuantity = g.Sum(x => (decimal?)x.Quantity) ?? 0
+        })
+        .ToListAsync();
+
+    var quantityLookup = shelfQuantities.ToDictionary(q => q.MaterialId, q => q.TotalQuantity);
+
+    
+    var result = materialDepartments
+        .Select(md =>
+        {
+            quantityLookup.TryGetValue(md.MaterialId, out var currentQty);
+            materialLookup.TryGetValue(md.MaterialId, out var material);
+
+            return new MaterialReorderReportDto
+            {
+                MaterialName = material?.Name,
+                MaterialCode = material?.Code,
+                CurrentQuantity = currentQty,
+                ReOrderLevel = md.ReOrderLevel,
+                UomSymbol = md.UomSymbol,
+            };
+        })
+        .Where(x => x.CurrentQuantity <= x.ReOrderLevel)
+        .OrderBy(x => x.MaterialName)
+        .ToList();
+
+    return Result.Success(result);
+  
+}
+
+public async Task<Result<ProductionScheduleStatusReportDto>> GetProductionScheduleReport(Guid departmentId)
+{
+    var query = context.ProductionSchedules
+        .IgnoreQueryFilters()
+        .Where(p => p.DepartmentId == departmentId && p.DeletedAt == null);
+
+    var counts = await query
+        .GroupBy(p => p.Status)
+        .Select(g => new
+        {
+            Status = g.Key,
+            Count = g.Count()
+        })
+        .ToListAsync();
+
+    var result = new ProductionScheduleStatusReportDto
+    {
+        NewScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.New)?.Count ?? 0,
+        InProgressScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.InProgress)?.Count ?? 0,
+        CompletedScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.Completed)?.Count ?? 0,
+        DelayedScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.Delayed)?.Count ?? 0,
+        CancelledScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.Cancelled)?.Count ?? 0
+    };
+
+    return Result.Success(result);
+    
+}
+public async Task<Result<StockTransferStatusReportDto>> GetStockTransferStatusReport(Guid departmentId)
+{
+    
+    var query = context.StockTransferSources
+        .IgnoreQueryFilters()
+        .Where(s => s.FromDepartmentId == departmentId && s.DeletedAt == null);
+
+    var counts = await query
+        .GroupBy(s => s.Status)
+        .Select(g => new
+        {
+            Status = g.Key,
+            Count = g.Count()
+        })
+        .ToListAsync();
+
+    var result = new StockTransferStatusReportDto
+    {
+        InProgressCount = counts.FirstOrDefault(x => x.Status == StockTransferStatus.InProgress)?.Count ?? 0,
+        ApprovedCount = counts.FirstOrDefault(x => x.Status == StockTransferStatus.Approved)?.Count ?? 0,
+        IssuedCount = counts.FirstOrDefault(x => x.Status == StockTransferStatus.Issued)?.Count ?? 0,
+        RejectedCount = counts.FirstOrDefault(x => x.Status == StockTransferStatus.Rejected)?.Count ?? 0
+    };
+
+    return Result.Success(result);
+}
 
 }
 
