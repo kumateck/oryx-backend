@@ -1,3 +1,5 @@
+using DOMAIN.Entities.Procurement.Suppliers;
+
 namespace DOMAIN.Entities.Reports.PurchaseOrder;
 
 public class PurchaseOrderReportDto
@@ -47,6 +49,7 @@ public class PurchaseOrderFilter
 {
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-    public List<Guid> SupplierIds { get; set; }
+    public List<Guid> SupplierIds { get; set; }=new();
     public string PoNumber {get; set;}
+    public SupplierType? SupplierType { get; set; }
 }
