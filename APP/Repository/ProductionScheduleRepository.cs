@@ -362,14 +362,20 @@ public class ProductionScheduleRepository(
                 ProductionActivityStepId = activity.Steps.OrderBy(s => s.Order).First().Id,
                 BatchQuantity = quantity
             });
-
-            await transaction.CommitAsync();
             
-            var allProductsStarted = await context.ProductionScheduleProducts
-                .Where(p => 
-                    p.ProductionScheduleId == productionScheduleProduct.ProductionScheduleId)
-                .AllAsync(p => context.ProductionActivities
-                    .Any(a => a.ProductionScheduleProductId == p.Id));
+            var scheduleId = productionScheduleProduct.ProductionScheduleId;
+
+            var totalProducts = await context.ProductionScheduleProducts
+                .CountAsync(p => p.ProductionScheduleId == scheduleId);
+
+            var startedProducts = await context.ProductionActivities
+                .CountAsync(a =>
+                    context.ProductionScheduleProducts
+                        .Where(p => p.ProductionScheduleId == scheduleId)
+                        .Select(p => p.Id)
+                        .Contains(a.ProductionScheduleProductId));
+
+            var allProductsStarted = totalProducts == startedProducts;
 
             if (allProductsStarted)
             {
@@ -381,6 +387,7 @@ public class ProductionScheduleRepository(
                     await context.SaveChangesAsync();
                 }
             }
+            await transaction.CommitAsync();
 
             return activity.Id;
         }
