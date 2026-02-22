@@ -362,7 +362,31 @@ public class ProductionScheduleRepository(
                 ProductionActivityStepId = activity.Steps.OrderBy(s => s.Order).First().Id,
                 BatchQuantity = quantity
             });
+            
+            var scheduleId = productionScheduleProduct.ProductionScheduleId;
 
+            var totalProducts = await context.ProductionScheduleProducts
+                .CountAsync(p => p.ProductionScheduleId == scheduleId);
+
+            var startedProducts = await context.ProductionActivities
+                .CountAsync(a =>
+                    context.ProductionScheduleProducts
+                        .Where(p => p.ProductionScheduleId == scheduleId)
+                        .Select(p => p.Id)
+                        .Contains(a.ProductionScheduleProductId));
+
+            var allProductsStarted = totalProducts == startedProducts;
+
+            if (allProductsStarted)
+            {
+                var productionSchedule = productionScheduleProduct.ProductionSchedule;
+                if (productionSchedule != null)
+                {
+                    productionSchedule.Status = ProductionStatus.InProgress;
+                    context.ProductionSchedules.Update(productionSchedule);
+                    await context.SaveChangesAsync();
+                }
+            }
             await transaction.CommitAsync();
             
             var allProductsStarted = await context.ProductionScheduleProducts
