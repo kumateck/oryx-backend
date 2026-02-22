@@ -2019,6 +2019,8 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
         var baseQuery = context.SupplierManufacturers
             .AsNoTracking()
             .IgnoreQueryFilters()
+            .Include(sm => sm.UoM)
+            .Include(sm => sm.Manufacturer)
             .Where(sm => sm.DeletedAt == null);
 
         if (!string.IsNullOrWhiteSpace(filters.MaterialName))
