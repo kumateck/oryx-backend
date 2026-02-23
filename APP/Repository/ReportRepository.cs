@@ -2689,7 +2689,6 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
 
 public async Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid departmentId)
 {
-    // -------------------- REQUISITION REPORT --------------------
     var requisitionQuery = context.Requisitions
         .IgnoreQueryFilters()
         .Where(r => r.DepartmentId == departmentId && r.DeletedAt == null);
@@ -2712,7 +2711,6 @@ public async Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid de
         RejectedRequisitionsCount = requisitionCounts.FirstOrDefault(x => x.Status == RequestStatus.Rejected)?.Count ?? 0
     };
 
-    // -------------------- MATERIAL REORDER REPORT --------------------
     var materialDepartments = await context.MaterialDepartments
         .AsNoTracking()
         .IgnoreQueryFilters()
@@ -2774,7 +2772,6 @@ public async Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid de
         .OrderBy(x => x.MaterialName)
         .ToList();
 
-    // -------------------- PRODUCTION SCHEDULE REPORT --------------------
     var productionQuery = context.ProductionSchedules
         .IgnoreQueryFilters()
         .Where(p => p.DepartmentId == departmentId && p.DeletedAt == null);
@@ -2797,7 +2794,7 @@ public async Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid de
         CancelledScheduleCount = productionCounts.FirstOrDefault(x => x.Status == ProductionStatus.Cancelled)?.Count ?? 0
     };
 
-    // -------------------- STOCK TRANSFER REPORT --------------------
+   
     var stockQuery = context.StockTransferSources
         .IgnoreQueryFilters()
         .Where(s => s.FromDepartmentId == departmentId && s.DeletedAt == null);
@@ -2819,7 +2816,6 @@ public async Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid de
         RejectedCount = stockCounts.FirstOrDefault(x => x.Status == StockTransferStatus.Rejected)?.Count ?? 0
     };
 
-    // -------------------- FINAL DASHBOARD OBJECT --------------------
     var dashboard = new ProductionDashboardDto
     {
         RequisitionReport = requisitionReport,
