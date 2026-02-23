@@ -6,11 +6,8 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
-using DOMAIN.Entities.Reports.Material;
 using DOMAIN.Entities.Reports.Procurement;
-using DOMAIN.Entities.Reports.ProductionSchedule;
 using DOMAIN.Entities.Reports.PurchaseOrder;
-using DOMAIN.Entities.Reports.Requisition;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
@@ -79,9 +76,5 @@ public interface IReportRepository
     Task<Result<List<ShipmentReportDto>>> GetShipmentReport(ShipmentReportFilter filter );
     Task<Result<List<PurchaseOrderReportDto>>> GetPurchaseOrderReportAsync(PurchaseOrderFilter filter);
     Task<Result<List<PurchasedPoReportDto>>> GetPurchasedPoReportAsync(PurchaseOrderFilter filter);
-    Task<Result<List<RequisitionReportDto>>> GetRequisitionReport(Guid departmentId);
-
-    Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReorderLevel(Guid departmentId);
-    Task<Result<ProductionScheduleStatusReportDto>> GetProductionScheduleReport(Guid departmentId);
-    Task<Result<StockTransferStatusReportDto>> GetStockTransferStatusReport(Guid departmentId);
+    Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid departmentId);
 }

@@ -21,11 +21,8 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
-using DOMAIN.Entities.Reports.Material;
 using DOMAIN.Entities.Reports.Procurement;
-using DOMAIN.Entities.Reports.ProductionSchedule;
 using DOMAIN.Entities.Reports.PurchaseOrder;
-using DOMAIN.Entities.Reports.Requisition;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
@@ -2688,13 +2685,16 @@ public class ReportRepository(ApplicationDbContext context, IMapper mapper, IMat
     return Result.Success(result);
 }
 
-public async Task<Result<List<RequisitionReportDto>>> GetRequisitionReport(Guid departmentId)
+
+
+public async Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid departmentId)
 {
-    var query = context.Requisitions
+    // -------------------- REQUISITION REPORT --------------------
+    var requisitionQuery = context.Requisitions
         .IgnoreQueryFilters()
         .Where(r => r.DepartmentId == departmentId && r.DeletedAt == null);
 
-    var counts = await query
+    var requisitionCounts = await requisitionQuery
         .GroupBy(r => r.Status)
         .Select(g => new
         {
@@ -2703,22 +2703,17 @@ public async Task<Result<List<RequisitionReportDto>>> GetRequisitionReport(Guid 
         })
         .ToListAsync();
 
-    var result = new RequisitionReportDto
+    var requisitionReport = new RequisitionReportDto
     {
-        NewRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.New)?.Count ?? 0,
-        PendingRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.Pending)?.Count ?? 0,
-        CompletedRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.Completed)?.Count ?? 0,
-        SourcedRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.Sourced)?.Count ?? 0,
-        RejectedRequisitionsCount = counts.FirstOrDefault(x => x.Status == RequestStatus.Rejected)?.Count ?? 0
+        NewRequisitionsCount = requisitionCounts.FirstOrDefault(x => x.Status == RequestStatus.New)?.Count ?? 0,
+        PendingRequisitionsCount = requisitionCounts.FirstOrDefault(x => x.Status == RequestStatus.Pending)?.Count ?? 0,
+        CompletedRequisitionsCount = requisitionCounts.FirstOrDefault(x => x.Status == RequestStatus.Completed)?.Count ?? 0,
+        SourcedRequisitionsCount = requisitionCounts.FirstOrDefault(x => x.Status == RequestStatus.Sourced)?.Count ?? 0,
+        RejectedRequisitionsCount = requisitionCounts.FirstOrDefault(x => x.Status == RequestStatus.Rejected)?.Count ?? 0
     };
 
-    return Result.Success(new List<RequisitionReportDto> { result });
-}
-
-public async Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReorderLevel(Guid departmentId)
-{
-    
-  var materialDepartments = await context.MaterialDepartments
+    // -------------------- MATERIAL REORDER REPORT --------------------
+    var materialDepartments = await context.MaterialDepartments
         .AsNoTracking()
         .IgnoreQueryFilters()
         .Where(md => md.DepartmentId == departmentId && md.DeletedAt == null)
@@ -2730,12 +2725,8 @@ public async Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReord
         })
         .ToListAsync();
 
-    if (!materialDepartments.Any())
-        return Result.Success(new List<MaterialReorderReportDto>());
-
     var materialIds = materialDepartments.Select(md => md.MaterialId).Distinct().ToList();
 
-  
     var materials = await context.Materials
         .AsNoTracking()
         .IgnoreQueryFilters()
@@ -2750,7 +2741,6 @@ public async Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReord
 
     var materialLookup = materials.ToDictionary(m => m.Id);
 
-   
     var shelfQuantities = await context.ShelfMaterialBatches
         .AsNoTracking()
         .IgnoreQueryFilters()
@@ -2765,8 +2755,7 @@ public async Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReord
 
     var quantityLookup = shelfQuantities.ToDictionary(q => q.MaterialId, q => q.TotalQuantity);
 
-    
-    var result = materialDepartments
+    var materialReport = materialDepartments
         .Select(md =>
         {
             quantityLookup.TryGetValue(md.MaterialId, out var currentQty);
@@ -2785,17 +2774,12 @@ public async Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReord
         .OrderBy(x => x.MaterialName)
         .ToList();
 
-    return Result.Success(result);
-  
-}
-
-public async Task<Result<ProductionScheduleStatusReportDto>> GetProductionScheduleReport(Guid departmentId)
-{
-    var query = context.ProductionSchedules
+    // -------------------- PRODUCTION SCHEDULE REPORT --------------------
+    var productionQuery = context.ProductionSchedules
         .IgnoreQueryFilters()
         .Where(p => p.DepartmentId == departmentId && p.DeletedAt == null);
 
-    var counts = await query
+    var productionCounts = await productionQuery
         .GroupBy(p => p.Status)
         .Select(g => new
         {
@@ -2804,26 +2788,21 @@ public async Task<Result<ProductionScheduleStatusReportDto>> GetProductionSchedu
         })
         .ToListAsync();
 
-    var result = new ProductionScheduleStatusReportDto
+    var productionReport = new ProductionScheduleStatusReportDto
     {
-        NewScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.New)?.Count ?? 0,
-        InProgressScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.InProgress)?.Count ?? 0,
-        CompletedScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.Completed)?.Count ?? 0,
-        DelayedScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.Delayed)?.Count ?? 0,
-        CancelledScheduleCount = counts.FirstOrDefault(x => x.Status == ProductionStatus.Cancelled)?.Count ?? 0
+        NewScheduleCount = productionCounts.FirstOrDefault(x => x.Status == ProductionStatus.New)?.Count ?? 0,
+        InProgressScheduleCount = productionCounts.FirstOrDefault(x => x.Status == ProductionStatus.InProgress)?.Count ?? 0,
+        CompletedScheduleCount = productionCounts.FirstOrDefault(x => x.Status == ProductionStatus.Completed)?.Count ?? 0,
+        DelayedScheduleCount = productionCounts.FirstOrDefault(x => x.Status == ProductionStatus.Delayed)?.Count ?? 0,
+        CancelledScheduleCount = productionCounts.FirstOrDefault(x => x.Status == ProductionStatus.Cancelled)?.Count ?? 0
     };
 
-    return Result.Success(result);
-    
-}
-public async Task<Result<StockTransferStatusReportDto>> GetStockTransferStatusReport(Guid departmentId)
-{
-    
-    var query = context.StockTransferSources
+    // -------------------- STOCK TRANSFER REPORT --------------------
+    var stockQuery = context.StockTransferSources
         .IgnoreQueryFilters()
         .Where(s => s.FromDepartmentId == departmentId && s.DeletedAt == null);
 
-    var counts = await query
+    var stockCounts = await stockQuery
         .GroupBy(s => s.Status)
         .Select(g => new
         {
@@ -2832,15 +2811,24 @@ public async Task<Result<StockTransferStatusReportDto>> GetStockTransferStatusRe
         })
         .ToListAsync();
 
-    var result = new StockTransferStatusReportDto
+    var stockReport = new StockTransferStatusReportDto
     {
-        InProgressCount = counts.FirstOrDefault(x => x.Status == StockTransferStatus.InProgress)?.Count ?? 0,
-        ApprovedCount = counts.FirstOrDefault(x => x.Status == StockTransferStatus.Approved)?.Count ?? 0,
-        IssuedCount = counts.FirstOrDefault(x => x.Status == StockTransferStatus.Issued)?.Count ?? 0,
-        RejectedCount = counts.FirstOrDefault(x => x.Status == StockTransferStatus.Rejected)?.Count ?? 0
+        InProgressCount = stockCounts.FirstOrDefault(x => x.Status == StockTransferStatus.InProgress)?.Count ?? 0,
+        ApprovedCount = stockCounts.FirstOrDefault(x => x.Status == StockTransferStatus.Approved)?.Count ?? 0,
+        IssuedCount = stockCounts.FirstOrDefault(x => x.Status == StockTransferStatus.Issued)?.Count ?? 0,
+        RejectedCount = stockCounts.FirstOrDefault(x => x.Status == StockTransferStatus.Rejected)?.Count ?? 0
     };
 
-    return Result.Success(result);
+    // -------------------- FINAL DASHBOARD OBJECT --------------------
+    var dashboard = new ProductionDashboardDto
+    {
+        RequisitionReport = requisitionReport,
+        MaterialsBelowReorderLevel = materialReport,
+        ProductionScheduleReport = productionReport,
+        StockTransferReport = stockReport
+    };
+
+    return Result.Success(dashboard);
 }
 
 }

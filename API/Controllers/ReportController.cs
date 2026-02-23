@@ -13,10 +13,7 @@ using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Reports.Procurement;
 using APP.Utils;
-using DOMAIN.Entities.Reports.Material;
-using DOMAIN.Entities.Reports.ProductionSchedule;
 using DOMAIN.Entities.Reports.PurchaseOrder;
-using DOMAIN.Entities.Reports.Requisition;
 using DOMAIN.Entities.Reports.Shipments;
 
 namespace API.Controllers;
@@ -403,78 +400,20 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
             : result.ToProblemDetails();
     }
     /// <summary>
-    /// Gets the requisition report for a specific department.
+    /// Gets the production dashboard report for a specific department.
     /// </summary>
-    [HttpGet("requisition")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<RequisitionReportDto>))]
-   
-    public async Task<IResult> GetRequisitionReport()
+    [HttpGet("production-dashboard")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionDashboardDto))]
+    public async Task<IResult> GetProductionDashboard()
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId))
             return TypedResults.Unauthorized();
 
-        var result = await repository.GetRequisitionReport(Guid.Parse(departmentId));
+        var result = await repository.GetProductionDashboard(Guid.Parse(departmentId));
 
         return result.IsSuccess
             ? TypedResults.Ok(result.Value)
-            : result.ToProblemDetails();
-    }
-    
-    /// <summary>
-    /// Gets materials below the reorder level for a specific department.
-    /// </summary>
-    [HttpGet("materials-below-reorder")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialReorderReportDto))]
-    public async Task<IResult> GetMaterialsBelowReorderLevel()
-    {
-        var departmentId = (string)HttpContext.Items["Department"];
-        if (string.IsNullOrEmpty(departmentId))
-            return TypedResults.Unauthorized();
-
-        var result = await repository
-            .GetMaterialsBelowReorderLevel(Guid.Parse(departmentId));
-
-        return result.IsSuccess
-            ? TypedResults.Ok(result.Value)
-            : result.ToProblemDetails();
-    }
-
-    /// <summary>
-    /// Gets the production schedule status report for a specific department.
-    /// </summary>
-    [HttpGet("production-schedule-status")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionScheduleStatusReportDto))]
-   
-    public async Task<IResult> GetProductionScheduleStatusReport()
-    {
-        var departmentId = (string)HttpContext.Items["Department"];
-        if (string.IsNullOrEmpty(departmentId)) 
-            return TypedResults.Unauthorized();
-
-        var result = await repository.GetProductionScheduleReport(Guid.Parse(departmentId));
-
-        return result.IsSuccess 
-            ? TypedResults.Ok(result.Value) 
-            : result.ToProblemDetails();
-    }
-
-    /// <summary>
-    /// Gets the stock transfer status report for a specific department.
-    /// </summary>
-    [HttpGet("stock-transfer-status")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StockTransferStatusReportDto))]
-   
-    public async Task<IResult> GetStockTransferStatusReport()
-    {
-        var departmentId = (string)HttpContext.Items["Department"];
-        if (string.IsNullOrEmpty(departmentId)) 
-            return TypedResults.Unauthorized();
-
-        var result = await repository.GetStockTransferStatusReport(Guid.Parse(departmentId));
-
-        return result.IsSuccess 
-            ? TypedResults.Ok(result.Value) 
             : result.ToProblemDetails();
     }
 }
