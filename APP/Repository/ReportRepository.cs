@@ -6,6 +6,7 @@ using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -24,6 +25,7 @@ using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
 using DOMAIN.Entities.Reports.PurchaseOrder;
 using DOMAIN.Entities.Reports.Shipments;
+using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
@@ -2829,6 +2831,384 @@ public async Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid de
     return Result.Success(dashboard);
 }
 
+public async Task<Result<ProcurementDashboardDto>> GetProcurementDashboard(DateFilter filter)
+{
+    DateTime now = DateTime.UtcNow;
+    DateTime? startDate = filter switch
+    {
+        DateFilter.Today => now.Date,
+        DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
+        DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
+        DateFilter.AllTime => null,
+        _ => null
+    };
+
+    // Purchase Orders
+    var purchaseOrderCounts = await context.PurchaseOrders
+        .IgnoreQueryFilters()
+        .Where(po => po.DeletedAt == null &&
+                     (startDate == null || po.CreatedAt >= startDate))
+        .GroupBy(po => po.Status)
+        .Select(g => new { g.Key, Count = g.Count() })
+        .ToListAsync();
+
+    var purchaseOrderLookup = purchaseOrderCounts.ToDictionary(x => x.Key, x => x.Count);
+
+    var purchaseOrderReport = new PurchaseOrderStatusReportDto
+    {
+        NewCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.New),
+        PendingCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.Pending),
+        DeliveredCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.Delivered),
+        AttachedCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.Attached),
+        PendingCheckCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.PendingCheck),
+        CheckedCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.Checked),
+        ApprovedCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.Approved),
+        CompletedCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.Completed),
+        PartiallyLinkedCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.PartiallyLinked),
+        LinkedCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.Linked),
+        RevisedCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.Revised),
+        CancelledCount = purchaseOrderLookup.GetValueOrDefault(PurchaseOrderStatus.Cancelled)
+    };
+
+    // Requisitions
+    var requisitionCounts = await context.Requisitions
+        .IgnoreQueryFilters()
+        .Where(r => r.DeletedAt == null &&
+                    (startDate == null || r.CreatedAt >= startDate))
+        .GroupBy(r => r.Status)
+        .Select(g => new { g.Key, Count = g.Count() })
+        .ToListAsync();
+
+    var requisitionLookup = requisitionCounts.ToDictionary(x => x.Key, x => x.Count);
+
+    var requisitionReport = new RequisitionReportDto
+    {
+        NewRequisitionsCount = requisitionLookup.GetValueOrDefault(RequestStatus.New),
+        PendingRequisitionsCount = requisitionLookup.GetValueOrDefault(RequestStatus.Pending),
+        CompletedRequisitionsCount = requisitionLookup.GetValueOrDefault(RequestStatus.Completed),
+        SourcedRequisitionsCount = requisitionLookup.GetValueOrDefault(RequestStatus.Sourced),
+        RejectedRequisitionsCount = requisitionLookup.GetValueOrDefault(RequestStatus.Rejected)
+    };
+
+    // Material Distribution
+    var distributionCounts = await context.DistributeMaterials
+        .IgnoreQueryFilters()
+        .Where(dm => dm.DeletedAt == null &&
+                     (startDate == null || dm.CreatedAt >= startDate))
+        .GroupBy(dm => dm.Status)
+        .Select(g => new { g.Key, Count = g.Count() })
+        .ToListAsync();
+
+    var distributionLookup = distributionCounts.ToDictionary(x => x.Key, x => x.Count);
+
+    var distributionReport = new MaterialDistributionStatusCountDto
+    {
+        PendingCount = distributionLookup.GetValueOrDefault(DistributeMaterialStatus.Pending),
+        DistributedCount = distributionLookup.GetValueOrDefault(DistributeMaterialStatus.Distributed)
+    };
+
+    // Supplier Quotation Items
+    var quotationCounts = await context.SupplierQuotationItems
+        .IgnoreQueryFilters()
+        .Where(sqi => sqi.DeletedAt == null &&
+                      (startDate == null || sqi.CreatedAt >= startDate))
+        .GroupBy(sqi => new { SupplierType = sqi.SupplierQuotation.Supplier.Type, sqi.Status })
+        .Select(g => new { g.Key.SupplierType, g.Key.Status, Count = g.Count() })
+        .ToListAsync();
+
+    var quotationLookup = quotationCounts.ToDictionary(
+        x => ((SupplierType)x.SupplierType, x.Status),
+        x => x.Count
+    );
+
+    var supplierQuotationReport = new SupplierQuotationItemStatusReportDto
+    {
+        Local = new SupplierQuotationStatusCountDto
+        {
+            NotProcessedCount = quotationLookup.GetValueOrDefault((SupplierType.Local, SupplierQuotationItemStatus.NotProcessed)),
+            ProcessedCount = quotationLookup.GetValueOrDefault((SupplierType.Local, SupplierQuotationItemStatus.Processed)),
+            NotUsedCount = quotationLookup.GetValueOrDefault((SupplierType.Local, SupplierQuotationItemStatus.NotUsed))
+        },
+        Foreign = new SupplierQuotationStatusCountDto
+        {
+            NotProcessedCount = quotationLookup.GetValueOrDefault((SupplierType.Foreign, SupplierQuotationItemStatus.NotProcessed)),
+            ProcessedCount = quotationLookup.GetValueOrDefault((SupplierType.Foreign, SupplierQuotationItemStatus.Processed)),
+            NotUsedCount = quotationLookup.GetValueOrDefault((SupplierType.Foreign, SupplierQuotationItemStatus.NotUsed))
+        }
+    };
+
+    return Result.Success(new ProcurementDashboardDto
+    {
+        RequisitionReport = requisitionReport,
+        PurchaseOrderStatus = purchaseOrderReport,
+        SalesQuotation = supplierQuotationReport,
+        MaterialDistributionStatus = distributionReport
+    });
+}
+
+public async Task<Result<WarehouseDashboardReportDto>> GetWarehouseDashboard(Guid departmentId, DateFilter filter)
+{
+    DateTime now = DateTime.UtcNow;
+    DateTime? startDate = filter switch
+    {
+        DateFilter.Today => now.Date,
+        DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
+        DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
+        DateFilter.AllTime => null,
+        _ => null
+    };
+
+    var baseQuery = context.StockTransferSources
+        .IgnoreQueryFilters()
+        .Where(st => st.DeletedAt == null &&
+                     (startDate == null || st.CreatedAt >= startDate));
+
+    var incomingCounts = await baseQuery
+        .Where(st => st.FromDepartmentId == departmentId)
+        .GroupBy(st => st.Status)
+        .Select(g => new { g.Key, Count = g.Count() })
+        .ToListAsync();
+
+    var outgoingCounts = await baseQuery
+        .Where(st => st.ToDepartmentId == departmentId)
+        .GroupBy(st => st.Status)
+        .Select(g => new { g.Key, Count = g.Count() })
+        .ToListAsync();
+
+    var requisitionCounts = await context.Requisitions
+        .IgnoreQueryFilters()
+        .Where(r => r.DeletedAt == null &&
+                    r.DepartmentId == departmentId &&
+                    (startDate == null || r.CreatedAt >= startDate))
+        .GroupBy(r => r.Status)
+        .Select(g => new { g.Key, Count = g.Count() })
+        .ToListAsync();
+
+    var incomingLookup = incomingCounts.ToDictionary(x => x.Key, x => x.Count);
+    var outgoingLookup = outgoingCounts.ToDictionary(x => x.Key, x => x.Count);
+    var requisitionLookup = requisitionCounts.ToDictionary(x => (RequestStatus)x.Key, x => x.Count);
+
+    return Result.Success(new WarehouseDashboardReportDto
+    {
+        StockTransfers = new StockTransferDashboardDto
+        {
+            Incoming = new StockTransferStatusCountDto
+            {
+                InProgressCount = incomingLookup.GetValueOrDefault(StockTransferStatus.InProgress),
+                ApprovedCount = incomingLookup.GetValueOrDefault(StockTransferStatus.Approved),
+                IssuedCount = incomingLookup.GetValueOrDefault(StockTransferStatus.Issued),
+                RejectedCount = incomingLookup.GetValueOrDefault(StockTransferStatus.Rejected)
+            },
+            Outgoing = new StockTransferStatusCountDto
+            {
+                InProgressCount = outgoingLookup.GetValueOrDefault(StockTransferStatus.InProgress),
+                ApprovedCount = outgoingLookup.GetValueOrDefault(StockTransferStatus.Approved),
+                IssuedCount = outgoingLookup.GetValueOrDefault(StockTransferStatus.Issued),
+                RejectedCount = outgoingLookup.GetValueOrDefault(StockTransferStatus.Rejected)
+            }
+        },
+        StockRequisitions = new StockRequisitionStatusCountDto
+        {
+            NewCount = requisitionLookup.GetValueOrDefault(RequestStatus.New),
+            PendingCount = requisitionLookup.GetValueOrDefault(RequestStatus.Pending),
+            SourcedCount = requisitionLookup.GetValueOrDefault(RequestStatus.Sourced),
+            CompletedCount = requisitionLookup.GetValueOrDefault(RequestStatus.Completed),
+            RejectedCount = requisitionLookup.GetValueOrDefault(RequestStatus.Rejected)
+        }
+    });
+}
+
+
+public async Task<Result<List<ExpiredMaterialReportDto>>> GetExpiredMaterials(Guid departmentId)
+{
+    var now = DateTime.UtcNow;
+
+    var expiredMaterials = await context.ShelfMaterialBatches
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(smb =>
+            smb.DeletedAt == null &&
+            smb.Quantity > 0 &&
+            smb.MaterialBatch.DeletedAt == null &&
+            smb.MaterialBatch.ExpiryDate <= now &&
+            smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId
+        )
+        .Select(smb => new ExpiredMaterialReportDto
+        {
+            MaterialName = smb.MaterialBatch.Material.Name,
+            MaterialCode = smb.MaterialBatch.Material.Code,
+            BatchNumber = smb.MaterialBatch.BatchNumber,
+            QuantityOnShelf = smb.Quantity,
+            UomSymbol = smb.MaterialBatch.UoM.Symbol,
+            ExpiryDate = smb.MaterialBatch.ExpiryDate,
+            DateReceived = smb.MaterialBatch.DateReceived,
+            ShelfName = smb.WarehouseLocationShelf.Name
+        })
+        .OrderBy(x => x.ExpiryDate)
+        .ToListAsync();
+
+    return Result.Success(expiredMaterials);
+}
+
+
+public async Task<Result<List<ReservedMaterialReportDto>>> GetReservedMaterials(Guid departmentId)
+{
+    var reservedMaterials = await context.MaterialBatchReservedQuantities
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(r => r.DeletedAt == null && r.Warehouse.DepartmentId == departmentId)
+        .Select(r => new ReservedMaterialReportDto
+        {
+            MaterialName = r.MaterialBatch.Material.Name,
+            MaterialCode = r.MaterialBatch.Material.Code,
+            ProductName = r.ProductionScheduleProduct.Product.Name,
+            ProductCode = r.ProductionScheduleProduct.Product.Code,
+            ReservedQuantity = r.Quantity,
+            UomSymbol = r.UoM.Symbol
+        })
+        .ToListAsync();
+
+    return Result.Success(reservedMaterials);
+}
+
+
+public async Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReorderLevel(Guid departmentId)
+{
+    var materialDepartments = await context.MaterialDepartments
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(md => md.DepartmentId == departmentId && md.DeletedAt == null)
+        .Select(md => new
+        {
+            md.MaterialId,
+            md.ReOrderLevel,
+            UomSymbol = md.UoM.Symbol
+        })
+        .ToListAsync();
+
+    var materialIds = materialDepartments.Select(md => md.MaterialId).Distinct().ToList();
+
+    var materials = await context.Materials
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(m => materialIds.Contains(m.Id))
+        .Select(m => new { m.Id, m.Name, m.Code })
+        .ToListAsync();
+
+    var materialLookup = materials.ToDictionary(m => m.Id);
+
+    var shelfQuantities = await context.ShelfMaterialBatches
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(smb => smb.DeletedAt == null && materialIds.Contains(smb.MaterialBatch.MaterialId))
+        .GroupBy(smb => smb.MaterialBatch.MaterialId)
+        .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(x => (decimal?)x.Quantity) ?? 0 })
+        .ToListAsync();
+
+    var quantityLookup = shelfQuantities.ToDictionary(q => q.MaterialId, q => q.TotalQuantity);
+
+    var report = materialDepartments
+        .Select(md =>
+        {
+            quantityLookup.TryGetValue(md.MaterialId, out var currentQty);
+            materialLookup.TryGetValue(md.MaterialId, out var material);
+
+            return new MaterialReorderReportDto
+            {
+                MaterialName = material?.Name,
+                MaterialCode = material?.Code,
+                CurrentQuantity = currentQty,
+                ReOrderLevel = md.ReOrderLevel,
+                UomSymbol = md.UomSymbol
+            };
+        })
+        .Where(x => x.CurrentQuantity <= x.ReOrderLevel)
+        .OrderBy(x => x.MaterialName)
+        .ToList();
+
+    return Result.Success(report);
+}
+
+public async Task<Result<MaterialsChecklistReportDto>> GetMaterialsChecklist(Guid departmentId)
+{
+
+    var query = context.DistributedRequisitionMaterials
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(drm => drm.DeletedAt == null &&
+                      drm.WarehouseArrivalLocation.Warehouse.DepartmentId == departmentId );
+
+    var allMaterials = await query
+        .Select(drm => new
+        {
+            drm.Material.Name,
+            drm.Material.Code,
+            drm.Quantity,
+            UomSymbol = drm.UoM.Symbol,
+            drm.CheckedAt
+        })
+        .ToListAsync();
+
+    var report = new MaterialsChecklistReportDto
+    {
+        IncomingMaterials = allMaterials
+            .Where(x => x.CheckedAt == null)
+            .Select(x => new MaterialChecklistItemDto
+            {
+                MaterialName = x.Name,
+                MaterialCode = x.Code,
+                Quantity = x.Quantity,
+                UomSymbol = x.UomSymbol
+            })
+            .ToList(),
+
+        CheckedMaterials = allMaterials
+            .Where(x => x.CheckedAt != null)
+            .Select(x => new MaterialChecklistItemDto
+            {
+                MaterialName = x.Name,
+                MaterialCode = x.Code,
+                Quantity = x.Quantity,
+                UomSymbol = x.UomSymbol
+            })
+            .ToList()
+    };
+
+    return Result.Success(report);
+}
+
+
+public async Task<Result<ShipmentStatusReportDto>> GetShipmentStatusReport(DateFilter filter)
+{
+    DateTime now = DateTime.UtcNow;
+    DateTime? startDate = filter switch
+    {
+        DateFilter.Today => now.Date,
+        DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
+        DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
+        DateFilter.AllTime => null,
+        _ => null
+    };
+
+    var shipmentCounts = await context.ShipmentDocuments
+        .IgnoreQueryFilters()
+        .Where(sd => sd.DeletedAt == null &&
+                     (startDate == null || sd.CreatedAt >= startDate))
+        .GroupBy(sd => sd.Status)
+        .Select(g => new { Status = g.Key, Count = g.Count() })
+        .ToListAsync();
+
+    var lookup = shipmentCounts.ToDictionary(x => (ShipmentStatus)x.Status, x => x.Count);
+
+    return Result.Success(new ShipmentStatusReportDto
+    {
+        NewCount = lookup.GetValueOrDefault(ShipmentStatus.New, 0),
+        AtPortCount = lookup.GetValueOrDefault(ShipmentStatus.AtPort, 0),
+        ClearedCount = lookup.GetValueOrDefault(ShipmentStatus.Cleared, 0),
+        InTransitCount = lookup.GetValueOrDefault(ShipmentStatus.InTransit, 0),
+        ArrivedCount = lookup.GetValueOrDefault(ShipmentStatus.Arrived, 0)
+    });
+}
 }
 
 

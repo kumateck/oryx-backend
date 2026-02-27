@@ -9,6 +9,7 @@ using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
 using DOMAIN.Entities.Reports.PurchaseOrder;
 using DOMAIN.Entities.Reports.Shipments;
+using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
@@ -77,4 +78,15 @@ public interface IReportRepository
     Task<Result<List<PurchaseOrderReportDto>>> GetPurchaseOrderReportAsync(PurchaseOrderFilter filter);
     Task<Result<List<PurchasedPoReportDto>>> GetPurchasedPoReportAsync(PurchaseOrderFilter filter);
     Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid departmentId);
+    Task<Result<ProcurementDashboardDto>> GetProcurementDashboard(DateFilter filter);
+    Task<Result<WarehouseDashboardReportDto>> GetWarehouseDashboard(Guid departmentId,DateFilter filter);
+    Task<Result<List<ExpiredMaterialReportDto>>> GetExpiredMaterials(Guid departmentId);
+
+    Task<Result<List<ReservedMaterialReportDto>>> GetReservedMaterials(Guid departmentId);
+
+    Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReorderLevel(Guid departmentId);
+
+    Task<Result<MaterialsChecklistReportDto>> GetMaterialsChecklist(Guid departmentId);
+
+    Task<Result<ShipmentStatusReportDto>> GetShipmentStatusReport(DateFilter filter);
 }
