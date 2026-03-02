@@ -7,6 +7,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
+using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -21,9 +22,11 @@ using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
+using DOMAIN.Entities.Reports.GeneralInventory;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
 using DOMAIN.Entities.Reports.PurchaseOrder;
+using DOMAIN.Entities.Reports.Services;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Requisitions;
@@ -3208,6 +3211,134 @@ public async Task<Result<ShipmentStatusReportDto>> GetShipmentStatusReport(DateF
         InTransitCount = lookup.GetValueOrDefault(ShipmentStatus.InTransit, 0),
         ArrivedCount = lookup.GetValueOrDefault(ShipmentStatus.Arrived, 0)
     });
+}
+
+public async Task<Result<GeneralInventoryDashboardDto>> GetGeneralInventoryDashboard(DateFilter filter)
+{   DateTime now = DateTime.UtcNow;
+    DateTime? startDate = filter switch
+    {
+        DateFilter.Today => now.Date,
+        DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
+        DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
+        DateFilter.AllTime => null,
+        _ => null
+    };
+    var itemsCount =await context.Items
+        .IgnoreQueryFilters()
+        .Where(i => i.DeletedAt == null && (startDate == null || i.CreatedAt >= startDate))
+        .GroupBy(i => i.Store)
+        .Select(g => new { Store = g.Key, Count = g.Count() })
+        .ToListAsync();
+    var itemsLookup=itemsCount.ToDictionary(x=>(Store)x.Store, x=>x.Count);
+    var itemsDashboard = new ItemCountDto
+    {
+     EquipmentStoreCount = itemsLookup.GetValueOrDefault(Store.EquipmentStore, 0),
+     GeneralSoreCount =  itemsLookup.GetValueOrDefault(Store.GeneralStore, 0),
+     ItStoreCount =  itemsLookup.GetValueOrDefault(Store.ItStore, 0),
+     ReagentStoreCount =  itemsLookup.GetValueOrDefault(Store.ReagentStore, 0),
+    };
+
+    var itemRequistionCount = await context.ItemStockRequisitions
+        .IgnoreQueryFilters()
+        .Where(i => i.DeletedAt == null && (startDate == null || i.CreatedAt >= startDate))
+        .GroupBy(i => i.Status)
+        .Select(g => new { Status = g.Key, Count = g.Count() })
+        .ToListAsync();
+    
+    var requisitionLookup= itemRequistionCount.ToDictionary(x=>(IssueItemStockRequisitionStatus)x.Status, x => x.Count);
+    var itemStockRequisition = new ItemStockRequisitionCountDto
+    {
+    PartialCount =  requisitionLookup.GetValueOrDefault(IssueItemStockRequisitionStatus.Partial, 0),
+    PendingCount =   requisitionLookup.GetValueOrDefault(IssueItemStockRequisitionStatus.Pending, 0),
+    CompletedCount =   requisitionLookup.GetValueOrDefault(IssueItemStockRequisitionStatus.Completed, 0),
+    };
+    
+    var totalVendors= await context.Vendors
+        .IgnoreQueryFilters()
+        .Where(v=>v.DeletedAt == null)
+        .CountAsync();
+
+    var dashboard = new GeneralInventoryDashboardDto
+    {
+        ItemCounts = itemsDashboard,
+        ItemStockRequisitions = itemStockRequisition,
+        Totalvendors =  totalVendors,
+        
+        
+    };
+    return Result.Success(dashboard);
+}
+
+public async Task<Result<List<ItemBelowReorderDto>>> GetItemBelowReorder()
+{
+    var items = await context.Items
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(i => i.DeletedAt == null &&
+                    i.IsActive &&
+                    i.AvailableQuantity <= i.ReorderLevel)
+        .Select(i => new ItemBelowReorderDto
+        {
+            ItemName = i.Name,
+            Code = i.Code,
+            CurrentQuantity = i.AvailableQuantity,
+            ReorderLevel = i.ReorderLevel
+        })
+        .OrderBy(i => i.ItemName)
+        .ToListAsync();
+
+    return Result.Success(items);
+}
+
+public async Task<Result<ServicesDashboardReportDto>> GetServicesDashboard(DateFilter filter)
+{
+    DateTime now = DateTime.UtcNow;
+    DateTime? startDate = filter switch
+    {
+        DateFilter.Today => now.Date,
+        DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
+        DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
+        DateFilter.AllTime => null,
+        _ => null
+    };
+    var totalService = await context.Services
+        .IgnoreQueryFilters()
+        .Where(s => s.DeletedAt == null)
+        .CountAsync();
+
+    var jobrequisition = await context.JobRequests.IgnoreQueryFilters()
+        .Where(j => j.DeletedAt == null)
+        .GroupBy(j => j.Status)
+        .Select(g => new { Status = g.Key, Count = g.Count() })
+        .ToListAsync();
+    var jobRequestLookup= jobrequisition.ToDictionary(x=>(JobRequestStatus)x.Status, x => x.Count);
+    var jobRequisitionCount = new JobRequisitionCountDto
+    {
+        Pending = jobRequestLookup.GetValueOrDefault(JobRequestStatus.Pending, 0),
+        SentToExternal = jobRequestLookup.GetValueOrDefault(JobRequestStatus.SentToExternal),
+        Completed = jobRequestLookup.GetValueOrDefault(JobRequestStatus.Completed, 0),
+        Acknowledged =  jobRequestLookup.GetValueOrDefault(JobRequestStatus.Acknowledged, 0),
+        Cancelled = jobRequestLookup.GetValueOrDefault(JobRequestStatus.Cancelled, 0),
+        Approved =  jobRequestLookup.GetValueOrDefault(JobRequestStatus.Approved, 0),
+        Assigned =  jobRequestLookup.GetValueOrDefault(JobRequestStatus.Assigned, 0),
+        QuotationReceived =  jobRequestLookup.GetValueOrDefault(JobRequestStatus.QuotationReceived, 0),
+        ContractorSelected =   jobRequestLookup.GetValueOrDefault(JobRequestStatus.ContractorSelected, 0),
+        JobStarted =   jobRequestLookup.GetValueOrDefault(JobRequestStatus.JobStarted, 0),
+
+    };
+
+    var contractorsCount = await context.ServiceProviders
+        .IgnoreQueryFilters()
+        .Where(i => i.DeletedAt == null && (startDate == null || i.CreatedAt >= startDate))
+        .CountAsync();
+
+    var dashboard = new ServicesDashboardReportDto
+    {
+    TotalServiceCount =  totalService,
+    TotalContractorsCount =  contractorsCount,
+    JobRequisitionCount =   jobRequisitionCount,
+    };
+    return Result.Success(dashboard);
 }
 }
 
