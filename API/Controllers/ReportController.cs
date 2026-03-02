@@ -13,7 +13,9 @@ using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Reports.Procurement;
 using APP.Utils;
+using DOMAIN.Entities.Reports.GeneralInventory;
 using DOMAIN.Entities.Reports.PurchaseOrder;
+using DOMAIN.Entities.Reports.Services;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Reports.Warehouse;
 
@@ -527,6 +529,47 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
         var result = await repository.GetShipmentStatusReport(filter);
         return result.IsSuccess 
             ? TypedResults.Ok(result.Value) 
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets general inventory dashboard summary
+    /// </summary>
+    [HttpGet("general-inventory-dashboard")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GeneralInventoryDashboardDto))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetGeneralInventoryDashboard([FromQuery] DateFilter filter = DateFilter.AllTime)
+    {
+        var result = await repository.GetGeneralInventoryDashboard(filter);
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+    /// <summary>
+    /// Gets items whose available quantity is at or below reorder level
+    /// </summary>
+    [HttpGet("items-below-reorder")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ItemBelowReorderDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetItemBelowReorder()
+    {
+        var result = await repository.GetItemBelowReorder();
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets services dashboard summary
+    /// </summary>
+    [HttpGet("services-dashboard")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServicesDashboardReportDto))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetServicesDashboard([FromQuery] DateFilter filter = DateFilter.AllTime)
+    {
+        var result = await repository.GetServicesDashboard(filter);
+        return result.IsSuccess
+            ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
     }
 }

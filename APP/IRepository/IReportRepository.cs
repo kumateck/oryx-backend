@@ -5,9 +5,11 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
+using DOMAIN.Entities.Reports.GeneralInventory;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
 using DOMAIN.Entities.Reports.PurchaseOrder;
+using DOMAIN.Entities.Reports.Services;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Warehouses;
@@ -89,4 +91,7 @@ public interface IReportRepository
     Task<Result<MaterialsChecklistReportDto>> GetMaterialsChecklist(Guid departmentId);
 
     Task<Result<ShipmentStatusReportDto>> GetShipmentStatusReport(DateFilter filter);
+    Task<Result<GeneralInventoryDashboardDto>> GetGeneralInventoryDashboard(DateFilter filter);
+    Task<Result<List<ItemBelowReorderDto>>> GetItemBelowReorder( );
+    Task<Result<ServicesDashboardReportDto>> GetServicesDashboard(DateFilter filter);
 }
