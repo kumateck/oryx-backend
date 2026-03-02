@@ -538,13 +538,8 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
     [HttpGet("general-inventory-dashboard")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GeneralInventoryDashboardDto))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetGeneralInventoryDashboard([FromQuery] DateFilter filter = DateFilter.AllTime)
     {
-        var departmentIdStr = (string?)HttpContext.Items["Department"];
-        if (string.IsNullOrWhiteSpace(departmentIdStr) || !Guid.TryParse(departmentIdStr, out var departmentId))
-            return TypedResults.Unauthorized();
-
         var result = await repository.GetGeneralInventoryDashboard(filter);
         return result.IsSuccess
             ? TypedResults.Ok(result.Value)
@@ -558,10 +553,6 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetItemBelowReorder()
     {
-        var departmentIdStr = (string?)HttpContext.Items["Department"];
-        if (string.IsNullOrWhiteSpace(departmentIdStr) || !Guid.TryParse(departmentIdStr, out var departmentId))
-            return TypedResults.Unauthorized();
-
         var result = await repository.GetItemBelowReorder();
         return result.IsSuccess
             ? TypedResults.Ok(result.Value)
@@ -574,13 +565,8 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
     [HttpGet("services-dashboard")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServicesDashboardReportDto))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetServicesDashboard([FromQuery] DateFilter filter = DateFilter.AllTime)
     {
-        var departmentIdStr = (string?)HttpContext.Items["Department"];
-        if (string.IsNullOrWhiteSpace(departmentIdStr) || !Guid.TryParse(departmentIdStr, out var departmentId))
-            return TypedResults.Unauthorized();
-
         var result = await repository.GetServicesDashboard(filter);
         return result.IsSuccess
             ? TypedResults.Ok(result.Value)
