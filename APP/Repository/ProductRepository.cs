@@ -225,7 +225,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .OrderByDescending(p => p.EffectiveDate)
             .FirstOrDefaultAsync(p => p.ProductId == productId && p.IsActive);
 
-        return mapper.Map<ProductBillOfMaterialDto>(bom);
+        return Result.Success(mapper.Map<ProductBillOfMaterialDto>(bom));
     }
 
     public async Task<Result> DeleteBillOfMaterials(Guid bomId, Guid userId)
