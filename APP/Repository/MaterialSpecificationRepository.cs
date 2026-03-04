@@ -102,9 +102,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Include(ms => ms.FormSections)
             .FirstOrDefaultAsync(ps => ps.Id == id);
 
-        return materialSpec is null
-            ? Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
-            : mapper.Map<MaterialSpecificationDto>(materialSpec);
+        return Result.Success(mapper.Map<MaterialSpecificationDto>(materialSpec));
     }
 
     public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(
@@ -129,7 +127,8 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
                     .ThenInclude(r => r.FormField)
             .Include(ms => ms.FormSections)
             .FirstOrDefaultAsync(ps => ps.MaterialId == materialId);
-        return mapper.Map<MaterialSpecificationDto>(materialSpec);
+
+        return Result.Success(mapper.Map<MaterialSpecificationDto>(materialSpec));
     }
 
     public async Task<Result> UpdateMaterialSpecification(
