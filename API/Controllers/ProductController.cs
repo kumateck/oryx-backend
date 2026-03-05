@@ -1,11 +1,11 @@
 using APP.Extensions;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Routes;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
@@ -25,7 +25,8 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> CreateProduct([FromBody] CreateProductRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.CreateProduct(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -47,18 +48,30 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a paginated list of products.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductListDto>>))]
-    public async Task<IResult> GetProducts([FromQuery] int page = 1,
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<ProductListDto>>)
+    )]
+    public async Task<IResult> GetProducts(
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
         [FromQuery] Guid? departmentId = null,
         [FromQuery] Division? division = null,
-        [FromQuery] string category = null)
+        [FromQuery] string category = null
+    )
     {
-        var result = await repository.GetProducts(page, pageSize, searchQuery, departmentId, division, category);
+        var result = await repository.GetProducts(
+            page,
+            pageSize,
+            searchQuery,
+            departmentId,
+            division,
+            category
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a list of product categories.
     /// </summary>
@@ -77,10 +90,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateProduct([FromBody] UpdateProductRequest request, Guid productId)
+    public async Task<IResult> UpdateProduct(
+        [FromBody] UpdateProductRequest request,
+        Guid productId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.UpdateProduct(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -93,12 +110,20 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateProductPackage([FromBody] UpdateProductPackageDescriptionRequest request, Guid productId)
+    public async Task<IResult> UpdateProductPackage(
+        [FromBody] UpdateProductPackageDescriptionRequest request,
+        Guid productId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.UpdateProductPackageDescription(request, productId, Guid.Parse(userId));
+        var result = await repository.UpdateProductPackageDescription(
+            request,
+            productId,
+            Guid.Parse(userId)
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -111,7 +136,8 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> DeleteProduct(Guid productId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteProduct(productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -135,10 +161,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [HttpPost("{productId}/routes")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateRoute([FromBody] List<CreateRouteRequest> request, Guid productId)
+    public async Task<IResult> CreateRoute(
+        [FromBody] List<CreateRouteRequest> request,
+        Guid productId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.CreateRoute(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -176,7 +206,8 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> DeleteRoute(Guid routeId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteRoute(routeId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -188,10 +219,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [HttpPost("{productId}/packages")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateProductPackage([FromBody] List<CreateProductPackageRequest> request, Guid productId)
+    public async Task<IResult> CreateProductPackage(
+        [FromBody] List<CreateProductPackageRequest> request,
+        Guid productId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.CreateProductPackage(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -203,10 +238,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [HttpPost("{productId}/packing")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateProductPacking([FromBody] List<CreateProductPacking> request, Guid productId)
+    public async Task<IResult> CreateProductPacking(
+        [FromBody] List<CreateProductPacking> request,
+        Guid productId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.CreateProductPacking(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -254,12 +293,20 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateProductPackage([FromBody] CreateProductPackageRequest request, Guid productPackageId)
+    public async Task<IResult> UpdateProductPackage(
+        [FromBody] CreateProductPackageRequest request,
+        Guid productPackageId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.UpdateProductPackage(request, productPackageId, Guid.Parse(userId));
+        var result = await repository.UpdateProductPackage(
+            request,
+            productPackageId,
+            Guid.Parse(userId)
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -272,7 +319,8 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> DeleteProductPackage(Guid productPackageId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteProductPackage(productPackageId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -284,10 +332,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [HttpPost("{productId}/finished")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateFinishedProduct([FromBody] List<CreateFinishedProductRequest> request, Guid productId)
+    public async Task<IResult> CreateFinishedProduct(
+        [FromBody] List<CreateFinishedProductRequest> request,
+        Guid productId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.CreateFinishedProduct(request, productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -305,7 +357,8 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> ArchiveBillOfMaterial(Guid productId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.ArchiveBillOfMaterial(productId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -320,7 +373,8 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> CreateEquipment([FromBody] CreateEquipmentRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.CreateEquipment(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -342,8 +396,15 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a paginated list of equipment.
     /// </summary>
     [HttpGet("equipment")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EquipmentDto>>))]
-    public async Task<IResult> GetEquipments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<EquipmentDto>>)
+    )]
+    public async Task<IResult> GetEquipments(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null
+    )
     {
         var result = await repository.GetEquipments(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -367,10 +428,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateEquipment([FromBody] CreateEquipmentRequest request, Guid equipmentId)
+    public async Task<IResult> UpdateEquipment(
+        [FromBody] CreateEquipmentRequest request,
+        Guid equipmentId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.UpdateEquipment(request, equipmentId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -385,7 +450,8 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> DeleteEquipment(Guid equipmentId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteEquipment(equipmentId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -403,12 +469,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> UploadProducts(IFormFile file)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.ImportProductsFromExcel(file);
-        return result.IsSuccess
-            ? TypedResults.NoContent()
-            : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -423,12 +488,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> UploadProductBom(IFormFile file)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.ImportProductBomFromExcel(file);
-        return result.IsSuccess
-            ? TypedResults.NoContent()
-            : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -443,12 +507,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> UploadProductPackages(IFormFile file)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.ImportProductPackagesFromExcel(file);
-        return result.IsSuccess
-            ? TypedResults.NoContent()
-            : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -463,14 +526,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     public async Task<IResult> UploadProductStock(IFormFile file)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.ImportProductStockFromExcel(file);
 
-        return result.IsSuccess
-            ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Imports equipment from an Excel file.
     /// </summary>
@@ -484,7 +547,6 @@ public class ProductController(IProductRepository repository) : ControllerBase
     {
         var result = await repository.ImportEquipmentFromExcel(file);
 
-        return result.IsSuccess
-            ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

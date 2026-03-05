@@ -13,6 +13,9 @@ public class Vendor : BaseEntity
     public string Email { get; set; }
     public Guid CountryId { get; set; }
     public Country Country { get; set; }
+
+    public string? ContactPerson { get; set; }
+    
     public Guid CurrencyId { get; set; }
     public Currency Currency { get; set; }
     public List<VendorItem> Items { get; set; } = [];

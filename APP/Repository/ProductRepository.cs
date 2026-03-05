@@ -34,11 +34,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var product = mapper.Map<Product>(request);
         product.CreatedById = userId;
-        product.Prices.Add(new ProductPrices
-        {
-            Price = request.Price,
-            Date = DateTime.UtcNow
-        });
+        product.Prices.Add(new ProductPrices { Price = request.Price, Date = DateTime.UtcNow });
         await context.Products.AddAsync(product);
         await context.SaveChangesAsync();
 
@@ -47,35 +43,47 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result<ProductDto>> GetProduct(Guid productId)
     {
-        var product = await context.Products
-            .AsSplitQuery()
+        var product = await context
+            .Products.AsSplitQuery()
             .Include(p => p.BaseUoM)
             .Include(p => p.Equipment)
             .Include(p => p.BillOfMaterials)
-            .ThenInclude(p => p.BillOfMaterial)
-            .ThenInclude(p => p.Items.OrderBy(i => i.Order))
+                .ThenInclude(p => p.BillOfMaterial)
+                    .ThenInclude(p => p.Items.OrderBy(i => i.Order))
             .Include(p => p.Category)
             .Include(p => p.FinishedProducts)
             .Include(p => p.Packages)
-            .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.WorkCenters)
-            .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleUsers)
-            .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.ResponsibleRoles)
-            .Include(p => p.Routes.OrderBy(r => r.Order)).ThenInclude(p => p.Resources)
-            .Include(p => p.Packings).ThenInclude(p => p.PackingLists.OrderBy(r => r.Order)).ThenInclude(p => p.Uom)
-            .Include(p => p.Packings).ThenInclude(p => p.BasePackingUoM)
+            .Include(p => p.Routes.OrderBy(r => r.Order))
+                .ThenInclude(p => p.WorkCenters)
+            .Include(p => p.Routes.OrderBy(r => r.Order))
+                .ThenInclude(p => p.ResponsibleUsers)
+            .Include(p => p.Routes.OrderBy(r => r.Order))
+                .ThenInclude(p => p.ResponsibleRoles)
+            .Include(p => p.Routes.OrderBy(r => r.Order))
+                .ThenInclude(p => p.Resources)
+            .Include(p => p.Packings)
+                .ThenInclude(p => p.PackingLists.OrderBy(r => r.Order))
+                    .ThenInclude(p => p.Uom)
+            .Include(p => p.Packings)
+                .ThenInclude(p => p.BasePackingUoM)
             .Include(p => p.CreatedBy)
             .FirstOrDefaultAsync(p => p.Id == productId);
 
-        return product is null ? ProductErrors.NotFound(productId) : mapper.Map<ProductDto>(product);
+        return product is null
+            ? ProductErrors.NotFound(productId)
+            : mapper.Map<ProductDto>(product);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts
-    (int page, int pageSize, string searchQuery, Guid? departmentId, Division? division,
-        string category)
+    public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProducts(
+        int page,
+        int pageSize,
+        string searchQuery,
+        Guid? departmentId,
+        Division? division,
+        string category
+    )
     {
-        var query = context.Products
-            .AsSplitQuery()
-            .AsQueryable();
+        var query = context.Products.AsSplitQuery().AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
@@ -110,7 +118,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return await context.ProductCategories.ToListAsync();
     }
 
-    public async Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId)
+    public async Task<Result> UpdateProduct(
+        UpdateProductRequest request,
+        Guid productId,
+        Guid userId
+    )
     {
         var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         if (existingProduct is null)
@@ -120,11 +132,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         if (existingProduct.Price != request.Price)
         {
-            existingProduct.Prices.Add(new ProductPrices
-            {
-                Price = request.Price,
-                Date = DateTime.UtcNow
-            });
+            existingProduct.Prices.Add(
+                new ProductPrices { Price = request.Price, Date = DateTime.UtcNow }
+            );
         }
 
         mapper.Map(request, existingProduct);
@@ -135,7 +145,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result> UpdateProductPackageDescription(UpdateProductPackageDescriptionRequest request, Guid productId, Guid userId)
+    public async Task<Result> UpdateProductPackageDescription(
+        UpdateProductPackageDescriptionRequest request,
+        Guid productId,
+        Guid userId
+    )
     {
         var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         if (existingProduct is null)
@@ -167,7 +181,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result<Guid>> CreateBillOfMaterials(CreateProductBillOfMaterialRequest request, Guid productId)
+    public async Task<Result<Guid>> CreateBillOfMaterials(
+        CreateProductBillOfMaterialRequest request,
+        Guid productId
+    )
     {
         var bom = mapper.Map<ProductBillOfMaterial>(request);
 
@@ -176,9 +193,14 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return bom.Id;
     }
 
-    public async Task<Result> UpdateBillOfMaterials(CreateProductBillOfMaterialRequest request, Guid bomId)
+    public async Task<Result> UpdateBillOfMaterials(
+        CreateProductBillOfMaterialRequest request,
+        Guid bomId
+    )
     {
-        var existingBom = await context.ProductBillOfMaterials.FirstOrDefaultAsync(p => p.Id == bomId);
+        var existingBom = await context.ProductBillOfMaterials.FirstOrDefaultAsync(p =>
+            p.Id == bomId
+        );
 
         if (existingBom is null)
         {
@@ -194,22 +216,16 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId)
     {
-        var bom = await context.ProductBillOfMaterials
-            .AsSplitQuery()
+        var bom = await context
+            .ProductBillOfMaterials.AsSplitQuery()
             .Include(b => b.BillOfMaterial)
-            .ThenInclude(b => b.Items)
-            .ThenInclude(i => i.Material)
-            .ThenInclude(m => m.MaterialCategory)
+                .ThenInclude(b => b.Items)
+                    .ThenInclude(i => i.Material)
+                        .ThenInclude(m => m.MaterialCategory)
             .OrderByDescending(p => p.EffectiveDate)
-            .FirstOrDefaultAsync(
-            p => p.ProductId == productId && p.IsActive);
+            .FirstOrDefaultAsync(p => p.ProductId == productId && p.IsActive);
 
-        if (bom is null)
-        {
-            return Error.NotFound("ProductBoM.NotFound", "Could not find bom for this product");
-        }
-
-        return mapper.Map<ProductBillOfMaterialDto>(bom);
+        return Result.Success(mapper.Map<ProductBillOfMaterialDto>(bom));
     }
 
     public async Task<Result> DeleteBillOfMaterials(Guid bomId, Guid userId)
@@ -228,13 +244,18 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId)
+    public async Task<Result> CreateRoute(
+        List<CreateRouteRequest> request,
+        Guid productId,
+        Guid userId
+    )
     {
-        var product = await context.Products
-            .AsSplitQuery()
+        var product = await context
+            .Products.AsSplitQuery()
             .Include(product => product.Routes)
             .FirstOrDefaultAsync(p => p.Id == productId);
-        if (product is null) return ProductErrors.NotFound(productId);
+        if (product is null)
+            return ProductErrors.NotFound(productId);
 
         if (product.Routes.Count != 0)
         {
@@ -254,17 +275,29 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result<RouteDto>> GetRoute(Guid routeId)
     {
-        var route = await context.Routes
-            .AsSplitQuery()
+        var route = await context
+            .Routes.AsSplitQuery()
             .Include(r => r.Operation)
-            .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
-            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
-            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.Form)
-            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
-            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.Form)
-            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.ProductStandardTestProcedure)
-            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.ProductStandardTestProcedure)
-            .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
+            .Include(r => r.WorkCenters)
+                .ThenInclude(r => r.WorkCenter)
+            .Include(r => r.ResponsibleUsers)
+                .ThenInclude(r => r.User)
+            .Include(r => r.ResponsibleUsers)
+                .ThenInclude(r => r.ProductAnalyticalRawData)
+                    .ThenInclude(r => r.Form)
+            .Include(r => r.ResponsibleRoles)
+                .ThenInclude(r => r.Role)
+            .Include(r => r.ResponsibleRoles)
+                .ThenInclude(r => r.ProductAnalyticalRawData)
+                    .ThenInclude(r => r.Form)
+            .Include(r => r.ResponsibleUsers)
+                .ThenInclude(r => r.ProductAnalyticalRawData)
+                    .ThenInclude(r => r.ProductStandardTestProcedure)
+            .Include(r => r.ResponsibleRoles)
+                .ThenInclude(r => r.ProductAnalyticalRawData)
+                    .ThenInclude(r => r.ProductStandardTestProcedure)
+            .Include(r => r.Resources)
+                .ThenInclude(rr => rr.Resource)
             .FirstOrDefaultAsync(r => r.Id == routeId);
 
         if (route == null)
@@ -276,16 +309,24 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result<IEnumerable<RouteDto>>> GetRoutes(Guid productId)
     {
-        var query = await context.Routes
-            .OrderBy(r => r.Order)
+        var query = await context
+            .Routes.OrderBy(r => r.Order)
             .AsSplitQuery()
             .Include(r => r.Operation)
-            .Include(r => r.WorkCenters).ThenInclude(r => r.WorkCenter)
-            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.User)
-            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.Role)
-            .Include(r => r.ResponsibleUsers).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.ProductStandardTestProcedure)
-            .Include(r => r.ResponsibleRoles).ThenInclude(r => r.ProductAnalyticalRawData).ThenInclude(r => r.ProductStandardTestProcedure)
-            .Include(r => r.Resources).ThenInclude(rr => rr.Resource)
+            .Include(r => r.WorkCenters)
+                .ThenInclude(r => r.WorkCenter)
+            .Include(r => r.ResponsibleUsers)
+                .ThenInclude(r => r.User)
+            .Include(r => r.ResponsibleRoles)
+                .ThenInclude(r => r.Role)
+            .Include(r => r.ResponsibleUsers)
+                .ThenInclude(r => r.ProductAnalyticalRawData)
+                    .ThenInclude(r => r.ProductStandardTestProcedure)
+            .Include(r => r.ResponsibleRoles)
+                .ThenInclude(r => r.ProductAnalyticalRawData)
+                    .ThenInclude(r => r.ProductStandardTestProcedure)
+            .Include(r => r.Resources)
+                .ThenInclude(rr => rr.Resource)
             .Where(r => r.ProductId == productId)
             .ToListAsync();
 
@@ -294,8 +335,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result> UpdateRoute(UpdateRouteRequest request, Guid routeId, Guid userId)
     {
-        var route = await context.Routes
-            .AsSplitQuery()
+        var route = await context
+            .Routes.AsSplitQuery()
             .Include(r => r.Resources)
             .Include(route => route.ResponsibleRoles)
             .Include(route => route.ResponsibleUsers)
@@ -333,10 +374,14 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result<Guid>> CreateProductPackage(List<CreateProductPackageRequest> request, Guid productId, Guid userId)
+    public async Task<Result<Guid>> CreateProductPackage(
+        List<CreateProductPackageRequest> request,
+        Guid productId,
+        Guid userId
+    )
     {
-        var product = await context.Products
-            .AsSplitQuery()
+        var product = await context
+            .Products.AsSplitQuery()
             .Include(p => p.Packages)
             .FirstOrDefaultAsync(p => p.Id == productId);
 
@@ -353,9 +398,18 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             if (newPackage.DirectLinkMaterialId.HasValue)
             {
                 // Check if this new package introduces a cycle
-                if (HasCircularDependency(newPackage.MaterialId, newPackage.DirectLinkMaterialId.Value, product.Packages.ToList()))
+                if (
+                    HasCircularDependency(
+                        newPackage.MaterialId,
+                        newPackage.DirectLinkMaterialId.Value,
+                        product.Packages.ToList()
+                    )
+                )
                 {
-                    return Error.Failure("Product.Package", $"Circular dependency detected with MaterialId {newPackage.MaterialId} and DirectLinkMaterialId {newPackage.DirectLinkMaterialId}");
+                    return Error.Failure(
+                        "Product.Package",
+                        $"Circular dependency detected with MaterialId {newPackage.MaterialId} and DirectLinkMaterialId {newPackage.DirectLinkMaterialId}"
+                    );
                 }
             }
         }
@@ -377,10 +431,13 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return product.Id;
     }
 
-
-    private bool HasCircularDependency(Guid materialId, Guid directLinkMaterialId, List<ProductPackage> existingPackages)
+    private bool HasCircularDependency(
+        Guid materialId,
+        Guid directLinkMaterialId,
+        List<ProductPackage> existingPackages
+    )
     {
-        var visited = new HashSet<Guid>();  // Track visited materials
+        var visited = new HashSet<Guid>(); // Track visited materials
         var currentMaterialId = directLinkMaterialId;
 
         while (true)
@@ -398,7 +455,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             }
 
             // Find the next linked material
-            var nextPackage = existingPackages.FirstOrDefault(p => p.MaterialId == currentMaterialId);
+            var nextPackage = existingPackages.FirstOrDefault(p =>
+                p.MaterialId == currentMaterialId
+            );
             if (nextPackage == null || !nextPackage.DirectLinkMaterialId.HasValue)
             {
                 break; // No more links, exit loop
@@ -410,18 +469,21 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return false;
     }
 
-
     public async Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId)
     {
-        var productPackage = await context.ProductPackages
-            .AsSplitQuery()
+        var productPackage = await context
+            .ProductPackages.AsSplitQuery()
             .Include(p => p.Product)
             .Include(p => p.Material)
-            .Include(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
+            .Include(s => s.ProductPacking)
+                .ThenInclude(p => p.PackingLists)
             .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
 
         if (productPackage == null)
-            return Error.NotFound("ProductPackage.NotFound", $"Product package with ID {productPackageId} not found.");
+            return Error.NotFound(
+                "ProductPackage.NotFound",
+                $"Product package with ID {productPackageId} not found."
+            );
 
         var productPackageDto = mapper.Map<ProductPackageDto>(productPackage);
         return Result.Success(productPackageDto);
@@ -429,39 +491,62 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result<IEnumerable<ProductPackageDto>>> GetProductPackages(Guid productId)
     {
-        var query = await context.ProductPackages
-            .AsSplitQuery()
+        var query = await context
+            .ProductPackages.AsSplitQuery()
             .Include(p => p.Material)
-            .Include(s => s.ProductPacking).ThenInclude(p => p.PackingLists)
+            .Include(s => s.ProductPacking)
+                .ThenInclude(p => p.PackingLists)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
 
         return mapper.Map<List<ProductPackageDto>>(query);
     }
 
-    public async Task<Result> UpdateProductPackage(CreateProductPackageRequest request, Guid productPackageId, Guid userId)
+    public async Task<Result> UpdateProductPackage(
+        CreateProductPackageRequest request,
+        Guid productPackageId,
+        Guid userId
+    )
     {
-        var productPackage = await context.ProductPackages
-            .AsSplitQuery()
+        var productPackage = await context
+            .ProductPackages.AsSplitQuery()
             .Include(p => p.Product)
-            .ThenInclude(p => p.Packages) // Include related packages for validation
+                .ThenInclude(p => p.Packages) // Include related packages for validation
             .FirstOrDefaultAsync(p => p.Id == productPackageId);
 
         if (productPackage == null)
-            return Error.NotFound("ProductPackage.NotFound", $"Product package with ID {productPackageId} not found.");
+            return Error.NotFound(
+                "ProductPackage.NotFound",
+                $"Product package with ID {productPackageId} not found."
+            );
 
         // Prevent self-referencing update
-        if (request.DirectLinkMaterialId.HasValue && request.DirectLinkMaterialId.Value == request.MaterialId)
+        if (
+            request.DirectLinkMaterialId.HasValue
+            && request.DirectLinkMaterialId.Value == request.MaterialId
+        )
         {
-            return Error.Failure("Product.Package", "DirectLinkMaterialId cannot be the same as MaterialId.");
+            return Error.Failure(
+                "Product.Package",
+                "DirectLinkMaterialId cannot be the same as MaterialId."
+            );
         }
 
         // Check for circular dependency
         if (request.DirectLinkMaterialId.HasValue)
         {
-            if (HasCircularDependency(request.MaterialId, request.DirectLinkMaterialId.Value, productPackage.Product.Packages.ToList()))
+            if (
+                HasCircularDependency(
+                    request.MaterialId,
+                    request.DirectLinkMaterialId.Value,
+                    productPackage.Product.Packages.ToList()
+                )
+            )
             {
-                return Error.Failure("Product.Package", $"Circular dependency detected with MaterialId {productPackage.MaterialId} and DirectLinkMaterialId {productPackage.DirectLinkMaterialId}");
+                return Error.Failure(
+                    "Product.Package",
+                    $"Circular dependency detected with MaterialId {productPackage.MaterialId} and DirectLinkMaterialId {productPackage.DirectLinkMaterialId}"
+                );
             }
         }
 
@@ -475,14 +560,17 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-
     public async Task<Result> DeleteProductPackage(Guid productPackageId, Guid userId)
     {
-        var productPackage = await context.ProductPackages
-            .FirstOrDefaultAsync(p => p.Id == productPackageId);
+        var productPackage = await context.ProductPackages.FirstOrDefaultAsync(p =>
+            p.Id == productPackageId
+        );
 
         if (productPackage == null)
-            return Error.NotFound("ProductPackage.NotFound", $"Product package with ID {productPackageId} not found.");
+            return Error.NotFound(
+                "ProductPackage.NotFound",
+                $"Product package with ID {productPackageId} not found."
+            );
 
         await context.ProductPackages.Where(x => x.Id == productPackageId).ExecuteDeleteAsync();
 
@@ -492,12 +580,16 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result<Guid>> CreateProductPacking(List<CreateProductPacking> request, Guid productId, Guid userId)
+    public async Task<Result<Guid>> CreateProductPacking(
+        List<CreateProductPacking> request,
+        Guid productId,
+        Guid userId
+    )
     {
-        var product = await context.Products
-            .AsSplitQuery()
+        var product = await context
+            .Products.AsSplitQuery()
             .Include(product => product.Packings)
-            .ThenInclude(p => p.PackingLists)
+                .ThenInclude(p => p.PackingLists)
             .FirstOrDefaultAsync(p => p.Id == productId);
 
         if (product is null)
@@ -512,7 +604,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         foreach (var incomingPacking in request)
         {
             var existing = existingPackings.FirstOrDefault(p =>
-                p.Name.Equals(incomingPacking.Name, StringComparison.OrdinalIgnoreCase));
+                p.Name.Equals(incomingPacking.Name, StringComparison.OrdinalIgnoreCase)
+            );
 
             if (existing != null)
             {
@@ -523,8 +616,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 // Remove old packing lists and replace with new
                 existing.PackingLists.Clear();
 
-                existing.PackingLists = incomingPacking.PackingLists
-                    .Select(mapper.Map<ProductPackingList>)
+                existing.PackingLists = incomingPacking
+                    .PackingLists.Select(mapper.Map<ProductPackingList>)
                     .ToList();
 
                 // Mark as updated
@@ -556,10 +649,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result<IEnumerable<ProductPackingDto>>> GetProductPackings(Guid productId)
     {
-        var query = await context.ProductPackings
-            .AsSplitQuery()
+        var query = await context
+            .ProductPackings.AsSplitQuery()
             .Include(p => p.PackingLists.OrderBy(pp => pp.Order))
-            .ThenInclude(p => p.Uom)
+                .ThenInclude(p => p.Uom)
             .Include(p => p.BasePackingUoM)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
@@ -567,10 +660,14 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return mapper.Map<List<ProductPackingDto>>(query);
     }
 
-    public async Task<Result<Guid>> CreateFinishedProduct(List<CreateFinishedProductRequest> request, Guid productId, Guid userId)
+    public async Task<Result<Guid>> CreateFinishedProduct(
+        List<CreateFinishedProductRequest> request,
+        Guid productId,
+        Guid userId
+    )
     {
-        var product = await context.Products
-            .AsSplitQuery()
+        var product = await context
+            .Products.AsSplitQuery()
             .Include(product => product.FinishedProducts)
             .FirstOrDefaultAsync(p => p.Id == productId);
         if (product is null)
@@ -596,11 +693,12 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
     public async Task<Result> ArchiveBillOfMaterial(Guid productId, Guid userId)
     {
-        var product = await context.Products
-            .AsSplitQuery()
+        var product = await context
+            .Products.AsSplitQuery()
             .Include(product => product.BillOfMaterials)
             .FirstOrDefaultAsync(p => p.Id == productId);
-        if (product is null) return ProductErrors.NotFound(productId);
+        if (product is null)
+            return ProductErrors.NotFound(productId);
 
         var bom = product.BillOfMaterials.FirstOrDefault(p => p.IsActive);
 
@@ -629,8 +727,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     // Get Equipment by ID
     public async Task<Result<EquipmentDto>> GetEquipment(Guid equipmentId)
     {
-        var equipment = await context.Equipments
-            .AsSplitQuery()
+        var equipment = await context
+            .Equipments.AsSplitQuery()
             .Include(e => e.UoM)
             .Include(e => e.Department)
             .FirstOrDefaultAsync(e => e.Id == equipmentId);
@@ -641,19 +739,21 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     }
 
     // Get paginated list of Equipments
-    public async Task<Result<Paginateable<IEnumerable<EquipmentDto>>>> GetEquipments(int page,
-        int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<EquipmentDto>>>> GetEquipments(
+        int page,
+        int pageSize,
+        string searchQuery
+    )
     {
-        var query = context.Equipments
-            .AsSplitQuery()
+        var query = context
+            .Equipments.AsSplitQuery()
             .Include(e => e.UoM)
             .Include(e => e.Department)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, e => e.Name,
-                e => e.EquipmentNumber);
+            query = query.WhereSearch(searchQuery, e => e.Name, e => e.EquipmentNumber);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -667,17 +767,25 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     // Get all Equipments
     public async Task<Result<List<EquipmentDto>>> GetEquipments()
     {
-        return mapper.Map<List<EquipmentDto>>(await context.Equipments
-            .AsSplitQuery()
-            .Include(e => e.UoM)
-            .Include(e => e.Department)
-            .ToListAsync());
+        return mapper.Map<List<EquipmentDto>>(
+            await context
+                .Equipments.AsSplitQuery()
+                .Include(e => e.UoM)
+                .Include(e => e.Department)
+                .ToListAsync()
+        );
     }
 
     // Update Equipment
-    public async Task<Result> UpdateEquipment(CreateEquipmentRequest request, Guid equipmentId, Guid userId)
+    public async Task<Result> UpdateEquipment(
+        CreateEquipmentRequest request,
+        Guid equipmentId,
+        Guid userId
+    )
     {
-        var existingEquipment = await context.Equipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        var existingEquipment = await context.Equipments.FirstOrDefaultAsync(e =>
+            e.Id == equipmentId
+        );
         if (existingEquipment is null)
         {
             return Error.NotFound("Equipment.NotFound", "Equipment with this Id not found");
@@ -735,8 +843,15 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var requiredHeaders = new[]
         {
-            "PRODUCT NAME", "PRODUCT CODE", "CATEGORY", "BASE UOM", "COMPOSITION UNIT QTY",
-            "EQUIPMENT", "FULL BATCH SIZE", "DEPARTMENT CODE", "LABEL CLAIMS"
+            "PRODUCT NAME",
+            "PRODUCT CODE",
+            "CATEGORY",
+            "BASE UOM",
+            "COMPOSITION UNIT QTY",
+            "EQUIPMENT",
+            "FULL BATCH SIZE",
+            "DEPARTMENT CODE",
+            "LABEL CLAIMS",
         };
 
         foreach (var header in requiredHeaders)
@@ -745,24 +860,24 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 return UploadErrors.MissingRequiredHeader(header);
         }
 
-        var categories = await context.ProductCategories
-            .AsNoTracking()
+        var categories = await context
+            .ProductCategories.AsNoTracking()
             .ToDictionaryAsync(c => c.Name.ToLower(), c => c.Id);
 
-        var uoms = await context.UnitOfMeasures
-            .AsNoTracking()
+        var uoms = await context
+            .UnitOfMeasures.AsNoTracking()
             .ToDictionaryAsync(u => u.Symbol.ToLower(), u => u.Id);
 
-        var equipments = await context.Equipments
-            .AsNoTracking()
+        var equipments = await context
+            .Equipments.AsNoTracking()
             .ToDictionaryAsync(e => e.Name.ToLower(), e => e.Id);
 
-        var departments = await context.Departments
-            .AsNoTracking()
+        var departments = await context
+            .Departments.AsNoTracking()
             .ToDictionaryAsync(d => d.Code, d => d.Id);
 
-        var existingCodes = await context.Products
-            .IgnoreQueryFilters()
+        var existingCodes = await context
+            .Products.IgnoreQueryFilters()
             .Select(p => p.Code)
             .ToHashSetAsync();
 
@@ -794,11 +909,19 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 PrimaryPackDescription = "",
                 SecondaryPackDescription = "",
                 TertiaryPackDescription = "",
-                CategoryId = categories.TryGetValue(categoryName, out var categoryId) ? categoryId : null,
+                CategoryId = categories.TryGetValue(categoryName, out var categoryId)
+                    ? categoryId
+                    : null,
                 BaseUomId = uoms.TryGetValue(baseUomName, out var baseUom) ? baseUom : null,
-                EquipmentId = equipments.TryGetValue(equipmentName, out var equipmentId) ? equipmentId : null,
-                DepartmentId = departments.TryGetValue(departmentCode, out var departmentId) ? departmentId : null,
-                BaseQuantity = decimal.TryParse(GetCell("COMPOSITION UNIT QTY"), out var bq) ? bq : 0,
+                EquipmentId = equipments.TryGetValue(equipmentName, out var equipmentId)
+                    ? equipmentId
+                    : null,
+                DepartmentId = departments.TryGetValue(departmentCode, out var departmentId)
+                    ? departmentId
+                    : null,
+                BaseQuantity = decimal.TryParse(GetCell("COMPOSITION UNIT QTY"), out var bq)
+                    ? bq
+                    : 0,
                 FullBatchSize = decimal.TryParse(GetCell("FULL BATCH SIZE"), out var fbs) ? fbs : 0,
                 LabelClaim = GetCell("LABEL CLAIMS"),
             };
@@ -841,8 +964,17 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var requiredHeaders = new[]
         {
-            "PRODUCT NAME", "PRODUCT CODE", "ORDER", "MATERIAL TYPE",
-            "COMPONENT MATERIAL", "COMPONENT MATERIAL CODE", "QUANTITY", "UOM", "GRADE", "CAS NUMBER", "FUNCTION"
+            "PRODUCT NAME",
+            "PRODUCT CODE",
+            "ORDER",
+            "MATERIAL TYPE",
+            "COMPONENT MATERIAL",
+            "COMPONENT MATERIAL CODE",
+            "QUANTITY",
+            "UOM",
+            "GRADE",
+            "CAS NUMBER",
+            "FUNCTION",
         };
 
         foreach (var header in requiredHeaders)
@@ -862,21 +994,28 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var uomName = GetCell("UOM");
             var materialTypeName = GetCell("MATERIAL TYPE");
 
-            var product = await context.Products
-                .AsNoTracking()
+            var product = await context
+                .Products.AsNoTracking()
                 .IgnoreAutoIncludes()
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(p => p.Code == productCode);
-            if (product == null) continue;
+            if (product == null)
+                continue;
 
-            var material = context.Materials
-                .AsNoTracking()
+            var material = context
+                .Materials.AsNoTracking()
                 .IgnoreAutoIncludes()
                 .FirstOrDefault(m => m.Code == materialCode);
-            if (material == null) continue;
+            if (material == null)
+                continue;
 
-            var uom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Name.ToLower() == uomName.ToLower());
-            var materialType = await context.MaterialTypes.AsNoTracking().IgnoreAutoIncludes().FirstOrDefaultAsync(mt => mt.Name.ToLower() == materialTypeName.ToLower());
+            var uom = await context.UnitOfMeasures.FirstOrDefaultAsync(u =>
+                u.Name.ToLower() == uomName.ToLower()
+            );
+            var materialType = await context
+                .MaterialTypes.AsNoTracking()
+                .IgnoreAutoIncludes()
+                .FirstOrDefaultAsync(mt => mt.Name.ToLower() == materialTypeName.ToLower());
 
             if (!bomMap.TryGetValue(productCode, out var billOfMaterial))
             {
@@ -885,7 +1024,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                     ProductId = product.Id,
                     Version = 1, // or dynamic version logic
                     IsActive = true,
-                    Items = []
+                    Items = [],
                 };
                 context.BillOfMaterials.Add(billOfMaterial);
                 bomMap[productCode] = billOfMaterial;
@@ -895,10 +1034,12 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 {
                     ProductId = product.Id,
                     BillOfMaterial = billOfMaterial,
-                    Quantity = decimal.TryParse(GetCell("QUANTITY"), out var quantity) ? quantity : 0,
+                    Quantity = decimal.TryParse(GetCell("QUANTITY"), out var quantity)
+                        ? quantity
+                        : 0,
                     Version = 1,
                     EffectiveDate = DateTime.UtcNow,
-                    IsActive = true
+                    IsActive = true,
                 };
                 context.ProductBillOfMaterials.Add(productBom);
             }
@@ -912,7 +1053,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 CasNumber = GetCell("CAS NUMBER"),
                 Order = int.TryParse(GetCell("ORDER"), out var order) ? order : 0,
                 IsSubstitutable = false,
-                BaseQuantity = decimal.TryParse(GetCell("QUANTITY"), out var baseQuantity) ? baseQuantity : 0,
+                BaseQuantity = decimal.TryParse(GetCell("QUANTITY"), out var baseQuantity)
+                    ? baseQuantity
+                    : 0,
                 BaseUoMId = uom?.Id,
             };
 
@@ -948,9 +1091,17 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var requiredHeaders = new[]
         {
-            "PRODUCT NAME", "PRODUCT CODE", "COMPONENT MATERIAL", "COMPONENT MATERIAL CODE",
-            "BASE QUANTITY", "DIRECT LINK MATERIAL", "DIRECT LINK MATERIAL CODE",
-            "UNIT CAPACITY", "PACKING EXCESS", "MATERIALS THICKNESS", "OTHER STANDARDS"
+            "PRODUCT NAME",
+            "PRODUCT CODE",
+            "COMPONENT MATERIAL",
+            "COMPONENT MATERIAL CODE",
+            "BASE QUANTITY",
+            "DIRECT LINK MATERIAL",
+            "DIRECT LINK MATERIAL CODE",
+            "UNIT CAPACITY",
+            "PACKING EXCESS",
+            "MATERIALS THICKNESS",
+            "OTHER STANDARDS",
         };
 
         foreach (var header in requiredHeaders)
@@ -969,22 +1120,36 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var componentMaterialCode = GetCell("COMPONENT MATERIAL CODE");
             var directLinkMaterialCode = GetCell("DIRECT LINK MATERIAL CODE");
 
-            var product = await context.Products.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Code == productCode);
-            if (product == null) continue;
+            var product = await context
+                .Products.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Code == productCode);
+            if (product == null)
+                continue;
 
-            var material = await context.Materials.FirstOrDefaultAsync(m => m.Code == componentMaterialCode);
-            if (material == null) continue;
+            var material = await context.Materials.FirstOrDefaultAsync(m =>
+                m.Code == componentMaterialCode
+            );
+            if (material == null)
+                continue;
 
-            var directLinkMaterial = await context.Materials.FirstOrDefaultAsync(m => m.Code == directLinkMaterialCode);
+            var directLinkMaterial = await context.Materials.FirstOrDefaultAsync(m =>
+                m.Code == directLinkMaterialCode
+            );
 
             var productPackage = new ProductPackage
             {
                 ProductId = product.Id,
                 MaterialId = material.Id,
                 DirectLinkMaterialId = directLinkMaterial?.Id,
-                BaseQuantity = decimal.TryParse(GetCell("BASE QUANTITY"), out var baseQty) ? baseQty : 0,
-                UnitCapacity = decimal.TryParse(GetCell("UNIT CAPACITY"), out var unitCap) ? unitCap : 0,
-                PackingExcessMargin = decimal.TryParse(GetCell("PACKING EXCESS"), out var excess) ? excess : 0,
+                BaseQuantity = decimal.TryParse(GetCell("BASE QUANTITY"), out var baseQty)
+                    ? baseQty
+                    : 0,
+                UnitCapacity = decimal.TryParse(GetCell("UNIT CAPACITY"), out var unitCap)
+                    ? unitCap
+                    : 0,
+                PackingExcessMargin = decimal.TryParse(GetCell("PACKING EXCESS"), out var excess)
+                    ? excess
+                    : 0,
                 MaterialThickness = GetCell("MATERIALS THICKNESS"),
                 OtherStandards = GetCell("OTHER STANDARDS"),
             };
@@ -1010,20 +1175,29 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage(stream);
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-        if (worksheet == null) return UploadErrors.WorksheetNotFound;
+        if (worksheet == null)
+            return UploadErrors.WorksheetNotFound;
 
         var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             var header = worksheet.Cells[1, col].Text.Trim();
-            if (!string.IsNullOrEmpty(header)) headers[header] = col;
+            if (!string.IsNullOrEmpty(header))
+                headers[header] = col;
         }
-        
+
         var requiredHeaders = new[]
         {
-            "Warehouse", "Product Code", "Product Name", "Packing Style",
-            "Total Quantity", "Batch No.", "FGTN ID",
-            " AR No.", " Manufacturing Date", "Expiry Date"
+            "Warehouse",
+            "Product Code",
+            "Product Name",
+            "Packing Style",
+            "Total Quantity",
+            "Batch No.",
+            "FGTN ID",
+            " AR No.",
+            " Manufacturing Date",
+            "Expiry Date",
         };
 
         foreach (var header in requiredHeaders)
@@ -1038,12 +1212,15 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetRaw(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+            string GetRaw(string h) =>
+                headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
             var pCode = GetRaw("Product Code");
             var pStyle = GetRaw("Packing Style");
 
-            if (!string.IsNullOrEmpty(pCode)) excelProductCodes.Add(pCode);
-            if (!string.IsNullOrEmpty(pStyle)) excelPackingStyles.Add(pStyle);
+            if (!string.IsNullOrEmpty(pCode))
+                excelProductCodes.Add(pCode);
+            if (!string.IsNullOrEmpty(pStyle))
+                excelPackingStyles.Add(pStyle);
         }
 
         // 2. FETCH DEFAULTS AND LOOKUPS
@@ -1052,25 +1229,30 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         var defaultStep = await context.ProductionActivitySteps.FirstOrDefaultAsync();
 
         if (defaultScheduleProduct == null || defaultStep == null)
-            return Error.Validation("Production.Config",
-                "Missing default Production Schedule or Step in the system.");
+            return Error.Validation(
+                "Production.Config",
+                "Missing default Production Schedule or Step in the system."
+            );
 
         // Fetch Product Packing with Product Hierarchy
-        var packingData = await context.ProductPackings
-            .IgnoreQueryFilters()
+        var packingData = await context
+            .ProductPackings.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(p => p.Product)
-            .Where(pp => excelPackingStyles.Contains(pp.Name) && excelProductCodes.Contains(pp.Product.Code))
+            .Where(pp =>
+                excelPackingStyles.Contains(pp.Name) && excelProductCodes.Contains(pp.Product.Code)
+            )
             .ToListAsync();
 
         // Create a composite lookup: "ProductCode|PackingName"
         var packingLookup = packingData.ToDictionary(
             pp => $"{pp.Product.Code.Trim()}|{pp.Name.Trim()}",
             pp => pp,
-            StringComparer.OrdinalIgnoreCase);
+            StringComparer.OrdinalIgnoreCase
+        );
 
-        var warehouses = await context.Warehouses
-            .Where(w => w.Type == WarehouseType.FinishedGoodsStorage)
+        var warehouses = await context
+            .Warehouses.Where(w => w.Type == WarehouseType.FinishedGoodsStorage)
             .ToDictionaryAsync(w => w.Name.ToLower(), w => w);
 
         var manufacturingRecords = new List<BatchManufacturingRecord>();
@@ -1080,21 +1262,24 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // 3. PROCESS ROWS
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetCell(string h) => headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() 
-                : null;
+            string GetCell(string h) =>
+                headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
 
             var productCode = GetCell("Product Code");
             var packingStyle = GetCell("Packing Style");
             var batchNo = GetCell("Batch No.");
 
-            if (string.IsNullOrEmpty(productCode) || string.IsNullOrEmpty(batchNo)) continue;
+            if (string.IsNullOrEmpty(productCode) || string.IsNullOrEmpty(batchNo))
+                continue;
 
             // Resolve Packing & Product
             var packingKey = $"{productCode}|{packingStyle}";
             if (!packingLookup.TryGetValue(packingKey, out var packing))
             {
-                return Error.NotFound("ProductPacking",
-                    $"Row {row}: Packing style '{packingStyle}' for Product '{productCode}' not found.");
+                return Error.NotFound(
+                    "ProductPacking",
+                    $"Row {row}: Packing style '{packingStyle}' for Product '{productCode}' not found."
+                );
             }
 
             // Parse shared data
@@ -1103,48 +1288,60 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var expiryDate = GetCell("Expiry Date");
 
             // 4. Create Manufacturing Record
-            manufacturingRecords.Add(new BatchManufacturingRecord
-            {
-                Id = Guid.NewGuid(),
-                ProductionScheduleProductId = defaultScheduleProduct.Id,
-                ProductionActivityStepId = defaultStep.Id,
-                BatchNumber = batchNo,
-                ManufacturingDate = ParseDate(mfgDate),
-                ExpiryDate = ParseDate(expiryDate),
-                BatchQuantity = quantity,
-                Status = BatchManufacturingStatus.Approved, // Set appropriate default status
-                IssuedDate = DateTime.UtcNow
-            });
+            manufacturingRecords.Add(
+                new BatchManufacturingRecord
+                {
+                    Id = Guid.NewGuid(),
+                    ProductionScheduleProductId = defaultScheduleProduct.Id,
+                    ProductionActivityStepId = defaultStep.Id,
+                    BatchNumber = batchNo,
+                    ManufacturingDate = ParseDate(mfgDate),
+                    ExpiryDate = ParseDate(expiryDate),
+                    BatchQuantity = quantity,
+                    Status = BatchManufacturingStatus.Approved, // Set appropriate default status
+                    IssuedDate = DateTime.UtcNow,
+                }
+            );
 
             // 5. Create Packaging Record
-            packagingRecords.Add(new BatchPackagingRecord
-            {
-                Id = Guid.NewGuid(),
-                ProductionScheduleProductId = defaultScheduleProduct.Id,
-                ProductionActivityStepId = defaultStep.Id,
-                ProductPackingId = packing.Id,
-                BatchNumber = batchNo,
-                ManufacturingDate = ParseDate(mfgDate),
-                ExpiryDate = ParseDate(expiryDate),
-                BatchQuantity = quantity,
-                IssuedDate = DateTime.UtcNow
-            });
-            
+            packagingRecords.Add(
+                new BatchPackagingRecord
+                {
+                    Id = Guid.NewGuid(),
+                    ProductionScheduleProductId = defaultScheduleProduct.Id,
+                    ProductionActivityStepId = defaultStep.Id,
+                    ProductPackingId = packing.Id,
+                    BatchNumber = batchNo,
+                    ManufacturingDate = ParseDate(mfgDate),
+                    ExpiryDate = ParseDate(expiryDate),
+                    BatchQuantity = quantity,
+                    IssuedDate = DateTime.UtcNow,
+                }
+            );
+
             // 6. Create Finished Goods Transfer Note
-            finishedGoodsTransferNotes.Add(new FinishedGoodsTransferNote
-            {
-                Id = Guid.NewGuid(),
-                TransferNoteNumber = GetCell("FGTN ID"),
-                ToWarehouseId = warehouses.TryGetValue(GetCell("Warehouse").ToLower(), out var warehouse) ? 
-                    warehouse.Id : null,
-                TotalQuantity = quantity,
-                ProductPackingId = packing.Id,
-                BatchManufacturingRecordId = (await context.BatchManufacturingRecords
-                    .FirstAsync(b => 
-                        b.ProductionScheduleProductId == defaultScheduleProduct.Id)).Id,
-                Approved = true,
-                IsApproved = true
-            });
+            finishedGoodsTransferNotes.Add(
+                new FinishedGoodsTransferNote
+                {
+                    Id = Guid.NewGuid(),
+                    TransferNoteNumber = GetCell("FGTN ID"),
+                    ToWarehouseId = warehouses.TryGetValue(
+                        GetCell("Warehouse").ToLower(),
+                        out var warehouse
+                    )
+                        ? warehouse.Id
+                        : null,
+                    TotalQuantity = quantity,
+                    ProductPackingId = packing.Id,
+                    BatchManufacturingRecordId = (
+                        await context.BatchManufacturingRecords.FirstAsync(b =>
+                            b.ProductionScheduleProductId == defaultScheduleProduct.Id
+                        )
+                    ).Id,
+                    Approved = true,
+                    IsApproved = true,
+                }
+            );
         }
 
         // 6. SAVE EVERYTHING
@@ -1155,7 +1352,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         return Result.Success();
     }
-    
+
     public async Task<Result> ImportEquipmentFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -1184,7 +1381,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // Mapping headers based on your requirements
         var requiredHeaders = new[]
         {
-            "EQUIPMENT NO", "EQUIPMENT NAME", "UOM", "DEPARTMENT CODE", "Storage Location"
+            "EQUIPMENT NO",
+            "EQUIPMENT NAME",
+            "UOM",
+            "DEPARTMENT CODE",
+            "Storage Location",
         };
 
         foreach (var header in requiredHeaders)
@@ -1194,31 +1395,36 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         }
 
         // Lookups for Foreign Keys
-        var uoms = await context.UnitOfMeasures
-            .AsNoTracking()
-            .ToDictionaryAsync(
-                u => u.Symbol, 
-                u => u.Id
-            );
+        var uoms = await context
+            .UnitOfMeasures.AsNoTracking()
+            .ToDictionaryAsync(u => u.Symbol, u => u.Id);
 
-        var departments = await context.Departments
-            .AsNoTracking()
+        var departments = await context
+            .Departments.AsNoTracking()
             .ToDictionaryAsync(d => d.Code.ToLower(), d => d.Id);
 
-        var existingNumbers = await context.Equipments
-            .IgnoreQueryFilters()
+        var existingNumbers = await context
+            .Equipments.IgnoreQueryFilters()
             .Select(e => e.EquipmentNumber)
             .ToHashSetAsync();
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetCell(string header) => headers.TryGetValue(header, out var header1) 
-                ? worksheet.Cells[row, header1].Text.Trim() : string.Empty;
+            string GetCell(string header) =>
+                headers.TryGetValue(header, out var header1)
+                    ? worksheet.Cells[row, header1].Text.Trim()
+                    : string.Empty;
 
             var equipmentNo = GetCell("EQUIPMENT NO");
-            if (equipmentNo != "-"  && existingNumbers.Contains(equipmentNo) && !string.IsNullOrWhiteSpace(equipmentNo))
-                return Error.Validation("EquipmentNo",
-                    $"Equipment number {equipmentNo} already exists. See row {row}");
+            if (
+                equipmentNo != "-"
+                && existingNumbers.Contains(equipmentNo)
+                && !string.IsNullOrWhiteSpace(equipmentNo)
+            )
+                return Error.Validation(
+                    "EquipmentNo",
+                    $"Equipment number {equipmentNo} already exists. See row {row}"
+                );
 
             var uomSymbol = GetCell("UOM").ToLower();
             var deptName = GetCell("DEPARTMENT CODE").ToLower();
@@ -1240,16 +1446,22 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 Location = GetCell("Storage Location"),
                 IsStorage = isStorage,
                 RelevanceCheck = relevanceCheck,
-                CapacityQuantity = decimal.TryParse(GetCell("CAPACITY QUANTITY"), out var cq) ? cq : 0,
+                CapacityQuantity = decimal.TryParse(GetCell("CAPACITY QUANTITY"), out var cq)
+                    ? cq
+                    : 0,
                 UoMId = uoms.TryGetValue(uomSymbol, out var uomId) ? uomId : null,
-                DepartmentId = departments.TryGetValue(deptName, out var deptId) ? deptId : Guid.Empty,
+                DepartmentId = departments.TryGetValue(deptName, out var deptId)
+                    ? deptId
+                    : Guid.Empty,
             };
 
             // Basic Validation: Ensure Guid IDs are found before adding
             if (equipment.DepartmentId == Guid.Empty)
             {
-                return Error.Validation("MissingValue", 
-                    $"Missing value for department at row {row}");
+                return Error.Validation(
+                    "MissingValue",
+                    $"Missing value for department at row {row}"
+                );
             }
             equipmentsToInsert.Add(equipment);
             existingNumbers.Add(equipmentNo);
@@ -1263,11 +1475,18 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         return Result.Success();
     }
-    
+
     DateTime? ParseDate(string input)
     {
-        if (DateTime.TryParseExact(input, "dd/MM/yyyy",
-                CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+        if (
+            DateTime.TryParseExact(
+                input,
+                "dd/MM/yyyy",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var d
+            )
+        )
         {
             // Specify that this date is UTC to prevent local time offsets
             return DateTime.SpecifyKind(d, DateTimeKind.Utc);
