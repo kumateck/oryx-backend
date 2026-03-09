@@ -48,7 +48,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         return analyticalRawData.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, bool? isVerified = null)
     {
         var query = context.ProductAnalyticalRawData
             .AsSplitQuery()
@@ -57,6 +57,11 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .ThenInclude(p => p.Product)
             .Where(ad => !ad.DeletedAt.HasValue)
             .AsQueryable();
+
+        if (isVerified.HasValue)
+        {
+            query = query.Where(p => p.IsVerified == isVerified.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {

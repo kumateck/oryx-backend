@@ -10,7 +10,7 @@ public interface IMaterialAnalyticalRawDataRepository
 {
     Task<Result<Guid>> CreateAnalyticalRawData(CreateMaterialAnalyticalRawDataRequest request);
 
-    Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, MaterialKind materialKind);
+    Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, MaterialKind materialKind, bool? isVerified = null);
 
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id);
     Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterial(Guid id);
