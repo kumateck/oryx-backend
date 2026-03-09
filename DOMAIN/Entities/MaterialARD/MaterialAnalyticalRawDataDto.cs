@@ -14,6 +14,7 @@ public class MaterialAnalyticalRawDataDto : WithAttachment
     public MaterialStandardTestProcedureDto MaterialStandardTestProcedure { get; set; }
     public CollectionItemDto Form { get; set; }
     public UniformityOfWeightDto UniformityOfWeight { get; set; }
+    public bool IsVerified { get; set; }
 }
 
 public class MaterialBatchArd

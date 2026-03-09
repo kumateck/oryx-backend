@@ -14,6 +14,7 @@ public class ProductAnalyticalRawDataDto : WithAttachment
     public string Description { get; set; }
     public FormDto Form { get; set; }
     public ProductStandardTestProcedureDto ProductStandardTestProcedure { get; set; }
+    public bool IsVerified { get; set; }
 }
 
 public class ProductBatchArd

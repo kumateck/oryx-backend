@@ -31,4 +31,5 @@ public class ProductListDto
     public decimal Price { get; set; }
     public Division Division { get; set; }
     public string LabelClaim { get; set; }
+    public bool IsVerified { get; set; }
 }
