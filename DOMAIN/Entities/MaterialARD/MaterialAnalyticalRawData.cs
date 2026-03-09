@@ -6,7 +6,7 @@ using DOMAIN.Entities.UniformityOfWeights;
 
 namespace DOMAIN.Entities.MaterialARD;
 
-public class MaterialAnalyticalRawData : BaseEntity
+public class MaterialAnalyticalRawData : BaseEntity, IVerifiable
 {
     public string SpecNumber { get; set; }
 
@@ -20,4 +20,7 @@ public class MaterialAnalyticalRawData : BaseEntity
     public Form Form { get; set; }
     public Guid? UniformityOfWeightId { get; set; }
     public UniformityOfWeight UniformityOfWeight { get; set; }
+    public bool IsVerified { get; set; }
+    public DateTime? VerifiedAt { get; set; }
+    public Guid? VerifiedById { get; set; }
 }
