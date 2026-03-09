@@ -51,7 +51,8 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         int page,
         int pageSize,
         string searchQuery,
-        MaterialKind materialKind
+        MaterialKind materialKind,
+        bool? isVerified = null
     )
     {
         var query = context
@@ -62,6 +63,11 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Include(ms => ms.Response)
             .Where(ms => ms.Material.Kind == materialKind)
             .AsQueryable();
+
+        if (isVerified.HasValue)
+        {
+            query = query.Where(p => p.IsVerified == isVerified.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {

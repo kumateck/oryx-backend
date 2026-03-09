@@ -80,10 +80,16 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         string searchQuery,
         Guid? departmentId,
         Division? division,
-        string category
+        string category,
+        bool? isVerified = null
     )
     {
         var query = context.Products.AsSplitQuery().AsQueryable();
+
+        if (isVerified.HasValue)
+        {
+            query = query.Where(p => p.IsVerified == isVerified.Value);
+        }
 
         if (!string.IsNullOrEmpty(searchQuery))
         {

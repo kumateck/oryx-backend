@@ -43,9 +43,9 @@ public class VerificationRepository(ApplicationDbContext context) : IVerificatio
             );
         }
 
-        entity.IsVerified = request.Verify;
-        entity.VerifiedAt = request.Verify ? DateTime.UtcNow : null;
-        entity.VerifiedById = request.Verify ? userId : null;
+        entity.IsVerified = true;
+        entity.VerifiedAt = DateTime.UtcNow;
+        entity.VerifiedById = userId;
 
         await context.SaveChangesAsync();
         return Result.Success();
