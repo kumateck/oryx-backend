@@ -24,7 +24,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         return productSpec.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductSpecificationDto>>>> GetProductSpecifications(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ProductSpecificationDto>>>> GetProductSpecifications(int page, int pageSize, string searchQuery, bool? isVerified = null)
     {
         var query = context.ProductSpecifications
             .AsSplitQuery()
@@ -34,6 +34,11 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Include(ps => ps.CreatedBy)
             .Where(ps => !ps.DeletedAt.HasValue)
             .AsQueryable();
+
+        if (isVerified.HasValue)
+        {
+            query = query.Where(p => p.IsVerified == isVerified.Value);
+        }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductSpecificationDto>);
     }

@@ -31,9 +31,9 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialSpecificationDto>>))]
     public async Task<IResult> GetMaterialSpecifications([FromQuery] MaterialKind materialKind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery = null, [FromQuery] bool? isVerified = null)
     {
-        var result = await repository.GetMaterialSpecifications(page, pageSize, searchQuery, materialKind);
+        var result = await repository.GetMaterialSpecifications(page, pageSize, searchQuery, materialKind, isVerified);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

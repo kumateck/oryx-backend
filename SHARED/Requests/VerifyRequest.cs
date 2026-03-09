@@ -13,5 +13,4 @@ public class VerifyRequest
 {
     public VerifiableEntity ModelType { get; set; }
     public Guid ModelId { get; set; }
-    public bool Verify { get; set; } = true;
 }

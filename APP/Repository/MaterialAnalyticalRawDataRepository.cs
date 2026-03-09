@@ -47,7 +47,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         return analyticalRawData.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, MaterialKind materialKind)
+    public async Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, MaterialKind materialKind, bool? isVerified = null)
     {
         var query = context.MaterialAnalyticalRawData
             .AsSplitQuery()
@@ -56,6 +56,11 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .Include(ad => ad.Form)
             .Where(ad => ad.MaterialStandardTestProcedure.Material.Kind == materialKind)
             .AsQueryable();
+
+        if (isVerified.HasValue)
+        {
+            query = query.Where(p => p.IsVerified == isVerified.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {

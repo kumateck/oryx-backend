@@ -58,7 +58,8 @@ public class ProductController(IProductRepository repository) : ControllerBase
         [FromQuery] string searchQuery = null,
         [FromQuery] Guid? departmentId = null,
         [FromQuery] Division? division = null,
-        [FromQuery] string category = null
+        [FromQuery] string category = null,
+        [FromQuery] bool? isVerified = null
     )
     {
         var result = await repository.GetProducts(
@@ -67,7 +68,8 @@ public class ProductController(IProductRepository repository) : ControllerBase
             searchQuery,
             departmentId,
             division,
-            category
+            category,
+            isVerified
         );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
