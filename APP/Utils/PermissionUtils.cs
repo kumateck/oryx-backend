@@ -325,6 +325,7 @@ public static class PermissionKeys
     public const string CanAssignProductTest = "CanAssignProductTest";
     public const string CanStartProductTest = "CanStartProductTest";
     public const string CanCheckProductTest = "CanCheckProductTest";
+    public const string CanVerifyProduct = "CanVerifyProduct";
     public const string CanViewRawMaterialStps = "CanViewRawMaterialStps";
     public const string CanCreateRawMaterialStp = "CanCreateRawMaterialStp";
     public const string CanEditRawMaterialStp = "CanEditRawMaterialStp";
@@ -337,18 +338,22 @@ public static class PermissionKeys
     public const string CanCreateRawMaterialSpecification = "CanCreateRawMaterialSpecification";
     public const string CanEditRawMaterialSpecification = "CanEditRawMaterialSpecification";
     public const string CanDeleteRawMaterialSpecification = "CanDeleteRawMaterialSpecification";
+    public const string CanVerifyRawMaterialSpecification = "CanVerifyRawMaterialSpecification";
     public const string CanViewPackagingMaterialSpecifications = "CanViewPackagingMaterialSpecifications";
     public const string CanCreatePackagingMaterialSpecification = "CanCreatePackagingMaterialSpecification";
     public const string CanEditPackagingMaterialSpecification = "CanEditPackagingMaterialSpecification";
     public const string CanDeletePackagingMaterialSpecification = "CanDeletePackagingMaterialSpecification";
+    public const string CanVerifyPackagingMaterialSpecification = "CanVerifyPackagingMaterialSpecification";
     public const string CanViewRawMaterialArds = "CanViewRawMaterialArds";
     public const string CanCreateRawMaterialArd = "CanCreateRawMaterialArd";
     public const string CanEditRawMaterialArd = "CanEditRawMaterialArd";
     public const string CanDeleteRawMaterialArd = "CanDeleteRawMaterialArd";
+    public const string CanVerifyRawMaterialArd = "CanVerifyRawMaterialArd";
     public const string CanViewPackagingMaterialArds = "CanViewPackagingMaterialArds";
     public const string CanCreatePackagingMaterialArd = "CanCreatePackagingMaterialArd";
     public const string CanEditPackagingMaterialArd = "CanEditPackagingMaterialArd";
     public const string CanDeletePackagingMaterialArd = "CanDeletePackagingMaterialArd";
+    public const string CanVerifyPackagingMaterialArd = "CanVerifyPackagingMaterialArd";
     public const string CanViewProductStps = "CanViewProductStps";
     public const string CanCreateProductStp = "CanCreateProductStp";
     public const string CanEditProductStp = "CanEditProductStp";
@@ -357,10 +362,12 @@ public static class PermissionKeys
     public const string CanCreateProductSpecification = "CanCreateProductSpecification";
     public const string CanEditProductSpecification = "CanEditProductSpecification";
     public const string CanDeleteProductSpecification = "CanDeleteProductSpecification";
+    public const string CanVerifyProductSpecification = "CanVerifyProductSpecification";
     public const string CanViewProductArds = "CanViewProductArds";
     public const string CanCreateProductArd = "CanCreateProductArd";
     public const string CanEditProductArd = "CanEditProductArd";
     public const string CanDeleteProductArd = "CanDeleteProductArd";
+    public const string CanVerifyProductArd = "CanVerifyProductArd";
 
     // Quality Assurance
     public const string CanViewIssuedBmrBprs = "CanViewIssuedBmrBprs";
@@ -987,6 +994,13 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.IssueBmr, PermissionKeys.CanIssueBmr);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanViewAnalyticalTestRequests);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanTakeSamples);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyProduct);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyRawMaterialSpecification);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyPackagingMaterialSpecification);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyProductSpecification);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyRawMaterialArd);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyPackagingMaterialArd);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyProductArd);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanViewPendingApprovals);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanApprovePendingApproval);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectPendingApproval);
