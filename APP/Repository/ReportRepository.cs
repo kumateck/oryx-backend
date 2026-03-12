@@ -3365,6 +3365,8 @@ public async Task<Result<List<InvoicedProductsSummaryReportDto>>> GetInvoicedPro
         invoicesQuery = invoicesQuery.Where(p => p.Products.Any(pr => pr.Product.Division == filters.WarehouseDivision.Value));
 
     var invoices = await invoicesQuery
+        .AsNoTracking()
+        .AsSplitQuery()
         .Include(p => p.AllocateProductionOrder)
         .ThenInclude(p => p.ProductionOrder)
         .ThenInclude(p => p.Customer)
@@ -3450,6 +3452,8 @@ public async Task<Result<List<InvoicedProductsDetailedReportDto>>> GetInvoicedPr
         invoicesQuery = invoicesQuery.Where(p => p.Products.Any(pr => pr.Product.Division == filters.WarehouseDivision.Value));
 
     var invoices = await invoicesQuery
+        .AsNoTracking()
+        .AsSplitQuery()
         .Include(p => p.AllocateProductionOrder)
         .ThenInclude(p => p.ProductionOrder)
         .ThenInclude(p => p.Customer)
