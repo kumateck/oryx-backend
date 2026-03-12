@@ -572,4 +572,32 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
             ? TypedResults.Ok(result.Value)
             : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Gets summary of invoiced products allocated to customers
+    /// </summary>
+    [HttpGet("invoiced-products-summary")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<InvoicedProductsSummaryReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetInvoicedProductsSummary([FromQuery] InvoicedProductFilters filters)
+    {
+        var result = await repository.GetInvoicedProductsSummary(filters);
+        return result.IsSuccess 
+            ? TypedResults.Ok(result.Value) 
+            : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets detailed list of invoiced products with allocation and batch information
+    /// </summary>
+    [HttpGet("invoiced-products-detailed")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<InvoicedProductsDetailedReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetInvoicedProductsDetailed([FromQuery] InvoicedProductFilters filters)
+    {
+        var result = await repository.GetInvoicedProductsDetailedReport(filters);
+        return result.IsSuccess 
+            ? TypedResults.Ok(result.Value) 
+            : result.ToProblemDetails();
+    }
 }
