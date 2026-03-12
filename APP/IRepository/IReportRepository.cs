@@ -94,4 +94,8 @@ public interface IReportRepository
     Task<Result<GeneralInventoryDashboardDto>> GetGeneralInventoryDashboard(DateFilter filter);
     Task<Result<List<ItemBelowReorderDto>>> GetItemBelowReorder( );
     Task<Result<ServicesDashboardReportDto>> GetServicesDashboard(DateFilter filter);
+    Task<Result<List<InvoicedProductsSummaryReportDto>>> GetInvoicedProductsSummary(
+        InvoicedProductFilters filters);
+    Task<Result<List<InvoicedProductsDetailedReportDto>>> GetInvoicedProductsDetailedReport(
+        InvoicedProductFilters filters);
 }
