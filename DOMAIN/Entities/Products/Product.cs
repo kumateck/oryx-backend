@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DOMAIN.Entities.Products;
 
-public class Product : BaseEntity
+public class Product : BaseEntity, IVerifiable
 {
     [StringLength(255)] public string Code { get; set; }
     [StringLength(255)] public string Name { get; set; }
@@ -43,6 +43,9 @@ public class Product : BaseEntity
     public Division Division { get; set; }
     public List<ProductPrices> Prices { get; set; } = [];
     public List<ProductPacking> Packings { get; set; } = [];
+    public bool IsVerified { get; set; }
+    public DateTime? VerifiedAt { get; set; }
+    public Guid? VerifiedById { get; set; }
 }
 
 [Owned]

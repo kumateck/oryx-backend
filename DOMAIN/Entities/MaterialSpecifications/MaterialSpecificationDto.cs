@@ -21,6 +21,7 @@ public class MaterialSpecificationDto : BaseDto
     public MaterialAnalyticalRawDataDto MaterialAnalyticalRawData { get; set; }
     public MaterialDto Material { get; set; }
     public List<FormSectionDto> FormSections { get; set; } = [];
+    public bool IsVerified { get; set; }
 }
 
 public class MaterialSpecificationReducedDto

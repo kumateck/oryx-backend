@@ -27,4 +27,5 @@ public class ProductSpecificationDto : BaseDto
     public ProductDto Product { get; set; }
     public ResponseDto Response { get; set; }
     public List<FormSectionDto> FormSections { get; set; } = [];
+    public bool IsVerified { get; set; }
 }

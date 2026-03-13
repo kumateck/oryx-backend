@@ -6,7 +6,7 @@ using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.ProductSpecifications;
 
-public class ProductSpecification : BaseEntity
+public class ProductSpecification : BaseEntity, IVerifiable
 {
     public string SpecificationNumber { get; set; }
     public string RevisionNumber { get; set; }
@@ -28,4 +28,7 @@ public class ProductSpecification : BaseEntity
     public Guid? ResponseId { get; set; }
     public Response Response { get; set; }
     public List<FormSection> FormSections { get; set; } = [];
+    public bool IsVerified { get; set; }
+    public DateTime? VerifiedAt { get; set; }
+    public Guid? VerifiedById { get; set; }
 }

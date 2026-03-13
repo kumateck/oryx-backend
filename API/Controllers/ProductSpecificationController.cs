@@ -31,9 +31,9 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductSpecificationDto>>))]
     public async Task<IResult> GetProductSpecifications([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery = null, [FromQuery] bool? isVerified = null)
     {
-        var result = await repository.GetProductSpecifications(page, pageSize, searchQuery);
+        var result = await repository.GetProductSpecifications(page, pageSize, searchQuery, isVerified);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
