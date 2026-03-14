@@ -8,6 +8,7 @@ using APP;
 using APP.Mapper;
 using APP.Middlewares;
 using Asp.Versioning;
+using AutoMapper.Internal;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -146,7 +147,13 @@ builder.Services.AddRateLimiter(options =>
 });
 
 //add automapper
-builder.Services.AddAutoMapper(typeof(OryxMapper));
+builder.Services.AddAutoMapper(
+    cfg =>
+    {
+        cfg.Internal().MaxExecutionPlanDepth = 32;
+    },
+    typeof(OryxMapper)
+);
 
 //configure database
 var defaultDbConnectionString =
