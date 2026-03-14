@@ -11,7 +11,7 @@ public class FormDto : BaseDto
     public FormType Type { get; set; }
     public List<FormSectionDto> Sections { get; set; } = [];
     public List<FormResponseDto> Responses { get; set; } = [];
-    public List<FormReviewerDto> Reviewers { get; set; } = [];
+    // public List<FormReviewerDto> Reviewers { get; set; } = [];
 }
 
 public class FormSectionDto : BaseDto
@@ -40,6 +40,7 @@ public class ResponseDto : BaseDto
     public CollectionItemDto Form { get; set; }
     public List<FormResponseDto> FormResponses { get; set; } = [];
 }
+
 public class ResponseDetailDto : ResponseDto
 {
     public CollectionItemDto BatchManufacturingRecord { get; set; }
@@ -48,7 +49,6 @@ public class ResponseDetailDto : ResponseDto
     public DateTime? CheckedAt { get; set; }
 }
 
-
 public class FormResponseDto : WithAttachment
 {
     public FormFieldDto FormField { get; set; }
@@ -56,7 +56,6 @@ public class FormResponseDto : WithAttachment
     public UserDto CheckedBy { get; set; }
     public DateTime? CheckedAt { get; set; }
 }
-
 
 public class FormReviewerDto : BaseDto
 {
