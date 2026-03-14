@@ -12,17 +12,23 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IMapper mapper) : IProductAnalyticalRawDataRepository
+public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IMapper mapper)
+    : IProductAnalyticalRawDataRepository
 {
-    public async Task<Result<Guid>> CreateAnalyticalRawData(CreateProductAnalyticalRawDataRequest request)
+    public async Task<Result<Guid>> CreateAnalyticalRawData(
+        CreateProductAnalyticalRawDataRequest request
+    )
     {
-        var existingAnalyticalRawData = await context.ProductAnalyticalRawData
-            .IgnoreQueryFilters()
+        var existingAnalyticalRawData = await context
+            .ProductAnalyticalRawData.IgnoreQueryFilters()
             .Where(ad => !ad.DeletedAt.HasValue)
             .AnyAsync(ad => ad.SpecNumber == request.SpecNumber);
         if (existingAnalyticalRawData)
         {
-            return Error.Validation("ProductAnalyticalRawData.Exists", "Analytical raw data already exists.");
+            return Error.Validation(
+                "ProductAnalyticalRawData.Exists",
+                "Analytical raw data already exists."
+            );
         }
 
         var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId);
@@ -32,12 +38,16 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             return Error.Validation("Form.Invalid", "Form is invalid.");
         }
 
-        var stpNumber = await context.ProductStandardTestProcedures
-            .AnyAsync(mstp => mstp.Id == request.StpId);
+        var stpNumber = await context.ProductStandardTestProcedures.AnyAsync(mstp =>
+            mstp.Id == request.StpId
+        );
 
         if (!stpNumber)
         {
-            return Error.Validation("ProductAnalyticalRawData.StpNumberNotFound", "Stp number not found.");
+            return Error.Validation(
+                "ProductAnalyticalRawData.StpNumberNotFound",
+                "Stp number not found."
+            );
         }
 
         var analyticalRawData = mapper.Map<ProductAnalyticalRawData>(request);
@@ -48,13 +58,15 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         return analyticalRawData.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, bool? isVerified = null)
+    public async Task<
+        Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>
+    > GetAnalyticalRawData(int page, int pageSize, string searchQuery, bool? isVerified = null)
     {
-        var query = context.ProductAnalyticalRawData
-            .AsSplitQuery()
+        var query = context
+            .ProductAnalyticalRawData.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(ad => ad.ProductStandardTestProcedure)
-            .ThenInclude(p => p.Product)
+                .ThenInclude(p => p.Product)
             .Where(ad => !ad.DeletedAt.HasValue)
             .AsQueryable();
 
@@ -65,10 +77,12 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery,
+            query = query.WhereSearch(
+                searchQuery,
                 ad => ad.SpecNumber,
                 ad => ad.ProductStandardTestProcedure.StpNumber,
-                ad => ad.ProductStandardTestProcedure.Product.Name);
+                ad => ad.ProductStandardTestProcedure.Product.Name
+            );
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -81,74 +95,106 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             query,
             page,
             pageSize,
-            entity => mapper.Map<ProductAnalyticalRawDataDto>(entity, opts =>
-            {
-                opts.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
-            }));
+            entity =>
+                mapper.Map<ProductAnalyticalRawDataDto>(
+                    entity,
+                    opts =>
+                    {
+                        opts.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
+                    }
+                )
+        );
     }
 
     public async Task<Result<ProductAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id)
     {
-        var analyticalRawData = await context.ProductAnalyticalRawData
-            .AsSplitQuery()
+        var analyticalRawData = await context
+            .ProductAnalyticalRawData.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(ad => ad.Form)
             .Include(ad => ad.ProductStandardTestProcedure)
-            .ThenInclude(ad => ad.Product)
+                .ThenInclude(ad => ad.Product)
+            .Include(ad => ad.Form)
+                .ThenInclude(f => f.Sections.OrderBy(s => s.Order))
+                    .ThenInclude(f => f.Instrument)
+                        .ThenInclude(f => f.QcEquipmentCategory)
             .Where(ad => !ad.DeletedAt.HasValue)
             .FirstOrDefaultAsync(ad => ad.Id == id);
 
-        return analyticalRawData is null ?
-            Error.NotFound("ProductAnalyticalRawData.NotFound", "Product analytical raw data not found") :
-            mapper.Map<ProductAnalyticalRawDataDto>(analyticalRawData, opts =>
-            {
-                opts.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
-            });
+        return analyticalRawData is null
+            ? Error.NotFound(
+                "ProductAnalyticalRawData.NotFound",
+                "Product analytical raw data not found"
+            )
+            : mapper.Map<ProductAnalyticalRawDataDto>(
+                analyticalRawData,
+                opts =>
+                {
+                    opts.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
+                }
+            );
     }
 
-    public async Task<Result<List<ProductAnalyticalRawDataDto>>> GetAnalyticalRawDataByProduct(Guid id)
+    public async Task<Result<List<ProductAnalyticalRawDataDto>>> GetAnalyticalRawDataByProduct(
+        Guid id
+    )
     {
-        var analyticalRawData = await context.ProductAnalyticalRawData
-            .AsSplitQuery()
+        var analyticalRawData = await context
+            .ProductAnalyticalRawData.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(ad => ad.Form)
-            .ThenInclude(f => f.Sections).ThenInclude(f => f.Fields)
-            .ThenInclude(f => f.Question)
+                .ThenInclude(f => f.Sections.OrderBy(s => s.Order))
+                    .ThenInclude(f => f.Fields.OrderBy(fi => fi.Rank))
+                        .ThenInclude(f => f.Question)
+            .Include(ad => ad.Form)
+                .ThenInclude(f => f.Sections.OrderBy(s => s.Order))
+                    .ThenInclude(f => f.Instrument)
+                        .ThenInclude(f => f.QcEquipmentCategory)
             .Include(ad => ad.ProductStandardTestProcedure)
-            .ThenInclude(ad => ad.Product)
+                .ThenInclude(ad => ad.Product)
             .Where(ad => ad.ProductStandardTestProcedure.ProductId == id && !ad.DeletedAt.HasValue)
             .ToListAsync();
 
-        return mapper.Map<List<ProductAnalyticalRawDataDto>>(analyticalRawData, opt =>
-        {
-            opt.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
-        });
+        return mapper.Map<List<ProductAnalyticalRawDataDto>>(
+            analyticalRawData,
+            opt =>
+            {
+                opt.Items[AppConstants.ModelType] = nameof(ProductAnalyticalRawData);
+            }
+        );
     }
 
-    public async Task<Result<ProductBatchArd>> GetRelevantProductInfoForArd(Guid batchManufacturingRecordId)
+    public async Task<Result<ProductBatchArd>> GetRelevantProductInfoForArd(
+        Guid batchManufacturingRecordId
+    )
     {
-        var bmr = await context.BatchManufacturingRecords
-            .AsSplitQuery()
+        var bmr = await context
+            .BatchManufacturingRecords.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(batchManufacturingRecord => batchManufacturingRecord.IssuedBy)
             .Include(b => b.ProductionScheduleProduct)
             .Where(b => !b.DeletedAt.HasValue)
             .FirstOrDefaultAsync(m => m.Id == batchManufacturingRecordId);
 
-        if (bmr is null) return Error.NotFound("Bmr.NotFound", "Bmr not found.");
+        if (bmr is null)
+            return Error.NotFound("Bmr.NotFound", "Bmr not found.");
 
-        var productSampling = await context.ProductSamplings
-            .AsSplitQuery()
+        var productSampling = await context
+            .ProductSamplings.AsSplitQuery()
             .Include(m => m.CreatedBy)
             .Include(m => m.AnalyticalTestRequest)
-            .FirstOrDefaultAsync(m => m.AnalyticalTestRequest.BatchManufacturingRecordId == batchManufacturingRecordId);
+            .FirstOrDefaultAsync(m =>
+                m.AnalyticalTestRequest.BatchManufacturingRecordId == batchManufacturingRecordId
+            );
 
-        var productArd = await context.ProductAnalyticalRawData
-            .AsSplitQuery()
+        var productArd = await context
+            .ProductAnalyticalRawData.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(p => p.ProductStandardTestProcedure)
             .Where(p => !p.DeletedAt.HasValue)
-            .FirstOrDefaultAsync(p => p.ProductStandardTestProcedure.ProductId == bmr.ProductionScheduleProduct.ProductId);
+            .FirstOrDefaultAsync(p =>
+                p.ProductStandardTestProcedure.ProductId == bmr.ProductionScheduleProduct.ProductId
+            );
 
         return new ProductBatchArd
         {
@@ -163,14 +209,21 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         };
     }
 
-    public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateProductAnalyticalRawDataRequest request)
+    public async Task<Result> UpdateAnalyticalRawData(
+        Guid id,
+        CreateProductAnalyticalRawDataRequest request
+    )
     {
-        var analyticalRawData = await context.ProductAnalyticalRawData
-            .FirstOrDefaultAsync(ad => ad.Id == id);
+        var analyticalRawData = await context.ProductAnalyticalRawData.FirstOrDefaultAsync(ad =>
+            ad.Id == id
+        );
 
         if (analyticalRawData is null)
         {
-            return Error.NotFound("ProductAnalyticalRawData.NotFound", "Product analytical raw data not found");
+            return Error.NotFound(
+                "ProductAnalyticalRawData.NotFound",
+                "Product analytical raw data not found"
+            );
         }
 
         mapper.Map(request, analyticalRawData);
@@ -182,11 +235,15 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
 
     public async Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId)
     {
-        var analyticalRawData = await context.ProductAnalyticalRawData
-            .FirstOrDefaultAsync(ad => ad.Id == id);
+        var analyticalRawData = await context.ProductAnalyticalRawData.FirstOrDefaultAsync(ad =>
+            ad.Id == id
+        );
         if (analyticalRawData is null)
         {
-            return Error.NotFound("ProductAnalyticalRawData.NotFound", "Product analytical raw data not found");
+            return Error.NotFound(
+                "ProductAnalyticalRawData.NotFound",
+                "Product analytical raw data not found"
+            );
         }
 
         analyticalRawData.DeletedAt = DateTime.UtcNow;
@@ -199,8 +256,11 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
 
     public async Task<Result> StartTestForBatchManufacturingRecord(Guid id)
     {
-        var batchManufacturingRecord = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == id);
-        if (batchManufacturingRecord is null) return Error.NotFound("BMR.NotFound", "BMR not found");
+        var batchManufacturingRecord = await context.BatchManufacturingRecords.FirstOrDefaultAsync(
+            b => b.Id == id
+        );
+        if (batchManufacturingRecord is null)
+            return Error.NotFound("BMR.NotFound", "BMR not found");
 
         batchManufacturingRecord.Status = BatchManufacturingStatus.Testing;
         context.BatchManufacturingRecords.Update(batchManufacturingRecord);
