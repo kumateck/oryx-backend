@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Users;
 using SHARED;
 
@@ -19,7 +20,7 @@ public class FormSectionDto : BaseDto
     public CollectionItemDto Form { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
-    public CollectionItemDto Instrument { get; set; }
+    public QcEquipmentDto Instrument { get; set; }
     public int Order { get; set; }
     public List<FormFieldDto> Fields { get; set; } = [];
     public string Value { get; set; }
