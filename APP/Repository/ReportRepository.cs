@@ -3339,6 +3339,181 @@ public async Task<Result<ServicesDashboardReportDto>> GetServicesDashboard(DateF
     };
     return Result.Success(dashboard);
 }
+
+
+public async Task<Result<List<InvoicedProductsSummaryReportDto>>> GetInvoicedProductsSummary(InvoicedProductFilters filters)
+{
+    var invoicesQuery = context.ProformaInvoices
+        .AsNoTracking()
+        .AsSplitQuery()
+        .IgnoreQueryFilters()
+        .Where(p => !p.DeletedAt.HasValue);
+
+    if (filters.StartDate.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.CreatedAt >= filters.StartDate.Value);
+
+    if (filters.EndDate.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.CreatedAt <= filters.EndDate.Value);
+
+    if (filters.CustomerId.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.AllocateProductionOrder.ProductionOrder.CustomerId == filters.CustomerId.Value);
+
+    if (filters.ProductId.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.Products.Any(pr => pr.ProductId == filters.ProductId.Value));
+
+    if (filters.WarehouseDivision.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.Products.Any(pr => pr.Product.Division == filters.WarehouseDivision.Value));
+
+    var invoices = await invoicesQuery
+        .AsNoTracking()
+        .AsSplitQuery()
+        .Include(p => p.AllocateProductionOrder)
+        .ThenInclude(p => p.ProductionOrder)
+        .ThenInclude(p => p.Customer)
+        .Include(p => p.Products)
+        .ThenInclude(p => p.Product)
+        .Include(p => p.AllocateProductionOrder)
+        .ThenInclude(p => p.Products)
+        .ThenInclude(p => p.FulfilledQuantities)
+        .ThenInclude(p => p.FinishedGoodsTransferNote)
+        .ThenInclude(p => p.BatchManufacturingRecord)
+        .ToListAsync();
+
+    var query = invoices
+        .SelectMany(invoice => invoice.Products.Select(p => new
+        {
+            Invoice = invoice,
+            Product = p.Product,
+            InvoiceProduct = p,
+            Allocation = invoice.AllocateProductionOrder,
+            ProductionOrder = invoice.AllocateProductionOrder.ProductionOrder,
+            Customer = invoice.AllocateProductionOrder.ProductionOrder.Customer
+        }));
+
+    var data = query
+        .Select(x => new InvoicedProductsSummaryReportDto
+        {
+            InvoiceNo = x.Invoice.Code,
+            InvoiceDate = x.Invoice.CreatedAt,
+
+            CustomerName = x.Customer.Name,
+
+            OrderNo = x.ProductionOrder.Code,
+            OrderDate = x.ProductionOrder.CreatedAt,
+
+            NoOfBatches = x.Allocation.Products
+                .Where(op => op.ProductId == x.Product.Id)
+                .SelectMany(op => op.FulfilledQuantities)
+                .Select(q => q.FinishedGoodsTransferNote.BatchManufacturingRecord.BatchNumber)
+                .Distinct()
+                .Count(),
+
+            OrderQuantity = x.InvoiceProduct.Quantity,
+            QuantityAllocated = x.Allocation.Products
+                .Where(op => op.ProductId == x.Product.Id)
+                .SelectMany(op => op.FulfilledQuantities)
+                .Sum(q => q.Quantity),
+
+            Uom = x.Product.BaseUoM.Symbol,
+            UnitPrice = x.Product.Price,
+
+            ProductName = x.Product.Name,
+            ProductCode = x.Product.Code
+        })
+        .ToList();
+
+    for (var i = 0; i < data.Count; i++)
+        data[i].No = i + 1;
+
+    return Result.Success(data);
+}
+
+public async Task<Result<List<InvoicedProductsDetailedReportDto>>> GetInvoicedProductsDetailedReport(InvoicedProductFilters filters)
+{
+    var invoicesQuery = context.ProformaInvoices
+        .AsNoTracking()
+        .AsSplitQuery()
+        .IgnoreQueryFilters()
+        .Where(p => !p.DeletedAt.HasValue);
+
+    if (filters.StartDate.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.CreatedAt >= filters.StartDate.Value);
+
+    if (filters.EndDate.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.CreatedAt <= filters.EndDate.Value);
+
+    if (filters.CustomerId.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.AllocateProductionOrder.ProductionOrder.CustomerId == filters.CustomerId.Value);
+
+    if (filters.ProductId.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.Products.Any(pr => pr.ProductId == filters.ProductId.Value));
+
+    if (filters.WarehouseDivision.HasValue)
+        invoicesQuery = invoicesQuery.Where(p => p.Products.Any(pr => pr.Product.Division == filters.WarehouseDivision.Value));
+
+    var invoices = await invoicesQuery
+        .AsNoTracking()
+        .AsSplitQuery()
+        .Include(p => p.AllocateProductionOrder)
+        .ThenInclude(p => p.ProductionOrder)
+        .ThenInclude(p => p.Customer)
+        .Include(p => p.Products)
+        .ThenInclude(p => p.Product)
+        .Include(p => p.AllocateProductionOrder)
+        .ThenInclude(p => p.Products)
+        .ThenInclude(p => p.FulfilledQuantities)
+        .ThenInclude(p => p.FinishedGoodsTransferNote)
+        .ThenInclude(p => p.BatchManufacturingRecord)
+        .ToListAsync();
+
+    var query = invoices
+        .SelectMany(invoice => invoice.Products
+            .SelectMany(p => invoice.AllocateProductionOrder.Products
+                .Where(op => op.ProductId == p.ProductId)
+                .SelectMany(pop => pop.FulfilledQuantities.Select(fq => new
+                {
+                    Invoice = invoice,
+                    InvoiceProduct = p,
+                    Product = p.Product,
+                    Allocation = invoice.AllocateProductionOrder,
+                    ProductionOrder = invoice.AllocateProductionOrder.ProductionOrder,
+                    Fulfilled = fq,
+                    Batch = fq.FinishedGoodsTransferNote.BatchManufacturingRecord
+                }))));
+
+    var data = query
+        .Select(x => new InvoicedProductsDetailedReportDto
+        {
+            InvoiceNo = x.Invoice.Code,
+            InvoiceDate = x.Invoice.CreatedAt,
+
+            CustomerName = x.ProductionOrder.Customer.Name,
+
+            OrderNo = x.ProductionOrder.Code,
+            OrderDate = x.ProductionOrder.CreatedAt,
+
+            ProductName = x.Product.Name,
+            ProductCode = x.Product.Code,
+
+            BatchNo = x.Batch.BatchNumber,
+
+            OrderQuantity = x.InvoiceProduct.Quantity,
+
+            QuantityAllocated = x.Fulfilled.Quantity,
+
+            Uom = x.Product.BaseUoM.Symbol,
+
+            UnitPrice = x.Product.Price,
+
+            AllocationStatus = x.Allocation.Status
+        })
+        .ToList();
+
+    for (var i = 0; i < data.Count; i++)
+        data[i].No = i + 1;
+
+    return Result.Success(data);
+}
 }
 
 

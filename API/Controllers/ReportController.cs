@@ -11,6 +11,8 @@ using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Reports.Procurement;
+using APP.Utils;
+
 using DOMAIN.Entities.Reports.GeneralInventory;
 using DOMAIN.Entities.Reports.PurchaseOrder;
 using DOMAIN.Entities.Reports.Services;
@@ -568,6 +570,34 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
         var result = await repository.GetServicesDashboard(filter);
         return result.IsSuccess
             ? TypedResults.Ok(result.Value)
+            : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Gets summary of invoiced products allocated to customers
+    /// </summary>
+    [HttpGet("invoiced-products-summary")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<InvoicedProductsSummaryReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetInvoicedProductsSummary([FromQuery] InvoicedProductFilters filters)
+    {
+        var result = await repository.GetInvoicedProductsSummary(filters);
+        return result.IsSuccess 
+            ? TypedResults.Ok(result.Value) 
+            : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets detailed list of invoiced products with allocation and batch information
+    /// </summary>
+    [HttpGet("invoiced-products-detailed")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<InvoicedProductsDetailedReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetInvoicedProductsDetailed([FromQuery] InvoicedProductFilters filters)
+    {
+        var result = await repository.GetInvoicedProductsDetailedReport(filters);
+        return result.IsSuccess 
+            ? TypedResults.Ok(result.Value) 
             : result.ToProblemDetails();
     }
 }

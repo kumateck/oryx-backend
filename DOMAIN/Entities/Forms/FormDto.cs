@@ -1,5 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Users;
 using SHARED;
 
@@ -11,7 +12,7 @@ public class FormDto : BaseDto
     public FormType Type { get; set; }
     public List<FormSectionDto> Sections { get; set; } = [];
     public List<FormResponseDto> Responses { get; set; } = [];
-    public List<FormReviewerDto> Reviewers { get; set; } = [];
+    // public List<FormReviewerDto> Reviewers { get; set; } = [];
 }
 
 public class FormSectionDto : BaseDto
@@ -19,7 +20,7 @@ public class FormSectionDto : BaseDto
     public CollectionItemDto Form { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
-    public CollectionItemDto Instrument { get; set; }
+    public QcEquipmentDto Instrument { get; set; }
     public int Order { get; set; }
     public List<FormFieldDto> Fields { get; set; } = [];
     public string Value { get; set; }
@@ -40,6 +41,7 @@ public class ResponseDto : BaseDto
     public CollectionItemDto Form { get; set; }
     public List<FormResponseDto> FormResponses { get; set; } = [];
 }
+
 public class ResponseDetailDto : ResponseDto
 {
     public CollectionItemDto BatchManufacturingRecord { get; set; }
@@ -48,7 +50,6 @@ public class ResponseDetailDto : ResponseDto
     public DateTime? CheckedAt { get; set; }
 }
 
-
 public class FormResponseDto : WithAttachment
 {
     public FormFieldDto FormField { get; set; }
@@ -56,7 +57,6 @@ public class FormResponseDto : WithAttachment
     public UserDto CheckedBy { get; set; }
     public DateTime? CheckedAt { get; set; }
 }
-
 
 public class FormReviewerDto : BaseDto
 {
