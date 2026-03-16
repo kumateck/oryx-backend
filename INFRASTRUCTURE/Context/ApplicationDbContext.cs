@@ -25,6 +25,7 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.ItemShipments;
 using DOMAIN.Entities.Invoices;
 using DOMAIN.Entities.ItemGrns;
 using DOMAIN.Entities.ItemInventoryTransactions;
@@ -584,6 +585,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Item> Items { get; set; }
     public DbSet<ItemGrn> ItemGrns { get; set; }
     public DbSet<ItemCategory> ItemCategories { get; set; }
+    public DbSet<ItemShipmentInvoice> ItemShipmentInvoices { get; set; }
+    public DbSet<ItemShipmentInvoiceItem> ItemShipmentInvoiceItems { get; set; }
+    public DbSet<ItemShipmentDocument> ItemShipmentDocuments { get; set; }
+    public DbSet<ItemBillingSheet> ItemBillingSheets { get; set; }
+    public DbSet<ItemBillingSheetCharge> ItemBillingSheetCharges { get; set; }
 
     #endregion
 
