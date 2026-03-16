@@ -31,6 +31,7 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemGrns;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.ItemTransactionLogs;
@@ -98,6 +99,10 @@ public class OryxMapper : Profile
 {
     public OryxMapper()
     {
+        #region ItemGrns
+        CreateMap<CreateItemGrnRequest, ItemGrn>();
+        CreateMap<ItemGrn, ItemGrnDto>();
+        #endregion
 
         #region CreateItemRequest
 

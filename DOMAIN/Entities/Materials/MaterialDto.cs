@@ -1,5 +1,4 @@
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSpecifications;
 

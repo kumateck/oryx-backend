@@ -2,8 +2,12 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.ItemShipments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemTransactionLogs;
+using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.PurchaseOrders.Request;
+using DOMAIN.Entities.Shipments;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
@@ -310,5 +314,579 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
         var result = mapper.Map<List<ItemTransactionLogDto>>(transactions);
 
         return Result.Success(result);
+    }
+
+    // ************* Item Shipment Invoice *************
+
+    public async Task<Result<Guid>> CreateItemShipmentInvoice(CreateItemShipmentInvoice request, Guid userId)
+    {
+        if (await context.ItemShipmentInvoices.AnyAsync(i => i.Code == request.Code))
+        {
+            return Error.Validation("Code", "Item shipment invoice code already exists.");
+        }
+
+        if (request.CurrencyId.HasValue)
+        {
+            var exists = await context.Currencies.AnyAsync(i => i.Id == request.CurrencyId.Value);
+            if (!exists) return Error.Validation("Currency.NotFound", "Currency not found.");
+        }
+
+        if (request.SupplierId.HasValue)
+        {
+            var exists = await context.Suppliers.AnyAsync(i => i.Id == request.SupplierId.Value);
+            if (!exists) return Error.Validation("SupplierId.NotFound", "Supplier not found.");
+        }
+
+        var invoice = mapper.Map<ItemShipmentInvoice>(request);
+        invoice.CreatedById = userId;
+        await context.ItemShipmentInvoices.AddAsync(invoice);
+        await context.SaveChangesAsync();
+        return invoice.Id;
+    }
+
+    public async Task<Result<ItemShipmentInvoiceDto>> GetItemShipmentInvoice(Guid invoiceId)
+    {
+        var invoice = await context.ItemShipmentInvoices
+            .AsSplitQuery()
+            .Include(si => si.Items)
+                .ThenInclude(item => item.Item)
+            .Include(si => si.Items)
+                .ThenInclude(item => item.UoM)
+            .Include(si => si.Items)
+                .ThenInclude(item => item.Currency)
+            .Include(si => si.Supplier)
+            .Include(si => si.Currency)
+            .FirstOrDefaultAsync(si => si.Id == invoiceId);
+
+        return invoice is null
+            ? Error.NotFound("ItemShipmentInvoice.NotFound", "Item shipment invoice not found")
+            : mapper.Map<ItemShipmentInvoiceDto>(invoice);
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<ItemShipmentInvoiceDto>>>> GetItemShipmentInvoices(int page, int pageSize, string searchQuery)
+    {
+        var query = context.ItemShipmentInvoices
+            .AsSplitQuery()
+            .Include(si => si.Items)
+                .ThenInclude(item => item.Item)
+            .Include(si => si.Items)
+                .ThenInclude(item => item.UoM)
+            .Include(si => si.Supplier)
+            .Include(si => si.Currency)
+            .OrderByDescending(s => s.CreatedAt)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, bs => bs.Code);
+        }
+
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var invoices = await paginatedResult.Data.ToListAsync();
+
+        return new Paginateable<IEnumerable<ItemShipmentInvoiceDto>>
+        {
+            Data = mapper.Map<IEnumerable<ItemShipmentInvoiceDto>>(invoices),
+            PageIndex = page,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+    }
+
+    public async Task<Result<IEnumerable<ItemShipmentInvoiceDto>>> GetUnattachedItemShipmentInvoices()
+    {
+        var unattached = await context.ItemShipmentInvoices
+            .AsSplitQuery()
+            .Where(si => !context.ItemShipmentDocuments.Any(sd => sd.ItemShipmentInvoiceId == si.Id))
+            .Include(si => si.Items)
+                .ThenInclude(item => item.Item)
+            .Include(si => si.Items)
+                .ThenInclude(item => item.UoM)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+
+        return mapper.Map<List<ItemShipmentInvoiceDto>>(unattached);
+    }
+
+    public async Task<Result> UpdateItemShipmentInvoice(CreateItemShipmentInvoice request, Guid invoiceId, Guid userId)
+    {
+        var existing = await context.ItemShipmentInvoices
+            .Include(si => si.Items)
+            .FirstOrDefaultAsync(si => si.Id == invoiceId);
+        if (existing is null)
+        {
+            return Error.NotFound("ItemShipmentInvoice.NotFound", "Item shipment invoice not found");
+        }
+        
+        if (request.CurrencyId.HasValue)
+        {
+            var exists = await context.Currencies.AnyAsync(i => i.Id == request.CurrencyId.Value);
+            if (!exists) return Error.Validation("Currency.NotFound", "Currency not found.");
+        }
+
+        if (request.SupplierId.HasValue)
+        {
+            var exists = await context.Suppliers.AnyAsync(i => i.Id == request.SupplierId.Value);
+            if (!exists) return Error.Validation("SupplierId.NotFound", "Supplier not found.");
+        }
+
+        mapper.Map(request, existing);
+        existing.LastUpdatedById = userId;
+
+        context.ItemShipmentInvoices.Update(existing);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> MarkItemShipmentInvoiceAsPaid(Guid invoiceId, DateTime? paidAt, Guid userId)
+    {
+        var existing = await context.ItemShipmentInvoices
+            .Include(si => si.Items)
+            .FirstOrDefaultAsync(si => si.Id == invoiceId);
+        if (existing is null)
+        {
+            return Error.NotFound("ItemShipmentInvoice.NotFound", "Item shipment invoice not found");
+        }
+
+        var existingBillingSheet = await context.ItemBillingSheets
+            .FirstOrDefaultAsync(bs => bs.InvoiceId == invoiceId);
+        if (existingBillingSheet is not null)
+        {
+            existingBillingSheet.Status = BillingSheetStatus.Paid;
+            context.ItemBillingSheets.Update(existingBillingSheet);
+        }
+
+        existing.PaidAt = paidAt ?? DateTime.UtcNow;
+        existing.LastUpdatedById = userId;
+        context.ItemShipmentInvoices.Update(existing);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteItemShipmentInvoice(Guid invoiceId, Guid userId)
+    {
+        var invoice = await context.ItemShipmentInvoices.FirstOrDefaultAsync(si => si.Id == invoiceId);
+        if (invoice is null)
+        {
+            return Error.NotFound("ItemShipmentInvoice.NotFound", "Item shipment invoice not found");
+        }
+
+        invoice.DeletedAt = DateTime.UtcNow;
+        invoice.LastDeletedById = userId;
+
+        context.ItemShipmentInvoices.Update(invoice);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // ************* Item Shipment Document *************
+
+    public async Task<Result<Guid>> CreateItemShipmentDocument(CreateItemShipmentDocumentRequest request, Guid userId)
+    {
+        var shipmentDocument = mapper.Map<ItemShipmentDocument>(request);
+
+        if (request.ItemShipmentInvoiceId.HasValue)
+        {
+            var exists = await context.ItemShipmentInvoices.AnyAsync(i => i.Id == request.ItemShipmentInvoiceId.Value);
+            if (!exists) return Error.Validation("ItemShipmentInvoice.NotFound", "Item shipment invoice not found");
+        }
+        
+        shipmentDocument.Type = DocType.Shipment;
+        shipmentDocument.Status = ShipmentStatus.New;
+        shipmentDocument.CreatedById = userId;
+        await context.ItemShipmentDocuments.AddAsync(shipmentDocument);
+        await context.SaveChangesAsync();
+        return shipmentDocument.Id;
+    }
+
+    public async Task<Result<ItemShipmentDocumentDto>> GetItemShipmentDocument(Guid shipmentDocumentId)
+    {
+        var shipmentDocument = await context.ItemShipmentDocuments
+            .AsSplitQuery()
+            .Include(s => s.ItemShipmentInvoice)
+                .ThenInclude(s => s.Items)
+            .FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId);
+
+        return shipmentDocument is null
+            ? Error.NotFound("ItemShipmentDocument.NotFound", "Item shipment document not found")
+            : mapper.Map<ItemShipmentDocumentDto>(shipmentDocument);
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<ItemShipmentDocumentDto>>>> GetItemShipmentDocuments(int page, int pageSize, string searchQuery, bool? onlyApproved)
+    {
+        var query = context.ItemShipmentDocuments
+            .AsSplitQuery()
+            .Include(s => s.ItemShipmentInvoice)
+            .Where(s => s.Type == DocType.Shipment)
+            .OrderByDescending(s => s.CreatedAt)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, bs => bs.Code);
+        }
+
+        if (onlyApproved.HasValue)
+        {
+            if (onlyApproved.Value)
+            {
+                query = query.Where(q => q.Approved);
+            }
+        }
+
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var shipmentDocuments = await paginatedResult.Data.ToListAsync();
+
+        return new Paginateable<IEnumerable<ItemShipmentDocumentDto>>
+        {
+            Data = mapper.Map<IEnumerable<ItemShipmentDocumentDto>>(shipmentDocuments),
+            PageIndex = page,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+    }
+
+    public async Task<Result> UpdateItemShipmentDocument(CreateItemShipmentDocumentRequest request, Guid shipmentDocumentId, Guid userId)
+    {
+        var existing = await context.ItemShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Shipment);
+        if (existing is null)
+        {
+            return Error.NotFound("ItemShipmentDocument.NotFound", "Item shipment document not found");
+        }
+        
+        if (request.ItemShipmentInvoiceId.HasValue)
+        {
+            var exists = await context.ItemShipmentInvoices.AnyAsync(i => i.Id == request.ItemShipmentInvoiceId.Value);
+            if (!exists) return Error.Validation("ItemShipmentInvoice.NotFound", "Item shipment invoice not found");
+        }
+
+        mapper.Map(request, existing);
+        existing.LastUpdatedById = userId;
+
+        context.ItemShipmentDocuments.Update(existing);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteItemShipmentDocument(Guid shipmentDocumentId, Guid userId)
+    {
+        var shipmentDocument = await context.ItemShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == shipmentDocumentId && bs.Type == DocType.Shipment);
+        if (shipmentDocument is null)
+        {
+            return Error.NotFound("ItemShipmentDocument.NotFound", "Item shipment document not found");
+        }
+
+        shipmentDocument.DeletedAt = DateTime.UtcNow;
+        shipmentDocument.LastDeletedById = userId;
+
+        context.ItemShipmentDocuments.Update(shipmentDocument);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> MarkItemShipmentAsArrived(Guid shipmentDocumentId, Guid userId)
+    {
+        var shipmentDocument = await context.ItemShipmentDocuments
+            .FirstOrDefaultAsync(sd => sd.Id == shipmentDocumentId);
+        if (shipmentDocument is null)
+        {
+            return Error.NotFound("ItemShipmentDocument.NotFound", "Item shipment document not found");
+        }
+
+        shipmentDocument.ArrivedAt = DateTime.UtcNow;
+        shipmentDocument.Status = ShipmentStatus.Arrived;
+        shipmentDocument.LastUpdatedById = userId;
+
+        context.ItemShipmentDocuments.Update(shipmentDocument);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // ************* Item Waybill *************
+
+    public async Task<Result<Guid>> CreateItemWaybill(CreateItemShipmentDocumentRequest request, Guid userId)
+    {
+        var waybill = mapper.Map<ItemShipmentDocument>(request);
+        if (request.ItemShipmentInvoiceId.HasValue)
+        {
+            var exists = await context.ItemShipmentInvoices.AnyAsync(i => i.Id == request.ItemShipmentInvoiceId.Value);
+            if (!exists) return Error.Validation("ItemShipmentInvoice.NotFound", "Item shipment invoice not found");
+        }
+        
+        waybill.Type = DocType.Waybill;
+        waybill.CreatedById = userId;
+        await context.ItemShipmentDocuments.AddAsync(waybill);
+        await context.SaveChangesAsync();
+        return waybill.Id;
+    }
+
+    public async Task<Result<ItemShipmentDocumentDto>> GetItemWaybill(Guid waybillId)
+    {
+        var shipmentDocument = await context.ItemShipmentDocuments
+            .AsSplitQuery()
+            .Include(s => s.ItemShipmentInvoice)
+                .ThenInclude(s => s.Items)
+            .FirstOrDefaultAsync(bs => bs.Id == waybillId && bs.Type == DocType.Waybill);
+
+        return shipmentDocument is null
+            ? Error.NotFound("ItemShipmentDocument.NotFound", "Item waybill not found")
+            : mapper.Map<ItemShipmentDocumentDto>(shipmentDocument);
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<ItemShipmentDocumentDto>>>> GetItemWaybills(int page, int pageSize, string searchQuery, ShipmentStatus? status)
+    {
+        var query = context.ItemShipmentDocuments
+            .AsSplitQuery()
+            .Include(s => s.ItemShipmentInvoice)
+            .Where(s => s.Type == DocType.Waybill)
+            .OrderByDescending(s => s.CreatedAt)
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(s => s.Status == status.Value);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, bs => bs.Code);
+        }
+
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var shipmentDocuments = await paginatedResult.Data.ToListAsync();
+
+        return new Paginateable<IEnumerable<ItemShipmentDocumentDto>>
+        {
+            Data = mapper.Map<IEnumerable<ItemShipmentDocumentDto>>(shipmentDocuments),
+            PageIndex = page,
+            PageCount = paginatedResult.PageCount,
+            TotalRecordCount = paginatedResult.TotalRecordCount,
+            StartPageIndex = paginatedResult.StartPageIndex,
+            StopPageIndex = paginatedResult.StopPageIndex
+        };
+    }
+
+    public async Task<Result> UpdateItemWaybill(CreateItemShipmentDocumentRequest request, Guid waybillId, Guid userId)
+    {
+        var existing = await context.ItemShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == waybillId && bs.Type == DocType.Waybill);
+        if (existing is null)
+        {
+            return Error.NotFound("ItemShipmentDocument.NotFound", "Item waybill not found");
+        }
+        
+        if (request.ItemShipmentInvoiceId.HasValue)
+        {
+            var exists = await context.ItemShipmentInvoices.AnyAsync(i => i.Id == request.ItemShipmentInvoiceId.Value);
+            if (!exists) return Error.Validation("ItemShipmentInvoice.NotFound", "Item shipment invoice not found");
+        }
+
+        mapper.Map(request, existing);
+        existing.LastUpdatedById = userId;
+
+        context.ItemShipmentDocuments.Update(existing);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteItemWaybill(Guid waybillId, Guid userId)
+    {
+        var shipmentDocument = await context.ItemShipmentDocuments.FirstOrDefaultAsync(bs => bs.Id == waybillId && bs.Type == DocType.Waybill);
+        if (shipmentDocument is null)
+        {
+            return Error.NotFound("ItemShipmentDocument.NotFound", "Item waybill not found");
+        }
+
+        shipmentDocument.DeletedAt = DateTime.UtcNow;
+        shipmentDocument.LastDeletedById = userId;
+
+        context.ItemShipmentDocuments.Update(shipmentDocument);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // ************* Item Billing Sheet *************
+
+    public async Task<Result<Guid>> CreateItemBillingSheet(CreateItemBillingSheetRequest request, Guid userId)
+    {
+        if (await context.ItemBillingSheets.AnyAsync(s => s.InvoiceId == request.InvoiceId))
+        {
+            return Error.Validation("ItemBillingSheet.Duplicate", "A billing sheet for this invoice already exists.");
+        }
+
+        if (request.Charges.Count == 0)
+        {
+            return Error.Validation("ItemBillingSheet.Charges", "No charges for this invoice.");
+        }
+
+        var billingSheet = mapper.Map<ItemBillingSheet>(request);
+        billingSheet.CreatedById = userId;
+        await context.ItemBillingSheets.AddAsync(billingSheet);
+        await context.SaveChangesAsync();
+        return billingSheet.Id;
+    }
+
+    public async Task<Result<ItemBillingSheetDto>> GetItemBillingSheet(Guid billingSheetId)
+    {
+        var billingSheet = await context.ItemBillingSheets
+            .AsSplitQuery()
+            .Include(bs => bs.Supplier)
+                .ThenInclude(s => s.Currency)
+            .Include(bs => bs.Supplier)
+                .ThenInclude(s => s.Country)
+            .Include(bs => bs.Invoice)
+                .ThenInclude(i => i.Items)
+                .ThenInclude(ii => ii.Item)
+            .Include(bs => bs.Charges)
+                .ThenInclude(c => c.Charge)
+            .Include(bs => bs.Charges)
+                .ThenInclude(c => c.Currency)
+            .Include(bs => bs.ContainerPackageStyle)
+            .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
+
+        return billingSheet is null
+            ? Error.NotFound("ItemBillingSheet.NotFound", "Item billing sheet not found")
+            : mapper.Map<ItemBillingSheetDto>(billingSheet);
+    }
+
+    public async Task<Result<ItemBillingSheetDto>> GetItemBillingSheetByInvoice(Guid invoiceId)
+    {
+        var billingSheet = await context.ItemBillingSheets
+            .AsSplitQuery()
+            .Include(bs => bs.Supplier)
+                .ThenInclude(s => s.Currency)
+            .Include(bs => bs.Supplier)
+                .ThenInclude(s => s.Country)
+            .Include(bs => bs.Invoice)
+                .ThenInclude(i => i.Items)
+                .ThenInclude(ii => ii.Item)
+            .Include(bs => bs.Charges)
+                .ThenInclude(c => c.Charge)
+            .Include(bs => bs.Charges)
+                .ThenInclude(c => c.Currency)
+            .FirstOrDefaultAsync(bs => bs.InvoiceId == invoiceId);
+
+        return billingSheet is null
+            ? Error.NotFound("ItemBillingSheet.NotFound", "Item billing sheet not found")
+            : mapper.Map<ItemBillingSheetDto>(billingSheet);
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<ItemBillingSheetDto>>>> GetItemBillingSheets(int page, int pageSize, string searchQuery, BillingSheetStatus? status)
+    {
+        var query = context.ItemBillingSheets
+            .Include(bs => bs.Supplier)
+            .Include(bs => bs.Invoice)
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(q => q.Status == status.Value);
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, bs => bs.Code, bs => bs.BillOfLading);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<ItemBillingSheetDto>
+        );
+    }
+
+    public async Task<Result> UpdateItemBillingSheet(UpdateItemBillingSheetRequest request, Guid billingSheetId, Guid userId)
+    {
+        var existing = await context.ItemBillingSheets.FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
+        if (existing is null)
+        {
+            return Error.NotFound("ItemBillingSheet.NotFound", "Item billing sheet not found");
+        }
+        
+        if (request.SupplierId.HasValue)
+        {
+            var exists = await context.Suppliers.AnyAsync(i => i.Id == request.SupplierId.Value);
+            if (!exists) return Error.Validation("Supplier.NotFound", "Supplier not found");
+        }
+
+        if (request.ContainerPackageStyleId.HasValue)
+        {
+            var exists = await context.PackageStyles.AnyAsync(i => i.Id == request.ContainerPackageStyleId.Value);
+            if (!exists) return Error.Validation("Container.PackageStyle.NotFound", "Container package style not found");
+        }
+        
+        var invoiceExists = await context.ItemShipmentInvoices.AnyAsync(i => i.Id == request.InvoiceId);
+        if  (!invoiceExists) return Error.Validation("ItemShipmentInvoices.NotFound", "Item invoice not found");
+
+        mapper.Map(request, existing);
+        existing.LastUpdatedById = userId;
+
+        context.ItemBillingSheets.Update(existing);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> AddChargesToItemBillingSheet(List<CreateBillingSheetCharge> request, Guid billingSheetId, Guid userId)
+    {
+        var existing = await context.ItemBillingSheets
+            .AsSplitQuery()
+            .Include(bs => bs.Charges)
+            .FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
+
+        if (existing is null)
+        {
+            return Error.NotFound("ItemBillingSheet.NotFound", "Item billing sheet not found");
+        }
+        
+        if (request.Count == 0) return Error.Validation("Charges.NotFound", "No billing sheet charges found");
+
+        existing.Charges.AddRange(mapper.Map<List<ItemBillingSheetCharge>>(request));
+        existing.LastUpdatedById = userId;
+        context.ItemBillingSheets.Update(existing);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> MarkItemBillingSheetChargeAsPaid(MarkBillingSheetCharge request, Guid userId)
+    {
+        var existingCharges = await context.ItemBillingSheetCharges
+            .Where(bs => request.BillingSheetChargeIds.Contains(bs.Id))
+            .ToListAsync();
+
+        if (existingCharges.Count == 0)
+        {
+            return Error.NotFound("Charge.NotFound", "Item billing sheet charge not found");
+        }
+
+        await context.ItemBillingSheetCharges
+            .Where(bs => request.BillingSheetChargeIds.Contains(bs.Id))
+            .ExecuteUpdateAsync(setters =>
+                setters
+                    .SetProperty(e => e.Paid, true)
+                    .SetProperty(p => p.LastUpdatedById, userId)
+                    .SetProperty(p => p.LastUpdatedOn, DateTime.UtcNow));
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteItemBillingSheet(Guid billingSheetId, Guid userId)
+    {
+        var billingSheet = await context.ItemBillingSheets.FirstOrDefaultAsync(bs => bs.Id == billingSheetId);
+        if (billingSheet is null)
+        {
+            return Error.NotFound("ItemBillingSheet.NotFound", "Item billing sheet not found");
+        }
+
+        billingSheet.DeletedAt = DateTime.UtcNow;
+        billingSheet.LastDeletedById = userId;
+
+        context.ItemBillingSheets.Update(billingSheet);
+        await context.SaveChangesAsync();
+        return Result.Success();
     }
 }
