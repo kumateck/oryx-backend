@@ -58,6 +58,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         return analyticalRawData.Id;
     }
 
+
     public async Task<
         Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>
     > GetAnalyticalRawData(int page, int pageSize, string searchQuery, bool? isVerified = null)

@@ -25,7 +25,9 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.ItemShipments;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemGrns;
 using DOMAIN.Entities.ItemInventoryTransactions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.Items.Requisitions;
@@ -581,7 +583,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     #region Items
 
     public DbSet<Item> Items { get; set; }
+    public DbSet<ItemGrn> ItemGrns { get; set; }
     public DbSet<ItemCategory> ItemCategories { get; set; }
+    public DbSet<ItemShipmentInvoice> ItemShipmentInvoices { get; set; }
+    public DbSet<ItemShipmentInvoiceItem> ItemShipmentInvoiceItems { get; set; }
+    public DbSet<ItemShipmentDocument> ItemShipmentDocuments { get; set; }
+    public DbSet<ItemBillingSheet> ItemBillingSheets { get; set; }
+    public DbSet<ItemBillingSheetCharge> ItemBillingSheetCharges { get; set; }
 
     #endregion
 
@@ -936,6 +944,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Designation
 
         modelBuilder.Entity<Designation>().Navigation(p => p.Departments).AutoInclude();
+
+        #endregion
+
+        #region Item Grns
+
+        modelBuilder.Entity<ItemGrn>().Navigation(p => p.Item).AutoInclude();
+        modelBuilder.Entity<ItemGrn>().Navigation(p => p.Supplier).AutoInclude();
 
         #endregion
     }
@@ -1418,6 +1433,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         #region Items
 
         modelBuilder.Entity<Item>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<ItemGrn>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
 

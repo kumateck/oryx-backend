@@ -125,6 +125,7 @@ public static class DependencyInjection
         services.AddScoped<IServiceProformaInvoiceRepository, ServiceProformaInvoiceRepository>();
         services.AddScoped<IServiceMemoRepository, ServiceMemoRepository>();
         services.AddScoped<IVerificationRepository, VerificationRepository>();
+        services.AddScoped<IItemGrnRepository, ItemGrnRepository>();
 
 
         services.AddScoped<IBlobStorageService, BlobStorageService>();
