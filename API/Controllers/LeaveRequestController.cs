@@ -12,17 +12,19 @@ namespace API.Controllers;
 [Authorize]
 public class LeaveRequestController(ILeaveRequestRepository repository) : ControllerBase
 {
-
     /// <summary>
     /// Creates a leave request.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateLeaveOrAbsenceRequest([FromBody] CreateLeaveRequest leaveRequest)
+    public async Task<IResult> CreateLeaveOrAbsenceRequest(
+        [FromBody] CreateLeaveRequest leaveRequest
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.CreateLeaveOrAbsenceRequest(leaveRequest);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -32,14 +34,31 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     /// Returns a paginated list of leave requests based on a search criteria.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveRequestDto>>))]
-    public async Task<IResult> GetLeaveRequests([FromQuery] LeaveStatus? status, [FromQuery] RequestCategory? leaveCategory, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
-        [FromQuery] Guid? departmentId = null)
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<LeaveRequestDto>>)
+    )]
+    public async Task<IResult> GetLeaveRequests(
+        [FromQuery] LeaveStatus? status,
+        [FromQuery] RequestCategory? leaveCategory,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] Guid? departmentId = null
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.GetLeaveRequests(page, pageSize, searchQuery, status, leaveCategory, departmentId);
+        var result = await repository.GetLeaveRequests(
+            page,
+            pageSize,
+            searchQuery,
+            status,
+            leaveCategory,
+            departmentId
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -52,7 +71,8 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     public async Task<IResult> GetLeaveRequest([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.GetLeaveRequest(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -65,10 +85,14 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateLeaveRequest([FromRoute] Guid id, [FromBody] CreateLeaveRequest leaveRequest)
+    public async Task<IResult> UpdateLeaveRequest(
+        [FromRoute] Guid id,
+        [FromBody] CreateLeaveRequest leaveRequest
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.UpdateLeaveRequest(id, leaveRequest);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -81,7 +105,9 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> SubmitLeaveRequest([FromBody] CreateLeaveRecallRequest leaveRecallRequest)
+    public async Task<IResult> SubmitLeaveRequest(
+        [FromBody] CreateLeaveRecallRequest leaveRecallRequest
+    )
     {
         var result = await repository.SubmitLeaveRecallRequest(leaveRecallRequest);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -90,7 +116,10 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     [HttpPut("{leaveRequestId:guid}/reapply")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> ReapplyLeaveRequest([FromRoute] Guid leaveRequestId, [FromBody] ReapplyLeaveRequest reapplyLeaveRequest)
+    public async Task<IResult> ReapplyLeaveRequest(
+        [FromRoute] Guid leaveRequestId,
+        [FromBody] ReapplyLeaveRequest reapplyLeaveRequest
+    )
     {
         var result = await repository.ReapplyLeaveRequest(leaveRequestId, reapplyLeaveRequest);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -105,7 +134,8 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     public async Task<IResult> DeleteLeaveRequest([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteLeaveRequest(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();

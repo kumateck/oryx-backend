@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
@@ -10,14 +11,18 @@ public class LeaveRequest : BaseEntity, IRequireApproval
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
 
+    [StringLength(1000000)]
     public string ContactPerson { get; set; } = string.Empty;
 
+    [StringLength(1000000)]
     public string ContactPersonNumber { get; set; } = string.Empty;
 
+    [StringLength(1000000)]
     public string Justification { get; set; }
 
     public DateTime? RecallDate { get; set; }
 
+    [StringLength(1000000)]
     public string RecallReason { get; set; }
 
     public RequestCategory RequestCategory { get; set; }
@@ -33,6 +38,9 @@ public class LeaveRequest : BaseEntity, IRequireApproval
     public LeaveType LeaveType { get; set; }
 
     public List<LeaveRequestApproval> Approvals { get; set; } = [];
+
+    [StringLength(1000000)]
+    public string Destination { get; set; }
 
     public bool Approved { get; set; }
 }
@@ -55,7 +63,7 @@ public enum RequestCategory
     LeaveRequest,
     AbsenceRequest,
     ExitPassRequest,
-    OfficialDuty
+    OfficialDuty,
 }
 
 public enum LeaveStatus
@@ -65,6 +73,5 @@ public enum LeaveStatus
     Rejected,
     Expired,
     Recalled,
-    Reapplied
+    Reapplied,
 }
-
