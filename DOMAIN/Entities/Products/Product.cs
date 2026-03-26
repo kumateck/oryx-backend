@@ -10,21 +10,50 @@ namespace DOMAIN.Entities.Products;
 
 public class Product : BaseEntity, IVerifiable
 {
-    [StringLength(255)] public string Code { get; set; }
-    [StringLength(255)] public string Name { get; set; }
-    [StringLength(255)] public string GenericName { get; set; }
-    [StringLength(255)] public string StorageCondition { get; set; }
-    [StringLength(255)] public string PackageStyle { get; set; }
-    [StringLength(255)] public string FilledWeight { get; set; }
-    [StringLength(255)] public string ShelfLife { get; set; }
-    [StringLength(255)] public string ActionUse { get; set; }
-    [StringLength(255)] public string Description { get; set; }
-    [StringLength(255)] public string FdaRegistrationNumber { get; set; }
-    [StringLength(255)] public string MasterFormulaNumber { get; set; }
-    [StringLength(1000000)] public string PrimaryPackDescription { get; set; }
-    [StringLength(1000000)] public string SecondaryPackDescription { get; set; }
-    [StringLength(1000000)] public string TertiaryPackDescription { get; set; }
-    [StringLength(1000000)] public string LabelClaim { get; set; }
+    [StringLength(255)]
+    public string Code { get; set; }
+
+    [StringLength(255)]
+    public string Name { get; set; }
+
+    [StringLength(255)]
+    public string GenericName { get; set; }
+
+    [StringLength(255)]
+    public string StorageCondition { get; set; }
+
+    [StringLength(255)]
+    public string PackageStyle { get; set; }
+
+    [StringLength(255)]
+    public string FilledWeight { get; set; }
+
+    [StringLength(255)]
+    public string ShelfLife { get; set; }
+
+    [StringLength(255)]
+    public string ActionUse { get; set; }
+
+    [StringLength(255)]
+    public string Description { get; set; }
+
+    [StringLength(255)]
+    public string FdaRegistrationNumber { get; set; }
+
+    [StringLength(255)]
+    public string MasterFormulaNumber { get; set; }
+
+    [StringLength(1000000)]
+    public string PrimaryPackDescription { get; set; }
+
+    [StringLength(1000000)]
+    public string SecondaryPackDescription { get; set; }
+
+    [StringLength(1000000)]
+    public string TertiaryPackDescription { get; set; }
+
+    [StringLength(1000000)]
+    public string LabelClaim { get; set; }
     public Guid? CategoryId { get; set; }
     public ProductCategory Category { get; set; }
     public decimal BaseQuantity { get; set; }
@@ -46,6 +75,10 @@ public class Product : BaseEntity, IVerifiable
     public bool IsVerified { get; set; }
     public DateTime? VerifiedAt { get; set; }
     public Guid? VerifiedById { get; set; }
+
+    [StringLength(1000)]
+    public string DocumentNumber { get; set; }
+    public int RevisionNumber { get; set; }
 }
 
 [Owned]
@@ -55,13 +88,16 @@ public class ProductPrices
     public DateTime Date { get; set; }
 }
 
-
 public class ProductPacking : BaseEntity
 {
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
-    [StringLength(10000)] public string Name { get; set; }
-    [StringLength(10000)] public string Description { get; set; }
+
+    [StringLength(10000)]
+    public string Name { get; set; }
+
+    [StringLength(10000)]
+    public string Description { get; set; }
     public int PackPerShipper { get; set; }
     public Guid? BasePackingUomId { get; set; }
     public UnitOfMeasure BasePackingUoM { get; set; }
@@ -85,20 +121,24 @@ public enum Division
     BetaLactam = 0,
     NonBetaLactam = 1,
 }
+
 public class ProductCategory : BaseEntity
 {
-    [StringLength(255)] public string Name { get; set; }
-    [StringLength(1000)] public string Description { get; set; }
+    [StringLength(255)]
+    public string Name { get; set; }
+
+    [StringLength(1000)]
+    public string Description { get; set; }
 }
 
 public class ProductBillOfMaterial : BaseEntity
 {
     public Guid ProductId { get; set; }
-    public Product Product { get; set; }  // The final product this BOM is for
+    public Product Product { get; set; } // The final product this BOM is for
     public Guid BillOfMaterialId { get; set; }
     public BillOfMaterial BillOfMaterial { get; set; }
-    public decimal Quantity { get; set; }  // Quantity of the component needed
-    public int Version { get; set; }   // Version of the BOM
+    public decimal Quantity { get; set; } // Quantity of the component needed
+    public int Version { get; set; } // Version of the BOM
     public DateTime EffectiveDate { get; set; }
     public bool IsActive { get; set; } = true;
 }
