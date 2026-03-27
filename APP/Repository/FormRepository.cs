@@ -60,9 +60,9 @@ public class FormRepository(
         var query = context
             .Forms.AsSplitQuery()
             .OrderByDescending(f => f.CreatedAt)
-            .Include(f => f.Sections.OrderByDescending(s => s.Order))
-                .ThenInclude(f => f.Fields.OrderBy(fi => fi.Rank))
             .Include(f => f.Sections.OrderBy(s => s.Order))
+                .ThenInclude(f => f.Fields.OrderBy(fi => fi.Rank))
+            .Include(f => f.Sections)
                 .ThenInclude(f => f.Instrument)
                     .ThenInclude(f => f.QcEquipmentCategory)
             .AsQueryable();
