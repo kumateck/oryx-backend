@@ -13,7 +13,9 @@ public class Route : BaseEntity
     public Product Product { get; set; }
     public Guid OperationId { get; set; }
     public Operation Operation { get; set; }
-    [StringLength(50)] public string EstimatedTime { get; set; }
+
+    [StringLength(50)]
+    public string EstimatedTime { get; set; }
     public Guid? WorkflowId { get; set; }
     public Form WorkFlow { get; set; }
     public int Order { get; set; }
@@ -64,13 +66,13 @@ public class RouteWorkCenter : BaseEntity
 
 public enum OperationAction
 {
-    BmrAndBprRequisition = 0,
+    BmrAndBprRequisitionOrIssue = 0,
     BmrAndBprCancellation = 1,
-    StockRequisition = 2,
+    StockRequisitionOrIssue = 2,
     FullReturn = 3,
-    AdditionalStockRequest = 4,
-    FinalPackingOrPartialReturn = 5,
-    FinishedGoodsTransferNote = 6,
+    AdditionalStockRequestOrIssue = 4,
+    FinalPackingAndPartialReturn = 5,
+    TransferFinishedProducts = 6,
     Dispatch = 7,
     Atr = 8,
 }
