@@ -537,6 +537,25 @@ public class ProductController(IProductRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Downloads product stock to an Excel file.
+    /// </summary>
+    /// <returns>Returns the Excel file containing product stock.</returns>
+    [HttpGet("download/stock")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(byte[]))]
+    public async Task<IResult> DownloadProductStock()
+    {
+        var result = await repository.ExportProductStockToExcel();
+        if (!result.IsSuccess)
+            return result.ToProblemDetails();
+
+        return TypedResults.File(
+            result.Value,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "ProductStock.xlsx"
+        );
+    }
+
+    /// <summary>
     /// Imports equipment from an Excel file.
     /// </summary>
     /// <param name="file">The uploaded Excel file containing materials.</param>

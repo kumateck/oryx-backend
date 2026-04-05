@@ -116,6 +116,8 @@ public interface IMaterialRepository
         Guid? departmentId);
     Task<Result> ImportMaterialStockFromExcel(IFormFile file);
     
+    Task<Result<byte[]>> ExportMaterialStockToExcel();
+    
     Task<Result<MaterialBatchCountDto>> GetMaterialBatchCount(Guid warehouseId, Guid? materialId,
         MaterialKind? materialKind, Guid? departmentId);
 }
