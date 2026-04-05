@@ -1359,6 +1359,49 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
+    public async Task<Result<byte[]>> ExportProductStockToExcel()
+    {
+        var transferNotes = await context.FinishedGoodsTransferNotes
+            .Include(t => t.ToWarehouse)
+            .Include(t => t.ProductPacking)
+                .ThenInclude(p => p.Product)
+            .Include(t => t.BatchManufacturingRecord)
+            .ToListAsync();
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Product Stock");
+
+        // Headers matching requiredHeaders in Import
+        string[] headers = { "Warehouse", "Product Code", "Product Name", "Packing Style", "Total Quantity", "Batch No.", "FGTN ID", " AR No.", " Manufacturing Date", "Expiry Date" };
+        for (int i = 0; i < headers.Length; i++)
+        {
+            worksheet.Cells[1, i + 1].Value = headers[i];
+            worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+        }
+
+        for (int i = 0; i < transferNotes.Count; i++)
+        {
+            var note = transferNotes[i];
+            var row = i + 2;
+
+            worksheet.Cells[row, 1].Value = note.ToWarehouse?.Name;
+            worksheet.Cells[row, 2].Value = note.ProductPacking?.Product?.Code;
+            worksheet.Cells[row, 3].Value = note.ProductPacking?.Product?.Name;
+            worksheet.Cells[row, 4].Value = note.ProductPacking?.Name;
+            worksheet.Cells[row, 5].Value = note.TotalQuantity;
+            worksheet.Cells[row, 6].Value = note.BatchManufacturingRecord?.BatchNumber;
+            worksheet.Cells[row, 7].Value = note.TransferNoteNumber;
+            worksheet.Cells[row, 8].Value = note.QarNumber; // Using QarNumber as AR No.
+            worksheet.Cells[row, 9].Value = note.BatchManufacturingRecord?.ManufacturingDate?.ToString("dd/MM/yyyy");
+            worksheet.Cells[row, 10].Value = note.BatchManufacturingRecord?.ExpiryDate?.ToString("dd/MM/yyyy");
+        }
+
+        worksheet.Cells.AutoFitColumns();
+
+        return Result.Success(package.GetAsByteArray());
+    }
+
     public async Task<Result> ImportEquipmentFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
