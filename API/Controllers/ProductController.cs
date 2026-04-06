@@ -542,9 +542,9 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <returns>Returns the Excel file containing product stock.</returns>
     [HttpGet("download/stock")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(byte[]))]
-    public async Task<IResult> DownloadProductStock()
+    public async Task<IResult> DownloadProductStock([FromQuery] Guid? departmentId)
     {
-        var result = await repository.ExportProductStockToExcel();
+        var result = await repository.ExportProductStockToExcel(departmentId);
         if (!result.IsSuccess)
             return result.ToProblemDetails();
 

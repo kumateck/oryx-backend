@@ -3805,17 +3805,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
     }
 
-    public async Task<Result<byte[]>> ExportMaterialStockToExcel()
+    public async Task<Result<byte[]>> ExportMaterialStockToExcel(Guid? departmentId, MaterialKind? kind)
     {
-        var shelfStocks = await context
-            .ShelfMaterialBatches.AsSplitQuery()
-            .Include(s => s.WarehouseLocationShelf)
-                .ThenInclude(sl => sl.WarehouseLocationRack)
-                    .ThenInclude(r => r.WarehouseLocation)
-                        .ThenInclude(wl => wl.Warehouse)
-            .Include(s => s.MaterialBatch)
-                .ThenInclude(b => b.Material)
-            .Include(s => s.UoM)
+        var warehouses = await context
+            .Warehouses.Where(w => !departmentId.HasValue || w.DepartmentId == departmentId)
+            .ToListAsync();
+
+        var materialDepartments = await context
+            .MaterialDepartments.AsSplitQuery()
+            .Include(md => md.Material)
+            .Include(md => md.UoM)
+            .Where(md => (!departmentId.HasValue || md.DepartmentId == departmentId) &&
+                         (!kind.HasValue || md.Material.Kind == kind))
             .ToListAsync();
 
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
@@ -3841,45 +3842,19 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             worksheet.Cells[1, i + 1].Style.Font.Bold = true;
         }
 
-        var batchIds = shelfStocks.Select(s => s.MaterialBatchId).Distinct().ToList();
-        var binCards = await context
-            .BinCardInformation.Where(b =>
-                b.MaterialBatchId != null && batchIds.Contains(b.MaterialBatchId.Value)
-            )
-            .OrderByDescending(b => b.CreatedAt)
-            .ToListAsync();
-
-        var binCardLookup = binCards
-            .GroupBy(b => b.MaterialBatchId)
-            .ToDictionary(g => g.Key, g => g.First());
-
-        for (int i = 0; i < shelfStocks.Count; i++)
+        int row = 2;
+        foreach (var warehouse in warehouses)
         {
-            var stock = shelfStocks[i];
-            var row = i + 2;
-
-            worksheet.Cells[row, 1].Value = stock
-                .WarehouseLocationShelf
-                ?.WarehouseLocationRack
-                ?.WarehouseLocation
-                ?.Warehouse
-                ?.Name;
-            worksheet.Cells[row, 2].Value = stock.WarehouseLocationShelf?.Code;
-            worksheet.Cells[row, 3].Value = stock.MaterialBatch?.BatchNumber;
-            worksheet.Cells[row, 4].Value = stock.UoM?.Symbol;
-            worksheet.Cells[row, 5].Value = stock.MaterialBatch?.Material?.Code;
-
-            if (binCardLookup.TryGetValue(stock.MaterialBatchId, out var binCard))
-            {
-                worksheet.Cells[row, 6].Value = binCard.WayBill;
-                worksheet.Cells[row, 7].Value = binCard.ArNumber;
-            }
-
-            worksheet.Cells[row, 8].Value = stock.MaterialBatch?.ExpiryDate?.ToString("dd/MM/yyyy");
-            worksheet.Cells[row, 9].Value = stock.MaterialBatch?.ManufacturingDate?.ToString(
-                "dd/MM/yyyy"
+            var deptMaterials = materialDepartments.Where(md =>
+                md.DepartmentId == warehouse.DepartmentId
             );
-            worksheet.Cells[row, 10].Value = stock.Quantity;
+            foreach (var md in deptMaterials)
+            {
+                worksheet.Cells[row, 1].Value = warehouse.Name;
+                worksheet.Cells[row, 4].Value = md.UoM?.Symbol;
+                worksheet.Cells[row, 5].Value = md.Material?.Code;
+                row++;
+            }
         }
 
         worksheet.Cells.AutoFitColumns();

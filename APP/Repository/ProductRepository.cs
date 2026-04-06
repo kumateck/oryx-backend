@@ -1359,13 +1359,16 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result<byte[]>> ExportProductStockToExcel()
+    public async Task<Result<byte[]>> ExportProductStockToExcel(Guid? departmentId)
     {
-        var transferNotes = await context.FinishedGoodsTransferNotes
-            .Include(t => t.ToWarehouse)
-            .Include(t => t.ProductPacking)
-                .ThenInclude(p => p.Product)
-            .Include(t => t.BatchManufacturingRecord)
+        var warehouses = await context
+            .Warehouses.Where(w => !departmentId.HasValue || w.DepartmentId == departmentId)
+            .ToListAsync();
+
+        var products = await context
+            .Products.AsSplitQuery()
+            .Include(p => p.Packings)
+            .Where(p => !departmentId.HasValue || p.DepartmentId == departmentId)
             .ToListAsync();
 
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
@@ -1373,28 +1376,40 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         var worksheet = package.Workbook.Worksheets.Add("Product Stock");
 
         // Headers matching requiredHeaders in Import
-        string[] headers = { "Warehouse", "Product Code", "Product Name", "Packing Style", "Total Quantity", "Batch No.", "FGTN ID", " AR No.", " Manufacturing Date", "Expiry Date" };
+        string[] headers =
+        {
+            "Warehouse",
+            "Product Code",
+            "Product Name",
+            "Packing Style",
+            "Total Quantity",
+            "Batch No.",
+            "FGTN ID",
+            " AR No.",
+            " Manufacturing Date",
+            "Expiry Date",
+        };
         for (int i = 0; i < headers.Length; i++)
         {
             worksheet.Cells[1, i + 1].Value = headers[i];
             worksheet.Cells[1, i + 1].Style.Font.Bold = true;
         }
 
-        for (int i = 0; i < transferNotes.Count; i++)
+        int row = 2;
+        foreach (var warehouse in warehouses)
         {
-            var note = transferNotes[i];
-            var row = i + 2;
-
-            worksheet.Cells[row, 1].Value = note.ToWarehouse?.Name;
-            worksheet.Cells[row, 2].Value = note.ProductPacking?.Product?.Code;
-            worksheet.Cells[row, 3].Value = note.ProductPacking?.Product?.Name;
-            worksheet.Cells[row, 4].Value = note.ProductPacking?.Name;
-            worksheet.Cells[row, 5].Value = note.TotalQuantity;
-            worksheet.Cells[row, 6].Value = note.BatchManufacturingRecord?.BatchNumber;
-            worksheet.Cells[row, 7].Value = note.TransferNoteNumber;
-            worksheet.Cells[row, 8].Value = note.QarNumber; // Using QarNumber as AR No.
-            worksheet.Cells[row, 9].Value = note.BatchManufacturingRecord?.ManufacturingDate?.ToString("dd/MM/yyyy");
-            worksheet.Cells[row, 10].Value = note.BatchManufacturingRecord?.ExpiryDate?.ToString("dd/MM/yyyy");
+            var deptProducts = products.Where(p => p.DepartmentId == warehouse.DepartmentId);
+            foreach (var product in deptProducts)
+            {
+                foreach (var packing in product.Packings)
+                {
+                    worksheet.Cells[row, 1].Value = warehouse.Name;
+                    worksheet.Cells[row, 2].Value = product.Code;
+                    worksheet.Cells[row, 3].Value = product.Name;
+                    worksheet.Cells[row, 4].Value = packing.Name;
+                    row++;
+                }
+            }
         }
 
         worksheet.Cells.AutoFitColumns();

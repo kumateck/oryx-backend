@@ -1013,9 +1013,9 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns the Excel file containing material stock.</returns>
     [HttpGet("download/stock")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(byte[]))]
-    public async Task<IResult> DownloadMaterialStock()
+    public async Task<IResult> DownloadMaterialStock([FromQuery] Guid? departmentId, [FromQuery] MaterialKind? kind)
     {
-        var result = await repository.ExportMaterialStockToExcel();
+        var result = await repository.ExportMaterialStockToExcel(departmentId, kind);
         if (!result.IsSuccess)
             return result.ToProblemDetails();
 
