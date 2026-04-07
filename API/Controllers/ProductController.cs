@@ -544,7 +544,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(byte[]))]
     public async Task<IResult> DownloadProductStock([FromQuery] Guid? departmentId)
     {
-        var result = await repository.ExportProductStockToExcel(departmentId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.ExportProductStockToExcel(Guid.Parse(userId), departmentId);
         if (!result.IsSuccess)
             return result.ToProblemDetails();
 

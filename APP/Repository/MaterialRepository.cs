@@ -3805,18 +3805,43 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
     }
 
-    public async Task<Result<byte[]>> ExportMaterialStockToExcel(Guid? departmentId, MaterialKind? kind)
+    public async Task<Result<byte[]>> ExportMaterialStockToExcel(
+        Guid userId,
+        Guid? departmentId,
+        MaterialKind? kind
+    )
     {
+        var user = await context
+            .Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return UserErrors.NotFound(userId);
+
+        departmentId ??= user.DepartmentId;
+
         var warehouses = await context
-            .Warehouses.Where(w => !departmentId.HasValue || w.DepartmentId == departmentId)
+            .Warehouses.Where(w =>
+                (!departmentId.HasValue || w.DepartmentId == departmentId)
+                && w.Type != WarehouseType.Production
+            )
             .ToListAsync();
+
+        if (kind.HasValue)
+        {
+            warehouses =
+                kind == MaterialKind.Raw
+                    ? warehouses.Where(w => w.Type != WarehouseType.PackagedStorage).ToList()
+                    : warehouses.Where(w => w.Type != WarehouseType.RawMaterialStorage).ToList();
+        }
 
         var materialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
             .Include(md => md.Material)
             .Include(md => md.UoM)
-            .Where(md => (!departmentId.HasValue || md.DepartmentId == departmentId) &&
-                         (!kind.HasValue || md.Material.Kind == kind))
+            .Where(md =>
+                (!departmentId.HasValue || md.DepartmentId == departmentId)
+                && (!kind.HasValue || md.Material.Kind == kind)
+            )
             .ToListAsync();
 
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
@@ -3830,6 +3855,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             "Batch No.",
             "UOM",
             "Material Code",
+            "Material Name",
             "Waybill",
             "AR No.",
             "Expiry Date",
@@ -3853,13 +3879,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 worksheet.Cells[row, 1].Value = warehouse.Name;
                 worksheet.Cells[row, 4].Value = md.UoM?.Symbol;
                 worksheet.Cells[row, 5].Value = md.Material?.Code;
+                worksheet.Cells[row, 6].Value = md.Material?.Name;
                 row++;
             }
         }
 
         worksheet.Cells.AutoFitColumns();
 
-        return Result.Success(package.GetAsByteArray());
+        return Result.Success(await package.GetAsByteArrayAsync());
     }
 
     public async Task<Result<MaterialBatchCountDto>> GetMaterialBatchCount(
