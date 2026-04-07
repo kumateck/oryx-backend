@@ -1013,9 +1013,20 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns the Excel file containing material stock.</returns>
     [HttpGet("download/stock")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(byte[]))]
-    public async Task<IResult> DownloadMaterialStock([FromQuery] Guid? departmentId, [FromQuery] MaterialKind? kind)
+    public async Task<IResult> DownloadMaterialStock(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] MaterialKind? kind
+    )
     {
-        var result = await repository.ExportMaterialStockToExcel(departmentId, kind);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.ExportMaterialStockToExcel(
+            Guid.Parse(userId),
+            departmentId,
+            kind
+        );
         if (!result.IsSuccess)
             return result.ToProblemDetails();
 

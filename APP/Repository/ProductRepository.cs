@@ -9,6 +9,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
@@ -1359,10 +1360,21 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result<byte[]>> ExportProductStockToExcel(Guid? departmentId)
+    public async Task<Result<byte[]>> ExportProductStockToExcel(Guid userId, Guid? departmentId)
     {
+        var user = await context
+            .Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return UserErrors.NotFound(userId);
+
+        departmentId ??= user.DepartmentId;
+
         var warehouses = await context
-            .Warehouses.Where(w => !departmentId.HasValue || w.DepartmentId == departmentId)
+            .Warehouses.Where(w =>
+                (!departmentId.HasValue || w.DepartmentId == departmentId)
+                && w.Type == WarehouseType.FinishedGoodsStorage
+            )
             .ToListAsync();
 
         var products = await context
@@ -1414,7 +1426,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         worksheet.Cells.AutoFitColumns();
 
-        return Result.Success(package.GetAsByteArray());
+        return Result.Success(await package.GetAsByteArrayAsync());
     }
 
     public async Task<Result> ImportEquipmentFromExcel(IFormFile file)
