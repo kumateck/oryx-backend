@@ -31,6 +31,7 @@ using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemGrns;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.ItemTransactionLogs;
@@ -98,6 +99,10 @@ public class OryxMapper : Profile
 {
     public OryxMapper()
     {
+        #region ItemGrns
+        CreateMap<CreateItemGrnRequest, ItemGrn>();
+        CreateMap<ItemGrn, ItemGrnDto>();
+        #endregion
 
         #region CreateItemRequest
 
@@ -913,8 +918,11 @@ public class OryxMapper : Profile
 
         #region Overtime Requests
 
-        CreateMap<CreateOvertimeRequest, OvertimeRequest>();
-        CreateMap<OvertimeRequestDto, OvertimeRequest>().ReverseMap();
+        CreateMap<CreateOvertimeRequest, OvertimeRequest>()
+            .ForMember(dest => dest.Employees, opt => opt.Ignore());
+        CreateMap<OvertimeRequest, OvertimeRequestDto>();
+        CreateMap<OvertimeRequestDto, OvertimeRequest>()
+            .ForMember(dest => dest.Employees, opt => opt.MapFrom(src => src.Employees));
 
         #endregion
 
@@ -929,14 +937,6 @@ public class OryxMapper : Profile
         CreateMap<LeaveEntitlementDto, LeaveEntitlement>();
         CreateMap<CreateLeaveEntitlementRequest, LeaveEntitlement>();
 
-        #endregion
-
-        #region Overtime Requests
-
-        CreateMap<CreateOvertimeRequest, OvertimeRequest>()
-            .ForMember(dest => dest.Employees, opt => opt.Ignore());
-        CreateMap<OvertimeRequestDto, OvertimeRequest>()
-            .ForMember(dest => dest.Employees, opt => opt.MapFrom(src => src.Employees));
         #endregion
 
         #region Material Standard Test Procedures

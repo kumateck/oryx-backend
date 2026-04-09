@@ -1,5 +1,3 @@
-using DOMAIN.Entities.Base;
-
 namespace DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 
 public class FinishedGoodsTransferDetailedReportDto

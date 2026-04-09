@@ -9,6 +9,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Routes;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
@@ -1357,6 +1358,75 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         await context.SaveChangesAsync();
 
         return Result.Success();
+    }
+
+    public async Task<Result<byte[]>> ExportProductStockToExcel(Guid userId, Guid? departmentId)
+    {
+        var user = await context
+            .Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return UserErrors.NotFound(userId);
+
+        departmentId ??= user.DepartmentId;
+
+        var warehouses = await context
+            .Warehouses.Where(w =>
+                (!departmentId.HasValue || w.DepartmentId == departmentId)
+                && w.Type == WarehouseType.FinishedGoodsStorage
+            )
+            .ToListAsync();
+
+        var products = await context
+            .Products.AsSplitQuery()
+            .Include(p => p.Packings)
+            .Where(p => !departmentId.HasValue || p.DepartmentId == departmentId)
+            .ToListAsync();
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Product Stock");
+
+        // Headers matching requiredHeaders in Import
+        string[] headers =
+        {
+            "Warehouse",
+            "Product Code",
+            "Product Name",
+            "Packing Style",
+            "Total Quantity",
+            "Batch No.",
+            "FGTN ID",
+            " AR No.",
+            " Manufacturing Date",
+            "Expiry Date",
+        };
+        for (int i = 0; i < headers.Length; i++)
+        {
+            worksheet.Cells[1, i + 1].Value = headers[i];
+            worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+        }
+
+        int row = 2;
+        foreach (var warehouse in warehouses)
+        {
+            var deptProducts = products.Where(p => p.DepartmentId == warehouse.DepartmentId);
+            foreach (var product in deptProducts)
+            {
+                foreach (var packing in product.Packings)
+                {
+                    worksheet.Cells[row, 1].Value = warehouse.Name;
+                    worksheet.Cells[row, 2].Value = product.Code;
+                    worksheet.Cells[row, 3].Value = product.Name;
+                    worksheet.Cells[row, 4].Value = packing.Name;
+                    row++;
+                }
+            }
+        }
+
+        worksheet.Cells.AutoFitColumns();
+
+        return Result.Success(await package.GetAsByteArrayAsync());
     }
 
     public async Task<Result> ImportEquipmentFromExcel(IFormFile file)

@@ -21,7 +21,6 @@ using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using SHARED;
 
 namespace APP.Repository;
@@ -506,11 +505,14 @@ public class ProductionScheduleRepository(
         if (activityStep is null)
             return Error.NotFound("ProductActivity.NotFound", "Activity step was not found");
 
-        if (activityStep.ResponsibleUsers.All(u => u.UserId != userId))
-            return Error.Validation(
-                "ProductActivity.Validation",
-                "You are not responsible for changing the status of this activity"
-            );
+        if (activityStep.IsCritical)
+        {
+            if (activityStep.ResponsibleUsers.All(u => u.UserId != userId))
+                return Error.Validation(
+                    "ProductActivity.Validation",
+                    "You are not responsible for changing the status of this activity"
+                );
+        }
 
         activityStep.Status = status;
 

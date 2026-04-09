@@ -1,5 +1,3 @@
-using DOMAIN.Entities.Shipments;
-
 namespace DOMAIN.Entities.Reports.Shipments;
 
 public class ShipmentReportDto

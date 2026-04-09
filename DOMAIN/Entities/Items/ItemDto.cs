@@ -1,6 +1,5 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Vendors;
 
 namespace DOMAIN.Entities.Items;
 

@@ -1,5 +1,3 @@
-using DOMAIN.Entities.PurchaseOrders;
-
 namespace DOMAIN.Entities.Reports.Procurement;
 
 public class ProcurementDashboardDto

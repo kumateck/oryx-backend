@@ -13,109 +13,239 @@ public interface IMaterialRepository
 {
     Task<Result<Guid>> CreateMaterial(CreateMaterialRequest request, Guid userId);
     Task<Result<MaterialDto>> GetMaterial(Guid materialId);
-    Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(int page, int pageSize, string searchQuery, MaterialKind kind);
-    Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotLinkedToArd(int page, int pageSize, string searchQuery, MaterialKind kind);
+    Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind kind
+    );
+    Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotLinkedToArd(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind kind
+    );
     Task<Result<List<MaterialCategoryDto>>> GetMaterialCategories(MaterialKind? materialKind);
     Task<Result<List<MaterialDto>>> GetMaterials();
     Task<Result> UpdateMaterial(CreateMaterialRequest request, Guid materialId, Guid userId);
     Task<Result> UpdateReOrderLevel(Guid materialId, int reOrderLevel, Guid userId);
     Task<Result> DeleteMaterial(Guid materialId, Guid userId);
     Task<Result<decimal>> CheckStockLevel(Guid materialId);
+
     //Task<Result<bool>> CanFulfillRequisition(Guid materialId, Guid requisitionId);
     Task<Result> CreateMaterialBatch(List<CreateMaterialBatchRequest> request, Guid userId);
-    Task<Result> CreateMaterialBatchWithoutBatchMovement(List<CreateMaterialBatchRequest> request,
-        Guid userId);
+    Task<Result> CreateMaterialBatchWithoutBatchMovement(
+        List<CreateMaterialBatchRequest> request,
+        Guid userId
+    );
     Task<Result<MaterialBatchDto>> GetMaterialBatch(Guid batchId);
-    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(int page, int pageSize,
-        string searchQuery);
+    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(
+        int page,
+        int pageSize,
+        string searchQuery
+    );
     Task<Result<List<MaterialBatchDto>>> GetMaterialBatchesByMaterialId(Guid materialId);
     Task<Result<decimal>> GetMaterialsInTransit(Guid materialId);
     Task<Result> MoveMaterialBatchByMaterial(MoveMaterialBatchRequest request, Guid userId);
     Task<Result> ApproveMaterialBatch(Guid batchId, Guid userId);
-    Task<Result> MoveMaterialBatch(Guid batchId, Guid fromLocationId, Guid toLocationId, decimal quantity,
-        Guid userId);
-    Task<Result<List<DepartmentDto>>> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity);
+    Task<Result> MoveMaterialBatch(
+        Guid batchId,
+        Guid fromLocationId,
+        Guid toLocationId,
+        decimal quantity,
+        Guid userId
+    );
+    Task<Result<List<DepartmentDto>>> GetDepartmentsWithEnoughStock(
+        Guid materialId,
+        decimal quantity
+    );
     Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
-    Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(Guid materialId,
-        Guid? departmentId = null, bool? onlyAboutToExpire = null);
-    Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(string searchQuery,
-        Guid departmentId);
+    Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(
+        Guid materialId,
+        Guid? departmentId = null,
+        bool? onlyAboutToExpire = null
+    );
+    Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(
+        string searchQuery,
+        Guid departmentId
+    );
     Task<Result<decimal>> GetFrozenMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
-    Task<Result<List<MaterialBatchDto>>> GetFrozenMaterialBatchesInWarehouse(Guid materialId,
-        Guid warehouseId);
+    Task<Result<List<MaterialBatchDto>>> GetFrozenMaterialBatchesInWarehouse(
+        Guid materialId,
+        Guid warehouseId
+    );
     Task<Result> FreezeMaterialBatchAsync(Guid batchId);
-    Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, decimal quantity, Guid userId);
-    Task<Result> ConsumeMaterialAtLocation(Material material, Guid locationId, decimal quantity,
-        Guid userId);
+    Task<Result> ConsumeMaterialAtLocation(
+        Guid batchId,
+        Guid locationId,
+        decimal quantity,
+        Guid userId
+    );
+    Task<Result> ConsumeMaterialAtLocation(
+        Material material,
+        Guid locationId,
+        decimal quantity,
+        Guid userId
+    );
     Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId);
     Task<Result> ImportMaterialsFromExcel(IFormFile file, MaterialKind kind);
-    Result<List<BatchLocation>> BatchesNeededToBeConsumed(Guid materialId, Guid warehouseId, decimal quantity);
+    Result<List<BatchLocation>> BatchesNeededToBeConsumed(
+        Guid materialId,
+        Guid warehouseId,
+        decimal quantity
+    );
     Task<Result> UpdateBatchStatus(UpdateBatchStatusRequest request, Guid userId);
     Task<Result> MoveMaterialBatchV2(MoveShelfMaterialBatchRequest request, Guid userId);
     Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId);
-    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(int page, int pageSize,
-        string searchQuery, MaterialKind kind, Guid userId);
+    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind kind,
+        Guid userId
+    );
 
-    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(int page, int pageSize,
-        string searchQuery, MaterialKind kind, Guid warehouseId, Guid departmentId);
+    Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterialsByDepartment(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind kind,
+        Guid warehouseId,
+        Guid departmentId
+    );
 
-    Task<Result<List<MaterialDetailsDto>>> GetApprovedMaterialsByDepartmentV2(MaterialKind? kind, Guid? departmentId,
-        Guid? materialCategoryId);
+    Task<Result<List<MaterialDetailsDto>>> GetApprovedMaterialsByDepartmentV2(
+        MaterialKind? kind,
+        Guid? departmentId,
+        Guid? materialCategoryId
+    );
 
-    Task<Result<Paginateable<IEnumerable<MaterialBatchDepartmentDto>>>>
-        GetMaterialsWithBatchesAndDepartments(
-            int page,
-            int pageSize,
-            string searchQuery,
-            MaterialKind? kind,
-            Guid? departmentId);
+    Task<
+        Result<Paginateable<IEnumerable<MaterialBatchDepartmentDto>>>
+    > GetMaterialsWithBatchesAndDepartments(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? kind,
+        Guid? departmentId
+    );
 
-    Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(int page,
-        int pageSize, Guid materialId, Guid userId);
+    Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(
+        int page,
+        int pageSize,
+        Guid materialId,
+        Guid userId
+    );
     Task<List<MaterialStockByWarehouseDto>> GetStockByWarehouse(Guid materialId);
     Task<List<MaterialStockByDepartmentDto>> GetStockByDepartment(Guid materialId);
-    Task<Result<List<BatchToSupply>>> BatchesToSupplyForGivenQuantity(Guid materialId,
-        Guid warehouseId, decimal quantity);
+    Task<Result<List<BatchToSupply>>> BatchesToSupplyForGivenQuantity(
+        Guid materialId,
+        Guid warehouseId,
+        decimal quantity
+    );
 
     Task<Result<decimal>> GetProductStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
-    Task<Result<List<BatchToSupply>>> GetFrozenBatchesForRequisitionItem(Guid materialId, Guid warehouseId,
-        decimal requestedQuantity);
-    Task<Result> ReserveQuantityFromBatchForProduction(Guid batchId, Guid warehouseId, Guid productionScheduleProductId, decimal quantity, Guid? uomId, Guid? warehouseLocationShelfId);
-    Task<List<MaterialBatchReservedQuantityDto>> GetReservedBatchesAndQuantityForProductionWarehouse(Guid materialId,
-        Guid warehouseId, Guid productionScheduleProductId); 
-    Task<List<MaterialBatchReservedQuantityDto>>
-        GetConsumedBatchesAndQuantityForProductionWarehouse(Guid materialId, Guid warehouseId, 
-            Guid productionScheduleProductId);
-    
+    Task<Result<List<BatchToSupply>>> GetFrozenBatchesForRequisitionItem(
+        Guid materialId,
+        Guid warehouseId,
+        decimal requestedQuantity
+    );
+    Task<Result> ReserveQuantityFromBatchForProduction(
+        Guid batchId,
+        Guid warehouseId,
+        Guid productionScheduleProductId,
+        decimal quantity,
+        Guid? uomId,
+        Guid? warehouseLocationShelfId
+    );
+    Task<
+        List<MaterialBatchReservedQuantityDto>
+    > GetReservedBatchesAndQuantityForProductionWarehouse(
+        Guid materialId,
+        Guid warehouseId,
+        Guid productionScheduleProductId
+    );
+    Task<
+        List<MaterialBatchReservedQuantityDto>
+    > GetConsumedBatchesAndQuantityForProductionWarehouse(
+        Guid materialId,
+        Guid warehouseId,
+        Guid productionScheduleProductId
+    );
+
     Task<Result<decimal>> GetMaterialStockInWarehouseByBatch(Guid batchId, Guid warehouseId);
-    Task<Result> CreateMaterialDepartment(List<CreateMaterialDepartment> materialDepartments,
-        Guid userId);
+    Task<Result> CreateMaterialDepartment(
+        List<CreateMaterialDepartment> materialDepartments,
+        Guid userId
+    );
     Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId);
-    Task<Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>> GetMaterialsThatHaveNotBeenLinked(int page, int pageSize, string searchQuery, MaterialKind? kind, Guid userId);
-    Task<Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>> GetMaterialDepartments(int page, 
-        int pageSize, 
-        string searchQuery, 
+    Task<
+        Result<Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>>
+    > GetMaterialsThatHaveNotBeenLinked(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? kind,
+        Guid userId
+    );
+    Task<
+        Result<Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>>
+    > GetMaterialDepartments(
+        int page,
+        int pageSize,
+        string searchQuery,
         MaterialKind? kind,
         Guid? materialCategoryId,
         string sortLabel,
         SortDirection? sortDirection,
-        Guid userId);
-    Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(Guid materialId, Guid userId);
+        Guid userId
+    );
+    Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(
+        Guid materialId,
+        Guid userId
+    );
     Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
         int page,
-        int pageSize, string searchQuery, bool withProcessed, Guid materialId, MaterialKind? kind);
-    Task<Result> MoveMaterialBatchToWarehouseFromHolding(SupplyMaterialBatchFromHoldingRequest request, Guid userId);
+        int pageSize,
+        string searchQuery,
+        bool withProcessed,
+        Guid materialId,
+        MaterialKind? kind
+    );
+    Task<Result> MoveMaterialBatchToWarehouseFromHolding(
+        SupplyMaterialBatchFromHoldingRequest request,
+        Guid userId
+    );
     Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId);
     Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(MaterialFilter filter);
     Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind);
-    Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(int page, int pageSize, string searchQuery, MaterialKind? kind);
+    Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? kind
+    );
     Task<Result> MoveMaterialBatchToWarehouseFromDistribute(
-        SupplyMaterialBatchFromHMaterialDistribute request, Guid userId);
-   Task<Result<IEnumerable<MaterialReservedQuantity>>> GetReservedQuantitiesForMaterial(Guid materialId,
-        Guid? departmentId);
+        SupplyMaterialBatchFromHMaterialDistribute request,
+        Guid userId
+    );
+    Task<Result<IEnumerable<MaterialReservedQuantity>>> GetReservedQuantitiesForMaterial(
+        Guid materialId,
+        Guid? departmentId
+    );
     Task<Result> ImportMaterialStockFromExcel(IFormFile file);
-    
-    Task<Result<MaterialBatchCountDto>> GetMaterialBatchCount(Guid warehouseId, Guid? materialId,
-        MaterialKind? materialKind, Guid? departmentId);
+
+    Task<Result<byte[]>> ExportMaterialStockToExcel(
+        Guid userId,
+        Guid? departmentId,
+        MaterialKind? kind
+    );
+
+    Task<Result<MaterialBatchCountDto>> GetMaterialBatchCount(
+        Guid warehouseId,
+        Guid? materialId,
+        MaterialKind? materialKind,
+        Guid? departmentId
+    );
 }

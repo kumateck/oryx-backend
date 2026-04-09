@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260316134036_AddItemProcurementProcessAndGrn")]
+    partial class AddItemProcurementProcessAndGrn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4921,12 +4924,10 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("ContactPerson")
-                        .HasMaxLength(1000000)
-                        .HasColumnType("character varying(1000000)");
+                        .HasColumnType("text");
 
                     b.Property<string>("ContactPersonNumber")
-                        .HasMaxLength(1000000)
-                        .HasColumnType("character varying(1000000)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -4937,10 +4938,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Destination")
-                        .HasMaxLength(1000000)
-                        .HasColumnType("character varying(1000000)");
-
                     b.Property<Guid>("EmployeeId")
                         .HasColumnType("uuid");
 
@@ -4948,8 +4945,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Justification")
-                        .HasMaxLength(1000000)
-                        .HasColumnType("character varying(1000000)");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -4970,8 +4966,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("RecallReason")
-                        .HasMaxLength(1000000)
-                        .HasColumnType("character varying(1000000)");
+                        .HasColumnType("text");
 
                     b.Property<int>("RequestCategory")
                         .HasColumnType("integer");
@@ -8626,10 +8621,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Division")
                         .HasColumnType("integer");
 
-                    b.Property<string>("DocumentNumber")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
                     b.Property<Guid?>("EquipmentId")
                         .HasColumnType("uuid");
 
@@ -8676,9 +8667,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("PrimaryPackDescription")
                         .HasMaxLength(1000000)
                         .HasColumnType("character varying(1000000)");
-
-                    b.Property<int>("RevisionNumber")
-                        .HasColumnType("integer");
 
                     b.Property<string>("SecondaryPackDescription")
                         .HasMaxLength(1000000)
@@ -15033,7 +15021,7 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DOMAIN.Entities.Products.Equipments.QcEquipment", "Instrument")
+                    b.HasOne("DOMAIN.Entities.Instruments.Instrument", "Instrument")
                         .WithMany()
                         .HasForeignKey("InstrumentId");
 
