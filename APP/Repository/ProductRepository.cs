@@ -1424,14 +1424,14 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             worksheet.Cells[row, 3].Value = fgtn.ProductPacking?.Product?.Name;
             worksheet.Cells[row, 4].Value = fgtn.ProductPacking?.Name;
             //worksheet.Cells[row, 5].Value = fgtn.TotalQuantity;
-            //worksheet.Cells[row, 6].Value = fgtn.BatchManufacturingRecord?.BatchNumber;
-            // worksheet.Cells[row, 7].Value = fgtn.TransferNoteNumber;
-            // worksheet.Cells[row, 8].Value = fgtn.QarNumber;
-            // worksheet.Cells[row, 9].Value =
-            //     fgtn.BatchManufacturingRecord?.ManufacturingDate?.ToString("yyyy-MM-dd");
-            // worksheet.Cells[row, 10].Value = fgtn.BatchManufacturingRecord?.ExpiryDate?.ToString(
-            //     "yyyy-MM-dd"
-            // );
+            worksheet.Cells[row, 6].Value = fgtn.BatchManufacturingRecord?.BatchNumber;
+            worksheet.Cells[row, 7].Value = fgtn.TransferNoteNumber;
+            worksheet.Cells[row, 8].Value = fgtn.QarNumber;
+            worksheet.Cells[row, 9].Value =
+                fgtn.BatchManufacturingRecord?.ManufacturingDate?.ToString("yyyy-MM-dd");
+            worksheet.Cells[row, 10].Value = fgtn.BatchManufacturingRecord?.ExpiryDate?.ToString(
+                "yyyy-MM-dd"
+            );
             row++;
         }
 
