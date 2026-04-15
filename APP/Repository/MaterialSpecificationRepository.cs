@@ -91,6 +91,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
     {
         var materialSpec = await context
             .MaterialSpecifications.IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
