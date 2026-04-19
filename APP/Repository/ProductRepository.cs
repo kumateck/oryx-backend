@@ -1360,10 +1360,15 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result<byte[]>> ExportProductStockToExcel(Guid userId, Guid? departmentId)
+    public async Task<Result<byte[]>> ExportProductStockToExcel(
+        Guid userId,
+        Guid? departmentId,
+        Division? departmentDivision
+    )
     {
         var user = await context
             .Users.IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(u => u.Department)
             .FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
@@ -1374,7 +1379,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             return Error.Failure("User.NoDepartment", "User does not belong to any department.");
         }
 
-        var division = user.Department.Division;
+        var division = departmentDivision ?? user.Department.Division;
 
         var fgtnList = await context
             .FinishedGoodsTransferNotes.AsSplitQuery()
