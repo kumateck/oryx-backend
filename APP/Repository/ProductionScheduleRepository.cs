@@ -2308,10 +2308,10 @@ public class ProductionScheduleRepository(
         var products = await productsQuery.ToListAsync();
 
         return products
-            .GroupBy(p => p.BatchManufacturingRecord.ProductionScheduleProduct)
+            .GroupBy(p => p.BatchManufacturingRecord.ProductionScheduleProduct.Product)
             .Select(item => new ApprovedProductDto
             {
-                Product = mapper.Map<ProductListDto>(item.Key.Product),
+                Product = mapper.Map<ProductListDto>(item.Key),
                 TotalQuantity = item.Sum(p => p.QuantityReceived),
                 TotalRemainingQuantity = item.Sum(p => p.RemainingQuantity),
                 QuantityPerPack = item.Select(p => p.QuantityPerPack).First(),
@@ -4113,8 +4113,8 @@ public class ProductionScheduleRepository(
             var balanceAfterIssue = fromBalance - batchRequest.Quantity;
             var balanceAfterReceive = toBalance + batchRequest.Quantity;
 
-            var arNumber = await context.MaterialSamplings
-                .Where(s => s.MaterialBatchId == batch.Id)
+            var arNumber = await context
+                .MaterialSamplings.Where(s => s.MaterialBatchId == batch.Id)
                 .OrderByDescending(s => s.CreatedAt)
                 .Select(s => s.ArNumber)
                 .FirstOrDefaultAsync();

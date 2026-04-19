@@ -3,6 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Http;
 using SHARED;
@@ -230,7 +231,7 @@ public interface IMaterialRepository
         SupplyMaterialBatchFromHMaterialDistribute request,
         Guid userId
     );
-    Task<Result<IEnumerable<MaterialReservedQuantity>>> GetReservedQuantitiesForMaterial(
+    Task<Result<List<ReservedMaterialReportDto>>> GetReservedQuantitiesForMaterial(
         Guid materialId,
         Guid? departmentId
     );

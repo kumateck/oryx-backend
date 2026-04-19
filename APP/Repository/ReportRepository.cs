@@ -3499,13 +3499,17 @@ public class ReportRepository(
         Guid? materialId = null
     )
     {
-        var reservedMaterials = await context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+        var reservedMaterialQuery = context
+            .MaterialBatchReservedQuantities.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Where(r =>
                 r.DeletedAt == null
-                && (departmentId == null || r.Warehouse.DepartmentId == departmentId)
-                && (materialId == null || r.MaterialBatch.MaterialId == materialId)
+                && (!departmentId.HasValue || r.Warehouse.DepartmentId == departmentId.Value)
+                && (!materialId.HasValue || r.MaterialBatch.MaterialId == materialId.Value)
             )
+            .AsNoTracking();
+
+        var reservedMaterials = await reservedMaterialQuery
             .Select(r => new ReservedMaterialReportDto
             {
                 MaterialName = r.MaterialBatch.Material.Name,
