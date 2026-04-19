@@ -3053,12 +3053,14 @@ public async Task<Result<List<ExpiredMaterialReportDto>>> GetExpiredMaterials(Gu
 }
 
 
-public async Task<Result<List<ReservedMaterialReportDto>>> GetReservedMaterials(Guid departmentId)
+public async Task<Result<List<ReservedMaterialReportDto>>> GetReservedMaterials(Guid? departmentId = null, Guid? materialId = null)
 {
     var reservedMaterials = await context.MaterialBatchReservedQuantities
         .AsNoTracking()
         .IgnoreQueryFilters()
-        .Where(r => r.DeletedAt == null && r.Warehouse.DepartmentId == departmentId)
+        .Where(r => r.DeletedAt == null && 
+                    (departmentId == null || r.Warehouse.DepartmentId == departmentId) && 
+                    (materialId == null || r.MaterialBatch.MaterialId == materialId))
         .Select(r => new ReservedMaterialReportDto
         {
             MaterialName = r.MaterialBatch.Material.Name,
@@ -3066,7 +3068,9 @@ public async Task<Result<List<ReservedMaterialReportDto>>> GetReservedMaterials(
             ProductName = r.ProductionScheduleProduct.Product.Name,
             ProductCode = r.ProductionScheduleProduct.Product.Code,
             ReservedQuantity = r.Quantity,
-            UomSymbol = r.UoM.Symbol
+            UomSymbol = r.UoM.Symbol,
+            WarehouseName = r.Warehouse.Name,
+            DepartmentName = r.Warehouse.Department.Name
         })
         .ToListAsync();
 
