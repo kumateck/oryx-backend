@@ -579,7 +579,10 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="searchQuery">Search material</param>
     /// <returns>Returns a paginated list of material batches.</returns>
     [HttpGet("{materialId:guid}/batches/v2")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShelfMaterialBatchDto>))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<List<ShelfMaterialBatchDto>>)
+    )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialBatchesByMaterialIdV2(
