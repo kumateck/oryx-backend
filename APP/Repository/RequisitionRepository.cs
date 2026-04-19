@@ -417,12 +417,18 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
                 var currentBalance = previousBalance - batch.Quantity;
 
+                var arNumber = await context.MaterialSamplings
+                    .Where(s => s.MaterialBatchId == materialBatch.Id)
+                    .OrderByDescending(s => s.CreatedAt)
+                    .Select(s => s.ArNumber)
+                    .FirstOrDefaultAsync();
+
                 var binCardEvent = new BinCardInformation
                 {
                     MaterialBatchId = materialBatch.Id,
                     Description = appropriateWarehouse.Name,
                     WayBill = "N/A",
-                    ArNumber = "N/A",
+                    ArNumber = arNumber ?? "N/A",
                     QuantityReceived = 0,
                     QuantityIssued = batch.Quantity,
                     BalanceQuantity = currentBalance,
@@ -603,12 +609,18 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             var balanceAfterIssue = fromBalance - batch.Quantity;
             var balanceAfterReceive = toBalance + batch.Quantity;
 
+            var arNumber = await context.MaterialSamplings
+                .Where(s => s.MaterialBatchId == shelfMaterialBatch.MaterialBatch.Id)
+                .OrderByDescending(s => s.CreatedAt)
+                .Select(s => s.ArNumber)
+                .FirstOrDefaultAsync();
+
             var toBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = shelfMaterialBatch.MaterialBatch.Id,
                 Description = fromWarehouse.Name,
                 WayBill = "N/A",
-                ArNumber = "N/A",
+                ArNumber = arNumber ?? "N/A",
                 QuantityReceived = 0,
                 QuantityIssued = batch.Quantity,
                 BalanceQuantity = balanceAfterIssue,
@@ -626,7 +638,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 MaterialBatchId = shelfMaterialBatch.MaterialBatch.Id,
                 Description = productionWarehouse.Name,
                 WayBill = "N/A",
-                ArNumber = "N/A",
+                ArNumber = arNumber ?? "N/A",
                 QuantityReceived = batch.Quantity,
                 QuantityIssued = 0,
                 BalanceQuantity = balanceAfterReceive,

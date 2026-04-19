@@ -4113,12 +4113,18 @@ public class ProductionScheduleRepository(
             var balanceAfterIssue = fromBalance - batchRequest.Quantity;
             var balanceAfterReceive = toBalance + batchRequest.Quantity;
 
+            var arNumber = await context.MaterialSamplings
+                .Where(s => s.MaterialBatchId == batch.Id)
+                .OrderByDescending(s => s.CreatedAt)
+                .Select(s => s.ArNumber)
+                .FirstOrDefaultAsync();
+
             var toBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = batch.Id,
                 Description = fromWarehouse.Name,
                 WayBill = "N/A",
-                ArNumber = "N/A",
+                ArNumber = arNumber ?? "N/A",
                 QuantityReceived = 0,
                 QuantityIssued = batchRequest.Quantity,
                 BalanceQuantity = balanceAfterIssue,
@@ -4135,7 +4141,7 @@ public class ProductionScheduleRepository(
                 MaterialBatchId = batch.Id,
                 Description = toWarehouse.Name,
                 WayBill = "N/A",
-                ArNumber = "N/A",
+                ArNumber = arNumber ?? "N/A",
                 QuantityReceived = batchRequest.Quantity,
                 QuantityIssued = 0,
                 BalanceQuantity = balanceAfterReceive,

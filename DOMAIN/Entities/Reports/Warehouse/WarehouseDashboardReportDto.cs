@@ -48,6 +48,15 @@ public class ReservedMaterialReportDto
 
     public string WarehouseName { get; set; }
     public string DepartmentName { get; set; }
+
+    public DateTime DateTime { get; set; }
+    public string Schedule { get; set; }
+    public string ProductBatchNumber { get; set; }
+    public string ArNumber { get; set; }
+    public DateTime? ManufacturingDate { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public decimal BalanceQuantity { get; set; }
+    public string MaterialBatchNumber { get; set; }
 }
 
 public class MaterialsChecklistReportDto
