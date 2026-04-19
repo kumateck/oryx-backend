@@ -3714,6 +3714,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var batches = await context
             .MaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(b => b.Material)
             .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
             .ToListAsync();
@@ -3797,6 +3798,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     Id = Guid.NewGuid(),
                     BatchNumber = batchNo,
                     MaterialId = material.Id,
+                    Material = material,
                     TotalQuantity = 0,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
@@ -3829,8 +3831,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             if (material.Id != batch.MaterialId)
                 return Error.Validation(
                     "Material.Batch",
-                    $"Material {material.Code} does not match with batch {batch.BatchNumber}."
-                        + $" Expected material {batch.Material.Code} for batch {batch.BatchNumber}."
+                    $"Material {material.Code} ({material.Name}) does not match with batch {batch.BatchNumber}."
+                        + $" Expected material {batch.Material?.Code} ({batch.Material?.Name}) for batch {batch.BatchNumber}."
                 );
 
             // --- SHELF & UOM VALIDATION ---
