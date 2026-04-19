@@ -408,6 +408,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = context
             .ShelfMaterialBatches.IgnoreQueryFilters()
             .AsSplitQuery()
+            .OrderBy(m => m.MaterialBatch.Material.Name)
             .Where(m =>
                 m.MaterialBatch.Material.Kind == kind
                 && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
