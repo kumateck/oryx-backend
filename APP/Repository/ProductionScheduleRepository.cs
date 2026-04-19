@@ -2153,7 +2153,7 @@ public class ProductionScheduleRepository(
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
             .Include(b => b.CreatedBy)
-            .Where(f => f.Id == batchManufacturingRecordId)
+            .Where(f => f.BatchManufacturingRecordId == batchManufacturingRecordId)
             .ToListAsync();
 
         return mapper.Map<List<FinishedGoodsTransferNoteDto>>(transferNote);

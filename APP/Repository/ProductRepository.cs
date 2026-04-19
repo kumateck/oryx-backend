@@ -1364,23 +1364,32 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     {
         var user = await context
             .Users.IgnoreQueryFilters()
+            .Include(u => u.Department)
             .FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
             return UserErrors.NotFound(userId);
 
-        departmentId ??= user.DepartmentId;
+        if (user.Department == null)
+        {
+            return Error.Failure("User.NoDepartment", "User does not belong to any department.");
+        }
 
-        var warehouses = await context
-            .Warehouses.Where(w =>
-                (!departmentId.HasValue || w.DepartmentId == departmentId)
-                && w.Type == WarehouseType.FinishedGoodsStorage
+        var division = user.Department.Division;
+
+        var fgtnList = await context
+            .FinishedGoodsTransferNotes.AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(f => f.ToWarehouse)
+            .Include(f => f.ProductPacking)
+                .ThenInclude(pp => pp.Product)
+            .Include(f => f.BatchManufacturingRecord)
+            .Where(f => f.IsApproved && f.TotalQuantity > 0 && !f.DeletedAt.HasValue)
+            .Where(f => f.ToWarehouse.Division == division)
+            .Where(f => f.ProductPacking.Product.Division == division)
+            .Where(f => f.ToWarehouse.Type == WarehouseType.FinishedGoodsStorage)
+            .Where(f =>
+                !departmentId.HasValue || f.ProductPacking.Product.DepartmentId == departmentId
             )
-            .ToListAsync();
-
-        var products = await context
-            .Products.AsSplitQuery()
-            .Include(p => p.Packings)
-            .Where(p => !departmentId.HasValue || p.DepartmentId == departmentId)
             .ToListAsync();
 
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
@@ -1408,20 +1417,22 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         }
 
         int row = 2;
-        foreach (var warehouse in warehouses)
+        foreach (var fgtn in fgtnList)
         {
-            var deptProducts = products.Where(p => p.DepartmentId == warehouse.DepartmentId);
-            foreach (var product in deptProducts)
-            {
-                foreach (var packing in product.Packings)
-                {
-                    worksheet.Cells[row, 1].Value = warehouse.Name;
-                    worksheet.Cells[row, 2].Value = product.Code;
-                    worksheet.Cells[row, 3].Value = product.Name;
-                    worksheet.Cells[row, 4].Value = packing.Name;
-                    row++;
-                }
-            }
+            worksheet.Cells[row, 1].Value = fgtn.ToWarehouse?.Name;
+            worksheet.Cells[row, 2].Value = fgtn.ProductPacking?.Product?.Code;
+            worksheet.Cells[row, 3].Value = fgtn.ProductPacking?.Product?.Name;
+            worksheet.Cells[row, 4].Value = fgtn.ProductPacking?.Name;
+            //worksheet.Cells[row, 5].Value = fgtn.TotalQuantity;
+            worksheet.Cells[row, 6].Value = fgtn.BatchManufacturingRecord?.BatchNumber;
+            worksheet.Cells[row, 7].Value = fgtn.TransferNoteNumber;
+            worksheet.Cells[row, 8].Value = fgtn.QarNumber;
+            worksheet.Cells[row, 9].Value =
+                fgtn.BatchManufacturingRecord?.ManufacturingDate?.ToString("yyyy-MM-dd");
+            worksheet.Cells[row, 10].Value = fgtn.BatchManufacturingRecord?.ExpiryDate?.ToString(
+                "yyyy-MM-dd"
+            );
+            row++;
         }
 
         worksheet.Cells.AutoFitColumns();

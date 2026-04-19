@@ -83,7 +83,7 @@ public interface IReportRepository
     Task<Result<WarehouseDashboardReportDto>> GetWarehouseDashboard(Guid departmentId,DateFilter filter);
     Task<Result<List<ExpiredMaterialReportDto>>> GetExpiredMaterials(Guid departmentId);
 
-    Task<Result<List<ReservedMaterialReportDto>>> GetReservedMaterials(Guid departmentId);
+    Task<Result<List<ReservedMaterialReportDto>>> GetReservedMaterials(Guid? departmentId = null, Guid? materialId = null);
 
     Task<Result<List<MaterialReorderReportDto>>> GetMaterialsBelowReorderLevel(Guid departmentId);
 

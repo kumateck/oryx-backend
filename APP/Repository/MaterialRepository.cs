@@ -408,6 +408,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = context
             .ShelfMaterialBatches.IgnoreQueryFilters()
             .AsSplitQuery()
+            .OrderBy(m => m.MaterialBatch.Material.Name)
             .Where(m =>
                 m.MaterialBatch.Material.Kind == kind
                 && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
@@ -3638,9 +3639,26 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         // --- 3. FETCH LOOKUPS (DATABASE) ---
-        var uomLookup = await context
+        var uoms = await context
             .UnitOfMeasures.Where(u => excelUomSymbols.Contains(u.Symbol))
-            .ToDictionaryAsync(u => u.Symbol.Trim(), u => u.Id, StringComparer.OrdinalIgnoreCase);
+            .ToListAsync();
+
+        var uomDuplicates = uoms.GroupBy(u => u.Symbol.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (uomDuplicates.Count != 0)
+            return Error.Validation(
+                "UOM.Ambiguous",
+                $"Multiple Unit of Measures found for symbols: {string.Join(", ", uomDuplicates)}"
+            );
+
+        var uomLookup = uoms.ToDictionary(
+            u => u.Symbol.Trim(),
+            u => u.Id,
+            StringComparer.OrdinalIgnoreCase
+        );
 
         var shelfHierarchy = await context
             .WarehouseLocationShelves.IgnoreQueryFilters()
@@ -3651,8 +3669,21 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 ShelfCode = s.Code.Trim(),
                 WarehouseId = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Id,
                 WarehouseName = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name.Trim(),
+                CreatedAt = s.CreatedAt,
             })
             .ToListAsync();
+
+        var shelfDuplicates = shelfHierarchy
+            .GroupBy(x => $"{x.WarehouseName}|{x.ShelfCode}", StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (shelfDuplicates.Count != 0)
+            return Error.Validation(
+                "Shelf.Ambiguous",
+                $"Multiple shelves found for keys: {string.Join(", ", shelfDuplicates)}"
+            );
 
         var shelfLookup = shelfHierarchy.ToDictionary(
             x => $"{x.WarehouseName}|{x.ShelfCode}",
@@ -3660,20 +3691,60 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             StringComparer.OrdinalIgnoreCase
         );
 
-        var materialLookup = await context
+        var materials = await context
             .Materials.Where(m => excelMaterialCodes.Contains(m.Code))
-            .ToDictionaryAsync(m => m.Code.Trim(), m => m, StringComparer.OrdinalIgnoreCase);
+            .ToListAsync();
 
-        var batchLookup = await context
+        var materialDuplicates = materials
+            .GroupBy(m => m.Code.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (materialDuplicates.Count != 0)
+            return Error.Validation(
+                "Material.Ambiguous",
+                $"Multiple materials found in system with same code: {string.Join(", ", materialDuplicates)}"
+            );
+
+        var materialLookup = materials.ToDictionary(
+            m => m.Code.Trim(),
+            m => m,
+            StringComparer.OrdinalIgnoreCase
+        );
+
+        var batches = await context
             .MaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(b => b.Material)
             .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
-            .ToDictionaryAsync(b => b.BatchNumber.Trim(), b => b, StringComparer.OrdinalIgnoreCase);
+            .ToListAsync();
+
+        var batchDuplicates = batches
+            .GroupBy(b => b.BatchNumber.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (batchDuplicates.Count != 0)
+            return Error.Validation(
+                "Batch.Ambiguous",
+                $"Multiple batches found in system with same number: {string.Join(", ", batchDuplicates)}"
+            );
+
+        var batchLookup = batches.ToDictionary(
+            b => b.BatchNumber.Trim(),
+            b => b,
+            StringComparer.OrdinalIgnoreCase
+        );
 
         // --- 4. PROCESS ROWS ---
         var shelfMaterialBatches = new List<ShelfMaterialBatch>();
         var binCardEntries = new List<BinCardInformation>();
         var newBatches = new List<MaterialBatch>();
+        var materialUomConsistency = new Dictionary<string, string>(
+            StringComparer.OrdinalIgnoreCase
+        );
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
@@ -3703,6 +3774,24 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     $"Row {row}: Material '{materialCode}' not found. Cannot create Batch '{batchNo}'."
                 );
 
+            // Consistency check for Material UOM in Excel
+            if (!string.IsNullOrEmpty(uomSymbol))
+            {
+                if (materialUomConsistency.TryGetValue(materialCode, out var existingUom))
+                {
+                    if (!existingUom.Equals(uomSymbol, StringComparison.OrdinalIgnoreCase))
+                        return Error.Validation(
+                            "Material.Consistency",
+                            $"Row {row}: Material '{materialCode}' is used with UOM '{uomSymbol}', "
+                                + $"but was previously defined with '{existingUom}' in this sheet."
+                        );
+                }
+                else
+                {
+                    materialUomConsistency[materialCode] = uomSymbol;
+                }
+            }
+
             if (!batchLookup.TryGetValue(batchNo, out var batch))
             {
                 batch = new MaterialBatch
@@ -3710,6 +3799,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     Id = Guid.NewGuid(),
                     BatchNumber = batchNo,
                     MaterialId = material.Id,
+                    Material = material,
                     TotalQuantity = 0,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
@@ -3720,12 +3810,30 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 batchLookup[batchNo] = batch;
                 newBatches.Add(batch);
             }
+            else
+            {
+                // Consistency check for new batches defined across multiple rows or existing batches
+                var rowExpiryDate = ParseDate(expiryDateStr);
+                var rowMfgDate = ParseDate(manufacturingDateStr);
+
+                if (batch.ExpiryDate != rowExpiryDate)
+                    return Error.Validation(
+                        "Batch.Consistency",
+                        $"Row {row}: Batch '{batchNo}' has a conflicting Expiry Date ('{expiryDateStr}') compared to the system or previous row."
+                    );
+
+                if (batch.ManufacturingDate != rowMfgDate)
+                    return Error.Validation(
+                        "Batch.Consistency",
+                        $"Row {row}: Batch '{batchNo}' has a conflicting Manufacturing Date ('{manufacturingDateStr}') compared to the system or previous row."
+                    );
+            }
 
             if (material.Id != batch.MaterialId)
                 return Error.Validation(
                     "Material.Batch",
-                    $"Material {material.Code} does not match with batch {batch.BatchNumber}."
-                        + $" Expected material {batch.Material.Code} for batch {batch.BatchNumber}."
+                    $"Material {material.Code} ({material.Name}) does not match with batch {batch.BatchNumber}."
+                        + $" Expected material {batch.Material?.Code} ({batch.Material?.Name}) for batch {batch.BatchNumber}."
                 );
 
             // --- SHELF & UOM VALIDATION ---
