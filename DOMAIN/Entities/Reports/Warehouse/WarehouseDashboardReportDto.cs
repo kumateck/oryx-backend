@@ -46,6 +46,8 @@ public class ReservedMaterialReportDto
     public string ProductName { get; set; }
     public string ProductCode { get; set; }
 
+    public string WarehouseName { get; set; }
+    public string DepartmentName { get; set; }
 }
 
 public class MaterialsChecklistReportDto

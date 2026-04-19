@@ -472,14 +472,16 @@ public async Task<IResult> GetSupplierMaterialReport([FromQuery] SupplierMateria
     /// </summary>
     [HttpGet("reserved-materials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ReservedMaterialReportDto>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetReservedMaterials()
+    public async Task<IResult> GetReservedMaterials(Guid? materialId)
     {
         var departmentIdStr = (string?)HttpContext.Items["Department"];
-        if (string.IsNullOrWhiteSpace(departmentIdStr) || !Guid.TryParse(departmentIdStr, out var departmentId))
-            return TypedResults.Unauthorized();
+        Guid? departmentId = null;
+        if (!string.IsNullOrWhiteSpace(departmentIdStr) && Guid.TryParse(departmentIdStr, out var deptId))
+        {
+            departmentId = deptId;
+        }
 
-        var result = await repository.GetReservedMaterials(departmentId);
+        var result = await repository.GetReservedMaterials(departmentId, materialId);
         return result.IsSuccess 
             ? TypedResults.Ok(result.Value) 
             : result.ToProblemDetails();
