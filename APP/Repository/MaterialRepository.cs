@@ -1340,12 +1340,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var currentBalance = previousBalance + totalQuantityToAssign;
 
+        var arNumber = await context.MaterialSamplings
+            .Where(s => s.MaterialBatchId == materialBatch.Id)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => s.ArNumber)
+            .FirstOrDefaultAsync();
+
         var binCardEvent = new BinCardInformation
         {
             MaterialBatchId = materialBatch.Id,
             Description = warehouse.Name,
             WayBill = "N/A",
-            ArNumber = "N/A",
+            ArNumber = arNumber ?? "N/A",
             QuantityReceived = totalQuantityToAssign,
             QuantityIssued = 0,
             BalanceQuantity = currentBalance,
@@ -3153,6 +3159,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (distributeMaterial is null)
             return Error.NotFound("DistributeMaterial.NotFound", "DistributeMaterial not found");
 
+        var arNumber = await context.MaterialSamplings
+            .Where(s => s.MaterialBatchId == request.MaterialBatchId)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => s.ArNumber)
+            .FirstOrDefaultAsync();
+
         var movements = new List<MassMaterialBatchMovement>();
         var materialBatchEvents = new List<MaterialBatchEvent>();
         var binCards = new List<BinCardInformation>();
@@ -3206,7 +3218,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     MaterialBatchId = materialBatch.Id,
                     UoMId = materialBatch.UoMId,
                     WayBill = grn?.GrnNumber,
-                    ArNumber = "",
+                    ArNumber = arNumber ?? "",
                     QuantityReceived = movedBatch.Quantity,
                     QuantityIssued = 0,
                     BalanceQuantity = currentBalance,
