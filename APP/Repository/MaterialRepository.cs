@@ -3649,6 +3649,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var excelShelfCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelUomSymbols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelMaterialCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var excelWarehouseNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
@@ -3657,6 +3658,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var s = GetCell(row, "Shelves");
             var u = GetCell(row, "UOM");
             var m = GetCell(row, "Material Code");
+            var w = GetCell(row, "Warehouse");
 
             if (!string.IsNullOrEmpty(s))
                 excelShelfCodes.Add(s);
@@ -3664,6 +3666,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 excelUomSymbols.Add(u);
             if (!string.IsNullOrEmpty(m))
                 excelMaterialCodes.Add(m);
+            if (!string.IsNullOrEmpty(w))
+                excelWarehouseNames.Add(w);
         }
 
         // --- LOOKUPS ---
@@ -3703,6 +3707,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             b => (b.MaterialId, (b.BatchNumber ?? "").Trim().ToUpperInvariant()),
             b => b
         );
+
+        var warehouses = await context
+            .Warehouses.IgnoreQueryFilters()
+            .Where(w => excelWarehouseNames.Contains(w.Name) && !w.DeletedAt.HasValue)
+            .ToListAsync();
 
         // --- AGGREGATION ---
         var aggregation =
@@ -3807,7 +3816,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 {
                     Id = Guid.NewGuid(),
                     MaterialBatchId = batch.Id,
-                    WarehouseId = Guid.Empty, // set properly if needed
+                    WarehouseId = warehouses.FirstOrDefault(w => w.Name == warehouse)?.Id,
                     UoMId = uomId,
                     WayBill = waybill,
                     ArNumber = arNo,
