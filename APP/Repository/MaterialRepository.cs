@@ -2183,7 +2183,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             if (shelfBatch.Quantity < quantity)
                 return Error.Validation(
                     "ShelfMaterialBatch",
-                    "Not enough stock on the shelf to reserve."
+                    $"Not enough stock on the shelf to reserve."
+                        + $" Available shelf quantity: {shelfBatch.Quantity}. Required shelf quantity: {quantity}"
                 );
         }
 

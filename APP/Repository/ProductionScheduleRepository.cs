@@ -261,6 +261,7 @@ public class ProductionScheduleRepository(
 
             var productionScheduleProduct = await context
                 .ProductionScheduleProducts.AsSplitQuery()
+                .IgnoreQueryFilters()
                 .Include(productionSchedule => productionSchedule.ProductionSchedule)
                 .FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
 
@@ -272,6 +273,7 @@ public class ProductionScheduleRepository(
 
             var product = await context
                 .Products.AsSplitQuery()
+                .IgnoreQueryFilters()
                 .Include(product => product.Routes)
                     .ThenInclude(route => route.Resources)
                 .Include(product => product.Routes)
@@ -1121,7 +1123,7 @@ public class ProductionScheduleRepository(
     )
     {
         var productionScheduleProduct =
-            await context.ProductionScheduleProducts.FirstOrDefaultAsync(p =>
+            await context.ProductionScheduleProducts.IgnoreQueryFilters().FirstOrDefaultAsync(p =>
                 p.Id == productionScheduleProductId
             );
 
@@ -1131,6 +1133,7 @@ public class ProductionScheduleRepository(
         var product = await context
             .Products.AsSplitQuery()
             .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
             .Include(product => product.BillOfMaterials)
                 .ThenInclude(p => p.BillOfMaterial)
                     .ThenInclude(p => p.Items)
@@ -1146,7 +1149,7 @@ public class ProductionScheduleRepository(
             return ProductErrors.NotFound(productionScheduleProduct.ProductId);
 
         var productionSchedule = await context
-            .ProductionSchedules.AsSplitQuery()
+            .ProductionSchedules.AsSplitQuery().IgnoreQueryFilters()
             .Include(productionSchedule => productionSchedule.Products)
             .Include(p => p.Department)
             .Include(baseEntity => baseEntity.CreatedBy)
