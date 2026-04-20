@@ -3354,7 +3354,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 DepartmentName = r.Warehouse.Department.Name,
                 DateTime = r.CreatedAt,
                 Schedule = r.ProductionScheduleProduct.ProductionSchedule.Code,
-                ProductBatchNumber = r.ProductionScheduleProduct.BatchNumber,
+                ProductBatchNumber = context
+                    .BatchManufacturingRecords.Where(b =>
+                        b.ProductionScheduleProductId == r.ProductionScheduleProductId
+                    )
+                    .Select(b => b.BatchNumber)
+                    .FirstOrDefault(),
                 ArNumber = context
                     .MaterialSamplings.Where(s => s.MaterialBatchId == r.MaterialBatchId)
                     .OrderByDescending(s => s.CreatedAt)
@@ -3518,9 +3523,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(
-        MaterialFilter filter
-    )
+    public async Task<
+        Result<Paginateable<IEnumerable<MaterialBatchDto>>>
+    > GetExpiredMaterialBatches(MaterialFilter filter)
     {
         var query = await context
             .MaterialBatches.AsSplitQuery()
@@ -3559,7 +3564,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ToList();
         }
 
-        return batches;
+        return PaginationHelper.Paginate(filter.Page, filter.PageSize, batches);
     }
 
     public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind)
