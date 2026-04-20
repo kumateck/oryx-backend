@@ -1122,10 +1122,9 @@ public class ProductionScheduleRepository(
         MaterialRequisitionStatus? status
     )
     {
-        var productionScheduleProduct =
-            await context.ProductionScheduleProducts.IgnoreQueryFilters().FirstOrDefaultAsync(p =>
-                p.Id == productionScheduleProductId
-            );
+        var productionScheduleProduct = await context
+            .ProductionScheduleProducts.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
 
         if (productionScheduleProduct == null)
             return ProductErrors.NotFound(productionScheduleProductId);
@@ -1149,7 +1148,8 @@ public class ProductionScheduleRepository(
             return ProductErrors.NotFound(productionScheduleProduct.ProductId);
 
         var productionSchedule = await context
-            .ProductionSchedules.AsSplitQuery().IgnoreQueryFilters()
+            .ProductionSchedules.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(productionSchedule => productionSchedule.Products)
             .Include(p => p.Department)
             .Include(baseEntity => baseEntity.CreatedBy)
@@ -1693,6 +1693,9 @@ public class ProductionScheduleRepository(
         CreateBatchManufacturingRecord request
     )
     {
+        if (string.IsNullOrEmpty(request.BatchNumber))
+            return Error.Validation("BatchNumber", "Batch number is required");
+
         var batchRecord = mapper.Map<BatchManufacturingRecord>(request);
         await context.BatchManufacturingRecords.AddAsync(batchRecord);
         await context.SaveChangesAsync();
@@ -2790,7 +2793,7 @@ public class ProductionScheduleRepository(
                         material.ProductionWarehouseId,
                         productionScheduleProductId,
                         batch.QuantityToTake,
-                        batch.Batch.UoM?.Id,
+                        batch.Batch.UoM.Id,
                         batch.WarehouseLocationShelfId
                     );
                     if (result.IsFailure)
@@ -2830,7 +2833,7 @@ public class ProductionScheduleRepository(
                         material.ProductionWarehouseId,
                         productionScheduleProductId,
                         batch.QuantityToTake,
-                        batch.Batch.UoM?.Id,
+                        batch.Batch.UoM.Id,
                         batch.WarehouseLocationShelfId
                     );
                 }

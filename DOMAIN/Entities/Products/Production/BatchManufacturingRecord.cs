@@ -9,6 +9,8 @@ public class CreateBatchManufacturingRecord
 {
     public Guid ProductionScheduleProductId { get; set; }
     public Guid ProductionActivityStepId { get; set; }
+
+    [Required]
     public string BatchNumber { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
@@ -30,7 +32,9 @@ public class BatchManufacturingRecord : BaseEntity
     public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
     public Guid ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
-    [StringLength(1000)] public string BatchNumber { get; set; }
+
+    [StringLength(1000)]
+    public string BatchNumber { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public decimal BatchQuantity { get; set; }

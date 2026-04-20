@@ -21,7 +21,9 @@ public class MaterialBatch : BaseEntity
     public Material Material { get; set; }
     public Guid? ChecklistId { get; set; }
     public Checklist Checklist { get; set; }
-    [StringLength(10000)] public string BatchNumber { get; set; }
+
+    [StringLength(10000)]
+    public string BatchNumber { get; set; }
     public Guid? GrnId { get; set; }
     public Grn Grn { get; set; }
     public Guid? StockTransferId { get; set; }
@@ -37,7 +39,7 @@ public class MaterialBatch : BaseEntity
     public decimal QuantityUnassigned => RemainingQuantity - QuantityAssigned;
     public decimal SampledQuantity { get; set; }
     public decimal QuantityDistributed { get; set; }
-    public Guid? UoMId { get; set; }
+    public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public BatchStatus Status { get; set; }
     public DateTime DateReceived { get; set; }
@@ -59,7 +61,9 @@ public class Sr : BaseEntity
 {
     public Guid MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
-    [StringLength(10000)] public string SrNumber { get; set; }
+
+    [StringLength(10000)]
+    public string SrNumber { get; set; }
     public decimal GrossWeight { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
@@ -86,7 +90,7 @@ public enum BatchStatus
     TestTaken = 9,
     Checked = 10,
     Sampled = 11,
-    TestAssigned = 12
+    TestAssigned = 12,
 }
 
 public class MaterialBatchEvent : BaseEntity
@@ -120,7 +124,7 @@ public enum EventType
     Supplied,
     Added,
     Moved,
-    Consumed
+    Consumed,
 }
 
 public class MassMaterialBatchMovement : BaseEntity
@@ -169,7 +173,9 @@ public class FinishedGoodsTransferNote : BaseEntity, IRequireApproval
     public decimal TotalQuantity { get; set; }
     public decimal QuantityReceived { get; set; } = 0;
     public string Notes { get; set; }
-    [StringLength(1000)] public string QarNumber { get; set; }
+
+    [StringLength(1000)]
+    public string QarNumber { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
@@ -179,13 +185,13 @@ public class FinishedGoodsTransferNote : BaseEntity, IRequireApproval
     public decimal RemainingQuantity => TotalQuantity - AllocatedQuantity;
     public List<FinishedGoodsTransferNoteQuantity> Quantities { get; set; } = [];
     public bool Approved { get; set; }
-    public List<FinishedGoodsTransferNoteApproval>  Approvals { get; set; } = [];
+    public List<FinishedGoodsTransferNoteApproval> Approvals { get; set; } = [];
     public bool IsPartial { get; set; }
     public bool IsFulfilled { get; set; }
     public DateTime? AcceptedAt { get; set; }
 }
 
-public class FinishedGoodsTransferNoteApproval: ResponsibleApprovalStage
+public class FinishedGoodsTransferNoteApproval : ResponsibleApprovalStage
 {
     public Guid Id { get; set; }
     public Guid FinishedGoodsTransferNoteId { get; set; }
@@ -256,7 +262,7 @@ public class MaterialBatchReservedQuantity : BaseEntity
     public WarehouseLocationShelf WarehouseLocationShelf { get; set; }
     public Guid ProductionScheduleProductId { get; set; }
     public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
-    public Guid? UoMId { get; set; }
+    public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
 }
@@ -291,9 +297,8 @@ public enum MovementType
 {
     ToWarehouse,
     ToProduction,
-    BetweenLocations
+    BetweenLocations,
 }
-
 
 public class MaterialReject : BaseEntity
 {
@@ -301,7 +306,9 @@ public class MaterialReject : BaseEntity
     public MaterialBatch MaterialBatch { get; set; }
     public Guid ResponseId { get; set; }
     public Response Response { get; set; }
-    [StringLength(1000000)] public string Reason { get; set; }
+
+    [StringLength(1000000)]
+    public string Reason { get; set; }
 }
 
 public class MaterialRejectDto : BaseDto

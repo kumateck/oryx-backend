@@ -157,7 +157,7 @@ public interface IMaterialRepository
         Guid warehouseId,
         Guid productionScheduleProductId,
         decimal quantity,
-        Guid? uomId,
+        Guid uomId,
         Guid? warehouseLocationShelfId
     );
     Task<
