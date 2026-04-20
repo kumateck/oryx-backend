@@ -2159,7 +2159,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         Guid warehouseId,
         Guid productionScheduleProductId,
         decimal quantity,
-        Guid? uoMId,
+        Guid uoMId,
         Guid? warehouseLocationShelfId
     )
     {
