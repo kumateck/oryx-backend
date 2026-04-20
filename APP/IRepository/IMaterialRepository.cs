@@ -219,7 +219,9 @@ public interface IMaterialRepository
         Guid userId
     );
     Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId);
-    Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(MaterialFilter filter);
+    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetExpiredMaterialBatches(
+        MaterialFilter filter
+    );
     Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind);
     Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(
         int page,

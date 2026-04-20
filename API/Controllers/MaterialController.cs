@@ -862,7 +862,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [HttpGet("batches/expired")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
-        Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>)
+        Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)
     )]
     public async Task<IResult> GetExpiredMaterialBatches([FromQuery] MaterialFilter filter)
     {
