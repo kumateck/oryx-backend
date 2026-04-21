@@ -567,6 +567,36 @@ public class ProductController(IProductRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Downloads all products in a division to an Excel file.
+    /// </summary>
+    /// <returns>Returns the Excel file containing products.</returns>
+    [HttpGet("download")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(byte[]))]
+    public async Task<IResult> DownloadProducts(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] Division? departmentDivision
+    )
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.ExportProductsToExcel(
+            Guid.Parse(userId),
+            departmentId,
+            departmentDivision
+        );
+        if (!result.IsSuccess)
+            return result.ToProblemDetails();
+
+        return TypedResults.File(
+            result.Value,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "Products.xlsx"
+        );
+    }
+
+    /// <summary>
     /// Imports equipment from an Excel file.
     /// </summary>
     /// <param name="file">The uploaded Excel file containing materials.</param>
