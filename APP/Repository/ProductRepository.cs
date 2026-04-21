@@ -1467,7 +1467,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         var division = departmentDivision ?? user.Department.Division;
 
         var warehouseName =
-            division == Division.BetaLactam ? "eta Warehouse" : "Non-Beta Warehouse";
+            division == Division.BetaLactam ? "Beta Warehouse" : "Non-Beta Warehouse";
 
         var products = await context
             .Products.AsSplitQuery()
