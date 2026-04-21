@@ -437,16 +437,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var materialIds = paginatedResult.Data.Select(m => m.Id).ToList();
 
-        var shelfMaterialBatches = await context
-            .ShelfMaterialBatches.IgnoreQueryFilters()
-            .AsSplitQuery()
-            .Where(s =>
-                materialIds.Contains(s.MaterialBatch.MaterialId)
-                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                    == warehouse.Id
-            )
-            .ToListAsync();
-
         var stocks = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
             .AsSplitQuery()
