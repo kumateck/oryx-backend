@@ -12,6 +12,8 @@ public interface IRequisitionRepository
     Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId);
     Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId);
 
+    Task<Result<List<MaterialAlternativeBatchesDto>>> GetAlternativeBatchesForStockRequisition(Guid requisitionId, Guid userId);
+
     Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities, Guid productId,
         Guid userId);
     Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize,
