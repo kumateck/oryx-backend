@@ -349,8 +349,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             foreach (var batch in batchesToConsume)
             {
-                var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m =>
-                    m.Id == batch.MaterialBatch.Id);
+                var materialBatch = await context.MaterialBatches
+                    .Include(m => m.Checklist).ThenInclude(c => c.Supplier)
+                    .Include(m => m.Checklist).ThenInclude(c => c.Manufacturer)
+                    .FirstOrDefaultAsync(m => m.Id == batch.MaterialBatch.Id);
                 if (materialBatch is null) continue;
 
                 materialBatch.QuantityAssigned = 0;
@@ -423,12 +425,17 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     .Select(s => s.ArNumber)
                     .FirstOrDefaultAsync();
 
+                var supplier = materialBatch.Checklist?.Supplier?.Name;
+                var manufacturer = materialBatch.Checklist?.Manufacturer?.Name;
+
                 var binCardEvent = new BinCardInformation
                 {
                     MaterialBatchId = materialBatch.Id,
                     Description = appropriateWarehouse.Name,
                     WayBill = "N/A",
                     ArNumber = arNumber ?? "N/A",
+                    Supplier = supplier,
+                    Manufacturer = manufacturer,
                     QuantityReceived = 0,
                     QuantityIssued = batch.Quantity,
                     BalanceQuantity = currentBalance,
@@ -521,6 +528,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 .ThenInclude(wlr => wlr.WarehouseLocation)
                 .ThenInclude(wl => wl.Warehouse)
                 .Include(shelfMaterialBatch => shelfMaterialBatch.MaterialBatch)
+                .ThenInclude(mb => mb.Checklist)
+                .ThenInclude(c => c.Supplier)
+                .Include(shelfMaterialBatch => shelfMaterialBatch.MaterialBatch)
+                .ThenInclude(mb => mb.Checklist)
+                .ThenInclude(c => c.Manufacturer)
                 .FirstOrDefaultAsync(smb => smb.Id == batch.ShelfMaterialBatchId);
 
             if (shelfMaterialBatch == null)
@@ -615,12 +627,17 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 .Select(s => s.ArNumber)
                 .FirstOrDefaultAsync();
 
+            var supplier = shelfMaterialBatch.MaterialBatch.Checklist?.Supplier?.Name;
+            var manufacturer = shelfMaterialBatch.MaterialBatch.Checklist?.Manufacturer?.Name;
+
             var toBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = shelfMaterialBatch.MaterialBatch.Id,
                 Description = fromWarehouse.Name,
                 WayBill = "N/A",
                 ArNumber = arNumber ?? "N/A",
+                Supplier = supplier,
+                Manufacturer = manufacturer,
                 QuantityReceived = 0,
                 QuantityIssued = batch.Quantity,
                 BalanceQuantity = balanceAfterIssue,
@@ -639,6 +656,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 Description = productionWarehouse.Name,
                 WayBill = "N/A",
                 ArNumber = arNumber ?? "N/A",
+                Supplier = supplier,
+                Manufacturer = manufacturer,
                 QuantityReceived = batch.Quantity,
                 QuantityIssued = 0,
                 BalanceQuantity = balanceAfterReceive,
