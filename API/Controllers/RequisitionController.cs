@@ -95,6 +95,24 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Retrieves alternative batches for a stock requisition that expire earlier than currently reserved ones.
+    /// </summary>
+    /// <param name="requisitionId">The ID of the Stock Requisition.</param>
+    /// <returns>Returns a list of materials with their current reserved batches and alternative earlier expiring batches.</returns>
+    [HttpGet("{requisitionId}/alternative-batches")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialAlternativeBatchesDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetAlternativeBatches(Guid requisitionId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetAlternativeBatchesForStockRequisition(requisitionId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /*[HttpPost("issue-stock-requisition/{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

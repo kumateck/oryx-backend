@@ -68,3 +68,19 @@ public class RequisitionApprovalDto
     public string Comments { get; set; }
     public int Order { get; set; }
 }
+
+public class MaterialAlternativeBatchesDto
+{
+    public MaterialDto Material { get; set; }
+    public decimal RequestedQuantity { get; set; }
+    public List<BatchToSupply> CurrentReservedBatches { get; set; } = [];
+    public List<AlternativeBatchDto> AlternativeBatches { get; set; } = [];
+}
+
+public class AlternativeBatchDto
+{
+    public MaterialBatchListDto Batch { get; set; }
+    public decimal QuantityAvailable { get; set; }
+    public CollectionItemDto Warehouse { get; set; }
+    public Guid? WarehouseLocationShelfId { get; set; }
+}
