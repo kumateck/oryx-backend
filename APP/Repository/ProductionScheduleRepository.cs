@@ -1120,10 +1120,9 @@ public class ProductionScheduleRepository(
         MaterialRequisitionStatus? status
     )
     {
-        var productionScheduleProduct =
-            await context.ProductionScheduleProducts.FirstOrDefaultAsync(p =>
-                p.Id == productionScheduleProductId
-            );
+        var productionScheduleProduct = await context
+            .ProductionScheduleProducts.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
 
         if (productionScheduleProduct == null)
             return ProductErrors.NotFound(productionScheduleProductId);
@@ -1131,6 +1130,7 @@ public class ProductionScheduleRepository(
         var product = await context
             .Products.AsSplitQuery()
             .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
             .Include(product => product.BillOfMaterials)
                 .ThenInclude(p => p.BillOfMaterial)
                     .ThenInclude(p => p.Items)
@@ -1147,6 +1147,7 @@ public class ProductionScheduleRepository(
 
         var productionSchedule = await context
             .ProductionSchedules.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(productionSchedule => productionSchedule.Products)
             .Include(p => p.Department)
             .Include(baseEntity => baseEntity.CreatedBy)
@@ -1690,6 +1691,9 @@ public class ProductionScheduleRepository(
         CreateBatchManufacturingRecord request
     )
     {
+        if (string.IsNullOrEmpty(request.BatchNumber))
+            return Error.Validation("BatchNumber", "Batch number is required");
+
         var batchRecord = mapper.Map<BatchManufacturingRecord>(request);
         await context.BatchManufacturingRecords.AddAsync(batchRecord);
         await context.SaveChangesAsync();
@@ -1932,12 +1936,17 @@ public class ProductionScheduleRepository(
         };
         await context.FinishedProductBatchEvents.AddAsync(batchEvent);
 
+        var organization = await context.Organizations.FirstOrDefaultAsync();
+        var organizationName = organization?.Name ?? "N/A";
+
         var binCardEvent = new ProductBinCardInformation
         {
             BatchId = bmr.Id,
             Description = finishedGoodsWarehouse.Name,
             WayBill = "N/A",
             ArNumber = "N/A",
+            Supplier = "N/A",
+            Manufacturer = organizationName,
             QuantityReceived = request.TotalQuantity,
             QuantityIssued = 0,
             BalanceQuantity =
@@ -2308,10 +2317,10 @@ public class ProductionScheduleRepository(
         var products = await productsQuery.ToListAsync();
 
         return products
-            .GroupBy(p => p.BatchManufacturingRecord.ProductionScheduleProduct)
+            .GroupBy(p => p.BatchManufacturingRecord.ProductionScheduleProduct.Product)
             .Select(item => new ApprovedProductDto
             {
-                Product = mapper.Map<ProductListDto>(item.Key.Product),
+                Product = mapper.Map<ProductListDto>(item.Key),
                 TotalQuantity = item.Sum(p => p.QuantityReceived),
                 TotalRemainingQuantity = item.Sum(p => p.RemainingQuantity),
                 QuantityPerPack = item.Select(p => p.QuantityPerPack).First(),
@@ -2787,7 +2796,7 @@ public class ProductionScheduleRepository(
                         material.ProductionWarehouseId,
                         productionScheduleProductId,
                         batch.QuantityToTake,
-                        batch.Batch.UoM?.Id,
+                        batch.Batch.UoM.Id,
                         batch.WarehouseLocationShelfId
                     );
                     if (result.IsFailure)
@@ -2827,7 +2836,7 @@ public class ProductionScheduleRepository(
                         material.ProductionWarehouseId,
                         productionScheduleProductId,
                         batch.QuantityToTake,
-                        batch.Batch.UoM?.Id,
+                        batch.Batch.UoM.Id,
                         batch.WarehouseLocationShelfId
                     );
                 }
@@ -4025,9 +4034,12 @@ public class ProductionScheduleRepository(
 
         foreach (var batchRequest in batches)
         {
-            var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
-                b.Id == batchRequest.BatchId
-            );
+            var batch = await context
+                .MaterialBatches.Include(m => m.Checklist)
+                    .ThenInclude(c => c.Supplier)
+                .Include(m => m.Checklist)
+                    .ThenInclude(c => c.Manufacturer)
+                .FirstOrDefaultAsync(b => b.Id == batchRequest.BatchId);
             if (batch == null || batch.RemainingQuantity < batchRequest.Quantity)
                 return Error.Failure(
                     "Batch.InsufficientStock",
@@ -4113,12 +4125,23 @@ public class ProductionScheduleRepository(
             var balanceAfterIssue = fromBalance - batchRequest.Quantity;
             var balanceAfterReceive = toBalance + batchRequest.Quantity;
 
+            var arNumber = await context
+                .MaterialSamplings.Where(s => s.MaterialBatchId == batch.Id)
+                .OrderByDescending(s => s.CreatedAt)
+                .Select(s => s.ArNumber)
+                .FirstOrDefaultAsync();
+
+            var supplier = batch.Checklist?.Supplier?.Name;
+            var manufacturer = batch.Checklist?.Manufacturer?.Name;
+
             var toBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = batch.Id,
                 Description = fromWarehouse.Name,
                 WayBill = "N/A",
-                ArNumber = "N/A",
+                ArNumber = arNumber ?? "N/A",
+                Supplier = supplier,
+                Manufacturer = manufacturer,
                 QuantityReceived = 0,
                 QuantityIssued = batchRequest.Quantity,
                 BalanceQuantity = balanceAfterIssue,
@@ -4135,7 +4158,9 @@ public class ProductionScheduleRepository(
                 MaterialBatchId = batch.Id,
                 Description = toWarehouse.Name,
                 WayBill = "N/A",
-                ArNumber = "N/A",
+                ArNumber = arNumber ?? "N/A",
+                Supplier = supplier,
+                Manufacturer = manufacturer,
                 QuantityReceived = batchRequest.Quantity,
                 QuantityIssued = 0,
                 BalanceQuantity = balanceAfterReceive,

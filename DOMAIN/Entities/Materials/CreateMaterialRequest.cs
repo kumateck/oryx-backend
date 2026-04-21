@@ -15,11 +15,12 @@ public class CreateMaterialRequest
 public class CreateMaterialDepartment
 {
     public Guid MaterialId { get; set; }
-    public Guid? UoMId { get; set; }
+    public Guid UoMId { get; set; }
     public decimal ReOrderLevel { get; set; }
     public decimal MinimumStockLevel { get; set; }
     public decimal MaximumStockLevel { get; set; }
 }
+
 public class UpdateReOrderLevelRequest
 {
     public int ReOrderLevel { get; set; }

@@ -3,6 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Http;
 using SHARED;
@@ -156,7 +157,7 @@ public interface IMaterialRepository
         Guid warehouseId,
         Guid productionScheduleProductId,
         decimal quantity,
-        Guid? uomId,
+        Guid uomId,
         Guid? warehouseLocationShelfId
     );
     Task<
@@ -218,7 +219,9 @@ public interface IMaterialRepository
         Guid userId
     );
     Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId);
-    Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(MaterialFilter filter);
+    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetExpiredMaterialBatches(
+        MaterialFilter filter
+    );
     Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind);
     Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(
         int page,
@@ -230,7 +233,7 @@ public interface IMaterialRepository
         SupplyMaterialBatchFromHMaterialDistribute request,
         Guid userId
     );
-    Task<Result<IEnumerable<MaterialReservedQuantity>>> GetReservedQuantitiesForMaterial(
+    Task<Result<List<ReservedMaterialReportDto>>> GetReservedQuantitiesForMaterial(
         Guid materialId,
         Guid? departmentId
     );

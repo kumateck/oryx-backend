@@ -11,6 +11,7 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
+using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
@@ -435,6 +436,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         );
 
         var materialIds = paginatedResult.Data.Select(m => m.Id).ToList();
+
+        var shelfMaterialBatches = await context
+            .ShelfMaterialBatches.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Where(s =>
+                materialIds.Contains(s.MaterialBatch.MaterialId)
+                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                    == warehouse.Id
+            )
+            .ToListAsync();
 
         var stocks = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
@@ -1222,6 +1233,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var materialBatch = await context
             .MaterialBatches.AsSplitQuery()
             .Include(materialBatch => materialBatch.Material)
+            .Include(materialBatch => materialBatch.Checklist)
+                .ThenInclude(c => c.Supplier)
+            .Include(materialBatch => materialBatch.Checklist)
+                .ThenInclude(c => c.Manufacturer)
             .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
 
         if (materialBatch == null)
@@ -1340,12 +1355,23 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var currentBalance = previousBalance + totalQuantityToAssign;
 
+        var arNumber = await context
+            .MaterialSamplings.Where(s => s.MaterialBatchId == materialBatch.Id)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => s.ArNumber)
+            .FirstOrDefaultAsync();
+
+        var supplier = materialBatch.Checklist?.Supplier?.Name;
+        var manufacturer = materialBatch.Checklist?.Manufacturer?.Name;
+
         var binCardEvent = new BinCardInformation
         {
             MaterialBatchId = materialBatch.Id,
             Description = warehouse.Name,
             WayBill = "N/A",
-            ArNumber = "N/A",
+            ArNumber = arNumber ?? "N/A",
+            Supplier = supplier,
+            Manufacturer = manufacturer,
             QuantityReceived = totalQuantityToAssign,
             QuantityIssued = 0,
             BalanceQuantity = currentBalance,
@@ -2152,7 +2178,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         Guid warehouseId,
         Guid productionScheduleProductId,
         decimal quantity,
-        Guid? uoMId,
+        Guid uoMId,
         Guid? warehouseLocationShelfId
     )
     {
@@ -2176,7 +2202,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             if (shelfBatch.Quantity < quantity)
                 return Error.Validation(
                     "ShelfMaterialBatch",
-                    "Not enough stock on the shelf to reserve."
+                    $"Not enough stock on the shelf to reserve."
+                        + $" Available shelf quantity: {shelfBatch.Quantity}. Required shelf quantity: {quantity}"
                 );
         }
 
@@ -2717,6 +2744,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             pageSize,
             mapper.Map<MaterialWithWarehouseStockDto>
         );
+
+        results.Data = results.Data.ToList();
         foreach (var result in results.Data)
         {
             var warehouseType =
@@ -2798,7 +2827,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             mapper.Map<MaterialDepartmentWithWarehouseStockDto>
         );
 
-        //results.Data = results.Data.ToList();
+        results.Data = results.Data.ToList();
         foreach (var result in results.Data)
         {
             var warehouseType =
@@ -3115,6 +3144,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var materialBatch = await context
             .MaterialBatches.AsSplitQuery()
             .Include(materialBatch => materialBatch.Material)
+            .Include(materialBatch => materialBatch.Checklist)
+                .ThenInclude(c => c.Supplier)
+            .Include(materialBatch => materialBatch.Checklist)
+                .ThenInclude(c => c.Manufacturer)
             .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
 
         if (materialBatch == null)
@@ -3152,6 +3185,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (distributeMaterial is null)
             return Error.NotFound("DistributeMaterial.NotFound", "DistributeMaterial not found");
+
+        var arNumber = await context
+            .MaterialSamplings.Where(s => s.MaterialBatchId == request.MaterialBatchId)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => s.ArNumber)
+            .FirstOrDefaultAsync();
 
         var movements = new List<MassMaterialBatchMovement>();
         var materialBatchEvents = new List<MaterialBatchEvent>();
@@ -3200,13 +3239,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             var currentBalance = previousBalance + movedBatch.Quantity;
 
+            var supplier = materialBatch.Checklist?.Supplier?.Name;
+            var manufacturer = materialBatch.Checklist?.Manufacturer?.Name;
+
             binCards.Add(
                 new BinCardInformation
                 {
                     MaterialBatchId = materialBatch.Id,
                     UoMId = materialBatch.UoMId,
                     WayBill = grn?.GrnNumber,
-                    ArNumber = "",
+                    ArNumber = arNumber ?? "",
+                    Supplier = supplier,
+                    Manufacturer = manufacturer,
                     QuantityReceived = movedBatch.Quantity,
                     QuantityIssued = 0,
                     BalanceQuantity = currentBalance,
@@ -3312,36 +3356,57 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task<
-        Result<IEnumerable<MaterialReservedQuantity>>
-    > GetReservedQuantitiesForMaterial(Guid materialId, Guid? departmentId)
+    public async Task<Result<List<ReservedMaterialReportDto>>> GetReservedQuantitiesForMaterial(
+        Guid materialId,
+        Guid? departmentId
+    )
     {
         var reservedMaterialQuery = context
             .MaterialBatchReservedQuantities.AsSplitQuery()
             .IgnoreQueryFilters()
-            .Include(m => m.Warehouse)
-            .Include(materialBatchReservedQuantity => materialBatchReservedQuantity.UoM)
-            .Where(m => m.MaterialBatch.MaterialId == materialId && !m.DeletedAt.HasValue)
-            .AsQueryable();
+            .Where(r =>
+                r.MaterialBatch.MaterialId == materialId
+                && r.DeletedAt == null
+                && (!departmentId.HasValue || r.Warehouse.DepartmentId == departmentId.Value)
+            )
+            .AsNoTracking();
 
-        if (departmentId.HasValue)
-        {
-            reservedMaterialQuery = reservedMaterialQuery.Where(r =>
-                r.Warehouse.DepartmentId == departmentId.Value
-            );
-        }
-
-        var reservedMaterials = await reservedMaterialQuery.ToListAsync();
-
-        return reservedMaterials
-            .GroupBy(r => r.Warehouse)
-            .Select(item => new MaterialReservedQuantity
+        var reservedMaterials = await reservedMaterialQuery
+            .Select(r => new ReservedMaterialReportDto
             {
-                Warehouse = mapper.Map<WarehouseWithoutLocationDto>(item.Key),
-                Quantity = item.Sum(i => i.Quantity),
-                UoM = mapper.Map<UnitOfMeasureDto>(item.Select(i => i.UoM).FirstOrDefault()),
+                MaterialName = r.MaterialBatch.Material.Name,
+                MaterialCode = r.MaterialBatch.Material.Code,
+                ProductName = r.ProductionScheduleProduct.Product.Name,
+                ProductCode = r.ProductionScheduleProduct.Product.Code,
+                ReservedQuantity = r.Quantity,
+                UomSymbol = r.UoM.Symbol,
+                WarehouseName = r.Warehouse.Name,
+                DepartmentName = r.Warehouse.Department.Name,
+                DateTime = r.CreatedAt,
+                Schedule = r.ProductionScheduleProduct.ProductionSchedule.Code,
+                ProductBatchNumber = context
+                    .BatchManufacturingRecords.Where(b =>
+                        b.ProductionScheduleProductId == r.ProductionScheduleProductId
+                    )
+                    .Select(b => b.BatchNumber)
+                    .FirstOrDefault(),
+                ArNumber = context
+                    .MaterialSamplings.Where(s => s.MaterialBatchId == r.MaterialBatchId)
+                    .OrderByDescending(s => s.CreatedAt)
+                    .Select(s => s.ArNumber)
+                    .FirstOrDefault(),
+                ManufacturingDate = r.MaterialBatch.ManufacturingDate,
+                ExpiryDate = r.MaterialBatch.ExpiryDate,
+                BalanceQuantity =
+                    r.MaterialBatch.TotalQuantity
+                    - r.MaterialBatch.ConsumedQuantity
+                    - r.MaterialBatch.ReservedQuantities.Where(rq => rq.DeletedAt == null)
+                        .Sum(rq => rq.Quantity),
+                MaterialBatchNumber = r.MaterialBatch.BatchNumber,
             })
-            .ToList();
+            .ToListAsync();
+
+        return Result.Success(reservedMaterials);
     }
 
     public async Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId)
@@ -3488,9 +3553,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task<Result<List<MaterialBatchDto>>> GetExpiredMaterialBatches(
-        MaterialFilter filter
-    )
+    public async Task<
+        Result<Paginateable<IEnumerable<MaterialBatchDto>>>
+    > GetExpiredMaterialBatches(MaterialFilter filter)
     {
         var query = await context
             .MaterialBatches.AsSplitQuery()
@@ -3529,7 +3594,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ToList();
         }
 
-        return batches;
+        return PaginationHelper.Paginate(filter.Page, filter.PageSize, batches);
     }
 
     public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind)
@@ -3593,18 +3658,17 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await file.CopyToAsync(stream);
         stream.Position = 0;
 
-        // Set EPPlus License
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage(stream);
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
         if (worksheet == null)
             return UploadErrors.WorksheetNotFound;
 
-        // --- 1. PREPARE HEADERS ---
-        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         if (worksheet.Dimension == null)
             return UploadErrors.EmptyFile;
 
+        // --- HEADERS ---
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             var header = worksheet.Cells[1, col].Text.Trim();
@@ -3612,47 +3676,39 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 headers[header] = col;
         }
 
-        // --- 2. SCAN EXCEL FOR LOOKUP CRITERIA ---
+        string GetCell(int row, string h) =>
+            headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+
+        // --- SCAN ---
         var excelBatchNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelShelfCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelUomSymbols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelMaterialCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var excelWarehouseNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetRaw(string h) =>
-                headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+            excelBatchNumbers.Add(GetCell(row, "Batch No.") ?? string.Empty);
 
-            var b = GetRaw("Batch No.");
-            var s = GetRaw("Shelves");
-            var u = GetRaw("UOM");
-            var m = GetRaw("Material Code");
+            var s = GetCell(row, "Shelves");
+            var u = GetCell(row, "UOM");
+            var m = GetCell(row, "Material Code");
+            var w = GetCell(row, "Warehouse");
 
-            if (!string.IsNullOrEmpty(b))
-                excelBatchNumbers.Add(b);
             if (!string.IsNullOrEmpty(s))
                 excelShelfCodes.Add(s);
             if (!string.IsNullOrEmpty(u))
                 excelUomSymbols.Add(u);
             if (!string.IsNullOrEmpty(m))
                 excelMaterialCodes.Add(m);
+            if (!string.IsNullOrEmpty(w))
+                excelWarehouseNames.Add(w);
         }
 
-        // --- 3. FETCH LOOKUPS (DATABASE) ---
+        // --- LOOKUPS ---
         var uoms = await context
             .UnitOfMeasures.Where(u => excelUomSymbols.Contains(u.Symbol))
             .ToListAsync();
-
-        var uomDuplicates = uoms.GroupBy(u => u.Symbol.Trim(), StringComparer.OrdinalIgnoreCase)
-            .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
-            .ToList();
-
-        if (uomDuplicates.Count != 0)
-            return Error.Validation(
-                "UOM.Ambiguous",
-                $"Multiple Unit of Measures found for symbols: {string.Join(", ", uomDuplicates)}"
-            );
 
         var uomLookup = uoms.ToDictionary(
             u => u.Symbol.Trim(),
@@ -3660,121 +3716,72 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             StringComparer.OrdinalIgnoreCase
         );
 
-        var shelfHierarchy = await context
-            .WarehouseLocationShelves.IgnoreQueryFilters()
-            .Where(s => excelShelfCodes.Contains(s.Code))
+        var shelfLookup = await context
+            .WarehouseLocationShelves.Where(s => excelShelfCodes.Contains(s.Code))
             .Select(s => new
             {
                 ShelfId = s.Id,
-                ShelfCode = s.Code.Trim(),
-                WarehouseId = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Id,
-                WarehouseName = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name.Trim(),
-                CreatedAt = s.CreatedAt,
+                Key = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name + "|" + s.Code,
             })
-            .ToListAsync();
-
-        var shelfDuplicates = shelfHierarchy
-            .GroupBy(x => $"{x.WarehouseName}|{x.ShelfCode}", StringComparer.OrdinalIgnoreCase)
-            .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
-            .ToList();
-
-        if (shelfDuplicates.Count != 0)
-            return Error.Validation(
-                "Shelf.Ambiguous",
-                $"Multiple shelves found for keys: {string.Join(", ", shelfDuplicates)}"
-            );
-
-        var shelfLookup = shelfHierarchy.ToDictionary(
-            x => $"{x.WarehouseName}|{x.ShelfCode}",
-            x => x,
-            StringComparer.OrdinalIgnoreCase
-        );
+            .ToDictionaryAsync(x => x.Key, x => x.ShelfId, StringComparer.OrdinalIgnoreCase);
 
         var materials = await context
             .Materials.Where(m => excelMaterialCodes.Contains(m.Code))
-            .ToListAsync();
-
-        var materialDuplicates = materials
-            .GroupBy(m => m.Code.Trim(), StringComparer.OrdinalIgnoreCase)
-            .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
-            .ToList();
-
-        if (materialDuplicates.Count != 0)
-            return Error.Validation(
-                "Material.Ambiguous",
-                $"Multiple materials found in system with same code: {string.Join(", ", materialDuplicates)}"
-            );
-
-        var materialLookup = materials.ToDictionary(
-            m => m.Code.Trim(),
-            m => m,
-            StringComparer.OrdinalIgnoreCase
-        );
+            .ToDictionaryAsync(m => m.Code.Trim(), m => m, StringComparer.OrdinalIgnoreCase);
 
         var batches = await context
-            .MaterialBatches.AsSplitQuery()
-            .IgnoreQueryFilters()
-            .Include(b => b.Material)
-            .Where(b => excelBatchNumbers.Contains(b.BatchNumber))
+            .MaterialBatches.Include(b => b.Material)
+            .Where(b =>
+                (
+                    excelBatchNumbers.Contains(b.BatchNumber)
+                    || (b.BatchNumber == null && excelBatchNumbers.Contains(""))
+                ) && excelMaterialCodes.Contains(b.Material.Code)
+            )
             .ToListAsync();
-
-        var batchDuplicates = batches
-            .GroupBy(b => b.BatchNumber.Trim(), StringComparer.OrdinalIgnoreCase)
-            .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
-            .ToList();
-
-        if (batchDuplicates.Count != 0)
-            return Error.Validation(
-                "Batch.Ambiguous",
-                $"Multiple batches found in system with same number: {string.Join(", ", batchDuplicates)}"
-            );
-
         var batchLookup = batches.ToDictionary(
-            b => b.BatchNumber.Trim(),
-            b => b,
-            StringComparer.OrdinalIgnoreCase
+            b => (b.MaterialId, (b.BatchNumber ?? "").Trim().ToUpperInvariant()),
+            b => b
         );
 
-        // --- 4. PROCESS ROWS ---
-        var shelfMaterialBatches = new List<ShelfMaterialBatch>();
-        var binCardEntries = new List<BinCardInformation>();
+        var warehouses = await context
+            .Warehouses.IgnoreQueryFilters()
+            .Where(w => excelWarehouseNames.Contains(w.Name) && !w.DeletedAt.HasValue)
+            .ToListAsync();
+
+        // --- AGGREGATION ---
+        var aggregation =
+            new Dictionary<(Guid ShelfId, Guid BatchId), (decimal Qty, Guid? UomId, string Note)>();
         var newBatches = new List<MaterialBatch>();
+        var binCards = new List<BinCardInformation>();
         var materialUomConsistency = new Dictionary<string, string>(
             StringComparer.OrdinalIgnoreCase
         );
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
-            string GetCell(string h) =>
-                headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
+            var warehouse = GetCell(row, "Warehouse");
+            var shelfCode = GetCell(row, "Shelves");
+            var materialCode = GetCell(row, "Material Code");
+            var batchNoRaw = GetCell(row, "Batch No.") ?? "";
+            var batchNo = batchNoRaw.ToUpperInvariant();
+            var uomSymbol = GetCell(row, "UOM");
+            var waybill = GetCell(row, "Waybill");
+            var arNo = GetCell(row, "AR No.");
+            var expiryDateStr = GetCell(row, "Expiry Date");
+            var mfgDateStr = GetCell(row, "Manufacturing Date");
 
-            var warehouseName = GetCell("Warehouse");
-            var shelfCode = GetCell("Shelves");
-            var batchNo = GetCell("Batch No.");
-            var uomSymbol = GetCell("UOM");
-            var materialCode = GetCell("Material Code");
-            var waybill = GetCell("Waybill");
-            var arNo = GetCell("AR No.");
-            var expiryDateStr = GetCell("Expiry Date");
-            var manufacturingDateStr = GetCell("Manufacturing Date");
-            var rowQuantity = decimal.TryParse(GetCell("Quantity"), out var qty) ? qty : 0;
+            var qty = decimal.TryParse(GetCell(row, "Quantity"), out var q) ? q : 0;
 
-            if (string.IsNullOrEmpty(batchNo) || string.IsNullOrEmpty(shelfCode))
+            if (string.IsNullOrEmpty(shelfCode))
                 continue;
 
-            if (
-                string.IsNullOrEmpty(materialCode)
-                || !materialLookup.TryGetValue(materialCode, out var material)
-            )
+            if (!materials.TryGetValue(materialCode, out var material))
                 return Error.NotFound(
                     "Material",
-                    $"Row {row}: Material '{materialCode}' not found. Cannot create Batch '{batchNo}'."
+                    $"Row {row}: Material '{materialCode}' not found."
                 );
 
-            // Consistency check for Material UOM in Excel
+            // --- UOM CONSISTENCY ---
             if (!string.IsNullOrEmpty(uomSymbol))
             {
                 if (materialUomConsistency.TryGetValue(materialCode, out var existingUom))
@@ -3782,8 +3789,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     if (!existingUom.Equals(uomSymbol, StringComparison.OrdinalIgnoreCase))
                         return Error.Validation(
                             "Material.Consistency",
-                            $"Row {row}: Material '{materialCode}' is used with UOM '{uomSymbol}', "
-                                + $"but was previously defined with '{existingUom}' in this sheet."
+                            $"Row {row}: Material '{materialCode}' has inconsistent UOM."
                         );
                 }
                 else
@@ -3792,110 +3798,129 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 }
             }
 
-            if (!batchLookup.TryGetValue(batchNo, out var batch))
+            var batchKey = (material.Id, batchNo);
+
+            if (!batchLookup.TryGetValue(batchKey, out var batch))
             {
                 batch = new MaterialBatch
                 {
                     Id = Guid.NewGuid(),
-                    BatchNumber = batchNo,
                     MaterialId = material.Id,
-                    Material = material,
+                    BatchNumber = batchNo,
                     TotalQuantity = 0,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
                     ExpiryDate = ParseDate(expiryDateStr),
-                    ManufacturingDate = ParseDate(manufacturingDateStr),
+                    ManufacturingDate = ParseDate(mfgDateStr),
                 };
 
-                batchLookup[batchNo] = batch;
+                batchLookup[batchKey] = batch;
                 newBatches.Add(batch);
             }
             else
             {
-                // Consistency check for new batches defined across multiple rows or existing batches
-                var rowExpiryDate = ParseDate(expiryDateStr);
-                var rowMfgDate = ParseDate(manufacturingDateStr);
+                if (batch.ExpiryDate != ParseDate(expiryDateStr))
+                    return Error.Validation("Batch.Consistency", $"Row {row}: Expiry mismatch.");
 
-                if (batch.ExpiryDate != rowExpiryDate)
-                    return Error.Validation(
-                        "Batch.Consistency",
-                        $"Row {row}: Batch '{batchNo}' has a conflicting Expiry Date ('{expiryDateStr}') compared to the system or previous row."
-                    );
-
-                if (batch.ManufacturingDate != rowMfgDate)
-                    return Error.Validation(
-                        "Batch.Consistency",
-                        $"Row {row}: Batch '{batchNo}' has a conflicting Manufacturing Date ('{manufacturingDateStr}') compared to the system or previous row."
-                    );
+                if (batch.ManufacturingDate != ParseDate(mfgDateStr))
+                    return Error.Validation("Batch.Consistency", $"Row {row}: MFG mismatch.");
             }
 
-            if (material.Id != batch.MaterialId)
-                return Error.Validation(
-                    "Material.Batch",
-                    $"Material {material.Code} ({material.Name}) does not match with batch {batch.BatchNumber}."
-                        + $" Expected material {batch.Material?.Code} ({batch.Material?.Name}) for batch {batch.BatchNumber}."
-                );
+            var shelfKey = $"{warehouse}|{shelfCode}";
+            if (!shelfLookup.TryGetValue(shelfKey, out var shelfId))
+                return Error.NotFound("Shelf", $"Row {row}: Shelf '{shelfKey}' not found.");
 
-            // --- SHELF & UOM VALIDATION ---
-            var shelfKey = $"{warehouseName}|{shelfCode}";
-            if (!shelfLookup.TryGetValue(shelfKey, out var shelfInfo))
-                return Error.NotFound(
-                    "Shelf",
-                    $"Row {row}: Shelf '{shelfCode}' not found in Warehouse '{warehouseName}'."
-                );
+            var uomId =
+                uomSymbol != null && uomLookup.TryGetValue(uomSymbol, out var u) ? u : (Guid?)null;
 
-            Guid? uomId =
-                uomSymbol != null && uomLookup.TryGetValue(uomSymbol, out var foundUomId)
-                    ? foundUomId
-                    : null;
+            batch.TotalQuantity += qty;
 
-            // Update Batch Running Total
-            batch.TotalQuantity += rowQuantity;
+            var key = (shelfId, batch.Id);
 
-            // 1. Add to Shelf Stock
-            shelfMaterialBatches.Add(
-                new ShelfMaterialBatch
-                {
-                    Id = Guid.NewGuid(),
-                    WarehouseLocationShelfId = shelfInfo.ShelfId,
-                    MaterialBatchId = batch.Id,
-                    Quantity = rowQuantity,
-                    UoMId = uomId,
-                    Note = $"Imported via Excel. Waybill: {waybill}",
-                }
-            );
+            if (aggregation.TryGetValue(key, out var existing))
+            {
+                aggregation[key] = (existing.Qty + qty, existing.UomId ?? uomId, existing.Note);
+            }
+            else
+            {
+                aggregation[key] = (qty, uomId, $"Imported via Excel. Waybill: {waybill}");
+            }
 
-            // 2. Add to Bin Card Information (Audit Trail)
-            binCardEntries.Add(
+            binCards.Add(
                 new BinCardInformation
                 {
                     Id = Guid.NewGuid(),
                     MaterialBatchId = batch.Id,
-                    WarehouseId = shelfInfo.WarehouseId,
+                    WarehouseId = warehouses.FirstOrDefault(w => w.Name == warehouse)?.Id,
                     UoMId = uomId,
                     WayBill = waybill,
                     ArNumber = arNo,
-                    QuantityReceived = rowQuantity,
+                    QuantityReceived = qty,
                     QuantityIssued = 0,
-                    BalanceQuantity = rowQuantity,
+                    BalanceQuantity = qty,
                     Description = $"Stock Import - Batch: {batchNo}",
                     CreatedAt = DateTime.UtcNow,
                 }
             );
         }
 
-        // --- 5. SAVE CHANGES ---
-        if (newBatches.Count != 0)
+        // --- UPSERT ---
+        var existingShelfBatches = await context
+            .ShelfMaterialBatches.Where(x => x.DeletedAt == null)
+            .ToListAsync();
+
+        var inserts = new List<ShelfMaterialBatch>();
+
+        foreach (var kv in aggregation)
+        {
+            var (shelfId, batchId) = kv.Key;
+            var (qty, uomId, note) = kv.Value;
+
+            var existing = existingShelfBatches.FirstOrDefault(x =>
+                x.WarehouseLocationShelfId == shelfId && x.MaterialBatchId == batchId
+            );
+
+            if (existing != null)
+            {
+                existing.Quantity += qty;
+                existing.UoMId ??= uomId;
+                existing.Note = note;
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                inserts.Add(
+                    new ShelfMaterialBatch
+                    {
+                        Id = Guid.NewGuid(),
+                        WarehouseLocationShelfId = shelfId,
+                        MaterialBatchId = batchId,
+                        Quantity = qty,
+                        UoMId = uomId,
+                        Note = note,
+                    }
+                );
+            }
+        }
+
+        if (newBatches.Count > 0)
             await context.MaterialBatches.AddRangeAsync(newBatches);
-        await context.ShelfMaterialBatches.AddRangeAsync(shelfMaterialBatches);
-        await context.BinCardInformation.AddRangeAsync(binCardEntries);
+
+        if (inserts.Count > 0)
+            await context.ShelfMaterialBatches.AddRangeAsync(inserts);
+
+        await context.BinCardInformation.AddRangeAsync(binCards);
 
         await context.SaveChangesAsync();
 
         return Result.Success();
 
+        // --- HELPERS ---
         DateTime? ParseDate(string input)
         {
+            if (string.IsNullOrWhiteSpace(input))
+                return null;
+
             if (
                 DateTime.TryParseExact(
                     input,
@@ -3906,9 +3931,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 )
             )
             {
-                // Specify that this date is UTC to prevent local time offsets
                 return DateTime.SpecifyKind(d, DateTimeKind.Utc);
             }
+
             return null;
         }
     }

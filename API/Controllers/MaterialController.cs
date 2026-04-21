@@ -5,6 +5,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -861,7 +862,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [HttpGet("batches/expired")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
-        Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>)
+        Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)
     )]
     public async Task<IResult> GetExpiredMaterialBatches([FromQuery] MaterialFilter filter)
     {
@@ -977,10 +978,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("{materialId}/reserved")]
-    [ProducesResponseType(
-        StatusCodes.Status200OK,
-        Type = typeof(IEnumerable<MaterialReservedQuantity>)
-    )]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ReservedMaterialReportDto>))]
     public async Task<IResult> GetMaterialReservedQuantity(
         [FromRoute] Guid materialId,
         [FromQuery] Guid? departmentId = null

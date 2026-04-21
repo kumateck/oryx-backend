@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420105302_AddUniqueConstraintToShelfMaterialBatch")]
+    partial class AddUniqueConstraintToShelfMaterialBatch
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1088,10 +1091,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Manufacturer")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<Guid?>("MaterialBatchId")
                         .HasColumnType("uuid");
 
@@ -1103,10 +1102,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<decimal>("QuantityReceived")
                         .HasColumnType("numeric");
-
-                    b.Property<string>("Supplier")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
@@ -1175,19 +1170,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Manufacturer")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<decimal>("QuantityIssued")
                         .HasColumnType("numeric");
 
                     b.Property<decimal>("QuantityReceived")
                         .HasColumnType("numeric");
-
-                    b.Property<string>("Supplier")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
@@ -5832,7 +5819,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("TotalQuantity")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid>("UoMId")
+                    b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -5955,7 +5942,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid>("UoMId")
+                    b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -6323,7 +6310,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("ReOrderLevel")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid>("UoMId")
+                    b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -17252,9 +17239,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
-                        .HasForeignKey("UoMId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("UoMId");
 
                     b.HasOne("DOMAIN.Entities.Warehouses.WarehouseArrivalLocation", null)
                         .WithMany("DistributedStockTransferBatches")
@@ -17350,9 +17335,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
-                        .HasForeignKey("UoMId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("UoMId");
 
                     b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "Warehouse")
                         .WithMany()
@@ -17597,9 +17580,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
-                        .HasForeignKey("UoMId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("UoMId");
 
                     b.Navigation("CreatedBy");
 

@@ -541,7 +541,20 @@ public class OryxMapper : Profile
 
         #region BinCardInformation
 
-        CreateMap<BinCardInformation, BinCardInformationDto>();
+        CreateMap<BinCardInformation, BinCardInformationDto>()
+            .ForMember(dest => dest.Supplier, opt => opt.MapFrom(src => 
+                !string.IsNullOrEmpty(src.Supplier) 
+                ? src.Supplier 
+                : (src.MaterialBatch != null && src.MaterialBatch.Checklist != null 
+                    ? (src.MaterialBatch.Checklist.Supplier != null ? src.MaterialBatch.Checklist.Supplier.Name : null) 
+                    : null)))
+            .ForMember(dest => dest.Manufacturer, opt => opt.MapFrom(src => 
+                !string.IsNullOrEmpty(src.Manufacturer) 
+                ? src.Manufacturer 
+                : (src.MaterialBatch != null && src.MaterialBatch.Checklist != null 
+                    ? (src.MaterialBatch.Checklist.Manufacturer != null ? src.MaterialBatch.Checklist.Manufacturer.Name : null) 
+                    : null)));
+
         CreateMap<ProductBinCardInformation, ProductBinCardInformationDto>();
 
         #endregion

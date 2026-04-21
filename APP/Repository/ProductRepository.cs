@@ -1360,10 +1360,15 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result<byte[]>> ExportProductStockToExcel(Guid userId, Guid? departmentId)
+    public async Task<Result<byte[]>> ExportProductStockToExcel(
+        Guid userId,
+        Guid? departmentId,
+        Division? departmentDivision
+    )
     {
         var user = await context
             .Users.IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(u => u.Department)
             .FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
@@ -1374,7 +1379,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             return Error.Failure("User.NoDepartment", "User does not belong to any department.");
         }
 
-        var division = user.Department.Division;
+        var division = departmentDivision ?? user.Department.Division;
 
         var fgtnList = await context
             .FinishedGoodsTransferNotes.AsSplitQuery()
@@ -1424,14 +1429,14 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             worksheet.Cells[row, 3].Value = fgtn.ProductPacking?.Product?.Name;
             worksheet.Cells[row, 4].Value = fgtn.ProductPacking?.Name;
             //worksheet.Cells[row, 5].Value = fgtn.TotalQuantity;
-            worksheet.Cells[row, 6].Value = fgtn.BatchManufacturingRecord?.BatchNumber;
-            worksheet.Cells[row, 7].Value = fgtn.TransferNoteNumber;
-            worksheet.Cells[row, 8].Value = fgtn.QarNumber;
-            worksheet.Cells[row, 9].Value =
-                fgtn.BatchManufacturingRecord?.ManufacturingDate?.ToString("yyyy-MM-dd");
-            worksheet.Cells[row, 10].Value = fgtn.BatchManufacturingRecord?.ExpiryDate?.ToString(
-                "yyyy-MM-dd"
-            );
+            // worksheet.Cells[row, 6].Value = fgtn.BatchManufacturingRecord?.BatchNumber;
+            // worksheet.Cells[row, 7].Value = fgtn.TransferNoteNumber;
+            // worksheet.Cells[row, 8].Value = fgtn.QarNumber;
+            // worksheet.Cells[row, 9].Value =
+            //     fgtn.BatchManufacturingRecord?.ManufacturingDate?.ToString("yyyy-MM-dd");
+            // worksheet.Cells[row, 10].Value = fgtn.BatchManufacturingRecord?.ExpiryDate?.ToString(
+            //     "yyyy-MM-dd"
+            // );
             row++;
         }
 

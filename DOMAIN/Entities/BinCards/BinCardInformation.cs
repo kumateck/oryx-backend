@@ -14,6 +14,8 @@ public class BinCardInformation : BaseEntity
     [StringLength(500)] public string Description { get; set; }
     [StringLength(500)] public string WayBill { get; set; }
     [StringLength(500)] public string ArNumber { get; set; }
+    [StringLength(500)] public string Supplier { get; set; }
+    [StringLength(500)] public string Manufacturer { get; set; }
     public decimal QuantityReceived { get; set; }
     public decimal QuantityIssued { get; set; }
     public decimal BalanceQuantity { get; set; }
@@ -33,6 +35,8 @@ public class BinCardInformationDto
     public string Description { get; set; }
     public string WayBill { get; set; }
     public string ArNumber { get; set; }
+    public string Supplier { get; set; }
+    public string Manufacturer { get; set; }
     public decimal QuantityReceived { get; set; }
     public decimal QuantityIssued { get; set; }
     public decimal BalanceQuantity { get; set; }
@@ -47,6 +51,8 @@ public class ProductBinCardInformation : BaseEntity
     [StringLength(500)] public string Description { get; set; }
     [StringLength(500)] public string WayBill { get; set; }
     [StringLength(500)] public string ArNumber { get; set; }
+    [StringLength(500)] public string Supplier { get; set; }
+    [StringLength(500)] public string Manufacturer { get; set; }
     public decimal QuantityReceived { get; set; }
     public decimal QuantityIssued { get; set; }
     public decimal BalanceQuantity { get; set; }
@@ -62,6 +68,8 @@ public class ProductBinCardInformationDto
     public string Description { get; set; }
     public string WayBill { get; set; }
     public string ArNumber { get; set; }
+    public string Supplier { get; set; }
+    public string Manufacturer { get; set; }
     public decimal QuantityReceived { get; set; }
     public decimal QuantityIssued { get; set; }
     public decimal BalanceQuantity { get; set; }
