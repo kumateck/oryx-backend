@@ -8,10 +8,6 @@ using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
-using INFRASTRUCTURE.Context;
-using Microsoft.EntityFrameworkCore;
-using SHARED;
-using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -20,16 +16,27 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
+using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
+using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
+using SHARED;
 
 namespace APP.Repository;
 
-public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
-    IProcurementRepository procurementRepository, IEmailService emailService, IPdfService pdfService,
-    IConfigurationRepository configurationRepository, IMaterialRepository materialRepository,
-    IApprovalRepository approvalRepository, IBackgroundWorkerService backgroundWorkerService) : IRequisitionRepository
+public class RequisitionRepository(
+    ApplicationDbContext context,
+    IMapper mapper,
+    IProcurementRepository procurementRepository,
+    IEmailService emailService,
+    IPdfService pdfService,
+    IConfigurationRepository configurationRepository,
+    IMaterialRepository materialRepository,
+    IApprovalRepository approvalRepository,
+    IBackgroundWorkerService backgroundWorkerService
+) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
 
@@ -38,24 +45,33 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     {
         if (request.ProductionScheduleProductId.HasValue)
         {
-            var existingRequisition = await context.Requisitions
-                .AsSplitQuery()
-                .Include(requisition => requisition.Items).FirstOrDefaultAsync(r =>
-                r.ProductionScheduleProductId == request.ProductionScheduleProductId &&
-                r.RequisitionType == request.RequisitionType);
+            var existingRequisition = await context
+                .Requisitions.AsSplitQuery()
+                .Include(requisition => requisition.Items)
+                .FirstOrDefaultAsync(r =>
+                    r.ProductionScheduleProductId == request.ProductionScheduleProductId
+                    && r.RequisitionType == request.RequisitionType
+                );
 
             if (existingRequisition is { RequisitionType: RequisitionType.Stock })
-                return Error.Validation("Requisition.Validation",
-                    $"A {request.RequisitionType.ToString()} requisition for " +
-                    $"this production schedule and product has already been created");
+                return Error.Validation(
+                    "Requisition.Validation",
+                    $"A {request.RequisitionType.ToString()} requisition for "
+                        + $"this production schedule and product has already been created"
+                );
 
-            if (existingRequisition != null &&
-                existingRequisition.Items.Any(r => request
-                    .Items.Select(i => i.MaterialId).Contains(r.MaterialId)))
+            if (
+                existingRequisition != null
+                && existingRequisition.Items.Any(r =>
+                    request.Items.Select(i => i.MaterialId).Contains(r.MaterialId)
+                )
+            )
             {
-                return Error.Validation("Requisition.Validation",
-                    $"A {request.RequisitionType.ToString()} requisition for this" +
-                    $" production schedule and product with at least one of the materials has already been created");
+                return Error.Validation(
+                    "Requisition.Validation",
+                    $"A {request.RequisitionType.ToString()} requisition for this"
+                        + $" production schedule and product with at least one of the materials has already been created"
+                );
             }
         }
 
@@ -66,51 +82,72 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         if (!user.DepartmentId.HasValue)
             return UserErrors.DepartmentNotFound;
 
-        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == user.DepartmentId.Value);
-        if (department is null) return UserErrors.DepartmentNotFound;
+        var department = await context.Departments.FirstOrDefaultAsync(d =>
+            d.Id == user.DepartmentId.Value
+        );
+        if (department is null)
+            return UserErrors.DepartmentNotFound;
 
         if (request.RequisitionType == RequisitionType.Stock)
         {
             if (!request.ProductionScheduleProductId.HasValue)
-                return Error.Validation("Stock.Requisition",
-                    "Production schedule product cannot be null when creating stock requisitions");
+                return Error.Validation(
+                    "Stock.Requisition",
+                    "Production schedule product cannot be null when creating stock requisitions"
+                );
 
             if (!request.ProductionActivityStepId.HasValue)
-                return Error.Validation("Stock.Requisition",
-                    "Production activity step cannot be null when creating stock requisitions");
+                return Error.Validation(
+                    "Stock.Requisition",
+                    "Production activity step cannot be null when creating stock requisitions"
+                );
 
             // Fetch materials to determine their kind (Raw or Package)
             var materialIds = request.Items.Select(i => i.MaterialId).ToList();
-            var materials = await context.Materials
-                .Where(m => materialIds.Contains(m.Id))
+            var materials = await context
+                .Materials.Where(m => materialIds.Contains(m.Id))
                 .Select(m => new { m.Id, m.Kind })
                 .ToListAsync();
 
             // Separate items into Raw and Package
-            var rawItems = request.Items.Where(i =>
-                materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Raw)).ToList();
-            var packageItems = request.Items.Where(i =>
-                materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Package)).ToList();
+            var rawItems = request
+                .Items.Where(i =>
+                    materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Raw)
+                )
+                .ToList();
+            var packageItems = request
+                .Items.Where(i =>
+                    materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Package)
+                )
+                .ToList();
 
             // Create Raw Material Requisition
             var rawStockRequisitionId = await CreateStockRequisition("RM", rawItems);
             if (rawStockRequisitionId.HasValue)
             {
-                await approvalRepository.CreateInitialApprovalsAsync("RawStockRequisition",
-                    rawStockRequisitionId.Value);
+                await approvalRepository.CreateInitialApprovalsAsync(
+                    "RawStockRequisition",
+                    rawStockRequisitionId.Value
+                );
             }
 
             // Create Package Material Requisition
             var packageStockRequisitionId = await CreateStockRequisition("PM", packageItems);
             if (packageStockRequisitionId.HasValue)
             {
-                await approvalRepository.CreateInitialApprovalsAsync("PackageStockRequisition",
-                    packageStockRequisitionId.Value);
+                await approvalRepository.CreateInitialApprovalsAsync(
+                    "PackageStockRequisition",
+                    packageStockRequisitionId.Value
+                );
             }
 
-            async Task<Guid?> CreateStockRequisition(string prefix, List<CreateRequisitionItemRequest> items)
+            async Task<Guid?> CreateStockRequisition(
+                string prefix,
+                List<CreateRequisitionItemRequest> items
+            )
             {
-                if (items == null || items.Count == 0) return null;
+                if (items == null || items.Count == 0)
+                    return null;
 
                 // Use a transaction to prevent two users from generating the same number simultaneously
                 await using var transaction = await context.Database.BeginTransactionAsync();
@@ -121,8 +158,8 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     var searchPattern = $"{prefix}/{beta}/{year}/";
 
                     // 1. Find the highest existing sequence number for this specific prefix/beta/year
-                    var lastCode = await context.Requisitions
-                        .IgnoreQueryFilters()
+                    var lastCode = await context
+                        .Requisitions.IgnoreQueryFilters()
                         .Where(c => c.Code.StartsWith(searchPattern))
                         .OrderByDescending(c => c.Code)
                         .Select(c => c.Code)
@@ -140,7 +177,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     }
 
                     var requisition = mapper.Map<Requisition>(request);
-        
+
                     // 2. Assign the unique code
                     requisition.Code = $"{prefix}/{beta}/{year}/{nextCount:D3}";
                     requisition.RequestedById = userId;
@@ -162,9 +199,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 }
             }
 
-            var productionActivityStep =
-                await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
-                    p.Id == request.ProductionActivityStepId);
+            var productionActivityStep = await context.ProductionActivitySteps.FirstOrDefaultAsync(
+                p => p.Id == request.ProductionActivityStepId
+            );
 
             if (productionActivityStep is not null)
             {
@@ -173,8 +210,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 context.ProductionActivitySteps.Update(productionActivityStep);
             }
 
-            backgroundWorkerService.EnqueueNotification("Stock requisition created",
-                NotificationType.StockRequisitionCreated, user.DepartmentId, []);
+            backgroundWorkerService.EnqueueNotification(
+                "Stock requisition created",
+                NotificationType.StockRequisitionCreated,
+                user.DepartmentId,
+                []
+            );
         }
         else
         {
@@ -185,9 +226,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             if (request.ProductionActivityStepId.HasValue)
             {
-                var activityStep =
-                    await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
-                        p.Id == request.ProductionActivityStepId);
+                var activityStep = await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
+                    p.Id == request.ProductionActivityStepId
+                );
 
                 if (activityStep is not null)
                 {
@@ -197,7 +238,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 }
             }
             await context.SaveChangesAsync();
-            await approvalRepository.CreateInitialApprovalsAsync("PurchaseRequisition", requisition.Id);
+            await approvalRepository.CreateInitialApprovalsAsync(
+                "PurchaseRequisition",
+                requisition.Id
+            );
         }
         await context.SaveChangesAsync();
         return Result.Success();
@@ -206,15 +250,16 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // Get Stock Requisition by ID
     public async Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId)
     {
-        var requisition = await context.Requisitions
-            .IgnoreQueryFilters()
+        var requisition = await context
+            .Requisitions.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(r => r.ProductionScheduleProduct)
-            .ThenInclude(r => r.ProductionSchedule)
+                .ThenInclude(r => r.ProductionSchedule)
             .Include(r => r.ProductionScheduleProduct)
-            .ThenInclude(r => r.Product)
+                .ThenInclude(r => r.Product)
             .Include(r => r.RequestedBy)
-            .Include(r => r.Items).ThenInclude(i => i.Material)
+            .Include(r => r.Items)
+                .ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
         if (requisition is null)
@@ -225,40 +270,81 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         var result = mapper.Map<RequisitionDto>(requisition);
 
         // If the requisition type is a purchase, return early
-        if (requisition.RequisitionType == RequisitionType.Purchase) return result;
+        if (requisition.RequisitionType == RequisitionType.Purchase)
+            return result;
 
-        var user = await context.Users
-            .AsSplitQuery()
+        var user = await context
+            .Users.AsSplitQuery()
             .Include(u => u.Department)
-            .ThenInclude(u => u.Warehouses)
+                .ThenInclude(u => u.Warehouses)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user?.Department is null)
         {
-            return Error.Validation("User.Department", "This user is not assigned to any department.");
+            return Error.Validation(
+                "User.Department",
+                "This user is not assigned to any department."
+            );
         }
 
         // Find user's raw material & packing warehouses
         var rawWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
-            i.Type == WarehouseType.RawMaterialStorage);
+            i.Type == WarehouseType.RawMaterialStorage
+        );
         if (rawWarehouse is null)
-            return Error.NotFound("User.Warehouse",
-                "No raw material warehouse is associated with current user");
+            return Error.NotFound(
+                "User.Warehouse",
+                "No raw material warehouse is associated with current user"
+            );
 
         var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
-            i.Type == WarehouseType.PackagedStorage);
+            i.Type == WarehouseType.PackagedStorage
+        );
         if (packingWarehouse is null)
-            return Error.NotFound("User.Warehouse",
-                "No packing material warehouse is associated with current user");
+            return Error.NotFound(
+                "User.Warehouse",
+                "No packing material warehouse is associated with current user"
+            );
+
+        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+            i.Type == WarehouseType.Production
+        );
 
         foreach (var item in result.Items)
         {
+            if (requisition.ProductionScheduleProductId.HasValue && productionWarehouse != null)
+            {
+                var reservedBatches =
+                    await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
+                        item.Material.Id,
+                        productionWarehouse.Id,
+                        requisition.ProductionScheduleProductId.Value
+                    );
+
+                if (reservedBatches.Count != 0)
+                {
+                    item.Batches = reservedBatches
+                        .Select(rb => new BatchToSupply
+                        {
+                            Batch = rb.MaterialBatch,
+                            QuantityToTake = rb.Quantity,
+                            WarehouseLocationShelfId = rb.WarehouseLocationShelf?.Id,
+                        })
+                        .ToList();
+                    continue;
+                }
+            }
+
             // Determine appropriate warehouse based on material type
-            var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
+            var appropriateWarehouse =
+                item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
             // Fetch frozen batches that will fulfill the request
-            var batchResult = await materialRepository.BatchesToSupplyForGivenQuantity(item.Material.Id,
-                appropriateWarehouse.Id, item.Quantity);
+            var batchResult = await materialRepository.BatchesToSupplyForGivenQuantity(
+                item.Material.Id,
+                appropriateWarehouse.Id,
+                item.Quantity
+            );
 
             if (batchResult.IsSuccess)
             {
@@ -269,110 +355,272 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return result;
     }
 
+    public async Task<
+        Result<List<MaterialAlternativeBatchesDto>>
+    > GetAlternativeBatchesForStockRequisition(Guid requisitionId, Guid userId)
+    {
+        var requisition = await context
+            .Requisitions.AsSplitQuery()
+            .Include(r => r.Items)
+                .ThenInclude(i => i.Material)
+            .Include(r => r.Items)
+                .ThenInclude(i => i.UoM)
+            .Include(r => r.ProductionScheduleProduct)
+            .FirstOrDefaultAsync(r => r.Id == requisitionId);
+
+        if (requisition is null)
+            return RequisitionErrors.NotFound(requisitionId);
+
+        if (requisition.RequisitionType != RequisitionType.Stock)
+            return Error.Validation(
+                "Requisition.Type",
+                "Only stock requisitions support alternative batch lookup."
+            );
+
+        var user = await context
+            .Users.AsSplitQuery()
+            .Include(u => u.Department)
+                .ThenInclude(u => u.Warehouses)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user?.Department is null)
+            return Error.Validation(
+                "User.Department",
+                "This user is not assigned to any department."
+            );
+
+        var departmentWarehouseIds = user.Department.Warehouses.Select(w => w.Id).ToList();
+        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+            i.Type == WarehouseType.Production
+        );
+
+        var result = new List<MaterialAlternativeBatchesDto>();
+
+        foreach (var item in requisition.Items)
+        {
+            var materialAlternative = new MaterialAlternativeBatchesDto
+            {
+                Material = mapper.Map<MaterialDto>(item.Material),
+                RequestedQuantity = item.Quantity,
+            };
+
+            // 1. Get current reserved batches (if any)
+            if (requisition.ProductionScheduleProductId.HasValue && productionWarehouse != null)
+            {
+                var reservedBatches =
+                    await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
+                        item.MaterialId,
+                        productionWarehouse.Id,
+                        requisition.ProductionScheduleProductId.Value
+                    );
+
+                if (reservedBatches.Any())
+                {
+                    materialAlternative.CurrentReservedBatches = reservedBatches
+                        .Select(rb => new BatchToSupply
+                        {
+                            Batch = rb.MaterialBatch,
+                            QuantityToTake = rb.Quantity,
+                            WarehouseLocationShelfId = rb.WarehouseLocationShelf?.Id,
+                        })
+                        .ToList();
+                }
+            }
+
+            // 2. Find minimum expiry date of current batches
+            DateTime? minExpiryDate = null;
+            if (materialAlternative.CurrentReservedBatches.Any())
+            {
+                minExpiryDate = materialAlternative
+                    .CurrentReservedBatches.Where(b => b.Batch.ExpiryDate.HasValue)
+                    .Min(b => b.Batch.ExpiryDate);
+            }
+
+            // 3. Find alternative batches across ALL warehouses EXCEPT our own department
+            var query = context
+                .ShelfMaterialBatches.IgnoreQueryFilters()
+                .AsSplitQuery()
+                .Include(smb => smb.MaterialBatch)
+                    .ThenInclude(b => b.UoM)
+                .Include(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+                .Where(smb =>
+                    smb.MaterialBatch.MaterialId == item.MaterialId
+                    && smb.Quantity > 0
+                    && !smb.DeletedAt.HasValue
+                    && smb.MaterialBatch.Status == BatchStatus.Approved
+                    && !departmentWarehouseIds.Contains(
+                        smb.WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId
+                    )
+                );
+
+            if (minExpiryDate.HasValue)
+            {
+                query = query.Where(smb => smb.MaterialBatch.ExpiryDate < minExpiryDate.Value);
+            }
+
+            var alternativeShelfBatches = await query
+                .OrderBy(smb => smb.MaterialBatch.ExpiryDate)
+                .ToListAsync();
+
+            materialAlternative.AlternativeBatches = alternativeShelfBatches
+                .Select(smb => new AlternativeBatchDto
+                {
+                    Batch = mapper.Map<MaterialBatchListDto>(smb.MaterialBatch),
+                    QuantityAvailable = smb.Quantity,
+                    Warehouse = mapper.Map<CollectionItemDto>(
+                        smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse
+                    ),
+                    WarehouseLocationShelfId = smb.WarehouseLocationShelfId,
+                })
+                .ToList();
+
+            result.Add(materialAlternative);
+        }
+
+        return result;
+    }
 
     public async Task<Result> ApproveStockRequisition(Guid stockRequisitionId)
     {
-        var stockRequisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == stockRequisitionId);
+        var stockRequisition = await context.Requisitions.FirstOrDefaultAsync(r =>
+            r.Id == stockRequisitionId
+        );
 
-        return stockRequisition is null ? RequisitionErrors.NotFound(stockRequisitionId) : Result.Success();
+        return stockRequisition is null
+            ? RequisitionErrors.NotFound(stockRequisitionId)
+            : Result.Success();
     }
 
     public async Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId)
     {
-        var stockRequisition = await context.Requisitions
-            .AsSplitQuery()
-            .Include(r => r.Items).ThenInclude(requisitionItem => requisitionItem.Material)
+        var stockRequisition = await context
+            .Requisitions.AsSplitQuery()
+            .Include(r => r.Items)
+                .ThenInclude(requisitionItem => requisitionItem.Material)
             .Include(requisition => requisition.ProductionActivityStep)
             .FirstOrDefaultAsync(r => r.Id == stockRequisitionId);
 
         if (stockRequisition is null)
             return RequisitionErrors.NotFound(stockRequisitionId);
 
-        var user = await context.Users
-            .AsSplitQuery()
+        var user = await context
+            .Users.AsSplitQuery()
             .Include(u => u.Department)
-            .ThenInclude(d => d.Warehouses)
+                .ThenInclude(d => d.Warehouses)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user is null)
             return UserErrors.NotFound(userId);
 
         if (user.Department == null)
-            return Error.NotFound("User.Department",
-                "User has no association to any department");
+            return Error.NotFound("User.Department", "User has no association to any department");
 
         if (user.Department.Warehouses.Count == 0)
-            return Error.NotFound("User.Warehouse",
-                "No raw material warehouse is associated with current user");
+            return Error.NotFound(
+                "User.Warehouse",
+                "No raw material warehouse is associated with current user"
+            );
 
         var rawWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
-            i.Type == WarehouseType.RawMaterialStorage);
+            i.Type == WarehouseType.RawMaterialStorage
+        );
         if (rawWarehouse is null)
-            return Error.NotFound("User.Warehouse",
-                "No raw material warehouse is associated with current user");
+            return Error.NotFound(
+                "User.Warehouse",
+                "No raw material warehouse is associated with current user"
+            );
 
         var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
-            i.Type == WarehouseType.PackagedStorage);
+            i.Type == WarehouseType.PackagedStorage
+        );
         if (packingWarehouse is null)
-            return Error.NotFound("User.Warehouse",
-                "No packing material warehouse is associated with current user");
+            return Error.NotFound(
+                "User.Warehouse",
+                "No packing material warehouse is associated with current user"
+            );
 
-        var productionWarehouse = await context.Warehouses.IgnoreQueryFilters().FirstOrDefaultAsync(w =>
-            w.DepartmentId == stockRequisition.DepartmentId && w.Type == WarehouseType.Production);
+        var productionWarehouse = await context
+            .Warehouses.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(w =>
+                w.DepartmentId == stockRequisition.DepartmentId
+                && w.Type == WarehouseType.Production
+            );
 
         if (productionWarehouse is null)
-            return Error.NotFound("User.Warehouse",
-                "No production warehouse is associated with department who made stock requisition");
-
+            return Error.NotFound(
+                "User.Warehouse",
+                "No production warehouse is associated with department who made stock requisition"
+            );
 
         foreach (var item in stockRequisition.Items)
         {
-            var appropriateWarehouse = item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
+            var appropriateWarehouse =
+                item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
-            var historicalBincards = await context.BinCardInformation
-                .AsSplitQuery()
+            var historicalBincards = await context
+                .BinCardInformation.AsSplitQuery()
                 .IgnoreQueryFilters()
                 .Include(binCardInformation => binCardInformation.MaterialBatch)
                 .Where(b => b.WarehouseId == appropriateWarehouse.Id)
                 .ToListAsync();
 
             if (stockRequisition.ProductionScheduleProductId == null)
-                return Error.Validation("Stock.Requisition",
-                    "Stock requisition has no production schedule product associated, contact admin.");
+                return Error.Validation(
+                    "Stock.Requisition",
+                    "Stock requisition has no production schedule product associated, contact admin."
+                );
             var batchesToConsume =
-                await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(item.MaterialId,
-                    productionWarehouse.Id, stockRequisition.ProductionScheduleProductId.Value);
+                await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
+                    item.MaterialId,
+                    productionWarehouse.Id,
+                    stockRequisition.ProductionScheduleProductId.Value
+                );
 
             if (batchesToConsume.Count == 0)
-                return Error.Validation("Stock.Requisition", 
-                    $"No reserved quantities to issue for {item.Material.Name}");
+                return Error.Validation(
+                    "Stock.Requisition",
+                    $"No reserved quantities to issue for {item.Material.Name}"
+                );
 
             foreach (var batch in batchesToConsume)
             {
-                var materialBatch = await context.MaterialBatches
-                    .Include(m => m.Checklist).ThenInclude(c => c.Supplier)
-                    .Include(m => m.Checklist).ThenInclude(c => c.Manufacturer)
+                var materialBatch = await context
+                    .MaterialBatches.Include(m => m.Checklist)
+                        .ThenInclude(c => c.Supplier)
+                    .Include(m => m.Checklist)
+                        .ThenInclude(c => c.Manufacturer)
                     .FirstOrDefaultAsync(m => m.Id == batch.MaterialBatch.Id);
-                if (materialBatch is null) continue;
+                if (materialBatch is null)
+                    continue;
 
                 materialBatch.QuantityAssigned = 0;
                 context.MaterialBatches.Update(materialBatch);
 
-                var shelfMaterialBatches =
-                    await context.ShelfMaterialBatches
-                        .IgnoreQueryFilters()
-                        .OrderBy(s => s.Quantity)
-                        .Where(sb => sb.MaterialBatchId == batch.MaterialBatch.Id
-                                     && sb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation
-                                         .WarehouseId == appropriateWarehouse.Id
-                                     && !sb.DeletedAt.HasValue)
-                        .ToListAsync();
+                var shelfMaterialBatches = await context
+                    .ShelfMaterialBatches.IgnoreQueryFilters()
+                    .OrderBy(s => s.Quantity)
+                    .Where(sb =>
+                        sb.MaterialBatchId == batch.MaterialBatch.Id
+                        && sb.WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId == appropriateWarehouse.Id
+                        && !sb.DeletedAt.HasValue
+                    )
+                    .ToListAsync();
 
                 var quantityToDeduct = batch.Quantity;
 
                 foreach (var shelfMaterialBatch in shelfMaterialBatches)
                 {
-                    if (quantityToDeduct <= 0) break;
+                    if (quantityToDeduct <= 0)
+                        break;
 
                     var deductAmount = Math.Min(shelfMaterialBatch.Quantity, quantityToDeduct);
                     shelfMaterialBatch.Quantity -= deductAmount;
@@ -391,7 +639,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     ToWarehouseId = productionWarehouse.Id,
                     Quantity = batch.Quantity,
                     MovedAt = DateTime.UtcNow,
-                    MovedById = userId
+                    MovedById = userId,
                 };
 
                 await context.MassMaterialBatchMovements.AddAsync(movement);
@@ -401,7 +649,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     BatchId = batch.MaterialBatch.Id,
                     Type = EventType.Moved,
                     Quantity = batch.Quantity,
-                    UserId = userId
+                    UserId = userId,
                 };
 
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
@@ -409,18 +657,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 await context.SaveChangesAsync();
 
                 var history = historicalBincards
-                    .Where(b => b.MaterialBatch.MaterialId == materialBatch.MaterialId
-                                && b.WarehouseId == appropriateWarehouse.Id)
+                    .Where(b =>
+                        b.MaterialBatch.MaterialId == materialBatch.MaterialId
+                        && b.WarehouseId == appropriateWarehouse.Id
+                    )
                     .Select(b => new { b.QuantityReceived, b.QuantityIssued })
                     .ToList();
 
-                var previousBalance = history.Sum(x => x.QuantityReceived)
-                                      - history.Sum(x => x.QuantityIssued);
+                var previousBalance =
+                    history.Sum(x => x.QuantityReceived) - history.Sum(x => x.QuantityIssued);
 
                 var currentBalance = previousBalance - batch.Quantity;
 
-                var arNumber = await context.MaterialSamplings
-                    .Where(s => s.MaterialBatchId == materialBatch.Id)
+                var arNumber = await context
+                    .MaterialSamplings.Where(s => s.MaterialBatchId == materialBatch.Id)
                     .OrderByDescending(s => s.CreatedAt)
                     .Select(s => s.ArNumber)
                     .FirstOrDefaultAsync();
@@ -455,7 +705,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         await context.SaveChangesAsync();
 
         // ✅ Check if all items in the requisition are completed
-        var allItemsCompleted = stockRequisition.Items.All(i => i.Status == RequestStatus.Completed);
+        var allItemsCompleted = stockRequisition.Items.All(i =>
+            i.Status == RequestStatus.Completed
+        );
 
         if (allItemsCompleted)
         {
@@ -468,8 +720,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         // ✅ Check if all items across all requisitions for the same `ProductionActivityStepId` are completed
         if (stockRequisition.ProductionActivityStepId.HasValue)
         {
-            var relatedRequisitions = await context.Requisitions
-                .Where(r => r.ProductionActivityStepId == stockRequisition.ProductionActivityStepId)
+            var relatedRequisitions = await context
+                .Requisitions.Where(r =>
+                    r.ProductionActivityStepId == stockRequisition.ProductionActivityStepId
+                )
                 .Include(r => r.Items)
                 .ToListAsync();
 
@@ -479,21 +733,27 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
             if (allRequisitionItemsCompleted)
             {
-                var productionActivityStep = await context.ProductionActivitySteps
-                    .FirstOrDefaultAsync(p => p.Id == stockRequisition.ProductionActivityStepId);
+                var productionActivityStep =
+                    await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
+                        p.Id == stockRequisition.ProductionActivityStepId
+                    );
 
                 if (productionActivityStep is not null)
                 {
                     productionActivityStep.Status = ProductionStatus.Completed;
                     productionActivityStep.CompletedAt = DateTime.UtcNow;
                     context.ProductionActivitySteps.Update(productionActivityStep);
-                    await context.ProductionActivityLogs.AddAsync(new ProductionActivityLog
-                    {
-                        ProductionActivityId = stockRequisition.ProductionActivityStep.ProductionActivityId,
-                        UserId = userId,
-                        Message = "Issued stock requisition.",
-                        Timestamp = DateTime.UtcNow
-                    });
+                    await context.ProductionActivityLogs.AddAsync(
+                        new ProductionActivityLog
+                        {
+                            ProductionActivityId = stockRequisition
+                                .ProductionActivityStep
+                                .ProductionActivityId,
+                            UserId = userId,
+                            Message = "Issued stock requisition.",
+                            Timestamp = DateTime.UtcNow,
+                        }
+                    );
                     await context.SaveChangesAsync();
                 }
             }
@@ -502,62 +762,83 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    private async Task<List<ShelfMaterialBatchDto>> GetShelvesOfBatch(Guid batchId, Guid warehouseId)
+    private async Task<List<ShelfMaterialBatchDto>> GetShelvesOfBatch(
+        Guid batchId,
+        Guid warehouseId
+    )
     {
-        var shelves = await context.ShelfMaterialBatches
-            .AsSplitQuery()
+        var shelves = await context
+            .ShelfMaterialBatches.AsSplitQuery()
             .Include(smb => smb.WarehouseLocationShelf)
             .Where(smb =>
-                smb.MaterialBatchId == batchId &&
-                smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id == warehouseId)
+                smb.MaterialBatchId == batchId
+                && smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id
+                    == warehouseId
+            )
             .ToListAsync();
 
         return mapper.Map<List<ShelfMaterialBatchDto>>(shelves);
     }
 
-    public async Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities,
-        Guid productId, Guid userId)
+    public async Task<Result> IssueStockRequisitionVoucher(
+        List<BatchQuantityDto> batchQuantities,
+        Guid productId,
+        Guid userId
+    )
     {
         var product = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         foreach (var batch in batchQuantities)
         {
-            var shelfMaterialBatch = await context.ShelfMaterialBatches
-                .AsSplitQuery()
+            var shelfMaterialBatch = await context
+                .ShelfMaterialBatches.AsSplitQuery()
                 .Include(smb => smb.WarehouseLocationShelf)
-                .ThenInclude(wls => wls.WarehouseLocationRack)
-                .ThenInclude(wlr => wlr.WarehouseLocation)
-                .ThenInclude(wl => wl.Warehouse)
+                    .ThenInclude(wls => wls.WarehouseLocationRack)
+                        .ThenInclude(wlr => wlr.WarehouseLocation)
+                            .ThenInclude(wl => wl.Warehouse)
                 .Include(shelfMaterialBatch => shelfMaterialBatch.MaterialBatch)
-                .ThenInclude(mb => mb.Checklist)
-                .ThenInclude(c => c.Supplier)
+                    .ThenInclude(mb => mb.Checklist)
+                        .ThenInclude(c => c.Supplier)
                 .Include(shelfMaterialBatch => shelfMaterialBatch.MaterialBatch)
-                .ThenInclude(mb => mb.Checklist)
-                .ThenInclude(c => c.Manufacturer)
+                    .ThenInclude(mb => mb.Checklist)
+                        .ThenInclude(c => c.Manufacturer)
                 .FirstOrDefaultAsync(smb => smb.Id == batch.ShelfMaterialBatchId);
 
             if (shelfMaterialBatch == null)
             {
-                return Error.Validation("ShelfMaterialBatch.NotFound",
-                    $"ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId} not found.");
+                return Error.Validation(
+                    "ShelfMaterialBatch.NotFound",
+                    $"ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId} not found."
+                );
             }
 
             if (shelfMaterialBatch.Quantity < batch.Quantity)
             {
-                return Error.Validation("ShelfMaterialBatch.InsufficientQuantity",
-                    $"Insufficient quantity in ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId}.");
+                return Error.Validation(
+                    "ShelfMaterialBatch.InsufficientQuantity",
+                    $"Insufficient quantity in ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId}."
+                );
             }
 
-            var productionWarehouse = await context.Warehouses
-                .AsSplitQuery()
-                .Where(dw => dw.Id == shelfMaterialBatch.WarehouseLocationShelf.WarehouseLocationRack
-                    .WarehouseLocation.Warehouse.Id)
+            var productionWarehouse = await context
+                .Warehouses.AsSplitQuery()
+                .Where(dw =>
+                    dw.Id
+                    == shelfMaterialBatch
+                        .WarehouseLocationShelf
+                        .WarehouseLocationRack
+                        .WarehouseLocation
+                        .Warehouse
+                        .Id
+                )
                 .Include(warehouse => warehouse.ArrivalLocation)
                 .FirstOrDefaultAsync(w => w.Type == WarehouseType.Production);
 
             if (productionWarehouse == null)
             {
-                return Error.Validation("ProductionWarehouse.NotFound",
-                    "Production warehouse not found for the department.");
+                return Error.Validation(
+                    "ProductionWarehouse.NotFound",
+                    "Production warehouse not found for the department."
+                );
             }
 
             // Update the quantity in the shelf
@@ -578,7 +859,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 BatchId = shelfMaterialBatch.MaterialBatchId,
                 Quantity = batch.Quantity,
                 Type = EventType.Moved,
-                UserId = userId
+                UserId = userId,
             };
 
             await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
@@ -586,28 +867,42 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             var batchMovement = new MassMaterialBatchMovement
             {
                 BatchId = shelfMaterialBatch.MaterialBatchId,
-                FromWarehouseId = shelfMaterialBatch.WarehouseLocationShelf
-                    .WarehouseLocationRack.WarehouseLocation.Warehouse.Id,
+                FromWarehouseId = shelfMaterialBatch
+                    .WarehouseLocationShelf
+                    .WarehouseLocationRack
+                    .WarehouseLocation
+                    .Warehouse
+                    .Id,
                 ToWarehouseId = productionWarehouse.Id,
                 Quantity = batch.Quantity,
-                CreatedById = userId
+                CreatedById = userId,
             };
 
             await context.MassMaterialBatchMovements.AddAsync(batchMovement);
 
             var fromWarehouse = shelfMaterialBatch
-                .WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse;
+                .WarehouseLocationShelf
+                .WarehouseLocationRack
+                .WarehouseLocation
+                .Warehouse;
 
             var toWarehouse = productionWarehouse;
 
             var warehouseIds = new List<Guid> { fromWarehouse.Id, toWarehouse.Id };
 
-            var history = await context.BinCardInformation
-                .AsSplitQuery()
+            var history = await context
+                .BinCardInformation.AsSplitQuery()
                 .IgnoreQueryFilters()
-                .Where(b => b.MaterialBatch.MaterialId == shelfMaterialBatch.MaterialBatch.MaterialId
-                            && warehouseIds.Contains(b.WarehouseId.Value))
-                .Select(b => new { b.WarehouseId, b.QuantityReceived, b.QuantityIssued })
+                .Where(b =>
+                    b.MaterialBatch.MaterialId == shelfMaterialBatch.MaterialBatch.MaterialId
+                    && warehouseIds.Contains(b.WarehouseId.Value)
+                )
+                .Select(b => new
+                {
+                    b.WarehouseId,
+                    b.QuantityReceived,
+                    b.QuantityIssued,
+                })
                 .ToListAsync();
 
             var fromBalance = history
@@ -621,8 +916,10 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             var balanceAfterIssue = fromBalance - batch.Quantity;
             var balanceAfterReceive = toBalance + batch.Quantity;
 
-            var arNumber = await context.MaterialSamplings
-                .Where(s => s.MaterialBatchId == shelfMaterialBatch.MaterialBatch.Id)
+            var arNumber = await context
+                .MaterialSamplings.Where(s =>
+                    s.MaterialBatchId == shelfMaterialBatch.MaterialBatch.Id
+                )
                 .OrderByDescending(s => s.CreatedAt)
                 .Select(s => s.ArNumber)
                 .FirstOrDefaultAsync();
@@ -645,7 +942,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 ProductId = product.Id,
                 CreatedAt = DateTime.UtcNow,
                 CreatedById = userId,
-                WarehouseId = fromWarehouse.Id
+                WarehouseId = fromWarehouse.Id,
             };
 
             await context.BinCardInformation.AddAsync(toBinCardEvent);
@@ -665,7 +962,7 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 ProductId = product.Id,
                 CreatedAt = DateTime.UtcNow,
                 CreatedById = userId,
-                WarehouseId = productionWarehouse.Id
+                WarehouseId = productionWarehouse.Id,
             };
 
             await context.BinCardInformation.AddAsync(fromBinCardEvent);
@@ -677,21 +974,24 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
     // Get paginated list of Stock Requisitions
     public async Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(
-    int page,
-    int pageSize,
-    string searchQuery,
-    RequestStatus? status,
-    RequisitionType? requisitionType,
-    Guid? departmentId,
-    MaterialKind? materialKind)
+        int page,
+        int pageSize,
+        string searchQuery,
+        RequestStatus? status,
+        RequisitionType? requisitionType,
+        Guid? departmentId,
+        MaterialKind? materialKind
+    )
     {
-        var query = context.Requisitions
-            .AsSplitQuery()
+        var query = context
+            .Requisitions.AsSplitQuery()
             .Include(r => r.RequestedBy)
-            .Include(r => r.Approvals).ThenInclude(r => r.User)
-            .Include(r => r.Approvals).ThenInclude(r => r.Role)
+            .Include(r => r.Approvals)
+                .ThenInclude(r => r.User)
+            .Include(r => r.Approvals)
+                .ThenInclude(r => r.Role)
             .Include(r => r.Items)
-            .ThenInclude(i => i.Material)
+                .ThenInclude(i => i.Material)
             .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
@@ -750,9 +1050,15 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     // Update Stock Requisition
-    public async Task<Result> UpdateRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId)
+    public async Task<Result> UpdateRequisition(
+        CreateRequisitionRequest request,
+        Guid requisitionId,
+        Guid userId
+    )
     {
-        var existingRequisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == requisitionId);
+        var existingRequisition = await context.Requisitions.FirstOrDefaultAsync(r =>
+            r.Id == requisitionId
+        );
         if (existingRequisition is null)
         {
             return RequisitionErrors.NotFound(requisitionId);
@@ -769,7 +1075,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // Delete Stock Requisition (soft delete)
     public async Task<Result> DeleteRequisition(Guid requisitionId, Guid userId)
     {
-        var requisition = await context.Requisitions.FirstOrDefaultAsync(r => r.Id == requisitionId);
+        var requisition = await context.Requisitions.FirstOrDefaultAsync(r =>
+            r.Id == requisitionId
+        );
         if (requisition is null)
         {
             return RequisitionErrors.NotFound(requisitionId);
@@ -786,15 +1094,21 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // ************* Manage Stock Requisition Approvals *************
 
     // Approve Stock Requisition
-    public async Task<Result> ApproveRequisition(ApproveRequisitionRequest request,
-        Guid requisitionId, Guid userId, List<Guid> roleIds)
+    public async Task<Result> ApproveRequisition(
+        ApproveRequisitionRequest request,
+        Guid requisitionId,
+        Guid userId,
+        List<Guid> roleIds
+    )
     {
         // Get the requisition and its approvals
-        var requisition = await context.Requisitions
-            .Include(r => r.Approvals).Include(requisition =>
-                requisition.ProductionActivityStep)
-            .Include(requisition => requisition.RequestedBy).ThenInclude(r => r.Department)
-            .ThenInclude(d => d.Warehouses).Include(requisition => requisition.Items)
+        var requisition = await context
+            .Requisitions.Include(r => r.Approvals)
+            .Include(requisition => requisition.ProductionActivityStep)
+            .Include(requisition => requisition.RequestedBy)
+                .ThenInclude(r => r.Department)
+                    .ThenInclude(d => d.Warehouses)
+            .Include(requisition => requisition.Items)
             .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
@@ -803,16 +1117,22 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             return RequisitionErrors.NotFound(requisitionId);
         }
 
-        if (!requisition.ProductionActivityStepId.HasValue || requisition.RequisitionType == RequisitionType.Purchase)
+        if (
+            !requisition.ProductionActivityStepId.HasValue
+            || requisition.RequisitionType == RequisitionType.Purchase
+        )
         {
-            return Error.Validation("Requisition.Approve", "You cant approve a purchase requisition");
+            return Error.Validation(
+                "Requisition.Approve",
+                "You cant approve a purchase requisition"
+            );
         }
 
         requisition.Approved = true;
         requisition.ProductionActivityStep.Status = ProductionStatus.Completed;
         requisition.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
-        
+
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -820,45 +1140,52 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // ************* CRUD for SourceRequisition *************
 
     // Create Source Requisition
-    public async Task<Result> CreateSourceRequisition(CreateSourceRequisitionRequest request, Guid userId)
+    public async Task<Result> CreateSourceRequisition(
+        CreateSourceRequisitionRequest request,
+        Guid userId
+    )
     {
-        var requisition = await context.Requisitions
-            .AsSplitQuery()
+        var requisition = await context
+            .Requisitions.AsSplitQuery()
             .Include(r => r.Items) // Include items since their status will be updated
             .FirstOrDefaultAsync(r => r.Id == request.RequisitionId);
 
         if (requisition is null)
             return RequisitionErrors.NotFound(request.RequisitionId);
 
-        var supplierGroupedItems = request.Items
-            .SelectMany(item => item.Suppliers.Select(supplier => new { item, supplier }))
+        var supplierGroupedItems = request
+            .Items.SelectMany(item => item.Suppliers.Select(supplier => new { item, supplier }))
             .GroupBy(x => x.supplier.SupplierId);
 
         foreach (var supplierGroup in supplierGroupedItems)
         {
             var supplierId = supplierGroup.Key;
 
-            var existingSourceRequisition = await context.SourceRequisitions
-                .Include(sr => sr.Items)
-                .FirstOrDefaultAsync(sr => sr.SupplierId == supplierId && !sr.SentQuotationRequestAt.HasValue);
+            var existingSourceRequisition = await context
+                .SourceRequisitions.Include(sr => sr.Items)
+                .FirstOrDefaultAsync(sr =>
+                    sr.SupplierId == supplierId && !sr.SentQuotationRequestAt.HasValue
+                );
 
             if (existingSourceRequisition is not null)
             {
                 foreach (var groupItem in supplierGroup)
                 {
-                    existingSourceRequisition.Items.Add(new SourceRequisitionItem
-                    {
-                        MaterialId = groupItem.item.MaterialId,
-                        UoMId = groupItem.item.UoMId,
-                        Quantity = groupItem.item.Quantity,
-                        Source = groupItem.item.Source,
-                        RequisitionId = request.RequisitionId
-                    });
+                    existingSourceRequisition.Items.Add(
+                        new SourceRequisitionItem
+                        {
+                            MaterialId = groupItem.item.MaterialId,
+                            UoMId = groupItem.item.UoMId,
+                            Quantity = groupItem.item.Quantity,
+                            Source = groupItem.item.Source,
+                            RequisitionId = request.RequisitionId,
+                        }
+                    );
 
                     // Update the status of the corresponding item in the requisition
-                    var requisitionItem = requisition.Items
-                        .FirstOrDefault(i =>
-                            i.MaterialId == groupItem.item.MaterialId && i.UoMId == groupItem.item.UoMId);
+                    var requisitionItem = requisition.Items.FirstOrDefault(i =>
+                        i.MaterialId == groupItem.item.MaterialId && i.UoMId == groupItem.item.UoMId
+                    );
                     if (requisitionItem is not null)
                     {
                         requisitionItem.Status = RequestStatus.Sourced;
@@ -873,14 +1200,16 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     Code = request.Code,
                     SupplierId = supplierId,
                     SentQuotationRequestAt = null,
-                    Items = supplierGroup.Select(x => new SourceRequisitionItem
-                    {
-                        MaterialId = x.item.MaterialId,
-                        UoMId = x.item.UoMId,
-                        Quantity = x.item.Quantity,
-                        Source = x.item.Source,
-                        RequisitionId = request.RequisitionId
-                    }).ToList(),
+                    Items = supplierGroup
+                        .Select(x => new SourceRequisitionItem
+                        {
+                            MaterialId = x.item.MaterialId,
+                            UoMId = x.item.UoMId,
+                            Quantity = x.item.Quantity,
+                            Source = x.item.Source,
+                            RequisitionId = request.RequisitionId,
+                        })
+                        .ToList(),
                 };
 
                 await context.SourceRequisitions.AddAsync(requisitionForSupplier);
@@ -888,8 +1217,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 // Update the status of all items in this group
                 foreach (var x in supplierGroup)
                 {
-                    var requisitionItem = requisition.Items
-                        .FirstOrDefault(i => i.MaterialId == x.item.MaterialId && i.UoMId == x.item.UoMId);
+                    var requisitionItem = requisition.Items.FirstOrDefault(i =>
+                        i.MaterialId == x.item.MaterialId && i.UoMId == x.item.UoMId
+                    );
                     if (requisitionItem is not null)
                     {
                         requisitionItem.Status = RequestStatus.Sourced;
@@ -905,36 +1235,43 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-
     // Get Source Requisition by ID
     public async Task<Result<SourceRequisitionDto>> GetSourceRequisition(Guid sourceRequisitionId)
     {
-        var sourceRequisition = await context.SourceRequisitions
-            .AsSplitQuery()
+        var sourceRequisition = await context
+            .SourceRequisitions.AsSplitQuery()
             .Include(sr => sr.Supplier)
-            .Include(sr => sr.Items).ThenInclude(item => item.Material)
-            .Include(sr => sr.Items).ThenInclude(item => item.UoM)
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.Material)
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.UoM)
             .FirstOrDefaultAsync(sr => sr.Id == sourceRequisitionId);
 
         return sourceRequisition is null
             ? RequisitionErrors.NotFound(sourceRequisitionId)
-            : mapper.Map<SourceRequisitionDto>(sourceRequisition,opt =>
-            {
-                opt.Items[AppConstants.ModelType] = nameof(SourceRequisition);
-            });
+            : mapper.Map<SourceRequisitionDto>(
+                sourceRequisition,
+                opt =>
+                {
+                    opt.Items[AppConstants.ModelType] = nameof(SourceRequisition);
+                }
+            );
     }
 
     // Get paginated list of Source Requisitions
-    public async Task<Result<Paginateable<IEnumerable<SourceRequisitionDto>>>> GetSourceRequisitions(int page,
-        int pageSize, string searchQuery)
+    public async Task<
+        Result<Paginateable<IEnumerable<SourceRequisitionDto>>>
+    > GetSourceRequisitions(int page, int pageSize, string searchQuery)
     {
-        var query = context.SourceRequisitions
-            .AsSplitQuery()
+        var query = context
+            .SourceRequisitions.AsSplitQuery()
             .Include(sr => sr.Supplier)
-            .ThenInclude(sr => sr.AssociatedManufacturers)
-            .ThenInclude(sr => sr.Manufacturer)
-            .Include(sr => sr.Items).ThenInclude(item => item.Material)
-            .Include(sr => sr.Items).ThenInclude(item => item.UoM)
+                .ThenInclude(sr => sr.AssociatedManufacturers)
+                    .ThenInclude(sr => sr.Manufacturer)
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.Material)
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.UoM)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -950,18 +1287,18 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         );
     }
 
-    public async Task<Result<Paginateable<IEnumerable<SourceRequisitionItemDto>>>> GetSourceRequisitionItems(int page,
-        int pageSize, ProcurementSource source)
+    public async Task<
+        Result<Paginateable<IEnumerable<SourceRequisitionItemDto>>>
+    > GetSourceRequisitionItems(int page, int pageSize, ProcurementSource source)
     {
-        var query = context.SourceRequisitionItems
-            .AsSplitQuery()
+        var query = context
+            .SourceRequisitionItems.AsSplitQuery()
             .Include(sr => sr.SourceRequisition)
             .Include(sr => sr.Material)
             .Include(sr => sr.UoM)
             .Where(sr => sr.Source == source)
             .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
-
 
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
@@ -972,10 +1309,14 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     }
 
     // Update Source Requisition
-    public async Task<Result> UpdateSourceRequisition(CreateSourceRequisitionRequest request, Guid sourceRequisitionId)
+    public async Task<Result> UpdateSourceRequisition(
+        CreateSourceRequisitionRequest request,
+        Guid sourceRequisitionId
+    )
     {
-        var existingSourceRequisition = await context.SourceRequisitions
-            .FirstOrDefaultAsync(sr => sr.Id == sourceRequisitionId);
+        var existingSourceRequisition = await context.SourceRequisitions.FirstOrDefaultAsync(sr =>
+            sr.Id == sourceRequisitionId
+        );
         if (existingSourceRequisition is null)
         {
             return RequisitionErrors.NotFound(sourceRequisitionId);
@@ -990,7 +1331,9 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     // Delete Source Requisition (soft delete)
     public async Task<Result> DeleteSourceRequisition(Guid sourceRequisitionId)
     {
-        var sourceRequisition = await context.SourceRequisitions.FirstOrDefaultAsync(sr => sr.Id == sourceRequisitionId);
+        var sourceRequisition = await context.SourceRequisitions.FirstOrDefaultAsync(sr =>
+            sr.Id == sourceRequisitionId
+        );
         if (sourceRequisition is null)
         {
             return RequisitionErrors.NotFound(sourceRequisitionId);
@@ -1002,15 +1345,20 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationRequest>>>>
-        GetSuppliersWithSourceRequisitionItems(int page, int pageSize, SupplierType source, bool sent)
+    public async Task<
+        Result<Paginateable<IEnumerable<SupplierQuotationRequest>>>
+    > GetSuppliersWithSourceRequisitionItems(int page, int pageSize, SupplierType source, bool sent)
     {
         // Base query
-        var query = context.SourceRequisitions
-            .AsSplitQuery()
-            .Include(sr => sr.Supplier).ThenInclude(s => s.AssociatedManufacturers).ThenInclude(s => s.Manufacturer)
-            .Include(sr => sr.Items).ThenInclude(item => item.Material)
-            .Include(sr => sr.Items).ThenInclude(item => item.UoM)
+        var query = context
+            .SourceRequisitions.AsSplitQuery()
+            .Include(sr => sr.Supplier)
+                .ThenInclude(s => s.AssociatedManufacturers)
+                    .ThenInclude(s => s.Manufacturer)
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.Material)
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.UoM)
             .Where(sr => sr.Supplier.Type == source)
             .AsQueryable();
 
@@ -1026,40 +1374,54 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         );
     }
 
-    public async Task<Result<SupplierQuotationRequest>> GetSuppliersWithSourceRequisitionItems(Guid supplierId)
+    public async Task<Result<SupplierQuotationRequest>> GetSuppliersWithSourceRequisitionItems(
+        Guid supplierId
+    )
     {
         // Base query
-        var query = await context.SourceRequisitions
-            .AsSplitQuery()
-            .Include(sr => sr.Supplier).ThenInclude(s => s.AssociatedManufacturers).ThenInclude(m => m.Manufacturer)
-            .Include(sr => sr.Items).ThenInclude(item => item.Material)
-            .Include(sr => sr.Items).ThenInclude(item => item.UoM)
-            .FirstOrDefaultAsync(sr => sr.SupplierId == supplierId && !sr.SentQuotationRequestAt.HasValue);
+        var query = await context
+            .SourceRequisitions.AsSplitQuery()
+            .Include(sr => sr.Supplier)
+                .ThenInclude(s => s.AssociatedManufacturers)
+                    .ThenInclude(m => m.Manufacturer)
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.Material)
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.UoM)
+            .FirstOrDefaultAsync(sr =>
+                sr.SupplierId == supplierId && !sr.SentQuotationRequestAt.HasValue
+            );
 
-        return query != null ?
-            mapper.Map<SupplierQuotationRequest>(query) : null;
+        return query != null ? mapper.Map<SupplierQuotationRequest>(query) : null;
     }
-
 
     public async Task<Result> SendQuotationToSupplier(Guid supplierId)
     {
-        var sourceRequisition = await context.SourceRequisitions
-            .AsSplitQuery()
+        var sourceRequisition = await context
+            .SourceRequisitions.AsSplitQuery()
             .Include(sr => sr.Supplier)
-            .Include(sr => sr.Items).ThenInclude(item => item.Material)
-            .Include(sr => sr.Items).ThenInclude(item => item.UoM)
-            .FirstOrDefaultAsync(s => s.SupplierId == supplierId && !s.SentQuotationRequestAt.HasValue);
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.Material)
+            .Include(sr => sr.Items)
+                .ThenInclude(item => item.UoM)
+            .FirstOrDefaultAsync(s =>
+                s.SupplierId == supplierId && !s.SentQuotationRequestAt.HasValue
+            );
 
         if (sourceRequisition is null)
         {
-            return Error.Validation("Supplier.Quotation",
-                "No items found to mark as quotation sent for the specified supplier.");
+            return Error.Validation(
+                "Supplier.Quotation",
+                "No items found to mark as quotation sent for the specified supplier."
+            );
         }
 
         if (await CheckIfSupplierHasPendingPriceComparison(supplierId))
         {
-            return Error.Validation("Supplier.Quotation",
-                "This supplier is in a pending price comparison, process that before proceeding");
+            return Error.Validation(
+                "Supplier.Quotation",
+                "This supplier is in a pending price comparison, process that before proceeding"
+            );
         }
 
         var supplierQuotationDto = mapper.Map<SupplierQuotationRequest>(sourceRequisition);
@@ -1068,18 +1430,27 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
 
         if (supplierQuotationDto.Items.Count == 0)
         {
-            return Error.Validation("Supplier.Quotation",
-                "No items found to mark as quotation sent for the specified supplier.");
+            return Error.Validation(
+                "Supplier.Quotation",
+                "No items found to mark as quotation sent for the specified supplier."
+            );
         }
 
         var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
-        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.QuotationRequestTemplate(supplierQuotationDto));
+        var fileContent = pdfService.GeneratePdfFromHtml(
+            PdfTemplate.QuotationRequestTemplate(supplierQuotationDto)
+        );
         mailAttachments.Add((fileContent, $"Quotation Request from Entrance", "application/pdf"));
 
         try
         {
-            emailService.SendMail(supplierQuotationDto.Supplier.Name, supplierQuotationDto.Supplier.Email,
-                "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.", mailAttachments);
+            emailService.SendMail(
+                supplierQuotationDto.Supplier.Name,
+                supplierQuotationDto.Supplier.Email,
+                "Sales Quote From Entrance",
+                "Please find attached to this email a sales quote from us.",
+                mailAttachments
+            );
         }
         catch (Exception e)
         {
@@ -1092,12 +1463,14 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         {
             SupplierId = sourceRequisition.SupplierId,
             SourceRequisitionId = sourceRequisition.Id,
-            Items = sourceRequisitionDto.Items.Select(i => new SupplierQuotationItem
-            {
-                MaterialId = i.Material.Id,
-                UoMId = i.UoM.Id,
-                Quantity = i.Quantity
-            }).ToList()
+            Items = sourceRequisitionDto
+                .Items.Select(i => new SupplierQuotationItem
+                {
+                    MaterialId = i.Material.Id,
+                    UoMId = i.UoM.Id,
+                    Quantity = i.Quantity,
+                })
+                .ToList(),
         };
 
         context.SourceRequisitions.UpdateRange(sourceRequisition);
@@ -1110,17 +1483,21 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     public async Task<bool> CheckIfSupplierHasPendingPriceComparison(Guid supplierId)
     {
         return await context.SupplierQuotations.AnyAsync(s =>
-            s.SupplierId == supplierId && s.Items.Any(si => si.Status == SupplierQuotationItemStatus.NotProcessed));
+            s.SupplierId == supplierId
+            && s.Items.Any(si => si.Status == SupplierQuotationItemStatus.NotProcessed)
+        );
     }
 
-    public async Task<Result<Paginateable<IEnumerable<SupplierQuotationDto>>>> GetSupplierQuotations(int page, 
-        int pageSize, SupplierType supplierType, bool received)
+    public async Task<
+        Result<Paginateable<IEnumerable<SupplierQuotationDto>>>
+    > GetSupplierQuotations(int page, int pageSize, SupplierType supplierType, bool received)
     {
-
-        var query = context.SupplierQuotations
-            .AsSplitQuery()
-            .Include(s => s.Items).ThenInclude(s => s.Material)
-            .Include(s => s.Items).ThenInclude(s => s.UoM)
+        var query = context
+            .SupplierQuotations.AsSplitQuery()
+            .Include(s => s.Items)
+                .ThenInclude(s => s.Material)
+            .Include(s => s.Items)
+                .ThenInclude(s => s.UoM)
             .Include(s => s.Supplier)
             .Where(s => s.Supplier.Type == supplierType)
             .AsQueryable();
@@ -1133,44 +1510,56 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             supplierQuotations,
             page,
             pageSize,
-            mapper.Map<SupplierQuotationDto>);
+            mapper.Map<SupplierQuotationDto>
+        );
     }
 
     public async Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId)
     {
-        return mapper.Map<SupplierQuotationDto>(await context.SupplierQuotations
-            .AsSplitQuery()
-            .Include(s => s.Items).ThenInclude(s => s.Material)
-            .Include(s => s.Items).ThenInclude(s => s.UoM)
-            .Include(sr => sr.Supplier)
-                .ThenInclude(s =>
-                    s.AssociatedManufacturers)
-                    .ThenInclude(m => m.Manufacturer)
-            .FirstOrDefaultAsync(s => s.Id == supplierQuotationId));
+        return mapper.Map<SupplierQuotationDto>(
+            await context
+                .SupplierQuotations.AsSplitQuery()
+                .Include(s => s.Items)
+                    .ThenInclude(s => s.Material)
+                .Include(s => s.Items)
+                    .ThenInclude(s => s.UoM)
+                .Include(sr => sr.Supplier)
+                    .ThenInclude(s => s.AssociatedManufacturers)
+                        .ThenInclude(m => m.Manufacturer)
+                .FirstOrDefaultAsync(s => s.Id == supplierQuotationId)
+        );
     }
 
-    public async Task<Result> ReceiveQuotationFromSupplier(List<SupplierQuotationResponseDto> supplierQuotationResponse,
-        Guid supplierQuotationId)
+    public async Task<Result> ReceiveQuotationFromSupplier(
+        List<SupplierQuotationResponseDto> supplierQuotationResponse,
+        Guid supplierQuotationId
+    )
     {
-        var supplierQuotation = await context.SupplierQuotations
-            .AsSplitQuery()
-            .Include(s => s.Items).ThenInclude(s => s.Material)
-            .Include(s => s.Items).ThenInclude(s => s.UoM)
+        var supplierQuotation = await context
+            .SupplierQuotations.AsSplitQuery()
+            .Include(s => s.Items)
+                .ThenInclude(s => s.Material)
+            .Include(s => s.Items)
+                .ThenInclude(s => s.UoM)
             .Include(s => s.Supplier)
             .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
 
         if (supplierQuotation.Items.Count == 0)
         {
-            return Error.Validation("Supplier.Quotation",
-                "No items found to mark as quotation sent for the specified supplier.");
+            return Error.Validation(
+                "Supplier.Quotation",
+                "No items found to mark as quotation sent for the specified supplier."
+            );
         }
 
         foreach (var item in supplierQuotation.Items)
         {
-            item.QuotedPrice = supplierQuotationResponse.FirstOrDefault(s =>
-                s.Id == item.Id)?.Price;
-            item.PriceUoM = supplierQuotationResponse.FirstOrDefault(s =>
-                s.Id == item.Id)?.PriceUoM;
+            item.QuotedPrice = supplierQuotationResponse
+                .FirstOrDefault(s => s.Id == item.Id)
+                ?.Price;
+            item.PriceUoM = supplierQuotationResponse
+                .FirstOrDefault(s => s.Id == item.Id)
+                ?.PriceUoM;
         }
 
         supplierQuotation.ReceivedQuotation = true;
@@ -1181,10 +1570,12 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
         return Result.Success();
     }
 
-    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(SupplierType supplierType)
+    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(
+        SupplierType supplierType
+    )
     {
-        var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
-            .AsSplitQuery()
+        var sourceRequisitionItemSuppliers = await context
+            .SupplierQuotationItems.AsSplitQuery()
             .Include(s => s.Material)
             .Include(s => s.UoM)
             .Include(s => s.SupplierQuotation)
@@ -1196,9 +1587,11 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                     .ThenInclude(s => s.Currency)
             .Include(s => s.SupplierQuotation)
                 .ThenInclude(s => s.SourceRequisition)
-            .Where(s => s.QuotedPrice != null &&
-                        s.Status == SupplierQuotationItemStatus.NotProcessed &&
-                        s.SupplierQuotation.Supplier.Type == supplierType)
+            .Where(s =>
+                s.QuotedPrice != null
+                && s.Status == SupplierQuotationItemStatus.NotProcessed
+                && s.SupplierQuotation.Supplier.Type == supplierType
+            )
             .ToListAsync();
 
         return sourceRequisitionItemSuppliers
@@ -1208,46 +1601,62 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 Material = mapper.Map<CollectionItemDto>(item.Key.Material),
                 UoM = mapper.Map<UnitOfMeasureDto>(item.Key.UoM),
                 Quantity = item.Select(s => s.Quantity).First(),
-                SupplierQuotation = item
-                    .GroupBy(s => s.SupplierQuotation.SupplierId)
-                    .Select(sg => sg.OrderByDescending(s =>
-                        s.SupplierQuotation.CreatedAt).First())
+                SupplierQuotation = item.GroupBy(s => s.SupplierQuotation.SupplierId)
+                    .Select(sg => sg.OrderByDescending(s => s.SupplierQuotation.CreatedAt).First())
                     .Select(s => new SupplierPrice
                     {
                         Supplier = mapper.Map<SupplierDto>(s.SupplierQuotation.Supplier),
-                        SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
-                        DefaultManufacturer = mapper.Map<ManufacturerListDto>(s.SupplierQuotation.
-                            Supplier.AssociatedManufacturers.First(m =>
-                                m.MaterialId == item.Key.Material.Id && m.Default).Manufacturer),
+                        SourceRequisition = mapper.Map<CollectionItemDto>(
+                            s.SupplierQuotation.SourceRequisition
+                        ),
+                        DefaultManufacturer = mapper.Map<ManufacturerListDto>(
+                            s.SupplierQuotation.Supplier.AssociatedManufacturers.First(m =>
+                                m.MaterialId == item.Key.Material.Id && m.Default
+                            ).Manufacturer
+                        ),
                         Status = s.Status,
                         Price = s.QuotedPrice,
-                        PriceUoM = s.PriceUoM
-                    }).ToList()
-            }).ToList();
+                        PriceUoM = s.PriceUoM,
+                    })
+                    .ToList(),
+            })
+            .ToList();
     }
 
-    public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(
-        SupplierType supplierType, Guid materialId, Guid purchaseOrderId, SupplierQuotationItemStatus? status)
+    public async Task<
+        Result<List<SupplierPriceComparison>>
+    > GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId(
+        SupplierType supplierType,
+        Guid materialId,
+        Guid purchaseOrderId,
+        SupplierQuotationItemStatus? status
+    )
     {
-        var sourceRequisitionItemSuppliers = await context.SupplierQuotationItems
-            .AsSplitQuery()
+        var sourceRequisitionItemSuppliers = await context
+            .SupplierQuotationItems.AsSplitQuery()
             .Include(s => s.Material)
             .Include(s => s.UoM)
             .Include(s => s.SupplierQuotation)
-                .ThenInclude(s => s.Supplier).ThenInclude(s => s.AssociatedManufacturers)
+                .ThenInclude(s => s.Supplier)
+                    .ThenInclude(s => s.AssociatedManufacturers)
             .Include(s => s.SupplierQuotation)
-                .ThenInclude(s => s.Supplier).ThenInclude(s => s.Currency)
+                .ThenInclude(s => s.Supplier)
+                    .ThenInclude(s => s.Currency)
             .Include(s => s.SupplierQuotation)
                 .ThenInclude(s => s.SourceRequisition)
-            .Where(s => s.QuotedPrice != null
-                                              && s.SupplierQuotation.Supplier.Type == supplierType &&
-                                              s.MaterialId == materialId && s.PurchaseOrderId == purchaseOrderId)
+            .Where(s =>
+                s.QuotedPrice != null
+                && s.SupplierQuotation.Supplier.Type == supplierType
+                && s.MaterialId == materialId
+                && s.PurchaseOrderId == purchaseOrderId
+            )
             .ToListAsync();
 
         if (status.HasValue)
         {
             sourceRequisitionItemSuppliers = sourceRequisitionItemSuppliers
-                .Where(s => s.Status == status).ToList();
+                .Where(s => s.Status == status)
+                .ToList();
         }
 
         return sourceRequisitionItemSuppliers
@@ -1257,68 +1666,87 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 Material = mapper.Map<CollectionItemDto>(item.Key.Material),
                 UoM = mapper.Map<UnitOfMeasureDto>(item.Key.UoM),
                 Quantity = item.Select(s => s.Quantity).First(),
-                SupplierQuotation = item
-                    .GroupBy(s => s.SupplierQuotation.SupplierId)
-                    .Select(sg => sg.OrderByDescending(s
-                        => s.SupplierQuotation.CreatedAt).First())
+                SupplierQuotation = item.GroupBy(s => s.SupplierQuotation.SupplierId)
+                    .Select(sg => sg.OrderByDescending(s => s.SupplierQuotation.CreatedAt).First())
                     .Select(s => new SupplierPrice
                     {
                         Supplier = mapper.Map<SupplierDto>(s.SupplierQuotation.Supplier),
-                        SourceRequisition = mapper.Map<CollectionItemDto>(s.SupplierQuotation.SourceRequisition),
+                        SourceRequisition = mapper.Map<CollectionItemDto>(
+                            s.SupplierQuotation.SourceRequisition
+                        ),
                         Status = s.Status,
                         Price = s.QuotedPrice,
-                        PriceUoM = s.PriceUoM
-                    }).ToList()
-            }).ToList();
+                        PriceUoM = s.PriceUoM,
+                    })
+                    .ToList(),
+            })
+            .ToList();
     }
 
-    public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(List<ProcessQuotation> processQuotations,
-        SupplierType type, Guid userId)
+    public async Task<Result> ProcessQuotationAndCreatePurchaseOrder(
+        List<ProcessQuotation> processQuotations,
+        SupplierType type,
+        Guid userId
+    )
     {
         foreach (var quotation in processQuotations)
         {
-            var sourceRequisition = await context.SourceRequisitions
-                .AsSplitQuery()
-                .Include(sourceRequisition => sourceRequisition.Items).FirstOrDefaultAsync(s
-                    => s.Id == quotation.SourceRequisitionId);
-            if (sourceRequisition == null) return Error.NotFound("Source.Requisition",
-                "Source requisition not found");
+            var sourceRequisition = await context
+                .SourceRequisitions.AsSplitQuery()
+                .Include(sourceRequisition => sourceRequisition.Items)
+                .FirstOrDefaultAsync(s => s.Id == quotation.SourceRequisitionId);
+            if (sourceRequisition == null)
+                return Error.NotFound("Source.Requisition", "Source requisition not found");
 
             if (quotation.Items.Count > sourceRequisition.Items.Count)
             {
-                return Error.Validation("SourceRequisition.Items",
-                    "Source requisition items count is greater" +
-                    " than what is in the source requisition item count");
+                return Error.Validation(
+                    "SourceRequisition.Items",
+                    "Source requisition items count is greater"
+                        + " than what is in the source requisition item count"
+                );
             }
 
-            if (!quotation.Items
-                    .Select(qi => qi.MaterialId)
-                    .All(id => sourceRequisition.Items.Select(si => si.MaterialId).Contains(id)))
+            if (
+                !quotation
+                    .Items.Select(qi => qi.MaterialId)
+                    .All(id => sourceRequisition.Items.Select(si => si.MaterialId).Contains(id))
+            )
             {
-                return Error.Validation("SourceRequisition.Materials",
-                    "Quotation contains materials that are not in the source requisition.");
+                return Error.Validation(
+                    "SourceRequisition.Materials",
+                    "Quotation contains materials that are not in the source requisition."
+                );
             }
 
             var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-            if (user is null) return UserErrors.NotFound(userId);
+            if (user is null)
+                return UserErrors.NotFound(userId);
 
-            var poId = (await procurementRepository.CreatePurchaseOrder(new CreatePurchaseOrderRequest
-            {
-                Code = await GeneratePurchaseOrderCode(),
-                SupplierId = quotation.SupplierId,
-                DepartmentId = user.DepartmentId,
-                SourceRequisitionId = quotation.SourceRequisitionId,
-                RequestDate = DateTime.UtcNow,
-                Items = quotation.Items
-            }, userId)).Value;
+            var poId = (
+                await procurementRepository.CreatePurchaseOrder(
+                    new CreatePurchaseOrderRequest
+                    {
+                        Code = await GeneratePurchaseOrderCode(),
+                        SupplierId = quotation.SupplierId,
+                        DepartmentId = user.DepartmentId,
+                        SourceRequisitionId = quotation.SourceRequisitionId,
+                        RequestDate = DateTime.UtcNow,
+                        Items = quotation.Items,
+                    },
+                    userId
+                )
+            ).Value;
 
             foreach (var processSupplierQuote in quotation.Items)
             {
                 //Process for the supplier
-                var supplierQuotationItem = await context.SupplierQuotationItems
-                    .FirstOrDefaultAsync(s => s.SupplierQuotation.SupplierId == quotation.SupplierId &&
-                                              s.MaterialId == processSupplierQuote.MaterialId &&
-                                              s.Status == SupplierQuotationItemStatus.NotProcessed);
+                var supplierQuotationItem =
+                    await context.SupplierQuotationItems.FirstOrDefaultAsync(s =>
+                        s.SupplierQuotation.SupplierId == quotation.SupplierId
+                        && s.MaterialId == processSupplierQuote.MaterialId
+                        && s.Status == SupplierQuotationItemStatus.NotProcessed
+                    );
 
                 if (supplierQuotationItem != null)
                 {
@@ -1329,14 +1757,16 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
                 await context.SaveChangesAsync();
 
                 //Process for everyone else
-                var supplierQuotationItems = await context.SupplierQuotationItems
-                    .AsSplitQuery()
+                var supplierQuotationItems = await context
+                    .SupplierQuotationItems.AsSplitQuery()
                     .Include(s => s.SupplierQuotation)
-                    .ThenInclude(s => s.Supplier)
-                    .Where(s => s.MaterialId == processSupplierQuote.MaterialId
-                                && s.SupplierQuotation.Supplier.Type == type
-                                && s.Status != SupplierQuotationItemStatus.Processed
-                        && !s.PurchaseOrderId.HasValue)
+                        .ThenInclude(s => s.Supplier)
+                    .Where(s =>
+                        s.MaterialId == processSupplierQuote.MaterialId
+                        && s.SupplierQuotation.Supplier.Type == type
+                        && s.Status != SupplierQuotationItemStatus.Processed
+                        && !s.PurchaseOrderId.HasValue
+                    )
                     .ToListAsync();
 
                 foreach (var supplierQuotation in supplierQuotationItems)
@@ -1349,18 +1779,27 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
             await context.SaveChangesAsync();
         }
 
-        var supplierQuotations = await context.SupplierQuotations
-            .AsSplitQuery()
+        var supplierQuotations = await context
+            .SupplierQuotations.AsSplitQuery()
             .Include(s => s.Items)
-            .ThenInclude(s => s.SupplierQuotation).ThenInclude(s => s.Supplier)
-            .Where(s => s.ReceivedQuotation &&
-                        s.Items.Any(i => i.Status == SupplierQuotationItemStatus.NotProcessed
-                                         && i.SupplierQuotation.Supplier.Type == type)).ToListAsync();
+                .ThenInclude(s => s.SupplierQuotation)
+                    .ThenInclude(s => s.Supplier)
+            .Where(s =>
+                s.ReceivedQuotation
+                && s.Items.Any(i =>
+                    i.Status == SupplierQuotationItemStatus.NotProcessed
+                    && i.SupplierQuotation.Supplier.Type == type
+                )
+            )
+            .ToListAsync();
 
         foreach (var supplierQuotation in supplierQuotations)
         {
-            foreach (var item in supplierQuotation.Items.Where(item =>
-                         item.Status == SupplierQuotationItemStatus.NotProcessed))
+            foreach (
+                var item in supplierQuotation.Items.Where(item =>
+                    item.Status == SupplierQuotationItemStatus.NotProcessed
+                )
+            )
             {
                 item.Status = SupplierQuotationItemStatus.NotUsed;
             }
@@ -1374,13 +1813,18 @@ public class RequisitionRepository(ApplicationDbContext context, IMapper mapper,
     private async Task<string> GeneratePurchaseOrderCode()
     {
         // Fetch the configuration for PurchaseOrder
-        var config = await context.Configurations
-            .FirstOrDefaultAsync(c => c.ModelType == nameof(PurchaseOrder));
-        if (config is null) throw new Exception("No configuration exists");
+        var config = await context.Configurations.FirstOrDefaultAsync(c =>
+            c.ModelType == nameof(PurchaseOrder)
+        );
+        if (config is null)
+            throw new Exception("No configuration exists");
 
-        var seriesCount =
-            await configurationRepository.GetCountForCodeConfiguration(nameof(PurchaseOrder), config.Prefix);
-        return seriesCount.IsFailure ? throw new Exception("No configuration exists") :
-            CodeGenerator.GenerateCode(config, seriesCount.Value);
+        var seriesCount = await configurationRepository.GetCountForCodeConfiguration(
+            nameof(PurchaseOrder),
+            config.Prefix
+        );
+        return seriesCount.IsFailure
+            ? throw new Exception("No configuration exists")
+            : CodeGenerator.GenerateCode(config, seriesCount.Value);
     }
 }
