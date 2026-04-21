@@ -1691,9 +1691,6 @@ public class ProductionScheduleRepository(
         CreateBatchManufacturingRecord request
     )
     {
-        if (string.IsNullOrEmpty(request.BatchNumber))
-            return Error.Validation("BatchNumber", "Batch number is required");
-
         var batchRecord = mapper.Map<BatchManufacturingRecord>(request);
         await context.BatchManufacturingRecords.AddAsync(batchRecord);
         await context.SaveChangesAsync();
