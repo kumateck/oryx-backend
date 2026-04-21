@@ -261,7 +261,6 @@ public class ProductionScheduleRepository(
 
             var productionScheduleProduct = await context
                 .ProductionScheduleProducts.AsSplitQuery()
-                .IgnoreQueryFilters()
                 .Include(productionSchedule => productionSchedule.ProductionSchedule)
                 .FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
 
@@ -273,7 +272,6 @@ public class ProductionScheduleRepository(
 
             var product = await context
                 .Products.AsSplitQuery()
-                .IgnoreQueryFilters()
                 .Include(product => product.Routes)
                     .ThenInclude(route => route.Resources)
                 .Include(product => product.Routes)
@@ -1938,12 +1936,17 @@ public class ProductionScheduleRepository(
         };
         await context.FinishedProductBatchEvents.AddAsync(batchEvent);
 
+        var organization = await context.Organizations.FirstOrDefaultAsync();
+        var organizationName = organization?.Name ?? "N/A";
+
         var binCardEvent = new ProductBinCardInformation
         {
             BatchId = bmr.Id,
             Description = finishedGoodsWarehouse.Name,
             WayBill = "N/A",
             ArNumber = "N/A",
+            Supplier = "N/A",
+            Manufacturer = organizationName,
             QuantityReceived = request.TotalQuantity,
             QuantityIssued = 0,
             BalanceQuantity =
@@ -4031,9 +4034,12 @@ public class ProductionScheduleRepository(
 
         foreach (var batchRequest in batches)
         {
-            var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
-                b.Id == batchRequest.BatchId
-            );
+            var batch = await context
+                .MaterialBatches.Include(m => m.Checklist)
+                    .ThenInclude(c => c.Supplier)
+                .Include(m => m.Checklist)
+                    .ThenInclude(c => c.Manufacturer)
+                .FirstOrDefaultAsync(b => b.Id == batchRequest.BatchId);
             if (batch == null || batch.RemainingQuantity < batchRequest.Quantity)
                 return Error.Failure(
                     "Batch.InsufficientStock",
@@ -4125,12 +4131,17 @@ public class ProductionScheduleRepository(
                 .Select(s => s.ArNumber)
                 .FirstOrDefaultAsync();
 
+            var supplier = batch.Checklist?.Supplier?.Name;
+            var manufacturer = batch.Checklist?.Manufacturer?.Name;
+
             var toBinCardEvent = new BinCardInformation
             {
                 MaterialBatchId = batch.Id,
                 Description = fromWarehouse.Name,
                 WayBill = "N/A",
                 ArNumber = arNumber ?? "N/A",
+                Supplier = supplier,
+                Manufacturer = manufacturer,
                 QuantityReceived = 0,
                 QuantityIssued = batchRequest.Quantity,
                 BalanceQuantity = balanceAfterIssue,
@@ -4148,6 +4159,8 @@ public class ProductionScheduleRepository(
                 Description = toWarehouse.Name,
                 WayBill = "N/A",
                 ArNumber = arNumber ?? "N/A",
+                Supplier = supplier,
+                Manufacturer = manufacturer,
                 QuantityReceived = batchRequest.Quantity,
                 QuantityIssued = 0,
                 BalanceQuantity = balanceAfterReceive,

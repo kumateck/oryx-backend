@@ -437,6 +437,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var materialIds = paginatedResult.Data.Select(m => m.Id).ToList();
 
+        var shelfMaterialBatches = await context
+            .ShelfMaterialBatches.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Where(s =>
+                materialIds.Contains(s.MaterialBatch.MaterialId)
+                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                    == warehouse.Id
+            )
+            .ToListAsync();
+
         var stocks = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
             .AsSplitQuery()
@@ -1223,6 +1233,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var materialBatch = await context
             .MaterialBatches.AsSplitQuery()
             .Include(materialBatch => materialBatch.Material)
+            .Include(materialBatch => materialBatch.Checklist)
+                .ThenInclude(c => c.Supplier)
+            .Include(materialBatch => materialBatch.Checklist)
+                .ThenInclude(c => c.Manufacturer)
             .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
 
         if (materialBatch == null)
@@ -1347,12 +1361,17 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Select(s => s.ArNumber)
             .FirstOrDefaultAsync();
 
+        var supplier = materialBatch.Checklist?.Supplier?.Name;
+        var manufacturer = materialBatch.Checklist?.Manufacturer?.Name;
+
         var binCardEvent = new BinCardInformation
         {
             MaterialBatchId = materialBatch.Id,
             Description = warehouse.Name,
             WayBill = "N/A",
             ArNumber = arNumber ?? "N/A",
+            Supplier = supplier,
+            Manufacturer = manufacturer,
             QuantityReceived = totalQuantityToAssign,
             QuantityIssued = 0,
             BalanceQuantity = currentBalance,
@@ -2725,6 +2744,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             pageSize,
             mapper.Map<MaterialWithWarehouseStockDto>
         );
+
+        results.Data = results.Data.ToList();
         foreach (var result in results.Data)
         {
             var warehouseType =
@@ -2806,7 +2827,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             mapper.Map<MaterialDepartmentWithWarehouseStockDto>
         );
 
-        //results.Data = results.Data.ToList();
+        results.Data = results.Data.ToList();
         foreach (var result in results.Data)
         {
             var warehouseType =
@@ -3123,6 +3144,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var materialBatch = await context
             .MaterialBatches.AsSplitQuery()
             .Include(materialBatch => materialBatch.Material)
+            .Include(materialBatch => materialBatch.Checklist)
+                .ThenInclude(c => c.Supplier)
+            .Include(materialBatch => materialBatch.Checklist)
+                .ThenInclude(c => c.Manufacturer)
             .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
 
         if (materialBatch == null)
@@ -3214,6 +3239,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
             var currentBalance = previousBalance + movedBatch.Quantity;
 
+            var supplier = materialBatch.Checklist?.Supplier?.Name;
+            var manufacturer = materialBatch.Checklist?.Manufacturer?.Name;
+
             binCards.Add(
                 new BinCardInformation
                 {
@@ -3221,6 +3249,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     UoMId = materialBatch.UoMId,
                     WayBill = grn?.GrnNumber,
                     ArNumber = arNumber ?? "",
+                    Supplier = supplier,
+                    Manufacturer = manufacturer,
                     QuantityReceived = movedBatch.Quantity,
                     QuantityIssued = 0,
                     BalanceQuantity = currentBalance,
