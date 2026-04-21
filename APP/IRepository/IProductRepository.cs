@@ -80,5 +80,10 @@ public interface IProductRepository
         Guid? departmentId,
         Division? departmentDivision
     );
+    Task<Result<byte[]>> ExportProductsToExcel(
+        Guid userId,
+        Guid? departmentId,
+        Division? departmentDivision
+    );
     Task<Result> ImportEquipmentFromExcel(IFormFile file);
 }

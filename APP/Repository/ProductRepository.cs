@@ -1445,6 +1445,86 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success(await package.GetAsByteArrayAsync());
     }
 
+    public async Task<Result<byte[]>> ExportProductsToExcel(
+        Guid userId,
+        Guid? departmentId,
+        Division? departmentDivision
+    )
+    {
+        var user = await context
+            .Users.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(u => u.Department)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+            return UserErrors.NotFound(userId);
+
+        if (user.Department == null)
+        {
+            return Error.Failure("User.NoDepartment", "User does not belong to any department.");
+        }
+
+        var division = departmentDivision ?? user.Department.Division;
+
+        var products = await context
+            .Products.AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(p => p.Packings)
+            .Where(p => !p.DeletedAt.HasValue)
+            .Where(p => p.Division == division)
+            .Where(p => !departmentId.HasValue || p.DepartmentId == departmentId)
+            .ToListAsync();
+
+        ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Products");
+
+        // Headers matching requiredHeaders in Import
+        string[] headers =
+        {
+            "Warehouse",
+            "Product Code",
+            "Product Name",
+            "Packing Style",
+            "Total Quantity",
+            "Batch No.",
+            "FGTN ID",
+            " AR No.",
+            " Manufacturing Date",
+            "Expiry Date",
+        };
+        for (int i = 0; i < headers.Length; i++)
+        {
+            worksheet.Cells[1, i + 1].Value = headers[i];
+            worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+        }
+
+        int row = 2;
+        foreach (var product in products)
+        {
+            if (product.Packings.Any())
+            {
+                foreach (var packing in product.Packings)
+                {
+                    worksheet.Cells[row, 2].Value = product.Code;
+                    worksheet.Cells[row, 3].Value = product.Name;
+                    worksheet.Cells[row, 4].Value = packing.Name;
+                    row++;
+                }
+            }
+            else
+            {
+                worksheet.Cells[row, 2].Value = product.Code;
+                worksheet.Cells[row, 3].Value = product.Name;
+                row++;
+            }
+        }
+
+        worksheet.Cells.AutoFitColumns();
+
+        return Result.Success(await package.GetAsByteArrayAsync());
+    }
+
     public async Task<Result> ImportEquipmentFromExcel(IFormFile file)
     {
         if (file == null || file.Length == 0)
