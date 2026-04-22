@@ -2059,6 +2059,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     == warehouseId
                 )
                 && DateTime.UtcNow <= b.ExpiryDate
+                && b.Status == BatchStatus.Available
             )
             .OrderBy(b => b.ReturnDate == null) // false (not null) first, true (null) last
             .ThenBy(b => b.ReturnDate) // earliest non-null return dates first
